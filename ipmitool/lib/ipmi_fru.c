@@ -96,7 +96,10 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 	}
 
 	if (size < 1)
+	{
+		*offset = off;
 		return NULL;
+	}
 	str = malloc(size+1);
 	if (str == NULL)
 		return NULL;
@@ -350,6 +353,13 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	area_len = fru_data[i++] * 8; /* fru area length */
 	i++;	/* skip fru board language */
 	i += 3;	/* skip mfg. date time */
+
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0) {
+		printf(" Board Mfg             : %s\n", fru_area);
+		free(fru_area);
+	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
