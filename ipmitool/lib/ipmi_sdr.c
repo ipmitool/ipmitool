@@ -215,6 +215,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	int i=0, validread=1, do_unit=1;
 	float val;
 	struct ipmi_rs * rsp;
+        unsigned char min_reading, max_reading;
 
 	if (!sensor)
 		return;
@@ -352,40 +353,115 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			       sensor->entity.id, sensor->entity.instance,
 			       val2str(sensor->entity.id, entity_id_vals));
 
-			printf("Sensor Type            : %s\n", ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+                        if (sensor->unit.analog != 3) { /* analog */
+                            printf("Sensor Type (Analog)   : %s\n", 
+                                   ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 
-			printf("Sensor Reading         : ");
-			if (validread)
-				printf("%.*f %s\n", (val==(int)val) ? 0 : 3, val, unitstr);
-			else
-				printf("not present\n");
+                            printf("Sensor Reading         : ");
+                            if (validread) {
+                                    unsigned raw_tol = (sensor->mtol & 0x3f00) >> 8;
+                                    float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
+                                    printf("%.*f (+/- %.*f) %s\n",
+                                           (val==(int)val) ? 0 : 3, 
+                                           val, 
+                                           (tol==(int)tol) ? 0 : 3, 
+                                           tol, 
+                                           unitstr);
+                            } else
+                                    printf("not present\n");
 
-			printf("Status                 : %s\n",
-			       ipmi_sdr_get_status(rsp->data[2]));
+                            printf("Status                 : %s\n",
+                                   ipmi_sdr_get_status(rsp->data[2]));
 
-			printf("Nominal Reading        : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->nominal_read));
-			printf("Normal Minimum         : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->normal_min));
-			printf("Normal Maximum         : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->normal_max));
+                            if (sensor->analog_flag.nominal_read)
+                                printf("Nominal Reading        : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->nominal_read));
+                            else
+                                printf("Nominal Reading        : Unspecified\n");
 
-			printf("Upper non-recoverable  : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_recover));
-			printf("Upper critical         : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.critical));
-			printf("Upper non-critical     : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_critical));
-			printf("Lower non-recoverable  : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_recover));
-			printf("Lower critical         : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.critical));
-			printf("Lower non-critical     : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_critical));
-			printf("Minimum sensor range   : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->sensor_min));
-			printf("Maximum sensor range   : %.3f\n",
-			       sdr_convert_sensor_reading(sensor, sensor->sensor_max));
+                            if (sensor->analog_flag.normal_min)
+                                printf("Normal Minimum         : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->normal_min));
+                            else
+                                printf("Normal Minimum         : Unspecified\n");
+
+                            if (sensor->analog_flag.normal_max)
+                                printf("Normal Maximum         : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->normal_max));
+                            else
+                                printf("Normal Maximum         : Unspecified\n");
+
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x20))
+                                printf("Upper non-recoverable  : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_recover));
+                            else
+                                printf("Upper non-recoverable  : Unspecified\n");
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x10))
+                                printf("Upper critical         : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.critical));
+                            else
+                                printf("Upper critical         : Unspecified\n");
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x08))
+                                printf("Upper non-critical     : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_critical));
+                            else
+                                printf("Upper non-critical     : Unspecified\n");
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x04))
+                                printf("Lower non-recoverable  : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_recover));
+                            else
+                                printf("Lower non-recoverable  : Unspecified\n");
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x02))
+                                printf("Lower critical         : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.critical));
+                            else
+                                printf("Lower critical         : Unspecified\n");
+
+                            if (sensor->sensor.init.thresholds &&
+                                (sensor->mask.threshold.set & 0x01))
+                                printf("Lower non-critical     : %.3f\n",
+                                       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_critical));
+                            else
+                                printf("Lower non-critical     : Unspecified\n");
+
+                            min_reading = sdr_convert_sensor_reading(sensor, sensor->sensor_min);
+                            if ((sensor->unit.analog == 0 && sensor->sensor_min == 0x00) ||
+                                (sensor->unit.analog == 1 && sensor->sensor_min == 0xff) ||
+                                (sensor->unit.analog == 2 && sensor->sensor_min == 0x80))
+                                printf("Minimum sensor range   : Unspecified\n");
+                            else
+                                printf("Minimum sensor range   : %.3f\n", min_reading);
+
+                            max_reading = sdr_convert_sensor_reading(sensor, sensor->sensor_max);
+                            if ((sensor->unit.analog == 0 && sensor->sensor_max == 0xff) ||
+                                (sensor->unit.analog == 1 && sensor->sensor_max == 0x00) ||
+                                (sensor->unit.analog == 2 && sensor->sensor_max == 0x7f))
+                                printf("Maximum sensor range   : Unspecified\n");
+                            else
+                                printf("Maximum sensor range   : %.3f\n", max_reading);
+                        } else {  /* discrete */
+                            printf("Sensor Type (Discete)  : %s\n", 
+                                   ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+
+                            printf("Sensor Reading         : ");
+                            if (validread)
+                                    printf("%xh\n", val);
+                            else
+                                    printf("not present\n");
+
+                            printf("Status                 : %s\n",
+                                   ipmi_sdr_get_status(rsp->data[2]));
+                        }
 			printf("\n");
 		}
 	}
@@ -407,12 +483,12 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	memcpy(desc, sensor->id_string, 16);
 	
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-	if (!rsp || rsp->ccode) {
-		printf("Unable to get sensor %x reading\n", sensor->keys.sensor_num);
+	if ((!rsp) || (rsp && (rsp->ccode !=0 && rsp->ccode != 0xcd))) {
+		printf("Unable to get sensor %x reading: cc=%x\n", rsp->ccode);
 		return;
-	}
+        }
 
-	if (!(rsp->data[1] & 0x80))
+	if (!rsp->ccode && (!(rsp->data[1] & 0x80)))
 		return;		/* sensor scanning disabled */
 
 	if (verbose) {
@@ -448,21 +524,30 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	else {
 		char * state;
 
-		switch (sensor->sensor.type) {
-		case 0x07:	/* processor */
-			if (rsp->data[2] & 0x80)
-				state = strdup("Present          ");
-			else
-				state = strdup("Not Present      ");
-			break;
-		case 0x21:	/* slot/connector */
-			if (rsp->data[2] & 0x04)
-				state = strdup("Installed        ");
-			else
-				state = strdup("Not Installed    ");
-			break;
-		default:
-			return;
+		if (rsp->ccode == 0xcd) {
+                    state = strdup("Not Readable     ");
+                } else {
+                    switch (sensor->sensor.type) {
+                    case 0x07:	/* processor */
+                            if (rsp->data[2] & 0x80)
+				    state = csv_output ? strdup("Present") : strdup("Present          ");
+			    else
+				    state = csv_output ? strdup("Not Present") : strdup("Not Present      ");
+                            break;
+                    case 0x21:	/* slot/connector */
+                            if (rsp->data[2] & 0x04)
+                                    state = csv_output ? strdup("Installed") : strdup("Installed        ");
+                            else
+                                    state = csv_output ? strdup("Not Installed") : strdup("Not Installed    ");
+                            break;
+                    default:
+                            {
+				    char temp[18];
+				    sprintf(temp, "0x%02x", rsp->data[2]);
+				    state = strdup(temp);
+                            }
+                            break;
+                    }
 		}
 
 		if (csv_output)
@@ -470,7 +555,14 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		else
 			printf("%-16s | ", sensor->id_code ? desc : NULL);
 
-		printf("%s | ok\n", state);
+		if (!rsp->ccode) {
+			if (csv_output)
+				printf("%s,ok\n", state);
+			else
+				printf("%-17s | ok\n", state);
+		} else
+			printf("%s\n", state);
+
 		free(state);
 	}
 }
@@ -490,10 +582,15 @@ ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
 		else
 			printf("%-16s | ", mc->id_code ? desc : NULL);
 
-		printf("%s MC @ %02Xh %s | ok\n",
+		printf("%s MC @ %02Xh",
 		       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic",
-		       mc->dev_slave_addr,
-		       (mc->pwr_state_notif & 0x1) ? " " : "");
+		       mc->dev_slave_addr);
+
+		if (csv_output)
+			printf(",ok\n");
+		else
+			printf(" %s | ok\n", (mc->pwr_state_notif & 0x1) ? " " : "");
+
 		return;
 	}		
 
@@ -546,6 +643,52 @@ ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
 }
 
 static void
+ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
+			  struct sdr_record_fru_locator * fru)
+{
+	char desc[17];
+
+	memset(desc, 0, sizeof(desc));
+	memcpy(desc, fru->id_string, 16);
+
+	if (!verbose) {
+		if (csv_output)
+			printf("%s,", fru->id_code ? desc : NULL);
+		else
+			printf("%-16s | ", fru->id_code ? desc : NULL);
+
+		printf("%s FRU @%02Xh %x.%x",
+		       (fru->logical) ? "Log" : "Phy",
+		       fru->device_id,
+		       fru->entity.id, fru->entity.instance);
+		if (csv_output)
+			printf(",ok\n");
+		else
+			printf(" | ok\n");
+
+		return;
+	}		
+
+	printf("Device ID              : %s\n", fru->id_string);
+	printf("Entity ID              : %d.%d (%s)\n",
+	       fru->entity.id, fru->entity.instance,
+	       val2str(fru->entity.id, entity_id_vals));
+
+	printf("Device Slave Address   : %02Xh\n", fru->dev_slave_addr);
+        if (fru->logical)
+	printf("%s: %02Xh\n", 
+                     fru->logical ? "Logical FRU Device     " : 
+                                    "Slave Address          ", 
+                     fru->device_id);
+	printf("LUN.Bus                : %01Xh.%01Xh\n", fru->lun, fru->bus);
+	printf("Channel Number         : %01Xh\n", fru->channel_num);
+	printf("Device Type.Modifier   : %01Xh.%01Xh (%s)\n",
+                fru->dev_type, fru->dev_type_modifier, 
+                val2str(fru->dev_type << 8 | fru->dev_type_modifier, device_type_vals));
+	printf("\n");
+}
+
+static void
 ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 {
 	struct sdr_get_rs * header;
@@ -586,6 +729,8 @@ ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			ipmi_sdr_print_fru_locator(intf,
+				(struct sdr_record_fru_locator *) rec);
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			ipmi_sdr_print_mc_locator(intf,
@@ -721,6 +866,7 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("               full       Full Sensor Record\n");
 		printf("               compact    Compact Sensor Record\n");
 		printf("               mcloc      Management Controller Locator Record\n");
+		printf("               fru        FRU Locator Record\n");
 	}
 	else if (!strncmp(argv[0], "list", 4)) {
 		if (argc > 1) {
@@ -732,8 +878,10 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_COMPACT_SENSOR);
 			else if (!strncmp(argv[1], "mcloc", 5))
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_MC_DEVICE_LOCATOR);
+			else if (!strncmp(argv[1], "fru", 3))
+				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR);
 			else
-				printf("usage: sdr list [all|full|compact|mcloc]\n");
+				printf("usage: sdr list [all|full|compact|mcloc|fru]\n");
 		} else {
 			ipmi_sdr_print_sdr(intf, 0xff);
 		}
