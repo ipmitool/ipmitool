@@ -84,10 +84,6 @@ struct ipmi_v2_payload {
 			struct ipmi_rq * request;
 		} ipmi_request;
 
-		struct {
-			unsigned char * message;
-		} sol_message;
-
 		/* Only used internally by the lanplus interface */
 		struct {
 			unsigned char * request;
@@ -112,6 +108,20 @@ struct ipmi_v2_payload {
 		struct {
 			unsigned char * message;
 		} rakp_4_message;
+
+		struct {
+			unsigned char data[BUF_SIZE];
+			unsigned char packet_sequence_number;
+			unsigned char acked_packet_number;
+			unsigned char accepted_character_count;
+			unsigned char is_nack;              /* bool */
+			unsigned char assert_ring_wor;      /* bool */
+			unsigned char generate_break;       /* bool */
+			unsigned char deassert_cts;         /* bool */
+			unsigned char deassert_dcd_dsr;     /* bool */
+			unsigned char flush_inbound;        /* bool */
+			unsigned char flush_outbound;       /* bool */
+		} sol_packet;
 
 	} payload;
 };
@@ -147,9 +157,10 @@ struct ipmi_rs {
 		unsigned char  bEncrypted;     /* IPMI v2 only */
 		unsigned char  bAuthenticated; /* IPMI v2 only */
 		unsigned char  payloadtype;    /* IPMI v2 only */
-		unsigned short msglen;         /* This is the total length of the payload or
-										  IPMI message.  IPMI v2.0 requires this to
-										  be 2 bytes.  Not really used for much. */
+		/* This is the total length of the payload or
+		   IPMI message.  IPMI v2.0 requires this to
+		   be 2 bytes.  Not really used for much. */
+		unsigned short msglen;
 	} session;
 
 
@@ -190,6 +201,17 @@ struct ipmi_rs {
 			unsigned int  console_id;
 			unsigned char integrity_check_value[20];
 		} rakp4_message;
+		struct {
+			unsigned char packet_sequence_number;
+			unsigned char acked_packet_number;
+			unsigned char accepted_character_count;
+			unsigned char is_nack;              /* bool */
+			unsigned char transfer_unavailable; /* bool */
+			unsigned char sol_inactive;         /* bool */
+			unsigned char transmit_overrun;     /* bool */
+			unsigned char break_detected;       /* bool */
+		} sol_packet;
+			
 	} payload;
 };
 
