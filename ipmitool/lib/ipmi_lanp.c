@@ -107,6 +107,12 @@ set_lan_param_wait(struct ipmi_intf * intf, unsigned char chan, int param, unsig
 
 	for (;;) {
 		p = get_lan_param(intf, chan, param);
+		if (!p) {
+			sleep(timeout);
+			if (!retry--)
+				return -1;
+			continue;
+		}
 		if (verbose > 1)
 			printbuf(p->data, p->data_len, "READ DATA");
 		if (p->data_len != len) {
@@ -158,8 +164,9 @@ __set_lan_param(struct ipmi_intf * intf, unsigned char chan, int param, unsigned
 		return -1;
 	}
 	if (rsp->ccode && wait) {
-		printf("Warning: Set Lan Parameter failed: %s\n",
-		       val2str(rsp->ccode, completion_code_vals));
+		if (verbose)
+			printf("Warning: Set Lan Parameter failed: %s\n",
+			       val2str(rsp->ccode, completion_code_vals));
 		if (rsp->ccode == 0xcc) {
 			/* retry hack for invalid data field ccode */
 			int timeout = 3;	/* 3 second timeout */
