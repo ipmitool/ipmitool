@@ -257,8 +257,8 @@ AC_ARG_ENABLE([ipmishell],
 			[enable IPMI shell interface [default=yes]])],
 	[], [enable_ipmishell=yes])
 if test "x$enable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([initscr], [curses ncurses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline], [have_readline=yes])
+	AC_SEARCH_LIBS([initscr], [curses ncurses], [have_curses=yes])
 	if test "x$have_curses" = "xyes" && test "x$have_readline" = "xyes"; then
 		AC_DEFINE(HAVE_READLINE, [1], [Define to 1 if readline present.])
 	fi
