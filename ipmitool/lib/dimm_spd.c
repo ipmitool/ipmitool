@@ -689,7 +689,8 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode)
 		return;
-	memcpy(&fru, rsp->data, sizeof(fru));
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
 
 	if (verbose > 1)
 		printf("fru.size = %d bytes (accessed by %s)\n",

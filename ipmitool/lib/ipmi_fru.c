@@ -41,6 +41,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 extern int verbose;
 extern void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id);
 
@@ -91,7 +95,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode)
 		return;
-	memcpy(&fru, rsp->data, sizeof(fru));
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
 
 	if (verbose > 1)
 		printf("fru.size = %d bytes (accessed by %s)\n",
@@ -281,6 +286,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 		struct fru_multirec_powersupply * ps;
 		struct fru_multirec_dcoutput * dc;
 		struct fru_multirec_dcload * dl;
+		unsigned short peak_capacity;
+		unsigned char peak_hold_up_time;
 
 		i = header.offset.multi;
 
@@ -292,6 +299,19 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			{
 			case FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION:
 				ps = (struct fru_multirec_powersupply *) (fru_data + i + sizeof (struct fru_multirec_header));
+
+#if WORDS_BIGENDIAN
+				ps->capacity		= BSWAP_16(ps->capacity);
+				ps->peak_va		= BSWAP_16(ps->peak_va);
+				ps->lowend_input1	= BSWAP_16(ps->lowend_input1);
+				ps->highend_input1	= BSWAP_16(ps->highend_input1);
+				ps->lowend_input2	= BSWAP_16(ps->lowend_input2);
+				ps->highend_input2	= BSWAP_16(ps->highend_input2);
+				ps->combined_capacity	= BSWAP_16(ps->combined_capacity);
+				ps->peak_cap_ht		= BSWAP_16(ps->peak_cap_ht);
+#endif
+				peak_hold_up_time 	= (ps->peak_cap_ht & 0xf000) >> 12;
+				peak_capacity 		= ps->peak_cap_ht & 0x0fff;
 
 				printf ("  Power Supply Record\n");
 				printf ("    Capacity               : %d W\n", ps->capacity);
@@ -310,8 +330,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 					ps->predictive_fail ? ps->rps_threshold ?
 						ps->tach ? "'Two pulses per rotation'" : "'One pulse per rotation'" :
 						ps->tach ? "'Failure on pin de-assertion'" : "'Failure on pin assertion'" : "");
-				printf ("    Peak capacity          : %d W\n", ps->peak_capacity);
-				printf ("    Peak capacity holdup   : %d s\n", ps->peak_hold_up_time);
+				printf ("    Peak capacity          : %d W\n", peak_capacity);
+				printf ("    Peak capacity holdup   : %d s\n", peak_hold_up_time);
 				if (ps->combined_capacity == 0)
 					printf ("    Combined capacity      : not specified\n");
 				else
@@ -326,6 +346,15 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			case FRU_RECORD_TYPE_DC_OUTPUT:
 				dc = (struct fru_multirec_dcoutput *) (fru_data + i + sizeof (struct fru_multirec_header));
 
+#if WORDS_BIGENDIAN
+				dc->nominal_voltage	= BSWAP_16(dc->nominal_voltage);
+				dc->max_neg_dev		= BSWAP_16(dc->max_neg_dev);
+				dc->max_pos_dev		= BSWAP_16(dc->max_pos_dev);
+				dc->ripple_and_noise	= BSWAP_16(dc->ripple_and_noise);
+				dc->min_current		= BSWAP_16(dc->min_current);
+				dc->max_current		= BSWAP_16(dc->max_current);
+#endif
+
 				printf ("  DC Output Record\n");
 				printf ("    Output Number          : %d\n", dc->output_number);
 				printf ("    Standby power          : %s\n", dc->standby ? "Yes" : "No");
@@ -339,6 +368,15 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 
 			case FRU_RECORD_TYPE_DC_LOAD:
 				dl = (struct fru_multirec_dcload *) (fru_data + i + sizeof (struct fru_multirec_header));
+
+#if WORDS_BIGENDIAN
+				dl->nominal_voltage	= BSWAP_16(dl->nominal_voltage);
+				dl->min_voltage		= BSWAP_16(dl->min_voltage);
+				dl->max_voltage		= BSWAP_16(dl->max_voltage);
+				dl->ripple_and_noise	= BSWAP_16(dl->ripple_and_noise);
+				dl->min_current		= BSWAP_16(dl->min_current);
+				dl->max_current		= BSWAP_16(dl->max_current);
+#endif
 
 				printf ("  DC Load Record\n");
 				printf ("    Output Number          : %d\n", dl->output_number);

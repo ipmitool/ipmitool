@@ -40,6 +40,10 @@
 #include <stdint.h>
 #include <ipmitool/ipmi.h>
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #define GET_FRU_INFO		0x10
 #define GET_FRU_DATA		0x11
 #define SET_FRU_DATA		0x12
@@ -125,7 +129,12 @@ struct fru_multirec_header {
 } __attribute__ ((packed));
 
 struct fru_multirec_powersupply {
-	unsigned short capacity : 12, __reserved1 : 4;
+#if WORDS_BIGENDIAN
+	unsigned short capacity;
+#else
+	unsigned short capacity		: 12;
+	unsigned short __reserved1	: 4;
+#endif
 	unsigned short peak_va;
 	unsigned char  inrush_current;
 	unsigned char  inrush_interval;
@@ -136,9 +145,29 @@ struct fru_multirec_powersupply {
 	unsigned char  lowend_freq;
 	unsigned char  highend_freq;
 	unsigned char  dropout_tolerance;
-	unsigned char  predictive_fail : 1, pfc : 1, autoswitch : 1, hotswap : 1, tach : 1, __reserved2 : 3;
-	unsigned short peak_capacity : 12, peak_hold_up_time : 4;
-	unsigned char  combined_voltage2 : 4, combined_voltage1 : 4;
+#if WORDS_BIGENDIAN
+	unsigned char  __reserved2	: 3;
+	unsigned char  tach		: 1;
+	unsigned char  hotswap		: 1;
+	unsigned char  autoswitch	: 1;
+	unsigned char  pfc		: 1;
+	unsigned char  predictive_fail	: 1;
+#else
+	unsigned char  predictive_fail	: 1;
+	unsigned char  pfc		: 1;
+	unsigned char  autoswitch	: 1;
+	unsigned char  hotswap		: 1;
+	unsigned char  tach		: 1;
+	unsigned char  __reserved2	: 3;
+#endif
+	unsigned short peak_cap_ht;
+#if WORDS_BIGENDIAN
+	unsigned char  combined_voltage1 : 4;
+	unsigned char  combined_voltage2 : 4;
+#else
+	unsigned char  combined_voltage2 : 4;
+	unsigned char  combined_voltage1 : 4;
+#endif
 	unsigned short combined_capacity;
 	unsigned char  rps_threshold;
 } __attribute__ ((packed));
@@ -148,7 +177,15 @@ static const char * combined_voltage_desc[] __attribute__((unused)) = {
 };
 
 struct fru_multirec_dcoutput {
-	unsigned char  output_number : 4, __reserved : 3, standby : 1;
+#if WORDS_BIGENDIAN
+	unsigned char  standby		: 1;
+	unsigned char  __reserved	: 3;
+	unsigned char  output_number	: 4;
+#else
+	unsigned char  output_number	: 4;
+	unsigned char  __reserved	: 3;
+	unsigned char  standby		: 1;
+#endif
 	short nominal_voltage;
 	short max_neg_dev;
 	short max_pos_dev;
@@ -158,7 +195,13 @@ struct fru_multirec_dcoutput {
 } __attribute__ ((packed));
 
 struct fru_multirec_dcload {
-	unsigned char  output_number : 4, __reserved : 4;
+#if WORDS_BIGENDIAN
+	unsigned char  __reserved	: 4;
+	unsigned char  output_number	: 4;
+#else
+	unsigned char  output_number	: 4;
+	unsigned char  __reserved	: 4;
+#endif
 	short nominal_voltage;
 	short min_voltage;
 	short max_voltage;
