@@ -136,9 +136,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),	
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -174,9 +174,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -213,9 +213,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -251,9 +251,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -289,9 +289,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -326,9 +326,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -363,9 +363,9 @@ ipmi_get_sol_info(
 				    val2str(data[1], sol_parameter_vals));
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -401,9 +401,9 @@ ipmi_get_sol_info(
 				params->payload_channel = channel;
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -439,9 +439,9 @@ ipmi_get_sol_info(
 				params->payload_port = intf->session->port;
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter '%s",
-				    rsp ? rsp->ccode : 0,
-				    val2str(data[1], sol_parameter_vals));
+				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
+					val2str(data[1], sol_parameter_vals),
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
@@ -915,11 +915,14 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	/* The command proper */
 	rsp = intf->sendrecv(intf, &req);
 
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error setting SOL parameter '%s'", param);
+		return -1;
+	}		
 
-	if (!rsp || rsp->ccode) {
-		lprintf(LOG_ERR, "Error:%x Error setting SOL parameter %s",
-			   rsp ? rsp->ccode : 0,
-			   param);
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error setting SOL parameter '%s': %s",
+			   param, val2str(rsp->ccode, completion_code_vals));
 
 		if (bGuarded &&
 			(ipmi_sol_set_param(intf,
@@ -1125,8 +1128,8 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 				lprintf(LOG_ERR, "Info: SOL payload type disabled");
 				break;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error activating SOL payload",
-				    rsp ? rsp->ccode : 0);
+				lprintf(LOG_ERR, "Error activating SOL payload: %s",
+					val2str(rsp->ccode, completion_code_vals));
 				break;
 		}
 	} else {
@@ -1455,8 +1458,8 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 				lprintf(LOG_ERR, "Info: cannot activate SOL payload without encryption");
 				return -1;
 			default:
-				lprintf(LOG_ERR, "Error:%x Error activating SOL payload",
-				    rsp ? rsp->ccode : 0);
+				lprintf(LOG_ERR, "Error activating SOL payload: %s",
+					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
 	} else {
