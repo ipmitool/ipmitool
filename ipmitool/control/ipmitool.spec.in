@@ -1,9 +1,7 @@
-%define _release 1%{?target_os:.%{target_os}}
-
 Name:         ipmitool
 Summary:      ipmitool - Utility for IPMI control
 Version:      @VERSION@
-Release:      %{_release}
+Release:      1%{?_distro:.%{_distro}}
 Copyright:    BSD
 Group:        Utilities
 Packager:     Duncan Laurie <duncan@iceblink.org>
@@ -46,12 +44,6 @@ make
 %install
 make DESTDIR=$RPM_BUILD_ROOT install-strip
 
-DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/ipmitool-@VERSION@
-mkdir -p $DOCDIR
-for DOC in COPYING AUTHORS ChangeLog ; do
-    install -m 644 $DOC $DOCDIR/$DOC
-done
-
 %clean
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
     rm -rf $RPM_BUILD_ROOT
@@ -68,12 +60,16 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 
 %changelog
 * Wed Aug 18 2004 <duncan@iceblink.org>  1.6.0-1
+ - Add a README
  - Add support for IPMIv2 and Serial-over-LAN from Newisys
- - Add Solaris x86 interface plugin
+ - Add Solaris x86 lipmi interface
  - Add support for building Solaris packages
+ - Add support for building RPMs as non-root user
  - Fix segfault when doing "sel list" (from Matthew Braithwaite)
  - Fix "chassis identify" on some BMCs (from ebrower@sourceforge)
  - Add "bmc info" and related output (from ebrower@sourceforge)
+ - new "shell" and "exec" commands
+ - lots of other contributed patches
 
 * Sat May 27 2004 <duncan@iceblink.org>  1.5.9-1
  - Add ability to get a particular sensor by name
