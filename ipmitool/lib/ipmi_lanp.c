@@ -225,7 +225,10 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 
 	memset(&req, 0, sizeof(req));
 	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x80;	/* 0x80=active, 0x40=non-volatile */
+
+	/* get volatile settings */
+
+	rqdata[1] = 0x80; /* 0x80=active */
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x41;
 	req.msg.data = rqdata;
@@ -236,10 +239,11 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 		return;
 	}
 
-	printf("  Alerting              : %sabled\n", (rsp->data[0] & 0x20) ? "dis" : "en");
-	printf("  Per-message Auth      : %sabled\n", (rsp->data[0] & 0x10) ? "dis" : "en");
-	printf("  User Level Auth       : %sabled\n", (rsp->data[0] & 0x08) ? "dis" : "en");
-	printf("  Access Mode           : ");
+	printf("  Volatile(active) Settings\n");
+	printf("    Alerting            : %sabled\n", (rsp->data[0] & 0x20) ? "dis" : "en");
+	printf("    Per-message Auth    : %sabled\n", (rsp->data[0] & 0x10) ? "dis" : "en");
+	printf("    User Level Auth     : %sabled\n", (rsp->data[0] & 0x08) ? "dis" : "en");
+	printf("    Access Mode         : ");
 	switch (rsp->data[0] & 0x7) {
 	case 0:
 		printf("disabled\n");
@@ -257,6 +261,38 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 		printf("unknown\n");
 		break;
 	}
+
+	/* get non-volatile settings */
+
+	rqdata[1] = 0x40; /* 0x40=non-volatile */
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp || rsp->ccode) {
+		return;
+	}
+
+	printf("  Non-Volatile Settings\n");
+	printf("    Alerting            : %sabled\n", (rsp->data[0] & 0x20) ? "dis" : "en");
+	printf("    Per-message Auth    : %sabled\n", (rsp->data[0] & 0x10) ? "dis" : "en");
+	printf("    User Level Auth     : %sabled\n", (rsp->data[0] & 0x08) ? "dis" : "en");
+	printf("    Access Mode         : ");
+	switch (rsp->data[0] & 0x7) {
+	case 0:
+		printf("disabled\n");
+		break;
+	case 1:
+		printf("pre-boot only\n");
+		break;
+	case 2:
+		printf("always available\n");
+		break;
+	case 3:
+		printf("shared\n");
+		break;
+	default:
+		printf("unknown\n");
+		break;
+	}
+	
 }
 
 static void
@@ -272,12 +308,12 @@ lan_set_arp_interval(struct ipmi_intf * intf, unsigned char chan, unsigned char 
 	if (ival) {
 		interval = ((unsigned char)atoi(ival) * 2) - 1;
 		set_lan_param(intf, chan, IPMI_LANP_GRAT_ARP, &interval, 1);
-		printf("BMC-generated Gratuitous ARP interval:  %.1f seconds\n",
-		       (float)((interval + 1) / 2));
 	} else {
-		printf("BMC-generated Gratuitous ARP interval:  %.1f seconds\n",
-		       (float)((lp->data[0] + 1) / 2));
+		interval = lp->data[0];
 	}
+
+	printf("BMC-generated Gratuitous ARP interval:  %.1f seconds\n",
+	       (float)((interval + 1) / 2));
 }
 
 static void
@@ -485,10 +521,10 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 	memset(&req, 0, sizeof(req));
 	rqdata[0] = channel & 0xf;
 
-	rqdata[1] = 0xa0;	/* set pef disabled, per-msg auth enabled */
+	rqdata[1] = 0x60;	/* save to nvram first */
 	if (enable)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
-	rqdata[2] = 0x84; 	/* set channel privilege limit to ADMIN */
+	rqdata[2] = 0x44;	/* save to nvram first */
 	
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x40;
@@ -502,10 +538,10 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 		return -1;
 	}
 
-	rqdata[1] = 0x60;	/* save to nvram */
+	rqdata[1] = 0xa0;	/* set pef disabled, per-msg auth enabled */
 	if (enable)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
-	rqdata[2] = 0x44;	/* save to nvram */
+	rqdata[2] = 0x84; 	/* set channel privilege limit to ADMIN */
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -513,6 +549,9 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 		       rsp ? rsp->ccode : 0, channel);
 		return -1;
 	}
+
+	if (!enable)		/* can't send close session if access off */
+		intf->abort = 1;
 
 	return 0;
 }
