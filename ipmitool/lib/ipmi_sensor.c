@@ -617,13 +617,13 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
          * thresh;
     unsigned char settingMask;
     float setting;
-    struct sdr_record_full_sensor * sdr;
+    struct sdr_record_list * sdr;
     struct ipmi_rs * rsp;
 
     if (argc < 3 || !strncmp(argv[0], "help", 4))
     {
             printf("sensor thresh <id> <threshold> <setting>\n");
-            printf("   id        : name or number of the sensor for which threshold is to be set\n");
+            printf("   id        : name of the sensor for which threshold is to be set\n");
             printf("   threshold : which threshold to set\n");
             printf("                 unr = upper non-recoverable\n");
             printf("                 ucr = upper critical\n");
@@ -669,24 +669,25 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
     }
 
     printf("Locating sensor record...\n");
+
     /* lookup by sensor name */
     sdr = ipmi_sdr_find_sdr_byid(intf, id);
-    if (!sdr)
-    {
-	/* lookup by sensor number */
-	unsigned char num = (unsigned char)strtol(id, NULL, 0);
-	sdr = ipmi_sdr_find_sdr_bynum(intf, num);
-    }
     if (sdr)
     {
-	printf("Setting sensor \"%s\" %s threshold to %.3f\n",
-	       sdr->id_string, val2str(settingMask, threshold_vals), setting);
-        rsp = ipmi_sensor_set_sensor_thresholds(intf, 
-                                                sdr->keys.sensor_num,
-                                                settingMask,
-                                                sdr_convert_sensor_value_to_raw(sdr, setting));
-        if (rsp && rsp->ccode)
-            printf("Error setting threshold: 0x%x\n", rsp->ccode);
+	if (sdr->type != SDR_RECORD_TYPE_FULL_SENSOR)
+	{
+	    printf("Invalid sensor type %02x\n", sdr->type);
+	}
+	else
+	{
+	    printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		   sdr->record.full->id_string, val2str(settingMask, threshold_vals), setting);
+	    rsp = ipmi_sensor_set_sensor_thresholds(intf, 
+			    sdr->record.full->keys.sensor_num, settingMask,
+			    sdr_convert_sensor_value_to_raw(sdr->record.full, setting));
+	    if (rsp && rsp->ccode)
+	        printf("Error setting threshold: 0x%x\n", rsp->ccode);
+	}
     }
     else
     {
@@ -698,26 +699,36 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 
 static void ipmi_sensor_get(struct ipmi_intf * intf, char * id)
 {
-	struct sdr_record_full_sensor * sdr;
+	struct sdr_record_list * sdr;
 
 	if (!id || !strncmp(id, "help", 4)) {
 		printf("sensor get <id>\n");
-		printf("   id        : name or number desired sensor\n");
+		printf("   id        : name of desired sensor\n");
 		return;
 	}
 	printf("Locating sensor record...\n");
 
 	/* lookup by sensor name */
 	sdr = ipmi_sdr_find_sdr_byid(intf, id);
-	if (!sdr) {
-		/* lookup by sensor number */
-		unsigned char num = (unsigned char)strtol(id, NULL, 0);
-		sdr = ipmi_sdr_find_sdr_bynum(intf, num);
-	}
-
 	if (sdr) {
 		verbose = verbose ? : 1;
-		ipmi_sensor_print_full(intf, sdr);
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			ipmi_sensor_print_full(intf, sdr->record.full);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			ipmi_sensor_print_compact(intf, sdr->record.compact);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			ipmi_sdr_print_fru_locator(intf, sdr->record.fruloc);
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			ipmi_sdr_print_mc_locator(intf, sdr->record.mcloc);
+			break;
+		}
 	} else {
 		printf("Sensor data record not found!\n");
 	}

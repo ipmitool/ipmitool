@@ -302,10 +302,10 @@ This command will read the SDR and extract sensor information, then query each s
 This command will list sensors and thresholds in a wide table format.
 .TP
 \fIget\fP <\fBid\fR>
-This command will print info for a single sensor specified by numeric ID or name.
+This command will print info for a single sensor specified by or name.
 .TP
 \fIthresh\fP <\fBid\fR> <\fBthreshold\fR> <\fBsetting\fR>
-This allows you to set a particular sensor threshold value.  The sensor can be specified by numeric ID or name.
+This allows you to set a particular sensor threshold value.  The sensor is specified by name.
 .RS
 .TP
 Valid thresholds are:

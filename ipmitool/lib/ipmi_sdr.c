@@ -49,11 +49,7 @@
 extern int verbose;
 static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
 
-struct sdr_records_full {
-	struct sdr_record_full_sensor * record;
-	struct sdr_records_full * next;
-};
-static struct sdr_records_full * sdr_list_head = NULL;
+static struct sdr_record_list * sdr_list_head = NULL;
 
 /* convert unsigned value to 2's complement signed */
 int utos(unsigned val, unsigned bits)
@@ -241,9 +237,8 @@ static inline int get_offset(unsigned char x)
 	return 0;
 }
 
-static void
-ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
-			   struct sdr_record_full_sensor * sensor)
+void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
+				struct sdr_record_full_sensor * sensor)
 {
 	char sval[16], unitstr[16], desc[17];
 	int i=0, validread=1, do_unit=1;
@@ -513,9 +508,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	}
 }
 
-static void
-ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
-			      struct sdr_record_compact_sensor * sensor)
+void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
+				   struct sdr_record_compact_sensor * sensor)
 {
 	struct ipmi_rs * rsp;
 	char desc[17];
@@ -633,9 +627,8 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	}
 }
 
-static void
-ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
-			        struct sdr_record_eventonly_sensor * sensor)
+void ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
+				     struct sdr_record_eventonly_sensor * sensor)
 {
 	char desc[17];
 
@@ -669,9 +662,8 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
 	}
 }
 
-static void
-ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
-			  struct sdr_record_mc_locator * mc)
+void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
+			       struct sdr_record_mc_locator * mc)
 {
 	char desc[17];
 
@@ -744,9 +736,8 @@ ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
 	printf("\n");
 }
 
-static void
-ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
-			  struct sdr_record_fru_locator * fru)
+void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
+				struct sdr_record_fru_locator * fru)
 {
 	char desc[17];
 
@@ -790,8 +781,7 @@ ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
 	printf("\n");
 }
 
-void
-ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
+void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 {
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
@@ -1012,7 +1002,7 @@ int ipmi_sdr_list_fill(struct ipmi_intf * intf)
 {
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
-	static struct sdr_records_full * sdr_list_tail;
+	static struct sdr_record_list * sdr_list_tail;
 
 	itr = ipmi_sdr_start(intf);
 	if (!itr) {
@@ -1021,29 +1011,46 @@ int ipmi_sdr_list_fill(struct ipmi_intf * intf)
 	}
 
 	while (header = ipmi_sdr_get_next_header(intf, itr)) {
-		struct sdr_record_full_sensor * sdr;
-		struct sdr_records_full * sdrr;
+		unsigned char * rec;
+		struct sdr_record_full_sensor * full;
+		struct sdr_record_compact_sensor * compact;
+		struct sdr_record_list * sdrr;
 
-		if (header->type != SDR_RECORD_TYPE_FULL_SENSOR)
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+
+		rec = ipmi_sdr_get_record(intf, header, itr);
+		if (!rec)
 			continue;
 
-		sdr = (struct sdr_record_full_sensor *)ipmi_sdr_get_record(intf, header, itr);
-		if (!sdr)
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		default:
+			free(rec);
 			continue;
-
-		sdrr = malloc(sizeof(struct sdr_records_full));
-		memset(sdrr, 0, sizeof(struct sdr_records_full));
-
-		sdrr->record = sdr;
+		}
 
 		if (!sdr_list_head)
 			sdr_list_head = sdrr;
 		else
 			sdr_list_tail->next = sdrr;
 		sdr_list_tail = sdrr;
-
-		if (verbose > 3)
-			printf("added list entry %x\n", sdrr->record->keys.sensor_num);
 	}
 
 	ipmi_sdr_end(intf, itr);
@@ -1051,37 +1058,43 @@ int ipmi_sdr_list_fill(struct ipmi_intf * intf)
 	return 0;
 }
 
-struct sdr_record_full_sensor *
+struct sdr_record_list *
 ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 {
-	static struct sdr_records_full * e;
+	static struct sdr_record_list * e;
 
 	if (!sdr_list_head)
 		ipmi_sdr_list_fill(intf);
 
 	e = sdr_list_head;
 	while (e) {
-		if (!strncmp(e->record->id_string, id, e->record->id_code & 0x3f))
-			return e->record;
-		e = e->next;
-	}
-
-	return NULL;
-}
-
-struct sdr_record_full_sensor *
-ipmi_sdr_find_sdr_bynum(struct ipmi_intf * intf, unsigned char num)
-{
-	static struct sdr_records_full * e;
-
-	if (!sdr_list_head)
-		ipmi_sdr_list_fill(intf);
-
-	e = sdr_list_head;
-
-	while (e) {
-		if (e->record->keys.sensor_num == num)
-			return e->record;
+		switch (e->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			if (!strncmp(e->record.full->id_string, id,
+				     e->record.full->id_code & 0x1f))
+				return e;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			if (!strncmp(e->record.compact->id_string, id,
+				     e->record.compact->id_code & 0x1f))
+				return e;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			if (!strncmp(e->record.eventonly->id_string, id,
+				     e->record.eventonly->id_code & 0x1f))
+				return e;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			if (!strncmp(e->record.fruloc->id_string, id,
+				     e->record.fruloc->id_code & 0x1f))
+				return e;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			if (!strncmp(e->record.mcloc->id_string, id,
+				     e->record.mcloc->id_code & 0x1f))
+				return e;
+			break;
+		}
 		e = e->next;
 	}
 
@@ -1090,14 +1103,32 @@ ipmi_sdr_find_sdr_bynum(struct ipmi_intf * intf, unsigned char num)
 
 void ipmi_sdr_list_empty(void)
 {
-	struct sdr_records_full *list, *next;
+	struct sdr_record_list *list, *next;
 
 	list = sdr_list_head;
 	while (list) {
-		if (verbose > 3)
-			printf("cleared sdr entry %x\n", list->record->keys.sensor_num);
-		if (list->record)
-			free(list->record);
+		switch (list->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			if (list->record.full)
+				free(list->record.full);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			if (list->record.compact)
+				free(list->record.compact);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			if (list->record.eventonly)
+				free(list->record.eventonly);
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			if (list->record.fruloc)
+				free(list->record.fruloc);
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			if (list->record.mcloc)
+				free(list->record.mcloc);
+			break;
+		}
 		next = list->next;
 		free(list);
 		list = next;

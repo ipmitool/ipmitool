@@ -576,6 +576,19 @@ struct ipmi_sdr_iterator
 	int next;
 };
 
+struct sdr_record_list {
+	unsigned short id;
+	unsigned char type;
+	struct sdr_record_list * next;
+	union {
+		struct sdr_record_full_sensor * full;
+		struct sdr_record_compact_sensor * compact;
+		struct sdr_record_eventonly_sensor * eventonly;
+		struct sdr_record_fru_locator * fruloc;
+		struct sdr_record_mc_locator * mcloc;
+	} record;
+};
+
 /* unit description codes (IPMI v1.5 section 37.16) */
 #define UNIT_MAX	0x90
 static const char * unit_desc[] __attribute__((unused)) = {
@@ -630,8 +643,13 @@ unsigned char sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * se
 struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor);
 const char * ipmi_sdr_get_sensor_type_desc(const unsigned char type);
 
-struct sdr_record_full_sensor *ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
-struct sdr_record_full_sensor *ipmi_sdr_find_sdr_bynum(struct ipmi_intf * intf, unsigned char num);
+void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf, struct sdr_record_full_sensor * sensor);
+void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf, struct sdr_record_compact_sensor * sensor);
+void ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf, struct sdr_record_eventonly_sensor * sensor);
+void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
+void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
+
+struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
 void ipmi_sdr_list_empty(void);
 
 #endif  /* IPMI_SDR_H */
