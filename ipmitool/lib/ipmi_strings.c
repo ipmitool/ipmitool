@@ -254,3 +254,25 @@ const struct valstr completion_code_vals[] = {
 	{ 0x00, NULL }
 };
 
+const struct valstr ipmi_auth_algorithms[] = {
+	{ IPMI_AUTH_RAKP_NONE,      "none"      },
+	{ IPMI_AUTH_RAKP_HMAC_SHA1, "hmac_sha1" },
+	{ IPMI_AUTH_RAKP_HMAC_MD5,  "hmac_md5"  },
+	{ 0x00, NULL }
+};
+
+const struct valstr ipmi_integrity_algorithms[] = {
+	{ IPMI_INTEGRITY_NONE,         "none" },
+	{ IPMI_INTEGRITY_HMAC_SHA1_96, "hmac_sha1_96" },
+	{ IPMI_INTEGRITY_HMAC_MD5_128, "hmac_md5_128" },
+	{ IPMI_INTEGRITY_MD5_128 ,     "md5_128"      },
+	{ 0x00, NULL }
+};
+
+const struct valstr ipmi_encryption_algorithms[] = {
+	{ IPMI_CRYPT_NONE,        "none"        },
+	{ IPMI_CRYPT_AES_CBC_128, "aes_cbc_128" },
+	{ IPMI_CRYPT_XRC4_128,    "xrc4_128"    },
+	{ IPMI_CRYPT_XRC4_40,     "xrc4_40"     },
+	{ 0x00, NULL }
+};
