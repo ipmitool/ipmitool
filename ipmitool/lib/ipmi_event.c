@@ -57,6 +57,8 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 	struct ipmi_rq req;
 	unsigned char rqdata[8];
 
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
 	memset(&req, 0, sizeof(req));
 	memset(rqdata, 0, 8);
 
@@ -64,43 +66,33 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 
 	/* IPMB/LAN/etc */
 	switch (num) {
-	case 0:			/* temperature */
-		printf("Temperature");
+	case 1:			/* temperature */
+		printf("Temperature - Upper Critical - Going High");
 		rqdata[0] = 0x04;	/* EvMRev */
 		rqdata[1] = 0x01;	/* Sensor Type */
 		rqdata[2] = 0x30;	/* Sensor # */
-		rqdata[3] = 0x04;	/* Event Dir / Event Type */
-		rqdata[4] = 0x00;	/* Event Data 1 */
+		rqdata[3] = 0x01;	/* Event Dir / Event Type */
+		rqdata[4] = 0x59;	/* Event Data 1 */
 		rqdata[5] = 0x00;	/* Event Data 2 */
 		rqdata[6] = 0x00;	/* Event Data 3 */
 		break;
-	case 1:			/* correctable ECC */
-		printf("Memory Correctable ECC");
+	case 2:			/* voltage error */
+		printf("Voltage Threshold - Lower Critical - Going Low");
+		rqdata[0] = 0x04;	/* EvMRev */
+		rqdata[1] = 0x02;	/* Sensor Type */
+		rqdata[2] = 0x60;	/* Sensor # */
+		rqdata[3] = 0x01;	/* Event Dir / Event Type */
+		rqdata[4] = 0x52;	/* Event Data 1 */
+		rqdata[5] = 0x00;	/* Event Data 2 */
+		rqdata[6] = 0x00;	/* Event Data 3 */
+		break;
+	case 3:			/* correctable ECC */
+		printf("Memory - Correctable ECC");
 		rqdata[0] = 0x04;	/* EvMRev */
 		rqdata[1] = 0x0c;	/* Sensor Type */
 		rqdata[2] = 0x01;	/* Sensor # */
 		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
 		rqdata[4] = 0x00;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	case 2:			/* uncorrectable ECC */
-		printf("Memory Uncorrectable ECC");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x0c;	/* Sensor Type */
-		rqdata[2] = 0x01;	/* Sensor # */
-		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
-		rqdata[4] = 0x01;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	case 3:			/* parity error */
-		printf("Memory Parity Error");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x0c;	/* Sensor Type */
-		rqdata[2] = 0x01;	/* Sensor # */
-		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
-		rqdata[4] = 0x02;	/* Event Data 1 */
 		rqdata[5] = 0x00;	/* Event Data 2 */
 		rqdata[6] = 0x00;	/* Event Data 3 */
 		break;
@@ -116,6 +108,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 	req.msg.data = rqdata;
 	req.msg.data_len = 7;
 
+
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
 		printf("Error:%x Platform Event Message Command\n", rsp?rsp->ccode:0);
@@ -129,10 +122,13 @@ int ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	unsigned char c;
 
-	if (!argc || !strncmp(argv[0], "help", 4))
+	if (!argc || !strncmp(argv[0], "help", 4)) {
 		printf("usage: event <num>\n");
-	else {
-		c = (unsigned char)strtol(argv[optind+1], NULL, 0);
+		printf("   1 : Temperature - Upper Critical - Going High\n");
+		printf("   2 : Voltage Threshold - Lower Critical - Going Low\n");
+		printf("   3 : Memory - Correctable ECC\n");
+	} else {
+		c = (unsigned char)strtol(argv[0], NULL, 0);
 		ipmi_send_platform_event(intf, c);
 	}
 
