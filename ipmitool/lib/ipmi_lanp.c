@@ -485,7 +485,9 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	memset(&data, 0, sizeof(data));
 	data[0] = userid & 0x3f;/* user ID */
 	data[1] = 0x02;		/* set password */
-	memcpy(data+2, password, (strlen(password) > 16) ? 16 : strlen(password));
+
+	if (password)
+		memcpy(data+2, password, (strlen(password) > 16) ? 16 : strlen(password));
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -506,9 +508,12 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	 */
 	lan_session.password = 1;
 	memset(lan_session.authcode, 0, 16);
-	memcpy(lan_session.authcode, password, strlen(password));
-
-	printf("Password for user %d set to %s\n", userid, lan_session.authcode);
+	if (password) {
+		memcpy(lan_session.authcode, password, strlen(password));
+		printf("Password for user %d set to %s\n", userid, lan_session.authcode);
+	}
+	else
+		printf("Password cleared for user %d\n", userid);
 }
 
 static int
