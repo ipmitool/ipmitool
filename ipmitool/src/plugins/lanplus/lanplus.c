@@ -1948,6 +1948,39 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		
 		ipmi_lanplus_send_payload(intf, &ack);
 	}
+
+	/* This may be an identical packet */
+	if (rsp &&
+		(rsp->payload.sol_packet.packet_sequence_number ==
+		 intf->session->sol_data.last_received_sequence_number))
+	{
+		/* This is the same as the last packet, but may include
+		   extra data */
+		int extra_data_size =
+			rsp->data_len -
+			intf->session->sol_data.last_received_byte_count;
+
+		if (extra_data_size > 0)
+		{
+			/* We have more data to process */
+			memmove(rsp->data,
+					rsp->data +
+					rsp->data_len - extra_data_size,
+					extra_data_size);
+		}
+
+		rsp->data_len = extra_data_size;
+	}
+
+	/* If it's not an ACK, remember that we saw it. */
+	if (rsp->payload.sol_packet.packet_sequence_number)
+	{
+		intf->session->sol_data.last_received_sequence_number =
+			rsp->payload.sol_packet.packet_sequence_number;
+
+		intf->session->sol_data.last_received_byte_count =
+			rsp->data_len;
+	}
 	
 	return rsp;
 }
@@ -2550,6 +2583,8 @@ int ipmi_lanplus_open(struct ipmi_intf * intf)
 	session->v2_data.console_id       = 0x00;
 	session->v2_data.bmc_id           = 0x00;
 	session->sol_data.sequence_number = 1;
+	session->sol_data.last_received_sequence_number = 0;
+	session->sol_data.last_received_byte_count      = 0;
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
 	memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
 
