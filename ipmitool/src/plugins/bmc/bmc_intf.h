@@ -34,10 +34,10 @@
  * facility.
  */
 
-#ifndef _BMC_INTF_H_
-#define	_BMC_INTF_H_
+#ifndef _BMC_INTF_H
+#define	_BMC_INTF_H
 
-#pragma ident	"@(#)bmc_intf.h	1.2	04/08/25 SMI"
+#pragma ident	"@(#)bmc_intf.h	1.2	05/03/07 SMI"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,13 +45,6 @@ extern "C" {
 
 #define	BMC_SUCCESS		0x0
 #define	BMC_FAILURE		0x1
-
-#define	IPMI_SUCCESS		BMC_SUCCESS
-#define	IPMI_FAILURE		BMC_FAILURE
-
-/* allau clean up */
-#define	IPMI_FALSE		0
-#define	IPMI_TRUE		1
 
 #define	BMC_NETFN_CHASSIS		0x0
 #define	BMC_NETFN_BRIDGE		0x2
@@ -95,27 +88,38 @@ extern "C" {
 
 
 #define	IOCTL_IPMI_KCS_ACTION		0x01
+#define	IOCTL_IPMI_INTERFACE_METHOD	0x02
 
+/* Interface methods returned from IOCTL_IPMI_INTERFACE_METHOD ioctl: */
+
+#define	BMC_IOCTL_METHOD		0	/* Not returned from ioctl, */
+						/* but can be used by	*/
+						/* applications that want to */
+						/* compare against an	*/
+						/* alternative method.	*/
+#define	BMC_PUTMSG_METHOD		1
 
 /*
  * bmc_req_t is the data structure to send
  * request packet from applications to the driver
  * module.
+ *
  * the request pkt is mainly for KCS-interface-BMC
  * messages. Since the system interface is session-less
  * connections, the packet won't have any session
  * information.
+ *
  * the data payload will be 2 bytes less than max
  * BMC supported packet size.
  * the address of the responder is always BMC and so
  * rsSa field is not required.
  */
 typedef struct bmc_req {
-	unsigned char fn;			/* netFn for command */
-	unsigned char lun;			/* logical unit on responder */
-	unsigned char cmd;			/* command */
-	unsigned char datalength;		/* length of following data */
-	unsigned char data[SEND_MAX_PAYLOAD_SIZE]; /* request data */
+	uint8_t fn;			/* netFn for command */
+	uint8_t lun;			/* logical unit on responder */
+	uint8_t cmd;			/* command */
+	uint8_t datalength;		/* length of following data */
+	uint8_t data[SEND_MAX_PAYLOAD_SIZE]; /* request data */
 } bmc_req_t;
 
 /*
@@ -127,20 +131,21 @@ typedef struct bmc_req {
  * messages. Since the system interface is session-less
  * connections, the packet won't have any session
  * information.
+ *
  * the data payload will be 2 bytes less than max
  * BMC supported packet size.
  */
 typedef struct bmc_rsp {
-	unsigned char	fn;			/* netFn for command */
-	unsigned char	lun;			/* logical unit on responder */
-	unsigned char	cmd;			/* command */
-	unsigned char	ccode;			/* completion code */
-	unsigned char	datalength;		/* Length */
-	unsigned char	data[RECV_MAX_PAYLOAD_SIZE]; /* response */
+	uint8_t	fn;			/* netFn for command */
+	uint8_t	lun;			/* logical unit on responder */
+	uint8_t	cmd;			/* command */
+	uint8_t	ccode;			/* completion code */
+	uint8_t	datalength;		/* Length */
+	uint8_t	data[RECV_MAX_PAYLOAD_SIZE]; /* response */
 } bmc_rsp_t;
 
 /*
- * the data structure for synchronous operation.
+ * the data structure for synchronous operation via ioctl (DEPRECATED)
  */
 typedef struct bmc_reqrsp {
 	bmc_req_t	req;			/* request half */
@@ -148,38 +153,59 @@ typedef struct bmc_reqrsp {
 } bmc_reqrsp_t;
 
 
-#ifdef _KERNEL
+/*
+ * The new way of communicating with the bmc driver is to use putmsg() to
+ * send a message of a particular type.  Replies from the driver also have this
+ * form, and will require the user to process the type field before examining
+ * the rest of the reply.
+ *
+ * The only change that must be observed when using the request and response
+ * structures defined above is as follows:
+ * when sending messages to the bmc driver, the data portion is now variable
+ * (the caller must allocate enough space to store the all structure members,
+ * plus enough space to cover the amount of data in the request), e.g.:
+ *
+ * bmc_msg_t *msg = malloc(offsetof(bmc_msg_t, msg) + sizeof(bmc_req_t) + 10);
+ *
+ * The amount allocated for the message is (# of bytes before the msg field) +
+ * the size of a bmc_req_t (which includes SEND_MAX_PAYLOAD_SIZE
+ * bytes in the data field), plus an additional 10 bytes for the data
+ * field (so the data field would occupy (SEND_MAX_PAYLOAD_SIZE + 10)
+ * bytes).  The datalength member must reflect the amount of data in the
+ * request's data field (as was required when using the ioctl interface).
+ */
+typedef struct bmc_msg {
+	uint8_t		m_type;		/* Message type (see below) */
+	uint32_t	m_id;		/* Message ID */
+	uint8_t		reserved[32];
+	uint8_t		msg[1];		/* Variable length message data */
+} bmc_msg_t;
+
 
 /*
- * data structure to send a message to BMC.
- * Ref. IPMI Spec 9.2
+ * An error response passed back from the bmc driver will have its m_id
+ * field set to BMC_UNKNOWN_MSG_ID if a message is sent to it that is not
+ * at least as large as a bmc_msg_t.
  */
-typedef struct bmc_send {
-	unsigned char	fnlun;			/* Network Function and LUN */
-	unsigned char	cmd;			/* command */
-	unsigned char	data[SEND_MAX_PAYLOAD_SIZE];
-} bmc_send_t;
+#define	BMC_UNKNOWN_MSG_ID	~((uint32_t)0)
+
 
 /*
- * data structure to receive a message from BMC.
- * Ref. IPMI Spec 9.3
+ * Possible values for the m_type field in bmc_msg_t:
  */
-typedef struct bmc_recv {
-	unsigned char	fnlun;			/* Network Function and LUN */
-	unsigned char	cmd;			/* command */
-	unsigned char	ccode;			/* completion code */
-	unsigned char	data[RECV_MAX_PAYLOAD_SIZE];
-} bmc_recv_t;
-
-
-#endif /* _KERNEL */
+#define	BMC_MSG_REQUEST		1	/* BMC request (as above, sent to the */
+					/* driver by the user), bmc_msg.msg */
+					/* begins with the bmc_req_t	*/
+					/* structure.			*/
+#define	BMC_MSG_RESPONSE	2	/* BMC response (sent by the driver) */
+					/* bmc_msg.msg begins with the	*/
+					/* bmc_rsp_t structure.		*/
+#define	BMC_MSG_ERROR		3	/* Error while processing a user msg */
+					/* msg[0] is the error code	*/
+					/* (interpret as an errno value) */
 
 #ifdef	__cplusplus
 }
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _BMC_INTF_H_ */
+#endif /* _BMC_INTF_H */

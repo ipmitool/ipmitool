@@ -48,6 +48,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stropts.h>
+#include <stddef.h>
+#include <stropts.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
@@ -56,7 +58,18 @@
 #include "bmc.h"
 
 static int	curr_seq;
+static int bmc_method(int fd);
+struct ipmi_rs *(*sendrecv_fn)(struct ipmi_intf *, struct ipmi_rq *) = NULL;
 extern int	verbose;
+
+static void dump_request(bmc_req_t *request);
+static void dump_response(bmc_rsp_t *response);
+static struct ipmi_rs *ipmi_bmc_send_cmd_ioctl(struct ipmi_intf *intf,
+	struct ipmi_rq *req);
+static struct ipmi_rs *ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf,
+	struct ipmi_rq *req);
+
+#define	MESSAGE_BUFSIZE 1024
 
 struct ipmi_intf ipmi_bmc_intf = {
 	name:		"bmc",
@@ -91,19 +104,30 @@ ipmi_bmc_open(struct ipmi_intf *intf)
 	curr_seq = 0;
 
 	intf->opened = 1;
+
+	sendrecv_fn = (bmc_method(intf->fd) == BMC_PUTMSG_METHOD) ?
+	    ipmi_bmc_send_cmd_putmsg : ipmi_bmc_send_cmd_ioctl;
+
 	return (intf->fd);
 }
 
 struct ipmi_rs *
 ipmi_bmc_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 {
-	struct strioctl istr;
-	static struct bmc_reqrsp reqrsp;
-	static struct ipmi_rs rsp;
-
 	/* If not already opened open the device or network connection */
 	if (!intf->opened && intf->open && intf->open(intf) < 0)
 		return NULL;
+
+	/* sendrecv_fn cannot be NULL at this point */
+	return ((*sendrecv_fn)(intf, req));
+}
+
+static struct ipmi_rs *
+ipmi_bmc_send_cmd_ioctl(struct ipmi_intf *intf, struct ipmi_rq *req)
+{
+	struct strioctl istr;
+	static struct bmc_reqrsp reqrsp;
+	static struct ipmi_rs rsp;
 
 	memset(&reqrsp, 0, sizeof (reqrsp));
 	reqrsp.req.fn = req->msg.netfn;
@@ -119,15 +143,21 @@ ipmi_bmc_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	istr.ic_len = sizeof (struct bmc_reqrsp);
 
 	if (verbose) {
-		printf("BMC req.fn         : %x\n", reqrsp.req.fn);
-		printf("BMC req.lun        : %x\n", reqrsp.req.lun);
-		printf("BMC req.cmd        : %x\n", reqrsp.req.cmd);
-		printf("BMC req.datalength : %d\n", reqrsp.req.datalength);
+		printf("--\n");
+		dump_request(&reqrsp.req);
+		printf("--\n");
 	}
+
 	if (ioctl(intf->fd, I_STR, &istr) < 0) {
 		perror("BMC IOCTL: I_STR");
 		return (NULL);
 	}
+
+	if (verbose > 2) {
+		dump_response(&reqrsp.rsp);
+		printf("--\n");
+	}
+
 	memset(&rsp, 0, sizeof (struct ipmi_rs));
 	rsp.ccode = reqrsp.rsp.ccode;
 	rsp.data_len = reqrsp.rsp.datalength;
@@ -139,4 +169,163 @@ ipmi_bmc_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		memcpy(rsp.data, reqrsp.rsp.data, rsp.data_len);
 
 	return (&rsp);
+}
+
+static struct ipmi_rs *
+ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf, struct ipmi_rq *req)
+{
+	struct strbuf sb;
+	int flags = 0;
+	static uint32_t msg_seq = 0;
+
+	/*
+	 * The length of the message structure is equal to the size of the
+	 * bmc_req_t structure, PLUS any additional data space in excess of
+	 * the data space already reserved in the data member + <n> for
+	 * the rest of the members in the bmc_msg_t structure.
+	 */
+	int msgsz = offsetof(bmc_msg_t, msg) + sizeof(bmc_req_t) +
+		((req->msg.data_len > SEND_MAX_PAYLOAD_SIZE) ?
+			(req->msg.data_len - SEND_MAX_PAYLOAD_SIZE) : 0);
+	bmc_msg_t *msg = malloc(msgsz);
+	bmc_req_t *request = (bmc_req_t *)&msg->msg[0];
+	bmc_rsp_t *response;
+	static struct ipmi_rs rsp;
+	struct ipmi_rs *ret = NULL;
+
+	msg->m_type = BMC_MSG_REQUEST;
+	msg->m_id = msg_seq++;
+	request->fn = req->msg.netfn;
+	request->lun = 0;
+	request->cmd = req->msg.cmd;
+	request->datalength = req->msg.data_len;
+	memcpy(request->data, req->msg.data, req->msg.data_len);
+
+	sb.len = msgsz;
+	sb.buf = (unsigned char *)msg;
+
+	if (verbose) {
+		printf("--\n");
+		dump_request(request);
+		printf("--\n");
+	}
+
+	if (putmsg(intf->fd, NULL, &sb, 0) < 0) {
+		perror("BMC putmsg: ");
+		free(msg);
+		return (NULL);
+	}
+
+	free(msg);
+
+	sb.buf = malloc(MESSAGE_BUFSIZE);
+	sb.maxlen = MESSAGE_BUFSIZE;
+
+	if (getmsg(intf->fd, NULL, &sb, &flags) < 0) {
+		perror("BMC getmsg: ");
+		free(sb.buf);
+		return (NULL);
+	}
+
+	msg = (bmc_msg_t *)sb.buf;
+
+	if (verbose > 3) {
+		printf("Got msg (id 0x%x) type 0x%x\n", msg->m_id, msg->m_type);
+	}
+
+
+	/* Did we get an error back from the stream? */
+	switch (msg->m_type) {
+
+	case BMC_MSG_RESPONSE:
+		response = (bmc_rsp_t *)&msg->msg[0];
+
+		if (verbose > 2) {
+			dump_response(response);
+			printf("--\n");
+		}
+
+		memset(&rsp, 0, sizeof (struct ipmi_rs));
+		rsp.ccode = response->ccode;
+		rsp.data_len = response->datalength;
+
+		if (!rsp.ccode && (rsp.data_len > 0))
+			memcpy(rsp.data, response->data, rsp.data_len);
+
+		ret = &rsp;
+		break;
+
+	case BMC_MSG_ERROR:
+		/* In case of an error, msg->msg[0] has the error code */
+		printf("bmc_send_cmd: %s\n", strerror(msg->msg[0]));
+		break;
+
+	}
+	
+	free(sb.buf);
+	return (ret);
+}
+
+/*
+ * Determine which interface to use.  Returns the interface method
+ * to use.
+ */
+static int
+bmc_method(int fd)
+{
+	struct strioctl istr;
+	uint8_t method = 0;
+
+	istr.ic_cmd = IOCTL_IPMI_INTERFACE_METHOD;
+	istr.ic_timout = 0;
+	istr.ic_dp = (uint8_t *)&method;
+	istr.ic_len = 1;
+
+	if (ioctl(fd, I_STR, &istr) < 0) {
+		/* If the IOCTL doesn't exist, use the (old) ioctl interface */
+		return (BMC_IOCTL_METHOD);
+	}
+
+	return (method);
+}
+
+static void
+dump_request(bmc_req_t *request)
+{
+	int i;
+
+	printf("BMC req.fn         : 0x%x\n", request->fn);
+	printf("BMC req.lun        : 0x%x\n", request->lun);
+	printf("BMC req.cmd        : 0x%x\n", request->cmd);
+	printf("BMC req.datalength : 0x%x\n", request->datalength);
+	printf("BMC req.data       : ");
+
+	if (request->datalength > 0) {
+		for (i = 0; i < request->datalength; i++)
+			printf("0x%x ", request->data[i]);
+	} else {
+		printf("<NONE>");
+	}
+	printf("\n");
+}
+
+static void
+dump_response(bmc_rsp_t *response)
+{
+	int i;
+
+	printf("BMC rsp.fn         : 0x%x\n", response->fn);
+	printf("BMC rsp.lun        : 0x%x\n", response->lun);
+	printf("BMC rsp.cmd        : 0x%x\n", response->cmd);
+	printf("BMC rsp.ccode      : 0x%x\n", response->ccode);
+	printf("BMC rsp.datalength : 0x%x\n", response->datalength);
+	printf("BMC rsp.data       : ");
+
+	if (response->datalength > 0) {
+		for (i = 0; i < response->datalength; i++)
+			printf("0x%x ", response->data[i]);
+	} else {
+		printf("<NONE>");
+	}
+	printf("\n");
 }
