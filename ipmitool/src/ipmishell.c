@@ -230,18 +230,26 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session password\n");
 	}
 	else if (strncmp(argv[0], "authtype", 8) == 0) {
-		uint8_t authtype;
-		authtype = (uint8_t)str2val(argv[1], ipmi_authtype_session_vals);
-		ipmi_intf_session_set_authtype(intf, authtype);
-		printf("Set session authtype to %s\n",
-		       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
+		int authtype;
+		authtype = str2val(argv[1], ipmi_authtype_session_vals);
+		if (authtype < 0) {
+			lprintf(LOG_ERR, "Invalid authtype: %s", argv[1]);
+		} else {
+			ipmi_intf_session_set_authtype(intf, authtype);
+			printf("Set session authtype to %s\n",
+			       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
+		}
 	}
 	else if (strncmp(argv[0], "privlvl", 7) == 0) {
-		uint8_t privlvl;
-		privlvl = (uint8_t)str2val(argv[1], ipmi_privlvl_vals);
-		ipmi_intf_session_set_privlvl(intf, privlvl);
-		printf("Set session privilege level to %s\n",
-		       val2str(intf->session->privlvl, ipmi_privlvl_vals));
+		int privlvl;
+		privlvl = str2val(argv[1], ipmi_privlvl_vals);
+		if (privlvl < 0) {
+			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[1]);
+		} else {
+			ipmi_intf_session_set_privlvl(intf, privlvl);
+			printf("Set session privilege level to %s\n",
+			       val2str(intf->session->privlvl, ipmi_privlvl_vals));
+		}
 	}
 	else if (strncmp(argv[0], "port", 4) == 0) {
 		int port = atoi(argv[1]);
@@ -267,7 +275,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	FILE * fp;
 	char buf[EXEC_BUF_SIZE];
-	char * ptr, * tok, * ret;
+	char * ptr, * tok, * ret, * tmp;
 	int __argc, i, r;
 	char * __argv[EXEC_ARG_SIZE];
 	int rc=0;
@@ -293,6 +301,29 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else
 			ptr = buf + strlen(buf);
 
+		/* change "" and '' with spaces in the middle to ~
+		 * this is really ugly but I'm in a hurry */
+		ptr = buf;
+		while (*ptr != '\0') {
+			if (*ptr == '"') {
+				ptr++;
+				while (*ptr != '"') {
+					if (isspace(*ptr))
+						*ptr = '~';
+					ptr++;
+				}
+			}
+			if (*ptr == '\'') {
+				ptr++;
+				while (*ptr != '\'') {
+					if (isspace(*ptr))
+						*ptr = '~';
+					ptr++;
+				}
+			}
+			ptr++;
+		}
+
 		/* clip off trailing and leading whitespace */
 		ptr--;
 		while (isspace(*ptr) && ptr >= buf)
@@ -305,16 +336,33 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* parse it and make argument list */
 		__argc = 0;
-		tok = strtok(ptr, " ");
-		while (tok) {
+		for (tok = strtok(ptr, " "); tok != NULL; tok = strtok(NULL, " ")) {
 			if (__argc < EXEC_ARG_SIZE) {
 				__argv[__argc++] = strdup(tok);
 				if (__argv[__argc-1] == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
 					return -1;
 				}
+				tmp = __argv[__argc-1];
+				if (*tmp == '\'') {
+					memmove(tmp, tmp+1, strlen(tmp));
+					while (*tmp != '\'') {
+						if (*tmp == '~')
+							*tmp = ' ';
+						tmp++;
+					}
+					*tmp = '\0';
+				}
+				if (*tmp == '"') {
+					memmove(tmp, tmp+1, strlen(tmp));
+					while (*tmp != '"') {
+						if (*tmp == '~')
+							*tmp = ' ';
+						tmp++;
+					}
+					*tmp = '\0';
+				}
 			}
-			tok = strtok(NULL, " ");
 		}
 
 		/* now run the command, save the result if not successful */
