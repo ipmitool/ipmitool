@@ -67,7 +67,7 @@ const struct valstr completion_code_vals[] = {
 	{ 0xd1, "Device firmeware in update mode" },
 	{ 0xd2, "BMC initialization in progress" },
 	{ 0xd3, "Destination unavailable" },
-	{ 0xd4, "Insufficient priviledge level" },
+	{ 0xd4, "Insufficient privilege level" },
 	{ 0xd5, "Command not supported in present state" },
 	{ 0xff, "Unspecified error" },
 	{ 0x00, NULL }
