@@ -56,7 +56,7 @@
 #include <ipmitool/ipmi_bmc.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_channel.h>
-
+#include <ipmitool/ipmi_event.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -64,7 +64,6 @@
 # define IPMITOOL_BIN	"ipmitool"
 #endif
 
-struct ipmi_session lan_session;
 int csv_output = 0;
 int verbose = 0;
 
@@ -85,6 +84,7 @@ void usage(void)
 	printf("       -a            Prompt for remote password\n");
 	printf("       -E            Read remote password from environment variable IPMI_PASSWORD\n");
 	printf("       -P password   Remote password\n");
+	printf("       -L level      Session privilege level [default=USER]\n");
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
 }
@@ -150,128 +150,24 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
-static int
-ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned char userid)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char rqdata[2];
-
-	memset(&req, 0, sizeof(req));
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = userid & 0x3f;
-	
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x44;
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get User Access Command (0x%x)\n",
-		       rsp ? rsp->ccode : 0, channel);
-		return -1;
-	}
-
-	printf("Maximum User IDs     : %d\n", rsp->data[0] & 0x3f);
-	printf("Enabled User IDs     : %d\n", rsp->data[1] & 0x3f);
-	printf("Fixed Name User IDs  : %d\n", rsp->data[2] & 0x3f);
-	printf("Access Available     : %s\n", (rsp->data[3] & 0x40) ? "callback" : "call-in / callback");
-	printf("Link Authentication  : %sabled\n", (rsp->data[3] & 0x20) ? "en" : "dis");
-	printf("IPMI Messaging       : %sabled\n", (rsp->data[3] & 0x10) ? "en" : "dis");
-//	printf("Privilege Level      : %s\n", val2str(rsp->data[3] & 0x0f, ipmi_privlvl_vals));
-
-	return 0;
-}
-
-static int
-ipmi_send_platform_event(struct ipmi_intf * intf, int num)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char rqdata[8];
-
-	memset(&req, 0, sizeof(req));
-	memset(rqdata, 0, 8);
-
-	printf("Sending ");
-
-	/* IPMB/LAN/etc */
-	switch (num) {
-	case 0:			/* temperature */
-		printf("Temperature");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x01;	/* Sensor Type */
-		rqdata[2] = 0x30;	/* Sensor # */
-		rqdata[3] = 0x04;	/* Event Dir / Event Type */
-		rqdata[4] = 0x00;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	case 1:			/* correctable ECC */
-		printf("Memory Correctable ECC");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x0c;	/* Sensor Type */
-		rqdata[2] = 0x01;	/* Sensor # */
-		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
-		rqdata[4] = 0x00;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	case 2:			/* uncorrectable ECC */
-		printf("Memory Uncorrectable ECC");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x0c;	/* Sensor Type */
-		rqdata[2] = 0x01;	/* Sensor # */
-		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
-		rqdata[4] = 0x01;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	case 3:			/* parity error */
-		printf("Memory Parity Error");
-		rqdata[0] = 0x04;	/* EvMRev */
-		rqdata[1] = 0x0c;	/* Sensor Type */
-		rqdata[2] = 0x01;	/* Sensor # */
-		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
-		rqdata[4] = 0x02;	/* Event Data 1 */
-		rqdata[5] = 0x00;	/* Event Data 2 */
-		rqdata[6] = 0x00;	/* Event Data 3 */
-		break;
-	default:
-		printf("Invalid event number: %d\n", num);
-		return -1;
-	}
-
-	printf(" event to BMC\n");
-
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = 0x02;
-	req.msg.data = rqdata;
-	req.msg.data_len = 7;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Platform Event Message Command\n", rsp?rsp->ccode:0);
-		return -1;
-	}
-
-	return 0;
-}
 
 int main(int argc, char ** argv)
 {
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
-	char * hostname = NULL, * password = NULL, * username = NULL, * tmp;
-	int argflag, i, intfarg = 0, rc = 0, port = 623, pedantic = 0;
+	char * tmp, * hostname = NULL, * username = NULL, * password = NULL;
+	int port = 0, argflag, i, intfarg = 0, rc = 0, pedantic = 0;
 	char intfname[32];
+	unsigned char privlvl = 0;
 
 	memset(intfname, 0, sizeof(intfname));
 
-	while ((argflag = getopt(argc, (char **)argv, "hVvcgEaI:H:P:U:p:")) != -1)
+	while ((argflag = getopt(argc, (char **)argv, "I:hVvcgEaH:P:U:p:L:")) != -1)
 	{
 		switch (argflag) {
+		case 'I':
+			intfarg = snprintf(intfname, sizeof(intfname), "intf_%s", optarg);
+			break;
 		case 'h':
 			usage();
 			goto out_free;
@@ -281,7 +177,7 @@ int main(int argc, char ** argv)
 			goto out_free;
 			break;
 		case 'g':
-			pedantic = 1;
+			intf->pedantic = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -289,41 +185,33 @@ int main(int argc, char ** argv)
 		case 'c':
 			csv_output = 1;
 			break;
-		case 'I':
-			intfarg = snprintf(intfname, sizeof(intfname), "intf_%s", optarg);
-			break;
 		case 'H':
 			hostname = strdup(optarg);
 			break;
 		case 'P':
 			if (password)
-				free (password);
-
+				free(password);
 			password = strdup(optarg);
 
 			/* Prevent password snooping with ps */
 			i = strlen (optarg);
 			memset (optarg, 'X', i);
-
 			break;
-
 		case 'E':
 			if ((tmp = getenv ("IPMITOOL_PASSWORD")))
 			{
 				if (password)
-					free (password);
-
-				password = strdup (tmp);
+					free(password);
+				password = strdup(tmp);
 			}
 			else if ((tmp = getenv("IPMI_PASSWORD")))
 			{
-			    	if (password)
-				    	free (password);
-
-				password = strdup (tmp);
+				if (password)
+					free(password);
+				password = strdup(tmp);
 			}
+			else printf("Unable to read password from environment.\n");
 			break;
-
 		case 'a':
 #ifdef HAVE_GETPASSPHRASE
 			if ((tmp = getpassphrase ("Password: ")))
@@ -332,14 +220,17 @@ int main(int argc, char ** argv)
 #endif
 			{
 				if (password)
-					free (password);
-
-				password = strdup (tmp);
+					free(password);
+				password = strdup(tmp);
 			}
 			break;
-
 		case 'U':
 			username = strdup(optarg);
+			break;
+		case 'L':
+			privlvl = (unsigned char)str2val(optarg, ipmi_privlvl_vals);
+			if (!privlvl)
+				printf("Invalid privilege level %s!\n", optarg);
 			break;
 		case 'p':
 			port = atoi(optarg);
@@ -356,36 +247,41 @@ int main(int argc, char ** argv)
 		goto out_free;
 	}
 
+	if (!strncmp(argv[optind], "help", 4)) {
+		usage();
+		printf("\nCommands:  bmc, chassis, event, fru, lan, raw, "
+		       "sdr, sel, sensor, sol, channel\n\n");
+		goto out_free;
+	}
+
+	/* load interface */
 	if (intfarg) {
 		intf = ipmi_intf_load(intfname);
 		if (!intf) {
 			printf("Error loading interface %s\n", intfname);
 			goto out_free;
 		}
-	}
-	else {
+	} else {
 		printf("No interface specified!\n");
 		usage();
 		goto out_free;
 	}
 
-	intf->pedantic = pedantic;
+	/* set session variables */
+	if (hostname)
+		ipmi_intf_session_set_hostname(intf, hostname);
+	if (username)
+		ipmi_intf_session_set_username(intf, username);
+	if (password)
+		ipmi_intf_session_set_password(intf, password);
+	if (port)
+		ipmi_intf_session_set_port(intf, port);
+	if (privlvl)
+		ipmi_intf_session_set_privlvl(intf, privlvl);
 
-	if (!strncmp(argv[optind], "help", 4)) {
-		printf("Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel\n");
-		goto out_free;
-	}
-	else if (!strncmp(argv[optind], "event", 5)) {
-		if (argc-optind-1 > 0) {
-			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
-			if (intf->open(intf, hostname, port, username, password) < 0)
-				goto out_free;
-			ipmi_send_platform_event(intf, c);
-			goto out_close;
-		} else {
-			printf("event <num>\n");
-			goto out_free;
-		}
+	/* handle sub-commands */
+	if (!strncmp(argv[optind], "event", 5)) {
+		submain = ipmi_event_main;
 	}
 	else if (!strncmp(argv[optind], "bmc", 3)) {
 		submain = ipmi_bmc_main;
@@ -414,20 +310,6 @@ int main(int argc, char ** argv)
 	else if (!strncmp(argv[optind], "raw", 3)) {
 		submain = ipmi_raw_main;
 	}
-	else if (!strncmp(argv[optind], "userinfo", 8)) {
-		if (argc-optind-1 > 0) {
-			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
-			rc = intf->open(intf, hostname, port, username, password);
-			if (rc < 0)
-				goto out_free;
-			ipmi_get_user_access(intf, c, 1);
-			goto out_close;
-		}
-		else {
-			printf("userinfo <channel>\n");
-			goto out_free;
-		}
-	}
 	else if (!strncmp(argv[optind], "channel", 7)) {
 		submain = ipmi_channel_main;
 	}
@@ -439,12 +321,6 @@ int main(int argc, char ** argv)
 
 	if (!submain)
 		goto out_free;
-
-	if (intf->open) {
-		rc = intf->open(intf, hostname, port, username, password);
-		if (rc < 0)
-			goto out_free;
-	}
 
 	rc = submain(intf, argc-optind-1, &(argv[optind+1]));
 
