@@ -1060,13 +1060,10 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	if (rc < 0)
 		goto fail;
 
-	/* channel 0xE will query current channel */
-//	ipmi_get_channel_info(intf, IPMI_LAN_CHANNEL_E);
-
 	return 0;
 
  fail:
-	printf("Unable to connect to IPMI-over-LAN host\n");
+	printf("Error: Unable to establish LAN session\n");
 	return -1;
 }
 
