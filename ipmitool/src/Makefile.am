@@ -47,5 +47,6 @@ endif
 
 EXTRA_DIST		= ipmievd.c
 
-bin_PROGRAMS		= ipmitool @IPMIEVD_BIN@
+bin_PROGRAMS		= ipmitool
+sbin_PROGRAMS		= @IPMIEVD_BIN@
 EXTRA_PROGRAMS		= ipmitool ipmievd

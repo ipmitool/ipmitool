@@ -34,6 +34,7 @@ fi
 ./configure --with-kerneldir \
 	--prefix=%{_prefix} \
 	--bindir=%{_bindir} \
+	--sbindir=%{_sbindir} \
 	--datadir=%{_datadir} \
 	--includedir=%{_includedir} \
 	--libdir=%{_libdir} \
@@ -53,6 +54,7 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %files
 %defattr(-,root,root)
 %{_bindir}/*
+%{_sbindir}/*
 %{_datadir}/ipmitool/*
 %doc %{_mandir}/man1/*
 %doc %{_datadir}/doc/ipmitool/*
