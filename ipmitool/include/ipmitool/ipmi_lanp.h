@@ -60,7 +60,6 @@
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_vals[];
-extern struct ipmi_session lan_session;
 
 enum {
 	IPMI_LANP_SET_IN_PROGRESS,
@@ -114,7 +113,7 @@ static struct lan_param {
 	{ IPMI_LANP_DEF_GATEWAY_MAC,	6,	"Default Gateway MAC"	},
 	{ IPMI_LANP_BAK_GATEWAY_IP,	4,	"Backup Gateway IP"	},
 	{ IPMI_LANP_BAK_GATEWAY_MAC,	6,	"Backup Gateway MAC"	},
-	{ IPMI_LANP_SNMP_STRING,	18,	"Community String"	},
+	{ IPMI_LANP_SNMP_STRING,	18,	"SNMP Community String"	},
 	{ IPMI_LANP_NUM_DEST,		1,	"Number of Destinations"},
 	{ IPMI_LANP_DEST_TYPE,		4,	"Destination Type"	},
 	{ IPMI_LANP_DEST_ADDR,		13,	"Destination Addresses"	},
