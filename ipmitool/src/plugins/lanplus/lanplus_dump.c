@@ -47,6 +47,9 @@ extern const struct valstr ipmi_encryption_algorithms[];
 
 void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 {
+	if (verbose < 2)
+		return;
+
  	printf("%sOPEN SESSION RESPONSE\n", DUMP_PREFIX_INCOMING);
 
 	printf("%s  Message tag                        : 0x%02x\n",
@@ -86,6 +89,9 @@ void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 {
 	int i;
+
+	if (verbose < 2)
+		return;
 
 	printf("%sRAKP 2 MESSAGE\n", DUMP_PREFIX_INCOMING);
 
@@ -140,6 +146,9 @@ void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 {
 	int i;
+
+	if (verbose < 2)
+		return;
 
 	printf("%sRAKP 4 MESSAGE\n", DUMP_PREFIX_INCOMING);
 
