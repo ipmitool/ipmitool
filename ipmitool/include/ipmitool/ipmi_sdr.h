@@ -41,7 +41,7 @@
 # include <config.h>
 #endif
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <math.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>

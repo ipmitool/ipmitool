@@ -37,7 +37,7 @@
 #ifndef IPMI_SEL_H
 #define IPMI_SEL_H
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <ipmitool/ipmi.h>
 
 #define IPMI_CMD_GET_SEL_INFO		0x40

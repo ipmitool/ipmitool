@@ -39,7 +39,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <ipmitool/helper.h>
 

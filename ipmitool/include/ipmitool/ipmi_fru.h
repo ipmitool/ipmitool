@@ -37,7 +37,7 @@
 #ifndef IPMI_FRU_H
 #define IPMI_FRU_H
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <ipmitool/ipmi.h>
 
 #if HAVE_CONFIG_H

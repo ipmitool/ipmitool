@@ -37,7 +37,7 @@
 #ifndef IPMI_HELPER_H
 #define IPMI_HELPER_H
 
-#include <stdint.h>
+#include <inttypes.h>
 
 struct valstr {
 	unsigned short val;
