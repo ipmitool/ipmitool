@@ -39,6 +39,9 @@
 #include <stdio.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <signal.h>
+
 
 #include <termios.h>
 
@@ -60,8 +63,12 @@
 #define SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
 #define SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
 
+#define SOL_ESCAPE_CHARACTER                    '~'
+
 static struct termios _saved_tio;
-static int _in_raw_mode = 0;
+static int            _in_raw_mode = 0;
+
+
 
 extern int verbose;
 
@@ -712,14 +719,140 @@ void enter_raw_mode(void)
 }
 
 
+static void suspendSelf(int bRestoreTty)
+{
+	leave_raw_mode();
+	kill(getpid(), SIGTSTP);
+
+	if (bRestoreTty)
+		enter_raw_mode();
+}
+
+
+
+void printSolEscapeSequences()
+{
+	printf(
+		   "~?\r\n\
+	Supported escape sequences:\r\n\
+	~.  - terminate connection\r\n\
+	~^Z - suspend ipmitool\r\n\
+	~^X - suspend ipmitool, but don't restore tty on restart\r\n\
+	~?  - this message\r\n\
+	~~  - send the escape character by typing it twice\r\n\
+	(Note that escapes are only recognized immediately after newline.)\r\n");
+}
+
+
+
+/*
+ * processSolUserInput
+ *
+ * Act on user input into the SOL session.  The only reason this
+ * is complicated is that we have to process escape sequences.
+ *
+ * return   0 on success
+ *          1 if we should exit
+ *        < 0 on error (BMC probably closed the session)
+ */
+static int processSolUserInput(struct ipmi_intf * intf,
+							   unsigned char    * input,
+							   unsigned short     buffer_length)
+{
+	static int escape_pending = 0;
+	static int last_was_cr    = 1;
+	struct ipmi_v2_payload v2_payload;
+	int  length               = 0;
+	int  retval               = 0;
+	char ch;
+	int  i;
+
+	for (i = 0; i < buffer_length; ++i)
+	{
+		ch = input[i];
+
+		//if (escape_pending && (ch != SOL_ESCAPE_CHARACTER)) {
+		if (escape_pending){
+			escape_pending = 0;
+			
+			/*
+			 * Process a possible escape sequence.
+			 */
+			switch (ch) {
+			case '.':
+				/* Terminate the connection. */
+				/* Should probably flush our buffer first */
+				return 1;
+				continue;
+			case 'Z' - 64:
+				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				suspendSelf(1); /* Restore tty back to raw */
+				continue;
+
+			case 'X' - 64:
+				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				suspendSelf(0); /* Don't restore to raw mode */
+				continue;
+
+			case '?':
+				printSolEscapeSequences();
+				continue;
+			default:
+				if (ch != SOL_ESCAPE_CHARACTER)
+					v2_payload.payload.sol_packet.data[length++] =
+						SOL_ESCAPE_CHARACTER;
+				v2_payload.payload.sol_packet.data[length++] = ch;
+			}
+		}
+
+		else
+		{
+			if (last_was_cr && (ch == SOL_ESCAPE_CHARACTER)) {
+				escape_pending = 1;
+				continue;
+			}
+
+			v2_payload.payload.sol_packet.data[length++] =	ch;
+		}
+
+
+		/*
+		 * Normal character.  Record whether it was a newline.
+		 */
+		last_was_cr = (ch == '\r' || ch == '\n');
+	}
+
+	
+	if (length)
+	{
+		v2_payload.payload_length = length;
+
+		//memcpy(v2_payload.payload.sol_packet.data,
+		//	   input,
+		//	   v2_payload.payload_length);
+
+		if (intf->send_sol(intf, &v2_payload))
+		{
+			printf("Error sending SOL data\n");
+			retval = -1;
+		}
+	}
+
+	return retval;
+}
+
+
 
 /*
  * ipmi_sol_red_pill
  */
 static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 {
-	struct ipmi_v2_payload v2_payload;
-	int    bShouldExit = 0;
+	
+	char   buffer[256];
+	int    numRead;
+	int    bShouldExit       = 0;
+	int    bBmcClosedSession = 0;
 	fd_set read_fds;
 	struct timeval tv;
 	int    retval;
@@ -754,23 +887,21 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				/*
 				 * Received input from the user
 				 */
-				bzero(&v2_payload, sizeof(v2_payload));
-				v2_payload.payload_length =
-					read(0,
-						 v2_payload.payload.sol_packet.data,
-						 sizeof(v2_payload.payload.sol_packet.data));
+				bzero(buffer, sizeof(buffer));
+				numRead = read(fileno(stdin),
+							   buffer, sizeof(buffer));
 
-				if (v2_payload.payload_length > 0)
+				if (numRead > 0)
 				{
-					if (intf->send_sol(intf, &v2_payload))
-					{
-						printf("Error sending SOL data\n");
-					}
+					int rc = processSolUserInput(intf, buffer, numRead);
+					if (rc)
+						bShouldExit = 1;
+					if (rc < 1)
+						bBmcClosedSession = 1;
 				}
 				else
 				{
-					/* ERROR */
-					perror("read of remote console input");
+					bShouldExit = 1;
 				}
 			}
 
@@ -780,10 +911,17 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				 * Received input from the BMC.
 				 */
 				int i;
-				//printf("The BMC has data for us...\n");
 				struct ipmi_rs * rs =intf->recv_sol(intf);
-				for (i = 0; i < rs->data_len; ++i)
-					putc(rs->data[i], stdout);
+				if (! rs)
+				{
+					bShouldExit = bBmcClosedSession = 1;
+				}
+				else
+				{
+					for (i = 0; i < rs->data_len; ++i)
+						putc(rs->data[i], stdout);
+				}
+
 				fflush(stdout);
  			}
 			
@@ -791,11 +929,18 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 			{
 				/* ERROR */
 				printf("Error: Select returned with nothing to read\n");
+				bShouldExit = 1;
 			}
 		}
 	}		
 
 	leave_raw_mode();
+
+	if (bBmcClosedSession)
+	{
+		printf("SOL session closed by BMC\n");
+		exit(1);
+	}
 
 	return 0;
 }
@@ -826,7 +971,7 @@ static int ipmi_sol_deactivate(struct ipmi_intf * intf)
 	data[4] = 0;
 	data[5] = 0;
 
-	//rsp = intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
 
 	if (!rsp || rsp->ccode) {
 		printf("Error:%x Dectivating SOL payload\n",
