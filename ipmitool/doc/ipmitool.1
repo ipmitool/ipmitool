@@ -48,12 +48,12 @@ This can be used to get command-line help on ipmitool commands.  It may also be 
 .PP
 ipmitool -I open help
 .br
-Commands:  chassis, fru, lan, sdr, sel
+Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel
 .LP
 .PP
 ipmitool -I open chassis help
 .br
-Chassis Commands:  status, power, identify, policy, restart_cause
+Chassis Commands:  status, power, identify, policy, restart_cause, poh
 .LP
 .PP
 ipmitool -I open chassis power help
@@ -76,7 +76,28 @@ RAW RSP (5 bytes)
 .LP
 .RE
 .TP
-\fIchaninfo\fP [\fBchannel\fR]
+.I channel
+.RS
+.TP
+\fIauthcap\fP <\fBchannel number\fR> <\fBmax priv\fR>
+This command will display information about the authentication capabilities of the slected channel at the specified privelige level.
+.RS
+.TP
+Possible privelige levels are:
+.br
+1   Callback level
+.br
+2   User level
+.br
+3   Operator level
+.br
+4   Administrator level
+.br
+5   OEM Proprietary level
+.LP
+.RE
+.TP
+\fIinfo\fP [\fBchannel number\fR]
 This command will display information about the selected channel.  If no channel is given it will display information about the currently used channel:
 .RS
 .PP
@@ -94,6 +115,7 @@ Channel 0xf info:
 .br
   Protocol Vendor ID    : 7154
 .LP
+.RE
 .RE
 .TP
 \fIuserinfo\fP <\fBchannel\fR>

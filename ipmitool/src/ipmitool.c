@@ -56,6 +56,8 @@
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_bmc.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_channel.h>
+
 
 struct ipmi_session lan_session;
 int csv_output = 0;
@@ -323,7 +325,7 @@ int main(int argc, char ** argv)
 	intf->pedantic = pedantic;
 
 	if (!strncmp(argv[optind], "help", 4)) {
-		printf("Commands:  bmc, chaninfo, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo\n");
+		printf("Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel\n");
 		goto out_free;
 	}
 	else if (!strncmp(argv[optind], "event", 5)) {
@@ -379,21 +381,8 @@ int main(int argc, char ** argv)
 			goto out_free;
 		}
 	}
-	else if (!strncmp(argv[optind], "chaninfo", 8)) {
-		if (argc-optind-1 > 0) {
-			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
-			rc = intf->open(intf, hostname, port, username, password);
-			if (rc < 0)
-				goto out_free;
-			verbose++;
-			ipmi_get_channel_info(intf, c);
-			verbose--;
-			goto out_close;
-		}
-		else {
-			printf("chaninfo <channel>\n");
-			goto out_free;
-		}
+	else if (!strncmp(argv[optind], "channel", 7)) {
+		submain = ipmi_channel_main;
 	}
 	else {
 		printf("Invalid comand: %s\n", argv[optind]);

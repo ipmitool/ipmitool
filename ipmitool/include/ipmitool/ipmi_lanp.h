@@ -128,7 +128,6 @@ static struct lan_param {
 	{ -1 }
 };
 
-void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 int  ipmi_lanp_main(struct ipmi_intf *, int, char **);
 
 #endif /*IPMI_LANP_H*/
