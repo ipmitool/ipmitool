@@ -163,7 +163,9 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return;
+	if (rsp->ccode) {
 		printf("Error%x in Get SEL Info command\n",
 		       rsp ? rsp->ccode : 0);
 		return;
@@ -200,7 +202,9 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		req.msg.cmd = IPMI_CMD_GET_SEL_ALLOC_INFO;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp || rsp->ccode) {
+		if (!rsp)
+			return;
+		if (rsp->ccode) {
 			printf("error%d in Get SEL Allocation Info command\n",
 			       rsp ? rsp->ccode : 0);
 			return;
@@ -237,7 +241,9 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return 0;
+	if (rsp->ccode) {
 		printf("Error %x in Get SEL Entry %x Command\n",
 		       rsp ? rsp->ccode : 0, id);
 		return 0;
@@ -404,7 +410,9 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return;
+	if (rsp->ccode) {
 		printf("Error: %x from Get SEL Info command\n",
 		       rsp ? rsp->ccode : 0);
 		return;
@@ -422,7 +430,9 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return;
+	if (rsp->ccode) {
 		printf("Error: %x from Reserve SEL command\n",
 		       rsp ? rsp->ccode : 0);
 		return;
@@ -462,7 +472,9 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return;
+	if (rsp->ccode) {
 		printf("Error:%x unable to reserve SEL\n",
 		       rsp ? rsp->ccode : 0);
 		return 0;
@@ -498,7 +510,9 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (!rsp)
+		return;
+	if (rsp->ccode) {
 		printf("Error:%x unable to clear SEL\n", rsp ? rsp->ccode : 0);
 		return;
 	}
@@ -540,9 +554,12 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data_len = 4;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp || rsp->ccode) 
+		if (!rsp)
 		{
-			if (!rsp) printf("No response\n");
+			printf("No response\n");
+		}
+		else if (rsp->ccode) 
+		{
 			printf("Error %x unable to delete entry %d\n", rsp ? rsp->ccode : 0, id);
 		}
 		else
