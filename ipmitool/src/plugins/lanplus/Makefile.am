@@ -32,18 +32,16 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-plugindir			= $(pluginpath)
+MAINTAINERCLEANFILES = Makefile.in
 
-INCLUDES			= -I$(top_srcdir)/include $(INCLTDL)
-MAINTAINERCLEANFILES		= Makefile.in ipmi_intf_static.c
-EXTRA_DIST			= ipmi_intf_static.c.in
+plugindir = $(pluginpath)
 
-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@
-DIST_SUBDIRS			= lan lanplus open lipmi
+INCLUDES = -I$(top_srcdir)/include
 
-noinst_LTLIBRARIES		= libintf.la
-libintf_la_SOURCES		= ipmi_intf.c ipmi_intf_static.c
-libintf_la_LDFLAGS		= -export-dynamic
-libintf_la_LIBADD		= $(LIBLTDL) @STATIC_INTF_LIB@
-libintf_la_DEPENDENCIES		= $(LIBLTDL) @STATIC_INTF_LIB@
+EXTRA_LTLIBRARIES	= libintf_lanplus.la
+plugin_LTLIBRARIES	= @PLUGIN_INTF_LANPLUS@
+noinst_LTLIBRARIES	= @STATIC_INTF_LANPLUS@
+libintf_lanplus_la_LDFLAGS	= @LDFLAGS_INTF_LANPLUS@
+libintf_lanplus_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
+libintf_lanplus_la_SOURCES	= lanplus.c lanplus.h rmcp.h lanplus_crypt.h lanplus_crypt.c lanplus_strings.c lanplus_dump.h lanplus_dump.c lanplus_crypt_impl.h lanplus_crypt_impl.c
 

@@ -34,30 +34,37 @@
  * facility.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#ifndef IPMI_LANPLUS_CRYPT_IMPL_H
+#define IPMI_LANPLUS_CRYPT_IMPL_H
 
-#include <inttypes.h>
 
-struct valstr {
-	unsigned short val;
-	const char * str;
-};
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
+int
+lanplus_seed_prng(unsigned int bytes);
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
+int
+lanplus_rand(unsigned char * buffer,  unsigned int num_bytes);
 
-void signal_handler(int sig, void * handler);
+unsigned char *
+lanplus_HMAC(unsigned char mac, const void *key, int key_len,
+			 const unsigned char *d, int n, unsigned char *md,
+			 unsigned int *md_len);
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
+void
+lanplus_encrypt_aes_cbc_128(const unsigned char * iv,
+							const unsigned char * key,
+							const unsigned char * input,
+							unsigned int          input_length,
+							unsigned char       * output,
+							unsigned int        * bytes_written);
 
-#define min(a, b)  ((a) < (b) ? (a) : (b))
 
-#endif /* IPMI_HELPER_H */
+void
+lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
+							const unsigned char * key,
+							const unsigned char * input,
+							unsigned int          input_length,
+							unsigned char       * output,
+							unsigned int        * bytes_written);
 
+
+#endif /* IPMI_LANPLUS_CRYPT_IMPL_H */

@@ -146,6 +146,42 @@ AC_SUBST(PLUGIN_INTF_LAN)
 AC_SUBST(STATIC_INTF_LAN)
 AC_SUBST(LDFLAGS_INTF_LAN)
 
+
+
+PLUGIN_INTF_LANPLUS=
+STATIC_INTF_LANPLUS=
+LDFLAGS_INTF_LANPLUS=
+AC_ARG_ENABLE([intf-lanplus],
+[[  --enable-intf-lanplus   enable IPMI-over-LAN RMCP+ interface ]]
+[[                            plugin : build dynamic]]
+[[                            static : link statically ]]
+[[  --diable-intf-lanplus   disable IPMI-over-LAN RMCP+ interface [default]]],
+
+        [if test "x$enableval" = "xplugin" || test "x$enableval" = "xdynamic"; then
+           AC_SUBST(INTF_LANPLUS,lanplus)
+           PLUGIN_INTF_LANPLUS="libintf_lanplus.la"
+           LDFLAGS_INTF_LANPLUS="-rpath $pluginpath -avoid-version"
+           DYNAMIC_INTF_LIST="lanplus $DYNAMIC_INTF_LIST"
+        elif test "x$enableval" = "xstatic" || test "x$enableval" = "xyes"; then
+           AC_SUBST(INTF_LANPLUS,lanplus)
+           STATIC_INTF_LANPLUS="libintf_lanplus.la"
+           STATIC_INTF_LIST="lanplus $STATIC_INTF_LIST"
+        fi
+        
+        if test "x$enableval" != "xno"; then
+            AC_CHECK_LIB(ssl, EVP_aes_128_cbc, [], [
+                echo "Error! The lanplus interface requires an SSL library with EVP_aes_128_cbc defined."
+                exit -1
+            ])
+        fi],
+        [])
+
+AC_SUBST(PLUGIN_INTF_LANPLUS)
+AC_SUBST(STATIC_INTF_LANPLUS)
+AC_SUBST(LDFLAGS_INTF_LANPLUS)
+
+
+
 PLUGIN_INTF_OPEN=
 STATIC_INTF_OPEN=
 LDFLAGS_INTF_OPEN=
@@ -248,6 +284,7 @@ AC_CONFIG_FILES([ipmitool.spec
 		src/plugins/ipmi_intf_static.c
 		src/plugins/Makefile
 		src/plugins/lan/Makefile
+                src/plugins/lanplus/Makefile
 		src/plugins/open/Makefile
 		src/plugins/lipmi/Makefile])
 

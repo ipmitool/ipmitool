@@ -34,30 +34,47 @@
  * facility.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#ifndef IPMI_RMCP_H
+#define IPMI_RMCP_H
 
-#include <inttypes.h>
+#include <ipmitool/helper.h>
+#include "lanplus.h"
 
-struct valstr {
-	unsigned short val;
-	const char * str;
+#define RMCP_VERSION_1		0x06
+
+#define RMCP_UDP_PORT		0x26f /* port 623 */
+#define RMCP_UDP_SECURE_PORT	0x298 /* port 664 */
+
+#define RMCP_TYPE_MASK		0x80
+#define RMCP_TYPE_NORM		0x00
+#define RMCP_TYPE_ACK		0x01
+
+static const struct valstr rmcp_type_vals[] __attribute__((unused)) = {
+	{ RMCP_TYPE_NORM,	"Normal RMCP" },
+	{ RMCP_TYPE_ACK,	"RMCP ACK" },
+	{ 0,			NULL }
 };
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
+#define RMCP_CLASS_MASK		0x1f
+#define RMCP_CLASS_ASF		0x06
+#define RMCP_CLASS_IPMI		0x07
+#define RMCP_CLASS_OEM		0x08
 
-void signal_handler(int sig, void * handler);
+static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
+	{ RMCP_CLASS_ASF,	"ASF" },
+	{ RMCP_CLASS_IPMI,	"IPMI" },
+	{ RMCP_CLASS_OEM,	"OEM" },
+	{ 0,			NULL }
+};
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
+/* RMCP message header */
+struct rmcp_hdr {
+	unsigned char ver;
+	unsigned char __reserved;
+	unsigned char seq;
+	unsigned char class;
+} __attribute__((packed));
 
-#define min(a, b)  ((a) < (b) ? (a) : (b))
+int handle_rmcp(struct ipmi_intf * intf, unsigned char * data, int data_len);
 
-#endif /* IPMI_HELPER_H */
-
+#endif /* IPMI_RMCP_H */

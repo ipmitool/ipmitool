@@ -34,30 +34,40 @@
  * facility.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#ifndef IPMI_ASF_H
+#define IPMI_ASF_H
 
-#include <inttypes.h>
+#include <ipmitool/helper.h>
+#include "lanplus.h"
 
-struct valstr {
-	unsigned short val;
-	const char * str;
+#define ASF_RMCP_IANA		0x000011be
+
+#define ASF_TYPE_PING		0x80
+#define ASF_TYPE_PONG		0x40
+
+static const struct valstr asf_type_vals[] __attribute__((unused)) = {
+	{ 0x10, "Reset" },
+	{ 0x11, "Power-up" },
+	{ 0x12, "Unconditional Power-down" },
+	{ 0x13, "Power Cycle" },
+	{ 0x40, "Presence Pong" },
+	{ 0x41, "Capabilities Response" },
+	{ 0x42, "System State Response" },
+	{ 0x80, "Presence Ping" },
+	{ 0x81, "Capabilities Request" },
+	{ 0x82, "System State Request" },
+	{ 0x00, NULL }
 };
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
+/* ASF message header */
+struct asf_hdr {
+	unsigned long iana;
+	unsigned char type;
+	unsigned char tag;
+	unsigned char __reserved;
+	unsigned char len;
+} __attribute__((packed));
 
-void signal_handler(int sig, void * handler);
+int handle_asf(struct ipmi_intf * intf, unsigned char * data, int data_len);
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
-
-#define min(a, b)  ((a) < (b) ? (a) : (b))
-
-#endif /* IPMI_HELPER_H */
-
+#endif /* IPMI_ASF_H */

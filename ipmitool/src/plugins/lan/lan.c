@@ -464,51 +464,53 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 
 		x = 4;
-		rsp->session_hdr.authtype = rsp->data[x++];
-		memcpy(&rsp->session_hdr.seq, rsp->data+x, 4);
+		rsp->session.authtype = rsp->data[x++];
+		memcpy(&rsp->session.seq, rsp->data+x, 4);
 		x += 4;
-		memcpy(&rsp->session_hdr.id, rsp->data+x, 4);
+		memcpy(&rsp->session.id, rsp->data+x, 4);
 		x += 4;
 
 		if (intf->session->active && intf->session->authtype)
 			x += 16;
 
-		rsp->msglen = rsp->data[x++];
-		rsp->header.rq_addr = rsp->data[x++];
-		rsp->header.netfn   = rsp->data[x] >> 2;
-		rsp->header.rq_lun  = rsp->data[x++] & 0x3;
+		rsp->session.msglen = rsp->data[x++];
+		rsp->payload.ipmi_response.rq_addr = rsp->data[x++];
+		rsp->payload.ipmi_response.netfn   = rsp->data[x] >> 2;
+		rsp->payload.ipmi_response.rq_lun  = rsp->data[x++] & 0x3;
 		x++;		/* checksum */
-		rsp->header.rs_addr = rsp->data[x++];
-		rsp->header.rq_seq  = rsp->data[x] >> 2;
-		rsp->header.rs_lun  = rsp->data[x++] & 0x3;
-		rsp->header.cmd     = rsp->data[x++]; 
+		rsp->payload.ipmi_response.rs_addr = rsp->data[x++];
+		rsp->payload.ipmi_response.rq_seq  = rsp->data[x] >> 2;
+		rsp->payload.ipmi_response.rs_lun  = rsp->data[x++] & 0x3;
+		rsp->payload.ipmi_response.cmd     = rsp->data[x++]; 
 		rsp->ccode          = rsp->data[x++];
 
 		if (verbose > 2) {
-			printbuf(rsp->data, x, "ipmi message header");
+			printbuf(rsp->data, rsp->data_len, "ipmi message header");
 			printf("<< IPMI Response Session Header\n");
 			printf("<<   Authtype   : %s\n",
-			       val2str(rsp->session_hdr.authtype, ipmi_authtype_session_vals));
-			printf("<<   Sequence   : 0x%08lx\n", rsp->session_hdr.seq);
-			printf("<<   Session ID : 0x%08lx\n", rsp->session_hdr.id);
+			       val2str(rsp->session.authtype, ipmi_authtype_session_vals));
+			printf("<<   Sequence   : 0x%08lx\n", rsp->session.seq);
+			printf("<<   Session ID : 0x%08lx\n", rsp->session.id);
 			
 			printf("<< IPMI Response Message Header\n");
-			printf("<<   Rq Addr    : %02x\n", rsp->header.rq_addr);
-			printf("<<   NetFn      : %02x\n", rsp->header.netfn);
-			printf("<<   Rq LUN     : %01x\n", rsp->header.rq_lun);
-			printf("<<   Rs Addr    : %02x\n", rsp->header.rs_addr);
-			printf("<<   Rq Seq     : %02x\n", rsp->header.rq_seq);
-			printf("<<   Rs Lun     : %01x\n", rsp->header.rs_lun);
-			printf("<<   Command    : %02x\n", rsp->header.cmd);
+			printf("<<   Rq Addr    : %02x\n", rsp->payload.ipmi_response.rq_addr);
+			printf("<<   NetFn      : %02x\n", rsp->payload.ipmi_response.netfn);
+			printf("<<   Rq LUN     : %01x\n", rsp->payload.ipmi_response.rq_lun);
+			printf("<<   Rs Addr    : %02x\n", rsp->payload.ipmi_response.rs_addr);
+			printf("<<   Rq Seq     : %02x\n", rsp->payload.ipmi_response.rq_seq);
+			printf("<<   Rs Lun     : %01x\n", rsp->payload.ipmi_response.rs_lun);
+			printf("<<   Command    : %02x\n", rsp->payload.ipmi_response.cmd);
 			printf("<<   Compl Code : 0x%02x\n", rsp->ccode);
 		}
 
 		/* now see if we have oustanding entry in request list */
-		entry = ipmi_req_lookup_entry(rsp->header.rq_seq, rsp->header.cmd);
+		entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
+									  rsp->payload.ipmi_response.cmd);
 		if (entry) {
 			if (verbose > 2)
 				printf("IPMI Request Match found\n");
-			ipmi_req_remove_entry(rsp->header.rq_seq, rsp->header.cmd);
+			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
+								  rsp->payload.ipmi_response.cmd);
 		} else {
 			if (verbose)
 				printf("WARNING: IPMI Request Match NOT FOUND!\n");
@@ -537,11 +539,11 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
  * |  rmcp.seq          |
  * |  rmcp.class        |
  * +--------------------+
- * |  session_hdr.authtype | 9 bytes
- * |  session_hdr.seq   |
- * |  session_hdr.id    |
+ * |  session.authtype | 9 bytes
+ * |  session.seq   |
+ * |  session.id    |
  * +--------------------+
- * | [session_hdr.authcode] | 16 bytes (AUTHTYPE != none)
+ * | [session.authcode] | 16 bytes (AUTHTYPE != none)
  * +--------------------+
  * |  message length    | 1 byte
  * +--------------------+

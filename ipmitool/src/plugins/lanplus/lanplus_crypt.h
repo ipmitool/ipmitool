@@ -34,30 +34,41 @@
  * facility.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#ifndef IPMI_LANPLUS_CRYPT_H
+#define IPMI_LANPLUS_CRYPT_H
 
-#include <inttypes.h>
+#include <ipmitool/ipmi_intf.h>
 
-struct valstr {
-	unsigned short val;
-	const char * str;
-};
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
+/*
+ * See the implementation file for documentation
+ */
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
+int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
+							   const unsigned char * hmac);
+int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
+							   const unsigned char * hmac);
+int lanplus_generate_rakp3_authcode(char                      * buffer,
+									const struct ipmi_session * session,
+									unsigned int              * auth_length);
+int lanplus_generate_sik(struct ipmi_session * session);
+int lanplus_generate_k1(struct ipmi_session * session);
+int lanplus_generate_k2(struct ipmi_session * session);
+int lanplus_encrypt_payload(unsigned char         crypt_alg,
+							const unsigned char * key,
+							const unsigned char * input,
+							unsigned int          input_length,
+							unsigned char       * output,
+							unsigned short      * bytesWritten);
+int lanplus_decrypt_payload(unsigned char         crypt_alg,
+							const unsigned char * key,
+							const unsigned char * input,
+							unsigned int          input_length,
+							unsigned char       * output,
+							unsigned short      * payload_size);
+int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
+								struct ipmi_session * session);
 
-void signal_handler(int sig, void * handler);
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
 
-#define min(a, b)  ((a) < (b) ? (a) : (b))
 
-#endif /* IPMI_HELPER_H */
-
+#endif /* IPMI_LANPLUS_CRYPT_H  */

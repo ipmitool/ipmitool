@@ -69,7 +69,7 @@ const char * buf2str(unsigned char * buf, int len)
 	return (const char *)str;
 }
 
-void printbuf(unsigned char * buf, int len, char * desc)
+void printbuf(const unsigned char * buf, int len, const char * desc)
 {
 	int i;
 

@@ -34,30 +34,15 @@
  * facility.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
 
-#include <inttypes.h>
+#ifndef IPMI_LANPLUS_DUMP_H
+#define IPMI_LANPLUS_DUMP_H
 
-struct valstr {
-	unsigned short val;
-	const char * str;
-};
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
+#include <ipmitool/ipmi_intf.h>
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
+/* See the implementation file for documentation */
+void lanplus_dump_open_session_response(const struct ipmi_rs * rsp);
+void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, unsigned char auth_alg);
 
-void signal_handler(int sig, void * handler);
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
-
-#define min(a, b)  ((a) < (b) ? (a) : (b))
-
-#endif /* IPMI_HELPER_H */
-
+#endif /* IPMI_LANPLUS_DUMP_H  */
