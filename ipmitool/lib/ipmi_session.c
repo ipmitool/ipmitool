@@ -294,7 +294,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 		case IPMI_SESSION_REQUEST_BY_HANDLE:
 			rqdata[0]        = 0xFE;
 			rqdata[1]        = (unsigned char)id_or_handle;
-			req.msg.data_len = 1;
+			req.msg.data_len = 2;
 			break;
 		}
 
@@ -302,11 +302,18 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp || rsp->ccode) {
 			printf("Error:%x Get Session Info Command\n", rsp ? rsp->ccode : 0);
-			return -1;
+
+			if ((session_request_type == IPMI_SESSION_REQUEST_CURRENT) &&
+				(strncmp(intf->name, "intf_lan", 8)))
+				printf("It is likely that the active channel does not support sessions\n");
+
+			retval = -1;
 		}
-		
-		memcpy(&session_info,  rsp->data, rsp->data_len);
-		print_session_info(&session_info, rsp->data_len);
+		else
+		{
+			memcpy(&session_info,  rsp->data, rsp->data_len);
+			print_session_info(&session_info, rsp->data_len);
+		}
 		break;
 		
 	case IPMI_SESSION_REQUEST_ALL:
@@ -319,13 +326,18 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 			
 			if (!rsp || rsp->ccode ||  (rsp->data_len < 3))
 			{
-				printf("Error retrieving session info for session %d\n", i);
-				retval = -1;
+				if (!rsp || (rsp->ccode != 0xCC))
+				{
+					printf("Error:%x Get Session Info Command\n", rsp ? rsp->ccode : 0);
+					retval = -1;
+				}
 				break;
 			}
-
-			memcpy(&session_info,  rsp->data, rsp->data_len);
-			print_session_info(&session_info, rsp->data_len);
+			else
+			{
+				memcpy(&session_info,  rsp->data, rsp->data_len);
+				print_session_info(&session_info, rsp->data_len);
+			}
 			
 		} while (i <= session_info.session_slot_count);
 		break;
