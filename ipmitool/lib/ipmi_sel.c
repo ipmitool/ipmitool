@@ -43,6 +43,9 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
 
@@ -122,6 +125,8 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
                       (evt->data == rec->event_data[1]))))
                 {
 			*desc = (char *)malloc(strlen(evt->desc) + 32);
+			if (*desc == NULL)
+				return;
                         sprintf(*desc, "%s", evt->desc);
 			return;
                 }
@@ -351,24 +356,23 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 	if (!evt)
 		return;
 
-	printf("SEL Record ID    : %04x\n",
-	       evt->record_id);
+	printf("SEL Record ID          : %04x\n", evt->record_id);
 
 	if (evt->record_type == 0xf0)
 	{
-		printf (" Record Type     : Linux kernel panic (OEM record %02x)\n", evt->record_type);
-		printf (" Panic string    : %.11s\n\n", (char *) evt + 5);
+		printf (" Record Type           : Linux kernel panic (OEM record %02x)\n", evt->record_type);
+		printf (" Panic string          : %.11s\n\n", (char *) evt + 5);
 		return;
 	}
 
 	if (evt->record_type >= 0xc0)
-		printf(" Record Type     : OEM record %02x\n", evt->record_type >= 0xc0);
+		printf(" Record Type           : OEM record %02x\n", evt->record_type >= 0xc0);
 	else
-		printf(" Record Type     : %02x\n", evt->record_type);
+		printf(" Record Type           : %02x\n", evt->record_type);
 
 	if (evt->record_type < 0xe0)
 	{
-		printf(" Timestamp       : %s\n",
+		printf(" Timestamp             : %s\n",
 		       ipmi_sel_timestamp(evt->timestamp));
 	}
 
@@ -378,22 +382,22 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 		return;
 	}
 
-	printf(" Generator ID    : %04x\n",
+	printf(" Generator ID          : %04x\n",
 	       evt->gen_id);
-	printf(" EvM Revision    : %02x\n",
+	printf(" EvM Revision          : %02x\n",
 	       evt->evm_rev);
-	printf(" Sensor Type     : %s\n",
+	printf(" Sensor Type           : %s\n",
 	       ipmi_sel_get_sensor_type(evt->sensor_type));
-	printf(" Sensor Num      : %02x\n",
+	printf(" Sensor Number         : %02x\n",
 	       evt->sensor_num);
-	printf(" Event Type      : %s\n",
+	printf(" Event Type            : %s\n",
 	       ipmi_get_event_type(evt->event_type));
-	printf(" Event Direction : %s\n",
+	printf(" Event Direction       : %s\n",
 	       val2str(evt->event_dir, event_dir_vals));
-	printf(" Event Data      : %02x%02x%02x\n",
+	printf(" Event Data            : %02x%02x%02x\n",
 	       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
         ipmi_get_event_desc(evt, &description);
-	printf(" Description     : %s\n",
+	printf(" Description           : %s\n",
                description ? description : "");
         free(description);
 
@@ -497,7 +501,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	static unsigned char tbuf[40];
-
+	uint32_t timei;
 	time_t time;
 
 	memset(&req, 0, sizeof(req));
@@ -519,10 +523,11 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 		return -1;
 	}
 	
-	memcpy(&time, rsp->data, 4);
+	memcpy(&timei, rsp->data, 4);
 #if WORDS_BIGENDIAN
-	time = BSWAP_32(time);
+	timei = BSWAP_32(time);
 #endif
+	time = (time_t)timei;
 
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&time));
 	printf("%s\n", tbuf);
@@ -545,14 +550,12 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	struct ipmi_rq       req;
 	struct tm            tm;
 	time_t               time;
+	uint32_t	     timei;
 	const char *         time_format = "%m/%d/%Y %H:%M:%S";
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_STORAGE;
 	req.msg.cmd      = IPMI_SET_SEL_TIME;
-	req.msg.data     = (unsigned char *)&time;
-	req.msg.data_len = sizeof(time);
-
 
 	/* Now how do we get our time_t from our ascii version? */
 	if (! strptime(time_string, time_format, &tm))
@@ -566,17 +569,21 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 		printf("Error.  Specified time could not be parsed.\n");
 		return -1;
 	}
-	
+
+	timei = (uint32_t)time;
+	req.msg.data = (unsigned char *)&timei;	
+	req.msg.data_len = 4;
 
 #if WORDS_BIGENDIAN
 	time = BSWAP_32(time);
 #endif
-
-
 	rsp = intf->sendrecv(intf, &req);
 
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Set SEL Time Command\n",  rsp ? rsp->ccode : 0);
+		printf("Error in Set SEL Time Command");
+		if (rsp)
+			printf(": %s", val2str(rsp->ccode, completion_code_vals));
+		printf("\n");
 		return -1;
 	}
 
@@ -634,7 +641,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (!argc || !strncmp(argv[0], "help", 4))
 	{
-		printf("usage: delete [id ...]\n");
+		printf("usage: delete <id>...<id>\n");
 		return;
 	}
 
@@ -674,42 +681,113 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 }
 
+static void
+ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	unsigned short id;
+	int i, oldv;
+	struct sel_event_record evt;
+	struct sdr_record_list * sdr;
+	struct entity_id entity;
+	struct sdr_record_list * list, * entry;
+
+	if (!argc || !strncmp(argv[0], "help", 4))
+	{
+		printf("usage: sel get <id>...<id>\n");
+		return;
+	}
+
+	if (!ipmi_sel_reserve(intf))
+		return;
+
+	for (i=0; i<argc; i++) {
+		id = (unsigned short)strtol(argv[i], NULL, 0);
+
+		/* lookup SEL entry based on ID */
+		ipmi_sel_get_std_entry(intf, id, &evt);
+		/* print SEL entry */
+		ipmi_sel_print_std_entry_verbose(&evt);
+		/* lookup SDR entry based on sensor number and type */
+		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sensor_num, evt.sensor_type);
+		if (!sdr)
+			continue;
+		/* print SDR entry */
+		oldv = verbose;
+		verbose = verbose ? : 1;
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			ipmi_sensor_print_full(intf, sdr->record.full);
+			entity.id = sdr->record.full->entity.id;
+			entity.instance = sdr->record.full->entity.instance;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			ipmi_sensor_print_compact(intf, sdr->record.compact);
+			entity.id = sdr->record.compact->entity.id;
+			entity.instance = sdr->record.compact->entity.instance;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
+			entity.id = sdr->record.eventonly->entity.id;
+			entity.instance = sdr->record.eventonly->entity.instance;
+			break;
+		default:
+			verbose = oldv;
+			continue;
+		}
+		verbose = oldv;
+
+		/* lookup SDR entry based on entity id */
+		list = ipmi_sdr_find_sdr_byentity(intf, &entity);
+		for (entry=list; entry; entry=entry->next) {
+			/* print FRU devices we find for this entity */
+			if (entry->type == SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR)
+				ipmi_fru_print(intf, entry->record.fruloc);
+		}
+
+		if ((argc > 1) && (i<(argc-1)))
+			printf("----------------------\n\n");
+	}
+}
+
 int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc)
 		ipmi_sel_get_info(intf);
 	else if (!strncmp(argv[0], "help", 4))
-		printf("SEL Commands:  info clear delete list\n");
+		printf("SEL Commands:  info clear delete list time\n");
 	else if (!strncmp(argv[0], "info", 4))
 		ipmi_sel_get_info(intf);
 	else if (!strncmp(argv[0], "list", 4))
 		ipmi_sel_list_entries(intf);
 	else if (!strncmp(argv[0], "clear", 5))
 		ipmi_sel_clear(intf);
-	else if (!strncmp(argv[0], "delete", 6))
-		ipmi_sel_delete(intf, argc-1, &argv[1]);
-
-
-	/*
-	 * Get time
-	 */
-	else if (argc == 2                    &&
-			 !strncmp(argv[0], "get",  3) &&
-			 !strncmp(argv[1], "time", 4))
-	{
-		ipmi_sel_get_time(intf);
+	else if (!strncmp(argv[0], "delete", 6)) {
+		if (argc < 2)
+			printf("usage: sel delete <id>...<id>\n");
+		else
+			ipmi_sel_delete(intf, argc-1, &argv[1]);
 	}
-
-	/*
-	 * Set time
-	 */
-	else if (argc == 3                    &&
-			 !strncmp(argv[0], "set",  3) &&
-			 !strncmp(argv[1], "time", 4))
-	{
-		ipmi_sel_set_time(intf, argv[2]);
+	else if (!strncmp(argv[0], "get", 3)) {
+		if (argc < 2)
+			printf("usage: sel get <entry>\n");
+		else
+			ipmi_sel_show_entry(intf, argc-1, &argv[1]);
 	}
-
+	else if (!strncmp(argv[0], "time", 4)) {
+		if (argc < 2)
+			printf("sel time commands: get set\n");
+		else if (!strncmp(argv[1], "get", 3))
+			ipmi_sel_get_time(intf);
+		else if (!strncmp(argv[1], "set", 3)) {
+			if (argc < 3)
+				printf("usage: sel time set \"mm/dd/yyyy hh:mm:ss\"\n");
+			else
+				ipmi_sel_set_time(intf, argv[2]);
+		} else
+			printf("sel time commands: get set\n");
+	}			
 
 	else
 		printf("Invalid SEL command: %s\n", argv[0]);
