@@ -120,6 +120,7 @@ AM_CONDITIONAL(IPMIEVD, test "x$enable_ipmievd" = "xyes")
 AC_CONFIG_FILES([ipmitool.spec
 		Makefile
 		doc/Makefile
+		contrib/Makefile
 		lib/Makefile
 		include/Makefile
 		include/ipmitool/Makefile
