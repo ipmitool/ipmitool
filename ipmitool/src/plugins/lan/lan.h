@@ -60,7 +60,7 @@
 #define IPMI_SESSION_PRIV_ADMIN		0x4
 #define IPMI_SESSION_PRIV_OEM		0x5
 
-unsigned char ipmi_csum(unsigned char * d, int s);
+
 
 struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 int  ipmi_lan_open(struct ipmi_intf * intf);

@@ -428,13 +428,6 @@ ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int data_len)
 	return digest;
 }
 
-unsigned char ipmi_csum(unsigned char * d, int s)
-{
-	unsigned char c = 0;
-	for (; s > 0; s--, d++)
-		c += *d;
-	return -c;
-}
 
 static struct ipmi_rs *
 ipmi_lan_poll_recv(struct ipmi_intf * intf)
