@@ -72,7 +72,7 @@
 #ifdef __sun
 # define OPTION_STRING	"I:hVvcH:f:U:p:"
 #else
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:L:A:t:m:"
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:"
 #endif
 
 int csv_output = 0;
@@ -170,24 +170,25 @@ ipmitool_usage(void)
 {
 	lprintf(LOG_NOTICE, "ipmitool version %s\n", VERSION);
 	lprintf(LOG_NOTICE, "usage: ipmitool [options...] <command>\n");
-	lprintf(LOG_NOTICE, "       -h            This help");
-	lprintf(LOG_NOTICE, "       -V            Show version information");
-	lprintf(LOG_NOTICE, "       -v            Verbose (can use multiple times)");
-	lprintf(LOG_NOTICE, "       -c            Display output in comma separated format");
-	lprintf(LOG_NOTICE, "       -I intf       Interface to use");
-	lprintf(LOG_NOTICE, "       -H hostname   Remote host name for LAN interface");
-	lprintf(LOG_NOTICE, "       -p port       Remote RMCP port [default=623]");
-	lprintf(LOG_NOTICE, "       -U username   Remote session username");
-	lprintf(LOG_NOTICE, "       -f file       Read remote session password from file");
+	lprintf(LOG_NOTICE, "       -h             This help");
+	lprintf(LOG_NOTICE, "       -V             Show version information");
+	lprintf(LOG_NOTICE, "       -v             Verbose (can use multiple times)");
+	lprintf(LOG_NOTICE, "       -c             Display output in comma separated format");
+	lprintf(LOG_NOTICE, "       -I intf        Interface to use");
+	lprintf(LOG_NOTICE, "       -H hostname    Remote host name for LAN interface");
+	lprintf(LOG_NOTICE, "       -p port        Remote RMCP port [default=623]");
+	lprintf(LOG_NOTICE, "       -U username    Remote session username");
+	lprintf(LOG_NOTICE, "       -f file        Read remote session password from file");
+	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 #ifndef __sun
-	lprintf(LOG_NOTICE, "       -L level      Remote session privilege level [default=USER]");
-	lprintf(LOG_NOTICE, "       -A authtype   Force use of authentication type NONE, PASSWORD, MD2, MD5 or OEM");
-	lprintf(LOG_NOTICE, "       -P password   Remote session password");
-	lprintf(LOG_NOTICE, "       -a            Prompt for remote password");
-	lprintf(LOG_NOTICE, "       -E            Read password from IPMI_PASSWORD environment variable");
-	lprintf(LOG_NOTICE, "       -m address    Set local IPMB address");
-	lprintf(LOG_NOTICE, "       -t address    Bridge request to remote target address");
-	lprintf(LOG_NOTICE, "       -o oemtype    Setup for OEM (use 'list' to see available OEM types)");
+	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=USER]");
+	lprintf(LOG_NOTICE, "       -A authtype    Force use of authentication type NONE, PASSWORD, MD2, MD5 or OEM");
+	lprintf(LOG_NOTICE, "       -P password    Remote session password");
+	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
+	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
+	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
+	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
+	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
 #endif
 	lprintf(LOG_NOTICE, "");
 	ipmi_intf_print();
@@ -257,6 +258,7 @@ main(int argc, char ** argv)
 	char * progname = NULL;
 	char * oemtype  = NULL;
 	int port = 0;
+	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i;
 	int rc = -1;
 
@@ -286,6 +288,9 @@ main(int argc, char ** argv)
 			break;
 		case 'p':
 			port = atoi(optarg);
+			break;
+		case 'C':
+			cipher_suite_id = atoi(optarg);
 			break;
 		case 'v':
 			verbose++;
@@ -422,6 +427,8 @@ main(int argc, char ** argv)
 		goto out_free;
 	}
 
+
+
 	/*
 	 * If the user has specified a hostname (-H option)
 	 * then this is a remote access session.
@@ -492,6 +499,8 @@ main(int argc, char ** argv)
 	else
 		ipmi_intf_session_set_privlvl(intf,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
+
+	ipmi_intf_session_set_cipher_suite_id(intf, cipher_suite_id);
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
