@@ -85,7 +85,7 @@ struct fru_area_chassis {
 };
 
 struct fru_area_board {
-	unsigned char	area_ver;
+	unsigned char area_ver;
 	unsigned char area_len;
 	unsigned char lang;
 	unsigned long mfg_date_time;
@@ -93,6 +93,7 @@ struct fru_area_board {
 	char * prod;
 	char * serial;
 	char * part;
+	char * fru;
 };
 
 struct fru_area_product {
@@ -105,6 +106,50 @@ struct fru_area_product {
 	char * version;
 	char * serial;
 	char * asset;
+	char * fru;
+};
+
+struct fru_multirec_header {
+#define FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION 0x00
+#define FRU_RECORD_TYPE_DC_OUTPUT 0x01
+#define FRU_RECORD_TYPE_DC_LOAD 0x02
+#define FRU_RECORD_TYPE_MANAGEMENT_ACCESS 0x03
+#define FRU_RECORD_TYPE_BASE_COMPATIBILITY 0x04
+#define FRU_RECORD_TYPE_EXTENDED_COMPATIBILITY 0x05
+	unsigned char type;
+	unsigned char format;
+	unsigned char len;
+	unsigned char record_checksum;
+	unsigned char header_checksum;
+} __attribute__ ((packed));
+
+struct fru_multirec_powersupply {
+	unsigned short capacity : 12, __reserved1 : 4;
+	unsigned short peak_va;
+	unsigned char  inrush_current;
+	unsigned char  inrush_interval;
+	unsigned short lowend_input1;
+	unsigned short highend_input1;
+	unsigned short lowend_input2;
+	unsigned short highend_input2;
+	unsigned char  lowend_freq;
+	unsigned char  highend_freq;
+	unsigned char  dropout_tolerance;
+	unsigned char  predictive_fail : 1, pfc : 1, autoswitch : 1, hotswap : 1, tach : 1, __reserved2 : 3;
+	unsigned short peak_capacity : 12, peak_hold_up_time : 4;
+	unsigned char  combined_voltage2 : 4, combined_voltage1 : 4;
+	unsigned short combined_capacity;
+	unsigned char  rps_threshold;
+} __attribute__ ((packed));
+
+static const char * combined_voltage_desc[] __attribute__((unused)) = {
+	"12 V", "-12 V", "5 V", "3.3 V"
+};
+
+struct fru_multirec_dcoutput {
+};
+
+struct fru_multirec_dcload {
 };
 
 static const char * chassis_type_desc[] __attribute__((unused)) = {
