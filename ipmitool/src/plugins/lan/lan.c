@@ -1378,7 +1378,7 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	s->addr.sin_family = AF_INET;
 	s->addr.sin_port = htons(s->port);
 
-	rc = inet_pton(AF_INET, s->hostname, &s->addr.sin_addr);
+	rc = inet_aton(s->hostname, &s->addr.sin_addr);
 	if (rc <= 0) {
 		struct hostent *host = gethostbyname(s->hostname);
 		if (host == NULL) {
