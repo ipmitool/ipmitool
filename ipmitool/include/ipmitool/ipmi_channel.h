@@ -45,6 +45,11 @@
 #define IPMI_GET_CHANNEL_AUTH_CAP 0x38
 #define IPMI_GET_CHANNEL_ACCESS   0x41
 #define IPMI_GET_CHANNEL_INFO     0x42
+#define IPMI_SET_USER_ACCESS      0x43
+#define IPMI_GET_USER_ACCESS      0x44
+#define IPMI_SET_USER_NAME        0x45
+#define IPMI_GET_USER_NAME        0x46
+#define IPMI_SET_USER_PASSWORD    0x47
 
 
 #define IPMI_1_5_AUTH_TYPE_BIT_NONE     0x01
@@ -167,6 +172,62 @@ struct get_channel_access_rsp {
 #endif
 } __attribute__ ((packed));
 
+
+struct get_user_access_rsp {
+#if WORDS_BIGENDIAN
+	unsigned char __reserved1        : 2;
+	unsigned char max_user_ids       : 6;
+	unsigned char __reserved2        : 2;
+	unsigned char enabled_user_ids   : 6;
+	unsigned char __reserved3        : 2;
+	unsigned char fixed_user_ids     : 6;
+	unsigned char __reserved4        : 1;
+	unsigned char callin_callback    : 1;
+	unsigned char link_auth          : 1;
+	unsigned char ipmi_messaging     : 1;
+	unsigned char privilege_limit    : 4;
+#else
+	unsigned char max_user_ids       : 6;
+	unsigned char __reserved1        : 2;
+	unsigned char enabled_user_ids   : 6;
+	unsigned char __reserved2        : 2;
+	unsigned char fixed_user_ids     : 6;
+	unsigned char __reserved3        : 2;
+	unsigned char privilege_limit    : 4;
+	unsigned char ipmi_messaging     : 1;
+	unsigned char link_auth          : 1;
+	unsigned char callin_callback    : 1;
+	unsigned char __reserved4        : 1;
+#endif
+} __attribute__ ((packed));
+
+struct set_user_access_data {
+#if WORDS_BIGENDIAN
+	unsigned char change_bits        : 1;
+	unsigned char callin_callback    : 1;
+	unsigned char link_auth          : 1;
+	unsigned char ipmi_messaging     : 1;
+	unsigned char channel            : 4;
+	unsigned char __reserved1        : 2;
+	unsigned char user_id            : 6;
+	unsigned char __reserved2        : 4;
+	unsigned char privilege_limit    : 4;
+	unsigned char __reserved3        : 4;
+	unsigned char session_limit      : 4;
+#else
+	unsigned char channel            : 4;
+	unsigned char ipmi_messaging     : 1;
+	unsigned char link_auth          : 1;
+	unsigned char callin_callback    : 1;
+	unsigned char change_bits        : 1;
+	unsigned char user_id            : 6;
+	unsigned char __reserved1        : 2;
+	unsigned char privilege_limit    : 4;
+	unsigned char __reserved2        : 4;
+	unsigned char session_limit      : 4;
+	unsigned char __reserved3        : 4;
+#endif
+} __attribute__ ((packed));
 
 
 int ipmi_channel_main(struct ipmi_intf *, int, char **);

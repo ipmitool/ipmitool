@@ -51,6 +51,7 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 
+void printf_channel_usage (void);
 
 const struct valstr ipmi_authtype_vals[] = {
 			{ IPMI_1_5_AUTH_TYPE_BIT_NONE,     "NONE" },
@@ -175,7 +176,7 @@ int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 	}
 
 	memcpy(&auth_cap, rsp->data, sizeof(struct get_channel_auth_cap_rsp));
-	printbuf(rsp->data, sizeof(struct get_channel_auth_cap_rsp), "the authcap buffer per sizeof");
+
 
 	printf("Channel number             : %d\n",
 		   auth_cap.channel_number);
@@ -254,10 +255,6 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 			   rsp ? rsp->ccode : 0, channel);
 		return -1;
 	}
-
-
-	printbuf(rsp->data, rsp->data_len, "the info buffer per data_len");
-	printbuf(rsp->data,  sizeof(struct get_channel_info_rsp), "the info buffer per sizeof");
 
 
 	memcpy(&channel_info, rsp->data, sizeof(struct get_channel_info_rsp));
@@ -388,54 +385,174 @@ static int
 ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned char userid)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req1, req2;
 	unsigned char rqdata[2];
+	struct get_user_access_rsp user_access;
+	int curr_uid, max_uid, init = 1;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
+	curr_uid = userid ? userid : 1;
+
+	memset(&req1, 0, sizeof(req1));
+	req1.msg.netfn = IPMI_NETFN_APP;
+	req1.msg.cmd = IPMI_GET_USER_ACCESS;
+	req1.msg.data = rqdata;
+	req1.msg.data_len = 2;
+
+	memset(&req2, 0, sizeof(req2));
+	req2.msg.netfn = IPMI_NETFN_APP;
+	req2.msg.cmd = IPMI_GET_USER_NAME;
+	req2.msg.data = rqdata;
+	req2.msg.data_len = 1;
+
+	do
+	{
+		rqdata[0] = channel & 0xf;
+		rqdata[1] = curr_uid & 0x3f;
+
+		rsp = intf->sendrecv(intf, &req1);
+		if (!rsp || rsp->ccode) {
+			printf("Error:%x Get User Access Command (0x%x)\n",
+			       rsp ? rsp->ccode : 0, channel);
+			return -1;
+		}
+
+		memcpy(&user_access, rsp->data, sizeof(struct get_user_access_rsp));
+
+
+		rqdata[0] = curr_uid & 0x3f;
+
+		rsp = intf->sendrecv(intf, &req2);
+		if (!rsp || rsp->ccode) {
+			printf("Error:%x Get User Name Command (0x%x)\n",
+			       rsp ? rsp->ccode : 0, channel);
+			return -1;
+		}
+
+		if (init)
+		{
+			printf("Maximum User IDs     : %d\n", user_access.max_user_ids);
+			printf("Enabled User IDs     : %d\n", user_access.enabled_user_ids);
+			max_uid = user_access.max_user_ids;
+			init = 0;
+		}
+
+		printf("\nUser ID              : %d\n", curr_uid);
+		printf("User Name            : %s\n", rsp->data);
+		printf("Fixed Name           : %s\n", curr_uid <= user_access.fixed_user_ids ? "Yes" : "No");
+		printf("Access Available     : %s\n", user_access.callin_callback ? "callback" : "call-in / callback");
+		printf("Link Authentication  : %sabled\n", user_access.link_auth ? "en" : "dis");
+		printf("IPMI Messaging       : %sabled\n", user_access.ipmi_messaging ? "en" : "dis");
+		printf("Privilege Level      : %s\n", val2str(user_access.privilege_limit, ipmi_privlvl_vals));
+
+		curr_uid ++;
+
+	} while (!userid && curr_uid <= max_uid);
+
+	return 0;
+}
+
+static void
+ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	unsigned char channel, userid;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	unsigned char rqdata[2];
+	struct get_user_access_rsp user_access;
+	struct set_user_access_data set_access;
+	int i;
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
+        if (argc < 3 || !strncmp(argv[0], "help", 4)) {
+		printf_channel_usage();
+                return;
+        }
+
+	channel = (unsigned char)strtol(argv[0], NULL, 0);
+	userid = (unsigned char)strtol(argv[1], NULL, 0);
+
 	memset(&req, 0, sizeof(req));
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = userid & 0x3f;
-	
 	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x44;
+	req.msg.cmd = IPMI_GET_USER_ACCESS;
 	req.msg.data = rqdata;
 	req.msg.data_len = 2;
+
+	rqdata[0] = channel & 0xf;
+	rqdata[1] = userid & 0x3f;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
 		printf("Error:%x Get User Access Command (0x%x)\n",
 		       rsp ? rsp->ccode : 0, channel);
-		return -1;
+		return;
 	}
 
-	printf("Maximum User IDs     : %d\n", rsp->data[0] & 0x3f);
-	printf("Enabled User IDs     : %d\n", rsp->data[1] & 0x3f);
-	printf("Fixed Name User IDs  : %d\n", rsp->data[2] & 0x3f);
-	printf("Access Available     : %s\n", (rsp->data[3] & 0x40) ? "callback" : "call-in / callback");
-	printf("Link Authentication  : %sabled\n", (rsp->data[3] & 0x20) ? "en" : "dis");
-	printf("IPMI Messaging       : %sabled\n", (rsp->data[3] & 0x10) ? "en" : "dis");
-	printf("Privilege Level      : %s\n", val2str(rsp->data[3] & 0x0f, ipmi_privlvl_vals));
+	memcpy(&user_access, rsp->data, sizeof(struct get_user_access_rsp));
 
-	return 0;
+	set_access.change_bits = 1;
+	set_access.callin_callback = user_access.callin_callback;
+	set_access.link_auth = user_access.link_auth;
+	set_access.ipmi_messaging = user_access.ipmi_messaging;
+	set_access.channel = channel;
+	set_access.user_id = userid;
+	set_access.privilege_limit = user_access.privilege_limit;
+	set_access.session_limit = 0;
+
+	for (i = 2; i < argc; i ++)
+	{
+		if (!strncmp(argv[i], "callin=", 7)) {
+			set_access.callin_callback = !strncmp (argv[i]+7, "off", 3);
+		}
+		else if (!strncmp(argv[i], "link=", 5)) {
+			set_access.link_auth = strncmp (argv[i]+5, "off", 3);
+		}
+		else if (!strncmp(argv[i], "ipmi=", 5)) {
+			set_access.ipmi_messaging = strncmp (argv[i]+5, "off", 3);
+		}
+		else if (!strncmp(argv[i], "privilege=", 10)) {
+			set_access.privilege_limit = strtol (argv[i]+10, NULL, 0);
+		}
+		else {
+			printf ("Invalid option: %s\n", argv [i]);
+			return;
+		}
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_SET_USER_ACCESS;
+	req.msg.data = (unsigned char *) &set_access;
+	req.msg.data_len = 4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Set User Access Command (0x%x)\n",
+		       rsp ? rsp->ccode : 0, channel);
+		return;
+	}
+
+	return;
 }
-
 
 void
 printf_channel_usage()
 {
-	printf("Channel Commands: authcap <channel number> <max priv>\n");
-	printf("                  user    <channel number> [user id]\n");
-	printf("                  info    [channel number]\n");
+	printf("Channel Commands: authcap   <channel number> <max privilege>\n");
+	printf("                  getaccess <channel number> [user id]\n");
+	printf("                  setaccess <channel number> <user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]\n");
+	printf("                  info      [channel number]\n");
 	printf("\n");
-	printf("Possible privelige levels are:\n");
+	printf("Possible privilege levels are:\n");
 	printf("   1   Callback level\n");
 	printf("   2   User level\n");
 	printf("   3   Operator level\n");
 	printf("   4   Administrator level\n");
 	printf("   5   OEM Proprietary level\n");
+	printf("  15   No access\n");
 }
-
 
 
 int
@@ -456,17 +573,21 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
                                                (unsigned char)strtol(argv[1], NULL, 0),
                                                (unsigned char)strtol(argv[2], NULL, 0));
 	}
-	else if (!strncmp(argv[0], "user", 4))
+	else if (!strncmp(argv[0], "getaccess", 10))
 	{
 		if (argc < 2 || argc > 3)
 			printf_channel_usage();
 		else {
 			unsigned char ch = (unsigned char)strtol(argv[1], NULL, 0);
-			unsigned char id = 1;
+			unsigned char id = 0;
 			if (argc == 3)
 				id = (unsigned char)strtol(argv[2], NULL, 0);
 			retval = ipmi_get_user_access(intf, ch, id);
 		}
+	}
+	else if (!strncmp(argv[0], "setaccess", 9))
+	{
+		ipmi_set_user_access(intf, argc-1, &(argv[1]));
 	}
 	else if (!strncmp(argv[0], "info", 4))
 	{
