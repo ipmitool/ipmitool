@@ -180,8 +180,9 @@ ipmitool_usage(void)
 	lprintf(LOG_NOTICE, "       -E            Read password from IPMI_PASSWORD environment variable");
 	lprintf(LOG_NOTICE, "       -f file       Read remote session password from file");
 	lprintf(LOG_NOTICE, "       -m address    Set local IPMB address");
-	lprintf(LOG_NOTICE, "       -t address    Bridge request to remote target address\n");
+	lprintf(LOG_NOTICE, "       -t address    Bridge request to remote target address");
 #endif
+	lprintf(LOG_NOTICE, "");
 	ipmi_intf_print();
 	ipmi_cmd_print();
 }
