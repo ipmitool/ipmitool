@@ -38,6 +38,7 @@
 #define IPMI_INTF_H
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_constants.h>
 
 #include <sys/types.h>
@@ -80,7 +81,6 @@ struct ipmi_session {
 	uint8_t authstatus;
 	uint8_t authextra;
 	uint8_t privlvl;
-	uint8_t authspecial; /* special auth flag */
 	int password;
 	int port;
 	int active;
@@ -144,16 +144,15 @@ struct ipmi_session {
 	} sol_data;
 };
 
-
 struct ipmi_intf {
 	char name[16];
 	char desc[128];
 	int fd;
 	int opened;
 	int abort;
-	int thump;
 
 	struct ipmi_session * session;
+	struct ipmi_oem_handle * oem;
 	uint32_t my_addr;
 	uint32_t target_addr;
 

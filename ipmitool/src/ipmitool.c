@@ -63,15 +63,16 @@
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_pef.h>
+#include <ipmitool/ipmi_oem.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
 
 #ifdef __sun
-# define OPTION_STRING	"I:hVvcgsH:f:U:p:t:m:"
+# define OPTION_STRING	"I:hVvcH:f:U:p:"
 #else
-# define OPTION_STRING	"I:hVvcgsEaH:P:f:U:p:L:A:t:m:"
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:L:A:t:m:"
 #endif
 
 int csv_output = 0;
@@ -123,7 +124,7 @@ ipmi_cmd_print(void)
 {
 	struct ipmi_cmd * cmd;
 	lprintf(LOG_NOTICE, "Commands:");
-	for (cmd=ipmi_cmd_list; cmd->func; cmd++) {
+	for (cmd=ipmi_cmd_list; cmd->func != NULL; cmd++) {
 		if (cmd->desc == NULL)
 			continue;
 		lprintf(LOG_NOTICE, "\t%-12s %s", cmd->name, cmd->desc);
@@ -185,6 +186,7 @@ ipmitool_usage(void)
 	lprintf(LOG_NOTICE, "       -f file       Read remote session password from file");
 	lprintf(LOG_NOTICE, "       -m address    Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -t address    Bridge request to remote target address");
+	lprintf(LOG_NOTICE, "       -o oemtype    Setup for OEM (use 'list' to see available OEM types)");
 #endif
 	lprintf(LOG_NOTICE, "");
 	ipmi_intf_print();
@@ -252,11 +254,10 @@ main(int argc, char ** argv)
 	char * password = NULL;
 	char * intfname = NULL;
 	char * progname = NULL;
+	char * oemtype  = NULL;
 	int port = 0;
 	int argflag, i;
 	int rc = -1;
-	int thump = 0;
-	int authspecial = 0;
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
@@ -328,11 +329,24 @@ main(int argc, char ** argv)
 			}
 			break;
 #ifndef __sun		/* some options not enabled on solaris yet */
+		case 'o':
+			oemtype = strdup(optarg);
+			if (oemtype == NULL) {
+				lprintf(LOG_ERR, "ipmitool: malloc failure");
+				goto out_free;
+			}
+			if (strncmp(oemtype, "list", 4) == 0) {
+				ipmi_oem_print();
+				goto out_free;
+			}
+			break;
 		case 'g':
-			thump = 1;
+			/* backwards compatible oem hack */
+			oemtype = strdup("intelwv2");
 			break;
 		case 's':
-			authspecial = 1;
+			/* backwards compatible oem hack */
+			oemtype = strdup("supermicro");
 			break;
 		case 'P':
 			if (password)
@@ -448,15 +462,15 @@ main(int argc, char ** argv)
 		goto out_free;
 	}
 
-	intf->thump = thump;
-
-	if (authspecial > 0) {
-		intf->session->authspecial = authspecial;
-		ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
-	}
-
 	/* setup log */
 	log_init(progname, 0, verbose);
+
+	/* run OEM setup if found */
+	if (oemtype != NULL &&
+	    ipmi_oem_setup(intf, oemtype) < 0) {
+		lprintf(LOG_ERR, "OEM setup for \"%s\" failed", oemtype);
+		goto out_free;
+	}
 
 	/* set session variables */
 	if (hostname != NULL)
@@ -502,14 +516,16 @@ main(int argc, char ** argv)
  out_free:
 	log_halt();
 
-	if (intfname)
+	if (intfname != NULL)
 		free(intfname);
-	if (hostname)
+	if (hostname != NULL)
 		free(hostname);
-	if (username)
+	if (username != NULL)
 		free(username);
-	if (password)
+	if (password != NULL)
 		free(password);
+	if (oemtype != NULL)
+		free(oemtype);
 
 	if (rc >= 0)
 		exit(EXIT_SUCCESS);

@@ -1,0 +1,146 @@
+/*
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * Redistribution of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ * 
+ * Redistribution in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * 
+ * Neither the name of Sun Microsystems, Inc. or the names of
+ * contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ * 
+ * This software is provided "AS IS," without a warranty of any kind.
+ * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
+ * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED.
+ * SUN MICROSYSTEMS, INC. ("SUN") AND ITS LICENSORS SHALL NOT BE LIABLE
+ * FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+ * OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL
+ * SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA,
+ * OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR
+ * PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
+ * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+ * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ * 
+ * You acknowledge that this software is not designed or intended for use
+ * in the design, construction, operation or maintenance of any nuclear
+ * facility.
+ */
+
+#include <string.h>
+
+#include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_constants.h>
+#include <ipmitool/log.h>
+#include <ipmitool/helper.h>
+
+static int ipmi_oem_supermicro(struct ipmi_intf * intf);
+
+static struct ipmi_oem_handle ipmi_oem_list[] = {
+	{
+		name:	"supermicro",
+		desc:	"Supermicro BMC with OEM LAN authentication support",
+		setup:	ipmi_oem_supermicro,
+	},
+	{
+		name:	"intelwv2",
+		desc:	"Intel SE7501WV2 BMC with extra LAN communication support",
+	},
+	{ 0 },
+};
+
+/* Supermicro IPMIv2 BMCs use OEM authtype */
+static int
+ipmi_oem_supermicro(struct ipmi_intf * intf)
+{
+	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	return 0;
+}
+
+/* ipmi_oem_print  -  print list of OEM handles
+ */
+void
+ipmi_oem_print(void)
+{
+	struct ipmi_oem_handle * oem;
+	lprintf(LOG_NOTICE, "\nOEM Support:");
+	for (oem=ipmi_oem_list; oem->setup != NULL; oem++) {
+		if (oem->name == NULL || oem->desc == NULL)
+			continue;
+		lprintf(LOG_NOTICE, "\t%-12s %s", oem->name, oem->desc);
+	}
+	lprintf(LOG_NOTICE, "");
+}
+
+/* ipmi_oem_setup  -  do initial setup of OEM handle
+ *
+ * @intf:	ipmi interface
+ * @oemtype:	OEM handle name
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+int
+ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
+{
+	struct ipmi_oem_handle * oem;
+	int rc = 0;
+
+	if (strncmp(oemtype, "help", 4) == 0 ||
+	    strncmp(oemtype, "list", 4) == 0 ||
+	    oemtype == NULL) {
+		ipmi_oem_print();
+		return -1;
+	}
+
+	for (oem=ipmi_oem_list; oem->setup != NULL; oem++) {
+		if (oem->name == NULL)
+			continue;
+		if (strncmp(oemtype, oem->name, strlen(oem->name)) == 0)
+			break;
+	}
+
+	if (oem->name == NULL) {
+		/* nothing was found */
+		lprintf(LOG_ERR, "OEM support not found for \"%s\"", oemtype);
+		return -1;
+	}
+
+	/* save pointer for later use */
+	intf->oem = oem;
+
+	/* run optional setup function if it is defined */
+	if (oem->setup != NULL) {
+		lprintf(LOG_DEBUG, "Running OEM setup for \"%s\"", oem->desc);
+		rc = oem->setup(intf);
+	}
+
+	return rc;
+}
+
+/* ipmi_oem_active  -  used to determine if a particular OEM type is set
+ *
+ * @intf:	ipmi interface
+ * @oemtype:	string containing name of ipmi handle to check
+ *
+ * returns 1 if requested ipmi handle is active
+ * returns 0 otherwise
+ */
+int
+ipmi_oem_active(struct ipmi_intf * intf, const char * oemtype)
+{
+	if (intf->oem == NULL)
+		return 0;
+
+	if (strncmp(intf->oem->name, oemtype, strlen(oemtype)) == 0)
+		return 1;
+
+	return 0;
+}
+

@@ -54,6 +54,7 @@
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
 
@@ -745,7 +746,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			continue;
 		}
 
-		if (intf->thump)
+		if (ipmi_oem_active(intf, "intelwv2"))
 			ipmi_lan_thump(intf);
 
 		usleep(100);
@@ -1092,7 +1093,8 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	msg_data[0] = s->authtype;
 	msg_data[1] = s->privlvl;
 
-	if (s->authspecial) {
+	/* supermicro oem authentication hack */
+	if (ipmi_oem_active(intf, "supermicro")) {
 		uint8_t * special = ipmi_auth_special(s);
 		memcpy(s->authcode, special, 16);
 		memset(msg_data + 2, 0, 16);
@@ -1293,10 +1295,12 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	/* don't fail on ping because its not always supported.
 	 * Supermicro's IPMI LAN 1.5 cards don't tolerate pings.
 	 */
-	if (intf->session->authspecial == 0)
+	if (ipmi_oem_active(intf, "supermicro"))
 		ipmi_lan_ping(intf);
 
-	if (intf->thump)
+	/* Some particular Intel boards need special help
+	 */
+	if (ipmi_oem_active(intf, "intelwv2"))
 		ipmi_lan_thump_first(intf);
 
 	rc = ipmi_get_auth_capabilities_cmd(intf);
