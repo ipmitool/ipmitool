@@ -43,6 +43,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
@@ -484,28 +485,28 @@ void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
                             else
                                 printf("Lower non-critical     : Unspecified\n");
 
-                            min_reading = sdr_convert_sensor_reading(sensor, sensor->sensor_min);
+                            min_reading = (unsigned char)sdr_convert_sensor_reading(sensor, sensor->sensor_min);
                             if ((sensor->unit.analog == 0 && sensor->sensor_min == 0x00) ||
                                 (sensor->unit.analog == 1 && sensor->sensor_min == 0xff) ||
                                 (sensor->unit.analog == 2 && sensor->sensor_min == 0x80))
                                 printf("Minimum sensor range   : Unspecified\n");
                             else
-                                printf("Minimum sensor range   : %.3f\n", min_reading);
+                                printf("Minimum sensor range   : %.3f\n", (float)min_reading);
 
-                            max_reading = sdr_convert_sensor_reading(sensor, sensor->sensor_max);
+                            max_reading = (unsigned char)sdr_convert_sensor_reading(sensor, sensor->sensor_max);
                             if ((sensor->unit.analog == 0 && sensor->sensor_max == 0xff) ||
                                 (sensor->unit.analog == 1 && sensor->sensor_max == 0x00) ||
                                 (sensor->unit.analog == 2 && sensor->sensor_max == 0x7f))
                                 printf("Maximum sensor range   : Unspecified\n");
                             else
-                                printf("Maximum sensor range   : %.3f\n", max_reading);
+                                printf("Maximum sensor range   : %.3f\n", (float)max_reading);
                         } else {  /* discrete */
                             printf("Sensor Type (Discete)  : %s\n", 
                                    ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 
                             printf("Sensor Reading         : ");
                             if (validread)
-                                    printf("%xh\n", val);
+                                    printf("%xh\n", (unsigned int)val);
                             else
                                     printf("not present\n");
 
@@ -843,7 +844,8 @@ void ipmi_sdr_print_oem(struct ipmi_intf * intf, unsigned char * data, int len)
 					printf("Power Supply Sensor    : %x\n", data[7]);
 					printf("Power Supply Sensor    : %x\n", data[8]);
 				} else if (csv_output) {
-					printf("Power Redundancy,PS@%02xh + PS@%02xh,ok\n");
+					printf("Power Redundancy,PS@%02xh + PS@%02xh,ok\n",
+					       data[7], data[8]);
 				} else {
 					printf("Power Redundancy | PS@%02xh + PS@%02xh   | ok\n",
 					       data[7], data[8]);
@@ -880,7 +882,7 @@ void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 		return;
 	}
 
-	while (header = ipmi_sdr_get_next_header(intf, itr)) {
+	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
 		unsigned char * rec;
 
 		if (type != header->type && type != 0xff)
@@ -961,7 +963,6 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct sdr_repo_info_rs sdr_info;
-	struct sdr_get_rs * header;
 
 	if (!(itr = malloc (sizeof (struct ipmi_sdr_iterator))))
 		return NULL;
@@ -1134,10 +1135,8 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 	}
 
 	/* now keep looking */
-	while (header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) {
+	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
 		unsigned char * rec;
-		struct sdr_record_full_sensor * full;
-		struct sdr_record_compact_sensor * compact;
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
@@ -1280,9 +1279,11 @@ ipmi_sdr_get_info(struct ipmi_intf * intf,
 static char *
 ipmi_sdr_timestamp(uint32_t stamp)
 {
-	static unsigned char tbuf[40];
+	static char tbuf[40];
 	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+	memset(tbuf, 0, 40);
+	if (stamp)
+		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
 	return tbuf;
 }
 
@@ -1330,7 +1331,7 @@ ipmi_sdr_print_info(struct ipmi_intf * intf)
 		printf("> 64Kb - 2 bytes\n");
 		break;
 	default:
-		printf("%d bytes\n");
+		printf("%d bytes\n", free_space);
 		break;
 	}
 
@@ -1380,6 +1381,8 @@ ipmi_sdr_print_info(struct ipmi_intf * intf)
 		   sdr_repository_info.reserve_sdr_repository_supported? "yes" : "no");
 	printf("SDR Repository Alloc info supported : %s\n",
 		   sdr_repository_info.delete_sdr_supported? "yes" : "no");
+
+	return 0;
 }
 
 
@@ -1410,7 +1413,7 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 		/* allow only files with 1 link (itself) */
 		if (st1.st_nlink != 1) {
 			printf("ERROR: file '%s' has invalid link count: %d != 1\n",
-			       ofile, st1.st_nlink);
+			       ofile, (int)st1.st_nlink);
 			return -1;
 		}
 
@@ -1443,7 +1446,7 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 	printf("Dumping Sensor Data Repository to '%s'\n", ofile);
 
 	/* go through sdr records */
-	while (header = ipmi_sdr_get_next_header(intf, itr)) {
+	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
 		int r;
 		unsigned char h[5];
 		unsigned char * rec;
@@ -1476,6 +1479,7 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 	}
 
 	close(fd);
+	return 0;
 }
 
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
