@@ -49,6 +49,12 @@ make
 %install
 make DESTDIR=$RPM_BUILD_ROOT install-strip
 
+DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/@IPMITOOL_PKG@-@VERSION@
+mkdir -p $DOCDIR
+for DOC in COPYING AUTHORS ChangeLog ; do
+    install -m 644 -o root -g root $DOC $DOCDIR/$DOC
+done
+
 %clean
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
     rm -rf $RPM_BUILD_ROOT
@@ -59,6 +65,7 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %defattr(-,root,root)
 %doc %{_mandir}/man1/*
 %{_bindir}/*
+%{_datadir}/doc/@IPMITOOL_PKG@-@VERSION@/*
 
 %files dev
 %defattr(-,root,root)
