@@ -147,9 +147,10 @@ AC_SUBST(STATIC_INTF)
 AC_SUBST(STATIC_INTF_EXT)
 AC_SUBST(STATIC_INTF_LIB)
 
-enable_ipmievd=no
 AC_ARG_ENABLE([ipmievd],
-	[[  --enable-ipmievd        enable IPMI event daemon [default=no]]],,)
+	[[  --enable-ipmievd        enable IPMI event daemon [default=no]]],
+	[enable_ipmievd=yes],
+	[enable_ipmievd=no])
 AM_CONDITIONAL(IPMIEVD, test "x$enable_ipmievd" = "xyes")
 
 AC_CONFIG_FILES([ipmitool.spec
