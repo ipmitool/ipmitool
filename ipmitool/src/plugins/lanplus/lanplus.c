@@ -50,6 +50,7 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include <config.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/md5.h>
@@ -534,7 +535,6 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			read_ipmi_response(rsp, &offset);
 
 			if (verbose > 2) {
-				//printbuf(rsp->data, offset, "ipmi message header");
 				printf("<< IPMI Response Session Header\n");
 				printf("<<   Authtype                : %s\n",
 					   val2str(rsp->session.authtype, ipmi_authtype_vals));
@@ -751,9 +751,6 @@ void read_rakp2_message(struct ipmi_rs * rsp, int offset, unsigned char auth_alg
 		 for (i = 0; i < 20; ++i)
 			 rsp->payload.rakp2_message.key_exchange_auth_code[i] =
 				 rsp->data[offset + 40 + i];
-		 #if WORDS_BIGENDIAN
-		 lanplus_swap(rsp->payload.rakp2_message.key_exchange_auth_code, 20);
-		 #endif
 		 break;
 
 	 case IPMI_AUTH_RAKP_HMAC_MD5:
@@ -813,11 +810,6 @@ void read_rakp4_message(struct ipmi_rs * rsp, int offset, unsigned char integrit
 		 for (i = 0; i < 12; ++i)
 			 rsp->payload.rakp4_message.integrity_check_value[i] =
 				 rsp->data[offset + 8 + i];
-
-		 #if WORDS_BIGENDIAN
-		 lanplus_swap(rsp->payload.rakp4_message.integrity_check_value, 12);
-		 #endif
-
 		 break;
 
 	 case IPMI_INTEGRITY_HMAC_MD5_128:
@@ -882,27 +874,13 @@ void read_session_data_v2x(struct ipmi_rs      * rsp,
 						   int                 * offset,
 						   struct ipmi_session * s)
 {
-	//rsp->session.authtype = rsp->data[*offset];
 	rsp->session.authtype = rsp->data[(*offset)++];
 
 	rsp->session.bEncrypted     = (rsp->data[*offset] & 0x80 ? 1 : 0);
 	rsp->session.bAuthenticated = (rsp->data[*offset] & 0x40 ? 1 : 0);
-	//++(*offset);
-
-
-	/*
-	 * We don't yet support encrypted or authenticated messages
-	 */
-	//if (rsp->session.bEncrypted  || rsp->session.bAuthenticated)
-	//{
-	//	printf("Encryted : %d, Authenticated : %d, not supported\n",
-	//		   rsp->session.bEncrypted, rsp->session.bAuthenticated);
-	//	assert(0);
-	//}
 
 
 	/* Payload type */
-	//rsp->session.payloadtype = rsp->data[(*offset)++];
 	rsp->session.payloadtype = rsp->data[(*offset)++] & 0x3F;
 
 	/* Session ID */
@@ -935,122 +913,8 @@ void read_session_data_v2x(struct ipmi_rs      * rsp,
 	memcpy(&rsp->session.msglen, rsp->data + *offset, 2);
 	*offset += 2;
 	#if WORDS_BIGENDIAN
-	rsp->session.msglen = BSWAP_32(rsp->session.msglen);
+	rsp->session.msglen = BSWAP_16(rsp->session.msglen);
 	#endif
-}
-
-
-
-/*
- * read_session_data_v2x
- *
- * Initialize the ipmi_rsp from the v2.x session header of the packet.
- *
- * The offset should point to the first byte of the the IPMI session when this
- * function is called.  When this function exits, offset will point to the
- * start of payload.
- *
- * This function decrypts the packet if encryption is enabled, and checks the
- * authcode if there is a specified integrity algorithm.
- *
- * param rsp    [in/out] we read from the data buffer and populate the session
- *              specific fields.
- * param offset [in/out] should point to the beginning of the session when this
- *              function is called.  The offset will be adjusted to point to the
- *              end of the session when this function exits.
- * param s      holds our session state
- */
-void read_session_data_v2x2(struct ipmi_rs      * rsp,
-							int                 * offset,
-							struct ipmi_session * s)
-{
-	rsp->session.authtype = rsp->data[*offset];
-
-	rsp->session.bEncrypted     = (rsp->data[*offset] & 0x80 ? 1 : 0);
-	rsp->session.bAuthenticated = (rsp->data[*offset] & 0x40 ? 1 : 0);
-	++(*offset);
-
-
-	/* Payload type */
-	rsp->session.payloadtype = rsp->data[(*offset)++];
-
-	/* Session ID */
-	memcpy(&rsp->session.id, rsp->data + *offset, 4);
-	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.id = BSWAP_32(rsp->session.id);
-	#endif
-
-
-	/*
-	 * Verify that the session ID is what we think it should be
-	 */
-	if ((s->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
-		(rsp->session.id != s->v2_data.console_id))
-	{
-		printf("packet session id 0x%x does not match active session 0x%0x\n",
-			   rsp->session.id, s->v2_data.console_id);
-		assert(0);
-	}
-
-
-	/* Ignored, so far */
-	memcpy(&rsp->session.seq, rsp->data + *offset, 4);
-	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.seq = BSWAP_32(rsp->session.seq);
-	#endif		
-
-
-	memcpy(&rsp->session.msglen, rsp->data + *offset, 2);
-	*offset += 2;
-	#if WORDS_BIGENDIAN
-	rsp->session.msglen = BSWAP_32(rsp->session.msglen);
-	#endif
-
-
-	/* Confidentiality Header */
-	//if (rsp->session.bEncrypted)
-	//{
-		/*
-		 * Some work here involved in decrypting the payload
-		 */
-	//printf("ERROR.  We don't support encryption");
-	//assert(0);
-
-		/*
-		 * BTW, when we decyrpt our packet, we should put the decyrpted
-		 * version in the same place it would be if the payload were
-		 * not encrypted, so that we can keep our code simple, below.
-		 */
-	//	}
-
-
-	/* PAYLOAD WOULD BE HERE */
-
-
-	/* Confidentiality trailer */
-	//if (rsp->session.bEncrypted)
-	//{
-		/*
-		 * Some work here involved in decrypting the payload
-		 */
-	//	printf("ERROR: we don't support encryption");
-	//	assert(0);
-	//}
-
-
-	/*
-	 * Session Trailer
-	 */
-	//if (rsp->session.bEncrypted && (rsp->session.id != 0))
-	//{
-		/*
-		 * Some work here involved in validating the packet
-		 */
-	//	printf("ERROR: we don't support encryption");
-	//	assert(0);
-	//}
 }
 
 
@@ -1121,78 +985,6 @@ void read_ipmi_response(struct ipmi_rs * rsp, int * offset)
 
 }
 
-
-
-/*
- * getIpmiPayloadWireRepOld
- *
- * Place the IPMI request in proper wire representation, starting at
- * msg[len].  Encyrpt the request according to crypt_alg, the output
- * includes the confidentiality header and and trailer if appropriate.
- *
- * param msg [out] will contain our wire representation
- * param len [in, out] is our index, where we start writing
- * param req [in] is the IPMI request to be written
- * param crypt_alg [in] specifies the encryption to use
- * param rq_seq [in] is the IPMI command sequence number.
- */
-/* void getIpmiPayloadWireRepOld(char           * msg, */
-/* 							  int            * len, */
-/* 							  struct ipmi_rq * req, */
-/* 							  unsigned char    crypt_alg, */
-/* 							  unsigned char  * k2, */
-/* 							  unsigned char    rq_seq) */
-/* { */
-/* 	// Write our plaintext output to a buffer and call */
-/* 	// lanplus_encrypt.  We should probably create our session */
-/* 	// header here -- with the IV. */
-/* 	// The confidentiality trailer is encrypted, so make room for it, too. */
-
-/* 	int cs, mp, tmp; */
-
-/* 	/\* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec *\/ */
-/* 	cs = mp = *len; */
-
-/* 	/\* rsAddr *\/ */
-/* 	msg[(*len)++] = IPMI_BMC_SLAVE_ADDR;  */
-
-/* 	/\* net Fn *\/ */
-/* 	msg[(*len)++] = req->msg.netfn << 2; */
-/* 	tmp = *len - cs; */
-
-/* 	/\* checkSum *\/ */
-/* 	msg[(*len)++] = ipmi_csum(msg+cs, tmp); */
-/* 	cs = (*len); */
-
-/* 	/\* rqAddr *\/ */
-/* 	msg[(*len)++] = IPMI_REMOTE_SWID; */
-
-/* 	/\* rqSeq / rqLUN *\/ */
-/* 	msg[(*len)++] = rq_seq << 2; */
-
-/* 	/\* cmd *\/ */
-/* 	msg[(*len)++] = req->msg.cmd; */
-
-/* 	/\* message data *\/ */
-/* 	if (req->msg.data_len) { */
-/* 		memcpy(msg + *len, */
-/* 			   req->msg.data, */
-/* 			   req->msg.data_len); */
-/* 		*len += req->msg.data_len; */
-/* 	} */
-
-/* 	/\* second checksum *\/ */
-/* 	tmp = *len - cs; */
-/* 	msg[(*len)++] = ipmi_csum(msg+cs, tmp); */
-
-
-/* 	/\* Encrypt if necessary *\/ */
-/* 	if (crypt_alg != IPMI_CRYPT_NONE) */
-/* 	{ */
-/* 		printf("unknown encryption type"); */
-/* 		assert(0); */
-/* 	} */
-/* } */
 
 
 /*
@@ -1298,7 +1090,7 @@ void
 		.seq		= 0xff,
 	};
 
-	// msg will hold the entire message to be sent
+	/* msg will hold the entire message to be sent */
 	unsigned char * msg;
 
 	int len = 0;
@@ -1380,12 +1172,6 @@ void
 	switch (payload->payload_type)
 	{
 	case IPMI_PAYLOAD_TYPE_IPMI:
-		//getIpmiPayloadWireRep(msg,                                   /* out    */
-		//					  &len,                                  /* in/out */
-		//					  payload->payload.ipmi_request.request, /* in     */
-		//					  session->v2_data.crypt_alg,            /* in     */
-		//					  session->v2_data.k2,                   /* in     */
-		//					  payload->payload.ipmi_request.rq_seq); /* in     */
 		getIpmiPayloadWireRep(msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
 							  payload->payload.ipmi_request.request,
 							  payload->payload.ipmi_request.rq_seq);
@@ -1462,7 +1248,6 @@ void
 			IPMI_LANPLUS_OFFSET_PAYLOAD +
 			payload->payload_length;
 
-		//printf("authcode sees payload size of %d\n", payload->payload_length);
 
 		/*
 		 * Determine the required integrity pad length.  We have to make the
@@ -2341,9 +2126,6 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		else
 		{
 			/* Success */
-			#if WORDS_BIGENDIAN
-			lanplus_swap(msg + 8, auth_length);
-			#endif
 			v2_payload.payload_length += auth_length;
 		}
 
@@ -2686,6 +2468,7 @@ void test_crypt2()
 int lanplus_intf_setup(struct ipmi_intf ** intf)
 {
 	//test_crypt1();
+    assert("lanplus_intf_setup");
 
 	if (lanplus_seed_prng(16))
 		return -1;
