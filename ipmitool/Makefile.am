@@ -36,12 +36,26 @@ EXTRA_DIST = ipmitool.spec.in AUTHORS COPYING ChangeLog \
 	debian/changelog debian/control debian/copyright \
 	debian/dirs debian/docs debian/rules
 
+AUTOMAKE_OPTIONS = dist-bzip2
+
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	config.guess config.sub depcomp install-sh ltmain.sh missing \
-	mkinstalldirs config.h.in stamp-h.in $(distdir).tar.gz
+	mkinstalldirs config.h.in stamp-h.in \
+	$(distdir).tar.gz $(distdir).tar.bz2
 
-SUBDIRS = libltdl lib src include doc contrib
+SUBDIRS = libltdl lib src include doc contrib control
 
 dist-hook: ipmitool.spec
 	cp ipmitool.spec $(distdir)
+
+solaris-pkg: SOLARIS_NAME := SUNW@IPMITOOL_BIN@
+solaris-pkg: SOLARIS_PACKAGE := $(SOLARIS_NAME)-@VERSION@-@OS@-@ARCH@
+solaris-pkg: DESTDIR := /tmp/$(SOLARIS_NAME)
+solaris-pkg: control/pkginfo
+	$(MAKE) DESTDIR=$(DESTDIR) install-strip
+	$(STRIP) $(DESTDIR)$(prefix)/bin/@IPMITOOL_BIN@
+	(cd control ; pkgmk -o -r $(DESTDIR))
+	pkgtrans -s spool $(DESTDIR)/$(SOLARIS_PACKAGE) $(SOLARIS_NAME)
+	gzip -c $(DESTDIR)/$(SOLARIS_PACKAGE) > $(SOLARIS_PACKAGE).gz
+	rm -rf $(DESTDIR)
 
