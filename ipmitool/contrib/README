@@ -1,0 +1,93 @@
+
+Graphs for ipmitool
+-------------------
+
+This is a set of shell-scripts to quickly create a webpage with pretty graphs!
+
+Prerequisites are a webserver with cgi-bin support and RRDtool, a data
+collection and graphing utility you can get here:
+
+http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
+
+
+First, decide on a directory where to store the RRDtool database files and make
+sure it exists. The user that will run the cronjob to collect updates must have
+write permissions in this dir.
+
+Next, you'll need to edit some variables at the top of each script.
+
+Common to all scripts:
+
+hostname	Override this if you are collecting data from a remote host,
+		or if the $HOSTNAME variable is incorrect. 
+
+ipmi_cmd	Command line used to call ipmitool. Default is to collect
+		data from the local server using OpenIPMI.
+
+		If you want to collect data from a remote host, add the
+		-I lan, -H, -U and -P options as necessary.
+
+		BIG NOTE! I do not recommend using remote data collection since
+		you'll have to store the password in the script. If you do,
+		make sure unauthorized people can't read or execute the scripts
+		or they'll be able to wreak havoc on your server.
+
+rrd_dir		Enter the dir where to store the RRDtool database here.
+
+
+Now you can get the data collection going. Run create_rrds.sh to create the
+RDDtool database, you'll find one .rrd file per sensor in the designated dir.
+Add a line to your crontab that executes collect_data.sh every 5 minutes.
+
+Something like this:
+*/5 * * * * /usr/local/bin/collect_data.sh
+
+If you are a Solaris user you'll have to write the more verbose:
+0,5,10,15,20,25,30,35,40,45,50,55 * * * * /usr/local/bin/collect_data.sh
+
+
+Finally it's time to create the webpage, begin with editing some more variables
+in the create_webpage.sh and/or create_webpage_compact.sh scripts:
+
+img_dir		Directory to store the graph images. This path must be within
+		the document root and writable by the web server user.
+
+		Example: /usr/local/apache2/htdocs/images/graphs
+
+web_dir		Relative path of the URL where the images will show up
+		on the web server.
+
+		Example: With the img_dir path above the corresponding web_dir
+		would be /images/graphs
+
+graph_width	Size of the graph area in pixels (excluding title, legends etc.)
+graph_height
+
+graph_daily	Decide which of daily, weekly and monthly graphs you want
+graph_weekly	included on the page.
+graph_monthly
+
+
+Finally run the create webpage script and store the output as a cgi-script and
+don't forget to make it executable.
+
+Example:
+
+create_webpage.sh > /usr/local/apache2/cgi-bin/my_ipmi_graphs.cgi
+chmod 755 /usr/local/apache2/cgi-bin/my_ipmi_graphs.cgi
+
+Now you can surf to http://my.server.com/cgi-bin/my_ipmi_graphs.cgi and enjoy!
+
+
+The difference between create_webpage.sh and create_webpage_compact.sh is that
+the first script displays sensor thresholds in the graphs. The second script
+collects all sensors that measure the same unit into the same graph thus
+producing a lot fewer graphs.
+
+Note, RRDtool sometimes scales the graphs such that the sensor thresholds
+fall outside the visible area.
+
+
+Happy graphing!
+
+
