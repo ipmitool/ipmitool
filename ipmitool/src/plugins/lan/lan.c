@@ -1094,6 +1094,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 
 	memcpy(&s->session_id, rsp->data + 1, 4);
 	s->in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
+	if (!s->in_seq) ++s->in_seq;
 	s->authtype = rsp->data[0] & 0xf;
 
 	if (verbose > 1) {
@@ -1150,7 +1151,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 }
 
 static int
-impi_close_session_cmd(struct ipmi_intf * intf)
+ipmi_close_session_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1254,7 +1255,7 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 void ipmi_lan_close(struct ipmi_intf * intf)
 {
 	if (!intf->abort)
-		impi_close_session_cmd(intf);
+		ipmi_close_session_cmd(intf);
 
 	if (intf->fd >= 0)
 		close(intf->fd);
