@@ -59,7 +59,7 @@ extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
  * returns pointer to FRU area string
  */
 static char *
-get_fru_area_str(uint8_t * data, int * offset)
+get_fru_area_str(uint8_t * data, uint32_t * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
 	char * str;
