@@ -380,6 +380,13 @@ printf_channel_usage()
 {
 	printf("Channel Commands: authcap <channel number> <max priv>\n");
 	printf("                  info    [channel number]\n");
+	printf("\n");
+	printf("Possible privelige levels are:\n");
+	printf("   1   Callback level\n");
+	printf("   2   User level\n");
+	printf("   3   Operator level\n");
+	printf("   4   Administrator level\n");
+	printf("   5   OEM Proprietary level\n");
 }
 
 
