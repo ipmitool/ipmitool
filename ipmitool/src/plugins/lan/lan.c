@@ -36,7 +36,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -60,10 +60,9 @@
 struct ipmi_rq_entry * ipmi_req_entries;
 static struct ipmi_rq_entry * ipmi_req_entries_tail;
 
-extern int h_errno;
 int verbose;
 
-static int recv_timeout = 1;
+static int recv_timeout = IPMI_LAN_TIMEOUT;
 static int curr_seq;
 static sigjmp_buf jmpbuf;
 struct ipmi_session lan_session;
@@ -195,15 +194,10 @@ get_random(void *data, unsigned int len)
 
 int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len)
 {
-	socklen_t addrlen;
-
 	if (verbose > 2)
 		printbuf(data, data_len, "send_packet");
 
-	addrlen = sizeof(intf->addr);
-
 	return send(intf->fd, data, data_len, 0);
-		    //   (struct sockaddr *)&intf->addr, addrlen);
 }
 
 struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
@@ -661,6 +655,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct ipmi_rq_entry * entry;
 	struct ipmi_rs * rsp;
+	int try = 0;
 
 	entry = ipmi_lan_build_cmd(intf, req);
 	if (!entry) {
@@ -668,17 +663,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		return NULL;
 	}
 
-	if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
-		printf("ipmi_lan_send_cmd failed\n");
-		free(entry->msg_data);
-		return NULL;
-	}
-
-	if (intf->pedantic)
-		ipmi_lan_pedantic(intf);
-
-	rsp = ipmi_lan_poll_recv(intf);
-	if (!rsp) {
+	while (try < IPMI_LAN_RETRY) {
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
 			printf("ipmi_lan_send_cmd failed\n");
 			free(entry->msg_data);
@@ -688,11 +673,14 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		if (intf->pedantic)
 			ipmi_lan_pedantic(intf);
 
+		usleep(100);
+
 		rsp = ipmi_lan_poll_recv(intf);
-		if (!rsp) {
-			free(entry->msg_data);
-			return NULL;
-		}
+		if (rsp)
+			break;
+
+		usleep(5000);
+		try++;
 	}
 
 	free(entry->msg_data);
@@ -820,10 +808,10 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 		printf("Get Session Challenge error: ");
 		switch (rsp->ccode) {
 		case 0x81:
-			printf("invalid user name\n");
+			printf("Invalid user name\n");
 			break;
 		case 0x82:
-			printf("null user name not enabled\n");
+			printf("NULL user name not enabled\n");
 			break;
 		default:
 			printf("%02x\n", rsp->ccode);
@@ -884,7 +872,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		printf("error in Activate Session Command\n");
+		printf("Error in Activate Session Command\n");
 		lan_session.active = 0;
 		return -1;
 	}
@@ -895,24 +883,27 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		printf("Activate Session error: ");
 		switch (rsp->ccode) {
 		case 0x81:
-			printf("no session slot available\n");
+			printf("No session slot available\n");
 			break;
 		case 0x82:
-			printf("no slot available for given user - "
+			printf("No slot available for given user - "
 			       "limit reached\n");
 			break;
 		case 0x83:
-			printf("no slot available to support user "
+			printf("No slot available to support user "
 			       "due to maximum privilege capacity\n");
 			break;
 		case 0x84:
-			printf("session sequence number out of range\n");
+			printf("Session sequence number out of range\n");
 			break;
 		case 0x85:
-			printf("invalid session ID in request\n");
+			printf("Invalid session ID in request\n");
 			break;
 		case 0x86:
-			printf("requested privilege level exceeds limit\n");
+			printf("Requested privilege level exceeds limit\n");
+			break;
+		case 0xd4:
+			printf("Insufficient privilege level\n");
 			break;
 		default:
 			printf("%02x\n", rsp->ccode);
@@ -1048,11 +1039,8 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 		ipmi_lan_first(intf);
 
 	rc = ipmi_get_auth_capabilities_cmd(intf);
-	if (rc < 0) {
-		rc = ipmi_get_auth_capabilities_cmd(intf);
-		if (rc < 0)
-			return -1;
-	}
+	if (rc < 0)
+		return -1;
 
 	rc = ipmi_get_session_challenge_cmd(intf);
 	if (rc < 0)
@@ -1061,6 +1049,8 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	rc = ipmi_activate_session_cmd(intf);
 	if (rc < 0)
 		return -1;
+
+	intf->abort = 0;
 
 	rc = ipmi_set_session_privlvl_cmd(intf);
 	if (rc < 0)
@@ -1108,7 +1098,7 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 		memcpy(lan_session.authcode, password, strlen(password));
 	}
 
-	intf->abort = 0;
+	intf->abort = 1;
 
 	/* open port to BMC */
 	memset(&intf->addr, 0, sizeof(struct sockaddr_in));
