@@ -88,9 +88,11 @@ static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lanplus_send_ipmi_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 static struct ipmi_rs * ipmi_lanplus_send_payload(struct ipmi_intf * intf,
 												  struct ipmi_v2_payload * payload);
-void getIpmiPayloadWireRep(unsigned char  * out,
+static void getIpmiPayloadWireRep(unsigned char  * out,
 						   struct ipmi_rq * req,
 						   unsigned char    rq_seq);
+static void getSolPayloadWireRep(unsigned char          * msg,
+								 struct ipmi_v2_payload * payload);
 static void read_open_session_response(struct ipmi_rs * rsp, int offset);
 static void read_rakp2_message(struct ipmi_rs * rsp, int offset, unsigned char alg);
 static void read_rakp4_message(struct ipmi_rs * rsp, int offset, unsigned char alg);
@@ -98,14 +100,16 @@ static void read_session_data(struct ipmi_rs * rsp, int * offset, struct ipmi_se
 static void read_session_data_v15(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
 static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
 static void read_ipmi_response(struct ipmi_rs * rsp, int * offset);
-
+static void read_sol_packet(struct ipmi_rs * rsp, int * offset);
+struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
 
 
 struct ipmi_intf ipmi_lanplus_intf = {
 	.open        = ipmi_lanplus_open,
 	.close       = ipmi_lanplus_close,
 	.sendrecv    = ipmi_lanplus_send_ipmi_cmd,
-	.sendrecv_v2 = ipmi_lanplus_send_payload,
+	.recv_sol    = ipmi_lanplus_recv_sol
+	/* .send_sol    = ipmi_lanplus_send_sol */
 };
 
 
@@ -484,18 +488,19 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		offset = 4;
 
 
-		/*-----------------------------------------------------------------------
+		/*--------------------------------------------------------------------
 		 * 
 		 * The current packet could be one of several things:
 		 *
-		 * 1) An IPMI 1.5 packet (the response to our GET CHANNEL AUTHENTICATION
-		 *    CAPABILITIES request)
+		 * 1) An IPMI 1.5 packet (the response to our GET CHANNEL
+		 *    AUTHENTICATION CAPABILITIES request)
 		 * 2) An RMCP+ message with an IPMI reponse payload
 		 * 3) AN RMCP+ open session response
 		 * 4) An RAKP-2 message (response to an RAKP 1 message)
 		 * 5) An RAKP-4 message (response to an RAKP 3 message)
-		 * 6) An Invalid packet (one that doesn't match a request)
-		 * ----------------------------------------------------------------------
+		 * 6) A Serial Over LAN packet
+		 * 7) An Invalid packet (one that doesn't match a request)
+		 * -------------------------------------------------------------------
 		 */
 		read_session_data(rsp, &offset, intf->session);
 
@@ -508,8 +513,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 
 		
-		if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE)            &&
-			(rsp->session.authtype          == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+		if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE)    &&
+			(rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
 			(rsp->session.bEncrypted))
 
 		{
@@ -519,6 +524,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 									rsp->session.msglen,
 									rsp->data + offset,
 									&payload_size);
+
+			printf("DECRYPTING PAYLOAD size %d\n", payload_size);
 		}
 		else
 			payload_size = rsp->session.msglen;
@@ -538,20 +545,32 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				printf("<< IPMI Response Session Header\n");
 				printf("<<   Authtype                : %s\n",
 					   val2str(rsp->session.authtype, ipmi_authtype_vals));
-				printf("<<   Payload type            : 0x%x\n",    rsp->session.payloadtype);
-				printf("<<   Session ID              : 0x%08lx\n", rsp->session.id);
-				printf("<<   Sequence                : 0x%08lx\n", rsp->session.seq);
+				printf("<<   Payload type            : 0x%x\n",
+					   rsp->session.payloadtype);
+				printf("<<   Session ID              : 0x%08lx\n",
+					   rsp->session.id);
+				printf("<<   Sequence                : 0x%08lx\n",
+					   rsp->session.seq);
 					
-				printf("<<   IPMI Msg/Payload Length : %d\n",      rsp->session.msglen);
+				printf("<<   IPMI Msg/Payload Length : %d\n",
+					   rsp->session.msglen);
 				printf("<< IPMI Response Message Header\n");
-				printf("<<   Rq Addr    : %02x\n", rsp->payload.ipmi_response.rq_addr);
-				printf("<<   NetFn      : %02x\n", rsp->payload.ipmi_response.netfn);
-				printf("<<   Rq LUN     : %01x\n", rsp->payload.ipmi_response.rq_lun);
-				printf("<<   Rs Addr    : %02x\n", rsp->payload.ipmi_response.rs_addr);
-				printf("<<   Rq Seq     : %02x\n", rsp->payload.ipmi_response.rq_seq);
-				printf("<<   Rs Lun     : %01x\n", rsp->payload.ipmi_response.rs_lun);
-				printf("<<   Command    : %02x\n", rsp->payload.ipmi_response.cmd);
-				printf("<<   Compl Code : 0x%02x\n", rsp->ccode);
+				printf("<<   Rq Addr    : %02x\n",
+					   rsp->payload.ipmi_response.rq_addr);
+				printf("<<   NetFn      : %02x\n",
+					   rsp->payload.ipmi_response.netfn);
+				printf("<<   Rq LUN     : %01x\n",
+					   rsp->payload.ipmi_response.rq_lun);
+				printf("<<   Rs Addr    : %02x\n",
+					   rsp->payload.ipmi_response.rs_addr);
+				printf("<<   Rq Seq     : %02x\n",
+					   rsp->payload.ipmi_response.rq_seq);
+				printf("<<   Rs Lun     : %01x\n",
+					   rsp->payload.ipmi_response.rs_lun);
+				printf("<<   Command    : %02x\n",
+					   rsp->payload.ipmi_response.cmd);
+				printf("<<   Compl Code : 0x%02x\n",
+					   rsp->ccode);
 			}
 
 			/* Are we expecting this packet? */
@@ -585,11 +604,14 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 
 
- 		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_RMCP_OPEN_RESPONSE)
+ 		else if (rsp->session.payloadtype ==
+				 IPMI_PAYLOAD_TYPE_RMCP_OPEN_RESPONSE)
 		{
-			if (session->v2_data.session_state != LANPLUS_STATE_OPEN_SESSION_SENT)
+			if (session->v2_data.session_state !=
+				LANPLUS_STATE_OPEN_SESSION_SENT)
 			{
-				printf("Error: Received an Unexpected Open Session Response\n");
+				printf("Error: Received an Unexpected Open Session "
+					   "Response\n");
 				rsp = ipmi_lan_recv_packet(intf);
 				continue;
 			}
@@ -624,9 +646,33 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			break;
 		}
 
+		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)
+		{
+			int payload_start = offset;
+			int extra_data_length;
+
+			if (session->v2_data.session_state != LANPLUS_STATE_ACTIVE)
+			{
+				printf("Error: Received an Unexpected SOL packet\n");
+				rsp = ipmi_lan_recv_packet(intf);
+				continue;
+			}
+
+			read_sol_packet(rsp, &offset);
+			extra_data_length = payload_size - (offset - payload_start);
+			if (rsp && extra_data_length)
+			{
+				rsp->data_len = extra_data_length;
+				memmove(rsp->data, rsp->data + offset, extra_data_length);
+			}
+
+			break;
+		}
+
 		else
 		{
-			printf("Invalid RMCP+ payload type : 0x%x\n", rsp->session.payloadtype);
+			printf("Invalid RMCP+ payload type : 0x%x\n",
+				   rsp->session.payloadtype);
 			assert(0);
 		}
 	}
@@ -769,12 +815,13 @@ void read_rakp2_message(struct ipmi_rs * rsp, int offset, unsigned char auth_alg
  * The offset should point the first byte of the the RAKP 4 payload when this
  * function is called.
  *
- * param rsp [in/out] reading from the data variable and writing to the rakp 4
- *       section
+ * param rsp [in/out] reading from the data variable and writing to the rakp
+ *       4 section
  * param offset [in] tells us where hte rakp4 payload starts
- * param integrity_alg [in] describes the authentication algorithm was agreed upon
- *       in the open session request/response phase.  We need to know that here so
- *       that we know how many bytes (if any) to read fromt the packet.
+ * param integrity_alg [in] describes the authentication algorithm was
+ *       agreed upon in the open session request/response phase.  We need
+ *       to know that here so that we know how many bytes (if any) to read
+ *       from the packet.
  *
  * returns 0 on success, 1 on error
  */
@@ -814,8 +861,8 @@ void read_rakp4_message(struct ipmi_rs * rsp, int offset, unsigned char integrit
 
 	 case IPMI_INTEGRITY_HMAC_MD5_128:
 	 case IPMI_INTEGRITY_MD5_128:
-		 printf("read_rakp4_message: no support for integrity algorithm 0x%x\n",
-				integrity_alg);
+		 printf("read_rakp4_message: no support for integrity algorithm "
+				"0x%x\n", integrity_alg);
 		 assert(0);
 		 break;	 
 	 }
@@ -988,6 +1035,78 @@ void read_ipmi_response(struct ipmi_rs * rsp, int * offset)
 
 
 /*
+ * read_sol_packet
+ *
+ * Initialize the impi_rs with the SOL response data
+ *
+ * The offset should point the first byte of the the SOL payload when this
+ * function is called. 
+ *
+ * param rsp    [in/out] we read from the data buffer and populate the
+ *              SOL specific fields.
+ * param offset [in/out] should point to the beginning of the SOL payload
+ *              when this function is called.
+ */
+void read_sol_packet(struct ipmi_rs * rsp, int * offset)
+{
+	/*
+	 * The data here should be decrypted by now.
+	 */
+	rsp->payload.sol_packet.packet_sequence_number =
+		rsp->data[(*offset)++] & 0x0F;
+
+	rsp->payload.sol_packet.acked_packet_number =
+		rsp->data[(*offset)++] & 0x0F;
+
+	rsp->payload.sol_packet.accepted_character_count =
+		rsp->data[(*offset)++] & 0x0F;
+
+	rsp->payload.sol_packet.is_nack =
+		rsp->data[*offset] & 0x40;
+
+	rsp->payload.sol_packet.transfer_unavailable =
+		rsp->data[*offset] & 0x20;
+
+	rsp->payload.sol_packet.sol_inactive = 
+		rsp->data[*offset] & 0x10;
+
+	rsp->payload.sol_packet.transmit_overrun =
+		rsp->data[*offset] & 0x08;
+	
+	rsp->payload.sol_packet.break_detected =
+		rsp->data[(*offset)++] & 0x04;
+
+	if (verbose)
+	{
+		printf("SOL sequence number     : 0x%02x\n",
+			   rsp->payload.sol_packet.packet_sequence_number);
+
+		printf("SOL acked packet        : 0x%02x\n",
+			   rsp->payload.sol_packet.acked_packet_number);
+
+		printf("SOL accepted char count : 0x%02x\n",
+			   rsp->payload.sol_packet.accepted_character_count);
+
+		printf("SOL is nack             : %s\n",
+			   rsp->payload.sol_packet.is_nack? "true" : "false");
+
+		printf("SOL xfer unavailable    : %s\n",
+			   rsp->payload.sol_packet.transfer_unavailable? "true" : "false");
+		
+		printf("SOL inactive            : %s\n",
+			   rsp->payload.sol_packet.sol_inactive? "true" : "false");
+
+		printf("SOL transmit overrun    : %s\n",
+			   rsp->payload.sol_packet.transmit_overrun? "true" : "false");
+
+		printf("SOL break detected      : %s\n",
+			   rsp->payload.sol_packet.break_detected? "true" : "false");
+	}
+}
+
+
+
+/*
  * getIpmiPayloadWireRep
  *
  * param out [out] will contain our wire representation
@@ -1037,6 +1156,44 @@ void getIpmiPayloadWireRep(unsigned char  * msg,
 	/* second checksum */
 	tmp = i - cs;
 	msg[i++] = ipmi_csum(msg+cs, tmp);
+}
+
+
+
+/*
+ * getSolPayloadWireRep
+ *
+ * param msg [out] will contain our wire representation
+ * param payload [in] holds the v2 payload with our SOL data
+ */
+void getSolPayloadWireRep(unsigned char          * msg,     /* output */
+						  struct ipmi_v2_payload * payload) /* input */
+{
+	int i = 0;
+
+	msg[i++] = payload->payload.sol_packet.packet_sequence_number;
+	msg[i++] = payload->payload.sol_packet.acked_packet_number;
+	msg[i++] = payload->payload.sol_packet.accepted_character_count;
+	
+	msg[i]    = payload->payload.sol_packet.is_nack           ? 0x40 : 0;
+	msg[i]   |= payload->payload.sol_packet.assert_ring_wor   ? 0x20 : 0;
+	msg[i]   |= payload->payload.sol_packet.generate_break    ? 0x10 : 0;
+	msg[i]   |= payload->payload.sol_packet.deassert_cts      ? 0x08 : 0;
+	msg[i]   |= payload->payload.sol_packet.deassert_dcd_dsr  ? 0x04 : 0;
+	msg[i]   |= payload->payload.sol_packet.flush_inbound     ? 0x02 : 0;
+	msg[i++] |= payload->payload.sol_packet.flush_outbound    ? 0x01 : 0;
+
+	/* We may have data to add */
+	memcpy(msg + i,
+		   payload->payload.sol_packet.data,
+		   payload->payload_length);
+
+	/*
+	 * At this point, the payload length becomes the whole payload
+	 * length, including the 4 bytes at the beginning of the SOL
+	 * packet
+	 */
+	payload->payload_length = payload->payload_length + 4;
 }
 
 
@@ -1177,6 +1334,13 @@ void
 							  payload->payload.ipmi_request.rq_seq);
 		break;
 
+	case IPMI_PAYLOAD_TYPE_SOL: 
+		getSolPayloadWireRep(msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
+							 payload);
+		len += payload->payload_length;
+
+		break;
+
 	case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
 		/* never encrypted, so our job is easy */
 		memcpy(msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
@@ -1201,13 +1365,11 @@ void
 		len += payload->payload_length;
 		break;
 
-	case IPMI_PAYLOAD_TYPE_SOL: 
 	default:
 		printf("unsupported payload type 0x%x\n", payload->payload_type);
 		assert(0);
 		break;
 	}
-
 
 
 	/*
@@ -1342,9 +1504,10 @@ static struct ipmi_rq_entry *
 	struct ipmi_rq_entry * entry;
 
 	/*
-	 * We have a problem.  we need to know the sequence number here, because we use it
-	 * in our stored entry.  But we also need to know the sequence number when we
-	 * generate our IPMI representation far below.
+	 * We have a problem.  we need to know the sequence number here,
+	 * because we use it in our stored entry.  But we also need to
+	 * know the sequence number when we generate our IPMI
+	 * representation far below.
 	 */
  	static unsigned char curr_seq = 0;
 	if (curr_seq >= 64)
@@ -1455,7 +1618,9 @@ static struct ipmi_rq_entry *
 	/*
 	 * ipmi session header
 	 */
-	/* Authtype should always be none for 1.5 packets sent from this interface */
+	/* Authtype should always be none for 1.5 packets sent from this
+	 * interface
+	 */
 	msg[len++] = IPMI_SESSION_AUTHTYPE_NONE;
 
 	msg[len++] = session->out_seq & 0xff;
@@ -1464,9 +1629,9 @@ static struct ipmi_rq_entry *
 	msg[len++] = (session->out_seq >> 24) & 0xff;
 
 	/*
-	 * The session ID should be all zeroes for pre-session commands.  We should only
-	 * be using the 1.5 interface for the pre-session Get Channel Authentication
-	 * Capabilities command
+	 * The session ID should be all zeroes for pre-session commands.  We
+	 * should only be using the 1.5 interface for the pre-session Get
+	 * Channel Authentication Capabilities command
 	 */
 	msg[len++] = 0;
 	msg[len++] = 0;
@@ -1556,23 +1721,39 @@ struct ipmi_rs *
 		struct ipmi_rq_entry * entry;
 		struct ipmi_rq * ipmi_request = payload->payload.ipmi_request.request;
 
+		if (verbose >= 1)
+		{
+			unsigned short i;
+
+			printf("\n");
+			printf(">> Sending IPMI command payload\n");
+			printf(">>    netfn   : 0x%02x\n", ipmi_request->msg.netfn);
+			printf(">>    command : 0x%02x\n", ipmi_request->msg.cmd);
+			printf(">>    data    : ");
+
+			for (i = 0; i < ipmi_request->msg.data_len; ++i)
+				printf("0x%02x ", ipmi_request->msg.data[i]);
+			printf("\n\n");
+		}
+
+
 		/*
 		 * If we are presession, and the command is GET CHANNEL AUTHENTICATION
 		 * CAPABILITIES, we will build the command in v1.5 format.  This is so
-		 * that we can ask any server whether it supports IPMI v2 / RMCP+ before
-		 * we attempt to open a v2.x session.
+		 * that we can ask any server whether it supports IPMI v2 / RMCP+
+		 * before we attempt to open a v2.x session.
 		 */
 		if ((ipmi_request->msg.netfn == IPMI_NETFN_APP) &&
 			(ipmi_request->msg.cmd   == IPMI_GET_CHANNEL_AUTH_CAP) &&
 			(session->v2_data.bmc_id  == 0)) // jme - check
 		{
-			if (verbose)
+			if (verbose >= 2)
 				printf("BUILDING A v1.5 COMMAND\n");
 			entry = ipmi_lanplus_build_v15_ipmi_cmd(intf, ipmi_request);
 		}
 		else
 		{
-			if (verbose)
+			if (verbose >= 2)
 				printf("BUILDING A v2 COMMAND\n");
 			entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request);
 		}
@@ -1603,7 +1784,8 @@ struct ipmi_rs *
 	{
 		if (verbose)
 			printf(">> SENDING A RAKP 1 MESSAGE \n\n");
-		assert(session->v2_data.session_state == LANPLUS_STATE_OPEN_SESSION_RECEIEVED);
+		assert(session->v2_data.session_state ==
+			   LANPLUS_STATE_OPEN_SESSION_RECEIEVED);
 
 		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
 								   payload,     /* in  */
@@ -1616,13 +1798,26 @@ struct ipmi_rs *
 	{
 		if (verbose)
 			printf(">> SENDING A RAKP 3 MESSAGE \n\n");
-		assert(session->v2_data.session_state == LANPLUS_STATE_RAKP_2_RECEIVED);
+		assert(session->v2_data.session_state ==
+			   LANPLUS_STATE_RAKP_2_RECEIVED);
 
 		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
 								   payload,     /* in  */
 								   &msg_length, /* out */
 								   &msg_data);  /* out */
 
+	}
+
+	else if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
+	{
+		if (verbose)
+			printf(">> SENDING A SOL MESSAGE \n\n");
+		assert(session->v2_data.session_state == LANPLUS_STATE_ACTIVE);
+
+		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
+								   payload,     /* in  */
+								   &msg_length, /* out */
+								   &msg_data);  /* out */
 	}
 
 	else
@@ -1659,6 +1854,13 @@ struct ipmi_rs *
 			break;
 		}
 
+		if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
+		{
+			// jme : todo.  If the payload is not an ACK we need to wait
+			// for an ack.  And if we don't receive an ACK, we need to
+			// resend.
+			break;
+		}
 
 
 		rsp = ipmi_lan_poll_recv(intf);
@@ -1672,6 +1874,45 @@ struct ipmi_rs *
 	return rsp;
 }
 
+
+
+/*
+ * ipmi_lanplus_recv_sol
+ *
+ * Receive a SOL packet and send an ACK in response.
+ *
+ */
+struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
+{
+	struct ipmi_v2_payload ack;
+	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
+	
+	/* If the SOL packet looks good, ACK it */
+	if (rsp)
+	{
+		bzero(&ack, sizeof(struct ipmi_v2_payload));
+
+		ack.payload_type   = IPMI_PAYLOAD_TYPE_SOL;
+
+		/*
+		 * Payload length is just the length of the character
+		 * data here.
+		 */
+		ack.payload_length = 0;
+
+		ack.payload.sol_packet.packet_sequence_number =
+			intf->session->sol_data.sequence_number++;
+
+		ack.payload.sol_packet.acked_packet_number =
+			rsp->payload.sol_packet.packet_sequence_number;
+
+		ack.payload.sol_packet.accepted_character_count = rsp->data_len;
+		
+		ipmi_lanplus_send_payload(intf, &ack);
+	}
+	
+	return rsp;
+}
 
 
 /**
