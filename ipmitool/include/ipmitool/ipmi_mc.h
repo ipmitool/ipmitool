@@ -45,6 +45,7 @@
 #define BMC_GET_SELF_TEST		0x04
 #define BMC_SET_GLOBAL_ENABLES		0x2e
 #define BMC_GET_GLOBAL_ENABLES		0x2f
+#define BMC_GET_GUID			0x37
 
 int ipmi_mc_main(struct ipmi_intf *, int, char **);
 
