@@ -63,8 +63,6 @@
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
-#else
-# define IPMITOOL_BIN	"ipmitool"
 #endif
 
 int csv_output = 0;
@@ -72,27 +70,31 @@ int verbose = 0;
 
 void usage(void)
 {
-	printf("%s version %s\n", IPMITOOL_BIN, VERSION);
+	printf("ipmitool version %s\n", VERSION);
 	printf("\n");
-	printf("usage: %s [options...] <command>\n", IPMITOOL_BIN);
+	printf("usage: ipmitool [options...] <command>\n");
 	printf("\n");
 	printf("       -h            This help\n");
 	printf("       -V            Show version information\n");
 	printf("       -v            Verbose (can use multiple times)\n");
-	printf("       -c            CSV output suitable for parsing\n");
-	printf("       -g            Attempt to be extra robust in LAN communications\n");
-	printf("       -H hostname   Remote host name for LAN interface\n");
-	printf("       -p port       Remote RMCP port (default is 623)\n");
-	printf("       -U username   Remote username\n");
-	printf("       -a            Prompt for remote password\n");
-	printf("       -E            Read remote password from environment variable IPMI_PASSWORD\n");
-	printf("       -P password   Remote password\n");
-	printf("       -L level      Session privilege level [default=USER]\n");
+	printf("       -c            Display output in comma separated format\n");
 	printf("       -I intf       Inteface to use\n");
+	printf("       -H hostname   Remote host name for LAN interface\n");
+	printf("       -p port       Remote RMCP port [default=623]\n");
+	printf("       -L level      Remote session privilege level [default=USER]\n");
+	printf("       -U username   Remote session username\n");
+	printf("       -P password   Remote session password\n");
+	printf("       -f file       Read remote session password from file\n");
+	printf("       -a            Prompt for remote password\n");
+	printf("       -E            Read password from IPMI_PASSWORD environment variable\n");
+	printf("       -m address    Set local IPMB address\n");
+	printf("       -t address    Bridge request to remote target address\n");
 	printf("\n\n");
-	printf("Commands:  bmc, chassis, event, fru, lan, raw, "
-		   "sdr, sel, sensor, user, sol, isol\n"
-		   "           channel, session\n\n");
+	printf("Commands:\n");
+	printf("\tbmc, chassis, event, fru, lan, raw, sol, isol,\n"
+	       "\tsel, sdr, sensor, user, channel, session\n\n");
+	printf("Interfaces:\n");
+	ipmi_intf_print();
 	printf("\n\n");
 }
 
@@ -158,34 +160,84 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 
+static char * ipmi_password_file_read(char * file)
+{
+	struct stat st1, st2;
+	int fp;
+	char * pass = NULL;
+
+	/* verify existance */
+	if (lstat(file, &st1) < 0) {
+		return NULL;
+	}
+
+	/* only regular files: no links */
+	if (!S_ISREG(st1.st_mode) || st1.st_nlink != 1) {
+		return NULL;
+	}
+
+	/* open it read-only */
+	if ((fp = open(file, O_RDONLY, 0)) < 0) {
+		return NULL;
+	}
+
+	/* stat again */
+	if (fstat(fp, &st2) < 0) {
+		close(fp);
+		return NULL;
+	}
+
+	/* verify inode, owner, link count */
+	if (st2.st_ino != st1.st_ino ||
+	    st2.st_uid != st1.st_uid ||
+	    st2.st_nlink != 1) {
+		close(fp);
+		return NULL;
+	}
+
+	pass = malloc(16);
+	if (!pass) {
+		close(fp);
+		return NULL;
+	}
+
+	/* read in id */
+	if (read(fp, pass, 16) < 0) {
+		close(fp);
+		return NULL;
+	}
+
+	/* close file */
+	close(fp);
+
+	return pass;
+}
+
 
 int main(int argc, char ** argv)
 {
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
-	char * tmp, * hostname = NULL, * username = NULL, * password = NULL;
-	int port = 0, argflag, i, intfarg = 0, rc = 0, pedantic = 0;
-	char intfname[32];
-	unsigned char privlvl = 0;
+	char * tmp, * hostname = NULL, * username = NULL, * password = NULL, * intfname = NULL;
+	int port = 0, argflag, i, intfarg = 0, rc = 0, thump = 0;
+	unsigned char privlvl = 0, target_addr = 0, my_addr = 0;
 
-	memset(intfname, 0, sizeof(intfname));
-
-	while ((argflag = getopt(argc, (char **)argv, "I:hVvcgEaH:P:U:p:L:")) != -1)
+	while ((argflag = getopt(argc, (char **)argv, "I:hVvcgEaH:P:f:U:p:L:t:m:")) != -1)
 	{
 		switch (argflag) {
 		case 'I':
-			intfarg = snprintf(intfname, sizeof(intfname), "intf_%s", optarg);
+			intfname = strdup(optarg);
 			break;
 		case 'h':
 			usage();
 			goto out_free;
 			break;
 		case 'V':
-			printf("%s version %s\n", IPMITOOL_BIN, VERSION);
+			printf("ipmitool version %s\n", VERSION);
 			goto out_free;
 			break;
 		case 'g':
-			intf->pedantic = 1;
+			thump = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -204,6 +256,13 @@ int main(int argc, char ** argv)
 			/* Prevent password snooping with ps */
 			i = strlen (optarg);
 			memset (optarg, 'X', i);
+			break;
+		case 'f':
+			if (password)
+				free(password);
+			password = ipmi_password_file_read(optarg);
+			if (!password)
+				printf("Unable to read password from file %s.\n", optarg);
 			break;
 		case 'E':
 			if ((tmp = getenv ("IPMITOOL_PASSWORD")))
@@ -243,6 +302,12 @@ int main(int argc, char ** argv)
 		case 'p':
 			port = atoi(optarg);
 			break;
+		case 't':
+			target_addr = (unsigned char)strtol(optarg, NULL, 0);
+			break;
+		case 'm':
+			my_addr = (unsigned char)strtol(optarg, NULL, 0);
+			break;
 		default:
 			usage();
 			goto out_free;
@@ -256,18 +321,14 @@ int main(int argc, char ** argv)
 	}
 
 	/* load interface */
-	if (intfarg) {
-		intf = ipmi_intf_load(intfname);
-		if (!intf) {
-			printf("Error loading interface %s\n", intfname);
-			goto out_free;
-		}
-		strncpy(intf->name, intfname, strlen(intfname));
-	} else {
-		printf("No interface specified!\n");
-		usage();
+	intf = ipmi_intf_load(intfname);
+	if (!intf) {
+		printf("Error loading interface %s\n", intfname);
 		goto out_free;
 	}
+
+	/* setup log */
+	log_init("ipmitool", 0, verbose);
 
 	/* set session variables */
 	if (hostname)
@@ -281,7 +342,21 @@ int main(int argc, char ** argv)
 	if (privlvl)
 		ipmi_intf_session_set_privlvl(intf, privlvl);
 
+	intf->thump = thump;
+	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
+
+	if (target_addr) {
+		if (intf->open)
+			intf->open(intf);
+		intf->target_addr = target_addr;
+		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+	}
+
 	/* handle sub-commands */
+	if (!strncmp(argv[optind], "help", 4)) {
+		usage();
+		goto out_free;
+	}
 	if (!strncmp(argv[optind], "event", 5)) {
 		submain = ipmi_event_main;
 	}
@@ -325,7 +400,7 @@ int main(int argc, char ** argv)
 		submain = ipmi_session_main;
 	}
 	else {
-		printf("Invalid comand: %s\n", argv[optind]);
+		printf("Invalid command: %s\n", argv[optind]);
 		rc = -1;
 		goto out_free;
 	}
@@ -336,12 +411,14 @@ int main(int argc, char ** argv)
 	rc = submain(intf, argc-optind-1, &(argv[optind+1]));
 
  out_close:
-	if (intf->close)
+	if (intf->opened && intf->close)
 		intf->close(intf);
 
  out_free:
-	ipmi_intf_exit();
+	log_halt();
 
+	if (intfname)
+		free(intfname);
 	if (hostname)
 		free(hostname);
 	if (username)
