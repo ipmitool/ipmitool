@@ -2544,11 +2544,12 @@ int ipmi_lanplus_open(struct ipmi_intf * intf)
 
 
 	/* Setup our lanplus session state */
-	session->v2_data.session_state  = LANPLUS_STATE_PRESESSION;
-	session->v2_data.auth_alg       = IPMI_AUTH_RAKP_NONE;
-	session->v2_data.crypt_alg      = IPMI_CRYPT_NONE;
-	session->v2_data.console_id     = 0x00;
-	session->v2_data.bmc_id         = 0x00;
+	session->v2_data.session_state    = LANPLUS_STATE_PRESESSION;
+	session->v2_data.auth_alg         = IPMI_AUTH_RAKP_NONE;
+	session->v2_data.crypt_alg        = IPMI_CRYPT_NONE;
+	session->v2_data.console_id       = 0x00;
+	session->v2_data.bmc_id           = 0x00;
+	session->sol_data.sequence_number = 1;
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
 	memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
 
