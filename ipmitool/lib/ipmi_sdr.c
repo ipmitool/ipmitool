@@ -37,6 +37,13 @@
 #include <string.h>
 #include <math.h>
 
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_intf.h>
@@ -321,14 +328,13 @@ void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		 */
 		printf("%s,", sensor->id_code ? desc : NULL);
 
-		if (validread)
+		if (validread) {
 			printf("%.*f,", (val==(int)val) ? 0 : 3, val);
-		else
-			printf(",");
+			printf("%s,%s", do_unit ? unitstr : "",
+			       ipmi_sdr_get_status(rsp->data[2]));
+		} else
+			printf(",,%s", ipmi_sdr_get_status(rsp->data[2]));
 
-		printf("%s,%s",
-			do_unit ? unitstr : "",
-			ipmi_sdr_get_status(rsp->data[2]));
 
 		if (verbose)
 		{
@@ -538,8 +544,16 @@ void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		return;
 	}
 
-	if (!rsp->ccode && (!(rsp->data[1] & 0x80)))
+	if (rsp->ccode) {
+		if (verbose > 1)
+			printf("Invalid ccode: %x\n", rsp->ccode);
+		return;
+	}
+	if (!(rsp->data[1] & 0x80)) {
+		if (verbose > 1)
+			printf("Sensor %x scanning disabled\n", sensor->keys.sensor_num);
 		return;		/* sensor scanning disabled */
+	}
 
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
@@ -576,7 +590,7 @@ void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		char temp[18];
 
 		if ((rsp->ccode == 0xcd) || (rsp->data[1] & READING_UNAVAILABLE)) {
-                    state = "Not Readable     ";
+                    state = csv_output ? "Not Readable" : "Not Readable     ";
                 } else {
                     switch (sensor->sensor.type) {
                     case 0x07:	/* processor */
@@ -659,7 +673,7 @@ void ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
 	else {
 		char * state = "Event-Only       ";
 		if (csv_output)
-			printf("%s,%s,ns", sensor->id_code ? desc : NULL, state);
+			printf("%s,Event-Only,ns\n", sensor->id_code ? desc : NULL);
 		else
 			printf("%-16s | %-17s | ns\n", sensor->id_code ? desc : NULL, state);
 	}
@@ -784,6 +798,74 @@ void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
 	printf("\n");
 }
 
+static
+void ipmi_sdr_print_oem(struct ipmi_intf * intf, unsigned char * data, int len)
+{
+	if (verbose > 2)
+		printbuf(data, len, "OEM Record");
+
+	/* intel manufacturer id */
+	if (data[0] == 0x57 && data[1] == 0x01 && data[2] == 0x00) {
+		switch (data[3]) { /* record sub-type */
+		case 0x02:	/* Power Unit Map */
+			if (verbose) {
+				printf("Sensor ID              : Power Unit Redundancy (0x%x)\n",
+				       data[4]);
+				printf("Sensor Type            : Intel OEM - Power Unit Map\n");
+				printf("Redundant Supplies     : %d", data[6]);
+				if (data[5])
+					printf(" (flags %xh)", data[5]);
+				printf("\n");
+			}
+
+			switch (len) {
+			case 7:	/* SR1300, non-redundant */
+				if (verbose)
+					printf("Power Redundancy       : No\n");
+				else if (csv_output)
+					printf("Power Redundancy,Not Available,nr\n");
+				else
+					printf("Power Redundancy | Not Available     | nr\n");
+				break;
+			case 8: /* SR2300, redundant, PS1 & PS2 present */
+				if (verbose) {
+					printf("Power Redundancy       : No\n");
+					printf("Power Supply 2 Sensor  : %x\n", data[8]);
+				} else if (csv_output) {
+					printf("Power Redundancy,PS@%02xh,nr\n", data[8]);
+				} else {
+					printf("Power Redundancy | PS@%02xh            | nr\n",
+					       data[8]);
+				}
+			case 9: /* SR2300, non-redundant, PSx present */
+				if (verbose) {
+					printf("Power Redundancy       : Yes\n");
+					printf("Power Supply Sensor    : %x\n", data[7]);
+					printf("Power Supply Sensor    : %x\n", data[8]);
+				} else if (csv_output) {
+					printf("Power Redundancy,PS@%02xh + PS@%02xh,ok\n");
+				} else {
+					printf("Power Redundancy | PS@%02xh + PS@%02xh   | ok\n",
+					       data[7], data[8]);
+				}
+				break;
+			}
+			if (verbose)
+				printf("\n");
+			break;
+		case 0x03:	/* Fan Speed Control */
+			break;
+		case 0x06:	/* System Information */
+			break;
+		case 0x07:	/* Ambient Temperature Fan Speed Control */
+			break;
+		default:
+			if (verbose > 1)
+				printf("Unknown Intel OEM SDR Record type %02x\n", data[3]);
+		}
+	}
+}
+
 void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 {
 	struct sdr_get_rs * header;
@@ -840,6 +922,7 @@ void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 		case SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO:
 			break;
 		case SDR_RECORD_TYPE_OEM:
+			ipmi_sdr_print_oem(intf, rec, header->length);
 			break;
 		}
 		free(rec);
@@ -897,7 +980,7 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 	memcpy(&sdr_info, rsp->data, sizeof(sdr_info));
 
 	/* byte 1 is SDR version, should be 51h */
-	if (sdr_info.version != 0x51) {
+	if ((sdr_info.version != 0x51) && (sdr_info.version != 0x01)) {
 		printf("SDR repository version mismatch!\n");
 		free (itr);
 		return NULL;
@@ -1300,6 +1383,100 @@ ipmi_sdr_print_info(struct ipmi_intf * intf)
 }
 
 
+static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
+{ 
+	struct stat st1, st2;
+	struct sdr_get_rs * header;
+	struct ipmi_sdr_iterator * itr;
+	int fd;
+
+	/* open file for writing */
+	if (lstat(ofile, &st1) < 0) {
+		/* does not exist, ok to create */
+		fd = open(ofile, O_WRONLY|O_TRUNC|O_EXCL|O_CREAT, 0600);
+		if (fd < 1) {
+			printf("ERROR: Unable to open file '%s' for write: %s\n",
+			       ofile, strerror(errno));
+			return -1;
+		}
+	} else {
+		/* it exists - allow only regular file, not links */
+		if (!S_ISREG(st1.st_mode)) {
+			printf("ERROR: file '%s' has invalid mode: %d\n",
+			       ofile, st1.st_mode);
+			return -1;
+		}
+
+		/* allow only files with 1 link (itself) */
+		if (st1.st_nlink != 1) {
+			printf("ERROR: file '%s' has invalid link count: %d != 1\n",
+			       ofile, st1.st_nlink);
+			return -1;
+		}
+
+		/* open it for write, overwrite existing file */
+		fd = open(ofile, O_WRONLY | O_TRUNC, 0600);
+		if (fd < 1) {
+			printf("ERROR: unable to overwrite file '%s': %s\n",
+			       ofile, strerror(errno));
+			return -1;
+		}
+
+		/* stat again and verify inode/owner/link count */
+		fstat(fd, &st2);
+		if (st2.st_ino != st1.st_ino || st2.st_uid != st1.st_uid ||
+		    st2.st_nlink != 1) {
+			printf("ERROR: unable to verify file '%s'\n", ofile);
+			close(fd);
+			return -1;
+		}
+	}
+	
+	/* open connection to SDR */
+	itr = ipmi_sdr_start(intf);
+	if (!itr) {
+		printf("Unable to open SDR for reading\n");
+		close(fd);
+		return -1;
+	}
+
+	printf("Dumping Sensor Data Repository to '%s'\n", ofile);
+
+	/* go through sdr records */
+	while (header = ipmi_sdr_get_next_header(intf, itr)) {
+		int r;
+		unsigned char h[5];
+		unsigned char * rec;
+
+		if (verbose)
+			printf("Record ID %04x (%d bytes)\n", header->id, header->length);
+
+		rec = ipmi_sdr_get_record(intf, header, itr);
+		if (!rec) continue;
+
+		/* build and write sdr header */
+		h[0] = header->id & 0xff;
+		h[1] = (header->id >> 8) & 0xff;
+		h[2] = header->version;
+		h[3] = header->type;
+		h[4] = header->length;
+
+		r = write(fd, h, 5);
+		if (r != 5) {
+			printf("Error writing %d byte to output file\n", 5);
+			break;
+		}
+
+		/* write sdr entry */
+		r = write(fd, rec, header->length);
+		if (r != header->length) {
+			printf("Error writing %d bytes to output file\n", header->length);
+			break;
+		}
+	}
+
+	close(fd);
+}
 
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -1340,7 +1517,13 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "info", 4)) {
 		ipmi_sdr_print_info(intf);
 	}
-	else
+	else if (!strncmp(argv[0], "dump", 4)) {
+		if (argc < 2)
+			printf("usage: sdr dump <filename>\n");
+		else
+			ipmi_sdr_dump_bin(intf, argv[1]);
+	} else {
 		printf("Invalid SDR command: %s\n", argv[0]);
+	}
 	return 0;
 }
