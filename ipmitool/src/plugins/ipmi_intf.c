@@ -150,6 +150,7 @@ void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 		intf->session->password = 0;
 		if (password) {
 			intf->session->password = 1;
+			memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
 			memcpy(intf->session->authcode,
 			       password,
 			       min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
@@ -173,4 +174,9 @@ void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char autht
 {
 	if (intf && intf->session)
 		intf->session->authtype_set = authtype;
+}
+
+void ipmi_cleanup(struct ipmi_intf * intf)
+{
+	ipmi_sdr_list_empty(intf);
 }
