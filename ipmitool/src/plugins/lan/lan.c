@@ -79,6 +79,7 @@ static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, i
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static int ipmi_lan_setup(struct ipmi_intf * intf);
+static int ipmi_lan_keepalive(struct ipmi_intf * intf);
 
 struct ipmi_intf ipmi_lan_intf = {
 	name:		"lan",
@@ -88,6 +89,7 @@ struct ipmi_intf ipmi_lan_intf = {
 	close:		ipmi_lan_close,
 	sendrecv:	ipmi_lan_send_cmd,
 	sendrsp:	ipmi_lan_send_rsp,
+	keepalive:	ipmi_lan_keepalive,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
@@ -842,6 +844,23 @@ int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 	if (msg)
 		free(msg);
 	return 0;
+}
+
+/* send a get device id command to keep session active */
+static int
+ipmi_lan_keepalive(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req = { msg: {
+		netfn: IPMI_NETFN_APP,
+		cmd: 1,
+	}};
+
+	if (!intf->opened)
+		return 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	return (!rsp || rsp->ccode) ? -1 : 0;
 }
 
 /*

@@ -156,6 +156,7 @@ struct ipmi_intf {
 	int (*sendrsp)(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 	struct ipmi_rs *(*recv_sol)(struct ipmi_intf * intf);
 	struct ipmi_rs *(*send_sol)(struct ipmi_intf * intf, struct ipmi_v2_payload * payload);
+	int (*keepalive)(struct ipmi_intf * intf);
 };
 
 struct ipmi_intf * ipmi_intf_load(char * name);
