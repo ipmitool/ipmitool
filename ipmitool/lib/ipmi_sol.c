@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/select.h>
+#include <sys/time.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
@@ -668,6 +670,82 @@ static int ipmi_sol_set_param(struct ipmi_intf * intf,
 }
 
 
+/*
+ * ipmi_sol_red_pill
+ */
+static int ipmi_sol_red_pill(struct ipmi_intf * intf)
+{
+	char   buffer[255];
+	int    bShouldExit = 0;
+	fd_set read_fds;
+	struct timeval tv;
+	int    retval;
+	size_t num_read;
+	char   c;
+
+	while (! bShouldExit)
+	{
+		FD_ZERO(&read_fds);
+		FD_SET(0, &read_fds);
+		FD_SET(intf->fd, &read_fds);
+
+		/* Wait up to half a second */
+		tv.tv_sec =  0;
+		tv.tv_usec = 500000;
+
+		retval = select(intf->fd + 1, &read_fds, NULL, NULL, &tv);
+
+		if (retval)
+		{
+			if (retval == -1)
+			{
+				/* ERROR */
+				perror("select");
+				return -1;
+			}
+
+			if (FD_ISSET(0, &read_fds))
+			{
+				/*
+				 * Received input from the user
+				 */
+				bzero(buffer, sizeof(buffer));
+				num_read = read(0, buffer, sizeof(buffer));
+				printf("read %d characters\n", num_read);
+				printf("buffer : %s\n", buffer);
+			}
+
+			else if (FD_ISSET(intf->fd, &read_fds))
+			{
+				/*
+				 * Received input from the BMC
+				 */
+				char buffer[256];
+				int i;
+
+				bzero(buffer, sizeof(buffer));
+
+				printf("The BMC has data for us...\n");
+
+				struct ipmi_rs * rs =intf->recv_sol(intf);
+				printf("sol data is %d bytes\n", rs->data_len);
+				for (i = 0; i < rs->data_len; ++i)
+					putc(rs->data[i], stdout);
+				fflush(stdout);
+ 			}
+			
+			else
+			{
+				/* ERROR */
+				printf("Error: Select returned with nothing to read\n");
+			}
+		}
+	}		
+
+	return 0;
+}
+
+
 
 /*
  * impi_sol_activate
@@ -697,8 +775,8 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 	req.msg.data_len = 6;
 	req.msg.data     = data;
 
-	data[0] = IPMI_PAYLOAD_TYPE_IPMI;  /* payload type     */
-	data[1] = 1;                       /* payload instance */
+	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type     */
+	data[1] = 1;                      /* payload instance */
 
 	/* Lots of important data.  Most is default */
 	data[2]  = bSolEncryption?     0x80 : 0;
@@ -724,20 +802,21 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 			   rsp->data_len);
 		return -1;
 	}
-	
-	memcpy(&ap_rsp, rsp->data, sizeof(struct activate_payload_rsp));
 
-	intf->session->sol_data.max_inbound_payload_size =
-		ap_rsp.inbound_payload_size[0] |
-		ap_rsp.inbound_payload_size[1];
+	memcpy(&ap_rsp, rsp->data, sizeof(struct activate_payload_rsp));
 	
+	intf->session->sol_data.max_inbound_payload_size =
+		(ap_rsp.inbound_payload_size[1] << 8) |
+		ap_rsp.inbound_payload_size[0];
+
 	intf->session->sol_data.max_outbound_payload_size =
-		ap_rsp.outbound_payload_size[0] |
-		ap_rsp.outbound_payload_size[1];
-		
+		(ap_rsp.outbound_payload_size[1] << 8) |
+		ap_rsp.outbound_payload_size[0];
+
 	intf->session->sol_data.port =
-		ap_rsp.payload_udp_port[0] |
-		ap_rsp.payload_udp_port[1];
+		(ap_rsp.payload_udp_port[1] << 8) |
+		ap_rsp.payload_udp_port[0];
+
 
 	#if WORDS_BIGENDIAN
 	intf->session->sol_data.max_inbound_payload_size =
@@ -749,11 +828,32 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 	#endif
 	
 
-	printf("max inbound payload size : %d\n",
+	printf("max inbound payload size  : %d\n",
 		   intf->session->sol_data.max_inbound_payload_size);
 	printf("max outbound payload size : %d\n",
 		   intf->session->sol_data.max_outbound_payload_size);
-	printf("SOL port : %d\n", intf->session->sol_data.port);
+	printf("SOL port                  : %d\n",
+		   intf->session->sol_data.port);
+
+
+	if (intf->session->sol_data.port != intf->session->port)
+	{
+		printf("Error: BMC requests SOL session on different port\n");
+		return -1;
+	}
+	
+
+	/*
+	 * At this point we are good to go with our SOL session.  We
+	 * need to listen to
+	 * 1) STDIN for user input
+	 * 2) The FD for incoming SOL packets
+	 */
+	if (ipmi_sol_red_pill(intf))
+	{
+		printf("Error in SOL session\n");
+		return -1;
+	}
 
 	return 0;
 }
