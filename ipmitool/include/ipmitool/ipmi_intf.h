@@ -40,6 +40,10 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_constants.h>
 
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 /*
  * An enumeration that describes every possible session state for
@@ -73,11 +77,12 @@ struct ipmi_session {
 	int active;
 
 	uint32_t session_id;
-
 	uint32_t in_seq;
 	uint32_t out_seq;
-
 	uint32_t timeout;
+
+	struct sockaddr_in addr;
+	socklen_t addrlen;
 
 	/*
 	 * This struct holds state data specific to IMPI v2 / RMCP+ sessions
@@ -132,33 +137,33 @@ struct ipmi_session {
 
 
 struct ipmi_intf {
-	char name[32];
+	char name[16];
+	char desc[128];
 	int fd;
 	int opened;
 	int abort;
-	int pedantic;
-	int (*open)(struct ipmi_intf *);
-	void (*close)(struct ipmi_intf *);
-	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
-	struct ipmi_rs *(*recv_sol)(struct ipmi_intf *);
-	struct ipmi_rs *(*send_sol)(struct ipmi_intf *,
-								struct ipmi_v2_payload * payload);
+	int thump;
+
 	struct ipmi_session * session;
+	unsigned int my_addr;
+	unsigned int target_addr;
+
+	int (*setup)(struct ipmi_intf * intf);
+	int (*open)(struct ipmi_intf * intf);
+	void (*close)(struct ipmi_intf * intf);
+	struct ipmi_rs *(*sendrecv)(struct ipmi_intf * intf, struct ipmi_rq * req);
+	int (*sendrsp)(struct ipmi_intf * intf, struct ipmi_rs * rsp);
+	struct ipmi_rs *(*recv_sol)(struct ipmi_intf * intf);
+	struct ipmi_rs *(*send_sol)(struct ipmi_intf * intf, struct ipmi_v2_payload * payload);
 };
 
-struct static_intf {
-	char * name;
-	int (*setup)(struct ipmi_intf ** intf);
-};
-
-int ipmi_intf_init(void);
-void ipmi_intf_exit(void);
 struct ipmi_intf * ipmi_intf_load(char * name);
+char * ipmi_intf_print(void);
 
-int ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
-int ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
-int ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
-int ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char privlvl);
-int ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
+void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
+void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
+void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
+void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char privlvl);
+void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 
 #endif /* IPMI_INTF_H */

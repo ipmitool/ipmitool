@@ -84,6 +84,11 @@ struct ipmi_v2_payload {
 			struct ipmi_rq * request;
 		} ipmi_request;
 
+		struct {
+			unsigned char	rs_seq;
+			struct ipmi_rs * response;
+		} ipmi_response;
+
 		/* Only used internally by the lanplus interface */
 		struct {
 			unsigned char * request;
@@ -150,6 +155,13 @@ struct ipmi_rs {
 	 * stuff, then modified to be the length of the extra IPMI message data
 	 */
 	int data_len;
+
+	struct {
+		unsigned char netfn;
+		unsigned char cmd;
+		unsigned char seq;
+		unsigned char lun;
+	} msg;
 
 	struct {
 		unsigned char  authtype;
@@ -224,7 +236,7 @@ struct ipmi_rs {
 #define IPMI_NETFN_APP			0x6
 #define IPMI_NETFN_FIRMWARE		0x8
 #define IPMI_NETFN_STORAGE		0xa
-#define IPMI_NETFN_TRANSPORT	0xc
+#define IPMI_NETFN_TRANSPORT		0xc
 #define IPMI_NETFN_ISOL			0x34
 
 #define IPMI_BMC_SLAVE_ADDR		0x20
