@@ -80,23 +80,6 @@
 #define IPMI_PRIV_OEM      5
 
 
-/* From table 13-17 of the IPMI v2 specification */
-#define IPMI_AUTH_RAKP_NONE         0x00
-#define IPMI_AUTH_RAKP_HMAC_SHA1    0x01
-#define IPMI_AUTH_RAKP_HMAC_MD5     0x02
-
-/* From table 13-18 of the IPMI v2 specification */
-#define IPMI_INTEGRITY_NONE         0x00
-#define IPMI_INTEGRITY_HMAC_SHA1_96 0x01
-#define IPMI_INTEGRITY_HMAC_MD5_128 0x02
-#define IPMI_INTEGRITY_MD5_128      0x03
-
-/* From table 13-19 of the IPMI v2 specfication */
-#define IPMI_CRYPT_NONE             0x00
-#define IPMI_CRYPT_AES_CBC_128      0x01
-#define IPMI_CRYPT_XRC4_128         0x02
-#define IPMI_CRYPT_XRC4_40          0x03
-
 #define IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE 0x10
 
 

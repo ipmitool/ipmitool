@@ -34,6 +34,7 @@
  * facility.
  */
 
+#include "ipmitool/ipmi_constants.h"
 #include "lanplus.h"
 #include "lanplus_crypt_impl.h"
 #include <openssl/hmac.h>

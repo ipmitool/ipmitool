@@ -94,4 +94,21 @@
 #define IPMI_CHANNEL_MEDIUM_USB_2	0xb
 #define IPMI_CHANNEL_MEDIUM_SYSTEM	0xc
 
+/* From table 13-17 of the IPMI v2 specification */
+#define IPMI_AUTH_RAKP_NONE         0x00
+#define IPMI_AUTH_RAKP_HMAC_SHA1    0x01
+#define IPMI_AUTH_RAKP_HMAC_MD5     0x02
+
+/* From table 13-18 of the IPMI v2 specification */
+#define IPMI_INTEGRITY_NONE         0x00
+#define IPMI_INTEGRITY_HMAC_SHA1_96 0x01
+#define IPMI_INTEGRITY_HMAC_MD5_128 0x02
+#define IPMI_INTEGRITY_MD5_128      0x03
+
+/* From table 13-19 of the IPMI v2 specfication */
+#define IPMI_CRYPT_NONE             0x00
+#define IPMI_CRYPT_AES_CBC_128      0x01
+#define IPMI_CRYPT_XRC4_128         0x02
+#define IPMI_CRYPT_XRC4_40          0x03
+
 #endif /*IPMI_CONSTANTS_H*/
