@@ -36,6 +36,8 @@
 
 #include <assert.h>
 #include <string.h>
+#include <config.h>
+#include <ipmitool/bswap.h>
 #include "lanplus.h"
 #include "lanplus_crypt.h"
 #include "lanplus_crypt_impl.h"
@@ -77,6 +79,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 
 	unsigned int SIDm_lsbf, SIDc_lsbf;
 
+
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 1;
 	
@@ -106,6 +109,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 	#if WORDS_BIGENDIAN
 	SIDm_lsbf = BSWAP_32(SIDm_lsbf);
 	#endif
+
 	memcpy(buffer, &SIDm_lsbf, 4);
 
 	/* SIDc */
@@ -262,6 +266,13 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 	#endif
 
 
+    if (verbose > 2)
+    {
+        printbuf(buffer, bufferLength, ">> rakp4 mac input buffer");
+        printbuf(session->v2_data.sik, 20l, ">> rakp4 mac key (sik)");
+    }
+
+
 	/*
 	 * The buffer is complete.  Let's hash.
 	 */
@@ -272,6 +283,13 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 				 bufferLength,
 				 mac,
 				 &macLength);
+
+    if (verbose > 2)
+	{
+		printbuf(mac, macLength, ">> rakp4 mac as computed by the remote console");
+	}
+
+
 
 	free(buffer);
 	assert(macLength == 20);
@@ -362,6 +380,13 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 	for (i = 0; i < input_buffer[21]; ++i)
 		input_buffer[22 + i] = session->username[i];
 
+    if (verbose > 2)
+    {
+        printbuf(input_buffer, input_buffer_length, ">> rakp3 mac input buffer");
+        printbuf((char*)(session->authcode), IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
+    }
+    
+
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 session->authcode,
 				 (session->authcode[IPMI_AUTHCODE_BUFFER_SIZE - 1] == 0?
@@ -370,6 +395,10 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 				 input_buffer_length,
 				 output_buffer,
 				 mac_length);
+
+    if (verbose > 2)
+        printbuf(output_buffer, *mac_length, "generated rakp3 mac");
+
 	
 	free(input_buffer);
 
@@ -631,13 +660,7 @@ int lanplus_encrypt_payload(unsigned char         crypt_alg,
 	{
 		printf("NOT ENCRYPTING\n");
 		/* Just copy the input to the output */
-		//memcpy(output, input, input_length);
-
-		//printf("input_length : %d\n", input_length);
-
 		*bytes_written = input_length;
-
-		//printf("bytes_written : %d\n", *bytes_written);
 		return 0;
 	}
 	
