@@ -1110,7 +1110,7 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 		rsp->data[(*offset)++] & 0x0F;
 
 	rsp->payload.sol_packet.accepted_character_count =
-		rsp->data[(*offset)++] & 0x0F;
+		rsp->data[(*offset)++];
 
 	rsp->payload.sol_packet.is_nack =
 		rsp->data[*offset] & 0x40;
@@ -1239,14 +1239,14 @@ void getSolPayloadWireRep(
 	/* We may have data to add */
 	memcpy(msg + i,
 		   payload->payload.sol_packet.data,
-		   payload->payload_length);
+		   payload->payload.sol_packet.character_count);
 
 	/*
 	 * At this point, the payload length becomes the whole payload
 	 * length, including the 4 bytes at the beginning of the SOL
 	 * packet
 	 */
-	payload->payload_length = payload->payload_length + 4;
+	payload->payload_length = payload->payload.sol_packet.character_count + 4;
 }
 
 
@@ -1963,13 +1963,7 @@ ipmi_lanplus_send_payload(
 		 * incoming packet from the BMC will use up one of our tries,
 		 * even if it is not our ACK, and even if it comes in before
 		 * our retry timeout.  I will make this code more sophisticated
-		 * (!!!) if I see that this is a problem.
-		 *
-		 * Yet another issue.  If we get nack at this point, we are
-		 * basically screwed because we can't adjust our data here.  We
-		 * have been encrypted in a frame above.  I have no way of testing
-		 * NACKS now anyway.  If I see that this is a problem, I will
-		 * make this code more sophisticated.
+		 * if I see that this is a problem.
 		 */
 		if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
 		{
@@ -1989,7 +1983,7 @@ ipmi_lanplus_send_payload(
 			else if (is_sol_packet(rsp) && rsp->data_len)
 			{
 				/*
-				 * We're still waiting for our ACK, but we more daa from
+				 * We're still waiting for our ACK, but we more data from
 				 * the BMC
 				 */
 				intf->session->sol_data.sol_input_handler(rsp);
@@ -2021,9 +2015,58 @@ ipmi_lanplus_send_payload(
 
 
 /*
+ * is_sol_partial_ack
+ *
+ * Determine if the response is a partial ACK/NACK that indicates
+ * we need to resend part of our packet.
+ *
+ * returns the number of characters we need to resend, or
+ *         0 if this isn't an ACK or we don't need to resend anything
+ */
+int is_sol_partial_ack(
+					   struct ipmi_v2_payload * v2_payload,
+					   struct ipmi_rs         * rs)
+{
+	int chars_to_resend = 0;
+
+	if (v2_payload                               &&
+		rs                                       &&
+		is_sol_packet(rs)                        &&
+		sol_response_acks_packet(rs, v2_payload) &&
+		(rs->payload.sol_packet.accepted_character_count <
+		 v2_payload->payload.sol_packet.character_count))
+	{
+		chars_to_resend =
+			v2_payload->payload.sol_packet.character_count -
+			rs->payload.sol_packet.accepted_character_count;
+	}
+
+	return chars_to_resend;
+}
+
+
+
+/*
+ * set_sol_packet_sequence_number
+ */
+static void set_sol_packet_sequence_number(
+										   struct ipmi_intf * intf,
+										   struct ipmi_v2_payload * v2_payload)
+{
+	/* Keep our sequence number sane */
+	if (intf->session->sol_data.sequence_number > 0x0F)
+		intf->session->sol_data.sequence_number = 1;
+
+	v2_payload->payload.sol_packet.packet_sequence_number =
+		intf->session->sol_data.sequence_number++;
+}
+
+
+
+/*
  * ipmi_lanplus_send_sol
  *
- * Sends a SOL packet.
+ * Sends a SOL packet..  We handle partial ACK/NACKs from the BMC here.
  *
  * Returns a pointer to the SOL ACK we received, or
  *         0 on failure
@@ -2036,6 +2079,12 @@ ipmi_lanplus_send_sol(
 {
 	struct ipmi_rs * rs;
 
+	/*
+	 * chars_to_resend indicates either that we got a NACK telling us
+	 * that we need to resend some part of our data.
+	 */
+	int chars_to_resend = 0;
+
 	v2_payload->payload_type   = IPMI_PAYLOAD_TYPE_SOL;
 
 	/*
@@ -2044,16 +2093,39 @@ ipmi_lanplus_send_sol(
 	 */
 	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
 
-	/* Keep our sequence number sane */
-	if (intf->session->sol_data.sequence_number > 0x0F)
-		intf->session->sol_data.sequence_number = 1;
-
-	v2_payload->payload.sol_packet.packet_sequence_number =
-		intf->session->sol_data.sequence_number++;
+	set_sol_packet_sequence_number(intf, v2_payload);
 	
 	v2_payload->payload.sol_packet.accepted_character_count = 0; /* NA */
-		
+
 	rs = ipmi_lanplus_send_payload(intf, v2_payload);
+
+	/* Determine if we need to resend some of our data */
+	chars_to_resend = is_sol_partial_ack(v2_payload, rs);
+
+
+	while (chars_to_resend)
+	{
+		/*
+		 * We first need to handle any new data we might have
+		 * received in our NACK
+		 */
+		if (rs->data_len)
+			intf->session->sol_data.sol_input_handler(rs);
+
+		set_sol_packet_sequence_number(intf, v2_payload);
+		
+		/* Just send the required data */
+		memmove(v2_payload->payload.sol_packet.data,
+				v2_payload->payload.sol_packet.data +
+				rs->payload.sol_packet.accepted_character_count,
+				chars_to_resend);
+
+		v2_payload->payload.sol_packet.character_count = chars_to_resend;
+
+		rs = ipmi_lanplus_send_payload(intf, v2_payload);
+
+		chars_to_resend = is_sol_partial_ack(v2_payload, rs);
+	}
 
 	return rs;
 }
