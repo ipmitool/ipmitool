@@ -99,15 +99,26 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 	return p;
 }
 
-/* wait for Set LAN Parameter command to complete
- * this may take a long time...
+/* set_lan_param_wait - Wait for Set LAN Parameter command to complete
+ *
+ * On some systems this can take unusually long so we wait for the write
+ * to take effect and verify that the data was written successfully
+ * before continuing or retrying.
+ *
+ * returns 0 on success
+ * returns -1 on error
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ * @param:   lan parameter id
+ * @data:    lan parameter data
+ * @len:     length of lan parameter data
  */
 static int
 set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 		   int param, uint8_t * data, int len)
 {
 	struct lan_param * p;
-	int timeout = 3;	/* 3 second timeout */
 	int retry = 10;		/* 10 retries */
 
 	lprintf(LOG_DEBUG, "Waiting for Set LAN Parameter to complete...");
@@ -117,7 +128,7 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 	for (;;) {
 		p = get_lan_param(intf, chan, param);
 		if (p == NULL) {
-			sleep(timeout);
+			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0)
 				return -1;
 			continue;
@@ -125,7 +136,7 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 		if (verbose > 1)
 			printbuf(p->data, p->data_len, "READ DATA");
 		if (p->data_len != len) {
-			sleep(timeout);
+			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0) {
 				lprintf(LOG_WARNING, "Mismatched data lengths: %d != %d",
 				       p->data_len, len);
@@ -134,7 +145,7 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 			continue;
 		}
 		if (memcmp(data, p->data, len) != 0) {
-			sleep(timeout);
+			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0) {
 				lprintf(LOG_WARNING, "LAN Parameter Data does not match!  "
 				       "Write may have failed.");
@@ -147,6 +158,21 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 	return 0;
 }
 
+/* __set_lan_param - Write LAN Parameter data to BMC
+ *
+ * This function does the actual work of writing the LAN parameter
+ * to the BMC and calls set_lan_param_wait() if requested.
+ *
+ * returns 0 on success
+ * returns -1 on error
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ * @param:   lan parameter id
+ * @data:    lan parameter data
+ * @len:     length of lan parameter data
+ * @wait:    whether to wait for write completion
+ */
 static int
 __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 		int param, uint8_t * data, int len, int wait)
@@ -178,13 +204,12 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 			val2str(rsp->ccode, completion_code_vals));
 		if (rsp->ccode == 0xcc) {
 			/* retry hack for invalid data field ccode */
-			int timeout = 3;	/* 3 second timeout */
 			int retry = 10;		/* 10 retries */
 			lprintf(LOG_DEBUG, "Retrying...");
 			for (;;) {
 				if (retry-- == 0)
 					break;
-				sleep(timeout);
+				sleep(IPMI_LANP_TIMEOUT);
 				rsp = intf->sendrecv(intf, &req);
 				if (rsp == NULL)
 					continue;
@@ -204,42 +229,84 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	return set_lan_param_wait(intf, chan, param, data, len);
 }
 
+/* ipmi_lanp_lock_state - Retrieve set-in-progress status
+ *
+ * returns one of:
+ *  IPMI_LANP_WRITE_UNLOCK
+ *  IPMI_LANP_WRITE_LOCK
+ *  IPMI_LANP_WRITE_COMMIT
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ */
 static int
 ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
-	return (p->data[0] & 1);
+	return (p->data[0] & 3);
 }
 
+/* ipmi_lanp_lock - Lock set-in-progress bits for our use
+ *
+ * Write to the Set-In-Progress LAN parameter to indicate
+ * to other management software that we are modifying parameters.
+ *
+ * No meaningful return value because this is an optional
+ * requirement in IPMI spec and not found on many BMCs.
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ */
 static void
 ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
 {
-	uint8_t val = 1;
-	int inp, try = 3;
+	uint8_t val = IPMI_LANP_WRITE_LOCK;
+	int retry = 3;
 
-	while ((inp = ipmi_lanp_lock_state(intf, chan)) != val) {
-		if (try-- == 0)
+	while (ipmi_lanp_lock_state(intf, chan) != val) {
+		if (retry-- == 0)
 			break;
-		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
+		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS,
+				&val, 1, 0);
 	}
 }
 
+/* ipmi_lanp_unlock - Unlock set-in-progress bits
+ *
+ * Write to the Set-In-Progress LAN parameter, first with
+ * a "commit" instruction and then unlocking it.
+ *
+ * No meaningful return value because this is an optional
+ * requirement in IPMI spec and not found on many BMCs.
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ */
 static void
 ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
 {
-	uint8_t val;
+	uint8_t val = IPMI_LANP_WRITE_COMMIT;
 	int rc;
 
-	val = 2;
 	rc = __set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
 	if (rc < 0) {
-		lprintf(LOG_DEBUG, "LAN Parameter Commit not supported.  Clearing Set In Progress...");
-		val = 0;
+		lprintf(LOG_DEBUG, "LAN Parameter Commit not supported");
+		val = IPMI_LANP_WRITE_UNLOCK;
 		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 0, 0);
 	}
 }
 
+/* set_lan_param - Wrap LAN parameter write with set-in-progress lock
+ *
+ * Returns value from __set_lan_param()
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ * @param:   lan parameter id
+ * @data:    lan parameter data
+ * @len:     length of lan parameter data
+ */
 static int
 set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	      int param, uint8_t * data, int len)
