@@ -72,3 +72,12 @@ const struct valstr ipmi_privlvl_vals[] = {
 	{ 0,			             	NULL },
 };
 
+
+const struct valstr ipmi_set_in_progress_vals[] = {
+	{ IPMI_SET_IN_PROGRESS_SET_COMPLETE, "set-complete"    },
+	{ IPMI_SET_IN_PROGRESS_IN_PROGRESS,  "set-in-progress" },
+	{ IPMI_SET_IN_PROGRESS_COMMIT_WRITE, "commit-write"    },
+	{ 0,                            NULL },
+};
+
+
