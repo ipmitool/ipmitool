@@ -213,6 +213,22 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id, unsigned
 		return NULL;
 	}
 
+
+	/* achu (chu11 at llnl dot gov): - Some boards are stupid and
+	 * return a record id from the Get SDR Record command
+	 * different than the record id passed in.  If we find this
+	 * situation, we cheat and put the original record id back in.
+	 * Otherwise, a later Get SDR Record command will fail with
+	 * completion code CBh = "Requested Sensor, data, or record
+	 * not present"
+	 */
+	if (sdr_rs.id != record_id) {
+		if (verbose > 1)
+			printf("SDR record id mismatch: 0x%04x\n",
+			       sdr_rs.id);
+		sdr_rs.id = record_id;
+	}
+
 	if (verbose > 1) {
 		printf("SDR record type : 0x%02x\n", sdr_rs.type);
 		printf("SDR record next : %d\n", sdr_rs.next);
@@ -396,11 +412,7 @@ void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 
                             printf(" Sensor Reading        : ");
                             if (validread) {
-#if WORDS_BIGENDIAN
-                                    unsigned raw_tol = sensor->mtol & 0x3f;
-#else
-                                    unsigned raw_tol = (sensor->mtol & 0x3f00) >> 8;
-#endif
+				    unsigned short raw_tol = __TO_TOL(sensor->mtol);
                                     float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
                                     printf("%.*f (+/- %.*f) %s\n",
                                            (val==(int)val) ? 0 : 3, 
@@ -409,7 +421,7 @@ void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
                                            tol, 
                                            unitstr);
                             } else
-                                    printf("not present\n");
+                                    printf("Not Present\n");
 
                             printf(" Status                : %s\n",
                                    ipmi_sdr_get_status(rsp->data[2]));
