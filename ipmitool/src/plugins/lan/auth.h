@@ -39,5 +39,6 @@
 
 unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int data_len);
 unsigned char * ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int data_len);
+unsigned char * ipmi_auth_special(struct ipmi_session * s);
 
 #endif /*IPMI_AUTH_H*/

@@ -165,3 +165,60 @@ unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int
 	return md;
 #endif /*HAVE_CRYPTO_MD2*/
 }
+
+/* special authentication method */
+unsigned char * ipmi_auth_special(struct ipmi_session * s)
+{
+#ifdef HAVE_CRYPTO_MD5
+	MD5_CTX ctx;
+	static unsigned char md[16];
+	unsigned char challenge[16];
+	int i;
+
+	memset(challenge, 0, 16);
+	memset(md, 0, 16);
+	memset(&ctx, 0, sizeof(MD5_CTX));
+
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, (const unsigned char *)s->authcode, strlen(s->authcode));
+	MD5_Final(md, &ctx);
+
+	for (i=0; i<16; i++)
+		challenge[i] = s->challenge[i] ^ md[i];
+
+	memset(md, 0, 16);
+	memset(&ctx, 0, sizeof(MD5_CTX));
+
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, (const unsigned char *)challenge, 16);
+	MD5_Final(md, &ctx);
+
+	return md;
+#else  /*HAVE_CRYPTO_MD5*/
+	int i;
+	md5_state_t state;
+	static md5_byte_t digest[16];
+	unsigned char challenge[16];
+
+	memset(challenge, 0, 16);
+	memset(digest, 0, 16);
+	memset(&state, 0, sizeof(md5_state_t));
+
+	md5_init(&state);
+	md5_append(&state, (const md5_byte_t *)s->authcode, strlen(s->authcode));
+	md5_finish(&state, digest);
+
+	for (i=0; i<16; i++)
+		challenge[i] = s->challenge[i] ^ digest[i];
+
+	memset(digest, 0, 16);
+	memset(&state, 0, sizeof(md5_state_t));
+
+	md5_init(&state);
+	md5_append(&state, (const md5_byte_t *)challenge, 16);
+	md5_finish(&state, digest);
+
+	return digest;
+#endif /*HAVE_CRYPTO_MD5*/
+}
+
