@@ -58,7 +58,7 @@
 #include "bmc.h"
 
 static int	curr_seq;
-static int bmc_method(int fd);
+static int bmc_method(int fd, int *if_type);
 struct ipmi_rs *(*sendrecv_fn)(struct ipmi_intf *, struct ipmi_rq *) = NULL;
 extern int	verbose;
 
@@ -91,6 +91,8 @@ ipmi_bmc_close(struct ipmi_intf *intf)
 int
 ipmi_bmc_open(struct ipmi_intf *intf)
 {
+	int method;
+
 	if (!intf)
                 return -1;
 
@@ -105,7 +107,12 @@ ipmi_bmc_open(struct ipmi_intf *intf)
 
 	intf->opened = 1;
 
-	sendrecv_fn = (bmc_method(intf->fd) == BMC_PUTMSG_METHOD) ?
+	if (bmc_method(intf->fd, &method) < 0) {
+		perror("Could not determine bmc messaging interface");
+		return (-1);
+	}
+
+	sendrecv_fn = (method == BMC_PUTMSG_METHOD) ?
 	    ipmi_bmc_send_cmd_putmsg : ipmi_bmc_send_cmd_ioctl;
 
 	return (intf->fd);
@@ -271,22 +278,33 @@ ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf, struct ipmi_rq *req)
  * to use.
  */
 static int
-bmc_method(int fd)
+bmc_method(int fd, int *if_type)
 {
 	struct strioctl istr;
-	uint8_t method = 0;
+	int retval = 0;
+	uint8_t method = BMC_PUTMSG_METHOD;
 
 	istr.ic_cmd = IOCTL_IPMI_INTERFACE_METHOD;
 	istr.ic_timout = 0;
 	istr.ic_dp = (uint8_t *)&method;
 	istr.ic_len = 1;
 
+	/*
+	 * If the ioctl doesn't exist, we should get an EINVAL back.
+	 * Bail out on any other error.
+	 */
 	if (ioctl(fd, I_STR, &istr) < 0) {
-		/* If the IOCTL doesn't exist, use the (old) ioctl interface */
-		return (BMC_IOCTL_METHOD);
+
+		if (errno != EINVAL)
+			retval = -1;
+		else
+			method = BMC_IOCTL_METHOD;
 	}
 
-	return (method);
+	if (retval == 0)
+		*if_type = method;
+
+	return (retval);
 }
 
 static void
