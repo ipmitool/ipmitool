@@ -31,7 +31,7 @@ Display version information.
 Increase verbose output level.  This option may be specified multiple times to increase the level of debug output.  If given three times you will get hexdumps of all incoming and outgoing packets.
 .TP 
 \fB\-I\fR <\fIinterface\fP>
-Selects IPMI interface to use.  Possible interfaces are \fIlan\fP, \fIlanplus\fP or \fIopen\fP.  The lanplus interface connects to the BMC with RMCP+ as specified by the IPMI v2.0 specification.
+Selects IPMI interface to use.  Possible interfaces are \fIlan\fP, \fIlanplus\fP or \fIopen\fP.
 .TP 
 \fB\-H\fR <\fIaddress\fP>
 Remote server address, can be IP address or hostname.  This option is required for the LAN interface connection.
@@ -490,9 +490,20 @@ The LAN interface is an authenticatiod multi\-session connection; messages deliv
 .LP 
 You can tell @IPMITOOL_BIN@ to use the lan interface with the \fB\-I\fR option:
 .PP 
-@IPMITOOL_BIN@ \-I lan \-H <hostname> \-P [password] <expression>
+@IPMITOOL_BIN@ \-I lan \-H <hostname> [\-U username] [\-P password] <expression>
 .LP 
 A hostname \fBmust\fR be given on the command line in order to use the lan interface with @IPMITOOL_BIN@.  The password field is optional; if you do not provide a password on the command line @IPMITOOL_BIN@ will attempt to connect without authentication.  If you specify a password it will use MD5 authentication if supported by the BMC and straight password/key otherwise.
+.SH "LANPLUS INTERFACE"
+.LP
+Like the \fIlan\fP inteface, the \fIlanplus\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  The difference is that the \fIlanplus\fP interface uses the RMCP+ protocol as described in the IMPI v2.0 specification.  RMCP+ allows for improved authentication and data integrity checks, as well as encryption and the ability to carry multiple types of payloads.  Generic Serial Over LAN support requires RMCP+, so the @IPMITOOL_BIN@ \fIsol activate\fP command requires the use of the \fIlanplus\fP interface.
+.LP
+RMCP+ session establishment uses a protocol call RAKP (Remote Authenticated Key-Exchange Protocol) which allows the negotiation of many options.  @IPMITOOL_BIN@ does not yet allow the user to specify the value of every option, defaulting to the most obvious settings, marked as required in the v2.0 specification.  Authentication and integrity HMACS are produced with SHA1, and encryption is performed with AES-CBC-128.  Role-level logins are not supported.  @IPMITOOL_BIN@ must be configured with the appropriate option for the \fIlanplus\fP interface to be available, as it is not enabled by default.  This interface currently requires the OpenSSL library.
+.LP
+You can tell @IPMITOOL_BIN@ to use the lanplus interface with the \fB\-I\fR option:
+.PP 
+@IPMITOOL_BIN@ \-I lanplus \-H <hostname> [\-U username] [\-P password] <expression>
+.LP 
+The options available for the \fIlanplus\fP inteface are identical to those available for the \fIlan\fP inteface.
 .SH "FILES"
 .TP 
 .I /dev/ipmi0
