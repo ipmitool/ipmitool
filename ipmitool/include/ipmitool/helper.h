@@ -38,6 +38,7 @@
 #define IPMI_HELPER_H
 
 #include <inttypes.h>
+#include <stdio.h>
 
 struct valstr {
 	unsigned short val;
@@ -52,7 +53,7 @@ const char * buf2str(unsigned char * buf, int len);
 void printbuf(const unsigned char * buf, int len, const char * desc);
 void signal_handler(int sig, void * handler);
 unsigned char ipmi_csum(unsigned char * d, int s);
-int ipmi_open_file(const char * file, int flags);
+FILE * ipmi_open_file(const char * file, int flags);
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)

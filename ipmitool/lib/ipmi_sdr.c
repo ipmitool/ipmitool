@@ -1387,10 +1387,10 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 { 
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
-	int fd;
+	FILE * fp;
 
-	fd = ipmi_open_file_write(ofile);
-	if (fd < 0) {
+	fp = ipmi_open_file_write(ofile);
+	if (!fp) {
 		return -1;
 	}
 	
@@ -1398,7 +1398,7 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 	itr = ipmi_sdr_start(intf);
 	if (!itr) {
 		printf("Unable to open SDR for reading\n");
-		close(fd);
+		fclose(fp);
 		return -1;
 	}
 
@@ -1423,21 +1423,22 @@ static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 		h[3] = header->type;
 		h[4] = header->length;
 
-		r = write(fd, h, 5);
+		r = fwrite(h, 1, 5, fp);
 		if (r != 5) {
-			printf("Error writing %d byte to output file\n", 5);
+			printf("Error writing header to output file %s\n", ofile);
 			break;
 		}
 
 		/* write sdr entry */
-		r = write(fd, rec, header->length);
+		r = fwrite(rec, 1, header->length, fp);
 		if (r != header->length) {
-			printf("Error writing %d bytes to output file\n", header->length);
+			printf("Error writing %d record bytes to output file %s\n",
+			       header->length, ofile);
 			break;
 		}
 	}
 
-	close(fd);
+	fclose(fp);
 	return 0;
 }
 
