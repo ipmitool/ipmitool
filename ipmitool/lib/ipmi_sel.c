@@ -482,6 +482,109 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 	return rsp->data[0] | rsp->data[1] << 8;
 }
 
+
+
+/*
+ * ipmi_sel_get_time
+ *
+ * return 0 on success,
+ *        -1 on error
+ */
+static int
+ipmi_sel_get_time(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	static unsigned char tbuf[40];
+
+	time_t time;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd   = IPMI_GET_SEL_TIME;
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Get SEL Time Command\n",  rsp ? rsp->ccode : 0);
+		return -1;
+	}
+
+
+	if (rsp->data_len != 4) 
+	{
+		printf("Error:Invalid data length (0x%x) from Get SEL Time Command\n",
+			   rsp->data_len);
+		return -1;
+	}
+	
+	memcpy(&time, rsp->data, 4);
+#if WORDS_BIGENDIAN
+	time = BSWAP_32(time);
+#endif
+
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&time));
+	printf("%s\n", tbuf);
+
+	return 0;
+}
+
+
+
+/*
+ * ipmi_sel_set_time
+ *
+ * return 0 on success,
+ *        -1 on error
+ */
+static int
+ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
+{
+	struct ipmi_rs     * rsp;
+	struct ipmi_rq       req;
+	static unsigned char tbuf[40];
+	struct tm            tm;
+	time_t               time;
+	const char *         time_format = "%m/%d/%Y %H:%M:%S";
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn    = IPMI_NETFN_STORAGE;
+	req.msg.cmd      = IPMI_SET_SEL_TIME;
+	req.msg.data     = (unsigned char *)&time;
+	req.msg.data_len = sizeof(time);
+
+
+	/* Now how do we get our time_t from our ascii version? */
+	if (! strptime(time_string, time_format, &tm))
+	{
+		printf("Error.  Specified time could not be parsed.\n");
+		return -1;
+	}
+
+	if ((time = mktime(&tm)) == 0xFFFFFFFF)
+	{
+		printf("Error.  Specified time could not be parsed.\n");
+		return -1;
+	}
+	
+
+#if WORDS_BIGENDIAN
+	time = BSWAP_32(time);
+#endif
+
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Set SEL Time Command\n",  rsp ? rsp->ccode : 0);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+
 static void
 ipmi_sel_clear(struct ipmi_intf * intf)
 {
@@ -583,6 +686,29 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_sel_clear(intf);
 	else if (!strncmp(argv[0], "delete", 6))
 		ipmi_sel_delete(intf, argc-1, &argv[1]);
+
+
+	/*
+	 * Get time
+	 */
+	else if (argc == 2                    &&
+			 !strncmp(argv[0], "get",  3) &&
+			 !strncmp(argv[1], "time", 4))
+	{
+		ipmi_sel_get_time(intf);
+	}
+
+	/*
+	 * Set time
+	 */
+	else if (argc == 3                    &&
+			 !strncmp(argv[0], "set",  3) &&
+			 !strncmp(argv[1], "time", 4))
+	{
+		ipmi_sel_set_time(intf, argv[2]);
+	}
+
+
 	else
 		printf("Invalid SEL command: %s\n", argv[0]);
 	return 0;

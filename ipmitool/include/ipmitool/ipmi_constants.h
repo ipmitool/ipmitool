@@ -53,6 +53,8 @@
 #define IPMI_ACTIVATE_PAYLOAD                   0x48
 #define IPMI_DEACTIVATE_PAYLOAD                 0x49
 #define IPMI_SUSPEND_RESUME_PAYLOAD_ENCRYPTYION 0x55
+#define IPMI_GET_SEL_TIME                       0x48
+#define IPMI_SET_SEL_TIME                       0x49
 
 
 #define IPMI_SESSION_AUTHTYPE_NONE      0x0
