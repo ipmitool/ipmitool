@@ -211,8 +211,8 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
  *
  * If the authentication algorithm is IPMI_AUTH_RAKP_NONE, we return success.
  * 
- * return 0 on success (the authcode matches)
- *        1 on failure (the authcode does not match)
+ * return 1 on success (the authcode matches)
+ *        0 on failure (the authcode does not match)
  */
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 							   const uint8_t       * bmc_mac)
