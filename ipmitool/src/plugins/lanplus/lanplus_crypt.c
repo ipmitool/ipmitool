@@ -666,10 +666,13 @@ int lanplus_encrypt_payload(unsigned char         crypt_alg,
 	
 	/* Currently, we only support AES */
 	assert(crypt_alg == IPMI_CRYPT_AES_CBC_128);
+	assert(input_length <= 255);
+
 
 	/*
-	 * The input to the AES encryption algorithm has to be a multiple of the block
-	 * size (16 bytes).  The extra byte we are adding is the pad length byte.
+	 * The input to the AES encryption algorithm has to be a multiple of the
+	 * block size (16 bytes).  The extra byte we are adding is the pad length
+	 * byte.
 	 */
 	mod = (input_length + 1) % IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE;
 	if (mod)
@@ -708,6 +711,8 @@ int lanplus_encrypt_payload(unsigned char         crypt_alg,
 	*bytes_written =
 		IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE + /* IV */
 		bytes_encrypted;
+
+	free(padded_input);
 
 	return 0;
 }
