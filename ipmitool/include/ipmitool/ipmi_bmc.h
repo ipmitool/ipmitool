@@ -46,4 +46,39 @@
 
 int ipmi_bmc_main(struct ipmi_intf *, int, char **);
 
+/* 
+ * Response data from IPM Get Device ID Command (IPMI rev 1.5, section 17.1)
+ * The following really apply to any IPM device, not just BMCs... 
+ */
+struct ipm_devid_rsp {
+	unsigned char device_id;
+	unsigned char device_revision;
+	unsigned char fw_rev1;
+	unsigned char fw_rev2;
+	unsigned char ipmi_version;
+	unsigned char adtl_device_support;
+	unsigned char manufacturer_id[3];
+	unsigned char product_id[2];
+	unsigned char aux_fw_rev[4];
+} __attribute__ ((packed));
+
+#define IPM_DEV_DEVICE_ID_SDR_MASK     (0x80) /* 1 = provides SDRs      */
+#define IPM_DEV_DEVICE_ID_REV_MASK     (0x07) /* BCD-enoded             */
+
+#define IPM_DEV_FWREV1_AVAIL_MASK      (0x80) /* 0 = normal operation   */
+#define IPM_DEV_FWREV1_MAJOR_MASK      (0x3f) /* Major rev, BCD-encoded */
+
+#define IPM_DEV_IPMI_VER_MAJOR_MASK    (0x0F) /* Major rev, BCD-encoded */
+#define IPM_DEV_IPMI_VER_MINOR_MASK    (0xF0) /* Minor rev, BCD-encoded */
+#define IPM_DEV_IPMI_VER_MINOR_SHIFT   (4)    /* Minor rev shift        */
+#define IPM_DEV_IPMI_VERSION_MAJOR(x) \
+	(x & IPM_DEV_IPMI_VER_MAJOR_MASK)
+#define IPM_DEV_IPMI_VERSION_MINOR(x) \
+	((x & IPM_DEV_IPMI_VER_MINOR_MASK) >> IPM_DEV_IPMI_VER_MINOR_SHIFT)
+
+#define IPM_DEV_MANUFACTURER_ID(x) \
+	((uint32_t) ((x[2] & 0x0F) << 16 | x[1] << 8 | x[0]))
+
+#define IPM_DEV_ADTL_SUPPORT_BITS      (8) 
+
 #endif /*IPMI_BMC_H*/

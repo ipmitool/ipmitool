@@ -96,10 +96,82 @@ static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
 	return 0;
 }
 
+/* IPM Device, Get Device ID Command - Additional Device Support */
+const char *ipm_dev_adtl_dev_support[8] = {
+        "Sensor Device",         /* bit 0 */
+        "SDR Repository Device", /* bit 1 */
+        "SEL Device",            /* bit 2 */
+        "FRU Inventory Device",  /*  ...  */
+        "IPMB Event Receiver",
+        "IPMB Event Generator",
+        "Bridge",
+        "Chassis Device"         /* bit 7 */
+};
+
+static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct ipm_devid_rsp *devid;
+	int i;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("Error in BMC Get Device ID Command\n");
+		return -1;
+	}
+	if (rsp->ccode) {
+		printf("BMC Get Device ID returned %x\n", rsp->ccode);
+		return -1;
+	}
+
+	devid = (struct ipm_devid_rsp *) rsp->data;
+	printf("Device ID                 : %i\n", 
+		devid->device_id);
+	printf("Device Revision           : %i\n",
+		devid->device_revision & IPM_DEV_DEVICE_ID_REV_MASK);
+	printf("Firmware Revision         : %u.%x\n",
+		devid->fw_rev1 & IPM_DEV_FWREV1_MAJOR_MASK,
+		devid->fw_rev2);
+	printf("IPMI Version              : %x.%x\n",
+		IPM_DEV_IPMI_VERSION_MAJOR(devid->ipmi_version),
+		IPM_DEV_IPMI_VERSION_MINOR(devid->ipmi_version));
+	printf("Manufacturer ID           : %lu\n",
+		IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+	printf("Product ID                : %u (0x%02x%02x)\n",
+		buf2short((unsigned char *)(devid->product_id)),
+		devid->product_id[1], devid->product_id[0]);
+	printf("Device Available          : %s\n",
+		(devid->fw_rev1 & IPM_DEV_FWREV1_AVAIL_MASK) ? 
+		"no" : "yes");
+	printf("Provides Device SDRs      : %s\n",
+		(devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK) ?
+		"yes" : "no");
+	printf("Additional Device Support :\n");
+	for (i = 0; i < IPM_DEV_ADTL_SUPPORT_BITS; i++) {
+		if (devid->adtl_device_support & (1 << i)) {
+			printf("    %s\n", ipm_dev_adtl_dev_support[i]);
+		}
+	}
+	printf("Aux Firmware Rev Info     : \n");
+	/* These values could be looked-up by vendor if documented,
+	 * so we put them on individual lines for better treatment later
+	 */
+	printf("    0x%02x\n    0x%02x\n    0x%02x\n    0x%02x\n",
+		devid->aux_fw_rev[0], devid->aux_fw_rev[1],
+		devid->aux_fw_rev[2], devid->aux_fw_rev[3]);
+	return 0;
+}
+
 int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc || !strncmp(argv[0], "help", 4)) {
-		printf("BMC Commands:  reset\n");
+		printf("BMC Commands:  reset info\n");
 		return 0;
 	}
 	else if (!strncmp(argv[0], "reset", 5)) {
@@ -115,6 +187,9 @@ int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else {
 			printf("reset commands: warm, cold\n");
 		}
+	}
+	else if (!strncmp(argv[0], "info", 4)) {
+		ipmi_bmc_get_deviceid(intf);
 	}
 	return 0;
 }
