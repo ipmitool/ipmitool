@@ -384,7 +384,7 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 		return -1;
 	}
 
-	printf("Chassis Set Boot Parameter %d to %s\n", param, data);
+	lprintf(LOG_DEBUG, "Chassis Set Boot Parameter %d to %s", param, buf2str(data, len));
 	return 0;
 }
 
@@ -431,39 +431,55 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 }
 
 static int
-ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
+ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg)
 {
 	uint8_t flags[5];
 	int rc = 0;
 
 	if (arg == NULL) {
-		lprintf(LOG_ERR, "No bootflag argument supplied");
+		lprintf(LOG_ERR, "No argument supplied");
 		return -1;
 	}
 
-	if (strncmp(arg, "force_pxe", 9) == 0)
+	memset(flags, 0, 5);
+	flags[0] = 0x01;
+	flags[1] = 0x01;
+	rc = ipmi_chassis_set_bootparam(intf, 4, flags, 2);
+	if (rc < 0)
+		return -1;
+
+	memset(flags, 0, 5);
+	if (strncmp(arg, "pxe", 3) == 0 ||
+	    strncmp(arg, "force_pxe", 9) == 0)
 		flags[1] = 0x04;
-	else if (strncmp(arg, "force_disk", 10) == 0)
+	else if (strncmp(arg, "disk", 4) == 0 ||
+		 strncmp(arg, "force_disk", 10) == 0)
 		flags[1] = 0x08;
-	else if (strncmp(arg, "force_diag", 10) == 0)
+	else if (strncmp(arg, "safe", 4) == 0 ||
+		 strncmp(arg, "force_safe", 10) == 0)
+		flags[1] = 0x0c;
+	else if (strncmp(arg, "diag", 4) == 0 ||
+		 strncmp(arg, "force_diag", 10) == 0)
 		flags[1] = 0x10;
-	else if (strncmp(arg, "force_cdrom", 11) == 0)
+	else if (strncmp(arg, "cdrom", 5) == 0 ||
+		 strncmp(arg, "force_cdrom", 11) == 0)
 		flags[1] = 0x14;
-	else if (strncmp(arg, "force_floppy", 12) == 0)
+	else if (strncmp(arg, "floppy", 6) == 0 ||
+		 strncmp(arg, "force_floppy", 12) == 0)
 		flags[1] = 0x3c;
+	else if (strncmp(arg, "bios", 4) == 0 ||
+		 strncmp(arg, "force_bios", 10) == 0)
+		flags[1] = 0x18;
 	else {
-		lprintf(LOG_ERR, "Invalid bootflag: %s", arg);
+		lprintf(LOG_ERR, "Invalid argument: %s", arg);
 		return -1;
 	}
 
-	flags[0] = 0x80;	/* set flag valid bit */
+	/* set flag valid bit */
+	flags[0] = 0x80;
 	rc = ipmi_chassis_set_bootparam(intf, 5, flags, 5);
-
-	if (rc < 0) {
-		flags[0] = 0x08;	/* don't automatically clear boot flag valid bit in 60 seconds */
-		rc = ipmi_chassis_set_bootparam(intf, 3, flags, 1);
-	}
-
+	if (rc == 0)
+		printf("Set Boot Device to %s\n", arg);
 	return rc;
 }
 
@@ -525,7 +541,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh");
+		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootparam");
 	}
 	else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = ipmi_chassis_status(intf);
@@ -603,9 +619,16 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_chassis_power_policy(intf, ctl);
 		}
 	}
-	else if (strncmp(argv[0], "bootparam", 7) == 0) {
+	else if (strncmp(argv[0], "bootparam", 9) == 0) {
 		if ((argc < 3) || (strncmp(argv[1], "help", 4) == 0)) {
-			lprintf(LOG_NOTICE, "bootparam get|set <option> [value ...]");
+			lprintf(LOG_NOTICE, "bootparam get <param #>");
+			lprintf(LOG_NOTICE, "bootparam set bootflag <flag>");
+			lprintf(LOG_NOTICE, "  force_pxe   : Force PXE boot");
+			lprintf(LOG_NOTICE, "  force_disk  : Force boot from default Hard-drive");
+			lprintf(LOG_NOTICE, "  force_safe  : Force boot from default Hard-drive, request Safe Mode");
+			lprintf(LOG_NOTICE, "  force_diag  : Force boot from Diagnostic Partition");
+			lprintf(LOG_NOTICE, "  force_cdrom : Force boot from CD/DVD");
+			lprintf(LOG_NOTICE, "  force_bios  : Force boot into BIOS Setup");
 		}
 		else {
 			if (strncmp(argv[1], "get", 3) == 0) {
@@ -616,13 +639,26 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				} else {
 					if (strncmp(argv[2], "bootflag", 8) == 0)
-						rc = ipmi_chassis_set_bootflag(intf, argv[3]);
+						rc = ipmi_chassis_set_bootdev(intf, argv[3]);
 					else
 						lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				}
 			}
 			else
 				lprintf(LOG_NOTICE, "bootparam get|set <option> [value ...]");
+		}
+	}
+	else if (strncmp(argv[0], "bootdev", 7) == 0) {
+		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+			lprintf(LOG_NOTICE, "bootdev <device>");
+			lprintf(LOG_NOTICE, "  pxe   : Force PXE boot");
+			lprintf(LOG_NOTICE, "  disk  : Force boot from default Hard-drive");
+			lprintf(LOG_NOTICE, "  safe  : Force boot from default Hard-drive, request Safe Mode");
+			lprintf(LOG_NOTICE, "  diag  : Force boot from Diagnostic Partition");
+			lprintf(LOG_NOTICE, "  cdrom : Force boot from CD/DVD");
+			lprintf(LOG_NOTICE, "  bios  : Force boot into BIOS Setup");
+		} else {
+			rc = ipmi_chassis_set_bootdev(intf, argv[1]);
 		}
 	}
 	else {
