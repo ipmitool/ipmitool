@@ -288,6 +288,9 @@ lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
 	}
 
 	if (verbose > 1)
-		printbuf(output, *bytes_written, "decrypted this data");
+	{
+		printf("Decrypted %d encrypted bytes\n", input_length);
+		printbuf(output, *bytes_written, "Decrypted this data");
+	}
 }
 
