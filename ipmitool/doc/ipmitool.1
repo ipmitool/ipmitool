@@ -11,7 +11,11 @@ ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlanplus\fP \fB\-H\fR \fIhostname\fP [\fB\-
 ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
 .LP 
-This program lets you perform various IPMI functions with either a kernel device driver or over a LAN interface.  These functions include printing FRU information, LAN configuration, sensor readings, and remote chassis power control.
+This program lets you manage Intelligent Platform Management Interface 
+(IPMI) functions of either the local system, via a kernel device driver,
+or a remote system, using IPMI V1.5 . These functions include printing 
+FRU information, LAN configuration, sensor readings, and remote chassis 
+power control.
 .SH "OPTIONS"
 .LP 
 .TP 
@@ -19,16 +23,13 @@ This program lets you perform various IPMI functions with either a kernel device
 Get basic usage help from the command line.
 .TP 
 \fB\-c\fR
-Make output suitable for parsing where possible by separating fields with commas instead of spaces.
-.TP
-\fB\-g\fR
-Attempt to be extra robust in IPMI-over-LAN communications.
+Display output with comma field separator instead of spaces.  Not available with all commands.
 .TP 
 \fB\-V\fR
 Display version information.
 .TP
 \fB\-v\fR
-Increase verbose output level.  This option may be specified multiple times to increase the level of debug output.  If given three times you will get hexdumps of all incoming and outgoing packets.
+Increase verbose output level.  This option may be specified multiple times to increase the level of debug output.
 .TP 
 \fB\-I\fR <\fIinterface\fP>
 Selects IPMI interface to use.  Possible interfaces are \fIlan\fP, \fIlanplus\fP or \fIopen\fP.
@@ -47,6 +48,9 @@ Promt for the remote server password, 16 character maximum. This is optional for
 .TP 
 \fB\-E\fR
 The remote server password is specified by the environment variable \fBIPMI_PASSWORD\fR. This option is intended for shell scripts.
+.TP
+\fB\-f\fR <\fIfile\fP>
+Read remote server password from file.
 .TP 
 \fB\-P\fR <\fIpassword\fP>
 Remote server password. \fBNote!\fR Specifying the password as a commandline option is not recommended since it will be visible in the process list.
@@ -129,7 +133,7 @@ Channel 0xf info:
 .RE
 .TP
 \fIuser\fP <\fBchannel number\fR> [\fBuser number\fR]
-This command will display information about configured user information on a specific LAN channel.  This command will fail on system interfaces.  Try channel 6 or 7.
+This command will display information about configured user information on a specific LAN channel.  This command will fail on system interfaces.
 .RS
 .PP
 ipmitool -I open channel user 6
