@@ -36,6 +36,7 @@
 
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
