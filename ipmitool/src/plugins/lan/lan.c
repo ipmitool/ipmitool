@@ -157,6 +157,8 @@ ipmi_req_remove_entry(unsigned char seq, unsigned char cmd)
 			else
 				ipmi_req_entries_tail = NULL;
 		}
+		if (e->msg_data)
+			free(e->msg_data);
 		free(e);
 	}
 }
@@ -666,7 +668,6 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	while (try < IPMI_LAN_RETRY) {
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
 			printf("ipmi_lan_send_cmd failed\n");
-			free(entry->msg_data);
 			return NULL;
 		}
 
@@ -682,9 +683,6 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		usleep(5000);
 		try++;
 	}
-
-	free(entry->msg_data);
-	entry->msg_len = 0;
 
 	return rsp;
 }
