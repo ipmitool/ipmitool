@@ -81,7 +81,12 @@ static int rl_event_keepalive(void)
 		return -1;
 	if (!shell_intf->keepalive)
 		return 0;
+#if defined (RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
 	if (internal_timer++ < RL_TIMEOUT)
+#else
+	/* In readline < 4.2 keyboard timeout hardcoded to 0.1 second */
+	if (internal_timer++ < RL_TIMEOUT * 10)
+#endif
 		return 0;
 
 	internal_timer = 0;
@@ -106,8 +111,10 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* hook to keep lan sessions active */
 		shell_intf = intf;
 		rl_event_hook = rl_event_keepalive;
+#if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
 		/* set to 1 second */
 		rl_set_keyboard_input_timeout(1000*1000);
+#endif
 	}
 
 	while ((pbuf = (char *)readline(RL_PROMPT)) != NULL) {
