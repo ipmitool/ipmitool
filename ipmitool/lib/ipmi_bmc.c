@@ -190,7 +190,6 @@ static int ipmi_bmc_get_enables(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	struct bmc_enables_data en;
 	struct bitfield_data * bf;
 
 	memset(&req, 0, sizeof(req));
@@ -337,7 +336,7 @@ static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
 		IPM_DEV_IPMI_VERSION_MAJOR(devid->ipmi_version),
 		IPM_DEV_IPMI_VERSION_MINOR(devid->ipmi_version));
 	printf("Manufacturer ID           : %lu\n",
-		IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
 	printf("Product ID                : %u (0x%02x%02x)\n",
 		buf2short((unsigned char *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);

@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <unistd.h>
 
 
 #include <termios.h>
@@ -67,7 +68,6 @@
 
 static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
-static int            bShouldExit  = 0;
 
 extern int verbose;
 
@@ -699,8 +699,6 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	 */
 	else if (! strcmp(param, "non-volatile-bit-rate"))
 	{
-		struct sol_config_parameters params;
-
 		req.msg.data_len = 3;
 		data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE;
 
@@ -740,8 +738,6 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	 */
 	else if (! strcmp(param, "volatile-bit-rate"))
 	{
-		struct sol_config_parameters params;
-
 		req.msg.data_len = 3;
 		data[1] = SOL_PARAMETER_SOL_VOLATILE_BIT_RATE;
 
@@ -1142,8 +1138,6 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	fd_set read_fds;
 	struct timeval tv;
 	int    retval;
-	size_t num_read;
-	char   c;
 	int    buffer_size = intf->session->sol_data.max_inbound_payload_size;
 
 	buffer = (char*)malloc(buffer_size);
@@ -1206,7 +1200,6 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 			 */
 			else if (FD_ISSET(intf->fd, &read_fds))
 			{
-				int i;
 				struct ipmi_rs * rs =intf->recv_sol(intf);
 				if (! rs)
 				{

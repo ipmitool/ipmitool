@@ -53,7 +53,7 @@ static char * get_fru_area_str(unsigned char * data, int * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
 	char * str;
-	int len, size, i, j, k;
+	int len, size=0, i, j, k;
 	int off = *offset;
 	union {
 		uint32_t bits;
@@ -561,7 +561,7 @@ static void ipmi_fru_print_all(struct ipmi_intf * intf)
 	if (!(itr = ipmi_sdr_start(intf)))
 		return;
 
-	while (header = ipmi_sdr_get_next_header(intf, itr))
+	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
 	{
 		if (header->type != SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR)
 			continue;

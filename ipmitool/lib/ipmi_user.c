@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
@@ -489,7 +490,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
   		if ((argc >= 3) &&
 			(! strcmp("password", argv[1]))) 
 		{
-			char * password;
+			char * password = NULL;
 			unsigned char user_id = (unsigned char)strtol(argv[2],
 														  NULL,
 														  0);

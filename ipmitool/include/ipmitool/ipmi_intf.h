@@ -159,7 +159,7 @@ struct ipmi_intf {
 };
 
 struct ipmi_intf * ipmi_intf_load(char * name);
-char * ipmi_intf_print(void);
+void ipmi_intf_print(void);
 
 void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
 void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);

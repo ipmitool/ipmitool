@@ -62,10 +62,10 @@ void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 				   ipmi_priv_levels));
 	printf("%s  Console Session ID                 : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
-		   rsp->payload.open_session_response.console_id);
+		   (long)rsp->payload.open_session_response.console_id);
 	printf("%s  BMC Session ID                     : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
-		   rsp->payload.open_session_response.bmc_id);
+		   (long)rsp->payload.open_session_response.bmc_id);
 	printf("%s  Negotiated authenticatin algorithm : %s\n",
 		   DUMP_PREFIX_INCOMING,
 		   val2str(rsp->payload.open_session_response.auth_alg,
@@ -100,7 +100,7 @@ void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, unsigned char auth_a
 
 	printf("%s  Console Session ID            : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
-		   rsp->payload.rakp2_message.console_id);
+		   (long)rsp->payload.rakp2_message.console_id);
 
 	printf("%s  BMC random number             : 0x", DUMP_PREFIX_INCOMING);
 	for (i = 0; i < 16; ++i)
@@ -154,7 +154,7 @@ void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, unsigned char auth_a
 
 	printf("%s  Console Session ID            : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
-		   rsp->payload.rakp2_message.console_id);
+		   (long)rsp->payload.rakp2_message.console_id);
 
 	printf("%s  BMC random number             : 0x", DUMP_PREFIX_INCOMING);
 	for (i = 0; i < 16; ++i)

@@ -110,10 +110,9 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
 {
     char id[17];
     char * unitstr = "discrete";
-    int i=0, validread=1;
-    unsigned char val;
+    int validread=1;
+    unsigned char val = 0;
     struct ipmi_rs * rsp;
-    char * status;
 
     if (!sensor)
         return;
@@ -238,9 +237,9 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 {
     char unitstr[16], id[17];
     int i=0, validread=1, thresh_available = 1;
-    float val;
+    float val = 0.0;
     struct ipmi_rs * rsp;
-    char * status;
+    char * status = NULL;
 
     if (!sensor)
         return;
@@ -320,7 +319,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
                 printf("| %-10.3f | %-10s | %-6s",
                        val,
                        unitstr,
-                       status);
+                       status ? : "");
             }
             else
             {
@@ -387,7 +386,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
                        (tol==(int)tol) ? 0 : 3, 
                        tol, 
                        unitstr);
-                printf("Status                 : %s\n", status);
+                printf("Status                 : %s\n", status ? : "");
 
                 if (thresh_available)
                 {
@@ -443,10 +442,9 @@ void ipmi_sensor_print_compact(struct ipmi_intf * intf,
 {
     char id[17];
     char * unitstr = "discrete";
-    int i=0, validread=1;
-    unsigned char val;
+    int validread=1;
+    unsigned char val = 0;
     struct ipmi_rs * rsp;
-    char * status;
 
     if (!sensor)
         return;
@@ -581,7 +579,7 @@ ipmi_sensor_list(struct ipmi_intf * intf)
         return;
     }
 
-    while (header = ipmi_sdr_get_next_header(intf, itr))
+    while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
     {
         unsigned char * rec = ipmi_sdr_get_record(intf, header, itr);
         if (!rec)

@@ -34,6 +34,10 @@
  * facility.
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_raw.h>

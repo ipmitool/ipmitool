@@ -388,7 +388,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 	struct ipmi_rq req1, req2;
 	unsigned char rqdata[2];
 	struct get_user_access_rsp user_access;
-	int curr_uid, max_uid, init = 1;
+	int curr_uid, max_uid = 0, init = 1;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 

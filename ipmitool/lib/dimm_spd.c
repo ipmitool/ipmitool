@@ -676,8 +676,7 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 	struct ipmi_rq req;
 	struct fru_info fru;
 	unsigned char spd_data[256], msg_data[4];
-	int i, len, offset;
-	int size, conf;
+	int len, offset, size;
 
 	msg_data[0] = id;
 

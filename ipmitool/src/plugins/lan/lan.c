@@ -80,7 +80,6 @@ const struct valstr ipmi_authtype_session_vals[] = {
 	{ 0,                               NULL },
 };
 
-static int recv_timeout = IPMI_LAN_TIMEOUT;
 static sigjmp_buf jmpbuf;
 
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
@@ -483,8 +482,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			printf("<< IPMI Response Session Header\n");
 			printf("<<   Authtype   : %s\n",
 			       val2str(rsp->session.authtype, ipmi_authtype_session_vals));
-			printf("<<   Sequence   : 0x%08lx\n", rsp->session.seq);
-			printf("<<   Session ID : 0x%08lx\n", rsp->session.id);
+			printf("<<   Sequence   : 0x%08lx\n", (long)rsp->session.seq);
+			printf("<<   Session ID : 0x%08lx\n", (long)rsp->session.id);
 			
 			printf("<< IPMI Response Message Header\n");
 			printf("<<   Rq Addr    : %02x\n", rsp->payload.ipmi_response.rq_addr);
@@ -569,12 +568,13 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		.seq		= 0xff,
 	};
 	unsigned char * msg, * temp;
-	int cs, cs2, mp, tmp;
+	int cs, mp, tmp;
 	int ap = 0;
 	int len = 0;
+	int cs2 = 0;
 	struct ipmi_rq_entry * entry;
 	struct ipmi_session * s = intf->session;
-	static curr_seq = 0;
+	static int curr_seq = 0;
 
 	if (curr_seq >= 64)
 		curr_seq = 0;
@@ -648,8 +648,8 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		printf(">> IPMI Request Session Header\n");
 		printf(">>   Authtype   : %s\n",
 		       val2str(s->authtype, ipmi_authtype_session_vals));
-		printf(">>   Sequence   : 0x%08lx\n", s->in_seq);
-		printf(">>   Session ID : 0x%08lx\n", s->session_id);
+		printf(">>   Sequence   : 0x%08lx\n", (long)s->in_seq);
+		printf(">>   Session ID : 0x%08lx\n", (long)s->session_id);
 		
 		printf(">> IPMI Request Message Header\n");
 		printf(">>   Rs Addr    : %02x\n", intf->target_addr);
@@ -752,7 +752,7 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 		.class	= RMCP_CLASS_IPMI,
 		.seq	= 0xff,
 	};
-	int cs, mp, ap = 0, tmp, rv;
+	int cs, mp, ap = 0, tmp;
 	int len;
 	unsigned char * msg;
 
@@ -1009,10 +1009,8 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 
 	if (verbose > 1) {
 		printf("Opening Session\n");
-		printf("  Session ID      : %08lx\n",
-		       s->session_id);
-		printf("  Challenge       : %s\n",
-		       buf2str(s->challenge, 16));
+		printf("  Session ID      : %08lx\n", (long)s->session_id);
+		printf("  Challenge       : %s\n", buf2str(s->challenge, 16));
 	}
 
 
@@ -1104,8 +1102,8 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		       val2str(rsp->data[0], ipmi_authtype_session_vals));
 		printf("  Max Priv Level  : %s\n",
 		       val2str(rsp->data[9], ipmi_privlvl_vals));
-		printf("  Session ID      : %08lx\n", s->session_id);
-		printf("  Inbound Seq     : %08lx\n", s->in_seq);
+		printf("  Session ID      : %08lx\n", (long)s->session_id);
+		printf("  Inbound Seq     : %08lx\n", (long)s->in_seq);
 		printf("\n");
 	}
 
@@ -1182,7 +1180,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 
 	if (rsp->ccode == 0x87) {
 		printf("Failed to Close Session: invalid session ID %08lx\n",
-		       session_id);
+		       (long)session_id);
 		return -1;
 	}
 	if (rsp->ccode) {
@@ -1191,7 +1189,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 	}
 
 	if (verbose > 1)
-		printf("\nClosed Session %08lx\n\n", session_id);
+		printf("\nClosed Session %08lx\n\n", (long)session_id);
 
 	return 0;
 }

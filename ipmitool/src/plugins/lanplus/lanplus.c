@@ -105,7 +105,7 @@ static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lanplus_send_sol(
 											  struct ipmi_intf * intf,
 											  struct ipmi_v2_payload * payload);
-static int check_sol_packet_for_data(
+static int check_sol_packet_for_new_data(
 									 struct ipmi_intf * intf,
 									 struct ipmi_rs *rsp);
 static void ack_sol_packet(
@@ -546,9 +546,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				printf("<<   Payload type            : 0x%x\n",
 					   rsp->session.payloadtype);
 				printf("<<   Session ID              : 0x%08lx\n",
-					   rsp->session.id);
+					   (long)rsp->session.id);
 				printf("<<   Sequence                : 0x%08lx\n",
-					   rsp->session.seq);
+					   (long)rsp->session.seq);
 					
 				printf("<<   IPMI Msg/Payload Length : %d\n",
 					   rsp->session.msglen);
@@ -1702,8 +1702,8 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 		printf(">> IPMI Request Session Header\n");
 		printf(">>   Authtype   : %s\n", val2str(IPMI_SESSION_AUTHTYPE_NONE,
 												 ipmi_authtype_vals));
-		printf(">>   Sequence   : 0x%08lx\n", session->out_seq);
-		printf(">>   Session ID : 0x%08lx\n", 0);
+		printf(">>   Sequence   : 0x%08lx\n", (long)session->out_seq);
+		printf(">>   Session ID : 0x%08lx\n", (long)0);
 
 		printf(">> IPMI Request Message Header\n");
 		printf(">>   Rs Addr    : %02x\n", IPMI_BMC_SLAVE_ADDR);
@@ -1772,7 +1772,7 @@ ipmi_lanplus_send_payload(
 						  struct ipmi_intf * intf,
 						  struct ipmi_v2_payload * payload)
 {
-	struct ipmi_rs      * rsp;
+	struct ipmi_rs      * rsp = NULL;
 	unsigned char       * msg_data;
 	int                   msg_length;
 	struct ipmi_session * session = intf->session;
@@ -2368,7 +2368,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 
 	if (rsp->ccode == 0x87) {
 		printf("Failed to Close Session: invalid session ID %08lx\n",
-			   intf->session->v2_data.bmc_id);
+			   (long)intf->session->v2_data.bmc_id);
 		return -1;
 	}
 	if (rsp->ccode) {
@@ -2377,7 +2377,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 	}
 
 	if (verbose > 1)
-		printf("\nClosed Session %08lx\n\n", intf->session->v2_data.bmc_id);
+		printf("\nClosed Session %08lx\n\n", (long)intf->session->v2_data.bmc_id);
 
 	return 0;
 }

@@ -45,6 +45,7 @@
 #include <sys/stat.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_session.h>
@@ -218,7 +219,7 @@ static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 	char *pbuf, **ap, *__argv[10];
 	int __argc, rc=0;
 
-	while (pbuf = (char *)readline(PROMPT)) {
+	while ((pbuf = (char *)readline(PROMPT)) != NULL) {
 		if (strlen(pbuf) == 0) {
 			continue;
 		}
@@ -265,7 +266,6 @@ int main(int argc, char ** argv)
 	char * progname = NULL;
 	int port = 0;
 	int argflag, i;
-	int intfarg = 0;
 	int rc = 0;
 	int thump = 0;
 
@@ -418,7 +418,6 @@ int main(int argc, char ** argv)
 	/* now we finally run the command */
 	ipmi_cmd_run(intf, argv[optind], argc-optind-1, &(argv[optind+1]));
 
- out_close:
 	if (intf->opened && intf->close)
 		intf->close(intf);
 

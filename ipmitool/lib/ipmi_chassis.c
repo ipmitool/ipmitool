@@ -182,7 +182,7 @@ static void ipmi_chassis_poh(struct ipmi_intf * intf)
 	memcpy(&count, rsp->data+1, 4);
 
 	printf("POH Counter  : %li hours total (%li days, %li hours)\n",
-	       count, (uint32_t)(count / 24), (uint32_t)(count % 24));
+	       (long)count, (long)(count / 24), (long)(count % 24));
 }
 
 static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)

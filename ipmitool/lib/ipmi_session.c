@@ -296,6 +296,8 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 			rqdata[1]        = (unsigned char)id_or_handle;
 			req.msg.data_len = 2;
 			break;
+		case IPMI_SESSION_REQUEST_ALL:
+			break;
 		}
 
 
@@ -377,7 +379,7 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 
 			Ipmi_Session_Request_Type session_request_type;
-			uint32_t                  id_or_handle;
+			uint32_t                  id_or_handle = 0;
 
 			if (!strncmp(argv[1], "active", 6))
 				session_request_type = IPMI_SESSION_REQUEST_CURRENT;

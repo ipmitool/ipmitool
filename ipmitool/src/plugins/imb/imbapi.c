@@ -1,7 +1,7 @@
 /*M*
 //  PVCS:
 //      $Workfile:   imbapi.c  $
-//      $Revision: 1.1 $
+//      $Revision: 1.2 $
 //      $Modtime:   06 Aug 2001 13:16:56  $
 //      $Author: iceblink $
 //
@@ -39,6 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *----------------------------------------------------------------------*/
 /*
  * $Log: imbapi.c,v $
+ * Revision 1.2  2004/08/31 23:52:58  iceblink
+ * fix lots of little errors that show up with -Werror -Wall
+ *
  * Revision 1.1  2004/08/27 16:33:25  iceblink
  * add support for Intel IMB kernel driver (for legacy kernel support)
  * imbapi.[ch] code is BSD licensed and taken from panicsel.sf.net
@@ -113,7 +116,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // pre-processor directives to separate os-specific code (pai 11/21) */
 
 HANDLE  AsyncEventHandle = 0;
-static void *  AsyncEventObject = 0; 
+//static void *  AsyncEventObject = 0; 
 static int  IpmiVersion;
 
 /*////////////////////////////////////////////////////////////////////////////
@@ -1743,7 +1746,7 @@ RegisterForImbAsyncMessageNotification (unsigned int *handleId)
 	if( (respLength != sizeof(int))  || (status != TRUE ))
 		return  ACCESN_ERROR;
 
-	/* printf("imbapi: Register handle = %x\n",AsyncEventHandle); /*++++*/
+	/* printf("imbapi: Register handle = %x\n",AsyncEventHandle); *//*++++*/
 	*handleId = (unsigned int) AsyncEventHandle;
 	
 #ifndef NO_MACRO_ARGS
@@ -1958,7 +1961,7 @@ UnmapPhysicalMemory (
 ACCESN_STATUS
 MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 {
-	int 				fd, i; 
+	int 				fd; 
 	unsigned int 		length = addressLength;
 	off_t 				startpAddress = (off_t)startAddress;
 	unsigned int 		diff;
@@ -2012,7 +2015,7 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	} 
 #endif /*LINUX_DEBUG_MAX */
 
-	*virtualAddress = (int)(startvAddress + diff);
+	*virtualAddress = (long)(startvAddress + diff);
 	return ACCESN_OK;
 }
 
@@ -2029,7 +2032,7 @@ UnmapPhysicalMemory( int virtualAddress, int Length )
 	DEBUG("%s: calling munmap(0x%x,%d)\n",__FUNCTION__,virtualAddress,Length);
 #endif
 
-	if(munmap((caddr_t)virtualAddress, Length) != 0)
+	if(munmap(&virtualAddress, Length) != 0)
 	{
 		char buf[128];
 

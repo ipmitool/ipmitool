@@ -33,8 +33,8 @@ AC_CHECK_FUNCS([alarm gethostbyname socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
 AC_CHECK_FUNCS([getpassphrase])
 
-dnl CFLAGS="$CFLAGS -Wall -Werror"
-dnl AC_SUBST(CFLAGS)
+CFLAGS="$CFLAGS -fno-strict-aliasing -Wall -Werror"
+AC_SUBST(CFLAGS)
 
 AM_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"

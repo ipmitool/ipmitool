@@ -43,6 +43,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/poll.h>
 
 #include <config.h>
@@ -67,7 +68,9 @@ static void daemonize(void)
 {
 	pid_t pid;
 	int fd;
+#ifdef SIGHUP
 	sigset_t sighup;
+#endif
 
 	/* if we are started from init no need to become daemon */
 	if (getppid() == 1)
@@ -128,7 +131,6 @@ static int enable_event_msg_buffer(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char bmc_global_enables;
-	int r;
 
 	/* we must read/modify/write bmc global enables */
 	memset(&req, 0, sizeof(req));

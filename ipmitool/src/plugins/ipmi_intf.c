@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <config.h>
 #include <ipmitool/ipmi_intf.h>
@@ -76,7 +77,7 @@ struct ipmi_intf * ipmi_intf_table[] = {
 	NULL
 };
 
-char * ipmi_intf_print(void)
+void ipmi_intf_print(void)
 {
 	struct ipmi_intf ** intf;
 	int def = 1;
