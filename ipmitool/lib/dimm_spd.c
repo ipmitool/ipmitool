@@ -733,6 +733,11 @@ ipmi_spd_print(struct ipmi_intf * intf, uint8_t id)
 		if (rsp->ccode > 0) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
+
+			/* Timeouts are acceptable. No DIMM in the socket */
+			if (rsp->ccode == 0xc3)
+				return 1;
+
 			return -1;
 		}
 
