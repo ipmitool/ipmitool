@@ -1,3 +1,18 @@
+ipmitool (1.6.0) unstable; urgency=low
+
+  * Add a README
+  * Add support for IPMIv2 and Serial-over-LAN from Newisys
+  * Add Solaris x86 lipmi interface
+  * Add support for building Solaris packages
+  * Add support for building RPMs as non-root user
+  * Fix segfault when doing "sel list" (from Matthew Braithwaite)
+  * Fix "chassis identify" on some BMCs (from ebrower@sourceforge)
+  * Add "bmc info" and related output (from ebrower@sourceforge)
+  * new "shell" and "exec" commands
+  * lots of other contributed patches
+
+ -- Duncan Laurie <duncan@iceblink.org>  Thu, 9 Sep 2004 21:39:37 -0700
+
 ipmitool (1.5.9) unstable; urgency=low
 
   * Add ability to get a particular sensor by name
