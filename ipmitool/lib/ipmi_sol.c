@@ -324,8 +324,9 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 {
 	struct sol_config_parameters params;
-	ipmi_get_sol_info(intf, channel, &params);
-
+	if (ipmi_get_sol_info(intf, channel, &params))
+		return -1;
+	
 	if (csv_output)
 	{
 		printf("%s,", params.set_in_progress?"true": "false");
