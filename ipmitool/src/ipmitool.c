@@ -90,8 +90,8 @@ void usage(void)
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
 	printf("Commands:  bmc, chassis, event, fru, lan, raw, "
-		   "sdr, sel, sensor, sol, isol, channel,\n"
-		   "           session\n\n");
+		   "sdr, sel, sensor, sol, isol\n"
+		   "           channel, session\n\n");
 	printf("\n\n");
 }
 
