@@ -1,5 +1,5 @@
-PKG="@IPMITOOL_BIN@"
-NAME="@IPMITOOL_BIN@ - Utility for IPMI control"
+PKG="@PACKAGE@"
+NAME="@PACKAGE@ - Utility for Intelligent Platform Management Interface (IPMI) control"
 ARCH="@ARCH@"
 VERSION="@VERSION@"
 CATEGORY="system"
