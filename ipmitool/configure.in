@@ -61,7 +61,12 @@ solaris*)
 	# openssl libs are in /usr/sfw/lib on solaris 10
         LIBS="$LIBS -R/usr/sfw/lib"
 	# disable the linux-specific interfaces
-	enable_intf_bmc=yes
+	# and bmc on SPARC (there is no bmc driver for SPARC)
+	if [[ `mach -p` = sparc ]]; then
+		enable_intf_bmc=no
+	else
+		enable_intf_bmc=yes
+	fi
 	enable_intf_imb=no
 	enable_intf_open=no
 	enable_ipmievd=no
@@ -182,7 +187,7 @@ AC_CHECK_HEADER([linux/ipmi.h],
 dnl enable Linux OpenIPMI interface
 AC_ARG_ENABLE([intf-open],
 	[AC_HELP_STRING([--enable-intf-open],
-			[enable Linux OpenIPMI interface [default=yes]])],
+			[enable Linux OpenIPMI interface [default=auto]])],
 	[], [enable_intf_open=yes])
 if test "x$enable_intf_open" = "xstatic" || test "x$enable_intf_open" = "xplugin"; then
    enable_intf_open=yes
@@ -197,7 +202,7 @@ fi
 dnl enable Intel IMB interface
 AC_ARG_ENABLE([intf-imb],
 	[AC_HELP_STRING([--enable-intf-imb],
-			[enable Intel IMB driver interface [default=yes]])],
+			[enable Intel IMB driver interface [default=auto]])],
 	[], [enable_intf_imb=yes])
 if test "x$enable_intf_imb" = "xstatic" || test "x$enable_intf_imb" = "xplugin"; then
    enable_intf_imb=yes
@@ -232,7 +237,7 @@ fi
 dnl enable Solaris BMC interface
 AC_ARG_ENABLE([intf-bmc],
 	[AC_HELP_STRING([--enable-intf-bmc],
-			[enable Solaris 10 x86 IPMI interface [default=no]])],,
+			[enable Solaris 10 x86 IPMI interface [default=auto]])],,
 	[enable_intf_bmc=no])
 if test "x$enable_intf_bmc" = "xstatic" || test "x$enable_intf_bmc" = "xplugin"; then
    enable_intf_bmc=yes
@@ -262,7 +267,7 @@ fi
 dnl enable IPMI Event Daemon
 AC_ARG_ENABLE([ipmievd],
 	[AC_HELP_STRING([--enable-ipmievd],
-			[enable IPMI Event daemon [default=yes]])],
+			[enable IPMI Event daemon [default=auto]])],
 	[], [enable_ipmievd=yes])
 AM_CONDITIONAL(IPMIEVD, [test "x$enable_ipmievd" = "xyes"])
 if test "x$enable_ipmievd" = "xyes"; then
