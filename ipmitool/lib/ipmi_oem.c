@@ -45,12 +45,12 @@ static int ipmi_oem_supermicro(struct ipmi_intf * intf);
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
 		name:	"supermicro",
-		desc:	"Supermicro BMC with OEM LAN authentication support",
+		desc:	"Supermicro IPMIv1.5 BMC with OEM LAN authentication support",
 		setup:	ipmi_oem_supermicro,
 	},
 	{
 		name:	"intelwv2",
-		desc:	"Intel SE7501WV2 BMC with extra LAN communication support",
+		desc:	"Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support",
 	},
 	{
 		name:	"intelplus",
