@@ -498,7 +498,7 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	data[1] = 0x02;		/* set password */
 
 	if (password != NULL)
-		memcpy(data+2, password, min(strlen(password), 16));
+		memcpy(data+2, password, __min(strlen(password), 16));
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -809,7 +809,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE, "lan set <channel> snmp <community string>");
 		} else {
-			memcpy(data, argv[2], min(strlen(argv[2]), 18));
+			memcpy(data, argv[2], __min(strlen(argv[2]), 18));
 			printf("Setting LAN %s to %s\n",
 			       ipmi_lan_params[IPMI_LANP_SNMP_STRING].desc, data);
 			rc = set_lan_param(intf, chan, IPMI_LANP_SNMP_STRING, data, 18);

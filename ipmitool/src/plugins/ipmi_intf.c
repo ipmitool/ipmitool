@@ -154,7 +154,7 @@ ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 
 	if (hostname != NULL) {
 		memcpy(intf->session->hostname, hostname,
-		       min(strlen(hostname), 64));
+		       __min(strlen(hostname), 64));
 	}
 }
 
@@ -169,7 +169,7 @@ ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 	if (username == NULL)
 		return;
 
-	memcpy(intf->session->username, username, min(strlen(username), 16));
+	memcpy(intf->session->username, username, __min(strlen(username), 16));
 }
 
 void
@@ -187,7 +187,7 @@ ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 
 	intf->session->password = 1;
 	memcpy(intf->session->authcode, password,
-	       min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
+	       __min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
 }
 
 void

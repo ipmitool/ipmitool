@@ -54,7 +54,6 @@
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_fru.h>
-#include <ipmitool/ipmi_isol.h>
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
@@ -104,7 +103,6 @@ struct ipmi_cmd {
 	{ ipmi_sel_main,     "sel",     "Print System Event Log (SEL)" },
 	{ ipmi_pef_main,     "pef",     "Configure Platform Event Filtering (PEF)" },
 	{ ipmi_sol_main,     "sol",     "Configure IPMIv2.0 Serial-over-LAN" },
-	{ ipmi_isol_main,    "isol",    "Configure Intel IPMIv1.5 Serial-over-LAN" },
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },

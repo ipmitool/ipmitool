@@ -51,18 +51,19 @@ unsigned short buf2short(unsigned char * buf);
 uint32_t buf2long(unsigned char * buf);
 const char * buf2str(unsigned char * buf, int len);
 void printbuf(const unsigned char * buf, int len, const char * desc);
-void signal_handler(int sig, void * handler);
 unsigned char ipmi_csum(unsigned char * d, int s);
-FILE * ipmi_open_file(const char * file, int flags);
+FILE * ipmi_open_file(const char * file, int rw);
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
 
-#define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
-#define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
-#define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
-
-#define min(a, b)  ((a) < (b) ? (a) : (b))
+#ifndef __min
+# define __min(a, b)  ((a) < (b) ? (a) : (b))
+#endif
 
 #endif /* IPMI_HELPER_H */
+
+
+
+
 

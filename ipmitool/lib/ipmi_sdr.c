@@ -1943,7 +1943,7 @@ ipmi_sdr_get_info(struct ipmi_intf * intf,
 
 	memcpy(sdr_repository_info,
 	       rsp->data,
-	       min(sizeof(struct get_sdr_repository_info_rsp),rsp->data_len));
+	       __min(sizeof(struct get_sdr_repository_info_rsp),rsp->data_len));
 
 	return 0;
 }

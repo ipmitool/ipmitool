@@ -46,6 +46,7 @@
 #include <errno.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 
 extern int verbose;
 
@@ -64,7 +65,7 @@ const char * buf2str(unsigned char * buf, int len)
 	static char str[1024];
 	int i;
 
-	if (!len || len > 1024)
+	if (len <= 0 || len > 1024)
 		return NULL;
 
 	memset(str, 0, 1024);
@@ -101,7 +102,7 @@ const char * val2str(unsigned short val, const struct valstr *vs)
 	static char un_str[16];
 	int i = 0;
 
-	while (vs[i].str) {
+	while (vs[i].str != NULL) {
 		if (vs[i].val == val)
 			return vs[i].str;
 		i++;
@@ -117,7 +118,7 @@ unsigned short str2val(const char *str, const struct valstr *vs)
 {
 	int i = 0;
 
-	while (vs[i].str) {
+	while (vs[i].str != NULL) {
 		if (!strncasecmp(vs[i].str, str, strlen(str)))
 			return vs[i].val;
 		i++;
@@ -126,29 +127,13 @@ unsigned short str2val(const char *str, const struct valstr *vs)
 	return 0;
 }
 
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
-unsigned char ipmi_csum(unsigned char * d, int s)
+/* ipmi_csum  -  calculate an ipmi checksum
+ *
+ * @d:		buffer to check
+ * @s:		position in buffer to start checksum from
+ */
+unsigned char
+ipmi_csum(unsigned char * d, int s)
 {
 	unsigned char c = 0;
 	for (; s > 0; s--, d++)
@@ -156,11 +141,16 @@ unsigned char ipmi_csum(unsigned char * d, int s)
 	return -c;
 }
 
-/* safely open a file for reading or writing
- * file: filename
- * rw:   read-write flag, 1=write
+/* ipmi_open_file  -  safely open a file for reading or writing
+ *
+ * @file:	filename
+ * @rw:		read-write flag, 1=write
+ *
+ * returns pointer to file handler on success
+ * returns NULL on error
  */
-FILE * ipmi_open_file(const char * file, int rw)
+FILE *
+ipmi_open_file(const char * file, int rw)
 {
 	struct stat st1, st2;
 	FILE * fp;
@@ -170,51 +160,66 @@ FILE * ipmi_open_file(const char * file, int rw)
 		if (rw) {
 			/* does not exist, ok to create */
 			fp = fopen(file, "w");
-			if (!fp) {
-				printf("ERROR: Unable to open file %s for write: %s\n",
-				       file, strerror(errno));
+			if (fp == NULL) {
+				lperror(LOG_ERR, "Unable to open file %s "
+					"for write", file);
 				return NULL;
 			}
+			/* created ok, now return the descriptor */
 			return fp;
 		} else {
-			printf("ERROR: File %s does not exist\n", file);
+			lprintf(LOG_ERR, "File %s does not exist", file);
 			return NULL;
 		}
 	}
 
 	/* it exists - only regular files, not links */
-	if (!S_ISREG(st1.st_mode)) {
-		printf("ERROR: File %s has invalid mode: %d\n", file, st1.st_mode);
+	if (S_ISREG(st1.st_mode) == 0) {
+		lprintf(LOG_ERR, "File %s has invalid mode: %d",
+			file, st1.st_mode);
 		return NULL;
 	}
 
 	/* allow only files with 1 link (itself) */
 	if (st1.st_nlink != 1) {
-		printf("ERROR: File %s has invalid link count: %d != 1\n",
+		lprintf(LOG_ERR, "File %s has invalid link count: %d != 1",
 		       file, (int)st1.st_nlink);
 		return NULL;
 	}
 
 	fp = fopen(file, rw ? "w+" : "r");
-	if (!fp) {
-		printf("ERROR: Unable to open file %s: %s\n",
-		       file, strerror(errno));
+	if (fp == NULL) {
+		lperror(LOG_ERR, "Unable to open file %s", file);
 		return NULL;
 	}
 
 	/* stat again */
 	if (fstat(fileno(fp), &st2) < 0) {
-		printf("ERROR: Unable to stat file %s: %s\n",
-		       file, strerror(errno));
+		lperror(LOG_ERR, "Unable to stat file %s", file);
 		fclose(fp);
 		return NULL;
 	}
 
-	/* verify inode, owner, link count */
-	if (st2.st_ino != st1.st_ino ||
-	    st2.st_uid != st1.st_uid ||
-	    st2.st_nlink != 1) {
-		printf("ERROR: Unable to verify file %s\n", file);
+	/* verify inode */
+	if (st1.st_ino != st2.st_ino) {
+		lprintf(LOG_ERR, "File %s has invalid inode: %d != %d",
+			file, st1.st_ino, st2.st_ino);
+		fclose(fp);
+		return NULL;
+	}
+
+	/* verify owner */
+	if (st1.st_uid != st2.st_uid) {
+		lprintf(LOG_ERR, "File %s has invalid user id: %d != %d",
+			file, st1.st_uid, st2.st_uid);
+		fclose(fp);
+		return NULL;
+	}
+
+	/* verify inode */
+	if (st2.st_nlink != 1) {
+		lprintf(LOG_ERR, "File %s has invalid link count: %d != 1",
+			file, st2.st_nlink);
 		fclose(fp);
 		return NULL;
 	}

@@ -86,19 +86,19 @@ static void daemonize(void)
 	sigaddset(&sighup, SIGHUP);
 	if (sigprocmask(SIG_UNBLOCK, &sighup, NULL) < 0)
 		fprintf(stderr, "ERROR: could not unblock SIGHUP signal\n");
-	SIG_IGNORE(SIGHUP);
+	signal(SIGHUP, SIG_IGN);
 #endif
 #ifdef SIGTTOU
-	SIG_IGNORE(SIGTTOU);
+	signal(SIGTTOU, SIG_IGN);
 #endif
 #ifdef SIGTTIN
-	SIG_IGNORE(SIGTTIN);
+	signal(SIGTTIN, SIG_IGN);
 #endif
 #ifdef SIGQUIT
-	SIG_IGNORE(SIGQUIT);
+	signal(SIGQUIT, SIG_IGN);
 #endif
 #ifdef SIGTSTP
-	SIG_IGNORE(SIGTSTP);
+	signal(SIGTSTP, SIG_IGN);
 #endif
 
 	pid = (pid_t) fork();
