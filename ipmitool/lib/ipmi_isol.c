@@ -39,9 +39,20 @@
 #include <stdio.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>
+
+const struct valstr ipmi_isol_baud_vals[] = {
+	{ ISOL_BAUD_RATE_9600,   "9600" },
+	{ ISOL_BAUD_RATE_19200,  "19200" },
+	{ ISOL_BAUD_RATE_38400,  "38400" },
+	{ ISOL_BAUD_RATE_57600,  "57600" },
+	{ ISOL_BAUD_RATE_115200, "115200" },
+	{ 0x00, NULL }
+};
 
 extern int verbose;
 
@@ -65,17 +76,17 @@ static int ipmi_isol_setup(struct ipmi_intf * intf, char baudsetting)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("Error in Set ISOL Config Command\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config Command");
 		return -1;
 	}
-
 	if (rsp->ccode == 0xc1) {
-		printf("Serial Over Lan not supported!\n");
+		lprintf(LOG_ERR, "IPMI v1.5 Serial Over Lan (ISOL) not supported!");
 		return -1;
 	}
-	if (rsp->ccode) {
-		printf("Set Serial Over Lan Config returned %x\n", rsp->ccode);
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config Command: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -90,8 +101,13 @@ static int ipmi_isol_setup(struct ipmi_intf * intf, char baudsetting)
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x in Get ISOL Config command\n", rsp?rsp->ccode:0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -108,8 +124,13 @@ static int ipmi_isol_setup(struct ipmi_intf * intf, char baudsetting)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x in Set ISOL Config (Authentication) command\n", rsp?rsp->ccode:0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config (Authentication) Command");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config (Authentication) Command: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -123,48 +144,52 @@ static int ipmi_isol_setup(struct ipmi_intf * intf, char baudsetting)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x in Set ISOL Config (Baud Rate) command\n", rsp?rsp->ccode:0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config (Baud Rate) Command");
 		return -1;
 	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error in Set ISOL Config (Baud Rate) Command: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	printf("Set ISOL Baud Rate to %s\n",
+	       val2str(baudsetting, ipmi_isol_baud_vals));
 
 	return 0;
 }
 
 int ipmi_isol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc || !strncmp(argv[0], "setup", 5)) {
-		if (argv[1]) {
-			if (!strncmp(argv[1], "9600", 4)) {
-				ipmi_isol_setup(intf, ISOL_BAUD_RATE_9600);
-				return 0;
-			}
-			else if (!strncmp(argv[1], "19200", 5)) {
-				ipmi_isol_setup(intf, ISOL_BAUD_RATE_19200);
-				return 0;
-			}
-			else if (!strncmp(argv[1], "38400", 5)) {
-				ipmi_isol_setup(intf, ISOL_BAUD_RATE_38400);
-				return 0;
-			}
-			else if (!strncmp(argv[1], "57600", 5)) {
-				ipmi_isol_setup(intf, ISOL_BAUD_RATE_57600);
-				return 0;
-			}
-			else if (!strncmp(argv[1], "115200", 6)) {
-				ipmi_isol_setup(intf, ISOL_BAUD_RATE_115200);
-				return 0;
-			}
-			else {
-				printf("ISOL - Unsupported baud rate: %s\n", argv[1]);
-				return 0;
-			}
-		} else {
-			ipmi_isol_setup(intf, ISOL_PREFERRED_BAUD_RATE);
-			return 0;
-		}
-	} else {
-		printf("ISOL Commands:  setup <baud>\n");
+	int ret = 0;
+
+	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "ISOL Commands: setup <baud>");
+		lprintf(LOG_NOTICE, "ISOL Baud Rates:  9600, 19200, 38400, 57600, 115200");
 		return 0;
 	}
+		
+	if (strncmp(argv[0], "setup", 5) == 0) {
+		if (strncmp(argv[1], "9600", 4) == 0) {
+			ret = ipmi_isol_setup(intf, ISOL_BAUD_RATE_9600);
+		}
+		else if (strncmp(argv[1], "19200", 5) == 0) {
+			ret = ipmi_isol_setup(intf, ISOL_BAUD_RATE_19200);
+		}
+		else if (strncmp(argv[1], "38400", 5) == 0) {
+			ret = ipmi_isol_setup(intf, ISOL_BAUD_RATE_38400);
+		}
+		else if (strncmp(argv[1], "57600", 5) == 0) {
+			ret = ipmi_isol_setup(intf, ISOL_BAUD_RATE_57600);
+		}
+		else if (strncmp(argv[1], "115200", 6) == 0) {
+			ret = ipmi_isol_setup(intf, ISOL_BAUD_RATE_115200);
+		}
+		else {
+			lprintf(LOG_ERR, "ISOL - Unsupported baud rate: %s", argv[1]);
+			ret = -1;
+		}
+	}
+	return ret;
 }
