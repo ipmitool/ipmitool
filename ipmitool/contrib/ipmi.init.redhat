@@ -1,0 +1,216 @@
+#!/bin/sh
+#
+# chkconfig: 2345 11 60
+# description: start, stop, or query ipmi system monitoring tools
+# config: /etc/sysconfig/ipmi
+#
+# For Redhat, Fedora, or similar systems.  Handles both 2.4 and 2.6
+# configurations.  Requires an /etc/sysconfig/ipmi file to function,
+# see below.
+#
+# Phil Hollenback
+# philiph@pobox.com
+
+# Source function library.
+. /etc/init.d/functions
+
+# Exit silently if we don't have a sysconfig file,
+# and read IPMI setting from it to determine whether or
+# not to continue.
+# The only current setting is ipmi={YES|NO}, whether or not
+# to enable IPMI.
+[ -f /etc/sysconfig/ipmi ] || exit 0
+. /etc/sysconfig/ipmi
+[ "${IPMI}" = "yes" ] || exit 0
+
+RETVAL=0
+
+start() {
+	echo -n $"Starting ipmi: "
+
+	# If ipmidev isn't listed in /proc/devices, try
+	# loading the modules.
+	if ! grep -q ipmidev /proc/devices
+	then
+	    /sbin/modprobe ipmi_msghandler || RETVAL=1
+	    /sbin/modprobe ipmi_devintf || RETVAL=1
+	    # Try loading new driver module, fall back to old
+	    # module if that fails.
+	    if ! /sbin/modprobe ipmi_si >/dev/null 2>&1
+	    then
+		/sbin/modprobe ipmi_kcs_drv || RETVAL=1
+	    fi
+	fi
+
+
+	# If ipmidev still isn't listed in /proc/devices after we load
+	# modules, this just isn't going to work.  Set RETVAL to mark
+	# this failure.
+	grep -q ipmidev /proc/devices || RETVAL=1
+
+	# Check if the device file exists and create if not.
+	if [ ! -c /dev/ipmi0 ] && [ $RETVAL -eq 0 ]
+	then
+	    major=$(awk '/ ipmidev$/{print $1}' /proc/devices)
+	    /bin/mknod -m 0600 /dev/ipmi0 c $major 0 || RETVAL=1
+	fi
+
+	if [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ipmi ; then
+		echo_success
+		echo
+	else
+		echo_failure
+		echo
+	fi
+}
+
+stop() {
+	echo -n $"Shutting down ipmi: "
+
+	# Stop doesn't actually do anything because we currently don't
+	# unload ipmi modules on stop.  That might change in the future
+ 	# if we decide unloading the ipmi modules is safe.
+	RETVAL=0
+
+	if [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ipmi ; then
+		echo_success
+		echo
+	else
+		echo_failure
+		echo
+	fi
+}
+
+dostatus() {
+	# Extract cpu temperatures from ipmitool output.
+
+	# Abort if we don't have the ipmitool program.
+	if ! /usr/bin/ipmitool -V >/dev/null
+	then
+	    echo "/usr/bin/ipmitool not found!" >&2
+	    exit 1
+	fi
+
+	# Abort if ipmi isn't loaded.
+	if ! grep -q ipmidev /proc/devices
+	then
+	    echo "ipmi not listed in /proc/devices!" >&2
+	    exit 1
+	fi
+
+	# Check if we are running on a v1.0 IPMI system, and
+	# change our processor search string appropriately.
+	if /usr/bin/ipmitool -I open bmc info | \
+		grep -q "IPMI Version.*1.0"
+	then
+	    IpmiVersion="1.0"
+	fi
+
+	# Determine # of running processors
+	NumProcs=$(grep -c processor /proc/cpuinfo)
+	if [ $NumProcs -eq 0 ]
+	then
+	    echo "Can't determine number of processors!" >&2
+	    exit 1
+	fi
+
+	# Now build the query string.  Concatenate it into
+	# one string because that's more efficient on 2.4 systems.
+	Count=1
+	TempString=""
+	while [ $Count -le $NumProcs ]
+	do
+	    if [ x$IpmiVersion  = x"1.0" ]
+	    then
+		TempString="$TempString CPU\ $Count"
+	    else
+		TempString="$TempString Processor$Count\ Temp"
+	    fi
+	    Count=$((Count + 1))
+	done
+	# building TempString like this and eval'ing it is ugly, but
+	# it's the only way I could make the quoting work.  Sorry.
+	TempString="/usr/bin/ipmitool -I open sensor get $TempString"
+	eval $TempString | awk -v "c=$Count" '
+BEGIN {
+   n = 1
+}
+/Sensor Reading/ {
+   printf "CPU%s Temp: %s\n",n,$4
+   n++
+}
+END {
+   if ( n != c) {
+	printf "Error: found %s CPUs, but got temps for %s\n",--c,--n >"/dev/stderr"
+	exit 1
+   }
+   exit 0
+}'
+	RETVAL=$((RETVAL + $?))
+	return $RETVAL
+}
+
+restart() {
+	stop
+	start
+	RETVAL=$?
+}
+
+condrestart() {
+	[ -e /var/lock/subsys/ipmi ] && restart || :
+}
+
+remove () {
+	# Actually remove the drivers.  Don't do during stop in case
+	# this causes system to become unstable (a la lm_sensors)
+	if /sbin/lsmod | awk '{print $1}' | grep -q ipmi_
+	then
+	    # Try removing both 2.4 and 2.6 modules.
+	    /sbin/rmmod ipmi_si 2>/dev/null
+	    /sbin/rmmod ipmi_kcs_drv 2>/dev/null
+	    /sbin/rmmod ipmi_devintf
+	    /sbin/rmmod ipmi_msghandler
+	else
+	    echo "No ipmi modules loaded!" >&2
+	    RETVAL=1
+	    return $RETVAL
+	fi
+
+	# Wait a sec to give modules time to unload.
+	sleep 1
+
+	# Check if we failed to remove any modules, and complain if so.
+	if /sbin/lsmod | awk '{print $1}' | grep -q ipmi_
+	then
+	    echo "ipmi modules still loaded!" >&2
+	    RETVAL=1
+	    return $RETVAL
+	fi
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+	dostatus
+	;;
+  restart|reload)
+	restart
+	;;
+  condrestart)
+	condrestart
+	;;
+  remove)
+	remove
+	;;
+  *)
+	echo "Usage: ipmi {start|stop|status|restart|condrestart|remove}"
+	exit 1
+esac
+
+exit $RETVAL
