@@ -637,33 +637,33 @@ ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 static int
 get_cmdline_macaddr(char * arg, uint8_t * buf)
 {
-	uint8_t m1, m2, m3, m4, m5, m6;
+	uint32_t m1, m2, m3, m4, m5, m6;
 	if (sscanf(arg, "%02x:%02x:%02x:%02x:%02x:%02x",
 		   &m1, &m2, &m3, &m4, &m5, &m6) != 6) {
 		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
 		return -1;
 	}
-	buf[0] = m1;
-	buf[1] = m2;
-	buf[2] = m3;
-	buf[3] = m4;
-	buf[4] = m5;
-	buf[5] = m6;
+	buf[0] = (uint8_t)m1;
+	buf[1] = (uint8_t)m2;
+	buf[2] = (uint8_t)m3;
+	buf[3] = (uint8_t)m4;
+	buf[4] = (uint8_t)m5;
+	buf[5] = (uint8_t)m6;
 	return 0;
 }
 
 static int
 get_cmdline_ipaddr(char * arg, uint8_t * buf)
 {
-	uint8_t ip1, ip2, ip3, ip4;
+	uint32_t ip1, ip2, ip3, ip4;
 	if (sscanf(arg, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
 		lprintf(LOG_ERR, "Invalid IP address: %s", arg);
 		return -1;
 	}
-	buf[0] = ip1;
-	buf[1] = ip2;
-	buf[2] = ip3;
-	buf[3] = ip4;
+	buf[0] = (uint8_t)ip1;
+	buf[1] = (uint8_t)ip2;
+	buf[2] = (uint8_t)ip3;
+	buf[3] = (uint8_t)ip4;
 	return 0;
 }
 
