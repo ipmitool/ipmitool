@@ -468,10 +468,6 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	chan = (unsigned char)strtol(argv[0], NULL, 0);
-	if (chan != 0x6 && chan != 0x7) {
-		printf("valid LAN channels are 6 and 7\n");
-		return;
-	}
 
 	/* set user access */
 	if (!strncmp(argv[1], "user", 4)) {
