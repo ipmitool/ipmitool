@@ -601,6 +601,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				rsp->data_len = extra_data_length;
 				memmove(rsp->data, rsp->data + offset, extra_data_length);
 			}
+			else
+				rsp->data_len = 0;
 
 			break;
 		}
