@@ -233,7 +233,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			rqdata[j] = (unsigned char)strtol(tok, NULL, 0);
 			tok = strtok(NULL, " ");
 		}
-		if (i < sizeof(rqdata)) {
+		if (i < 7) {
 			printf("Invalid Event: %s\n",
 			       buf2str(rqdata, sizeof(rqdata)));
 			continue;
