@@ -836,7 +836,7 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	{
 		if ((argc < 3) || (argc > 4)                                         ||
 		    (strncmp(argv[1], "all", 3) && strncmp(argv[1], "supported", 9)) ||
-		    (strncmp(argv[2], "ipmi", 4) && strncmp(argv[2], "sol",  3) == 0))
+		    (strncmp(argv[2], "ipmi", 4) && strncmp(argv[2], "sol",  3)))
 			printf_channel_usage();
 		else
 		{
