@@ -359,7 +359,7 @@ int main(int argc, char ** argv)
 	if (intfarg) {
 		intf = ipmi_intf_load(intfname);
 		if (!intf) {
-			printf("Error loading interface %s\n", optarg);
+			printf("Error loading interface %s\n", intfname);
 			goto out_free;
 		}
 	}
