@@ -1,0 +1,310 @@
+
+                              ipmitool
+                            Duncan Laurie
+                         duncan@iceblink.org
+
+Overview
+========
+ipmitool is a utility for managing and configuring devices that support
+the Intelligent Platform Management Interface.  IPMI is an open standard
+for monitoring, logging, recovery, inventory, and control of hardware
+that is implemented independent of the main CPU, BIOS, and OS.  The
+service processor (or Baseboard Management Controller, BMC) is the brain
+behind platform management and its primary purpose is to handle the
+autonomous sensor monitoring and event logging features.
+
+The ipmitool program provides a simple command-line interface to this BMC.
+It features the ability to read the sensor data repository (SDR) and print
+sensor values, display the contents of the System Event Log (SEL), print
+Field Replaceable Unit (FRU) inventory information, read and set LAN
+configuration parameters, and perform remote chassis power control.
+
+
+Background
+==========
+I originally wrote ipmitool while between projects and employeed at Sun
+Microsystems.  Sun had just embarked on a new line of general-purpose x86
+servers that inclued an OEM Intel board with an IPMIv1.5 BMC on board.
+It started with an idea that remote chassis power control would be a handy
+feature for my systems in the lab and from there it grew into a multi-
+purpose tool that lots of people found useful.  I decided to release it
+under a BSD license and give others the chance to make use of it.
+
+ipmitool was not written to provide large-scale (aka Enterprise) management
+application functionality.  The functionality that ipmitool proivides is
+easily accomplished by sending simple IPMI request messages and parsing
+the returned response.  It is intended to be used by system administrators
+who like the simplicity and scriptability of command-line utilities, as
+well as those debugging or developing their own BMC implementations.
+
+
+Requirements
+============
+Obviously the largest requirement is hardware with a service processor
+that supports the IPMI specification.  Many x86-based servers are now
+comming with IPMI support, check with your preferred hardware vendor
+about available prodcuts.
+
+Once you are certain you have the required hardware, you then need to
+decide how you want to access the BMC.  The most common case involve
+access through the System Interface or over the LAN.  (or serial, but
+currently ipmitool does not support the serial interface)
+
+
+System Interface
+----------------
+There are multiple types of system interfaces, but they are all similar
+enough to allow a single well-designed driver to support them all.  
+Different types of system interfaces include Keyboard Controller Style
+(KCS), Block Transfer (BT), System Management Interface Chip (SMIC) and
+SMBus.  Different hardware vendors will have different preference and
+implementations.
+
+On Linux the OpenIPMI kernel driver should support all of these system
+interfaces and it should be a simple matter of loading the right
+kernel modules and setting up the device node to use it.  The driver
+module names vary slightly in different kernel versions, but for all
+releases you need these two modules:
+
+  ipmi_msghandler: incoming and outgoing message handler
+  ipmi_devintf: character device interface to IPMI driver
+
+For 2.4.x and early 2.6.x kernels you need to choose a module based on
+the type of system interface your hardware supports.  For example:
+
+  ipmi_kcs_drv: Keyboard Controller Style driver
+
+More recent 2.6.x kernels have combined these into a single module:
+
+  ipmi_si: a universal IPMI system interface driver
+
+See the documentation that comes with your distribution and/or kernel
+for more information on what kernel modules are required.  Once the
+required modules are loaded and the driver has found a suitable system
+interface to the BMC then you need to ensure the device node at
+/dev/ipmi0 is pointing at the correct major number.
+
+This is because OpenIPMI is given a dynamically assigned major number
+when it is loaded, but depending on what other modules are present
+this number may be anywhere from 254 on down.  The easiest way to tell
+is to check the output of /proc/devices and see what major number the
+"ipmidev" device is assigned to.
+
+There is a sample script included with ipmitool called ipmi.init that
+can be used to automate this process at bootup.
+
+
+LAN Interface
+-------------
+This is often referred to as "IPMI-over-LAN" and defines how IPMI messages
+can be sent to and from the BMC encapsulated in Remote Management Control
+Protocol (RMCP) packets which are then transferred as UDP datagrams.
+
+IPMI-over-LAN is only supported with version 1.5 and higher of the IPMI
+specification.  The RMCP packet format is defined by the Alert Standard
+Forum, and it has been followed up with the RMCP+ protocol that adds
+encryption and payload support.  The IPMIv2 specification was updated
+accordingly to to support the RMCP+ protocol and brings with it enhanced
+security with encryption as well as support for Serial over LAN.
+
+There are different types of LAN interfaces as well.  Some systems have
+shared management networks where the NIC will intercept UDP packets to
+port 623 and redirect them to the BMC over SMBUS.  This type of LAN
+interface requires that the BMC be configured with the same settings that
+the system uses.  It also suffers from an increased security risk just by
+the nature of sharing that interface with normal traffic.
+
+I have also seen bugs in some implementations that have rendered the
+IPMI-over-LAN feature "dangerous" to enable in some situations.  (in
+particular there can be an issue with RPC because it will sometimes choose
+to use port 623 and you will lose response packets...)
+
+There is a sample shell script included with ipmitool called bmclanconf
+that can be used to simplify the LAN settings configuration process using
+the System Interface to configure the settings.  In some cases the
+hardware will come with a utility (often a DOS bootable CD) for configuring
+enabling the LAN interface as well.
+
+In order to support the IPMIv2.0 interface you must have an OpenSSL library
+with the required encrytion functions.  Recent distributions should have
+no problems.  The IPMIv1.5 interface will attempt to use OpenSSL for MD5
+hash function at compile time but if that is not found it will use an
+internal library.
+
+
+Usage
+=====
+All invocations of ipmitool require specifying an interface to use, unless
+you want to use the default interface as set at compile time.  Each call
+must also specify a command to run.  You can see the list of supported
+interfaces and which is default as well as a list of top level commands in
+the usage output available with the -h option:
+
+usage: ipmitool [options...] <command>
+
+   -h            This help
+   -V            Show version information
+   -v            Verbose (can use multiple times)
+   -c            Display output in comma separated format
+   -I intf       Interface to use
+   -H hostname   Remote host name for LAN interface
+   -p port       Remote RMCP port [default=623]
+   -L level      Remote session privilege level [default=USER]
+   -A authtype   Force use of authtype NONE, PASSWORD, MD2 or MD5
+   -U username   Remote session username
+   -P password   Remote session password
+   -f file       Read remote session password from file
+   -a            Prompt for remote password
+   -E            Read password from IPMI_PASSWORD environment variable
+   -m address    Set local IPMB address
+   -t address    Bridge request to remote target address
+
+Interfaces:
+    open         Linux OpenIPMI Interface [default]
+    imb          Intel IMB Interface
+    lan          IPMI v1.5 LAN Interface
+    lanplus      IPMI v2.0 RMCP+ LAN Interface
+
+Commands:
+    raw          Send a RAW IPMI request and print response
+    lan          Configure LAN Channels
+    chassis      Get chassis status and set power state
+    event        Send pre-defined events to BMC
+    bmc          Print BMC status and configure global enables
+    sdr          Print Sensor Data Repository entries and readings
+    sensor       Print detailed sensor information
+    fru          Print built-in FRU and scan SDR for FRU locators
+    sel          Print System Evelnt Log
+    sol          Configure IPMIv2.0 Serial-over-LAN
+    isol         Configure Intel IPMIv1.5 Serial-over-LAN
+    user         Configure BMC users
+    channel      Configure BMC channels
+    session      Print session information
+    shell        Launch interactive IPMI shell
+    exec         Run list of commands from file
+    set          Set runtime variable for shell and exec
+
+
+Commands
+========
+More help on the supported commands can be found by running them with the
+help argument, for example "chassis help".  There are a few commands with
+special meaning:
+
+> shell:  This command will launch an shell interface to the ipmitool
+  command set.  You can use this for interactively entering commands to
+  monitor system status.  An example session:
+
+# ipmitool -I open shell
+ipmitool> chassis status
+System Power         : off
+Power Overload       : false
+Power Interlock      : inactive
+Main Power Fault     : false
+Power Control Fault  : false
+Power Restore Policy : always-off
+Last Power Event     : command
+Chassis Intrusion    : active
+Front-Panel Lockout  : inactive
+Drive Fault          : false
+Cooling/Fan Fault    : false
+ipmitool> user list 7
+ID  Name             Callin  Link Auth  IPMI Msg   Channel Priv Limit
+1                    true    false      true       ADMINISTRATOR
+ipmitool> exit
+
+> exec:  This command will read a text file and execute ipmitool commands
+  in sequence.  It can be used for scriptable commands:
+
+# cat lansetup.scr
+lan set 7 ipsrc static
+lan set 7 ipaddr 10.1.1.10
+lan set 7 netmask 255.255.255.0
+lan set 7 defgw ipaddr 10.1.1.254
+# ipmitool -I open exec lansetup.scr
+Setting LAN IP Address to 10.1.1.10
+Setting Lan Subnet Mask to 255.255.255.0
+Setting Lan Default Gateway IP to 10.1.1.254
+
+> set:  This command can be used by the shell and exec modes to configure
+  various session parameters:
+
+  hostname <host>        Session hostname
+  username <user>        Session username
+  password <pass>        Session password
+  privlvl <level>        Session privilege level force
+  authtype <type>        Authentication type force
+  localaddr <addr>       Local IPMB address
+  targetaddr <addr>      Remote target IPMB address
+  port <port>            Remote RMCP port
+  csv [level]            enable output in comma separated format
+  verbose [level]        Verbose level
+
+# cat getstatus.scr
+set hostname sf-v20z-1
+set password admin
+chassis status
+# ipmitool -I lan exec getstatus.scr
+Set session hostname to lx50
+Set session password
+System Power         : off
+Power Overload       : false
+Power Interlock      : inactive
+Main Power Fault     : false
+Power Control Fault  : false
+Power Restore Policy : always-off
+Last Power Event     : command
+Chassis Intrusion    : active
+Front-Panel Lockout  : inactive
+Drive Fault          : false
+Cooling/Fan Fault    : false
+
+
+ipmievd
+=======
+Included with ipmitool is another utility called ipmievd that is a daemon
+which will listen for events from the BMC that are being sent to the SEL
+and also log those messages to syslog.  By default when run (as root) with
+no arguments it will daemonize and poll on the OpenIPMI device waiting for
+an event notification.  Upon receipt of an event it will log it to syslog
+with the LOG_LOCAL4 facility.  You can test ipmievd by sending test events
+over the LAN interface with ipmitool:
+
+remote# ipmievd
+
+local$ ipmitool -I lan -H lx50 -P admin event help
+usage: event <num>
+   1 : Temperature - Upper Critical - Going High
+   2 : Voltage Threshold - Lower Critical - Going Low
+   3 : Memory - Correctable ECC
+local$ ipmitool -I lan -H lx50 -P admin event 1
+Sending Temperature - Upper Critical - Going High event to BMC
+local$ ipmitool -I lan -H lx50 -P admin event 2
+Sending Voltage Threshold - Lower Critical - Going Low event to BMC
+local$ ipmitool -I lan -H lx50 -P admin event 3
+Sending Memory - Correctable ECC event to BMC
+
+remote# tail /var/log/messages   (timestamps removed)
+ipmievd: Waiting for events...
+ipmievd: Temperature Sensor 30 - Upper Critical - going high
+ipmievd: Voltage Sensor 60 - Lower Critical - going low
+ipmievd: Memory Sensor 01 - Correctable ECC
+
+
+Resources
+=========
+IPMItool homepage
+http://ipmitool.sourceforge.net
+
+IPMItool manpage
+http://ipmitool.sourceforge.net/manpage.html
+
+IPMItool overview paper from Linux.conf.au 2004
+http://ipmitool.sourceforge.net/lca2004_ipmitool.pdf
+
+Intelligent Platform Management Interface specification
+http://www.intel.com/design/servers/ipmi/spec.htm
+
+OpenIPMI project: Linux IPMI kernel driver and userland library
+http://openipmi.sourceforge.net
+

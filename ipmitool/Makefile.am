@@ -32,7 +32,10 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-EXTRA_DIST = AUTHORS COPYING ChangeLog \
+DOCDIR = $(DESTDIR)/$(datadir)/doc/$(distdir)
+DOCLIST = README COPYING AUTHORS ChangeLog
+
+EXTRA_DIST = $(DOCLIST) \
 	debian/changelog debian/control debian/copyright \
 	debian/dirs debian/docs debian/rules
 
@@ -47,6 +50,10 @@ SUBDIRS = lib src include doc contrib control
 
 dist-hook:
 	cp control/ipmitool.spec $(distdir)
+
+install-data-local:
+	mkdir -p $(DOCDIR)
+	install -m 644 $(DOCLIST) $(DOCDIR)
 
 .PHONY: pkg
 pkg: PKG := ipmitool-@VERSION@-@OS@-@ARCH@
