@@ -1,3 +1,19 @@
+ipmitool (1.5.9) unstable; urgency=low
+
+  * Add ability to get a particular sensor by name
+  * Add ability to set a particular sensor threshold
+  * Add support for displaying V2 channel authentication levels
+  * Add README for rrdtool scripts in contrib directory
+  * Improve lan interface retry handling
+  * Support prompting for password or reading from environment
+  * Move chaninfo command into channel subcommand
+  * Fix reservation ID handling when two sessions open to BMC
+  * Fix reading of large FRU data
+  * Add configure option for changing binary to ipmiadm for Solaris
+  * Fix compile problem on Solaris 8
+
+ -- Duncan Laurie <duncan@sun.com>  Sat, 27 Mar 2004 00:11:37 -0700
+
 ipmitool (1.5.8) unstable; urgency=low
 
   * Enable static compilation of interfaces

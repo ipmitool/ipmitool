@@ -66,6 +66,19 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %{_includedir}/ipmitool/*.h
 
 %changelog
+* Sat May 27 2004 <duncan@sun.com>  1.5.9-1
+ - Add ability to get a particular sensor by name
+ - Add ability to set a particular sensor threshold
+ - Add support for displaying V2 channel authentication levels
+ - Add README for rrdtool scripts in contrib directory
+ - Improve lan interface retry handling
+ - Support prompting for password or reading from environment
+ - Move chaninfo command into channel subcommand
+ - Fix reservation ID handling when two sessions open to BMC
+ - Fix reading of large FRU data
+ - Add configure option for changing binary to ipmiadm for Solaris
+ - Fix compile problem on Solaris 8
+
 * Tue Jan 27 2004 <duncan@sun.com>  1.5.8-1
  - Enable static compilation of interfaces
  - Fix types to be 64-bit safe
