@@ -39,6 +39,18 @@
 
 #include <ipmitool/ipmi.h>
 
+#define IPMI_SESSION_AUTHTYPE_NONE	0x0
+#define IPMI_SESSION_AUTHTYPE_MD2	0x1
+#define IPMI_SESSION_AUTHTYPE_MD5	0x2
+#define IPMI_SESSION_AUTHTYPE_KEY	0x4
+#define IPMI_SESSION_AUTHTYPE_OEM	0x5
+
+#define IPMI_SESSION_PRIV_CALLBACK	0x1
+#define IPMI_SESSION_PRIV_USER		0x2
+#define IPMI_SESSION_PRIV_OPERATOR	0x3
+#define IPMI_SESSION_PRIV_ADMIN		0x4
+#define IPMI_SESSION_PRIV_OEM		0x5
+
 struct ipmi_session {
 	unsigned char hostname[64];
 	unsigned char username[16];

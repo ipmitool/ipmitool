@@ -78,7 +78,10 @@ static const struct valstr ipmi_chassis_power_control_vals[] = {
 
 static void ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ctl)
 {
+	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -86,11 +89,16 @@ static void ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ct
 	req.msg.data = &ctl;
 	req.msg.data_len = 1;
 
-	printf("Chassis Power Control: %s\n",
-	       val2str(ctl, ipmi_chassis_power_control_vals));
+	rsp = intf->sendrecv(intf, &req);
 
-	intf->sendrecv(intf, &req);
-	intf->abort = 1;
+	if (!rsp || rsp->ccode) {
+		printf("Unable to set Chassis Power Control to %s\n",
+		       val2str(ctl, ipmi_chassis_power_control_vals));
+	} else {
+		printf("Chassis Power Control: %s\n",
+		       val2str(ctl, ipmi_chassis_power_control_vals));
+		intf->abort = 1;
+	}
 }
 
 static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)

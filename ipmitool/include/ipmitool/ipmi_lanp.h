@@ -46,18 +46,6 @@
 # define IPMI_LAN_SUSPEND_ARP_GRAT (1)
 #define IPMI_LAN_GET_STAT	0x04
 
-#define IPMI_SESSION_AUTHTYPE_NONE	0x0
-#define IPMI_SESSION_AUTHTYPE_MD2	0x1
-#define IPMI_SESSION_AUTHTYPE_MD5	0x2
-#define IPMI_SESSION_AUTHTYPE_KEY	0x4
-#define IPMI_SESSION_AUTHTYPE_OEM	0x5
-
-#define IPMI_SESSION_PRIV_CALLBACK	0x1
-#define IPMI_SESSION_PRIV_USER		0x2
-#define IPMI_SESSION_PRIV_OPERATOR	0x3
-#define IPMI_SESSION_PRIV_ADMIN		0x4
-#define IPMI_SESSION_PRIV_OEM		0x5
-
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_vals[];
 
