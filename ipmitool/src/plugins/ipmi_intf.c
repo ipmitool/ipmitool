@@ -34,18 +34,94 @@
  * facility.
  */
 
-#ifndef IPMI_INTF_H
-#define IPMI_INTF_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <ltdl.h>
 
+#include <config.h>
+#include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
 
-struct static_intf {
-	char * name;
+extern struct static_intf static_intf_list[];
+
+/* ipmi_intf_init
+ * initialize dynamic plugin interface
+ */
+int ipmi_intf_init(void)
+{
+	if (lt_dlinit() < 0) {
+		printf("ERROR: Unable to initialize ltdl\n");
+		return -1;
+	}
+
+	if (lt_dlsetsearchpath(PLUGIN_PATH) < 0) {
+		printf("ERROR: Unable to set ltdl plugin path to %s\n",
+		       PLUGIN_PATH);
+		lt_dlexit();
+		return -1;
+	}
+
+	return 0;
+}
+
+/* ipmi_intf_exit
+ * close dynamic plugin interface
+ */
+void ipmi_intf_exit(void)
+{
+	if (lt_dlexit() < 0)
+		printf("ERROR: Unable to cleanly exit ltdl\n");
+}
+
+/* ipmi_intf_load
+ * name: interface plugin name to load
+ */
+struct ipmi_intf * ipmi_intf_load(char * name)
+{
+	lt_dlhandle handle;
+	struct ipmi_intf * intf;
 	int (*setup)(struct ipmi_intf ** intf);
-};
+	struct static_intf *i = static_intf_list;
+	char libname[16];
 
-int ipmi_intf_init(void);
-void ipmi_intf_exit(void);
-struct ipmi_intf * ipmi_intf_load(char * name);
+	while (i->name) {
+		if (!strcmp(name, i->name)) {
+			if (i->setup(&intf) < 0) {
+				printf("ERROR: Unable to setup static interface %s\n", name);
+				return NULL;
+			}
+			return intf;
+		}
+		i++;
+	}
 
-#endif /* IPMI_INTF_H */
+	memset(libname, 0, 16);
+	if (snprintf(libname, sizeof(libname), "lib%s", name) <= 0) {
+		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
+		       name, PLUGIN_PATH);
+		return NULL;
+	}
+
+	handle = lt_dlopenext(libname);
+	if (handle == NULL) {
+		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
+		       libname, PLUGIN_PATH);
+		return NULL;
+	}
+
+	setup = lt_dlsym(handle, "intf_setup");
+	if (!setup) {
+		printf("ERROR: Unable to find interface setup symbol in plugin %s\n", name);
+		lt_dlclose(handle);
+		return NULL;
+	}
+
+	if (setup(&intf) < 0) {
+		printf("ERROR: Unable to run interface setup for plugin %s\n", name);
+		lt_dlclose(handle);
+		return NULL;
+	}
+
+	return intf;
+}
+

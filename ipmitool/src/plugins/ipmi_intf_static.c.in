@@ -36,70 +36,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ltdl.h>
 
 #include <config.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
 
-/* ipmi_intf_init
- * initialize dynamic plugin interface
- */
-int ipmi_intf_init(void)
-{
-	if (lt_dlinit() < 0) {
-		printf("ERROR: Unable to initialize ltdl\n");
-		return -1;
-	}
+@STATIC_INTF_EXT@
 
-	if (lt_dlsetsearchpath(PLUGIN_PATH) < 0) {
-		printf("ERROR: Unable to set ltdl plugin path to %s\n",
-		       PLUGIN_PATH);
-		lt_dlexit();
-		return -1;
-	}
-
-	return 0;
-}
-
-/* ipmi_intf_exit
- * close dynamic plugin interface
- */
-void ipmi_intf_exit(void)
-{
-	if (lt_dlexit() < 0)
-		printf("ERROR: Unable to cleanly exit ltdl\n");
-}
-
-/* ipmi_intf_load
- * name: interface plugin name to load
- */
-struct ipmi_intf * ipmi_intf_load(char * name)
-{
-	lt_dlhandle handle;
-	struct ipmi_intf * intf;
-	int (*intf_setup)(struct ipmi_intf ** intf);
-
-	handle = lt_dlopenext(name);
-	if (handle == NULL) {
-		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
-		       name, PLUGIN_PATH);
-		return NULL;
-	}
-
-	intf_setup = lt_dlsym(handle, "intf_setup");
-	if (!intf_setup) {
-		printf("ERROR: Unable to find interface setup symbol in plugin %s\n", name);
-		lt_dlclose(handle);
-		return NULL;
-	}
-
-	if (intf_setup(&intf) < 0) {
-		printf("ERROR: Unable to run interface setup for plugin %s\n", name);
-		lt_dlclose(handle);
-		return NULL;
-	}
-
-	return intf;
-}
-
+struct static_intf static_intf_list[] = {
+	@STATIC_INTF@
+	{ 0, 0 }
+};
