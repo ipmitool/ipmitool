@@ -287,7 +287,7 @@ lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
 		}
 	}
 
-	if (verbose > 2)
+	if (verbose > 1)
 		printbuf(output, *bytes_written, "decrypted this data");
 }
 
