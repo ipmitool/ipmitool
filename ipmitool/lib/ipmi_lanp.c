@@ -85,12 +85,54 @@ get_lan_param(struct ipmi_intf * intf, unsigned char chan, int param)
 		return NULL;
 
 	p->data = rsp->data + 1;
+	p->data_len = rsp->data_len-1;
 
 	return p;
 }
 
+/* wait for Set LAN Parameter command to complete
+ * this may take a long time...
+ */
 static int
-set_lan_param(struct ipmi_intf * intf, unsigned char chan, int param, unsigned char * data, int len)
+set_lan_param_wait(struct ipmi_intf * intf, unsigned char chan, int param, unsigned char * data, int len)
+{
+	struct lan_param * p;
+	int timeout = 3;	/* 3 second timeout */
+	int retry = 10;		/* 10 retries */
+
+	if (verbose > 1) {
+		printf("Waiting for Set LAN Parameter to complete...\n");
+		printbuf(data, len, "SET DATA");
+	}
+
+	for (;;) {
+		p = get_lan_param(intf, chan, param);
+		if (verbose > 1)
+			printbuf(p->data, p->data_len, "READ DATA");
+		if (p->data_len != len) {
+			sleep(timeout);
+			if (!retry--) {
+				printf("Mismatched data lengths: %d != %d\n",
+				       p->data_len, len);
+				return -1;
+			}
+			continue;
+		}
+		if (memcmp(data, p->data, len) != 0) {
+			sleep(timeout);
+			if (!retry--) {
+				printf("LAN Parameter Data does not match!  "
+				       "Write may have failed.\n");
+				return -1;
+			}
+			continue;
+		}
+		return 0;
+	}
+}
+
+static int
+__set_lan_param(struct ipmi_intf * intf, unsigned char chan, int param, unsigned char * data, int len, int wait)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -111,10 +153,82 @@ set_lan_param(struct ipmi_intf * intf, unsigned char chan, int param, unsigned c
 	req.msg.data_len = len+2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode)
+	if (!rsp) {
+		printf("Set Lan Parameter failed\n");
 		return -1;
+	}
+	if (rsp->ccode && wait) {
+		printf("Warning: Set Lan Parameter failed: %s\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		if (rsp->ccode == 0xcc) {
+			/* retry hack for invalid data field ccode */
+			int timeout = 3;	/* 3 second timeout */
+			int retry = 10;		/* 10 retries */
+			printf("Retrying...\n");
+			for (;;) {
+				if (!retry--)
+					break;
+				sleep(timeout);
+				rsp = intf->sendrecv(intf, &req);
+				if (!rsp || rsp->ccode)
+					continue;
+				return wait ? set_lan_param_wait(intf, chan, param, data, len) : 0;
+			}
+		}
+		else if (rsp->ccode != 0xff) {
+			/* let 0xff ccode continue */
+			return -1;
+		}
+	}
 
-	return 0;
+	return wait ? set_lan_param_wait(intf, chan, param, data, len) : 0;
+}
+
+static int
+ipmi_lanp_lock_state(struct ipmi_intf * intf, unsigned char chan)
+{
+	struct lan_param * p;
+	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
+	return p->data[0] & 1;
+}
+
+static void
+ipmi_lanp_lock(struct ipmi_intf * intf, unsigned char chan)
+{
+	unsigned char val = 1;
+	int inp, try = 3;
+
+	while ((inp = ipmi_lanp_lock_state(intf, chan)) != val) {
+		if (!try--)
+			break;
+		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
+	}
+}
+
+static void
+ipmi_lanp_unlock(struct ipmi_intf * intf, unsigned char chan)
+{
+	unsigned char val;
+	int rc;
+
+	val = 2;
+	rc = __set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
+	if (rc < 0) {
+		if (verbose > 1)
+			printf("LAN Parameter Commit not supported.  Clearing Set In Progress...\n");
+		val = 0;
+		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 0, 0);
+	}
+}
+
+static int
+set_lan_param(struct ipmi_intf * intf, unsigned char chan, int param, unsigned char * data, int len)
+{
+	int rc;
+	ipmi_lanp_lock(intf, chan);
+	rc = __set_lan_param(intf, chan, param, data, len, 1);
+	ipmi_lanp_unlock(intf, chan);
+	return rc;
 }
 
 
@@ -183,6 +297,9 @@ static void
 ipmi_lan_print(struct ipmi_intf * intf, unsigned char chan)
 {
 	struct lan_param * p;
+
+	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
+	if (p) printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE);
 	if (p) printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
@@ -442,6 +559,34 @@ get_cmdline_ipaddr(char * arg, unsigned char * buf)
 	return 0;
 }
 
+static void ipmi_lan_set_usage(void)
+{
+	printf("\nusage: lan set <channel> <command> [option]\n\n");
+	printf("LAN set commands:\n");
+	printf("  ipaddr <x.x.x.x>               Set channel IP address\n");
+	printf("  netmask <x.x.x.x>              Set channel IP netmask\n");
+	printf("  macaddr <x:x:x:x:x:x>          Set channel MAC address\n");
+	printf("  defgw ipaddr <x.x.x.x>         Set default gateway IP address\n");
+	printf("  defgw macaddr <x:x:x:x:x:x>    Set default gateway MAC address\n");
+	printf("  bakgw ipaddr <x.x.x.x>         Set backup gateway IP address\n");
+	printf("  bakgw macaddr <x:x:x:x:x:x>    Set backup gateway MAC address\n");
+	printf("  password <password>            Set session password for this channel\n");
+	printf("  snmp <community string>        Set SNMP public community string\n");
+	printf("  access <on|off>                Enable or disable access to this channel\n");
+	printf("  arp response <on|off>          Enable or disable BMC ARP responding\n");
+	printf("  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation\n");
+	printf("  arp interval <seconds>         Set gratuitous ARP generation interval\n");
+	printf("  auth <level> <type,..>         Set channel authentication types\n");
+	printf("    level  = callback, user, operator, admin\n");
+	printf("    type   = none, md2, md5, key\n");
+	printf("  ipsrc <source>                 Set IP Address source\n");
+	printf("    none   = unspecified source\n");
+	printf("    static = address manually configured to be static\n");
+	printf("    dhcp   = address obtained by BMC running DHCP\n");
+	printf("    bios   = address loaded by BIOS or system software\n");
+	printf("\n");
+}
+
 static void
 ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -449,23 +594,26 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	unsigned char chan;
 	memset(&data, 0, sizeof(data));
 
-	if (argc < 2 || !strncmp(argv[0], "help", 4) || !strncmp(argv[1], "help", 4)) {
-		printf("usage: lan set <channel> <command>\n");
-		printf("LAN set commands: ipaddr, netmask, macaddr, defgw, bakgw, "
-		       "password, auth, ipsrc, access, user, arp, snmp\n");
+	if (argc < 1) {
+		ipmi_lan_set_usage();
 		return;
 	}
 
 	chan = (unsigned char)strtol(argv[0], NULL, 0);
 
-	/* set user access */
-	if (!strncmp(argv[1], "user", 4)) {
-		ipmi_set_user_access(intf, chan, 1);
+	if (argc < 2 || chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX ||
+	    !strncmp(argv[0], "help", 4) ||
+	    !strncmp(argv[1], "help", 4)) {
+		ipmi_lan_set_usage();
 		return;
 	}
 
+	/* set user access */
+	if (!strncmp(argv[1], "user", 4)) {
+		ipmi_set_user_access(intf, chan, 1);
+	}
 	/* set channel access mode */
-	if (!strncmp(argv[1], "access", 6)) {
+	else if (!strncmp(argv[1], "access", 6)) {
 		if (argc < 3 || !strncmp(argv[2], "help", 4)) {
 			printf("lan set access <on|off>\n");
 		}
@@ -478,11 +626,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		else {
 			printf("lan set access <on|off>\n");
 		}
-		return;
 	}
-
 	/* set ARP control */
-	if (!strncmp(argv[1], "arp", 3)) {
+	else if (!strncmp(argv[1], "arp", 3)) {
 		if (argc < 3 || !strncmp(argv[2], "help", 4)) {
 			printf("lan set <channel> arp respond <on|off>\n");
 			printf("lan set <channel> arp generate <on|off>\n");
@@ -517,11 +663,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("lan set <channel> arp generate <on|off>\n");
 			printf("lan set <channel> arp interval <seconds>\n");
 		}
-		return;
 	}
-
 	/* set authentication types */
-	if (!strncmp(argv[1], "auth", 4)) {
+	else if (!strncmp(argv[1], "auth", 4)) {
 		if (argc < 3 || !strncmp(argv[2], "help", 4)) {
 			printf("lan set <channel> auth <level> <type,type,...>\n");
 			printf("  level = callback, user, operator, admin\n");
@@ -530,7 +674,6 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			return;
 		}
 		ipmi_lan_set_auth(intf, chan, argv[2], argv[3]);
-		return;
 	}
 	/* ip address source */
 	else if (!strncmp(argv[1], "ipsrc", 5)) {
@@ -577,9 +720,6 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		       ipmi_lan_params[IPMI_LANP_IP_ADDR].desc,
 		       data[0], data[1], data[2], data[3]);
 		set_lan_param(intf, chan, IPMI_LANP_IP_ADDR, data, 4);
-		/* also set ip address source to "static" */
-		data[0] = 0x1;
-		set_lan_param(intf, chan, IPMI_LANP_IP_ADDR_SRC, data, 1);
 	}
 	/* network mask */
 	else if (!strncmp(argv[1], "netmask", 7) &&
@@ -650,12 +790,14 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/* all the lan parameters commands need admin level */
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
-	if (!strncmp(argv[0], "printconf", 9) ||
-		 !strncmp(argv[0], "print", 5)) {
+	if (!strncmp(argv[0], "printconf", 9) || !strncmp(argv[0], "print", 5)) {
 		unsigned char chan = 7;
 		if (argc > 1)
 			chan = (unsigned char)strtol(argv[1], NULL, 0);
-		ipmi_lan_print(intf, chan);
+		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
+			printf("usage: lan print <channel>\n");
+		else
+			ipmi_lan_print(intf, chan);
 	}
 	else if (!strncmp(argv[0], "set", 3))
 		ipmi_lan_set(intf, argc-1, &(argv[1]));
