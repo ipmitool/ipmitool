@@ -449,7 +449,7 @@ This command deactives Serial Over LAN mode on the BMC.  Exiting Serial Over LAN
 .RS
 .TP
 .I setup
-Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.  This sub-command is specifice to Intel motherboards.
+Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.  This sub-command is specific to Intel motherboards.
 .RE
 .SH "OPEN INTERFACE"
 .LP 
