@@ -158,7 +158,11 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 		result = powf(result, 3.0);
 		break;
 	case SDR_SENSOR_L_SQRT:
+#ifdef __sun
+		result = (float)sqrt((double)result);
+#else
 		result = sqrtf(result);
+#endif
 		break;
 	case SDR_SENSOR_L_CUBERT:
 		result = cbrtf(result);
