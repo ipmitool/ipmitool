@@ -56,7 +56,6 @@
 extern int errno;
 int verbose = 0;
 int csv_output = 0;
-int num = 0;
 
 static int enable_event_msg_buffer(struct ipmi_intf * intf)
 {
@@ -145,7 +144,7 @@ static void read_event(struct ipmi_intf * intf)
 	if (verbose)
 		ipmi_sel_print_std_entry_verbose((struct sel_event_record *)recv.msg.data);
 	else
-		ipmi_sel_print_std_entry(num++, (struct sel_event_record *)recv.msg.data);
+		ipmi_sel_print_std_entry((struct sel_event_record *)recv.msg.data);
 }
 
 static int do_exit(struct ipmi_intf * intf, int rv)
