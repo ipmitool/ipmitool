@@ -342,7 +342,7 @@ This command will list the contents of the SEL.
 .RS
 .TP
 .I setup
-Setup Serial-over-LAN: enable, set authentication and baud rate.
+Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.
 .RE
 .SH "OPEN INTERFACE"
 .LP 
@@ -363,9 +363,16 @@ Once they are loaded there will be a dynamic char device entry that must exist a
 .LP 
 .I mknod /dev/ipmi0 c 254 0
 .LP 
-In order to force @IPMITOOL_BIN@ to make use of the device interface you can specifiy it on the command line:
+In order to force @IPMITOOL_BIN@ to make use of the OpenIPMI device interface you can specifiy it on the command line:
 .PP 
 @IPMITOOL_BIN@ \-I open <expression>
+.SH "LIPMI INTERFACE"
+.LP
+The @IPMITOOL_BIN@ \fIlipmi\fP interface uses the Solaris x86 IPMI kernel device driver.
+.LP
+You can tell @IPMITOOL_BIN@ to use the Solaris IPMI driver with the \fB-I\fR option:
+.PP
+@IPMITOOL_BIN@ \-I lipmi <expression>
 .SH "LAN INTERFACE"
 .LP 
 The @IPMITOOL_BIN@ \fIlan\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  UDP datagrams are formatted to contain IPMI request/response messages with a IPMI session headers and RMCP headers.
