@@ -58,6 +58,8 @@ solaris*)
 	STRIP=gstrip
 	LD=gld
 	AR=gar
+	# openssl libs are in /usr/sfw/lib on solaris 10
+        LIBS="$LIBS -R/usr/sfw/lib"
 	# disable the linux-specific interfaces
 	enable_intf_bmc=yes
 	enable_intf_imb=no
@@ -66,9 +68,21 @@ solaris*)
 	enable_ipmishell=no
 	;;
 *cygwin*)
+	# disable the linux and solaris-specific interfaces
 	enable_intf_imb=no
 	enable_intf_open=no
+	enable_intf_lipmi=no
+	enable_intf_bmc=no
 	enable_ipmievd=no
+	enable_ipmishell=no
+	;;
+*darwin*)
+	# disable the linux and solaris-specific interfaces
+	enable_intf_imb=no
+	enable_intf_open=no
+	enable_intf_lipmi=no
+	enable_intf_bmc=no
+	enable_ipmived=no
 	enable_ipmishell=no
 	;;
 esac
