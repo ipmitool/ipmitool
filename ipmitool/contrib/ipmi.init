@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "Setting up OpenIPMI driver..."
+
+# load the ipmi modules
+modprobe ipmi_msghandler
+modprobe ipmi_devintf
+if ! modprobe ipmi_kcs_drv ; then
+	modprobe ipmi_si # try new module name
+fi
+
+maj=$(cat /proc/devices | awk '/ipmidev/{print $1}')
+if [ "$maj" ]; then
+    test -e /dev/ipmi0 && rm -f /dev/ipmi0
+    /bin/mknod /dev/ipmi0 c $maj 0
+fi
+

@@ -34,6 +34,6 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-dist_pkgdata_DATA	= bmclanconf README \
+dist_pkgdata_DATA	= bmclanconf ipmi.init README \
 	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
 
