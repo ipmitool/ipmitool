@@ -45,6 +45,7 @@
 #include <math.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_entity.h>
 
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
 int utos(unsigned val, unsigned bits);
@@ -135,17 +136,8 @@ struct sdr_record_compact_sensor {
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
-	struct {
-		unsigned char	id;			/* physical entity id */
-#if WORDS_BIGENDIAN
-		unsigned char	logical     : 1;	/* physical/logical */
-		unsigned char	instance    : 7;	/* instance number */
-#else
-		unsigned char	instance    : 7;	/* instance number */
-		unsigned char	logical     : 1;	/* physical/logical */
-#endif
-	} entity;
-	
+	struct entity_id entity;
+
 	struct {
 		struct {
 #if WORDS_BIGENDIAN
@@ -267,17 +259,8 @@ struct sdr_record_eventonly_sensor {
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
-	struct {
-		unsigned char	id;			/* physical entity id */
-#if WORDS_BIGENDIAN
-		unsigned char	logical     : 1;	/* physical/logical */
-		unsigned char	instance    : 7;	/* instance number */
-#else
-		unsigned char	instance    : 7;	/* instance number */
-		unsigned char	logical     : 1;	/* physical/logical */
-#endif
-	} entity;
-	
+	struct entity_id entity;
+
 	unsigned char	sensor_type;			/* sensor type */
 	unsigned char	event_type;			/* event/reading type code */
 
@@ -322,16 +305,7 @@ struct sdr_record_full_sensor {
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
-	struct {
-		unsigned char	id;			/* physical entity id */
-#if WORDS_BIGENDIAN
-		unsigned char	logical     : 1;	/* physical/logical */
-		unsigned char	instance    : 7;	/* instance number */
-#else
-		unsigned char	instance    : 7;	/* instance number */
-		unsigned char	logical     : 1;	/* physical/logical */
-#endif
-	} entity;
+	struct entity_id entity;
 
 	struct {
 		struct {
@@ -453,56 +427,8 @@ struct sdr_record_full_sensor {
 	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
 } __attribute__ ((packed));
 
-struct sdr_record_fru_device_locator {
-	struct {
-#if WORDS_BIGENDIAN
-		unsigned char __reserved2	: 1;
-		unsigned char dev_access_addr	: 6;
-		unsigned char __reserved1	: 1;
-#else
-		unsigned char __reserved1	: 1;
-		unsigned char dev_access_addr	: 6;
-		unsigned char __reserved2	: 1;
-#endif
-		unsigned char fru_device_id;
-#if WORDS_BIGENDIAN
-		unsigned char logical_dev	: 1;
-		unsigned char __reserved3	: 2;
-		unsigned char access_lun	: 2;
-		unsigned char private_bus	: 3;
-#else
-		unsigned char private_bus	: 3;
-		unsigned char access_lun	: 2;
-		unsigned char __reserved3	: 2;
-		unsigned char logical_dev	: 1;
-#endif
-#if WORDS_BIGENDIAN
-		unsigned char channel_num	: 4;
-		unsigned char __reserved4	: 4;
-#else
-		unsigned char __reserved4	: 4;
-		unsigned char channel_num	: 4;
-#endif
-	} keys;
-
-	unsigned char __reserved;
-	unsigned char device_type;
-	unsigned char device_type_modifier;
-	unsigned char fru_entity_id;
-	unsigned char fru_entity_instance;
-	unsigned char oem;
-	unsigned char id_code;
-	unsigned char id_string[16];
-} __attribute__ ((packed));
-
 struct sdr_record_mc_locator {
-#if WORDS_BIGENDIAN
-	unsigned char dev_slave_addr	: 7;
-	unsigned char __reserved1	: 1;
-#else
-	unsigned char __reserved1	: 1;
-	unsigned char dev_slave_addr	: 7;
-#endif
+	unsigned char dev_slave_addr;
 #if WORDS_BIGENDIAN
 	unsigned char __reserved2	: 4;
 	unsigned char channel_num 	: 4;
@@ -521,23 +447,14 @@ struct sdr_record_mc_locator {
 #endif
 	unsigned char dev_support;
 	unsigned char __reserved4[3];
-	struct {
-		unsigned char id;
-		unsigned char instance;
-	} entity;
+	struct entity_id entity;
 	unsigned char oem;
 	unsigned char id_code;
 	unsigned char id_string[16];
 } __attribute__ ((packed));
 
 struct sdr_record_fru_locator {
-#if WORDS_BIGENDIAN
-	unsigned char dev_slave_addr	: 7;
-	unsigned char __reserved1	: 1;
-#else
-	unsigned char __reserved1	: 1;
-	unsigned char dev_slave_addr	: 7;
-#endif
+	unsigned char dev_slave_addr;
 	unsigned char device_id;
 #if WORDS_BIGENDIAN
 	unsigned char bus		: 3;
@@ -560,16 +477,16 @@ struct sdr_record_fru_locator {
 	unsigned char __reserved4;
 	unsigned char dev_type;
 	unsigned char dev_type_modifier;
-	struct {
-		unsigned char id;
-		unsigned char instance;
-	} entity;
+	struct entity_id entity;
 	unsigned char oem;
 	unsigned char id_code;
 	unsigned char id_string[16];
 } __attribute__ ((packed));
 
-
+struct sdr_record_oem {
+	unsigned char * data;
+	int data_len;
+};
 
 /*
  * The Get SDR Repository Info response structure
@@ -621,6 +538,7 @@ struct sdr_record_list {
 		struct sdr_record_eventonly_sensor * eventonly;
 		struct sdr_record_fru_locator * fruloc;
 		struct sdr_record_mc_locator * mcloc;
+		struct sdr_record_oem * oem;
 	} record;
 };
 
@@ -672,6 +590,8 @@ struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipm
 unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
 void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type);
+void ipmi_sdr_print_rawentry(struct ipmi_intf * intf, unsigned char type, unsigned char * raw, int len);
+void ipmi_sdr_print_listentry(struct ipmi_intf * intf, struct sdr_record_list * entry);
 const char * ipmi_sdr_get_status(unsigned char stat);
 float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char val);
 unsigned char sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val);
@@ -684,6 +604,8 @@ void ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf, struct sdr_record_
 void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
 void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
 
+struct sdr_record_list * ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity);
+struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, unsigned char num, unsigned char type);
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
