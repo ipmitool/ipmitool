@@ -316,6 +316,8 @@ static void ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char pa
 	struct ipmi_rq req;
 	unsigned char msg_data[16];
 
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
 	memset(msg_data, 0, 16);
 	msg_data[0] = param & 0x7f;
 	memcpy(msg_data+1, data, len);
@@ -373,6 +375,8 @@ static void ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
 {
 	unsigned char flags[5];
 
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
 	if (!arg) {
 		printf("Error: no bootflag argument supplied\n");
 		return;
@@ -410,8 +414,7 @@ static void ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char pol
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
-	if (!policy)
-		return;
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -420,8 +423,14 @@ static void ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char pol
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode)
+	if (!rsp)
 		return;
+	if (rsp->ccode > 0) {
+		printf("BMC Power Restore Policy command failed: %s\n",
+                       val2str(rsp->ccode, completion_code_vals));
+		return;
+	}
+
 
 	if (policy == IPMI_CHASSIS_POLICY_NO_CHANGE) {
 		printf("Supported chassis power policy:  ");
