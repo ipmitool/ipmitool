@@ -7,7 +7,7 @@ version 1.7.0
 	* Improved event generator, now supports reading events from text file
 	* New "-o oemtype" option for specifying OEM boards
 	  exsting types are "supermicro" and "intelwv2"
-	* New PEF subsystem
+	* New PEF subsystem from Tim Murphy at Dell
 	* New "bmc" plugin for Solaris 10 x86
 	* Many bugfixes and contributed patches
 
