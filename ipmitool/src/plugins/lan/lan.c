@@ -1043,27 +1043,31 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 		sleep(1);
 		rc = ipmi_get_auth_capabilities_cmd(intf);
 		if (rc < 0)
-			return -1;
+			goto fail;
 	}
 
 	rc = ipmi_get_session_challenge_cmd(intf);
 	if (rc < 0)
-		return -1;
+		goto fail;
 
 	rc = ipmi_activate_session_cmd(intf);
 	if (rc < 0)
-		return -1;
+		goto fail;
 
 	intf->abort = 0;
 
 	rc = ipmi_set_session_privlvl_cmd(intf);
 	if (rc < 0)
-		return -1;
+		goto fail;
 
 	/* channel 0xE will query current channel */
 //	ipmi_get_channel_info(intf, IPMI_LAN_CHANNEL_E);
 
 	return 0;
+
+ fail:
+	printf("Unable to connect to IPMI-over-LAN host\n");
+	return -1;
 }
 
 void ipmi_lan_close(struct ipmi_intf * intf)
