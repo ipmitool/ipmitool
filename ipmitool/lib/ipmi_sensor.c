@@ -38,6 +38,8 @@
 #include <math.h>
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sel.h>
@@ -51,18 +53,15 @@ static
 struct ipmi_rs *
 ipmi_sensor_get_sensor_thresholds(struct ipmi_intf * intf, uint8_t sensor)
 {
-    struct ipmi_rs * rsp;
-    struct ipmi_rq req;
+	struct ipmi_rq req;
 
-    memset(&req, 0, sizeof(req));
-    req.msg.netfn = IPMI_NETFN_SE;
-    req.msg.cmd = GET_SENSOR_THRESHOLDS;
-    req.msg.data = &sensor;
-    req.msg.data_len = sizeof(sensor);
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_THRESHOLDS;
+	req.msg.data = &sensor;
+	req.msg.data_len = sizeof(sensor);
 
-    rsp = intf->sendrecv(intf, &req);
-
-    return rsp;
+	return intf->sendrecv(intf, &req);
 }
 
 static
@@ -72,436 +71,429 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf * intf,
                                   uint8_t threshold,
                                   uint8_t setting)
 {
-    struct ipmi_rs * rsp;
-    struct ipmi_rq req;
-    static struct sensor_set_thresh_rq set_thresh_rq;
+	struct ipmi_rq req;
+	static struct sensor_set_thresh_rq set_thresh_rq;
 
-    memset(&set_thresh_rq, 0, sizeof(set_thresh_rq));
-    set_thresh_rq.sensor_num = sensor;
-    set_thresh_rq.set_mask   = threshold;
-    if (threshold == UPPER_NON_RECOV_SPECIFIED)
-        set_thresh_rq.upper_non_recov = setting;
-    else if (threshold == UPPER_CRIT_SPECIFIED)
-        set_thresh_rq.upper_crit = setting;
-    else if (threshold == UPPER_NON_CRIT_SPECIFIED)
-        set_thresh_rq.upper_non_crit = setting;
-    else if (threshold == LOWER_NON_CRIT_SPECIFIED)
-        set_thresh_rq.lower_non_crit = setting;
-    else if (threshold == LOWER_CRIT_SPECIFIED)
-        set_thresh_rq.lower_crit = setting;
-    else if (threshold == LOWER_NON_RECOV_SPECIFIED)
-        set_thresh_rq.lower_non_recov = setting;
-    else
-        return NULL;
+	memset(&set_thresh_rq, 0, sizeof(set_thresh_rq));
+	set_thresh_rq.sensor_num = sensor;
+	set_thresh_rq.set_mask   = threshold;
+	if (threshold == UPPER_NON_RECOV_SPECIFIED)
+		set_thresh_rq.upper_non_recov = setting;
+	else if (threshold == UPPER_CRIT_SPECIFIED)
+		set_thresh_rq.upper_crit = setting;
+	else if (threshold == UPPER_NON_CRIT_SPECIFIED)
+		set_thresh_rq.upper_non_crit = setting;
+	else if (threshold == LOWER_NON_CRIT_SPECIFIED)
+		set_thresh_rq.lower_non_crit = setting;
+	else if (threshold == LOWER_CRIT_SPECIFIED)
+		set_thresh_rq.lower_crit = setting;
+	else if (threshold == LOWER_NON_RECOV_SPECIFIED)
+		set_thresh_rq.lower_non_recov = setting;
+	else
+		return NULL;
 
-    memset(&req, 0, sizeof(req));
-    req.msg.netfn = IPMI_NETFN_SE;
-    req.msg.cmd = SET_SENSOR_THRESHOLDS;
-    req.msg.data = (uint8_t *)&set_thresh_rq;
-    req.msg.data_len = sizeof(set_thresh_rq);
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = SET_SENSOR_THRESHOLDS;
+	req.msg.data = (uint8_t *)&set_thresh_rq;
+	req.msg.data_len = sizeof(set_thresh_rq);
 
-    rsp = intf->sendrecv(intf, &req);
-
-    return rsp;
+	return intf->sendrecv(intf, &req);
 }
 
-static void
+static int
 ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
                                 struct sdr_record_full_sensor * sensor)
 {
-    char id[17];
-    char * unitstr = "discrete";
-    int validread=1;
-    uint8_t val = 0;
-    struct ipmi_rs * rsp;
+	char id[17];
+	char * unitstr = "discrete";
+	int validread=1;
+	uint8_t val = 0;
+	struct ipmi_rs * rsp;
 
-    if (!sensor)
-        return;
+	if (sensor == NULL)
+		return;
 
-    memset(id, 0, sizeof(id));
-    memcpy(id, sensor->id_string, 16);
+	memset(id, 0, sizeof(id));
+	memcpy(id, sensor->id_string, 16);
 
-    /*
-     * Get current reading
-     */
-    rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-    if (!rsp)
-    {
-        printf("Error reading sensor %s (#%02x)\n", id, sensor->keys.sensor_num);
-        return;
-    }
-    else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE))
-    {
-        validread = 0;
-    }
-    else
-    {
-        /* convert RAW reading into units */
-        val = rsp->data[0];
-    }
+	/*
+	 * Get current reading
+	 */
+	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
+			id, sensor->keys.sensor_num);
+		return -1;
+	} else if (rsp->ccode > 0 || (rsp->data[1] & READING_UNAVAILABLE)) {
+		validread = 0;
+	} else {
+		/* convert RAW reading into units */
+		val = rsp->data[0];
+	}
 
-    if (csv_output)
-    {
-    }
-    else
-    {
-        if (!verbose)
-        {
-            /* output format
-             *   id value units status thresholds....
-             */
-            printf("%-16s ", id);
-            if (validread)
-            {
-                printf("| 0x%-8x | %-10s | 0x%02x%02x",
-                       val,
-                       unitstr,
-                       rsp->data[2],
-                       rsp->data[3]);
-            }
-            else
-            {
-                printf("| %-10s | %-10s | %-6s",
-                       "na",
-                       unitstr,
-                       "na");
-            }
-            printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
-                   "na", "na", "na", "na", "na", "na");
+	if (csv_output)
+	{
+		/* NOT IMPLEMENTED */
+	}
+	else
+	{
+		if (verbose == 0) {
+			/* output format
+			 *   id value units status thresholds....
+			 */
+			printf("%-16s ", id);
+			if (validread) {
+				printf("| 0x%-8x | %-10s | 0x%02x%02x",
+				       val,
+				       unitstr,
+				       rsp->data[2],
+				       rsp->data[3]);
+			} else {
+				printf("| %-10s | %-10s | %-6s",
+				       "na",
+				       unitstr,
+				       "na");
+			}
+			printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
+			       "na", "na", "na", "na", "na", "na");
 
-            printf("\n");
-        }
-        else
-        {
-            printf("Sensor ID              : %s (0x%x)\n",
-                   id, sensor->keys.sensor_num);
-	    printf(" Entity ID             : %d.%d\n",
-		   sensor->entity.id, sensor->entity.instance);
-            printf(" Sensor Type (Discrete): %s\n", 
-                   ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-	    ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
-            printf("\n");
-        }
-    }
+			printf("\n");
+		} else {
+			printf("Sensor ID              : %s (0x%x)\n",
+			       id, sensor->keys.sensor_num);
+			printf(" Entity ID             : %d.%d\n",
+			       sensor->entity.id, sensor->entity.instance);
+			printf(" Sensor Type (Discrete): %s\n", 
+			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+			ipmi_sdr_print_discrete_state(sensor->sensor.type,
+						      sensor->event_type,
+						      rsp->data[2]);
+			printf("\n");
+		}
+	}
+
+	return 0;
 }
 
-static void
+static int
 ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
                               struct sdr_record_full_sensor * sensor)
 {
-    char unitstr[16], id[17];
-    int i=0, validread=1, thresh_available = 1;
-    float val = 0.0;
-    struct ipmi_rs * rsp;
-    char * status = NULL;
+	char unitstr[16], id[17];
+	int i=0, validread=1, thresh_available = 1;
+	float val = 0.0;
+	struct ipmi_rs * rsp;
+	char * status = NULL;
 
-    if (!sensor)
-        return;
+	if (sensor == NULL)
+		return -1;
 
-    /* only handle linear sensors (for now) */
-    if (sensor->linearization) {
-        printf("non-linear!\n");
-        return;
-    }
+	/* only handle linear sensors (for now) */
+	if (sensor->linearization) {
+		lprintf(LOG_ERR, "Sensor #%02x is non-linear",
+			sensor->keys.sensor_num);
+		return -1;
+	}
 
-    memset(id, 0, sizeof(id));
-    memcpy(id, sensor->id_string, 16);
+	memset(id, 0, sizeof(id));
+	memcpy(id, sensor->id_string, 16);
 
-    /*
-     * Get current reading
-     */
-    rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-    if (!rsp)
-    {
-        printf("Error reading sensor %s (#%02x)\n", id, sensor->keys.sensor_num);
-        return;
-    }
-    else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE))
-    {
-        validread = 0;
-    }
-    else
-    {
-        /* convert RAW reading into units */
-        val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
-        status = (char*)ipmi_sdr_get_status(rsp->data[2]);
-    }
+	/*
+	 * Get current reading
+	 */
+	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
+			id, sensor->keys.sensor_num);
+		return -1;
+	} else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE)) {
+		validread = 0;
+	} else {
+		/* convert RAW reading into units */
+		val = (rsp->data[0] > 0)
+			? sdr_convert_sensor_reading(sensor, rsp->data[0])
+			: 0;
+		status = (char*)ipmi_sdr_get_status(rsp->data[2]);
+	}
 
-    /*
-     * Figure out units
-     */
-    memset(unitstr, 0, sizeof(unitstr));
-    switch (sensor->unit.modifier)
-    {
+	/*
+	 * Figure out units
+	 */
+	memset(unitstr, 0, sizeof(unitstr));
+	switch (sensor->unit.modifier)
+	{
         case 2:
-            i += snprintf(unitstr, sizeof(unitstr), "%s * %s",
-            unit_desc[sensor->unit.type.base],
-            unit_desc[sensor->unit.type.modifier]);
-            break;
+		i += snprintf(unitstr, sizeof(unitstr), "%s * %s",
+			      unit_desc[sensor->unit.type.base],
+			      unit_desc[sensor->unit.type.modifier]);
+		break;
         case 1:
-            i += snprintf(unitstr, sizeof(unitstr), "%s/%s",
-            unit_desc[sensor->unit.type.base],
-            unit_desc[sensor->unit.type.modifier]);
-            break;
+		i += snprintf(unitstr, sizeof(unitstr), "%s/%s",
+			      unit_desc[sensor->unit.type.base],
+			      unit_desc[sensor->unit.type.modifier]);
+		break;
         case 0:
         default:
-            i += snprintf(unitstr, sizeof(unitstr), "%s",
-            unit_desc[sensor->unit.type.base]);
-            break;
-    }
+		i += snprintf(unitstr, sizeof(unitstr), "%s",
+			      unit_desc[sensor->unit.type.base]);
+		break;
+	}
 
-    /*
-     * Get sensor thresholds
-     */
-    rsp = ipmi_sensor_get_sensor_thresholds(intf, sensor->keys.sensor_num);
-    if (!rsp)
-        thresh_available = 0;
+	/*
+	 * Get sensor thresholds
+	 */
+	rsp = ipmi_sensor_get_sensor_thresholds(intf, sensor->keys.sensor_num);
+	if (rsp == NULL)
+		thresh_available = 0;
 
-    if (csv_output)
-    {
-    }
-    else
-    {
-        if (!verbose)
-        {
-            /* output format
-             *   id value units status thresholds....
-             */
-            printf("%-16s ", id);
-            if (validread)
-            {
-                printf("| %-10.3f | %-10s | %-6s",
-                       val,
-                       unitstr,
-                       status ? : "");
-            }
-            else
-            {
-                printf("| %-10s | %-10s | %-6s",
-                       "na",
-                       unitstr,
-                       "na");
-            }
-            if (thresh_available)
-            {
-                if (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED) 
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[3])); 
-                else
-                    printf("| %-10s", "na");
-                if (rsp->data[0] & LOWER_CRIT_SPECIFIED)      
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[2])); 
-                else
-                    printf("| %-10s", "na");
-                if (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)  
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[1])); 
-                else
-                    printf("| %-10s", "na");
-                if (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)  
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[4])); 
-                else
-                    printf("| %-10s", "na");
-                if (rsp->data[0] & UPPER_CRIT_SPECIFIED)      
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[5])); 
-                else
-                    printf("| %-10s", "na");
-                if (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED) 
-                    printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[6])); 
-                else
-                    printf("| %-10s", "na");
-            }
-            else
-            {
-                printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
-                       "na", "na", "na", "na", "na", "na");
-            }
+	if (csv_output)
+	{
+		/* NOT IPMLEMENTED */
+	}
+	else
+	{
+		if (verbose == 0)
+		{
+			/* output format
+			 *   id value units status thresholds....
+			 */
+			printf("%-16s ", id);
+			if (validread) {
+				printf("| %-10.3f | %-10s | %-6s",
+				       val, unitstr, status ? : "");
+			} else {
+				printf("| %-10s | %-10s | %-6s",
+				       "na", unitstr, "na");
+			}
+			if (thresh_available)
+			{
+				if (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED) 
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[3])); 
+				else
+					printf("| %-10s", "na");
+				if (rsp->data[0] & LOWER_CRIT_SPECIFIED)      
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[2])); 
+				else
+					printf("| %-10s", "na");
+				if (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)  
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[1])); 
+				else
+					printf("| %-10s", "na");
+				if (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)  
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[4])); 
+				else
+					printf("| %-10s", "na");
+				if (rsp->data[0] & UPPER_CRIT_SPECIFIED)      
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[5])); 
+				else
+					printf("| %-10s", "na");
+				if (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED) 
+					printf("| %-10.3f", sdr_convert_sensor_reading(sensor, rsp->data[6])); 
+				else
+					printf("| %-10s", "na");
+			}
+			else
+			{
+				printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
+				       "na", "na", "na", "na", "na", "na");
+			}
 
-            printf("\n");
-        }
-        else
-        {
-            printf("Sensor ID              : %s (0x%x)\n",
-                   id, sensor->keys.sensor_num);
+			printf("\n");
+		}
+		else
+		{
+			printf("Sensor ID              : %s (0x%x)\n",
+			       id, sensor->keys.sensor_num);
 
-	    printf(" Entity ID             : %d.%d\n",
-		   sensor->entity.id, sensor->entity.instance);
+			printf(" Entity ID             : %d.%d\n",
+			       sensor->entity.id, sensor->entity.instance);
 
-            printf(" Sensor Type (Analog)  : %s\n", 
-                   ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+			printf(" Sensor Type (Analog)  : %s\n", 
+			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 
-            printf(" Sensor Reading        : ");
-            if (validread) {
-                uint16_t raw_tol = __TO_TOL(sensor->mtol);
-                float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
-                printf("%.*f (+/- %.*f) %s\n",
-                       (val==(int)val) ? 0 : 3, 
-                       val, 
-                       (tol==(int)tol) ? 0 : 3, 
-                       tol, 
-                       unitstr);
-                printf(" Status                : %s\n", status ? : "");
+			printf(" Sensor Reading        : ");
+			if (validread) {
+				uint16_t raw_tol = __TO_TOL(sensor->mtol);
+				float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
+				printf("%.*f (+/- %.*f) %s\n",
+				       (val==(int)val) ? 0 : 3, 
+				       val, 
+				       (tol==(int)tol) ? 0 : 3, 
+				       tol, 
+				       unitstr);
+				printf(" Status                : %s\n", status ? : "");
 
-                if (thresh_available)
-                {
-                    if (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED) 
-                        printf(" Lower Non-Recoverable : %.3f\n",
-                            sdr_convert_sensor_reading(sensor, rsp->data[3])); 
-                    else
-                        printf(" Lower Non-Recoverable : na\n");
-                    if (rsp->data[0] & LOWER_CRIT_SPECIFIED)      
-                        printf(" Lower Critical        : %.3f\n",
-                               sdr_convert_sensor_reading(sensor, rsp->data[2])); 
-                    else
-                        printf(" Lower Critical        : na\n");
-                    if (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)  
-                        printf(" Lower Non-Critical    : %.3f\n",
-                               sdr_convert_sensor_reading(sensor, rsp->data[1])); 
-                    else
-                        printf(" Lower Non-Critical    : na\n");
-                    if (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)  
-                        printf(" Upper Non-Critical    : %.3f\n",
-                               sdr_convert_sensor_reading(sensor, rsp->data[4])); 
-                    else
-                        printf(" Upper Non-Critical    : na\n");
-                    if (rsp->data[0] & UPPER_CRIT_SPECIFIED)      
-                        printf(" Upper Critical        : %.3f\n",
-                               sdr_convert_sensor_reading(sensor, rsp->data[5])); 
-                    else
-                        printf(" Upper Critical        : na\n");
-                    if (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED) 
-                        printf(" Upper Non-Recoverable : %.3f\n",
-                               sdr_convert_sensor_reading(sensor, rsp->data[6])); 
-                    else
-                        printf(" Upper Non-Recoverable : na\n");
-                }
-            } else
-                printf("Not Present\n");
-            printf("\n");
-        }
-    }
+				if (thresh_available)
+				{
+					if (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED) 
+						printf(" Lower Non-Recoverable : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[3])); 
+					else
+						printf(" Lower Non-Recoverable : na\n");
+					if (rsp->data[0] & LOWER_CRIT_SPECIFIED)      
+						printf(" Lower Critical        : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[2])); 
+					else
+						printf(" Lower Critical        : na\n");
+					if (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)  
+						printf(" Lower Non-Critical    : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[1])); 
+					else
+						printf(" Lower Non-Critical    : na\n");
+					if (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)  
+						printf(" Upper Non-Critical    : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[4])); 
+					else
+						printf(" Upper Non-Critical    : na\n");
+					if (rsp->data[0] & UPPER_CRIT_SPECIFIED)      
+						printf(" Upper Critical        : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[5])); 
+					else
+						printf(" Upper Critical        : na\n");
+					if (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED) 
+						printf(" Upper Non-Recoverable : %.3f\n",
+						       sdr_convert_sensor_reading(sensor, rsp->data[6])); 
+					else
+						printf(" Upper Non-Recoverable : na\n");
+				}
+			}
+			else
+			{
+				printf("Not Present\n");
+			}
+			printf("\n");
+		}
+	}
 }
 
-void ipmi_sensor_print_full(struct ipmi_intf * intf,
+int
+ipmi_sensor_print_full(struct ipmi_intf * intf,
                        struct sdr_record_full_sensor * sensor)
 {
-    if (sensor->unit.analog != 3)
-        ipmi_sensor_print_full_analog(intf, sensor);
-    else
-        ipmi_sensor_print_full_discrete(intf, sensor);
+	if (sensor->unit.analog != 3)
+		return ipmi_sensor_print_full_analog(intf, sensor);
+	else
+		return ipmi_sensor_print_full_discrete(intf, sensor);
 }
 
-void ipmi_sensor_print_compact(struct ipmi_intf * intf,
+int
+ipmi_sensor_print_compact(struct ipmi_intf * intf,
                           struct sdr_record_compact_sensor * sensor)
 {
-    char id[17];
-    char * unitstr = "discrete";
-    int validread=1;
-    uint8_t val = 0;
-    struct ipmi_rs * rsp;
+	char id[17];
+	char * unitstr = "discrete";
+	int validread = 1;
+	uint8_t val = 0;
+	struct ipmi_rs * rsp;
 
-    if (!sensor)
-        return;
+	if (sensor == NULL)
+		return -1;
 
-    memset(id, 0, sizeof(id));
-    memcpy(id, sensor->id_string, 16);
+	memset(id, 0, sizeof(id));
+	memcpy(id, sensor->id_string, 16);
 
-    /*
-     * Get current reading
-     */
-    rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-    if (!rsp)
-    {
-        printf("Error reading sensor %s (#%02x)\n", id, sensor->keys.sensor_num);
-        return;
-    }
-    else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE))
-    {
-        validread = 0;
-    }
-    else
-    {
-        /* convert RAW reading into units */
-        val = rsp->data[0];
-    }
+	/*
+	 * Get current reading
+	 */
+	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
+			id, sensor->keys.sensor_num);
+		return -1;
+	} else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE)) {
+		validread = 0;
+	} else {
+		/* convert RAW reading into units */
+		val = rsp->data[0];
+	}
 
-    if (csv_output)
-    {
-    }
-    else
-    {
-        if (!verbose)
-        {
-            /* output format
-             *   id value units status thresholds....
-             */
-            printf("%-16s ", id);
-            if (validread)
-            {
-                printf("| 0x%-8x | %-10s | 0x%02x%02x",
-                       val,
-                       unitstr,
-                       rsp->data[2],
-                       rsp->data[3]);
-            }
-            else
-            {
-                printf("| %-10s | %-10s | %-6s",
-                       "na",
-                       unitstr,
-                       "na");
-            }
-            printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
-                   "na", "na", "na", "na", "na", "na");
+	if (csv_output)
+	{
+		/* NOT IMPLEMENTED */
+	}
+	else
+	{
+		if (!verbose)
+		{
+			/* output format
+			 *   id value units status thresholds....
+			 */
+			printf("%-16s ", id);
 
-            printf("\n");
-        }
-        else
-        {
-            printf("Sensor ID              : %s (0x%x)\n",
-                   id, sensor->keys.sensor_num);
-	    printf(" Entity ID             : %d.%d\n",
-		   sensor->entity.id, sensor->entity.instance);
-            printf(" Sensor Type (Discrete): %s\n", 
-                   ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-	    ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
-            printf("\n");
-        }
-    }
+			if (validread) {
+				printf("| 0x%-8x | %-10s | 0x%02x%02x",
+				       val, unitstr,
+				       rsp->data[2], rsp->data[3]);
+			} else {
+				printf("| %-10s | %-10s | %-6s",
+				       "na", unitstr, "na");
+			}
+
+			printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s", 
+			       "na", "na", "na", "na", "na", "na");
+			printf("\n");
+		}
+		else
+		{
+			printf("Sensor ID              : %s (0x%x)\n",
+			       id, sensor->keys.sensor_num);
+			printf(" Entity ID             : %d.%d\n",
+			       sensor->entity.id, sensor->entity.instance);
+			printf(" Sensor Type (Discrete): %s\n", 
+			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+			ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
+			printf("\n");
+		}
+	}
+
+	return 0;
 }
 
-static void
+static int
 ipmi_sensor_list(struct ipmi_intf * intf)
 {
-    struct sdr_get_rs * header;
-    struct ipmi_sdr_iterator * itr;
+	struct sdr_get_rs * header;
+	struct ipmi_sdr_iterator * itr;
+	int rc = 0;
 
-    if (verbose > 1)
-        printf("Querying SDR for sensor list\n");
+	lprintf(LOG_DEBUG, "Querying SDR for sensor list");
 
-    itr = ipmi_sdr_start(intf);
-    if (!itr)
-    {
-        printf("Unable to open SDR for reading\n");
-        return;
-    }
+	itr = ipmi_sdr_start(intf);
+	if (itr == NULL) {
+		lprintf(LOG_ERR, "Unable to open SDR for reading");
+		return -1;
+	}
 
-    while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
-    {
-        uint8_t * rec = ipmi_sdr_get_record(intf, header, itr);
-        if (!rec)
-            continue;
+	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
+	{
+		int r = 0;
+		uint8_t * rec;
 
-        switch(header->type)
-        {
-            case SDR_RECORD_TYPE_FULL_SENSOR:
-                ipmi_sensor_print_full(intf, (struct sdr_record_full_sensor *) rec);
-                break;
-            case SDR_RECORD_TYPE_COMPACT_SENSOR:
-                ipmi_sensor_print_compact(intf, (struct sdr_record_compact_sensor *) rec);
-                break;
-        }
-	free(rec);
-    }
-    ipmi_sdr_end(intf, itr);
+		rec = ipmi_sdr_get_record(intf, header, itr);
+		if (rec == NULL)
+			continue;
+
+		switch(header->type)
+		{
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			r = ipmi_sensor_print_full(intf,
+				(struct sdr_record_full_sensor *)rec);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			r = ipmi_sensor_print_compact(intf,
+				(struct sdr_record_compact_sensor *)rec);
+			break;
+		}
+		free(rec);
+
+		/* save any errors */
+		rc = (r == 0) ? rc : r; 
+	}
+
+	ipmi_sdr_end(intf, itr);
+
+	return rc;
 }
 
 static const struct valstr threshold_vals[] = {
@@ -514,154 +506,167 @@ static const struct valstr threshold_vals[] = {
 	{ 0x00,				NULL },
 };
 
-static void
+static int
 ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 {
-    char * id,
-         * thresh;
-    uint8_t settingMask;
-    float setting;
-    struct sdr_record_list * sdr;
-    struct ipmi_rs * rsp;
+	char * id, * thresh;
+	uint8_t settingMask;
+	float setting;
+	struct sdr_record_list * sdr;
+	struct ipmi_rs * rsp;
 
-    if (argc < 3 || !strncmp(argv[0], "help", 4))
-    {
-            printf("sensor thresh <id> <threshold> <setting>\n");
-            printf("   id        : name of the sensor for which threshold is to be set\n");
-            printf("   threshold : which threshold to set\n");
-            printf("                 unr = upper non-recoverable\n");
-            printf("                 ucr = upper critical\n");
-            printf("                 unc = upper non-critical\n");
-            printf("                 lnc = lower non-critical\n");
-            printf("                 lcr = lower critical\n");
-            printf("                 lnr = lower non-recoverable\n");
-            printf("   setting   : the value to set the threshold to\n");
-            return;
-    }
-
-    ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
-    id = argv[0];
-    thresh = argv[1];
-    setting = (float)atof(argv[2]);
-    if (!strcmp(thresh, "unr"))
-    {
-        settingMask = UPPER_NON_RECOV_SPECIFIED;
-    }
-    else if (!strcmp(thresh, "ucr"))
-    {
-        settingMask = UPPER_CRIT_SPECIFIED;
-    }
-    else if (!strcmp(thresh, "unc"))
-    {
-        settingMask = UPPER_NON_CRIT_SPECIFIED;
-    }
-    else if (!strcmp(thresh, "lnc"))
-    {
-        settingMask = LOWER_NON_CRIT_SPECIFIED;
-    }
-    else if (!strcmp(thresh, "lcr"))
-    {
-        settingMask = LOWER_CRIT_SPECIFIED;
-    }
-    else if (!strcmp(thresh, "lnr"))
-    {
-        settingMask = LOWER_NON_RECOV_SPECIFIED;
-    }
-    else
-    {
-        printf("Valid threshold not specified!\n");
-        return;
-    }
-
-    printf("Locating sensor record...\n");
-
-    /* lookup by sensor name */
-    sdr = ipmi_sdr_find_sdr_byid(intf, id);
-    if (sdr)
-    {
-	if (sdr->type != SDR_RECORD_TYPE_FULL_SENSOR)
+	if (argc < 3 || strncmp(argv[0], "help", 4) == 0)
 	{
-	    printf("Invalid sensor type %02x\n", sdr->type);
+		lprintf(LOG_NOTICE, "sensor thresh <id> <threshold> <setting>");
+		lprintf(LOG_NOTICE, "   id        : name of the sensor for which threshold is to be set");
+		lprintf(LOG_NOTICE, "   threshold : which threshold to set");
+		lprintf(LOG_NOTICE, "                 unr = upper non-recoverable");
+		lprintf(LOG_NOTICE, "                 ucr = upper critical");
+		lprintf(LOG_NOTICE, "                 unc = upper non-critical");
+		lprintf(LOG_NOTICE, "                 lnc = lower non-critical");
+		lprintf(LOG_NOTICE, "                 lcr = lower critical");
+		lprintf(LOG_NOTICE, "                 lnr = lower non-recoverable");
+		lprintf(LOG_NOTICE, "   setting   : the value to set the threshold to");
+		return 0;
 	}
-	else
-	{
-	    printf("Setting sensor \"%s\" %s threshold to %.3f\n",
-		   sdr->record.full->id_string,
-		   val2str(settingMask, threshold_vals), setting);
-	    rsp = ipmi_sensor_set_sensor_thresholds(intf, 
-			    sdr->record.full->keys.sensor_num, settingMask,
-			    sdr_convert_sensor_value_to_raw(sdr->record.full, setting));
-	    if (rsp && rsp->ccode)
-	        printf("Error setting threshold: 0x%x\n", rsp->ccode);
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
+	id = argv[0];
+	thresh = argv[1];
+	setting = (float)atof(argv[2]);
+	if (strncmp(thresh, "unr", 3) == 0)
+		settingMask = UPPER_NON_RECOV_SPECIFIED;
+	else if (strncmp(thresh, "ucr", 3) == 0)
+		settingMask = UPPER_CRIT_SPECIFIED;
+	else if (strncmp(thresh, "unc", 3) == 0)
+		settingMask = UPPER_NON_CRIT_SPECIFIED;
+	else if (strncmp(thresh, "lnc", 3) == 0)
+		settingMask = LOWER_NON_CRIT_SPECIFIED;
+	else if (strncmp(thresh, "lcr", 3) == 0)
+		settingMask = LOWER_CRIT_SPECIFIED;
+	else if (strncmp(thresh, "lnr", 3) == 0)
+		settingMask = LOWER_NON_RECOV_SPECIFIED;
+	else {
+		lprintf(LOG_ERR, "Valid threshold not specified!");
+		return -1;
 	}
-    }
-    else
-    {
-        printf("Sensor data record not found!\n");
-    }
+
+	printf("Locating sensor record...\n");
+
+	/* lookup by sensor name */
+	sdr = ipmi_sdr_find_sdr_byid(intf, id);
+	if (sdr == NULL) {
+		lprintf(LOG_ERR, "Sensor data record not found!");
+		return -1;
+	}
+
+	if (sdr->type != SDR_RECORD_TYPE_FULL_SENSOR) {
+		lprintf(LOG_ERR, "Invalid sensor type %02x", sdr->type);
+		return -1;
+	}
+
+	printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+	       sdr->record.full->id_string,
+	       val2str(settingMask, threshold_vals), setting);
+
+	rsp = ipmi_sensor_set_sensor_thresholds(intf, 
+		sdr->record.full->keys.sensor_num, settingMask,
+		sdr_convert_sensor_value_to_raw(sdr->record.full, setting));
+
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error setting threshold");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error setting threshold: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	return 0;
 }
 
-static void ipmi_sensor_get(struct ipmi_intf * intf, int argc, char ** argv)
+static int
+ipmi_sensor_get(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct sdr_record_list * sdr;
 	int i, v;
+	int rc = 0;
 
-	if (argc < 1 || !strncmp(argv[0], "help", 4)) {
-		printf("sensor get <id> ... [id]\n");
-		printf("   id        : name of desired sensor\n");
-		return;
+	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "sensor get <id> ... [id]");
+		lprintf(LOG_NOTICE, "   id        : name of desired sensor");
+		return -1;
 	}
 	printf("Locating sensor record...\n");
 
 	/* lookup by sensor name */
 	for (i=0; i<argc; i++) {
+		int r = 0;
+
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
-		if (sdr) {
-			v = verbose;
-			verbose = 1;
-			switch (sdr->type) {
-			case SDR_RECORD_TYPE_FULL_SENSOR:
-				ipmi_sensor_print_full(intf, sdr->record.full);
-				break;
-			case SDR_RECORD_TYPE_COMPACT_SENSOR:
-				ipmi_sensor_print_compact(intf, sdr->record.compact);
-				break;
-			case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-				ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
-				break;
-			case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-				ipmi_sdr_print_sensor_fru_locator(intf, sdr->record.fruloc);
-				break;
-			case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-				ipmi_sdr_print_sensor_mc_locator(intf, sdr->record.mcloc);
-				break;
-			}
-			verbose = v;
-		} else {
-			printf("Sensor data record \"%s\" not found!\n", argv[i]);
+		if (sdr == NULL) {
+			lprintf(LOG_ERR, "Sensor data record \"%s\" not found!",
+				argv[i]);
+			rc = -1;
+			continue;
 		}
+
+		/* need to set verbose level to 1 */
+		v = verbose;
+		verbose = 1;
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			r = ipmi_sensor_print_full(intf, sdr->record.full);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			r = ipmi_sensor_print_compact(intf, sdr->record.compact);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			r = ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			r = ipmi_sdr_print_sensor_fru_locator(intf, sdr->record.fruloc);
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			r = ipmi_sdr_print_sensor_mc_locator(intf, sdr->record.mcloc);
+			break;
+		}
+		verbose = v;
+
+		/* save errors */
+		rc = (r == 0) ? rc : r;
 	}
+
+	return rc;
 }
 
 int
 ipmi_sensor_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc)
-		ipmi_sensor_list(intf);
-	else if (!strncmp(argv[0], "help", 4)) {
-		printf("Sensor Commands:  list thresh get\n");
+	int rc = 0;
+
+	if (argc == 0) {
+		rc = ipmi_sensor_list(intf);
 	}
-	else if (!strncmp(argv[0], "list", 4)) {
-		ipmi_sensor_list(intf);
+	else if (strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "Sensor Commands:  list thresh get");
 	}
-	else if (!strncmp(argv[0], "thresh", 5)) {
-		ipmi_sensor_set_threshold(intf, argc-1, &argv[1]);
+	else if (strncmp(argv[0], "list", 4) == 0) {
+		rc = ipmi_sensor_list(intf);
 	}
-	else if (!strncmp(argv[0], "get", 3)) {
-		ipmi_sensor_get(intf, argc-1, &argv[1]);
+	else if (strncmp(argv[0], "thresh", 5) == 0) {
+		rc = ipmi_sensor_set_threshold(intf, argc-1, &argv[1]);
 	}
-	else
-		printf("Invalid sensor command: %s\n", argv[0]);
-	return 0;
+	else if (strncmp(argv[0], "get", 3) == 0) {
+		rc = ipmi_sensor_get(intf, argc-1, &argv[1]);
+	}
+	else {
+		lprintf(LOG_ERR, "Invalid sensor command: %s",
+			argv[0]);
+		rc = -1;
+	}
+
+	return rc;
 }
