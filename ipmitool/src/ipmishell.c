@@ -129,7 +129,9 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		add_history(pbuf);
 		
 		__argc = 0;
-		for (ap = __argv; (*ap = strsep(&pbuf, " \t")) != NULL;) {
+		ap = __argv;
+
+		for (*ap = strtok(pbuf, " \t"); *ap != NULL; *ap = strtok(NULL, " \t")) {
 			__argc++;
 			if (**ap != '\0') {
 				if (++ap >= &__argv[20])
