@@ -40,6 +40,7 @@
 #include <math.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sdr.h>
 
 /* ipmi sensor commands */
 #define GET_SENSOR_READING      0x2d
