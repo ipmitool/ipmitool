@@ -50,10 +50,12 @@ unsigned short buf2short(unsigned char * buf);
 uint32_t buf2long(unsigned char * buf);
 const char * buf2str(unsigned char * buf, int len);
 void printbuf(const unsigned char * buf, int len, const char * desc);
-
 void signal_handler(int sig, void * handler);
-
 unsigned char ipmi_csum(unsigned char * d, int s);
+int ipmi_open_file(const char * file, int flags);
+
+#define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
+#define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
 
 #define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
 #define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))

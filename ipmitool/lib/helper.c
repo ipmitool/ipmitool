@@ -39,6 +39,12 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
 #include <ipmitool/helper.h>
 
 uint32_t buf2long(unsigned char * buf)
@@ -143,5 +149,69 @@ unsigned char ipmi_csum(unsigned char * d, int s)
 	for (; s > 0; s--, d++)
 		c += *d;
 	return -c;
+}
+
+/* safely open a file for reading or writing
+ * file: filename
+ * rw:   read-write flag, 1=write
+ */
+int ipmi_open_file(const char * file, int rw)
+{
+	struct stat st1, st2;
+	int fp;
+
+	/* verify existance */
+	if (lstat(file, &st1) < 0) {
+		if (rw) {
+			/* does not exist, ok to create */
+			fp = open(file, O_WRONLY|O_TRUNC|O_EXCL|O_CREAT, 0600);
+			if (fp < 0) {
+				printf("ERROR: Unable to open file %s for write: %s\n",
+				       file, strerror(errno));
+				return -1;
+			}
+			return fp;
+		} else {
+			printf("ERROR: File %s does not exist\n", file);
+			return -1;
+		}
+	}
+
+	/* it exists - only regular files, not links */
+	if (!S_ISREG(st1.st_mode)) {
+		printf("ERROR: File %s has invalid mode: %d\n", file, st1.st_mode);
+		return -1;
+	}
+
+	/* allow only files with 1 link (itself) */
+	if (st1.st_nlink != 1) {
+		printf("ERROR: File %s has invalid link count: %d != 1\n",
+		       file, (int)st1.st_nlink);
+		return -1;
+	}
+
+	fp = open(file, rw ? (O_WRONLY|O_TRUNC) : O_RDONLY, 0600);
+	if (fp < 0) {
+		printf("ERROR: Unable to open file %s: %s\n",
+		       file, strerror(errno));
+		return -1;
+	}
+
+	/* stat again */
+	if (fstat(fp, &st2) < 0) {
+		close(fp);
+		return -1;
+	}
+
+	/* verify inode, owner, link count */
+	if (st2.st_ino != st1.st_ino ||
+	    st2.st_uid != st1.st_uid ||
+	    st2.st_nlink != 1) {
+		printf("ERROR: Unable to verify file %s\n", file);
+		close(fp);
+		return -1;
+	}
+
+	return fp;
 }
 

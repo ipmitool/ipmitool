@@ -38,11 +38,8 @@
 #include <math.h>
 
 #include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <time.h>
 
 #include <ipmitool/ipmi.h>
@@ -1388,51 +1385,13 @@ ipmi_sdr_print_info(struct ipmi_intf * intf)
 
 static int ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 { 
-	struct stat st1, st2;
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
 	int fd;
 
-	/* open file for writing */
-	if (lstat(ofile, &st1) < 0) {
-		/* does not exist, ok to create */
-		fd = open(ofile, O_WRONLY|O_TRUNC|O_EXCL|O_CREAT, 0600);
-		if (fd < 1) {
-			printf("ERROR: Unable to open file '%s' for write: %s\n",
-			       ofile, strerror(errno));
-			return -1;
-		}
-	} else {
-		/* it exists - allow only regular file, not links */
-		if (!S_ISREG(st1.st_mode)) {
-			printf("ERROR: file '%s' has invalid mode: %d\n",
-			       ofile, st1.st_mode);
-			return -1;
-		}
-
-		/* allow only files with 1 link (itself) */
-		if (st1.st_nlink != 1) {
-			printf("ERROR: file '%s' has invalid link count: %d != 1\n",
-			       ofile, (int)st1.st_nlink);
-			return -1;
-		}
-
-		/* open it for write, overwrite existing file */
-		fd = open(ofile, O_WRONLY | O_TRUNC, 0600);
-		if (fd < 1) {
-			printf("ERROR: unable to overwrite file '%s': %s\n",
-			       ofile, strerror(errno));
-			return -1;
-		}
-
-		/* stat again and verify inode/owner/link count */
-		fstat(fd, &st2);
-		if (st2.st_ino != st1.st_ino || st2.st_uid != st1.st_uid ||
-		    st2.st_nlink != 1) {
-			printf("ERROR: unable to verify file '%s'\n", ofile);
-			close(fd);
-			return -1;
-		}
+	fd = ipmi_open_file_write(ofile);
+	if (fd < 0) {
+		return -1;
 	}
 	
 	/* open connection to SDR */

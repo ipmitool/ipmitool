@@ -35,14 +35,10 @@
  */
 
 #include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -160,38 +156,14 @@ static void usage(void)
 }
 
 
-static char * ipmi_password_file_read(char * file)
+static char * ipmi_password_file_read(char * filename)
 {
-	struct stat st1, st2;
 	int fp;
 	char * pass = NULL;
 
-	/* verify existance */
-	if (lstat(file, &st1) < 0) {
-		return NULL;
-	}
-
-	/* only regular files: no links */
-	if (!S_ISREG(st1.st_mode) || st1.st_nlink != 1) {
-		return NULL;
-	}
-
-	/* open it read-only */
-	if ((fp = open(file, O_RDONLY, 0)) < 0) {
-		return NULL;
-	}
-
-	/* stat again */
-	if (fstat(fp, &st2) < 0) {
-		close(fp);
-		return NULL;
-	}
-
-	/* verify inode, owner, link count */
-	if (st2.st_ino != st1.st_ino ||
-	    st2.st_uid != st1.st_uid ||
-	    st2.st_nlink != 1) {
-		close(fp);
+	fp = ipmi_open_file_read((const char *)filename);
+	if (fp < 0) {
+		printf("Unable to open password file %s\n", filename);
 		return NULL;
 	}
 
@@ -207,9 +179,7 @@ static char * ipmi_password_file_read(char * file)
 		return NULL;
 	}
 
-	/* close file */
 	close(fp);
-
 	return pass;
 }
 
