@@ -80,6 +80,7 @@ static sigjmp_buf jmpbuf;
 
 
 static int ipmi_lanplus_setup(struct ipmi_intf * intf);
+static int ipmi_lanplus_keepalive(struct ipmi_intf * intf);
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
@@ -122,6 +123,7 @@ struct ipmi_intf ipmi_lanplus_intf = {
 	sendrecv:	ipmi_lanplus_send_ipmi_cmd,
 	recv_sol:	ipmi_lanplus_recv_sol,
 	send_sol:	ipmi_lanplus_send_sol,
+	keepalive:	ipmi_lanplus_keepalive,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
@@ -3063,9 +3065,28 @@ void test_crypt2()
 }
 
 
+/**
+ * send a get device id command to keep session active
+ */
+static int
+ipmi_lanplus_keepalive(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req = { msg: {
+		netfn: IPMI_NETFN_APP,
+		cmd: 1,
+	}};
+
+	if (!intf->opened)
+		return 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	return (!rsp || rsp->ccode) ? -1 : 0;
+}
+
 
 /**
- * lanplus_intf_setup
+ * ipmi_lanplus_setup
  */
 static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 {
