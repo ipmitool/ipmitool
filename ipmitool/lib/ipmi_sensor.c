@@ -40,6 +40,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
@@ -174,62 +175,12 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
         {
             printf("Sensor ID              : %s (0x%x)\n",
                    id, sensor->keys.sensor_num);
-
 	    printf(" Entity ID             : %d.%d\n",
 		   sensor->entity.id, sensor->entity.instance);
-
             printf(" Sensor Type (Discrete): %s\n", 
                    ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-
-            printf(" Sensor Reading        : ");
-            if (validread)
-            {
-                printf("0x%x\n", val);
-            }
-            else
-            {
-                printf("not present\n\n");
-                return;
-            }
-
-            printf(" States Asserted       : ");
-            if (!rsp->data[2] && !rsp->data[3])
-                printf("none");
-            else
-            {
-                if (rsp->data[2] & STATE_0_ASSERTED)
-                    printf("%d ", 0);
-                if (rsp->data[2] & STATE_1_ASSERTED)
-                    printf("%d ", 1);
-                if (rsp->data[2] & STATE_2_ASSERTED)
-                    printf("%d ", 2);
-                if (rsp->data[2] & STATE_3_ASSERTED)
-                    printf("%d ", 3);
-                if (rsp->data[2] & STATE_4_ASSERTED)
-                    printf("%d ", 4);
-                if (rsp->data[2] & STATE_5_ASSERTED)
-                    printf("%d ", 5);
-                if (rsp->data[2] & STATE_6_ASSERTED)
-                    printf("%d ", 6);
-                if (rsp->data[2] & STATE_7_ASSERTED)
-                    printf("%d ", 7);
-                if (rsp->data[3] & STATE_8_ASSERTED)
-                    printf("%d ", 8);
-                if (rsp->data[3] & STATE_9_ASSERTED)
-                    printf("%d ", 9);
-                if (rsp->data[3] & STATE_10_ASSERTED)
-                    printf("%d ", 10);
-                if (rsp->data[3] & STATE_11_ASSERTED)
-                    printf("%d ", 11);
-                if (rsp->data[3] & STATE_12_ASSERTED)
-                    printf("%d ", 12);
-                if (rsp->data[3] & STATE_13_ASSERTED)
-                    printf("%d ", 13);
-                if (rsp->data[3] & STATE_14_ASSERTED)
-                    printf("%d ", 14);
-            }
-
-            printf("\n\n");
+	    ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
+            printf("\n");
         }
     }
 }
@@ -428,7 +379,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
                         printf(" Upper Non-Recoverable : na\n");
                 }
             } else
-                printf("not present\n");
+                printf("Not Present\n");
             printf("\n");
         }
     }
@@ -512,62 +463,12 @@ void ipmi_sensor_print_compact(struct ipmi_intf * intf,
         {
             printf("Sensor ID              : %s (0x%x)\n",
                    id, sensor->keys.sensor_num);
-
 	    printf(" Entity ID             : %d.%d\n",
 		   sensor->entity.id, sensor->entity.instance);
-
             printf(" Sensor Type (Discrete): %s\n", 
                    ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-
-            printf(" Sensor Reading        : ");
-            if (validread)
-            {
-                printf("0x%04x\n", val);
-            }
-            else
-            {
-                printf("not present\n\n");
-                return;
-            }
-
-            printf(" States Asserted       : ");
-            if (!rsp->data[2] && !rsp->data[3])
-                printf("none");
-            else
-            {
-                if (rsp->data[2] & STATE_0_ASSERTED)
-                    printf("%d ", 0);
-                if (rsp->data[2] & STATE_1_ASSERTED)
-                    printf("%d ", 1);
-                if (rsp->data[2] & STATE_2_ASSERTED)
-                    printf("%d ", 2);
-                if (rsp->data[2] & STATE_3_ASSERTED)
-                    printf("%d ", 3);
-                if (rsp->data[2] & STATE_4_ASSERTED)
-                    printf("%d ", 4);
-                if (rsp->data[2] & STATE_5_ASSERTED)
-                    printf("%d ", 5);
-                if (rsp->data[2] & STATE_6_ASSERTED)
-                    printf("%d ", 6);
-                if (rsp->data[2] & STATE_7_ASSERTED)
-                    printf("%d ", 7);
-                if (rsp->data[3] & STATE_8_ASSERTED)
-                    printf("%d ", 8);
-                if (rsp->data[3] & STATE_9_ASSERTED)
-                    printf("%d ", 9);
-                if (rsp->data[3] & STATE_10_ASSERTED)
-                    printf("%d ", 10);
-                if (rsp->data[3] & STATE_11_ASSERTED)
-                    printf("%d ", 11);
-                if (rsp->data[3] & STATE_12_ASSERTED)
-                    printf("%d ", 12);
-                if (rsp->data[3] & STATE_13_ASSERTED)
-                    printf("%d ", 13);
-                if (rsp->data[3] & STATE_14_ASSERTED)
-                    printf("%d ", 14);
-            }
-
-            printf("\n\n");
+	    ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
+            printf("\n");
         }
     }
 }
