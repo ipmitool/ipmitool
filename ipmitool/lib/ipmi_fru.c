@@ -152,7 +152,7 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 		msg_data[0] = id;
 		msg_data[1] = offset;
 		msg_data[2] = 0;
-		msg_data[3] = 32;
+		msg_data[3] = (fru.size - offset) > 32 ? 32 : (fru.size - offset);
 
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp || rsp->ccode)
@@ -380,7 +380,7 @@ static void ipmi_fru_print_all(struct ipmi_intf * intf)
 		memset(desc, 0, sizeof(desc));
 		memcpy(desc, fru->id_string, fru->id_code & 0x01f);
 		desc[fru->id_code & 0x01f] = 0;
-		printf("\nFRU Device Description: %s\n", desc);
+		printf("\nFRU Device Description: %s    Device ID: %d\n", desc, fru->keys.fru_device_id);
 
 		switch (fru->device_type_modifier) {
 		case 0x00:
@@ -415,7 +415,7 @@ int ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (!strncmp(argv[0], "help", 4))
 		printf("FRU Commands:  print\n");
-	else if (!strncmp(argv[0], "print", 4))
+	else if (!strncmp(argv[0], "print", 5))
 		ipmi_fru_print_all(intf);
 	else
 		printf("Invalid FRU command: %s\n", argv[0]);
