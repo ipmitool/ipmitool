@@ -337,7 +337,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			memset(sval, 0, sizeof(sval));
 			if (validread) {
 				i += snprintf(sval, sizeof(sval), "%.*f %s",
-					(val==(int)val) ? 0 : 3, val,
+					(val==(int)val) ? 0 : 2, val,
 					do_unit ? unitstr : "");
 			} else {
 				i += snprintf(sval, sizeof(sval), "no reading ");
@@ -549,6 +549,17 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 			    else
 				    state = csv_output ? "Not Present" : "Not Present      ";
                             break;
+                    case 0x10:	/* event logging disabled */
+                            if (rsp->data[2] & 0x10)
+				    state = csv_output ? "Log Full" : "Log Full         ";
+			    else if (rsp->data[2] & 0x04)
+				    state = csv_output ? "Log Clear" : "Log Clear        ";
+			    else
+                            {
+				    sprintf(temp, "0x%02x", rsp->data[2]);
+				    state = temp;
+                            }
+                            break;
                     case 0x21:	/* slot/connector */
                             if (rsp->data[2] & 0x04)
                                     state = csv_output ? "Installed" : "Installed        ";
@@ -611,7 +622,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
 		printf("\n");
 	}
 	else {
-		char * state = "Not Readable     ";
+		char * state = "Event-Only       ";
 		if (csv_output)
 			printf("%s,%s,ns", sensor->id_code ? desc : NULL, state);
 		else
@@ -709,7 +720,7 @@ ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
 		else
 			printf("%-16s | ", fru->id_code ? desc : NULL);
 
-		printf("%s FRU @%02Xh %x.%x",
+		printf("%s FRU @%02Xh %02x.%x",
 		       (fru->logical) ? "Log" : "Phy",
 		       fru->device_id,
 		       fru->entity.id, fru->entity.instance);

@@ -232,7 +232,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 		return -1;
 	}
 
-	printf("event to BMC\n");
+	printf(" event to BMC\n");
 
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = 0x02;
@@ -317,7 +317,7 @@ int main(int argc, char ** argv)
 	intf->pedantic = pedantic;
 
 	if (!strncmp(argv[optind], "help", 4)) {
-		printf("Commands:  chassis, fru, lan, sdr, sel\n");
+		printf("Commands:  bmc, chaninfo, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo\n");
 		goto out_free;
 	}
 	else if (!strncmp(argv[optind], "event", 5)) {

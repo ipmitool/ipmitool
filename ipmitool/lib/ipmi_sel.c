@@ -202,7 +202,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error%x in Get SEL Entry %x Command\n",
+		printf("Error %x in Get SEL Entry %x Command\n",
 		       rsp ? rsp->ccode : 0, *next_id);
 		return NULL;
 	}
@@ -250,9 +250,9 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		return;
 
 	if (csv_output)
-		printf("%d,", evt->record_id);
+		printf("%x,", evt->record_id);
 	else
-		printf("%4d | ", evt->record_id);
+		printf("%4x | ", evt->record_id);
 
 	if (evt->timestamp < 0x20000000) {
 		printf("Pre-Init Time-stamp");
@@ -330,7 +330,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error%x in Get SEL Info command\n",
+		printf("Error: %x from Get SEL Info command\n",
 		       rsp ? rsp->ccode : 0);
 		return;
 	}
@@ -348,7 +348,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x unable to reserve SEL\n",
+		printf("Error: %x from Reserve SEL command\n",
 		       rsp ? rsp->ccode : 0);
 		return;
 	}
@@ -462,7 +462,8 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp || rsp->ccode) 
 		{
-			printf("Error:%x unable to delete entry %d\n", rsp ? rsp->ccode : 0, id);
+			if (!rsp) printf("No response\n");
+			printf("Error %x unable to delete entry %d\n", rsp ? rsp->ccode : 0, id);
 		}
 		else
 		{
