@@ -816,7 +816,7 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to clear SEL: %s");
+		lprintf(LOG_ERR, "Unable to clear SEL");
 		return -1;
 	}
 	if (rsp->ccode > 0) {
