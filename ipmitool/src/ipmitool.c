@@ -65,13 +65,7 @@
 # include <config.h>
 #endif
 
-#ifdef HAVE_READLINE
-#include <readline/readline.h>
-#include <readline/history.h>
-#define RL_PROMPT		"ipmitool> "
-#define RL_TIMEOUT		30
-static struct ipmi_intf * shell_intf;
-#endif
+#define OPTION_STRING	"I:hVvcgEaH:P:f:U:p:L:A:t:m:"
 
 int csv_output = 0;
 int verbose = 0;
@@ -79,10 +73,10 @@ int verbose = 0;
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
-static int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
-static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
-static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
-static int ipmi_delay_main(struct ipmi_intf * intf, int argc, char ** argv);
+/* defined in ipmishell.c */
+extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
+extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
+extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 
 struct ipmi_cmd {
 	int (*func)(struct ipmi_intf * intf, int argc, char ** argv);
@@ -106,10 +100,13 @@ struct ipmi_cmd {
 	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
 	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
 	{ ipmi_set_main,	"set",		"Set runtime variable for shell and exec" },
-	{ ipmi_delay_main,	"delay",	NULL },
 	{ NULL },
 };
 
+/*
+ * Print all the commands in the above table to stdout
+ * used for help text on command line and shell
+ */
 void ipmi_cmd_print(void)
 {
 	struct ipmi_cmd * cmd;
@@ -122,6 +119,9 @@ void ipmi_cmd_print(void)
 	printf("\n");
 }
 
+/*
+ * Run a command from ipmi_cmd_list based on parameters.
+ */
 int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 {
 	struct ipmi_cmd * cmd;
@@ -139,9 +139,7 @@ int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	return cmd->func(intf, argc, argv);
 }
 
-#define OPTION_STRING	"I:hVvcgEaH:P:f:U:p:L:A:t:m:"
-
-static void usage(void)
+static void ipmitool_usage(void)
 {
 	printf("ipmitool version %s\n", VERSION);
 	printf("\n");
@@ -168,23 +166,19 @@ static void usage(void)
 	ipmi_cmd_print();
 }
 
-
 static char * ipmi_password_file_read(char * filename)
 {
 	FILE * fp;
 	char * pass = NULL;
 	int l;
 
-	fp = ipmi_open_file_read((const char *)filename);
-	if (!fp) {
-		return NULL;
-	}
-
 	pass = malloc(16);
-	if (!pass) {
-		fclose(fp);
+	if (!pass)
 		return NULL;
-	}
+
+	fp = ipmi_open_file_read((const char *)filename);
+	if (!fp)
+		return NULL;
 
 	/* read in id */
 	if (fgets(pass, 16, fp) == NULL) {
@@ -192,7 +186,7 @@ static char * ipmi_password_file_read(char * filename)
 		return NULL;
 	}
 
-	/* remove trailing whitespace */
+ 	/* remove trailing whitespace */
 	l = strcspn(pass, " \r\n\t");
 	if (l > 0)
 		pass[l] = '\0';
@@ -201,248 +195,6 @@ static char * ipmi_password_file_read(char * filename)
 	return pass;
 }
 
-static void ipmi_set_usage(void)
-{
-	printf("Usage: set <option> <value>\n\n");
-	printf("Options are:\n");
-	printf("    hostname <host>        Session hostname\n");
-	printf("    username <user>        Session username\n");
-	printf("    password <pass>        Session password\n");
-	printf("    privlvl <level>        Session privilege level force\n");
-	printf("    authtype <type>        Authentication type force\n");
-	printf("    localaddr <addr>       Local IPMB address\n");
-	printf("    targetaddr <addr>      Remote target IPMB address\n");
-	printf("    port <port>            Remote RMCP port\n");
-	printf("    csv [level]            enable output in comma separated format\n");
-	printf("    verbose [level]        Verbose level\n");
-	printf("\n");
-}
-
-static int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	if (!argc || !strncmp(argv[0], "help", 4)) {
-		ipmi_set_usage();
-		return -1;
-	}
-
-	/* these options can have no arguments */
-	if (!strncmp(argv[0], "verbose", 7)) {
-		verbose = (argc > 1) ? atoi(argv[1]) : verbose+1;
-		return 0;
-	}
-	if (!strncmp(argv[0], "csv", 3)) {
-		csv_output = (argc > 1) ? atoi(argv[1]) : 1;
-		return 0;
-	}
-
-	/* the rest need an argument */
-	if (argc == 1) {
-		ipmi_set_usage();
-		return -1;
-	}
-
-	if (!strncmp(argv[0], "host", 4) || !strncmp(argv[0], "hostname", 8)) {
-		ipmi_intf_session_set_hostname(intf, argv[1]);
-		printf("Set session hostname to %s\n", intf->session->hostname);
-	}
-	else if (!strncmp(argv[0], "user", 4) || !strncmp(argv[0], "username", 8)) {
-		ipmi_intf_session_set_username(intf, argv[1]);
-		printf("Set session username to %s\n", intf->session->username);
-	}
-	else if (!strncmp(argv[0], "pass", 4) || !strncmp(argv[0], "password", 8)) {
-		ipmi_intf_session_set_password(intf, argv[1]);
-		printf("Set session password\n");
-	}
-	else if (!strncmp(argv[0], "authtype", 8)) {
-		unsigned char authtype;
-		authtype = (unsigned char)str2val(argv[1], ipmi_authtype_session_vals);
-		ipmi_intf_session_set_authtype(intf, authtype);
-		printf("Set session authtype to %s\n",
-		       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
-	}
-	else if (!strncmp(argv[0], "privlvl", 7)) {
-		unsigned char privlvl;
-		privlvl = (unsigned char)str2val(argv[1], ipmi_privlvl_vals);
-		ipmi_intf_session_set_privlvl(intf, privlvl);
-		printf("Set session privilege level to %s\n",
-		       val2str(intf->session->privlvl, ipmi_privlvl_vals));
-	}
-	else if (!strncmp(argv[0], "port", 4)) {
-		int port = atoi(argv[1]);
-		ipmi_intf_session_set_port(intf, port);
-		printf("Set session port to %d\n", intf->session->port);
-	}
-	else if (!strncmp(argv[0], "localaddr", 9)) {
-		intf->my_addr = (unsigned char)strtol(argv[1], NULL, 0);
-		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
-	}
-	else if (!strncmp(argv[0], "targetaddr", 10)) {
-		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
-		printf("Set remote IPMB address to 0x%02x\n", intf->target_addr);
-	}
-	else {
-		ipmi_set_usage();
-		return -1;
-	}
-	return 0;
-}
-
-static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	FILE * fp;
-	char buf[512];
-	char * ptr, * tok;
-	int __argc, i;
-	char * __argv[32];
-
-	if (argc < 1) {
-		printf("Usage: exec <filename>\n");
-		return -1;
-	}
-
-	fp = ipmi_open_file_read(argv[0]);
-	if (!fp) {
-		return -1;
-	}
-
-	while (fgets(buf, 512, fp) != NULL) {
-		/* clip off optional comment tail indicated by # */
-		ptr = strchr(buf, '#');
-		if (ptr)
-			*ptr = '\0';
-		else
-			ptr = buf + strlen(buf);
-
-		/* clip off trailing and leading whitespace */
-		ptr--;
-		while (isspace(*ptr) && ptr >= buf)
-			*ptr-- = '\0';
-		ptr = buf;
-		while (isspace(*ptr))
-			ptr++;
-		if (!strlen(ptr))
-			continue;
-
-		__argc = 0;
-
-		/* parse it and make argument list */
-		tok = strtok(ptr, " ");
-		while (tok) {
-			if (__argc < 32)
-				__argv[__argc++] = strdup(tok);
-			tok = strtok(NULL, " ");
-		}
-
-		ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
-
-		for (i=0; i<__argc; i++) {
-			if (__argv[i] != NULL) {
-				free(__argv[i]);
-				__argv[i] = NULL;
-			}
-		}
-	}
-
-	fclose(fp);
-	return 0;
-}
-
-#if HAVE_READLINE
-/* This function attempts to keep lan sessions active
- * so they do not time out waiting for user input.  The
- * readline timeout is set to 1 second but lan session
- * timeout is ~60 seconds.
- */
-static int rl_event_keepalive(void)
-{
-	static int internal_timer = 0;
-
-	if (!shell_intf)
-		return -1;
-	if (!shell_intf->keepalive)
-		return 0;
-	if (internal_timer++ < RL_TIMEOUT)
-		return 0;
-
-	internal_timer = 0;
-	shell_intf->keepalive(shell_intf);
-
-	return 0;
-}
-#endif
-
-static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-#ifdef HAVE_READLINE
-	char *pbuf, **ap, *__argv[20];
-	int __argc, rc=0;
-
-	rl_readline_name = "ipmitool";
-
-	/* this essentially disables command completion
-	 * until its implemented right, otherwise we get
-	 * the current directory contents... */
-	rl_bind_key('\t', rl_insert);
-
-	if (intf->keepalive) {
-		/* hook to keep lan sessions active */
-		shell_intf = intf;
-		rl_event_hook = rl_event_keepalive;
-		/* set to 1 second */
-		rl_set_keyboard_input_timeout(1000*1000);
-	}
-
-	while ((pbuf = (char *)readline(RL_PROMPT)) != NULL) {
-		if (strlen(pbuf) == 0) {
-			free(pbuf);
-			continue;
-		}
-		if (!strncmp(pbuf, "quit", 4) || !strncmp(pbuf, "exit", 4)) {
-			free(pbuf);
-			return 0;
-		}
-		if (!strncmp(pbuf, "help", 4) || !strncmp(pbuf, "?", 1)) {
-			ipmi_cmd_print();
-			free(pbuf);
-			continue;
-		}
-
-		/* for the all-important up arrow :) */
-		add_history(pbuf);
-		
-		__argc = 0;
-		for (ap = __argv; (*ap = strsep(&pbuf, " \t")) != NULL;) {
-			__argc++;
-			if (**ap != '\0') {
-				if (++ap >= &__argv[20])
-					break;
-			}
-		}
-
-		if (__argc && __argv[0])
-			rc = ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
-
-		free(pbuf);
-	}	
-
-	return rc;
-#else
-	printf("Compiled without readline support, shell is disabled.\n");
-	return -1;
-#endif
-}
-
-static int
-ipmi_delay_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	int delay = 1;
-	if (argc > 0) {
-		delay = atoi(argv[0]);
-	}
-	printf("Delaying %d seconds...\n", delay);
-	sleep(delay);
-	return 0;
-}
 
 int main(int argc, char ** argv)
 {
@@ -462,6 +214,7 @@ int main(int argc, char ** argv)
 	int rc = 0;
 	int thump = 0;
 
+	/* save program name */
 	if (!(progname = strrchr(argv[0], '/')))
 		progname = argv[0];
 	else
@@ -474,7 +227,7 @@ int main(int argc, char ** argv)
 			intfname = strdup(optarg);
 			break;
 		case 'h':
-			usage();
+			ipmitool_usage();
 			goto out_free;
 			break;
 		case 'V':
@@ -557,7 +310,7 @@ int main(int argc, char ** argv)
 			my_addr = (unsigned char)strtol(optarg, NULL, 0);
 			break;
 		default:
-			usage();
+			ipmitool_usage();
 			goto out_free;
 		}
 	}
@@ -565,11 +318,11 @@ int main(int argc, char ** argv)
 	/* check for command before doing anything */
 	if (argc-optind <= 0) {
 		printf("No command provided!\n");
-		usage();
+		ipmitool_usage();
 		goto out_free;
 	}
 	if (!strncmp(argv[optind], "help", 4)) {
-		usage();
+		ipmitool_usage();
 		goto out_free;
 	}
 
@@ -579,7 +332,6 @@ int main(int argc, char ** argv)
 		printf("Error loading interface %s\n", intfname);
 		goto out_free;
 	}
-
 	intf->thump = thump;
 
 	/* setup log */
@@ -599,14 +351,17 @@ int main(int argc, char ** argv)
 	if (privlvl)
 		ipmi_intf_session_set_privlvl(intf, privlvl);
 	else
-		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+		ipmi_intf_session_set_privlvl(intf,
+		      IPMI_SESSION_PRIV_ADMIN);	/* default */
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
 	if (target_addr) {
+		/* need to open the interface first */
 		if (intf->open)
 			intf->open(intf);
 		intf->target_addr = target_addr;
+		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 	}
 

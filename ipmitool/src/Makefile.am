@@ -37,7 +37,7 @@ SUBDIRS			= plugins
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-ipmitool_SOURCES	= ipmitool.c
+ipmitool_SOURCES	= ipmitool.c ipmishell.c
 ipmitool_LDADD		= $(top_builddir)/lib/libipmitool.la plugins/libintf.la
 
 if IPMIEVD
