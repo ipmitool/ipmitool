@@ -262,7 +262,7 @@ int main(int argc, char ** argv)
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
 	char * hostname = NULL, * password = NULL, * username = NULL, * tmp;
-	int argflag, intfarg = 0, rc = 0, port = 623, pedantic = 0;
+	int argflag, i, intfarg = 0, rc = 0, port = 623, pedantic = 0;
 	char intfname[32];
 
 	memset(intfname, 0, sizeof(intfname));
