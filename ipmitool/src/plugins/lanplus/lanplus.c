@@ -511,7 +511,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		{
 			printf("ERROR: Received message with invalid authcode!\n");
 			rsp = ipmi_lan_recv_packet(intf);
-			continue;
+			assert(0);
+			//continue;
 		}
 
 		
@@ -1897,6 +1898,10 @@ int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
 	 */
 	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
 
+	/* Keep our sequence number sane */
+	if (intf->session->sol_data.sequence_number > 0x0F)
+		intf->session->sol_data.sequence_number = 1;
+
 	v2_payload->payload.sol_packet.packet_sequence_number =
 		intf->session->sol_data.sequence_number++;
 	
@@ -1921,7 +1926,7 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
 	
 	/* If the SOL packet looks good, ACK it */
-	if (rsp && (rsp->data_len > 4))
+	if (rsp && rsp->data_len)
 	{
 		bzero(&ack, sizeof(struct ipmi_v2_payload));
 
@@ -1933,8 +1938,8 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		 */
 		ack.payload_length = 0;
 
-		ack.payload.sol_packet.packet_sequence_number =
-			intf->session->sol_data.sequence_number++;
+		/* ACK packets have sequence numbers of 0 */
+		ack.payload.sol_packet.packet_sequence_number = 0;
 
 		ack.payload.sol_packet.acked_packet_number =
 			rsp->payload.sol_packet.packet_sequence_number;
