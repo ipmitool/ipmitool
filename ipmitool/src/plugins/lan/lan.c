@@ -1127,7 +1127,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		printbuf(rsp->data, rsp->data_len, "activate_session");
 
 	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Activate Session error:");
+		fprintf(stderr, "Activate Session error:");
 		switch (rsp->ccode) {
 		case 0x81:
 			lprintf(LOG_ERR, "\tNo session slot available");
