@@ -146,6 +146,8 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	unsigned short e, f;
+	int pctfull = 0;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -165,10 +167,18 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	printf("SEL Information\n");
 	printf("Version          : %x%x\n",
 	       (rsp->data[0] & 0xf0) >> 4, rsp->data[0] & 0xf);
-	printf("Entries          : %d\n",
-	       buf2short(rsp->data + 1));
-	printf("Free Space       : %d\n",
-	       buf2short(rsp->data + 3));
+
+	e = buf2short(rsp->data + 1);
+	f = buf2short(rsp->data + 3);
+	printf("Entries          : %d\n", e);
+	printf("Free Space       : %d\n", f);
+	if (e) {
+		e *= 16;
+		f += e;
+		pctfull = (int)(100 * ( (double)e / (double)f ));
+	}
+	printf("Percent Used     : %d%%\n", pctfull);
+
 	printf("Last Add Time    : %s\n",
 	       ipmi_sel_timestamp(buf2long(rsp->data + 5)));
 	printf("Last Del Time    : %s\n",
