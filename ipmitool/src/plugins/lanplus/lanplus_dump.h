@@ -43,6 +43,7 @@
 /* See the implementation file for documentation */
 void lanplus_dump_open_session_response(const struct ipmi_rs * rsp);
 void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, unsigned char auth_alg);
+void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, unsigned char auth_alg);
 
 
 #endif /* IPMI_LANPLUS_DUMP_H  */
