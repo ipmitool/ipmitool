@@ -39,6 +39,7 @@
 #include <time.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_pef.h>
@@ -201,7 +202,8 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 	if (!rsp)
 		return(NULL);
 	if (rsp->ccode) {
-		printf(" **Error %x in '%s' command\n", rsp ? rsp->ccode : 0, txt);
+		lprintf(LOG_ERR, " **Error %x in '%s' command",
+			rsp ? rsp->ccode : 0, txt);
 		return(NULL);
 	}
 	if (verbose > 2)
@@ -246,7 +248,8 @@ ipmi_pef_get_policy_table(struct ipmi_intf * intf,
 		rsp = ipmi_pef_msg_exchange(intf, &req, "Alert policy table entry");
 		if (!rsp
 		|| i != (rsp->data[1] & PEF_POLICY_TABLE_ID_MASK)) {
-			printf(" **Error retrieving %s\n", "Alert policy table entry");
+			lprintf(LOG_ERR, " **Error retrieving %s",
+				"Alert policy table entry");
 			free(ptbl);
 			ptbl = NULL;
 			tbl_size = 0;
@@ -283,7 +286,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	req.msg.data_len = sizeof(lsel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination count");
 	if (!rsp) {
-		printf(" **Error retrieving %s\n", "Alert destination count");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Alert destination count");
 		return;
 	}
 	tbl_size = (rsp->data[1] & PEF_LAN_DEST_TABLE_SIZE_MASK);
@@ -294,7 +298,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	lsel.set = dest;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination type");
 	if (!rsp || rsp->data[1] != lsel.set) {
-		printf(" **Error retrieving %s\n", "Alert destination type");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Alert destination type");
 		return;
 	}
 	ptype = (struct pef_lan_cfgparm_dest_type *)&rsp->data[1];
@@ -308,7 +313,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 		lsel.set = 0;
 		rsp = ipmi_pef_msg_exchange(intf, &req, "PET community");
 		if (!rsp)
-			printf(" **Error retrieving %s\n", "PET community");
+			lprintf(LOG_ERR, " **Error retrieving %s",
+				"PET community");
 		else {
 			rsp->data[19] = '\0';
 			ipmi_pef_print_str("PET Community", &rsp->data[1]);
@@ -321,7 +327,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	lsel.set = dest;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination info");
 	if (!rsp || rsp->data[1] != lsel.set)
-		printf(" **Error retrieving %s\n", "Alert destination info");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Alert destination info");
 	else {
 		pinfo = (struct pef_lan_cfgparm_dest_info *)&rsp->data[1];
 		sprintf(buf, "%u.%u.%u.%u", 
@@ -368,7 +375,7 @@ ipmi_pef_print_serial_dest_dial(struct ipmi_intf * intf, char * label,
 		if (!rsp
 		|| (rsp->data[1] != ssel->id)
 		|| (rsp->data[2] != tmp.block)) {
-			printf(" **Error retrieving %s\n", label);
+			lprintf(LOG_ERR, " **Error retrieving %s", label);
 			return;
 		}
 		memcpy(p, &rsp->data[3], BLOCK_SIZE);
@@ -410,7 +417,8 @@ ipmi_pef_print_serial_dest_tap(struct ipmi_intf * intf,
 	tmp.id = PEF_SERIAL_CFGPARM_ID_TAP_ACCT_INFO;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "TAP account info");
 	if (!rsp || (rsp->data[1] != tmp.set)) {
-		printf(" **Error retrieving %s\n", "TAP account info");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"TAP account info");
 		return;
 	}
 	dialstr_id = (rsp->data[2] & PEF_SERIAL_TAP_ACCT_INFO_DIAL_STRING_ID_MASK);
@@ -422,7 +430,8 @@ ipmi_pef_print_serial_dest_tap(struct ipmi_intf * intf,
 	tmp.set = setting_id;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "TAP service settings");
 	if (!rsp || (rsp->data[1] != tmp.set)) {
-		printf(" **Error retrieving %s\n", "TAP service settings");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"TAP service settings");
 		return;
 	}
 	pset = (struct pef_serial_cfgparm_tap_svc_settings *)&rsp->data[1];
@@ -473,7 +482,8 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	req.msg.data_len = sizeof(ssel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination count");
 	if (!rsp) {
-		printf(" **Error retrieving %s\n", "Alert destination count");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Alert destination count");
 		return;
 	}
 	tbl_size = (rsp->data[1] & PEF_SERIAL_DEST_TABLE_SIZE_MASK);
@@ -484,7 +494,8 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	ssel.set = dest;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination info");
 	if (!rsp || rsp->data[1] != ssel.set)
-		printf(" **Error retrieving %s\n", "Alert destination info");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Alert destination info");
 	else {
 		pinfo = (struct pef_serial_cfgparm_dest_info *)rsp->data;
 		wrk = (pinfo->dest_type & PEF_SERIAL_DEST_TYPE_MASK);
@@ -642,7 +653,8 @@ ipmi_pef_list_entries(struct ipmi_intf * intf)
 		rsp = ipmi_pef_msg_exchange(intf, &req, "PEF table entry");
 		if (!rsp
 		|| (psel.set != (rsp->data[1] & PEF_FILTER_TABLE_ID_MASK))) {
-			printf(" **Error retrieving %s\n", "PEF table entry");
+			lprintf(LOG_ERR, " **Error retrieving %s",
+				"PEF table entry");
 			continue;
 		}
 		pcfg = (struct pef_cfgparm_filter_table_entry *)&rsp->data[1];
@@ -692,7 +704,8 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 			ch = (wrk & PEF_POLICY_CHANNEL_MASK) >> PEF_POLICY_CHANNEL_SHIFT;
 			rsp = ipmi_pef_msg_exchange(intf, &req, "Channel info");
 			if (!rsp || rsp->data[0] != ch) {
-				printf(" **Error retrieving %s\n", "Channel info");
+				lprintf(LOG_ERR, " **Error retrieving %s",
+					"Channel info");
 				continue;
 			}
 			medium = rsp->data[1];
@@ -734,7 +747,8 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_LAST_PROCESSED_EVT_ID;
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Last S/W processed ID");
 	if (!rsp) {
-		printf(" **Error retrieving %s\n", "Last S/W processed ID");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"Last S/W processed ID");
 		return;
 	}
 #if WORDS_BIGENDIAN
@@ -758,7 +772,8 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	req.msg.data_len = sizeof(psel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "PEF control");
 	if (!rsp) {
-		printf(" **Error retrieving %s\n", "PEF control");
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"PEF control");
 		return;
 	}
 	ipmi_pef_print_flags(&pef_b2s_control, P_ABLE, rsp->data[1]);
@@ -842,10 +857,10 @@ int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_pef_list_entries(intf);
 	else {
 		help = 1;
-		printf("Invalid PEF command: '%s'\n\n", argv[0]);
+		lprintf(LOG_ERR, "Invalid PEF command: '%s'\n", argv[0]);
 	}
 	if (help)
-		printf("PEF commands: info status policy list\n");
+		lprintf(LOG_NOTICE, "PEF commands: info status policy list");
 	else if (!verbose)
 		printf("\n");
 	return 0;
