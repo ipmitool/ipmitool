@@ -74,7 +74,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char fru_data[256], msg_data[4];
+	unsigned char * fru_data;
+	unsigned char msg_data[4];
 	int i, len, offset;
 
 	struct fru_area_chassis chassis;
@@ -101,6 +102,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 	if (verbose > 1)
 		printf("fru.size = %d bytes (accessed by %s)\n",
 		       fru.size, fru.access ? "words" : "bytes");
+	if (!fru.size)
+		return;
 
 	msg_data[0] = id;
 	msg_data[1] = 0;
@@ -151,8 +154,11 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 		printf("fru.header.offset.multi:    0x%x\n", header.offset.multi);
 	}
 
+	fru_data = malloc(fru.size+1);
+	if (!fru_data)
+		return;
+	memset(fru_data, 0, fru.size+1);
 	offset = 0;
-	memset(fru_data, 0, 256);
 	do {
 		msg_data[0] = id;
 		msg_data[1] = offset;
@@ -391,6 +397,8 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			i += h->len + sizeof (struct fru_multirec_header);
 		} while (!(h->format & 0x80));
 	}
+
+	free(fru_data);
 }
 
 static void ipmi_fru_print_all(struct ipmi_intf * intf)
