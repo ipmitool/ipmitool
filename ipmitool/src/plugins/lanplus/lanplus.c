@@ -132,6 +132,115 @@ struct ipmi_intf ipmi_lanplus_intf = {
 extern int verbose;
 
 
+
+/*
+ * lanplus_get_requested_ciphers
+ *
+ * Set the authentication, integrity and encryption algorithms based
+ * on the cipher suite ID.  See table 22-19 in the IPMIv2 spec for the
+ * source of this information.
+ *
+ * param cipher_suite_id [in]
+ * param auth_alg        [out]
+ * param integrity_alg   [out]
+ * param crypt_alg       [out]
+ *
+ * returns 0 on success
+ *         1 on failure
+ */
+int lanplus_get_requested_ciphers(int       cipher_suite_id,
+								  uint8_t * auth_alg,
+								  uint8_t * integrity_alg,
+								  uint8_t * crypt_alg)
+{
+	if ((cipher_suite_id < 0) || (cipher_suite_id > 14))
+		return 1;
+
+		/* See table 22-19 for the source of the statement */
+	switch (cipher_suite_id)
+	{
+	case 0:
+		*auth_alg      = IPMI_AUTH_RAKP_NONE;
+		*integrity_alg = IPMI_INTEGRITY_NONE;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 1:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
+		*integrity_alg = IPMI_INTEGRITY_NONE;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 2:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 3:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
+		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
+		break;
+	case 4:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
+		*crypt_alg     = IPMI_CRYPT_XRC4_128;
+		break;
+	case 5:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
+		*crypt_alg     = IPMI_CRYPT_XRC4_40;
+		break;
+	case 6:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_NONE;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 7:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 8:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
+		break;
+	case 9:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_XRC4_128;
+		break;
+	case 10:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_XRC4_40;
+		break;
+	case 11:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 12:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
+		break;
+	case 13:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_XRC4_128;
+		break;
+	case 14:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
+		*integrity_alg = IPMI_INTEGRITY_MD5_128;
+		*crypt_alg     = IPMI_CRYPT_XRC4_40;
+		break;
+	}
+
+	return 0;
+}
+
+
+
 /*
  * Reverse the order of arbitrarily long strings of bytes
  */
@@ -657,7 +766,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				continue;
 			}
 
-			read_rakp4_message(rsp, offset, session->v2_data.integrity_alg);
+			read_rakp4_message(rsp, offset, session->v2_data.auth_alg);
 			break;
 		}
 
@@ -857,7 +966,7 @@ void
 read_rakp4_message(
 				   struct ipmi_rs * rsp,
 				   int offset,
-				   uint8_t integrity_alg)
+				   uint8_t auth_alg)
 {
 	 int i;
 
@@ -878,23 +987,22 @@ read_rakp4_message(
 
 	 
 	 /* Integrity check value */
-	 switch (integrity_alg)
+	 switch (auth_alg)
 	 {
-	 case  IPMI_INTEGRITY_NONE:
+	 case  IPMI_AUTH_RAKP_NONE:
 		 /* Nothing to do here */
 		 break;
 
-	 case IPMI_INTEGRITY_HMAC_SHA1_96:
+	 case IPMI_AUTH_RAKP_HMAC_SHA1:
 		 /* We need to copy 12 bytes */
 		 for (i = 0; i < 12; ++i)
 			 rsp->payload.rakp4_message.integrity_check_value[i] =
 				 rsp->data[offset + 8 + i];
 		 break;
 
-	 case IPMI_INTEGRITY_HMAC_MD5_128:
-	 case IPMI_INTEGRITY_MD5_128:
+	 case IPMI_AUTH_RAKP_HMAC_MD5:
 		 lprintf(LOG_ERR, "read_rakp4_message: no support "
-			 "for integrity algorithm 0x%x", integrity_alg);
+			 "for authentication algorithm 0x%x", auth_alg);
 		 assert(0);
 		 break;	 
 	 }
@@ -1339,7 +1447,7 @@ ipmi_lanplus_build_v2x_msg(
 		msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
 			((session->v2_data.crypt_alg != IPMI_CRYPT_NONE	)? 0x80 : 0x00);
 		msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
-			((session->v2_data.auth_alg  != IPMI_AUTH_RAKP_NONE)? 0x40 : 0x00);
+			((session->v2_data.integrity_alg  != IPMI_INTEGRITY_NONE)? 0x40 : 0x00);
 	}
 
 	/* Session ID  -- making it LSB */
@@ -1451,7 +1559,7 @@ ipmi_lanplus_build_v2x_msg(
 	 *------------------------------------------
 	 */
 	if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
-		(session->v2_data.auth_alg      != IPMI_AUTH_RAKP_NONE))
+		(session->v2_data.integrity_alg != IPMI_INTEGRITY_NONE))
 	{
 		uint32_t i, hmac_length, integrity_pad_size = 0, hmac_input_size;
 		uint8_t * hmac_output;
@@ -1504,7 +1612,7 @@ ipmi_lanplus_build_v2x_msg(
 
 
 		/* Auth Code */
-		lanplus_HMAC(session->v2_data.auth_alg,
+		lanplus_HMAC(session->v2_data.integrity_alg,
 					 session->v2_data.k1,                /* key        */
 					 20,                                 /* key length */
 					 msg + IMPI_LANPLUS_OFFSET_AUTHTYPE, /* hmac input */
@@ -2439,6 +2547,18 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	msg[6] = (session->v2_data.console_id >> 16) & 0xff;
 	msg[7] = (session->v2_data.console_id >> 24) & 0xff;
 
+
+	if (lanplus_get_requested_ciphers(session->cipher_suite_id,
+									  &(session->v2_data.requested_auth_alg),
+									  &(session->v2_data.requested_integrity_alg),
+									  &(session->v2_data.requested_crypt_alg)))
+	{
+		lprintf(LOG_WARNING, "Unsupported cipher suite ID : %d\n",
+				session->cipher_suite_id);
+		return -1;
+	}
+
+
 	/*
 	 * Authentication payload
 	 */
@@ -2446,7 +2566,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	msg[9]  = 0; /* reserved */
 	msg[10] = 0; /* reserved */
 	msg[11] = 8; /* payload length */
-	msg[12] = IPMI_AUTH_RAKP_HMAC_SHA1; 
+	msg[12] = session->v2_data.requested_auth_alg;
 	msg[13] = 0; /* reserved */	
 	msg[14] = 0; /* reserved */
 	msg[15] = 0; /* reserved */	
@@ -2458,7 +2578,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	msg[17] = 0; /* reserved */
 	msg[18] = 0; /* reserved */
 	msg[19] = 8; /* payload length */
-	msg[20] = IPMI_INTEGRITY_HMAC_SHA1_96; 
+	msg[20] = session->v2_data.requested_integrity_alg;
 	msg[21] = 0; /* reserved */	
 	msg[22] = 0; /* reserved */
 	msg[23] = 0; /* reserved */
@@ -2470,7 +2590,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	msg[25] = 0; /* reserved */
 	msg[26] = 0; /* reserved */
 	msg[27] = 8; /* payload length */
-	msg[28] = IPMI_CRYPT_AES_CBC_128; 
+	msg[28] = session->v2_data.requested_crypt_alg;
 	msg[29] = 0; /* reserved */	
 	msg[30] = 0; /* reserved */
 	msg[31] = 0; /* reserved */
@@ -2515,6 +2635,39 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 			rsp->payload.open_session_response.crypt_alg;
 		session->v2_data.session_state  =
 			LANPLUS_STATE_OPEN_SESSION_RECEIEVED;
+
+
+		/*
+		 * Verify that we have agreed on a cipher suite
+		 */
+		if (rsp->payload.open_session_response.auth_alg !=
+			session->v2_data.requested_auth_alg)
+		{
+			lprintf(LOG_WARNING, "Authentication algorithm 0x%02x is "
+					"not what we requested 0x%02x\n",
+					rsp->payload.open_session_response.auth_alg,
+					session->v2_data.requested_auth_alg);
+			rc = -1;
+		}
+		else if (rsp->payload.open_session_response.integrity_alg !=
+				 session->v2_data.requested_integrity_alg)
+		{
+			lprintf(LOG_WARNING, "Integrity algorithm 0x%02x is "
+					"not what we requested 0x%02x\n",
+					rsp->payload.open_session_response.integrity_alg,
+					session->v2_data.requested_integrity_alg);
+			rc = -1;
+		}
+		else if (rsp->payload.open_session_response.crypt_alg !=
+				 session->v2_data.requested_crypt_alg)
+		{
+			lprintf(LOG_WARNING, "Encryption algorithm 0x%02x is "
+					"not what we requested 0x%02x\n",
+					rsp->payload.open_session_response.crypt_alg,
+					session->v2_data.requested_crypt_alg);
+			rc = -1;
+		}
+
 	}
 
 	return rc;
