@@ -48,14 +48,12 @@ SUBDIRS = libltdl lib src include doc contrib control
 dist-hook: ipmitool.spec
 	cp ipmitool.spec $(distdir)
 
-solaris-pkg: SOLARIS_NAME := SUNW@IPMITOOL_BIN@
-solaris-pkg: SOLARIS_PACKAGE := $(SOLARIS_NAME)-@VERSION@-@OS@-@ARCH@
-solaris-pkg: DESTDIR := /tmp/$(SOLARIS_NAME)
-solaris-pkg: control/pkginfo
-	$(MAKE) DESTDIR=$(DESTDIR) install-strip
-	$(STRIP) $(DESTDIR)$(prefix)/bin/@IPMITOOL_BIN@
-	(cd control ; pkgmk -o -r $(DESTDIR))
-	pkgtrans -s spool $(DESTDIR)/$(SOLARIS_PACKAGE) $(SOLARIS_NAME)
-	gzip -c $(DESTDIR)/$(SOLARIS_PACKAGE) > $(SOLARIS_PACKAGE).gz
-	rm -rf $(DESTDIR)
-
+pkg: PKG := @IPMITOOL_BIN@-@VERSION@-@OS@-@ARCH@
+pkg: control/pkginfo
+	$(STRIP) src/@IPMITOOL_BIN@
+# this needs done twice to workaround bug in gnu binutils
+	$(STRIP) src/@IPMITOOL_BIN@
+	(cd control ; pkgmk -o -d /tmp)
+	pkgtrans -s /tmp $(PKG) @IPMITOOL_BIN@
+	gzip -c /tmp/$(PKG) > $(PKG).gz
+	-rm -rf /tmp/@IPMITOOL_BIN@ /tmp/$(PKG)

@@ -34,6 +34,6 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-EXTRA_DIST		= pkginfo.in prototype
+EXTRA_DIST		= pkginfo.in prototype.in
 
-dist-hook: pkginfo
+dist-hook: pkginfo prototype

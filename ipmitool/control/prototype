@@ -1,6 +1,0 @@
-i pkginfo
-d none usr 0755 root sys
-d none usr/bin 0755 root bin
-f none usr/bin/ipmiadm 0755 root bin
-d none usr/man/man1 0755 root bin
-f none usr/man/man1/ipmiadm.1 0644 root bin

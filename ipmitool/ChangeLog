@@ -1,3 +1,6 @@
+	* Add Solaris x86 interface plugin
+	* Add support for building Solaris packages
+
 version 1.5.9
 	* Add ability to get a particular sensor by name
 	* Add ability to set a particular sensor threshold
