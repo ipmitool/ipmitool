@@ -38,10 +38,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <signal.h>
-#include <ipmitool/helper.h>
-
 #include <string.h>
-
+#include <ipmitool/helper.h>
 
 uint32_t buf2long(unsigned char * buf)
 {
@@ -104,6 +102,19 @@ const char * val2str(unsigned short val, const struct valstr *vs)
 	return un_str;
 }
 
+unsigned short str2val(const char *str, const struct valstr *vs)
+{
+	int i = 0;
+
+	while (vs[i].str) {
+		if (!strncasecmp(vs[i].str, str, strlen(str)))
+			return vs[i].val;
+		i++;
+	}
+
+	return 0;
+}
+
 void signal_handler(int sig, void * handler)
 {
 	struct sigaction act;
@@ -125,4 +136,3 @@ void signal_handler(int sig, void * handler)
 		return;
 	}
 }
-

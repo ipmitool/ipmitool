@@ -44,6 +44,7 @@ struct valstr {
 	const char * str;
 };
 const char * val2str(unsigned short val, const struct valstr * vs);
+unsigned short str2val(const char * str, const struct valstr * vs);
 
 unsigned short buf2short(unsigned char * buf);
 uint32_t buf2long(unsigned char * buf);
@@ -55,6 +56,8 @@ void signal_handler(int sig, void * handler);
 #define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
 #define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
 #define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
+
+#define min(a, b)  ((a) < (b) ? (a) : (b))
 
 #endif /* IPMI_HELPER_H */
 
