@@ -66,9 +66,11 @@
 #endif
 
 #ifdef HAVE_READLINE
-# include <readline/readline.h>
-# include <readline/history.h>
-# define PROMPT		"ipmitool> "
+#include <readline/readline.h>
+#include <readline/history.h>
+#define RL_PROMPT		"ipmitool> "
+#define RL_TIMEOUT		30
+static struct ipmi_intf * shell_intf;
 #endif
 
 int csv_output = 0;
@@ -203,16 +205,16 @@ static void ipmi_set_usage(void)
 {
 	printf("Usage: set <option> <value>\n\n");
 	printf("Options are:\n");
-	printf("  hostname <host>    Set session hostname\n");
-	printf("  username <user>    Set session username\n");
-	printf("  password <pass>    Set session password\n");
-	printf("  privlvl <level>    Set session privilege level\n");
-	printf("  authtype <type>    Set authentication type too use\n");
-	printf("  localaddr <addr>   Set local IPMB address\n");
-	printf("  targetaddr <addr>  Set remote target IPMB address\n");
-	printf("  port <port>        Set remote RMCP port\n");
-	printf("  csv [level]        Enable output in comma separated format\n");
-	printf("  verbose [level]    Set verbose level\n");
+	printf("    hostname <host>        Session hostname\n");
+	printf("    username <user>        Session username\n");
+	printf("    password <pass>        Session password\n");
+	printf("    privlvl <level>        Session privilege level force\n");
+	printf("    authtype <type>        Authentication type force\n");
+	printf("    localaddr <addr>       Local IPMB address\n");
+	printf("    targetaddr <addr>      Remote target IPMB address\n");
+	printf("    port <port>            Remote RMCP port\n");
+	printf("    csv [level]            enable output in comma separated format\n");
+	printf("    verbose [level]        Verbose level\n");
 	printf("\n");
 }
 
@@ -239,34 +241,44 @@ static int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	if (!strncmp(argv[0], "hostname", 8)) {
+	if (!strncmp(argv[0], "host", 4) || !strncmp(argv[0], "hostname", 8)) {
 		ipmi_intf_session_set_hostname(intf, argv[1]);
+		printf("Set session hostname to %s\n", intf->session->hostname);
 	}
-	else if (!strncmp(argv[0], "username", 8)) {
+	else if (!strncmp(argv[0], "user", 4) || !strncmp(argv[0], "username", 8)) {
 		ipmi_intf_session_set_username(intf, argv[1]);
+		printf("Set session username to %s\n", intf->session->username);
 	}
-	else if (!strncmp(argv[0], "password", 8)) {
+	else if (!strncmp(argv[0], "pass", 4) || !strncmp(argv[0], "password", 8)) {
 		ipmi_intf_session_set_password(intf, argv[1]);
+		printf("Set session password\n");
 	}
 	else if (!strncmp(argv[0], "authtype", 8)) {
 		unsigned char authtype;
 		authtype = (unsigned char)str2val(argv[1], ipmi_authtype_session_vals);
 		ipmi_intf_session_set_authtype(intf, authtype);
+		printf("Set session authtype to %s\n",
+		       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
 	}
 	else if (!strncmp(argv[0], "privlvl", 7)) {
 		unsigned char privlvl;
 		privlvl = (unsigned char)str2val(argv[1], ipmi_privlvl_vals);
 		ipmi_intf_session_set_privlvl(intf, privlvl);
+		printf("Set session privilege level to %s\n",
+		       val2str(intf->session->privlvl, ipmi_privlvl_vals));
 	}
 	else if (!strncmp(argv[0], "port", 4)) {
 		int port = atoi(argv[1]);
 		ipmi_intf_session_set_port(intf, port);
+		printf("Set session port to %d\n", intf->session->port);
 	}
 	else if (!strncmp(argv[0], "localaddr", 9)) {
-		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
+		intf->my_addr = (unsigned char)strtol(argv[1], NULL, 0);
+		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
 	}
 	else if (!strncmp(argv[0], "targetaddr", 10)) {
 		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
+		printf("Set remote IPMB address to 0x%02x\n", intf->target_addr);
 	}
 	else {
 		ipmi_set_usage();
@@ -335,21 +347,63 @@ static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
+#if HAVE_READLINE
+/* This function attempts to keep lan sessions active
+ * so they do not time out waiting for user input.  The
+ * readline timeout is set to 1 second but lan session
+ * timeout is ~60 seconds.
+ */
+static int rl_event_keepalive(void)
+{
+	static int internal_timer = 0;
+
+	if (!shell_intf)
+		return -1;
+	if (!shell_intf->keepalive)
+		return 0;
+	if (internal_timer++ < RL_TIMEOUT)
+		return 0;
+
+	internal_timer = 0;
+	shell_intf->keepalive(shell_intf);
+
+	return 0;
+}
+#endif
+
 static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 #ifdef HAVE_READLINE
-	char *pbuf, **ap, *__argv[10];
+	char *pbuf, **ap, *__argv[20];
 	int __argc, rc=0;
 
-	while ((pbuf = (char *)readline(PROMPT)) != NULL) {
-		if (strlen(pbuf) == 0)
+	rl_readline_name = "ipmitool";
+
+	/* this essentially disables command completion
+	 * until its implemented right, otherwise we get
+	 * the current directory contents... */
+	rl_bind_key('\t', rl_insert);
+
+	if (intf->keepalive) {
+		/* hook to keep lan sessions active */
+		shell_intf = intf;
+		rl_event_hook = rl_event_keepalive;
+		/* set to 1 second */
+		rl_set_keyboard_input_timeout(1000*1000);
+	}
+
+	while ((pbuf = (char *)readline(RL_PROMPT)) != NULL) {
+		if (strlen(pbuf) == 0) {
+			free(pbuf);
 			continue;
-		if (!strncmp(pbuf, "quit", 4))
+		}
+		if (!strncmp(pbuf, "quit", 4) || !strncmp(pbuf, "exit", 4)) {
+			free(pbuf);
 			return 0;
-		if (!strncmp(pbuf, "exit", 4))
-			return 0;
+		}
 		if (!strncmp(pbuf, "help", 4) || !strncmp(pbuf, "?", 1)) {
 			ipmi_cmd_print();
+			free(pbuf);
 			continue;
 		}
 
@@ -360,16 +414,20 @@ static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		for (ap = __argv; (*ap = strsep(&pbuf, " \t")) != NULL;) {
 			__argc++;
 			if (**ap != '\0') {
-				if (++ap >= &__argv[10])
+				if (++ap >= &__argv[20])
 					break;
 			}
 		}
 
-		rc = ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
+		if (__argc && __argv[0])
+			rc = ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
+
+		free(pbuf);
 	}	
+
 	return rc;
 #else
-	printf("Compiled without readline support, ipmishell is disabled.\n");
+	printf("Compiled without readline support, shell is disabled.\n");
 	return -1;
 #endif
 }
