@@ -211,11 +211,6 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 
 	*next_id = (rsp->data[1] << 8) | rsp->data[0];
 
-	if (rsp->data[4] >= 0xc0) {
-		printf("Not a standard SEL Entry!\n");
-		return NULL;
-	}
-
 	return (struct sel_event_record *) &rsp->data[2];
 }
 
@@ -253,6 +248,24 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		printf("%x,", evt->record_id);
 	else
 		printf("%4x | ", evt->record_id);
+
+
+	if (evt->record_type == 0xf0)
+	{
+		char tmp [12];
+		memcpy (tmp, (char *) evt + 5, 11);
+		tmp [11] = 0;
+
+		printf ("Linux kernel panic: %s\n", tmp);
+
+		return;
+	}
+
+	if (evt->record_type >= 0xc0)
+	{
+		printf ("OEM record\n");
+		return;
+	}
 
 	if (evt->timestamp < 0x20000000) {
 		printf("Pre-Init Time-stamp");
@@ -292,6 +305,26 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 
 	printf("SEL Record ID    : %04x\n",
 	       evt->record_id);
+
+	if (evt->record_type == 0xf0)
+	{
+		char tmp [12];
+		printf (" Record Type     : Linux kernel panic (OEM record).\n");
+
+		memcpy (tmp, (char *) evt + 5, 11);
+		tmp [11] = 0;
+
+		printf (" Panic string    : %s\n\n", tmp);
+
+		return;
+	}
+
+	if (evt->record_type >= 0xc0)
+	{
+		printf (" Record Type     : OEM record\n");
+		return;
+	}
+
 	printf(" Record Type     : %02x\n",
 	       evt->record_type);
 	printf(" Timestamp       : %s\n",
