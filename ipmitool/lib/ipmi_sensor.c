@@ -365,6 +365,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 			printf("\n");
 		}
 	}
+
+	return 0;
 }
 
 int
