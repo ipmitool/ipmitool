@@ -76,14 +76,28 @@ if test "x$exec_prefix" = "xNONE"; then
   exec_prefix="$prefix"
 fi
 
+
+dnl Solaris convention is command-line tools have *adm and GUIs have *tool suffix
+IPMITOOL_BIN="ipmitool"
+AC_ARG_ENABLE([ipmiadm],
+	[[  --enable-ipmiadm        enable rename of ipmitool to ipmiadm [default=no]]],,enable_ipmiadm=no)
+AM_CONDITIONAL(IPMIADM, test "x$enable_ipmiadm" = "xyes")
+if test "x$enable_ipmiadm" = "xyes"; then
+	IPMITOOL_BIN="ipmiadm"
+fi
+AC_DEFINE_UNQUOTED(IPMITOOL_BIN, "$IPMITOOL_BIN", "IPMItool binary name")
+AC_SUBST(IPMITOOL_BIN)
+
+
 dnl enable plugins for interfaces
 AC_ARG_WITH([plugin-path],
 	[[  --with-plugin-path=DIR  Set plugin path to DIR]],
 	[pluginpath="$withval"],
-	[pluginpath="${exec_prefix}/lib/ipmitool"])
+	[pluginpath="${exec_prefix}/lib/${IPMITOOL_BIN}"])
 
 AC_DEFINE_UNQUOTED(PLUGIN_PATH, "$pluginpath", "IPMI interface plugin path")
 AC_SUBST(pluginpath)
+
 
 STATIC_INTF_LIST=
 STATIC_INTF=
@@ -158,17 +172,6 @@ if test "x$enable_ipmievd" = "xyes"; then
 fi
 AC_SUBST(IPMIEVD_SRC)
 AC_SUBST(IPMIEVD_BIN)
-
-dnl Solaris convention is command-line tools have *adm and GUIs have *tool suffix
-IPMITOOL_BIN="ipmitool"
-AC_ARG_ENABLE([ipmiadm],
-	[[  --enable-ipmiadm        enable rename of ipmitool to ipmiadm [default=no]]],,enable_ipmiadm=no)
-AM_CONDITIONAL(IPMIADM, test "x$enable_ipmiadm" = "xyes")
-if test "x$enable_ipmiadm" = "xyes"; then
-	IPMITOOL_BIN="ipmiadm"
-fi
-AC_DEFINE_UNQUOTED(IPMITOOL_BIN, "$IPMITOOL_BIN", "IPMItool binary name")
-AC_SUBST(IPMITOOL_BIN)
 
 
 AC_CONFIG_FILES([ipmitool.spec
