@@ -85,7 +85,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 1;
 	
-	/* We don't yet support other alogrithms */
+	/* We don't yet support other algorithms */
 	assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);
 	
 
@@ -230,14 +230,14 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 		if (session->v2_data.integrity_alg == IPMI_INTEGRITY_NONE)
 			return 1;
 		
-		/* We don't yet support other alogrithms */
+		/* We don't yet support other algorithms */
 		assert(session->v2_data.integrity_alg == IPMI_INTEGRITY_HMAC_SHA1_96);
 		
 	} else {
 		if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 			return 1;		
 
-		/* We don't yet support other alogrithms */	
+		/* We don't yet support other algorithms */	
 		assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);	
 	}
 
@@ -360,7 +360,7 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 		return 0;
 	}
 
-	/* We don't yet support other alogrithms */
+	/* We don't yet support other algorithms */
 	assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);
 
 	input_buffer_length =
@@ -474,7 +474,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 0;
 
-	/* We don't yet support other alogrithms */
+	/* We don't yet support other algorithms */
 	assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);
 
 	input_buffer_length =
