@@ -414,7 +414,7 @@ main(int argc, char ** argv)
 		goto out_free;
 	}
 	if (strncmp(argv[optind], "help", 4) == 0) {
-		ipmitool_usage();
+		ipmi_cmd_print();
 		goto out_free;
 	}
 
