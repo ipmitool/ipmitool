@@ -136,3 +136,12 @@ void signal_handler(int sig, void * handler)
 		return;
 	}
 }
+
+unsigned char ipmi_csum(unsigned char * d, int s)
+{
+	unsigned char c = 0;
+	for (; s > 0; s--, d++)
+		c += *d;
+	return -c;
+}
+
