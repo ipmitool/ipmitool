@@ -34,30 +34,22 @@
  * facility.
  */
 
-#ifndef IPMI_CONSTANTS_H
-#define IPMI_CONSTANTS_H
+#ifndef IPMI_ISOL_H
+#define IPMI_ISOL_H
 
+#include <ipmitool/ipmi.h>
 
-/*
- * COMMANDS
- */
-#define IPMI_GET_SDR_REPOSITORY_INFO    0x20
-#define IMPI_SOL_ACTIVATING             0x20
-#define IMPI_SET_SOL_CONFIG_PARAMETERS  0x21
-#define IMPI_GET_SOL_CONFIG_PARAMETERS  0x22
+#define ACTIVATE_ISOL			0x01
+#define SET_ISOL_CONFIG			0x03
+#define GET_ISOL_CONFIG			0x04
 
-#define IPMI_SESSION_AUTHTYPE_NONE      0x0
-#define IPMI_SESSION_AUTHTYPE_MD2       0x1
-#define IPMI_SESSION_AUTHTYPE_MD5   	0x2
-#define IPMI_SESSION_AUTHTYPE_KEY	    0x4
-#define IPMI_SESSION_AUTHTYPE_OEM       0x5
-#define IPMI_SESSION_AUTHTYPE_RMCP_PLUS 0x6
+#define ISOL_ENABLE_PARAM		0x01
+#define ISOL_AUTHENTICATION_PARAM	0x02
+#define ISOL_ENABLE_FLAG			0x01
+#define ISOL_PRIVILEGE_LEVEL_USER	0x02
+#define ISOL_BAUD_RATE_PARAM		0x05
+#define ISOL_PREFERRED_BAUD_RATE		0x07
 
-#define IPMI_SESSION_PRIV_CALLBACK	0x1
-#define IPMI_SESSION_PRIV_USER		0x2
-#define IPMI_SESSION_PRIV_OPERATOR	0x3
-#define IPMI_SESSION_PRIV_ADMIN		0x4
-#define IPMI_SESSION_PRIV_OEM		0x5
+int ipmi_isol_main(struct ipmi_intf *, int, char **);
 
-
-#endif /*IPMI_CONSTANTS_H*/
+#endif /* IPMI_SOL_H */

@@ -202,7 +202,7 @@ struct ipmi_rs {
 #define IPMI_NETFN_FIRMWARE		0x8
 #define IPMI_NETFN_STORAGE		0xa
 #define IPMI_NETFN_TRANSPORT	0xc
-#define IPMI_NETFN_SOL			0x34
+#define IPMI_NETFN_ISOL			0x34
 
 #define IPMI_BMC_SLAVE_ADDR		0x20
 #define IPMI_REMOTE_SWID		0x81
