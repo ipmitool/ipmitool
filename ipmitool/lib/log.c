@@ -143,6 +143,7 @@ void log_halt(void)
 		closelog();
 
 	free(logpriv);
+	logpriv = NULL;
 }
 
 int log_level_get(void)
