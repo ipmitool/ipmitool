@@ -61,14 +61,14 @@ enum LANPLUS_SESSION_STATE {
 };
 
 
-#define IPMI_AUTHCODE_BUFFER_SIZE 16
+#define IPMI_AUTHCODE_BUFFER_SIZE 20
 #define IPMI_SIK_BUFFER_SIZE      20
 #define IPMI_KG_BUFFER_SIZE       21 /* key plus null byte */
 
 struct ipmi_session {
 	unsigned char hostname[64];
 	unsigned char username[16];
-	unsigned char authcode[IPMI_AUTHCODE_BUFFER_SIZE];
+	unsigned char authcode[IPMI_AUTHCODE_BUFFER_SIZE + 1];
 	unsigned char challenge[16];
 	unsigned char authtype;
 	unsigned char authtype_set;

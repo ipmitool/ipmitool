@@ -146,11 +146,13 @@ void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 {
 	if (intf && intf->session) {
-		memset(intf->session->authcode, 0, 16);
+		memset(intf->session->authcode, 0, sizeof(intf->session->authcode));
 		intf->session->password = 0;
 		if (password) {
 			intf->session->password = 1;
-			memcpy(intf->session->authcode, password, min(strlen(password), 16));
+			memcpy(intf->session->authcode,
+			       password,
+			       min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
 		}
 	}
 }
