@@ -37,3 +37,5 @@ MAINTAINERCLEANFILES = Makefile.in
 plugindir = $(pluginpath)
 
 SUBDIRS = @PLUGINS@
+DIST_SUBDIRS = lan open
+
