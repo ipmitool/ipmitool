@@ -64,6 +64,16 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %{_includedir}/ipmitool/*.h
 
 %changelog
+* Thu Dec  4 2003 <duncan@sun.com>  1.5.6-1
+ - Fix SEL event decoding for generic events
+ - Handle empty SEL gracefully when doing "sel list"
+ - Fix sdr handling of sensors that do not return a reading
+ - Fix for CSV display of sensor readings/units from Fredrik Öhrn
+
+* Tue Nov 25 2003 <duncan@sun.com>  1.5.5-1
+ - Add -U option for setting LAN username
+ - Fix -v usage for plugin interfaces
+
 * Fri Nov 14 2003 <duncan@sun.com>  1.5.4-1
  - pull interface plugin api into library
  - fix ipmievd

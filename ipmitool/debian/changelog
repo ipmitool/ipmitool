@@ -1,3 +1,12 @@
+ipmitool (1.5.6) unstable; urgency=low
+
+  * Fix SEL event decoding for generic events
+  * Handle empty SEL gracefully when doing "sel list"
+  * Fix sdr handling of sensors that do not return a reading
+  * Fix for CSV display of sensor readings/units from Fredrik Öhrn
+
+ -- Duncan Laurie <duncan@sun.com>  Thu,  4 Dec 2003 14:47:19 -0700
+
 ipmitool (1.5.5) unstable; urgency=low
 
   * Add -U option for setting LAN username
