@@ -456,7 +456,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 			
 		if (rmcp_rsp.class != RMCP_CLASS_IPMI) {
-			printf("Invalid RMCP class: %x\n", rmcp_rsp.class);
+			if (verbose > 1)
+				printf("Invalid RMCP class: %x\n", rmcp_rsp.class);
 			rsp = ipmi_lan_recv_packet(intf);
 			continue;
 		}
