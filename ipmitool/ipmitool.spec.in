@@ -1,53 +1,95 @@
-Summary:      Utility for interfacing with IPMI hardware
-Name:         ipmitool
-Version:      @@VERSION@@
+Name:         @IPMITOOL_PKG@
+Summary:      @IPMITOOL_PKG@ - Utility for interfacing with IPMI devices
+Version:      @VERSION@
 Release:      1
-Copyright:    Sun Microsystems
-License:      BSD
-Group:        Applications/System
-Source:       ipmitool.tar.gz
+Copyright:    BSD
+Group:        Utilities
+Vendor:       Sun Microsystems
+Packager:     Duncan Laurie <duncan@sun.com>
+Source:       @IPMITOOL_PKG@-@VERSION@.tar.gz
+Buildroot:    /var/tmp/@IPMITOOL_PKG@-root
+
+%package dev
+Summary: Development files for ipmitool
+Group: Utilities
 
 %description
-This package contains a utility for interfacing with IPMI
-hardware through either the Linux OpenIPMI kernel driver or
-over ethernet LAN.  It provides some basic functions for
-reading the SDR and displaying sensor values, printing FRU
-information, LAN configuration, and chassis power control.
+This package contains a utility for interfacing with IPMI-enabled devices
+through either the OpenIPMI kernel driver or with IPMI-over-LAN protocol.
+It provides some basic functions for reading the SDR and displaying sensor
+values, displaying the contents of the SEL, printing FRU information,
+reading and setting LAN configuration, and chassis power control.
+
+%description dev
+Additional development files for creating applications or interface plugins
+for ipmitool.
 
 %prep
-[ "$RPM_BUILD_ROOT" ] && rm -rf $RPM_BUILD_ROOT
+if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
+    rm -rf $RPM_BUILD_ROOT
+fi
 
-%setup -q -n ipmitool
-mkdir -p $RPM_BUILD_ROOT/usr/sbin
-mkdir -p $RPM_BUILD_ROOT/usr/share/man/man1
+%setup
 
 %build
-make 
+./configure @ac_configure_args@ \
+	--prefix=%{_prefix} \
+	--bindir=%{_bindir} \
+	--datadir=%{_datadir} \
+	--includedir=%{_includedir} \
+	--libdir=%{_libdir} \
+	--mandir=%{_mandir} \
+	--sysconfdir=%{_sysconfdir}
+make
 
 %install
-mkdir -p $RPM_BUILD_ROOT/usr/sbin
-make install DESTDIR=$RPM_BUILD_ROOT
-make install-man DESTDIR=$RPM_BUILD_ROOT
-install -m 0755 -o root -g root bmcautoconf.sh $RPM_BUILD_ROOT/usr/sbin
+make DESTDIR=$RPM_BUILD_ROOT install
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
+    rm -rf $RPM_BUILD_ROOT
+fi
+rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 
 %files
-/usr/sbin/ipmitool
-/usr/sbin/bmcautoconf.sh
-/usr/share/man/man1/ipmitool.1.gz
+%defattr(-,root,root)
+%doc %{_mandir}/man1/*
+%{_bindir}/*
+%dir %{_libdir}/ipmitool
+%attr(755,root,root) %{_libdir}/ipmitool/*
+
+%files dev
+%defattr(-,root,root)
+%dir %{_includedir}/ipmitool
+%{_includedir}/ipmitool/*.h
 
 %changelog
-* Wed Nov 12 2003 <duncan@sun.com>  1.4.1.1-1
- - first public release
+* Fri Nov 14 2003 <duncan@sun.com>  1.5.4-1
+ - pull interface plugin api into library
+ - fix ipmievd
+
+* Fri Oct 31 2003 <duncan@sun.com>  1.5.3-1
+ - add -g optin for pedantic ipmi-over-lan communication
+
+* Fri Oct 24 2003 <duncan@sun.com>  1.5.2-1
+ - add gratuitous arp interval setting
+
+* Wed Oct  8 2003 <duncan@sun.com>  1.5.1-1
+ - better SEL support
+ - fix display bug in SDR list
+
+* Fri Sep  5 2003 <duncan@sun.com>  1.5.0-1
+ - use automake/autoconf/libtool
+ - dynamic loading interface plugins
 
 * Wed May 28 2003 <duncan@sun.com>  1.4.0-1
  - make UDP packet handling more robust
+ - fix imb driver support
 
 * Thu May 22 2003 <duncan@sun.com>  1.3-1
  - update manpage
  - rework of low-level network handling
+ - add basic imb driver support
 
 * Wed Apr  2 2003 <duncan@sun.com>  1.2-1
  - change command line option parsing

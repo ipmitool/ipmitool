@@ -34,94 +34,22 @@
  * facility.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <ipmitool/helper.h>
+#ifndef IPMI_SOL_H
+#define IPMI_SOL_H
 
-#include <string.h>
+#include <ipmitool/ipmi.h>
 
+#define ACTIVATE_SOL			0x01
+#define SET_SOL_CONFIG			0x03
+#define GET_SOL_CONFIG			0x04
 
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+#define SOL_ENABLE_PARAM		0x01
+#define SOL_AUTHENTICATION_PARAM	0x02
+#define SOL_ENABLE_FLAG			0x01
+#define SOL_PRIVILEGE_LEVEL_USER	0x02
+#define SOL_BAUD_RATE_PARAM		0x05
+#define SOL_PREFERRED_BAUD_RATE		0x07
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+int ipmi_sol_main(struct ipmi_intf *, int, char **);
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
-
-	if (!len || len > 1024)
-		return NULL;
-
-	memset(str, 0, 1024);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
+#endif /* IPMI_SOL_H */

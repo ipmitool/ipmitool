@@ -1,8 +1,36 @@
-ipmitool (1.4.1.1-1) unstable; urgency=low
+ipmitool (1.5.4) unstable; urgency=low
 
-  * First public source relese
+  * Put interface plugin API into library
+  * Fix ipmievd
 
- -- Duncan Laurie <duncan@sun.com>  Wed, 12 Nov 2003 09:23:18 -0700
+ -- Duncan Laurie <duncan@sun.com>  Fri, 14 Nov 2003 15:16:34 -0700
+
+ipmitool (1.5.3) unstable; urgency=low
+
+  * Add -g option to work with grizzly bmc
+
+ -- Duncan Laurie <duncan@sun.com>  Mon,  3 Nov 2003 18:04:07 -0700
+
+ipmitool (1.5.2) unstable; urgency=low
+
+  * add support for setting gratuitous arp interval 
+
+ -- Duncan Laurie <duncan@sun.com>  Fri, 24 Oct 2003 11:00:00 -0700
+
+ipmitool (1.5.1) unstable; urgency=low
+
+  * better SEL support
+  * fix display bug in SDR list
+
+ -- Duncan Laurie <duncan@sun.com>  Wed,  8 Oct 2003 17:28:51 -0700
+
+ipmitool (1.5.0) unstable; urgency=low
+
+  * more robust UDP packet handling
+  * add Intel IMB driver support
+  * use autoconf/automake/libtool
+
+ -- Duncan Laurie <duncan@sun.com>  Fri,  5 Sep 2003 11:57:32 -0700
 
 ipmitool (1.2-1) unstable; urgency=low
 
@@ -13,13 +41,13 @@ ipmitool (1.2-1) unstable; urgency=low
 
 ipmitool (1.1-1) unstable; urgency=low
 
-  * Minor fixes
+  * Minor fixes.
 
  -- Duncan Laurie <duncan@sun.com>  Tue,  1 Apr 2003 14:31:10 -0700
 
 ipmitool (1.0-1) unstable; urgency=low
 
-  * Initial Release
+  * Initial Release.
 
  -- Duncan Laurie <duncan@sun.com>  Sun, 30 Mar 2003 21:30:46 -0700
 

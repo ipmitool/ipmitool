@@ -1,0 +1,348 @@
+.TH "ipmitool" "1" "" "Duncan Laurie" ""
+.SH "NAME"
+.LP 
+ipmitool \- utility for controlling IPMI-enabled devices
+.SH "SYNTAX"
+.LP 
+ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIaddress\fP [\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+.br 
+ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
+.SH "DESCRIPTION"
+.LP 
+This program lets you perform various IPMI functions with either a kernel device driver or over a LAN interface.  These functions include printing FRU information, LAN configuration, sensor readings, and remote chassis power control.
+.SH "OPTIONS"
+.LP 
+.TP 
+\fB\-h\fR
+Get basic usage help from the command line.
+.TP 
+\fB\-c\fR
+Make output suitable for parsing where possible by separating fields with commas instead of spaces.
+.TP
+\fB\-g\fR
+Attempt to be extra robust in IPMI-over-LAN communications.
+.TP 
+\fB\-V\fR
+Display version information.
+.TP
+\fB\-v\fR
+Increase verbose output level.  This option may be specified multiple times to increase the level of debug output.  If given three times you will get hexdumps of all incoming and outgoing packets.
+.TP 
+\fB\-I\fR <\fIinterface\fP>
+Selects IPMI interface to use.  Possible interfaces are \fIlan\fP or \fIopen\fP.
+.TP 
+\fB\-H\fR <\fIaddress\fP>
+Remote server address, can be IP address or hostname.  This option is required for the LAN interface connection.
+.TP 
+\fB\-P\fR <\fIpassword\fP>
+Remote server password, 16 character maximum.  This is optional for the LAN interface, if it is not provided the session will not be authenticated.
+.SH "EXPRESSIONS"
+.LP
+.TP
+.I help
+This can be used to get command-line help on ipmitool commands.  It may also be placed at the end of commands to get option usage help.
+.RS
+.PP
+ipmitool -I open help
+.br
+Commands:  chassis, fru, lan, sdr, sel
+.LP
+.PP
+ipmitool -I open chassis help
+.br
+Chassis Commands:  status, power, identify, policy, restart_cause
+.LP
+.PP
+ipmitool -I open chassis power help
+.br
+Chassis Power Commands: status, on, off, cycle, reset, diag, soft
+.LP
+.RE
+.TP
+\fIraw\fP <\fBnetfn\fR> <\fBcmd\fR> [\fBdata\fR]
+This will allow you to execute raw IPMI commands.  For example to query the POH counter with a raw command:
+.RS
+.PP
+ipmitool -I open raw 0x0 0xf
+.br
+RAW REQ (netfn=0x0 cmd=0xf data_len=0)
+.br
+RAW RSP (5 bytes)
+.br
+ 3c 72 0c 00 00
+.LP
+.RE
+.TP
+\fIchaninfo\fP [\fBchannel\fR]
+This command will display information about the selected channel.  If no channel is given it will display information about the currently used channel:
+.RS
+.PP
+ipmitool -I open chaninfo
+.br
+Channel 0xf info:
+.br
+  Channel Medium Type   : System Interface
+.br
+  Channel Protocol Type : KCS
+.br
+  Session Support       : session-less
+.br
+  Active Session Count  : 0
+.br
+  Protocol Vendor ID    : 7154
+.LP
+.RE
+.TP
+\fIuserinfo\fP <\fBchannel\fR>
+This command will display information about configured user information on a specific LAN channel.  This command will fail on system interfaces.  Try channel 6 or 7.
+.RS
+.PP
+ipmitool -I open userinfo 6
+.br
+Maximum User IDs     : 4
+.br
+Enabled User IDs     : 1
+.br
+Fixed Name User IDs  : 1
+.br
+Access Available     : call-in / callback
+.br
+Link Authentication  : disabled
+.br
+IPMI Messaging       : enabled
+.LP
+.RE
+.TP
+.I chassis
+.RS
+.TP
+.I status
+This command returns information about the high-level status of the system chassis and main power subsystem.
+.TP
+.I poh
+This command will return the Power-On Hours counter.
+.TP
+\fIidentify\fP <\fBinterval\fR>
+Control the front panel identify light.  Default is 15.  Use 0 to turn off.
+.TP
+.I restart_cause
+Query the chassis for the cause of the last system restart.
+.TP
+.I policy
+Set the chassis power policy in the event power failure.
+.RS
+.TP
+.I list
+Return supported policies.
+.TP
+.I always-on
+Turn on when power is restored.
+.TP
+.I previous
+Returned to previous state when power is restored.
+.TP
+.I always-off
+Stay off after power is restored.
+.RE
+.TP
+.I power
+Performs a chassis control command to view and change the power state.
+.RS
+.TP
+.I status
+Show current chassis power status.
+.TP
+.I on
+Power up chassis.
+.TP
+.I off
+Power down chassis into soft off (S4/S5 state).  WARNING: this command does not initiate a clean shutdown of the operating system prior to powering down the system.
+.TP
+.I cycle
+This command provides a power off interval of at least 1 second.  No action should occur if chassis power is in S4/S5 state, but it is recommended to check power state first and only issue a power cycle command if the system power is on or in lower sleep state than S4/S5.
+.TP
+.I reset
+This command will perform a hard reset.
+.TP
+.I diag
+Pulse a version of a diagnostic interrupt (NMI) that goes directly to the processor(s).
+.TP
+.I soft
+Initiate a soft\-shutdown of OS via ACPI by emulating a fatal overtemperature.
+.RE
+.RE
+.TP
+.I lan
+.RS
+.TP
+\fIprint\fP <\fBchannel\fR>
+Print the current configuration for the given channel.
+.TP
+\fIset\fP <\fBchannel\fR> <\fBparameter\fR>
+Set the given parameter on the given channel.  Valid parameters are:
+.RS
+.TP
+\fIipaddr\fP <\fBx.x.x.x\fR>
+Set the IP address for this channel.
+.TP
+\fInetmask\fP <\fBx.x.x.x\fR>
+Set the netmask for this channel.
+.TP
+\fImacaddr\fP <\fBxx:xx:xx:xx:xx:xx\fR>
+Set the MAC adddress for this channel.
+.TP
+\fIdefgw\fP \fIipaddr\fP <\fBx.x.x.x\fR>
+Set the default gateway IP address.
+.TP
+\fIdefgw\fP \fImacaddr\fP <\fBxx:xx:xx:xx:xx:xx\fR>
+Set the default gateway MAC address.
+.TP
+\fIbakgw\fP \fIipaddr\fP <\fBx.x.x.x\fR>
+Set the backup gateway IP address.
+.TP
+\fIbakgw\fP \fImacaddr\fP <\fBxx:xx:xx:xx:xx:xx\fR>
+Set the backup gateway MAC address.
+.TP
+\fIpassword\fP <\fBpass\fR>
+Set the null user password.
+.TP
+\fIuser\fP
+Enable user access mode.
+.TP
+\fIaccess\fP <\fBon|off\fR>
+Set LAN channel access mode.
+.TP
+\fIipsrc\fP <\fBsource\fR>
+Set the IP address source:
+.br
+none = unspecified
+.br
+static = manually configured static IP address
+.br
+dhcp = address obtained by BMC running DHCP
+.br
+bios = address loaded by BIOS or system software
+.TP
+\fIarp\fP \fIrespond\fP <\fBon|off\fR>
+Set BMC generated ARP responses.
+.TP
+\fIarp\fP \fIgenerate\fP <\fBon|off\fR>
+Set BMC generated gratuitous ARPs.
+.TP
+\fIarp\fP \fIinterval\fP <\fBseconds\fR>
+Set BMC generated gratuitous ARP interval.
+.TP
+\fIauth\fP <\fBlevel,...\fR> <\fBtype,...\fR>
+Set the valid authtypes for a given auth level.
+.RS
+Levels:
+.B callback
+.B user
+.B operator
+.B admin
+.br
+Types: 
+.B none
+.B md2
+.B md5
+.B key
+.RE
+.RE
+.RE
+.TP
+.I fru
+.RS
+.TP
+.I print
+This command will read all Field Replacable Unit inventory data and extract such information as serial number, part number, asset tags, and short strings describing the chassis, board, or product. 
+.RE
+.TP
+.I sdr
+.RS
+.TP
+.I list
+This command will read the SDR and extract sensor information, then query each sensor and print its name, reading, and status.
+.RE
+.TP
+.I sel
+.RS
+.TP
+.I info
+This command will query the BMC for information about the SEL and its contents.
+.TP
+.I clear
+This command will clear the contents of the SEL.  It cannot be undone so be careful.
+.TP
+.I list
+This command will list the contents of the SEL.
+.RE
+.TP
+.I sol
+.RS
+.TP
+.I setup
+Setup Serial-over-LAN: enable, set authentication and baud rate.
+.RE
+.SH "OPEN INTERFACE"
+.LP 
+The ipmitool \fIopen\fP interface utilizes the MontaVista OpenIPMI kernel device driver.  This driver is present in 2.5.57 and later development kernels and in 2.4.21pre1 and later stable kernels.  There are also IPMI driver kernel patches for different versions available from the OpenIPMI homepage.
+.LP 
+The following kernel modules must be loaded in order for ipmitool to work:
+.TP 
+.B ipmi_msghandler
+Incoming and outgoing message handler for IPMI interfaces.
+.TP 
+.B ipmi_kcs_drv
+An IPMI Keyboard Controler Style (KCS) interface driver for the message handler.
+.TP 
+.B ipmi_devintf
+Linux character device interface for the message handler.
+.LP 
+Once they are loaded there will be a dynamic char device entry that must exist at \fB/dev/ipmi0\fR.  Usually if this is the first dynamic device it will be major number \fB254\fR and minor number \fB0\fR so you would create the dev entry with:
+.LP 
+.I mknod /dev/ipmi0 c 254 0
+.LP 
+In order to force ipmitool to make use of the device interface you can specifiy it on the command line:
+.PP 
+ipmitool \-I open [option...]
+.LP 
+Alternatively if you do not provide a hostname on the command line ipmitool will assume you want to use the open interface.
+.SH "LAN INTERFACE"
+.LP 
+The ipmitool \fIlan\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  UDP datagrams are formatted to contain IPMI request/response messages with a IPMI session headers and RMCP headers.
+.LP 
+IPMI\-over\-LAN uses version 1 of the Remote Management Control Protocol (RMCP) to support \fIpre\-OS\fP and \fIOS\-absent\fP management.  RMCP is a request\-response protocol delivered using UDP datagrams to port 623.
+.LP 
+The LAN interface is an authenticatiod multi\-session connection; messages delivered to the BMC can (and should) be authenticated with a challenge/response protocol with either straight password/key or MD5 message\-digest algorithm.  ipmitool will attempt to connect with administrator privilege level as this is required to perform chassis power functions.
+.LP 
+You can tell ipmitool to use the lan interface with the \fB\-I\fR option:
+.PP 
+ipmitool \-I lan [option...] <address> [password]
+.LP 
+A hostname \fBmust\fR be given on the command line in order to use the lan interface with ipmitool.  The password field is optional; if you do not provide a password on the command line ipmitool will attempt to connect without authentication.  If you specify a password it will use MD5 authentication if supported by the BMC and straight password/key otherwise.
+.SH "FILES"
+.TP 
+.I /dev/ipmi0
+This character device file is used by the OpenIPMI kernel driver.
+.SH "EXAMPLES"
+.LP 
+If you want to remotely control the power of an IPMI\-over\-LAN enabled system you can use:
+.LP 
+ipmitool \-I lan \-H 192.168.1.1 \-P password chassis power on
+.br
+Chassis Power Control: Up/On
+.LP 
+ipmitool \-I lan \-H 192.168.1.1 \-P password chassis power status
+.br
+Chassis Power is on
+.SH "AUTHOR"
+.LP 
+Duncan Laurie <duncan@sun.com>
+.SH "SEE ALSO"
+.LP 
+.TP 
+Intelligent Platform Management Interface Specification
+http://www.intel.com/design/servers/ipmi/spec.htm
+.TP 
+OpenIPMI project (MontaVista IPMI kernel driver)
+http://openipmi.sourceforge.net/

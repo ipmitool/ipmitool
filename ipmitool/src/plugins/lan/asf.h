@@ -34,94 +34,40 @@
  * facility.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
+#ifndef IPMI_ASF_H
+#define IPMI_ASF_H
+
 #include <ipmitool/helper.h>
+#include "lan.h"
 
-#include <string.h>
+#define ASF_RMCP_IANA		0x000011be
 
+#define ASF_TYPE_PING		0x80
+#define ASF_TYPE_PONG		0x40
 
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+static const struct valstr asf_type_vals[] __attribute__((unused)) = {
+	{ 0x10, "Reset" },
+	{ 0x11, "Power-up" },
+	{ 0x12, "Unconditional Power-down" },
+	{ 0x13, "Power Cycle" },
+	{ 0x40, "Presence Pong" },
+	{ 0x41, "Capabilities Response" },
+	{ 0x42, "System State Response" },
+	{ 0x80, "Presence Ping" },
+	{ 0x81, "Capabilities Request" },
+	{ 0x82, "System State Request" },
+	{ 0x00, NULL }
+};
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+/* ASF message header */
+struct asf_hdr {
+	unsigned long iana;
+	unsigned char type;
+	unsigned char tag;
+	unsigned char __reserved;
+	unsigned char len;
+} __attribute__((packed));
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
+int handle_asf(struct ipmi_intf * intf, unsigned char * data, int data_len);
 
-	if (!len || len > 1024)
-		return NULL;
-
-	memset(str, 0, 1024);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
+#endif /* IPMI_ASF_H */

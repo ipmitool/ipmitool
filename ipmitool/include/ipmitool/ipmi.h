@@ -34,94 +34,93 @@
  * facility.
  */
 
+#ifndef IPMI_H
+#define IPMI_H
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <signal.h>
-#include <ipmitool/helper.h>
+#include <netinet/in.h>
 
-#include <string.h>
+#define BUF_SIZE 256
 
+extern int verbose;
+extern int csv_output;
 
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+struct ipmi_session {
+	unsigned char username[16];
+	unsigned char challenge[16];
+	unsigned char password;
+	unsigned char authtype;
+	unsigned char authcode[16];
+	unsigned char privlvl;
+	unsigned long in_seq;
+	unsigned long out_seq;
+	unsigned long id;
+	int active;
+};
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+struct ipmi_rq {
+	struct {
+		unsigned char netfn;
+		unsigned char cmd;
+		unsigned short data_len;
+		unsigned char *data;
+	} msg;
+};
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
+struct ipmi_rq_entry {
+	struct ipmi_rq req;
+	struct ipmi_intf * intf;
+	struct ipmi_session * session;
+	unsigned char rq_seq;
+	unsigned char * msg_data;
+	int msg_len;
+	struct ipmi_rq_entry * next;
+};
 
-	if (!len || len > 1024)
-		return NULL;
+struct ipmi_rs {
+	unsigned char ccode;
+	unsigned char data[BUF_SIZE];
+	int data_len;
+	struct {
+		unsigned char authtype;
+		unsigned long seq;
+		unsigned long id;
+	} session;
+	unsigned char msglen;
+	struct {
+		unsigned char rq_addr;
+		unsigned char netfn;
+		unsigned char rq_lun;
+		unsigned char rs_addr;
+		unsigned char rq_seq;
+		unsigned char rs_lun;
+		unsigned char cmd;
+	} header;
+};
 
-	memset(str, 0, 1024);
+struct ipmi_intf {
+	int fd;
+	struct sockaddr_in addr;
+	int abort;
+	int pedantic;
+	int (*open)(struct ipmi_intf *, char *, int, char *);
+	void (*close)(struct ipmi_intf *);
+	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
+};
 
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
+#define IPMI_NETFN_CHASSIS		0x0
+#define IPMI_NETFN_BRIDGE		0x2
+#define IPMI_NETFN_SE			0x4
+#define IPMI_NETFN_APP			0x6
+#define IPMI_NETFN_FIRMWARE		0x8
+#define IPMI_NETFN_STORAGE		0xa
+#define IPMI_NETFN_TRANSPORT		0xc
+#define IPMI_NETFN_SOL			0x34
 
-	str[len*2] = '\0';
+#define IPMI_BMC_SLAVE_ADDR		0x20
+#define IPMI_REMOTE_SWID		0x81
 
-	return (const char *)str;
-}
+int handle_ipmi(struct ipmi_intf *intf, unsigned char * data, int data_len);
 
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
+#endif /* IPMI_H */
