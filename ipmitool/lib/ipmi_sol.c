@@ -1254,7 +1254,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	 * This command is only available over RMCP+ (the lanplus
 	 * interface).
 	 */
-	if (strncmp(intf->name, "lanplus", 12))
+	if (strncmp(intf->name, "lanplus", 7))
 	{
 		printf("Error: This command is only available over the "
 			   "lanplus interface\n");
