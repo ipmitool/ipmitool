@@ -391,6 +391,8 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, unsigned char chan, char * level, cha
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_MD5;
 		else if (!strncmp(p, "key", 3))
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_KEY;
+		else if (!strncmp(p, "oem", 3))
+			authtype |= 1 << IPMI_SESSION_AUTHTYPE_OEM;
 		else
 			printf("invalid authtype: %s\n", p);
 		p = strchr(p, ',');
@@ -676,7 +678,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc < 3 || !strncmp(argv[2], "help", 4)) {
 			printf("lan set <channel> auth <level> <type,type,...>\n");
 			printf("  level = callback, user, operator, admin\n");
-			printf("  types = none, md2, md5, key\n");
+			printf("  types = none, md2, md5, key, oem\n");
 			printf("example: lan set 7 auth admin key,md5\n");
 			return;
 		}
