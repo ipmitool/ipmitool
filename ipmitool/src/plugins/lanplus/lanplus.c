@@ -2146,9 +2146,7 @@ check_sol_packet_for_new_data(
 			 * This is the same as the last packet, but may include
 			 * extra data
 			 */
-			new_data_size =
-				rsp->data_len -
-				intf->session->sol_data.last_received_byte_count;
+			new_data_size = rsp->data_len - last_received_byte_count;
 
 			if (new_data_size > 0)
 			{
