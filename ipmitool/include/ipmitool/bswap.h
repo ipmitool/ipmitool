@@ -37,19 +37,20 @@
 #ifndef IPMI_BSWAP_H
 #define IPMI_BSWAP_H
 
-#if defined(__sun)
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 
-#define BSWAP_16(x) ((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
-#define BSWAP_32(x) ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) |\
-                     (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
-
+#if HAVE_BYTESWAP_H
+# include <byteswap.h>
+# define BSWAP_16(x) bswap_16(x)
+# define BSWAP_32(x) bswap_32(x)
+#elif HAVE_SYS_BYTEORDER_H
+# include <sys/byteorder.h>
 #else
-
-#include <byteswap.h>
-
-#define BSWAP_16(x) bswap_16(x)
-#define BSWAP_32(x) bswap_32(x)
-
+# define BSWAP_16(x) ((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
+# define BSWAP_32(x) ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >> 8) |\
+                     (((x) & 0x0000ff00) << 8) | (((x) & 0x000000ff) << 24))
 #endif
 
 #endif /* IPMI_BSWAP_H */
