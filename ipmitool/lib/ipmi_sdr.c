@@ -230,13 +230,20 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	memcpy(desc, sensor->id_string, 16);
 
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-	if (!rsp || rsp->ccode) {
+
+	if (!rsp) {
+		printf("Error reading sensor %d\n", sensor->keys.sensor_num);
+		return;
+	}
+
+	if (rsp->ccode) {
 		if (rsp && rsp->ccode == 0xcb) {
 			/* sensor not found */
 			val = 0.0;
 			validread = 0;
 		} else {
-			printf("Error reading sensor: %s\n",
+			printf("Error reading sensor %d, %s\n",
+			       sensor->keys.sensor_num,
 			       val2str(rsp->ccode, completion_code_vals));
 			return;
 		}
@@ -483,10 +490,17 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	memcpy(desc, sensor->id_string, 16);
 	
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-	if ((!rsp) || (rsp && (rsp->ccode !=0 && rsp->ccode != 0xcd))) {
-		printf("Unable to get sensor %x reading: cc=%x\n", rsp->ccode);
+	if (!rsp) {
+		printf("Error reading sensor %d\n", sensor->keys.sensor_num);
 		return;
-        }
+	}
+
+	if (rsp->ccode !=0 && rsp->ccode != 0xcd) {
+		printf("Error reading sensor %d, %s\n",
+		       sensor->keys.sensor_num,
+		       val2str(rsp->ccode, completion_code_vals));
+		return;
+	}
 
 	if (!rsp->ccode && (!(rsp->data[1] & 0x80)))
 		return;		/* sensor scanning disabled */
@@ -523,28 +537,28 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	}
 	else {
 		char * state;
+		char temp[18];
 
 		if (rsp->ccode == 0xcd) {
-                    state = strdup("Not Readable     ");
+                    state = "Not Readable     ";
                 } else {
                     switch (sensor->sensor.type) {
                     case 0x07:	/* processor */
                             if (rsp->data[2] & 0x80)
-				    state = csv_output ? strdup("Present") : strdup("Present          ");
+				    state = csv_output ? "Present" : "Present          ";
 			    else
-				    state = csv_output ? strdup("Not Present") : strdup("Not Present      ");
+				    state = csv_output ? "Not Present" : "Not Present      ";
                             break;
                     case 0x21:	/* slot/connector */
                             if (rsp->data[2] & 0x04)
-                                    state = csv_output ? strdup("Installed") : strdup("Installed        ");
+                                    state = csv_output ? "Installed" : "Installed        ";
                             else
-                                    state = csv_output ? strdup("Not Installed") : strdup("Not Installed    ");
+                                    state = csv_output ? "Not Installed" : "Not Installed    ";
                             break;
                     default:
                             {
-				    char temp[18];
 				    sprintf(temp, "0x%02x", rsp->data[2]);
-				    state = strdup(temp);
+				    state = temp;
                             }
                             break;
                     }
@@ -562,8 +576,6 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 				printf("%-17s | ok\n", state);
 		} else
 			printf("%s\n", state);
-
-		free(state);
 	}
 }
 
