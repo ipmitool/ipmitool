@@ -609,5 +609,6 @@ struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, un
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
+void ipmi_sdr_print_discrete_state(unsigned char sensor_type, unsigned char event_type, unsigned char state);
 
 #endif  /* IPMI_SDR_H */
