@@ -461,7 +461,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	unsigned char chan;
 	memset(&data, 0, sizeof(data));
 
-	if (argc < 2 || !strncmp(argv[0], "help", 4)) {
+	if (argc < 2 || !strncmp(argv[0], "help", 4) || !strncmp(argv[1], "help", 4)) {
 		printf("usage: lan set <channel> <command>\n");
 		printf("LAN set commands: ipaddr, netmask, macaddr, defgw, bakgw, password, auth, ipsrc, access, user, arp\n");
 		return;
