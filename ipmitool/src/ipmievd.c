@@ -46,6 +46,11 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
+#ifdef __FreeBSD__
+#include <signal.h>
+#include <paths.h>
+#endif
+
 #include <config.h>
 
 #ifdef HAVE_OPENIPMI_H
@@ -79,7 +84,7 @@ static void daemonize(void)
 #ifdef SIGHUP
 	sigemptyset(&sighup);
 	sigaddset(&sighup, SIGHUP);
-	if (sigprocmask(SIG_UNBLOCK, &sighup, nil) < 0)
+	if (sigprocmask(SIG_UNBLOCK, &sighup, NULL) < 0)
 		fprintf(stderr, "ERROR: could not unblock SIGHUP signal\n");
 	SIG_IGNORE(SIGHUP);
 #endif
