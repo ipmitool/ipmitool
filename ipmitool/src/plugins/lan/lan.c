@@ -1123,7 +1123,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	if (verbose)
+	if (verbose > 1)
 		printf("\nClosed Session %08lx\n\n", lan_session.id);
 
 	return 0;
