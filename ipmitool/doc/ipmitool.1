@@ -4,7 +4,7 @@
 ipmitool \- utility for controlling IPMI-enabled devices
 .SH "SYNTAX"
 .LP 
-ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIaddress\fP [\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
 .br 
 ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
@@ -36,6 +36,9 @@ Remote server address, can be IP address or hostname.  This option is required f
 .TP 
 \fB\-P\fR <\fIpassword\fP>
 Remote server password, 16 character maximum.  This is optional for the LAN interface, if it is not provided the session will not be authenticated.
+.TP
+\fB\-U\fR <\fIusername\fP>
+Remote username, default is NULL user.
 .SH "EXPRESSIONS"
 .LP
 .TP
@@ -304,9 +307,7 @@ Once they are loaded there will be a dynamic char device entry that must exist a
 .LP 
 In order to force ipmitool to make use of the device interface you can specifiy it on the command line:
 .PP 
-ipmitool \-I open [option...]
-.LP 
-Alternatively if you do not provide a hostname on the command line ipmitool will assume you want to use the open interface.
+ipmitool \-I open <expression>
 .SH "LAN INTERFACE"
 .LP 
 The ipmitool \fIlan\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  UDP datagrams are formatted to contain IPMI request/response messages with a IPMI session headers and RMCP headers.
@@ -317,7 +318,7 @@ The LAN interface is an authenticatiod multi\-session connection; messages deliv
 .LP 
 You can tell ipmitool to use the lan interface with the \fB\-I\fR option:
 .PP 
-ipmitool \-I lan [option...] <address> [password]
+ipmitool \-I lan \-H <hostname> \-P [password] <expression>
 .LP 
 A hostname \fBmust\fR be given on the command line in order to use the lan interface with ipmitool.  The password field is optional; if you do not provide a password on the command line ipmitool will attempt to connect without authentication.  If you specify a password it will use MD5 authentication if supported by the BMC and straight password/key otherwise.
 .SH "FILES"
@@ -341,8 +342,11 @@ Duncan Laurie <duncan@sun.com>
 .SH "SEE ALSO"
 .LP 
 .TP 
+IPMItool Homepage
+http://ipmitool.sourceforge.net
+.TP 
 Intelligent Platform Management Interface Specification
 http://www.intel.com/design/servers/ipmi/spec.htm
 .TP 
 OpenIPMI project (MontaVista IPMI kernel driver)
-http://openipmi.sourceforge.net/
+http://openipmi.sourceforge.net
