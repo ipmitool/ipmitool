@@ -260,6 +260,7 @@ int main(int argc, char ** argv)
 			printf("Error loading interface %s\n", intfname);
 			goto out_free;
 		}
+		strncpy(intf->name, intfname, strlen(intfname));
 	} else {
 		printf("No interface specified!\n");
 		usage();
