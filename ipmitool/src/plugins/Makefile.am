@@ -34,7 +34,7 @@
 
 plugindir			= $(pluginpath)
 
-INCLUDES			= -I$(top_srcdir)/include
+INCLUDES			= -I$(top_srcdir)/include $(INCLTDL)
 MAINTAINERCLEANFILES		= Makefile.in ipmi_intf_static.c
 EXTRA_DIST			= ipmi_intf_static.c.in
 
