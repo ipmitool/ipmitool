@@ -129,7 +129,7 @@ fi
 
 # Default Route MAC Address
 # (ping it first to populate arp table)
-$PING -q -c1 >/dev/null 2>&1
+$PING -q -c1 $DEF_ROUTE_IP >/dev/null 2>&1
 DEF_ROUTE_MAC=$( $ARP -an -i $IFACE | grep "$DEF_ROUTE_IP[^0-9]" | awk '{ print $4 }' )
 if [ X$DEF_ROUTE_MAC = X ]; then
     echo "Unable to determine default route MAC address"
