@@ -48,6 +48,20 @@ const struct valstr ipmi_channel_activity_type_vals[] = {
 };
 
 
+/*
+ * From table 26-4 of the IPMI v2 specification
+ */
+const struct valstr impi_bit_rate_vals[] = {
+	{ 0x00, "IPMI-Over-Serial-Setting"}, /* Using the value in the IPMI Over Serial Config */
+	{ 0x06, "9.6" },
+	{ 0x07, "19.2" },
+	{ 0x08, "38.4" },
+	{ 0x09, "57.6" },
+	{ 0x0A, "115.2" },
+	{ 0x00, NULL },
+};
+
+
 const struct valstr ipmi_privlvl_vals[] = {
 	{ IPMI_SESSION_PRIV_CALLBACK,   "CALLBACK" },
 	{ IPMI_SESSION_PRIV_USER,    	"USER" },
