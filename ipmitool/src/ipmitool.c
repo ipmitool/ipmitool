@@ -428,8 +428,13 @@ main(int argc, char ** argv)
 	 * otherwise the default is hardcoded
 	 * to use the first entry in the list
 	 */
-	if (intfname == NULL && hostname != NULL)
+	if (intfname == NULL && hostname != NULL) {
 		intfname = strdup("lan");
+		if (intfname == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			goto out_free;
+		}
+	}
 
 	/* load interface */
 	intf = ipmi_intf_load(intfname);

@@ -126,8 +126,10 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
                       (evt->data == rec->event_data[1]))))
                 {
 			*desc = (char *)malloc(strlen(evt->desc) + 32);
-			if (*desc == NULL)
+			if (*desc == NULL) {
+				lprintf(LOG_ERR, "ipmitool: malloc failure");
 				return;
+			}
                         sprintf(*desc, "%s", evt->desc);
 			return;
                 }

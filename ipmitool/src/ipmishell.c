@@ -283,7 +283,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	while (feof(fp) == 0) {
 		ret = fgets(buf, EXEC_BUF_SIZE, fp);
-		if (!ret)
+		if (ret == NULL)
 			continue;
 
 		/* clip off optional comment tail indicated by # */
@@ -307,8 +307,13 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 		__argc = 0;
 		tok = strtok(ptr, " ");
 		while (tok) {
-			if (__argc < EXEC_ARG_SIZE)
+			if (__argc < EXEC_ARG_SIZE) {
 				__argv[__argc++] = strdup(tok);
+				if (__argv[__argc-1] == NULL) {
+					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					return -1;
+				}
+			}
 			tok = strtok(NULL, " ");
 		}
 

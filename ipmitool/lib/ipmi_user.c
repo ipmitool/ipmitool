@@ -574,6 +574,10 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 #endif
 				if (tmp != NULL)
 					password = strdup(tmp);
+				if (password == NULL) {
+					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					return -1;
+				}
 			}
 			else
 				password = argv[3];
@@ -632,6 +636,10 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				if (tmp != NULL)
 				{
 					password = strdup(tmp);
+					if (password == NULL) {
+						lprintf(LOG_ERR, "ipmitool: malloc failure");
+						return -1;
+					}
 
 #ifdef HAVE_GETPASSPHRASE
 					tmp = getpassphrase (password_prompt);

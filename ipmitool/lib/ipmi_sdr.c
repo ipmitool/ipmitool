@@ -1311,8 +1311,10 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 	struct sdr_repo_info_rs sdr_info;
 
 	itr = malloc(sizeof(struct ipmi_sdr_iterator));
-	if (itr == NULL)
+	if (itr == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
+	}
 
 	/* get sdr repository info */
 	memset(&req, 0, sizeof(req));
@@ -1383,8 +1385,10 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		return NULL;
 
 	data = malloc(len+1);
-	if (data == NULL)
+	if (data == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
+	}
 	memset(data, 0, len+1);
 
 	memset(&sdr_rq, 0, sizeof(sdr_rq));
@@ -1482,8 +1486,10 @@ __sdr_list_add(struct sdr_record_list * head,
 		return -1;
 
 	new = malloc(sizeof(struct sdr_record_list));
-	if (new == NULL)
+	if (new == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return -1;
+	}
 	memcpy(new, entry, sizeof(struct sdr_record_list));
 
 	e = head;
@@ -1616,8 +1622,10 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num,
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
-		if (sdrr == NULL)
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			break;
+		}
 		memset(sdrr, 0, sizeof(struct sdr_record_list));
 		sdrr->id = header->id;
 		sdrr->type = header->type;
@@ -1681,8 +1689,10 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity)
 	struct sdr_record_list * head;
 
 	head = malloc(sizeof(struct sdr_record_list));
-	if (head == NULL)
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
+	}
 	memset(head, 0, sizeof(struct sdr_record_list));
 
 	if (sdr_list_itr == NULL) {
@@ -1730,8 +1740,10 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity)
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
-		if (sdrr == NULL)
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			break;
+		}
 		memset(sdrr, 0, sizeof(struct sdr_record_list));
 		sdrr->id = header->id;
 		sdrr->type = header->type;
@@ -1848,8 +1860,10 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
-		if (sdrr == NULL)
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			break;
+		}
 		memset(sdrr, 0, sizeof(struct sdr_record_list));
 		sdrr->id = header->id;
 		sdrr->type = header->type;
