@@ -32,8 +32,13 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-MAINTAINERCLEANFILES	= Makefile.in
+MAINTAINERCLEANFILES	= Makefile.in ipmitool.1
 
 man_MANS		= ipmitool.1
+EXTRA_DIST		= ipmitool.1.in
 
-EXTRA_DIST		= $(man_MANS)
+install-data-hook:
+	mv $(mandir)/man1/ipmitool.1 $(mandir)/man1/@IPMITOOL_BIN@.1
+
+uninstall-hook:
+	mv $(mandir)/man1/@IPMITOOL_BIN@.1 $(mandir)/man1/ipmitool.1

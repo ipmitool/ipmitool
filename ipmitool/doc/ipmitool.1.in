@@ -1,12 +1,12 @@
-.TH "ipmitool" "1" "" "Duncan Laurie" ""
+.TH "@IPMITOOL_BIN@" "1" "" "Duncan Laurie" ""
 .SH "NAME"
 .LP 
-ipmitool \- utility for controlling IPMI-enabled devices
+@IPMITOOL_BIN@ \- utility for controlling IPMI-enabled devices
 .SH "SYNTAX"
 .LP 
-ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+@IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
 .br 
-ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
+@IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
 .LP 
 This program lets you perform various IPMI functions with either a kernel device driver or over a LAN interface.  These functions include printing FRU information, LAN configuration, sensor readings, and remote chassis power control.
@@ -41,7 +41,7 @@ Remote username, default is NULL user.
 Promt for the remote server password, 16 character maximum. This is optional for the LAN interface, if a password is not provided the session will not be authenticated.
 .TP 
 \fB\-E\fR
-The remote server password is specified by the environment variable \fBIPMITOOL_PASSWORD\fR. This option is intended for shell scripts.
+The remote server password is specified by the environment variable \fBIPMI_PASSWORD\fR. This option is intended for shell scripts.
 .TP 
 \fB\-P\fR <\fIpassword\fP>
 Remote server password. \fBNote!\fR Specifying the password as a commandline option is not recommended since it will be visible in the process list.
@@ -49,20 +49,20 @@ Remote server password. \fBNote!\fR Specifying the password as a commandline opt
 .LP
 .TP
 .I help
-This can be used to get command-line help on ipmitool commands.  It may also be placed at the end of commands to get option usage help.
+This can be used to get command-line help on @IPMITOOL_BIN@ commands.  It may also be placed at the end of commands to get option usage help.
 .RS
 .PP
-ipmitool -I open help
+@IPMITOOL_BIN@ -I open help
 .br
 Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel
 .LP
 .PP
-ipmitool -I open chassis help
+@IPMITOOL_BIN@ -I open chassis help
 .br
 Chassis Commands:  status, power, identify, policy, restart_cause, poh
 .LP
 .PP
-ipmitool -I open chassis power help
+@IPMITOOL_BIN@ -I open chassis power help
 .br
 Chassis Power Commands: status, on, off, cycle, reset, diag, soft
 .LP
@@ -72,7 +72,7 @@ Chassis Power Commands: status, on, off, cycle, reset, diag, soft
 This will allow you to execute raw IPMI commands.  For example to query the POH counter with a raw command:
 .RS
 .PP
-ipmitool -I open raw 0x0 0xf
+@IPMITOOL_BIN@ -I open raw 0x0 0xf
 .br
 RAW REQ (netfn=0x0 cmd=0xf data_len=0)
 .br
@@ -107,7 +107,7 @@ Possible privelige levels are:
 This command will display information about the selected channel.  If no channel is given it will display information about the currently used channel:
 .RS
 .PP
-ipmitool -I open chaninfo
+@IPMITOOL_BIN@ -I open chaninfo
 .br
 Channel 0xf info:
 .br
@@ -128,7 +128,7 @@ Channel 0xf info:
 This command will display information about configured user information on a specific LAN channel.  This command will fail on system interfaces.  Try channel 6 or 7.
 .RS
 .PP
-ipmitool -I open userinfo 6
+@IPMITOOL_BIN@ -I open userinfo 6
 .br
 Maximum User IDs     : 4
 .br
@@ -346,9 +346,9 @@ Setup Serial-over-LAN: enable, set authentication and baud rate.
 .RE
 .SH "OPEN INTERFACE"
 .LP 
-The ipmitool \fIopen\fP interface utilizes the MontaVista OpenIPMI kernel device driver.  This driver is present in 2.5.57 and later development kernels and in 2.4.21pre1 and later stable kernels.  There are also IPMI driver kernel patches for different versions available from the OpenIPMI homepage.
+The @IPMITOOL_BIN@ \fIopen\fP interface utilizes the MontaVista OpenIPMI kernel device driver.  This driver is present in 2.5.57 and later development kernels and in 2.4.21pre1 and later stable kernels.  There are also IPMI driver kernel patches for different versions available from the OpenIPMI homepage.
 .LP 
-The following kernel modules must be loaded in order for ipmitool to work:
+The following kernel modules must be loaded in order for @IPMITOOL_BIN@ to work:
 .TP 
 .B ipmi_msghandler
 Incoming and outgoing message handler for IPMI interfaces.
@@ -363,22 +363,22 @@ Once they are loaded there will be a dynamic char device entry that must exist a
 .LP 
 .I mknod /dev/ipmi0 c 254 0
 .LP 
-In order to force ipmitool to make use of the device interface you can specifiy it on the command line:
+In order to force @IPMITOOL_BIN@ to make use of the device interface you can specifiy it on the command line:
 .PP 
-ipmitool \-I open <expression>
+@IPMITOOL_BIN@ \-I open <expression>
 .SH "LAN INTERFACE"
 .LP 
-The ipmitool \fIlan\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  UDP datagrams are formatted to contain IPMI request/response messages with a IPMI session headers and RMCP headers.
+The @IPMITOOL_BIN@ \fIlan\fP interface communicates with the BMC over an Ethernet LAN connection using UDP under IPv4.  UDP datagrams are formatted to contain IPMI request/response messages with a IPMI session headers and RMCP headers.
 .LP 
 IPMI\-over\-LAN uses version 1 of the Remote Management Control Protocol (RMCP) to support \fIpre\-OS\fP and \fIOS\-absent\fP management.  RMCP is a request\-response protocol delivered using UDP datagrams to port 623.
 .LP 
-The LAN interface is an authenticatiod multi\-session connection; messages delivered to the BMC can (and should) be authenticated with a challenge/response protocol with either straight password/key or MD5 message\-digest algorithm.  ipmitool will attempt to connect with administrator privilege level as this is required to perform chassis power functions.
+The LAN interface is an authenticatiod multi\-session connection; messages delivered to the BMC can (and should) be authenticated with a challenge/response protocol with either straight password/key or MD5 message\-digest algorithm.  @IPMITOOL_BIN@ will attempt to connect with administrator privilege level as this is required to perform chassis power functions.
 .LP 
-You can tell ipmitool to use the lan interface with the \fB\-I\fR option:
+You can tell @IPMITOOL_BIN@ to use the lan interface with the \fB\-I\fR option:
 .PP 
-ipmitool \-I lan \-H <hostname> \-P [password] <expression>
+@IPMITOOL_BIN@ \-I lan \-H <hostname> \-P [password] <expression>
 .LP 
-A hostname \fBmust\fR be given on the command line in order to use the lan interface with ipmitool.  The password field is optional; if you do not provide a password on the command line ipmitool will attempt to connect without authentication.  If you specify a password it will use MD5 authentication if supported by the BMC and straight password/key otherwise.
+A hostname \fBmust\fR be given on the command line in order to use the lan interface with @IPMITOOL_BIN@.  The password field is optional; if you do not provide a password on the command line @IPMITOOL_BIN@ will attempt to connect without authentication.  If you specify a password it will use MD5 authentication if supported by the BMC and straight password/key otherwise.
 .SH "FILES"
 .TP 
 .I /dev/ipmi0
@@ -387,11 +387,11 @@ This character device file is used by the OpenIPMI kernel driver.
 .LP 
 If you want to remotely control the power of an IPMI\-over\-LAN enabled system you can use:
 .LP 
-ipmitool \-I lan \-H 192.168.1.1 \-P password chassis power on
+@IPMITOOL_BIN@ \-I lan \-H 192.168.1.1 \-P password chassis power on
 .br
 Chassis Power Control: Up/On
 .LP 
-ipmitool \-I lan \-H 192.168.1.1 \-P password chassis power status
+@IPMITOOL_BIN@ \-I lan \-H 192.168.1.1 \-P password chassis power status
 .br
 Chassis Power is on
 .SH "AUTHOR"
@@ -408,3 +408,4 @@ http://www.intel.com/design/servers/ipmi/spec.htm
 .TP 
 OpenIPMI project (MontaVista IPMI kernel driver)
 http://openipmi.sourceforge.net
+
