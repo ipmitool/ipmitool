@@ -49,6 +49,8 @@ If you are a Solaris user you'll have to write the more verbose:
 Finally it's time to create the webpage, begin with editing some more variables
 in the create_webpage.sh and/or create_webpage_compact.sh scripts:
 
+rrdcgi		Full path to the rrdcgi executable.
+
 img_dir		Directory to store the graph images. This path must be within
 		the document root and writable by the web server user.
 
