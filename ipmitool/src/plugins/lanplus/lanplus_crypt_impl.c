@@ -39,6 +39,7 @@
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/err.h>
 #include <assert.h>
 
 
