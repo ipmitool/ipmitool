@@ -38,11 +38,11 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -497,13 +497,21 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			if (verbose > 2)
 				printf("IPMI Request Match found\n");
 			if (intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
-				if (verbose > 2)
-					printf("Bridged cmd resp: %s\n", buf2str(&rsp->data[x],rsp->data_len));
+				if ((verbose > 2) && rsp->data_len)
+					printf("Bridged cmd %02x resp: %s\n",
+					       rsp->payload.ipmi_response.cmd,
+					       buf2str(&rsp->data[x],rsp->data_len));
 				/* bridged command: lose extra header */
-				x += sizeof(rsp->payload.ipmi_response);
-				if (verbose && rsp->data[x-1] != 0)
-					printf("WARNING: Bridged cmd ccode = 0x%02x\n",
-						rsp->data[x-1]);
+				if (rsp->payload.ipmi_response.cmd == 0x34) {
+					entry->req.msg.cmd = entry->req.msg.target_cmd;
+					rsp = ipmi_lan_recv_packet(intf);
+					continue;
+				} else {
+					//x += sizeof(rsp->payload.ipmi_response);
+					if (verbose && rsp->data[x-1] != 0)
+						printf("WARNING: Bridged cmd ccode = 0x%02x\n",
+						       rsp->data[x-1]);
+				}
 			}
 			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
 					      rsp->payload.ipmi_response.cmd);
@@ -623,6 +631,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		msg[len++] = IPMI_REMOTE_SWID;
 		msg[len++] = curr_seq << 2;
 		msg[len++] = 0x34;			/* Send Message rqst */
+		entry->req.msg.target_cmd = entry->req.msg.cmd;	/* Save target command */
 		entry->req.msg.cmd = 0x34;		/* (fixup request entry) */
 		msg[len++] = 0x40;			/* Track request, Channel=IPMB */
 		cs = len;
@@ -1267,8 +1276,11 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 {
 	int rc;
 
-	/* don't fail on ping because its not always supported */
-	ipmi_lan_ping(intf);
+	/* don't fail on ping because its not always supported.
+	 * Supermicro's IPMI LAN 1.5 cards don't tolerate pings.
+	 */
+	if (!intf->session->authspecial)
+		ipmi_lan_ping(intf);
 
 	if (intf->thump)
 		ipmi_lan_thump_first(intf);
