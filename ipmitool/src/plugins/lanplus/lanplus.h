@@ -129,7 +129,7 @@
  * one integrity algorithm, and 1 encyrption alogrithm
  */
 #define IPMI_OPEN_SESSION_REQUEST_SIZE 32
-#define IPMI_RAKP1_MESSAGE_SIZE        43
+#define IPMI_RAKP1_MESSAGE_SIZE        44
 #define IPMI_RAKP3_MESSAGE_MAX_SIZE    28
 
 #define IPMI_MAX_USER_NAME_LENGTH      16
