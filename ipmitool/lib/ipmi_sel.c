@@ -80,11 +80,14 @@ ipmi_get_event_type(unsigned char code)
         return "Reserved";
 }
 
-static const char *
-ipmi_get_event_desc(struct sel_event_record * rec)
+static void
+ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 {
 	unsigned char code, offset;
 	struct ipmi_event_sensor_types *evt;
+
+        if (desc == NULL)
+	        return;
 
 	if (rec->event_type == 0x6f) {
 		evt = sensor_specific_types;
@@ -97,12 +100,17 @@ ipmi_get_event_desc(struct sel_event_record * rec)
 	offset = rec->event_data[0] & 0xf;
 
 	while (evt->type) {
-		if (evt->code == code && evt->offset == offset)
-			return evt->desc;
+		if ((evt->code == code && evt->offset == offset)    &&
+                    ((evt->data == ALL_OFFSETS_SPECIFIED) ||
+                     ((rec->event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
+                      (evt->data == rec->event_data[1]))))
+                {
+			*desc = (char *)malloc(strlen(evt->desc) + 32);
+                        sprintf(*desc, "%s", evt->desc);
+			return;
+                }
 		evt++;
 	}
-
-	return "Unknown Event";
 }
 
 static const char *
@@ -211,6 +219,11 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 
 	*next_id = (rsp->data[1] << 8) | rsp->data[0];
 
+	if (rsp->data[4] >= 0xc0) {
+		printf("Not a standard SEL Entry!\n");
+		return NULL;
+	}
+
 	return (struct sel_event_record *) &rsp->data[2];
 }
 
@@ -241,6 +254,7 @@ ipmi_sel_timestamp_time(unsigned long stamp)
 void
 ipmi_sel_print_std_entry(struct sel_event_record * evt)
 {
+        char * description;
 	if (!evt)
 		return;
 
@@ -248,7 +262,6 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		printf("%x,", evt->record_id);
 	else
 		printf("%4x | ", evt->record_id);
-
 
 	if (evt->record_type == 0xf0)
 	{
@@ -300,12 +313,15 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		printf(",");
 	else
 		printf(" | ");
-	printf("%s\n", ipmi_get_event_desc(evt));
+        ipmi_get_event_desc(evt, &description);
+	printf("%s\n", description ? description : "");
+        free(description);
 }
 
 void
 ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 {
+        char * description;
 	if (!evt)
 		return;
 
@@ -350,8 +366,10 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 	       val2str(evt->event_dir, event_dir_vals));
 	printf(" Event Data      : %02x%02x%02x\n",
 	       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
+        ipmi_get_event_desc(evt, &description);
 	printf(" Description     : %s\n",
-	       ipmi_get_event_desc(evt));
+               description ? description : "");
+        free(description);
 
 	printf("\n");
 }
