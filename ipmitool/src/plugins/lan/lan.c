@@ -433,8 +433,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	struct rmcp_hdr rmcp_rsp;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq_entry * entry;
-	int x, rv;
-
+	int x=0, rv;
 	rsp = ipmi_lan_recv_packet(intf);
 	while (rsp) {
 

@@ -378,7 +378,7 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else
 		{
 
-			Ipmi_Session_Request_Type session_request_type;
+			Ipmi_Session_Request_Type session_request_type = 0;
 			uint32_t                  id_or_handle = 0;
 
 			if (!strncmp(argv[1], "active", 6))

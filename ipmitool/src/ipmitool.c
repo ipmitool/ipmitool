@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
