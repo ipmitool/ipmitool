@@ -112,7 +112,7 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
 	struct ipmi_rs * rsp;
 
 	if (sensor == NULL)
-		return;
+		return -1;
 
 	memset(id, 0, sizeof(id));
 	memcpy(id, sensor->id_string, 16);
