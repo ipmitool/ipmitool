@@ -344,6 +344,27 @@ This command will clear the contents of the SEL.  It cannot be undone so be care
 This command will list the contents of the SEL.
 .RE
 .TP
+.I session
+.RS
+.TP
+\fIinfo\fP <\fBparameter\fR> [\fBargument\fR]
+This command will query the BMC for information about its session capabilities and current sessions.  Valid parameters are:
+.RS
+.TP
+\fIactive\fP 
+Queries the BMC for information about the current session.  That is, the session used to execute this command.
+.TP
+\fIall\fP
+Queries the BMC for information about all active sessions
+.TP
+\fIid\fP <\fBid\fR>
+Queries the BMC for information about the session with the specified ID.  The ID should be specified in hex.
+.TP
+\fIhandle\fP <\fBhandle\fR>
+Queries the BMC for information about the session with the specified handle.  The handle should be specified in hex.
+.RE
+.RE
+.TP
 .I sol
 .RS
 .TP
