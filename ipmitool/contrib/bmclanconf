@@ -248,7 +248,7 @@ case `uname -s` in
     Linux)
 	if [ X$IFACE != X ]; then
 	    if [ X$IP_ADDRESS = X ]; then
-		IP_ADDRESS=`$IFCONFIG $IFACE | grep inet | awk -F"[:[:space:]]+" '{print $4}'`
+		IP_ADDRESS=`$IFCONFIG $IFACE | grep "inet addr" | awk -F"[:[:space:]]+" '{print $4}'`
 	    fi
 	    if [ X$IP_NETMASK = X ]; then
 		IP_NETMASK=`$IFCONFIG $IFACE | grep Bcast | awk -F"[:[:space:]]+" '{print $8}'`
