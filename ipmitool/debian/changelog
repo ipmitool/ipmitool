@@ -1,6 +1,9 @@
-ipmitool (1.8.1) unstable; urgency=low
+ipmitool (1.8.1-1) unstable; urgency=low
 
-  * Install ipmievd into /usr/sbin
+  * New upstream release.
+  * Install ipmievd into /usr/sbin/.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Thu,  7 Apr 2005 01:18:44 +0200
 
 ipmitool (1.8.0-1) unstable; urgency=low
 
