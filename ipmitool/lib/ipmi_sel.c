@@ -326,6 +326,24 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = 0x40;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp || rsp->ccode) {
+		printf("Error%x in Get SEL Info command\n",
+		       rsp ? rsp->ccode : 0);
+		return;
+	}
+	if (verbose > 2)
+		printbuf(rsp->data, rsp->data_len, "sel_info");
+
+	if (!rsp->data[1]) {
+		printf("SEL has no entries\n");
+		return;
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
 	req.msg.cmd = 0x42;	/* reserve SEL */
 
 	rsp = intf->sendrecv(intf, &req);
