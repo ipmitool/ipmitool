@@ -83,7 +83,7 @@ void usage(void)
 	printf("       -p port       Remote RMCP port (default is 623)\n");
 	printf("       -U username   Remote username\n");
 	printf("       -a            Prompt for remote password\n");
-	printf("       -E            Read remote password from environment variable IPMITOOL_PASSWORD\n");
+	printf("       -E            Read remote password from environment variable IPMI_PASSWORD\n");
 	printf("       -P password   Remote password\n");
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
@@ -310,6 +310,13 @@ int main(int argc, char ** argv)
 			{
 				if (password)
 					free (password);
+
+				password = strdup (tmp);
+			}
+			else if ((tmp = getenv("IPMI_PASSWORD")))
+			{
+			    	if (password)
+				    	free (password);
 
 				password = strdup (tmp);
 			}
