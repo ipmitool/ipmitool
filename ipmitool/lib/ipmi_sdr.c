@@ -47,6 +47,13 @@
 #endif
 
 extern int verbose;
+static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
+
+struct sdr_records_full {
+	struct sdr_record_full_sensor * record;
+	struct sdr_records_full * next;
+};
+static struct sdr_records_full * sdr_list_head = NULL;
 
 /* convert unsigned value to 2's complement signed */
 int utos(unsigned val, unsigned bits)
@@ -945,12 +952,12 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	req.msg.data = (unsigned char *)&sdr_rq;
 	req.msg.data_len = sizeof(sdr_rq);
 
-	/* read SDR record with partial (30 byte) reads
-	 * because a full read (0xff) exceeds the maximum
+	/* read SDR record with partial reads
+	 * because a full read usually exceeds the maximum
 	 * transport buffer size.  (completion code 0xca)
 	 */
 	while (i < len) {
-		sdr_rq.length = (len-i < GET_SDR_MAX_LEN) ? len-i : GET_SDR_MAX_LEN;
+		sdr_rq.length = (len-i < sdr_max_read_len) ? len-i : sdr_max_read_len;
 		sdr_rq.offset = i+5; /* 5 header bytes */
 		if (verbose > 1)
 			printf("getting %d bytes from SDR at offset %d\n",
@@ -962,9 +969,16 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			return NULL;
 		}
 
-		if (rsp->ccode == 0xc5) {
+		switch (rsp->ccode) {
+		case 0xca:
+			/* read too many bytes at once */
+			sdr_max_read_len = (sdr_max_read_len >> 1) - 1;
+			continue;
+		case 0xc5:
+			/* lost reservation */
 			if (verbose > 1)
-				printf("SDR reserveration canceled. Sleeping a bit and retrying...\n");
+				printf("SDR reserveration canceled. "
+				       "Sleeping a bit and retrying...\n");
 
 			sleep (rand () & 3);
 
@@ -977,12 +991,12 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		}
 
 		if (!rsp->data_len || rsp->ccode) {
-			free (data);
+			free(data);
 			return NULL;
 		}
 
 		memcpy(data+i, rsp->data+2, sdr_rq.length);
-		i+=GET_SDR_MAX_LEN;
+		i += sdr_max_read_len;
 	}
 
 	return data;
@@ -994,29 +1008,100 @@ ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 	free (itr);
 }
 
-struct sdr_record_full_sensor *
-ipmi_sdr_find_sdr(struct ipmi_intf * intf, char * id)
+int ipmi_sdr_list_fill(struct ipmi_intf * intf)
 {
-    struct sdr_get_rs * header;
-    struct ipmi_sdr_iterator * itr;
+	struct sdr_get_rs * header;
+	struct ipmi_sdr_iterator * itr;
+	static struct sdr_records_full * sdr_list_tail;
 
-    itr = ipmi_sdr_start(intf);
-    if (!itr)
-    {
-        printf("Unable to open SDR for reading\n");
-        return;
-    }
+	itr = ipmi_sdr_start(intf);
+	if (!itr) {
+		printf("Unable to open SDR for reading\n");
+		return -1;
+	}
 
-    while (header = ipmi_sdr_get_next_header(intf, itr)) 
-    {
-        struct sdr_record_full_sensor * sdr;
-        if (header->type != SDR_RECORD_TYPE_FULL_SENSOR)
-            continue;
-        sdr = (struct sdr_record_full_sensor *)ipmi_sdr_get_record(intf, header, itr);
-        if (sdr && !strncmp(sdr->id_string, id, sdr->id_code & 0x3f))
-            return sdr;
-    }
-    return NULL;
+	while (header = ipmi_sdr_get_next_header(intf, itr)) {
+		struct sdr_record_full_sensor * sdr;
+		struct sdr_records_full * sdrr;
+
+		if (header->type != SDR_RECORD_TYPE_FULL_SENSOR)
+			continue;
+
+		sdr = (struct sdr_record_full_sensor *)ipmi_sdr_get_record(intf, header, itr);
+		if (!sdr)
+			continue;
+
+		sdrr = malloc(sizeof(struct sdr_records_full));
+		memset(sdrr, 0, sizeof(struct sdr_records_full));
+
+		sdrr->record = sdr;
+
+		if (!sdr_list_head)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+		sdr_list_tail = sdrr;
+
+		if (verbose > 3)
+			printf("added list entry %x\n", sdrr->record->keys.sensor_num);
+	}
+
+	ipmi_sdr_end(intf, itr);
+
+	return 0;
+}
+
+struct sdr_record_full_sensor *
+ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
+{
+	static struct sdr_records_full * e;
+
+	if (!sdr_list_head)
+		ipmi_sdr_list_fill(intf);
+
+	e = sdr_list_head;
+	while (e) {
+		if (!strncmp(e->record->id_string, id, e->record->id_code & 0x3f))
+			return e->record;
+		e = e->next;
+	}
+
+	return NULL;
+}
+
+struct sdr_record_full_sensor *
+ipmi_sdr_find_sdr_bynum(struct ipmi_intf * intf, unsigned char num)
+{
+	static struct sdr_records_full * e;
+
+	if (!sdr_list_head)
+		ipmi_sdr_list_fill(intf);
+
+	e = sdr_list_head;
+
+	while (e) {
+		if (e->record->keys.sensor_num == num)
+			return e->record;
+		e = e->next;
+	}
+
+	return NULL;
+}
+
+void ipmi_sdr_list_empty(void)
+{
+	struct sdr_records_full *list, *next;
+
+	list = sdr_list_head;
+	while (list) {
+		if (verbose > 3)
+			printf("cleared sdr entry %x\n", list->record->keys.sensor_num);
+		if (list->record)
+			free(list->record);
+		next = list->next;
+		free(list);
+		list = next;
+	}
 }
 
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)

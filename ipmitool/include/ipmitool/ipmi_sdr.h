@@ -98,7 +98,6 @@ struct sdr_get_rq {
 	unsigned short	id;		/* record ID */
 	unsigned char	offset;		/* offset into SDR */
 #define GET_SDR_ENTIRE_RECORD	0xff
-#define GET_SDR_MAX_LEN		30
 	unsigned char	length;		/* length to read */
 } __attribute__ ((packed));
 
@@ -630,7 +629,9 @@ float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigne
 unsigned char sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val);
 struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor);
 const char * ipmi_sdr_get_sensor_type_desc(const unsigned char type);
-struct sdr_record_full_sensor * ipmi_sdr_find_sdr(struct ipmi_intf * intf, char * id);
 
+struct sdr_record_full_sensor *ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
+struct sdr_record_full_sensor *ipmi_sdr_find_sdr_bynum(struct ipmi_intf * intf, unsigned char num);
+void ipmi_sdr_list_empty(void);
 
 #endif  /* IPMI_SDR_H */

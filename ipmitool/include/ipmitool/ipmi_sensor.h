@@ -88,5 +88,7 @@ struct sensor_set_thresh_rq {
 
 
 int ipmi_sensor_main(struct ipmi_intf *, int, char **);
+void ipmi_sensor_print_full(struct ipmi_intf *, struct sdr_record_full_sensor *);
+void ipmi_sensor_print_compact(struct ipmi_intf *, struct sdr_record_compact_sensor *);
 
 #endif  /* IPMI_SENSOR_H */
