@@ -278,9 +278,10 @@ ipmi_sel_print_std_entry(int num, struct sel_event_record * evt)
 	printf("%s #0x%02x", ipmi_sel_get_sensor_type(evt->sensor_type), evt->sensor_num);
 
 	if (csv_output)
-		printf(",%s\n", ipmi_get_event_desc(evt));
+		printf(",");
 	else
-		printf(" | %s\n", ipmi_get_event_desc(evt));
+		printf(" | ");
+	printf("%s\n", ipmi_get_event_desc(evt));
 }
 
 void
