@@ -37,7 +37,7 @@ MAINTAINERCLEANFILES		= Makefile.in
 
 noinst_LTLIBRARIES		= libipmitool.la
 libipmitool_la_SOURCES		= helper.c ipmi_sdr.c ipmi_sel.c ipmi_sol.c ipmi_lanp.c \
-				  ipmi_fru.c ipmi_chassis.c ipmi_bmc.c ipmi_intf.c
+				  ipmi_fru.c ipmi_chassis.c ipmi_bmc.c ipmi_intf.c dimm_spd.c
 libipmitool_la_LDFLAGS		= -export-dynamic
 libipmitool_la_LIBADD		= -lm $(LIBLTDL)
 libipmitool_la_DEPENDENCIES	= $(LIBLTDL)
