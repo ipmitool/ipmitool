@@ -51,9 +51,7 @@
 
 #include "open.h"
 
-static int curr_seq;
 extern int verbose;
-struct ipmi_session lan_session;
 
 struct ipmi_intf ipmi_openipmi_intf = {
 	.open     = ipmi_openipmi_open,
@@ -67,14 +65,11 @@ void ipmi_openipmi_close(struct ipmi_intf * intf)
 		close(intf->fd);
 }
 
-int ipmi_openipmi_open(struct ipmi_intf * intf, char * dev, int __unused1, char * __unused2, char * __unused3)
+int ipmi_openipmi_open(struct ipmi_intf * intf)
 {
 	int i = 0;
 
-	if (!dev)
-		intf->fd = open(OPENIPMI_DEV, O_RDWR);
-	else
-		intf->fd = open(dev, O_RDWR);
+	intf->fd = open(OPENIPMI_DEV, O_RDWR);
 
 	if (intf->fd < 0) {
 		perror("Could not open ipmi device");
@@ -86,8 +81,6 @@ int ipmi_openipmi_open(struct ipmi_intf * intf, char * dev, int __unused1, char 
 		return -1;
 	}
 
-	curr_seq = 0;
-
 	return intf->fd;
 }
 
@@ -98,7 +91,20 @@ struct ipmi_rs * ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq 
 	struct ipmi_system_interface_addr bmc_addr;
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
+	static int curr_seq = 0;
 	fd_set rset;
+
+	if (!intf)
+		return NULL;
+
+	if (!intf->opened) {
+		intf->opened = 1;
+		if (intf->open(intf) < 0) {
+			printf("Unable to open OpenIPMI interface!\n");
+			intf->opened = 0;
+			return NULL;
+		}
+	}
 
 	if (!req)
 		return NULL;

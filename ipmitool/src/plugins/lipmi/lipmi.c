@@ -49,9 +49,7 @@
 
 #include "lipmi.h"
 
-static int curr_seq;
 extern int verbose;
-struct ipmi_session lan_session;
 
 struct ipmi_intf ipmi_lipmi_intf = {
 	.open     = ipmi_lipmi_open,
@@ -66,16 +64,13 @@ void ipmi_lipmi_close(struct ipmi_intf * intf)
 	intf->fd = -1;
 }
 
-int ipmi_lipmi_open(struct ipmi_intf * intf, char * dev,
-		    int __unused1, char * __unused2, char * __unused3)
+int ipmi_lipmi_open(struct ipmi_intf * intf)
 {
-	intf->fd = open(dev ? : LIPMI_DEV, O_RDWR);
+	intf->fd = open(LIPMI_DEV, O_RDWR);
 	if (intf->fd < 0) {
 		perror("Could not open lipmi device");
 		return -1;
 	}
-
-	curr_seq = 0;
 
 	return intf->fd;
 }
@@ -85,6 +80,19 @@ struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * r
 	struct strioctl istr;
 	static struct lipmi_reqrsp reqrsp;
 	static struct ipmi_rs rsp;	
+	static int curr_seq = 0;
+
+	if (!intf)
+		return NULL;
+
+	if (!intf->opened) {
+		intf->opened = 1;
+		if (intf->open(intf) < 0) {
+			printf("Unable to open LIPMI interface!\n");
+			intf->opened = 0;
+			return NULL;
+		}
+	}
 
 	memset(&reqrsp, 0, sizeof(reqrsp));
 	reqrsp.req.fn = req->msg.netfn;
@@ -128,3 +136,4 @@ int lipmi_intf_setup(struct ipmi_intf ** intf)
 }
 
 int intf_setup(struct ipmi_intf ** intf) __attribute__ ((weak, alias("lipmi_intf_setup")));
+
