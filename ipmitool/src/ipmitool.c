@@ -66,7 +66,7 @@
 # include <config.h>
 #endif
 
-#define OPTION_STRING	"I:hVvcgEaH:P:f:U:p:L:A:t:m:"
+#define OPTION_STRING	"I:hVvcgsEaH:P:f:U:p:L:A:t:m:"
 
 int csv_output = 0;
 int verbose = 0;
@@ -215,6 +215,7 @@ int main(int argc, char ** argv)
 	int argflag, i;
 	int rc = 0;
 	int thump = 0;
+	int authspecial = 0;
 
 	/* save program name */
 	if (!(progname = strrchr(argv[0], '/')))
@@ -238,6 +239,9 @@ int main(int argc, char ** argv)
 			break;
 		case 'g':
 			thump = 1;
+			break;
+		case 's':
+			authspecial = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -334,7 +338,13 @@ int main(int argc, char ** argv)
 		printf("Error loading interface %s\n", intfname);
 		goto out_free;
 	}
+
 	intf->thump = thump;
+
+	if (authspecial) {
+		intf->session->authspecial = authspecial;
+		ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	}
 
 	/* setup log */
 	log_init(progname, 0, verbose);
