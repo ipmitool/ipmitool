@@ -63,7 +63,7 @@ unsigned char * ipmi_auth_md5(unsigned char * data, int data_len);
 unsigned char ipmi_csum(unsigned char * d, int s);
 
 struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
-int  ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * password);
+int  ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * username, char * password);
 void ipmi_lan_close(struct ipmi_intf * intf);
 void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 int ipmi_lan_ping(struct ipmi_intf * intf);

@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <netinet/in.h>
+#include <ipmitool/helper.h>
 
 #define BUF_SIZE 256
 
@@ -104,7 +105,7 @@ struct ipmi_intf {
 	struct sockaddr_in addr;
 	int abort;
 	int pedantic;
-	int (*open)(struct ipmi_intf *, char *, int, char *);
+	int (*open)(struct ipmi_intf *, char *, int, char *, char *);
 	void (*close)(struct ipmi_intf *);
 	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
 };
@@ -121,6 +122,6 @@ struct ipmi_intf {
 #define IPMI_BMC_SLAVE_ADDR		0x20
 #define IPMI_REMOTE_SWID		0x81
 
-int handle_ipmi(struct ipmi_intf *intf, unsigned char * data, int data_len);
+const struct valstr completion_code_vals[25];
 
 #endif /* IPMI_H */

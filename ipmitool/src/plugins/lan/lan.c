@@ -83,6 +83,7 @@ query_alarm(int signo)
 	siglongjmp(jmpbuf, 1);
 }
 
+#if 0
 const struct valstr ipmi_privlvl_vals[] = {
 	{ IPMI_SESSION_PRIV_CALLBACK,	"CALLBACK" },
 	{ IPMI_SESSION_PRIV_USER,	"USER" },
@@ -101,7 +102,7 @@ const struct valstr ipmi_authtype_vals[] = {
 	{ IPMI_SESSION_AUTHTYPE_OEM,	"OEM" },
 	{ 0,				NULL },
 };
-
+#endif
 static const struct valstr ipmi_channel_protocol_vals[] = {
 	{ 0x00, "reserved" },
 	{ 0x01, "IPMB-1.0" },
@@ -716,6 +717,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return rsp;
 }
 
+#if 0
 void
 ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 {
@@ -810,6 +812,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 		break;
 	}
 }
+#endif
 
 /*
  * IPMI Get Channel Authentication Capabilities Command
@@ -1192,7 +1195,7 @@ void ipmi_lan_close(struct ipmi_intf * intf)
 	ipmi_req_clear_entries();
 }
 
-int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * password)
+int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * username, char * password)
 {
 	int rc;
 	struct sigaction act;
@@ -1210,6 +1213,10 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * pas
 
 	memset(&lan_session, 0, sizeof(lan_session));
 	curr_seq = 0;
+
+	if (username) {
+		memcpy(lan_session.username, username, strlen(username));
+	}
 
 	if (password) {
 		lan_session.password = 1;
