@@ -2219,8 +2219,13 @@ void ipmi_lanplus_close(struct ipmi_intf * intf)
 {
 	if (!intf->abort)
 		impi_close_session_cmd(intf);
-	close(intf->fd);
+	if (intf->fd >= 0)
+		close(intf->fd);
 	ipmi_req_clear_entries();
+	if (intf->session)
+		free(intf->session);
+	intf->session = NULL;
+	intf = NULL;
 }
 
 
