@@ -43,7 +43,7 @@ extern const struct valstr ipmi_auth_algorithms[];
 extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
 
-#define DUMP_PREFIX_INCOMING "<< "
+#define DUMP_PREFIX_INCOMING "<<"
 
 void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 {
@@ -66,6 +66,12 @@ void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 	printf("%s  Console Session ID                 : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
 		   (long)rsp->payload.open_session_response.console_id);
+
+	/* only tag, status, privlvl, and console id are returned if error */
+	if (rsp->payload.open_session_response.rakp_return_code !=
+	    IPMI_RAKP_STATUS_NO_ERRORS)
+		return;
+
 	printf("%s  BMC Session ID                     : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
 		   (long)rsp->payload.open_session_response.bmc_id);
@@ -154,26 +160,16 @@ void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 
 	printf("%s  Message tag                   : 0x%02x\n",
 		   DUMP_PREFIX_INCOMING,
-		   rsp->payload.rakp2_message.message_tag);
+		   rsp->payload.rakp4_message.message_tag);
 
 	printf("%s  RMCP+ status                  : %s\n",
 		   DUMP_PREFIX_INCOMING,
-		   val2str(rsp->payload.rakp2_message.rakp_return_code,
+		   val2str(rsp->payload.rakp4_message.rakp_return_code,
 				   ipmi_rakp_return_codes));
 
 	printf("%s  Console Session ID            : 0x%08lx\n",
 		   DUMP_PREFIX_INCOMING,
-		   (long)rsp->payload.rakp2_message.console_id);
-
-	printf("%s  BMC random number             : 0x", DUMP_PREFIX_INCOMING);
-	for (i = 0; i < 16; ++i)
-		printf("%02x", rsp->payload.rakp2_message.bmc_rand[i]);
-	printf("\n");
-
-	printf("%s  BMC GUID                      : 0x", DUMP_PREFIX_INCOMING);
-	for (i = 0; i < 16; ++i)
-		printf("%02x", rsp->payload.rakp2_message.bmc_guid[i]);
-	printf("\n");
+		   (long)rsp->payload.rakp4_message.console_id);
 
 	switch(auth_alg)
 	{

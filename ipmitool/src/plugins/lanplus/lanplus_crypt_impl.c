@@ -80,7 +80,7 @@ int lanplus_seed_prng(uint32_t bytes)
 int
 lanplus_rand(uint8_t * buffer, uint32_t num_bytes)
 {
-#define IPMI_LANPLUS_FAKE_RAND 1
+#undef IPMI_LANPLUS_FAKE_RAND
 #ifdef IPMI_LANPLUS_FAKE_RAND
 
 	/*

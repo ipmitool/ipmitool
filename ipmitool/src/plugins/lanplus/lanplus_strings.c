@@ -18,7 +18,7 @@ const struct valstr ipmi_rakp_return_codes[] = {
 	{ IPMI_RAKP_STATUS_INVALID_NAME_LENGTH,                "invalid name length"                 },
 	{ IPMI_RAKP_STATUS_UNAUTHORIZED_NAME,                  "unauthorized name"                   },
 	{ IPMI_RAKP_STATUS_UNAUTHORIZED_GUID,                  "unauthorized GUID"                   },
-	{ IPMI_RAKP_STATUS_INVALID_INTEGRITY_CHECK_VALUE,      "invlalid integrity check value"      },
+	{ IPMI_RAKP_STATUS_INVALID_INTEGRITY_CHECK_VALUE,      "invalid integrity check value"       },
 	{ IPMI_RAKP_STATUS_INVALID_CONFIDENTIALITY_ALGORITHM,  "invalid confidentiality algorithm"   },
 	{ IPMI_RAKP_STATUS_NO_CIPHER_SUITE_MATCH,              "no matching cipher suite"            },
 	{ IPMI_RAKP_STATUS_ILLEGAL_PARAMTER,                   "illegal parameter"                   },

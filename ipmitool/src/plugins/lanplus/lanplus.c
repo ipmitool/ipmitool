@@ -50,13 +50,16 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include <config.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_strings.h>
 #include <ipmitool/bswap.h>
 #include <openssl/rand.h>
 
@@ -303,6 +306,20 @@ static const struct valstr ipmi_channel_medium_vals[] = {
 	{ 0x00, NULL },
 };
 
+static const struct valstr plus_payload_types_vals[] = {
+    { IPMI_PAYLOAD_TYPE_IPMI,              "IPMI (0)" },	// IPMI Message
+    { IPMI_PAYLOAD_TYPE_SOL,               "SOL  (1)" },	// SOL (Serial over LAN)
+    { IPMI_PAYLOAD_TYPE_OEM,               "OEM  (2)" },	// OEM Explicid
+
+    { IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST, "OpenSession Req (0x10)" },
+    { IPMI_PAYLOAD_TYPE_RMCP_OPEN_RESPONSE,"OpenSession Resp (0x11)" },
+    { IPMI_PAYLOAD_TYPE_RAKP_1,            "RAKP1 (0x12)" },
+    { IPMI_PAYLOAD_TYPE_RAKP_2,            "RAKP2 (0x13)" },
+    { IPMI_PAYLOAD_TYPE_RAKP_3,            "RAKP3 (0x14)" },
+    { IPMI_PAYLOAD_TYPE_RAKP_4,            "RAKP4 (0x15)" },
+	{ 0x00, NULL },
+};
+
 static struct ipmi_rq_entry *
 ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
@@ -481,7 +498,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		printf("  ASF Version %s\n"
 			   "  RMCP Version %s\n"
 			   "  RMCP Sequence %d\n"
-			   "  IANA Enterprise %d\n\n",
+			   "  IANA Enterprise %ld\n\n",
 			   (pong->sup_entities & 0x01) ? "1.0" : "unknown",
 			   (pong->rmcp.ver == 6) ? "1.0" : "unknown",
 			   pong->rmcp.seq,
@@ -514,7 +531,7 @@ int
 ipmiv2_lan_ping(struct ipmi_intf * intf)
 {
 	struct asf_hdr asf_ping = {
-		.iana	= ASF_RMCP_IANA,
+		.iana	= htonl(ASF_RMCP_IANA),
 		.type	= ASF_TYPE_PING,
 	};
 	struct rmcp_hdr rmcp_ping = {
@@ -657,9 +674,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 
 			lprintf(LOG_DEBUG+1, "<< IPMI Response Session Header");
 			lprintf(LOG_DEBUG+1, "<<   Authtype                : %s",
-				val2str(rsp->session.authtype, ipmi_authtype_vals));
-			lprintf(LOG_DEBUG+1, "<<   Payload type            : 0x%x",
-				rsp->session.payloadtype);
+				val2str(rsp->session.authtype, ipmi_authtype_session_vals));
+			lprintf(LOG_DEBUG+1, "<<   Payload type            : %s",
+				val2str(rsp->session.payloadtype, plus_payload_types_vals));
 			lprintf(LOG_DEBUG+1, "<<   Session ID              : 0x%08lx",
 				(long)rsp->session.id);
 			lprintf(LOG_DEBUG+1, "<<   Sequence                : 0x%08lx",
@@ -829,6 +846,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 void
 read_open_session_response(struct ipmi_rs * rsp, int offset)
 {
+	memset(&rsp->payload.open_session_response, 0,
+	       sizeof(rsp->payload.open_session_response));
+
 	 /*  Message tag */
 	 rsp->payload.open_session_response.message_tag = rsp->data[offset];
 
@@ -838,6 +858,8 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
 	 /* Maximum privilege level */
 	 rsp->payload.open_session_response.max_priv_level = rsp->data[offset + 2];
 
+	 /*** offset + 3 is reserved ***/
+
 	 /* Remote console session ID */
 	 memcpy(&(rsp->payload.open_session_response.console_id),
 			rsp->data + offset + 4,
@@ -846,6 +868,11 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
 	 rsp->payload.open_session_response.console_id =
 		 BSWAP_32(rsp->payload.open_session_response.console_id);
 	 #endif
+
+	/* only tag, status, privlvl, and console id are returned if error */
+	 if (rsp->payload.open_session_response.rakp_return_code !=
+	     IPMI_RAKP_STATUS_NO_ERRORS)
+		 return;
 
 	 /* BMC session ID */
 	 memcpy(&(rsp->payload.open_session_response.bmc_id),
@@ -1450,9 +1477,8 @@ ipmi_lanplus_build_v2x_msg(
 			((session->v2_data.integrity_alg  != IPMI_INTEGRITY_NONE)? 0x40 : 0x00);
 	}
 
-
 	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
- 	{
+	{
 		/* Session ID  -- making it LSB */
 		msg[IMPI_LANPLUS_OFFSET_SESSION_ID    ] = session->v2_data.bmc_id         & 0xff;
 		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 1] = (session->v2_data.bmc_id >> 8)  & 0xff;
@@ -1465,7 +1491,6 @@ ipmi_lanplus_build_v2x_msg(
 		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
 		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
 	}
-
 	
 	/*
 	 * Payload Length is set below (we don't know how big the payload is until after
@@ -1831,7 +1856,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 
 	lprintf(LOG_DEBUG+1, ">> IPMI Request Session Header");
 	lprintf(LOG_DEBUG+1, ">>   Authtype   : %s",
-		val2str(IPMI_SESSION_AUTHTYPE_NONE, ipmi_authtype_vals));
+		val2str(IPMI_SESSION_AUTHTYPE_NONE, ipmi_authtype_session_vals));
 	lprintf(LOG_DEBUG+1, ">>   Sequence   : 0x%08lx",
 		(long)session->out_seq);
 	lprintf(LOG_DEBUG+1, ">>   Session ID : 0x%08lx",
@@ -2386,7 +2411,6 @@ ipmi_lanplus_send_ipmi_cmd(
 }
 
 
-
 /*
  * ipmi_get_auth_capabilities_cmd
  *
@@ -2801,12 +2825,15 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		memcpy(session->v2_data.bmc_rand, rsp->payload.rakp2_message.bmc_rand, 16);
 		memcpy(session->v2_data.bmc_guid, rsp->payload.rakp2_message.bmc_guid, 16);
 
+		printbuf(session->v2_data.bmc_rand, 16, "bmc_rand");
+
 		/*
 		 * It is at this point that we have to decode the random number and determine
 		 * whether the BMC has authenticated.
 		 */
 		if (! lanplus_rakp2_hmac_matches(session,
-										 rsp->payload.rakp2_message.key_exchange_auth_code))
+										 rsp->payload.rakp2_message.key_exchange_auth_code, 
+										 intf))
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> RAKP 2 HMAC is invalid");
@@ -2875,7 +2902,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 
 	v2_payload.payload_type                   = IPMI_PAYLOAD_TYPE_RAKP_3;
 	v2_payload.payload_length                 = 8;
-	v2_payload.payload.rakp_1_message.message = msg;
+	v2_payload.payload.rakp_3_message.message = msg;
 
 	/*
 	 * If the rakp2 return code indicates and error, we don't have to
@@ -2887,7 +2914,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	{
 		uint32_t auth_length;
 		
-		if (lanplus_generate_rakp3_authcode(msg + 8, session, &auth_length))
+		if (lanplus_generate_rakp3_authcode(msg + 8, session, &auth_length, intf))
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating RAKP 3 authcode");
@@ -2958,7 +2985,8 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	{
 		/* Validate the authcode */
 		if (lanplus_rakp4_hmac_matches(session,
-									   rsp->payload.rakp4_message.integrity_check_value))
+									   rsp->payload.rakp4_message.integrity_check_value,
+									   intf))
 		{
 			/* Success */
 			session->v2_data.session_state = LANPLUS_STATE_ACTIVE;
@@ -3097,6 +3125,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 	intf->opened = 1;
 
+
 	/*
 	 *
 	 * Make sure the BMC supports IPMI v2 / RMCP+
@@ -3135,6 +3164,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		intf->close(intf);
 		goto fail;
 	}
+
 
 	/*
 	 * RAKP 3

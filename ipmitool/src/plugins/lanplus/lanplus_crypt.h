@@ -41,15 +41,20 @@
 
 /*
  * See the implementation file for documentation
+ * ipmi_intf can be used for oem specific implementations 
+ * e.g. if (ipmi_oem_active(intf, "OEM_XYZ"))
  */
 
 int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t * hmac);
+							   const uint8_t             * hmac,
+							   struct ipmi_intf          * intf);
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t * hmac);
+							   const uint8_t             * hmac,
+							   struct ipmi_intf          * intf);
 int lanplus_generate_rakp3_authcode(char                      * buffer,
 									const struct ipmi_session * session,
-									uint32_t              * auth_length);
+									uint32_t                  * auth_length,
+									struct ipmi_intf          * intf);
 int lanplus_generate_sik(struct ipmi_session * session);
 int lanplus_generate_k1(struct ipmi_session * session);
 int lanplus_generate_k2(struct ipmi_session * session);
