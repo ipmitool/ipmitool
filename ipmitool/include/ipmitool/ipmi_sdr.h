@@ -52,21 +52,21 @@ int utos(unsigned val, unsigned bits);
 
 #if WORDS_BIGENDIAN
 # define __TO_TOL(mtol)     (unsigned short)(mtol & 0x3f)
-# define __TO_M(mtol)       (unsigned short)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (unsigned int)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
+# define __TO_M(mtol)       (signed short)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (signed int)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
 # define __TO_ACC(bacc)     (unsigned int)(((bacc & 0x3f0000) >> 16) | ((bacc & 0xf000) >> 6))
 # define __TO_ACC_EXP(bacc) (unsigned int)((bacc & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (unsigned int)(utos(((bacc & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (unsigned int)(utos((bacc & 0xf), 4))
+# define __TO_R_EXP(bacc)   (signed int)(utos(((bacc & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (signed int)(utos((bacc & 0xf), 4))
 #else
 # define __TO_TOL(mtol)     (unsigned short)(BSWAP_16(mtol) & 0x3f)
-# define __TO_M(mtol)       (unsigned short)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (unsigned int)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
+# define __TO_M(mtol)       (signed short)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (signed int)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
                             ((BSWAP_32(bacc) & 0xc00000) >> 14)), 10))
 # define __TO_ACC(bacc)     (unsigned int)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
 # define __TO_ACC_EXP(bacc) (unsigned int)((BSWAP_32(bacc) & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (unsigned int)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (unsigned int)(utos((BSWAP_32(bacc) & 0xf), 4))
+# define __TO_R_EXP(bacc)   (signed int)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (signed int)(utos((BSWAP_32(bacc) & 0xf), 4))
 #endif
 
 #define GET_SDR_REPO_INFO	0x20
