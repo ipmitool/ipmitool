@@ -244,4 +244,6 @@ struct ipmi_rs {
 #define IPMI_BMC_SLAVE_ADDR		0x20
 #define IPMI_REMOTE_SWID		0x81
 
+extern const struct valstr completion_code_vals[];
+
 #endif /* IPMI_H */
