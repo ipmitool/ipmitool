@@ -67,8 +67,7 @@
 
 static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
-
-
+static int            bShouldExit  = 0;
 
 extern int verbose;
 
@@ -719,6 +718,28 @@ void enter_raw_mode(void)
 }
 
 
+static void sendBreak(struct ipmi_intf * intf)
+{
+	struct ipmi_v2_payload  v2_payload;
+
+	memset(&v2_payload, 0, sizeof(v2_payload));
+
+	v2_payload.payload_length = 0;
+	v2_payload.payload.sol_packet.generate_break = 1;
+
+	intf->send_sol(intf, &v2_payload);
+}
+
+
+
+/*
+ * suspendSelf
+ *
+ * Put ourself in the background
+ *
+ * param bRestoreTty specifies whether we will put our self back
+ *       in raw mode when we resume
+ */
 static void suspendSelf(int bRestoreTty)
 {
 	leave_raw_mode();
@@ -730,18 +751,84 @@ static void suspendSelf(int bRestoreTty)
 
 
 
+/*
+ * printSolEscapeSequences
+ *
+ * Send some useful documentation to the user
+ */
 void printSolEscapeSequences()
 {
 	printf(
-		   "~?\r\n\
+		   "%c?\r\n\
 	Supported escape sequences:\r\n\
-	~.  - terminate connection\r\n\
-	~^Z - suspend ipmitool\r\n\
-	~^X - suspend ipmitool, but don't restore tty on restart\r\n\
-	~?  - this message\r\n\
-	~~  - send the escape character by typing it twice\r\n\
-	(Note that escapes are only recognized immediately after newline.)\r\n");
+	%c.  - terminate connection\r\n\
+	%c^Z - suspend ipmitool\r\n\
+	%c^X - suspend ipmitool, but don't restore tty on restart\r\n\
+	%cb  - send break\r\n\
+	%c?  - this message\r\n\
+	%c%c  - send the escape character by typing it twice\r\n\
+	(Note that escapes are only recognized immediately after newline.)\r\n",
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER);
 }
+
+
+
+/*
+ * output
+ *
+ * Send the specified data to stdout
+ */
+static void output(char * data, int length)
+{
+	int i;
+	for (i = 0; i < length; ++i)
+		putc(data[i], stdout);
+
+	fflush(stdout);
+}
+
+
+
+/*
+ * impi_sol_deactivate
+ */
+static int ipmi_sol_deactivate(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq   req;
+	unsigned char    data[6];	 
+
+	req.msg.netfn    = IPMI_NETFN_APP;
+	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
+	req.msg.data_len = 6;
+	req.msg.data     = data;
+
+	bzero(data, sizeof(data));
+	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type              */
+	data[1] = 1;                      /* payload instance.  Guess! */
+
+	/* Lots of important data */
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = 0;
+	data[5] = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Dectivating SOL payload\n",
+			   rsp ? rsp->ccode : 0);
+		return -1;
+	}
+
+	return 0;
+}	
 
 
 
@@ -767,11 +854,16 @@ static int processSolUserInput(struct ipmi_intf * intf,
 	char ch;
 	int  i;
 
+	memset(&v2_payload, 0, sizeof(v2_payload));
+
+	/*
+	 * Our first order of business is to check the input for escape
+	 * sequences to act on.
+	 */
 	for (i = 0; i < buffer_length; ++i)
 	{
 		ch = input[i];
 
-		//if (escape_pending && (ch != SOL_ESCAPE_CHARACTER)) {
 		if (escape_pending){
 			escape_pending = 0;
 			
@@ -780,10 +872,9 @@ static int processSolUserInput(struct ipmi_intf * intf,
 			 */
 			switch (ch) {
 			case '.':
-				/* Terminate the connection. */
-				/* Should probably flush our buffer first */
-				return 1;
-				continue;
+				printf("%c. [terminated ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				retval = 1;
+				break;
 			case 'Z' - 64:
 				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
 				suspendSelf(1); /* Restore tty back to raw */
@@ -792,6 +883,11 @@ static int processSolUserInput(struct ipmi_intf * intf,
 			case 'X' - 64:
 				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
 				suspendSelf(0); /* Don't restore to raw mode */
+				continue;
+
+			case 'b':
+				printf("%cb [send break]\r\n", SOL_ESCAPE_CHARACTER);
+				sendBreak(intf);
 				continue;
 
 			case '?':
@@ -823,19 +919,28 @@ static int processSolUserInput(struct ipmi_intf * intf,
 	}
 
 	
+	/*
+	 * If there is anything left to process we dispatch it to the BMC
+	 */
 	if (length)
 	{
+		struct ipmi_rs * rsp;
+		
 		v2_payload.payload_length = length;
+		rsp = intf->send_sol(intf, &v2_payload);
 
-		//memcpy(v2_payload.payload.sol_packet.data,
-		//	   input,
-		//	   v2_payload.payload_length);
-
-		if (intf->send_sol(intf, &v2_payload))
+		/* This will always fail until we wait for our ACKs */
+		if (! rsp)
 		{
-			printf("Error sending SOL data\n");
-			retval = -1;
+			//printf("Error sending SOL data\n");
+			//retval = -1;
 		}
+
+		/* If the sequence number is set we know we have new data */
+		//else if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+		//		 (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
+		//		 (rsp->payload.sol_packet.packet_sequence_number))
+		//	output(rsp->data, rsp->data_len);
 	}
 
 	return retval;
@@ -882,11 +987,12 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				return -1;
 			}
 
+
+			/*
+			 * Process input from the user
+			 */
 			if (FD_ISSET(0, &read_fds))
-			{
-				/*
-				 * Received input from the user
-				 */
+	 		{
 				bzero(buffer, sizeof(buffer));
 				numRead = read(fileno(stdin),
 							   buffer, sizeof(buffer));
@@ -894,10 +1000,14 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				if (numRead > 0)
 				{
 					int rc = processSolUserInput(intf, buffer, numRead);
+					
 					if (rc)
-						bShouldExit = 1;
-					if (rc < 1)
-						bBmcClosedSession = 1;
+					{
+						if (rc < 0)
+							bShouldExit = bBmcClosedSession = 1;
+						else
+							bShouldExit = 1;
+					}
 				}
 				else
 				{
@@ -905,11 +1015,12 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				}
 			}
 
+
+			/*
+			 * Process input from the BMC
+			 */
 			else if (FD_ISSET(intf->fd, &read_fds))
 			{
-				/*
-				 * Received input from the BMC.
-				 */
 				int i;
 				struct ipmi_rs * rs =intf->recv_sol(intf);
 				if (! rs)
@@ -917,17 +1028,15 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 					bShouldExit = bBmcClosedSession = 1;
 				}
 				else
-				{
-					for (i = 0; i < rs->data_len; ++i)
-						putc(rs->data[i], stdout);
-				}
-
-				fflush(stdout);
+					output(rs->data, rs->data_len);
  			}
+
 			
-			else
+			/*
+			 * ERROR in select
+			 */
+ 			else
 			{
-				/* ERROR */
 				printf("Error: Select returned with nothing to read\n");
 				bShouldExit = 1;
 			}
@@ -941,46 +1050,14 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 		printf("SOL session closed by BMC\n");
 		exit(1);
 	}
+	else
+		ipmi_sol_deactivate(intf);
 
 	return 0;
 }
 
 
 
-/*
- * impi_sol_deactivate
- */
-static int ipmi_sol_deactivate(struct ipmi_intf * intf)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq   req;
-	unsigned char    data[6];	 
-
-	req.msg.netfn    = IPMI_NETFN_APP;
-	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
-	req.msg.data_len = 6;
-	req.msg.data     = data;
-
-	bzero(data, sizeof(data));
-	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type              */
-	data[1] = 1;                      /* payload instance.  Guess! */
-
-	/* Lots of important data */
-	data[2] = 0;
-	data[3] = 0;
-	data[4] = 0;
-	data[5] = 0;
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Dectivating SOL payload\n",
-			   rsp ? rsp->ccode : 0);
-		return -1;
-	}
-
-	return 0;
-}	
 
 
 
@@ -1065,20 +1142,16 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 	#endif
 	
 
-	printf("max inbound payload size  : %d\n",
-		   intf->session->sol_data.max_inbound_payload_size);
-	printf("max outbound payload size : %d\n",
-		   intf->session->sol_data.max_outbound_payload_size);
-	printf("SOL port                  : %d\n",
-		   intf->session->sol_data.port);
-
-
 	if (intf->session->sol_data.port != intf->session->port)
 	{
 		printf("Error: BMC requests SOL session on different port\n");
 		return -1;
 	}
 	
+
+	printf("[SOL Session operational.  Use %c? for help]\r\n",
+		   SOL_ESCAPE_CHARACTER);
+
 
 	/*
 	 * At this point we are good to go with our SOL session.  We
@@ -1104,6 +1177,8 @@ void print_sol_usage()
 {
 	printf("SOL Commands: info [<channel number>]\n");
 	printf("              set <parameter> <value> [channel]\n");
+	printf("              activate\n");
+	printf("              deactivate\n");
 }
 
 
@@ -1139,6 +1214,7 @@ int ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		retval = ipmi_print_sol_info(intf, channel);
 	}
+
 
 	/*
 	 * Set a parameter value

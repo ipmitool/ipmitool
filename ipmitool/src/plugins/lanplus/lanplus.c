@@ -102,8 +102,12 @@ static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipm
 static void read_ipmi_response(struct ipmi_rs * rsp, int * offset);
 static void read_sol_packet(struct ipmi_rs * rsp, int * offset);
 static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
-static int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
-								 struct ipmi_v2_payload * payload);
+static struct ipmi_rs * ipmi_lanplus_send_sol(struct ipmi_intf * intf,
+											  struct ipmi_v2_payload * payload);
+static int check_sol_packet_for_data(struct ipmi_intf * intf,
+									 struct ipmi_rs *rsp);
+static void ack_sol_packet(struct ipmi_intf * intf,
+						   struct ipmi_rs * rsp);
 
 
 struct ipmi_intf ipmi_lanplus_intf = {
@@ -605,7 +609,10 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 
 
- 		else if (rsp->session.payloadtype ==
+		/*
+		 * Open Response
+		 */
+  		else if (rsp->session.payloadtype ==
 				 IPMI_PAYLOAD_TYPE_RMCP_OPEN_RESPONSE)
 		{
 			if (session->v2_data.session_state !=
@@ -621,7 +628,11 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			break;
 		}
 		
-		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_RAKP_2)
+
+		/*
+		 * RAKP 2
+		 */
+ 		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_RAKP_2)
 		{
 			if (session->v2_data.session_state != LANPLUS_STATE_RAKP_1_SENT)
 			{
@@ -634,6 +645,10 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			break;
 		}
 
+
+		/*
+		 * RAKP 4
+		 */
 	 	else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_RAKP_4)
 		{
 			if (session->v2_data.session_state != LANPLUS_STATE_RAKP_3_SENT)
@@ -647,7 +662,11 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			break;
 		}
 
-		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)
+		
+		/*
+		 * SOL
+		 */
+ 		else if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)
 		{
 			int payload_start = offset;
 			int extra_data_length;
@@ -1833,6 +1852,8 @@ struct ipmi_rs *
 
 
 	while (try < IPMI_LAN_RETRY) {
+
+
 		if (ipmi_lan_send_packet(intf, msg_data, msg_length) < 0) {
 			printf("ipmi_lan_send_cmd failed\n");
 			return NULL;
@@ -1859,13 +1880,38 @@ struct ipmi_rs *
 
 		if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
 		{
-			// jme : todo.  If the payload is not an ACK we need to wait
-			// for an ack.  And if we don't receive an ACK, we need to
-			// resend.
-			break;
+			//if (! payload->payload.sol_packet.packet_sequence_number)
+			//{
+				/* This was just an ACK.  We can leave now.  No retry. */
+				break;
+				//}
+			
+
+			//int try_count = 1;
+
+			
+			// jme : todo.  We need to wait for an ack.  And if we
+			// don't receive an ACK, we need to resend.
+			
+			/* We need an ACK */
+			//for (try_count = 1; try_count < 3; ++try_count)
+			//{
+			//	rsp = ipmi_lan_poll_recv(intf);
+
+				/* Sets our last see */
+			//	handleIncomingSolPacket(rsp);
+				
+			//	if (acksPacket(rsp, payload))
+			//		break;
+			//}
+
+				//break;
 		}
 
 
+		/*
+		 * This call is NOT made for SOL packets
+		 */
 		rsp = ipmi_lan_poll_recv(intf);
 		if (rsp)
 			break;
@@ -1887,9 +1933,11 @@ struct ipmi_rs *
  * return 0 on success
  *        -1 on error
  */
-int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
-						  struct ipmi_v2_payload * v2_payload)
+struct ipmi_rs * ipmi_lanplus_send_sol(struct ipmi_intf * intf,
+									   struct ipmi_v2_payload * v2_payload)
 {
+	struct ipmi_rs * rs;
+
 	v2_payload->payload_type   = IPMI_PAYLOAD_TYPE_SOL;
 
 	/*
@@ -1907,27 +1955,100 @@ int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
 	
 	v2_payload->payload.sol_packet.accepted_character_count = 0; /* NA */
 		
-	ipmi_lanplus_send_payload(intf, v2_payload);
+	rs = ipmi_lanplus_send_payload(intf, v2_payload);
 
-	return 0;
+	return rs;
 }
 
 
 
 /*
- * ipmi_lanplus_recv_sol
+ * check_sol_packet_for_new_data
  *
- * Receive a SOL packet and send an ACK in response.
+ * Determine whether the SOL packet has already been seen
+ * and whether the packet has new data for us.
  *
+ * This function has the side effect of removing an previously
+ * seen data, and moving new data to the front.
+ *
+ * It also "Remembers" the data so we don't get repeats.
+ *
+ * returns the number of new bytes in the SOL packet
  */
-struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
+static int check_sol_packet_for_new_data(struct ipmi_intf * intf,
+										 struct ipmi_rs *rsp)
 {
-	struct ipmi_v2_payload ack;
-	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
-	
-	/* If the SOL packet looks good, ACK it */
-	if (rsp && rsp->data_len)
+	static unsigned char last_received_sequence_number = 0;
+	static unsigned char last_received_byte_count      = 0;
+	int new_data_size                                  = 0;
+
+
+	if (rsp &&
+		(rsp->session.authtype    == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+		(rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL))
 	{
+		/* Store the data length before we mod it */
+		unsigned char unaltered_data_len = rsp->data_len;
+		
+		
+		if (rsp->payload.sol_packet.packet_sequence_number ==
+			last_received_sequence_number)
+		{
+
+			/*
+			 * This is the same as the last packet, but may include
+			 * extra data
+			 */
+			new_data_size =
+				rsp->data_len -
+				intf->session->sol_data.last_received_byte_count;
+
+			if (new_data_size > 0)
+			{
+				/* We have more data to process */
+				memmove(rsp->data,
+						rsp->data +
+						rsp->data_len - new_data_size,
+						new_data_size);
+			}
+
+			rsp->data_len = new_data_size;
+		}
+
+
+		/*
+		 *Rember the data for next round
+		 */
+		if (rsp->payload.sol_packet.packet_sequence_number)
+		{
+			last_received_sequence_number =
+				rsp->payload.sol_packet.packet_sequence_number;
+
+			last_received_byte_count = unaltered_data_len;
+		}
+	}
+
+
+	return new_data_size;
+}
+
+
+
+/*
+ * ack_sol_packet
+ *
+ * Provided the specified packet looks reasonable, ACK it.
+ */
+static void ack_sol_packet(struct ipmi_intf * intf,
+						   struct ipmi_rs * rsp)
+{
+	if (rsp                                                           &&
+		(rsp->session.authtype    == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+		(rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)           &&
+		(rsp->payload.sol_packet.packet_sequence_number))
+	{
+		struct ipmi_v2_payload ack;
+
 		bzero(&ack, sizeof(struct ipmi_v2_payload));
 
 		ack.payload_type   = IPMI_PAYLOAD_TYPE_SOL;
@@ -1948,43 +2069,31 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		
 		ipmi_lanplus_send_payload(intf, &ack);
 	}
+}
 
-	/* This may be an identical packet */
-	if (rsp &&
-		(rsp->payload.sol_packet.packet_sequence_number ==
-		 intf->session->sol_data.last_received_sequence_number))
-	{
-		/* This is the same as the last packet, but may include
-		   extra data */
-		int extra_data_size =
-			rsp->data_len -
-			intf->session->sol_data.last_received_byte_count;
 
-		if (extra_data_size > 0)
-		{
-			/* We have more data to process */
-			memmove(rsp->data,
-					rsp->data +
-					rsp->data_len - extra_data_size,
-					extra_data_size);
-		}
 
-		rsp->data_len = extra_data_size;
-	}
-
-	/* If it's not an ACK, remember that we saw it. */
-	if (rsp &&
-		rsp->payload.sol_packet.packet_sequence_number)
-	{
-		intf->session->sol_data.last_received_sequence_number =
-			rsp->payload.sol_packet.packet_sequence_number;
-
-		intf->session->sol_data.last_received_byte_count =
-			rsp->data_len;
-	}
+/*
+ * ipmi_lanplus_recv_sol
+ *
+ * Receive a SOL packet and send an ACK in response.
+ *
+ */
+struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
 	
+	ack_sol_packet(intf, rsp);	              
+
+	/*
+	 * Remembers the data sent, and alters the data to just
+	 * include the new stuff.
+	 */
+	check_sol_packet_for_new_data(intf, rsp);
+
 	return rsp;
 }
+
 
 
 /**
@@ -2002,7 +2111,6 @@ struct ipmi_rs *
 
 	return ipmi_lanplus_send_payload(intf, &v2_payload);
 }
-
 
 
 
@@ -2584,8 +2692,8 @@ int ipmi_lanplus_open(struct ipmi_intf * intf)
 	session->v2_data.console_id       = 0x00;
 	session->v2_data.bmc_id           = 0x00;
 	session->sol_data.sequence_number = 1;
-	session->sol_data.last_received_sequence_number = 0;
-	session->sol_data.last_received_byte_count      = 0;
+	//session->sol_data.last_received_sequence_number = 0;
+	//session->sol_data.last_received_byte_count      = 0;
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
 	memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
 
