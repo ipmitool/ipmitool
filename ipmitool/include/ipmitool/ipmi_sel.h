@@ -39,6 +39,19 @@
 
 #include <ipmitool/ipmi.h>
 
+#define IPMI_CMD_GET_SEL_INFO		0x40
+#define IPMI_CMD_GET_SEL_ALLOC_INFO	0x41
+#define IPMI_CMD_RESERVE_SEL		0x42
+#define IPMI_CMD_GET_SEL_ENTRY		0x43
+#define IPMI_CMD_ADD_SEL_ENTRY		0x44
+#define IPMI_CMD_PARTIAL_ADD_SEL_ENTRY	0x45
+#define IPMI_CMD_DELETE_SEL_ENTRY	0x46
+#define IPMI_CMD_CLEAR_SEL		0x47
+#define IPMI_CMD_GET_SEL_TIME		0x48
+#define IPMI_CMD_SET_SEL_TIME		0x49
+#define IPMI_CMD_GET_AUX_LOG_STATUS	0x5A
+#define IPMI_CMD_SET_AUX_LOG_STATUS	0x5B
+
 enum {
 	IPMI_EVENT_CLASS_DISCRETE,
 	IPMI_EVENT_CLASS_DIGITAL,
@@ -356,6 +369,6 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 };
 
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
-void ipmi_sel_print_std_entry(int num, struct sel_event_record * evt);
+void ipmi_sel_print_std_entry(struct sel_event_record * evt);
 
 #endif /* IPMI_SEL_H */

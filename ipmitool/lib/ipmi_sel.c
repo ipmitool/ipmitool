@@ -125,7 +125,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x40;
+	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -162,7 +162,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		/* get sel allocation info */
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_STORAGE;
-		req.msg.cmd = 0x41;
+		req.msg.cmd = IPMI_CMD_GET_SEL_ALLOC_INFO;
 
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp || rsp->ccode) {
@@ -196,7 +196,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x43;
+	req.msg.cmd = IPMI_CMD_GET_SEL_ENTRY;
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 
@@ -244,15 +244,15 @@ ipmi_sel_timestamp_time(unsigned long stamp)
 }
 
 void
-ipmi_sel_print_std_entry(int num, struct sel_event_record * evt)
+ipmi_sel_print_std_entry(struct sel_event_record * evt)
 {
 	if (!evt)
 		return;
 
 	if (csv_output)
-		printf("%d,", num);
+		printf("%d,", evt->record_id);
 	else
-		printf("%4d | ", num);
+		printf("%4d | ", evt->record_id);
 
 	if (evt->timestamp < 0x20000000) {
 		printf("Pre-Init Time-stamp");
@@ -322,12 +322,11 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned short reserve_id, next_id = 0;
-	int num = 1;
 	struct sel_event_record * evt;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x40;
+	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -345,7 +344,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x42;	/* reserve SEL */
+	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -368,8 +367,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 		if (verbose)
 			ipmi_sel_print_std_entry_verbose(evt);
 		else
-			ipmi_sel_print_std_entry(num, evt);
-		num++;
+			ipmi_sel_print_std_entry(evt);
 	}
 }
 
@@ -381,7 +379,7 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x42;	/* reserve SEL */
+	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -415,7 +413,7 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = 0x47;	/* clear SEL */
+	req.msg.cmd = IPMI_CMD_CLEAR_SEL;
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 
@@ -428,18 +426,66 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	printf("Clearing SEL.  Please allow a few seconds to erase.\n");
 }
 
+static void
+ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	unsigned short id;
+	unsigned char msg_data[4];
+
+	if (!argc || !strncmp(argv[0], "help", 4))
+	{
+		printf("usage: delete [id ...]\n");
+		return;
+	}
+
+	id = ipmi_sel_reserve(intf);
+	if (id == 0)
+		return;
+
+	memset(msg_data, 0, 4);
+	msg_data[0] = id & 0xff;
+	msg_data[1] = id >> 8;
+	while (argc)
+	{
+		id = atoi(argv[argc-1]);
+		msg_data[2] = id & 0xff;
+		msg_data[3] = id >> 8;
+
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_STORAGE;
+		req.msg.cmd = IPMI_CMD_DELETE_SEL_ENTRY;
+		req.msg.data = msg_data;
+		req.msg.data_len = 4;
+
+		rsp = intf->sendrecv(intf, &req);
+		if (!rsp || rsp->ccode) 
+		{
+			printf("Error:%x unable to delete entry %d\n", rsp ? rsp->ccode : 0, id);
+		}
+		else
+		{
+			printf("Deleted entry %d\n", id);
+		}
+                argc--;
+	}
+}
+
 int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc)
 		ipmi_sel_get_info(intf);
 	else if (!strncmp(argv[0], "help", 4))
-		printf("SEL Commands:  info clear list\n");
+		printf("SEL Commands:  info clear delete list\n");
 	else if (!strncmp(argv[0], "info", 4))
 		ipmi_sel_get_info(intf);
 	else if (!strncmp(argv[0], "list", 4))
 		ipmi_sel_list_entries(intf);
 	else if (!strncmp(argv[0], "clear", 5))
 		ipmi_sel_clear(intf);
+	else if (!strncmp(argv[0], "delete", 6))
+		ipmi_sel_delete(intf, argc-1, &argv[1]);
 	else
 		printf("Invalid SEL command: %s\n", argv[0]);
 	return 0;
