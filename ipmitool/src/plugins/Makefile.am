@@ -38,8 +38,8 @@ INCLUDES			= -I$(top_srcdir)/include $(INCLTDL)
 MAINTAINERCLEANFILES		= Makefile.in ipmi_intf_static.c
 EXTRA_DIST			= ipmi_intf_static.c.in
 
-SUBDIRS				= @INTF_LAN@ @INTF_OPEN@
-DIST_SUBDIRS			= lan open
+SUBDIRS				= @INTF_LAN@ @INTF_OPEN@ @INTF_LIPMI@
+DIST_SUBDIRS			= lan open lipmi
 
 noinst_LTLIBRARIES		= libintf.la
 libintf_la_SOURCES		= ipmi_intf.c ipmi_intf_static.c
