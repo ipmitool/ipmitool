@@ -1052,11 +1052,11 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	if (rc < 0)
 		goto fail;
 
-	intf->abort = 0;
-
 	rc = ipmi_set_session_privlvl_cmd(intf);
 	if (rc < 0)
 		goto fail;
+
+	intf->abort = 0;
 
 	return 0;
 
