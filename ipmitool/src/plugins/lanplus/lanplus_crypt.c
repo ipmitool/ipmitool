@@ -766,6 +766,18 @@ int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 				 rs->data_len - IMPI_LANPLUS_OFFSET_AUTHTYPE - IPMI_SHA1_AUTHCODE_SIZE,
 				 generated_authcode,
 				 &generated_authcode_length);
+
+	if (verbose > 3)
+	{
+		printf("Validating authcode\n");
+		printbuf(session->v2_data.k1, 20, "K1");
+		printbuf(rs->data + IMPI_LANPLUS_OFFSET_AUTHTYPE,
+				 rs->data_len - IMPI_LANPLUS_OFFSET_AUTHTYPE - IPMI_SHA1_AUTHCODE_SIZE,
+				 "Authcode Input Data");
+		printbuf(generated_authcode, 12, "Generated authcode");
+		printbuf(bmc_authcode,       12, "Expected authcode");
+	}
+
 	
 	assert(generated_authcode_length == 20);
 	return (memcmp(bmc_authcode, generated_authcode, 12) == 0);
