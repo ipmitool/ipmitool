@@ -155,52 +155,54 @@ unsigned char ipmi_csum(unsigned char * d, int s)
  * file: filename
  * rw:   read-write flag, 1=write
  */
-int ipmi_open_file(const char * file, int rw)
+FILE * ipmi_open_file(const char * file, int rw)
 {
 	struct stat st1, st2;
-	int fp;
+	FILE * fp;
 
 	/* verify existance */
 	if (lstat(file, &st1) < 0) {
 		if (rw) {
 			/* does not exist, ok to create */
-			fp = open(file, O_WRONLY|O_TRUNC|O_EXCL|O_CREAT, 0600);
-			if (fp < 0) {
+			fp = fopen(file, "w");
+			if (!fp) {
 				printf("ERROR: Unable to open file %s for write: %s\n",
 				       file, strerror(errno));
-				return -1;
+				return NULL;
 			}
 			return fp;
 		} else {
 			printf("ERROR: File %s does not exist\n", file);
-			return -1;
+			return NULL;
 		}
 	}
 
 	/* it exists - only regular files, not links */
 	if (!S_ISREG(st1.st_mode)) {
 		printf("ERROR: File %s has invalid mode: %d\n", file, st1.st_mode);
-		return -1;
+		return NULL;
 	}
 
 	/* allow only files with 1 link (itself) */
 	if (st1.st_nlink != 1) {
 		printf("ERROR: File %s has invalid link count: %d != 1\n",
 		       file, (int)st1.st_nlink);
-		return -1;
+		return NULL;
 	}
 
-	fp = open(file, rw ? (O_WRONLY|O_TRUNC) : O_RDONLY, 0600);
-	if (fp < 0) {
+	fp = fopen(file, rw ? "w+" : "r");
+	if (!fp) {
 		printf("ERROR: Unable to open file %s: %s\n",
 		       file, strerror(errno));
-		return -1;
+		return NULL;
 	}
 
 	/* stat again */
-	if (fstat(fp, &st2) < 0) {
-		close(fp);
-		return -1;
+	if (fstat(fileno(fp), &st2) < 0) {
+		printf("ERROR: Unable to stat file %s: %s\n",
+		       file, strerror(errno));
+		fclose(fp);
+		return NULL;
 	}
 
 	/* verify inode, owner, link count */
@@ -208,8 +210,8 @@ int ipmi_open_file(const char * file, int rw)
 	    st2.st_uid != st1.st_uid ||
 	    st2.st_nlink != 1) {
 		printf("ERROR: Unable to verify file %s\n", file);
-		close(fp);
-		return -1;
+		fclose(fp);
+		return NULL;
 	}
 
 	return fp;
