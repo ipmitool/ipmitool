@@ -1,3 +1,12 @@
+version 1.8.0
+	* Fix IPMIv2.0 issues
+	* Fix chassis boot parameter support
+	* Add support for linear sensors
+
+version 1.7.1
+	* Update bmc plugin to work with new Solaris bmc driver (new ioctl
+	  for interface detection and new STREAMS message-based interface)
+
 version 1.7.0
 	* Propogate errors correctly so exit status will be useful
 	* More consistent display of errors including completion code text

@@ -1,3 +1,18 @@
+ipmitool (1.8.0) unstable; urgency=low
+
+  * Fix IPMIv2.0 issues
+  * Fix chassis boot parameter support
+  * Add support for linear sensors
+
+ -- Duncan Laurie <duncan@iceblink.org>  Wed, Mar 16 2005 17:08:12 -0700
+
+ipmitool (1.7.1) unstable; urgency=low
+
+  * Update bmc plugin to work with new Solaris bmc driver (new ioctl
+    for interface detection and new STREAMS message-based interface).
+
+ -- Seth Goldberg <sethmeisterg@hotmail.com>  Mon, Mar 7 2005 18:03:00 -0800
+	
 ipmitool (1.7.0) unstable; urgency=low
 
   * Propogate errors correctly so exit status will be useful
