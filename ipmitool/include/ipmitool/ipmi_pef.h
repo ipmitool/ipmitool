@@ -99,7 +99,7 @@ struct bit_desc_map {				/* description text container */
 #define BIT_DESC_MAP_ANY 0x2		/* bitwise, but only print 1st one */
 #define BIT_DESC_MAP_ALL 0x3		/* bitwise, print them all */
 	uint32_t desc_map_type;
-	struct desc_map desc_maps[];
+	struct desc_map desc_maps[128];
 };
 
 static struct bit_desc_map
