@@ -370,7 +370,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
-	if (!rsp->data[1]) {
+	if (!rsp->data[1] && !rsp->data[2]) {
 		printf("SEL has no entries\n");
 		return;
 	}
