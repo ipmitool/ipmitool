@@ -38,5 +38,6 @@ noinst_HEADERS = log.h bswap.h helper.h ipmi.h ipmi_intf.h \
 	ipmi_chassis.h ipmi_entity.h ipmi_fru.h ipmi_lanp.h \
 	ipmi_sdr.h ipmi_sel.h ipmi_sol.h ipmi_bmc.h ipmi_raw.h \
 	ipmi_channel.h ipmi_sensor.h ipmi_event.h ipmi_session.h \
-	ipmi_strings.h ipmi_constants.h ipmi_isol.h ipmi_user.h
+	ipmi_strings.h ipmi_constants.h ipmi_isol.h ipmi_user.h \
+	ipmi_pef.h
 
