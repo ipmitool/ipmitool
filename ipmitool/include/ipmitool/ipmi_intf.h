@@ -72,6 +72,13 @@ struct ipmi_session {
 	unsigned char challenge[16];
 	unsigned char authtype;
 	unsigned char authtype_set;
+#define IPMI_AUTHSTATUS_PER_MSG_DISABLED	0x10
+#define IPMI_AUTHSTATUS_PER_USER_DISABLED	0x08
+#define IPMI_AUTHSTATUS_NONNULL_USERS_ENABLED	0x04
+#define IPMI_AUTHSTATUS_NULL_USERS_ENABLED	0x02
+#define IPMI_AUTHSTATUS_ANONYMOUS_USERS_ENABLED	0x01
+	unsigned char authstatus;
+	unsigned char authextra;
 	unsigned char privlvl;
 	int password;
 	int port;

@@ -457,7 +457,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		memcpy(&rsp->session.id, rsp->data+x, 4);
 		x += 4;
 
-		if (intf->session->active && intf->session->authtype)
+		if (intf->session->active && (rsp->session.authtype || intf->session->authtype))
 			x += 16;
 
 		rsp->session.msglen = rsp->data[x++];
@@ -497,11 +497,13 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			if (verbose > 2)
 				printf("IPMI Request Match found\n");
 			if (intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
+if (verbose > 2)
+	printf("Bridged cmd resp: %s\n", buf2str(&rsp->data[x],rsp->data_len));
 				/* bridged command: lose extra header */
 				x += sizeof(rsp->payload.ipmi_response);
 				if (verbose && rsp->data[x-1] != 0)
 					printf("WARNING: Bridged cmd ccode = 0x%02x\n",
-					       rsp->data[x-1]);
+						rsp->data[x-1]);
 			}
 			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
 					      rsp->payload.ipmi_response.cmd);
@@ -751,7 +753,7 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 	unsigned char * msg;
 
 	len = rsp->data_len + 22;
-	if (intf->session->active && intf->session->authtype)
+	if (intf->session->active)
 		len += 16;
 
 	msg = malloc(len);
@@ -915,17 +917,18 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 			printf("OEM ");
 		printf("\n");
 		printf("  Per-msg auth    : %sabled\n",
-		       (rsp->data[2] & 1<<4) ? "dis" : "en");
+		       (rsp->data[2] & IPMI_AUTHSTATUS_PER_MSG_DISABLED) ? "dis" : "en");
 		printf("  User level auth : %sabled\n",
-		       (rsp->data[2] & 1<<3) ? "dis" : "en");
+		       (rsp->data[2] & IPMI_AUTHSTATUS_PER_USER_DISABLED) ? "dis" : "en");
 		printf("  Non-null users  : %sabled\n",
-		       (rsp->data[2] & 1<<2) ? "en" : "dis");
+		       (rsp->data[2] & IPMI_AUTHSTATUS_NONNULL_USERS_ENABLED) ? "en" : "dis");
 		printf("  Null users      : %sabled\n",
-		       (rsp->data[2] & 1<<1) ? "en" : "dis");
+		       (rsp->data[2] & IPMI_AUTHSTATUS_NULL_USERS_ENABLED) ? "en" : "dis");
 		printf("  Anonymous login : %sabled\n",
-		       (rsp->data[2] & 1<<0) ? "en" : "dis");
+		       (rsp->data[2] & IPMI_AUTHSTATUS_ANONYMOUS_USERS_ENABLED) ? "en" : "dis");
 		printf("\n");
 	}
+	s->authstatus = rsp->data[2];
 
 	if (s->password &&
 	    (!s->authtype_set ||
@@ -1106,7 +1109,13 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	memcpy(&s->session_id, rsp->data + 1, 4);
 	s->in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
 	if (!s->in_seq) ++s->in_seq;
-	s->authtype = rsp->data[0] & 0xf;
+
+	if (s->authtype & IPMI_AUTHSTATUS_PER_MSG_DISABLED)
+		s->authtype = IPMI_SESSION_AUTHTYPE_NONE;
+	else if (s->authtype != rsp->data[0] & 0xf) {
+		printf("\nInvalid Session AuthType in response!!\n");
+		return -1;
+	}
 
 	if (verbose > 1) {
 		printf("\nSession Activated\n");

@@ -60,6 +60,7 @@
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/ipmi_raw.h>
+#include <ipmitool/ipmi_pef.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -92,6 +93,7 @@ struct ipmi_cmd {
 	{ ipmi_sensor_main,	"sensor",	"Print detailed sensor information" },
 	{ ipmi_fru_main,	"fru",		"Print built-in FRU and scan SDR for FRU locators" },
 	{ ipmi_sel_main,	"sel",		"Print System Evelnt Log" },
+	{ ipmi_pef_main,	"pef",		"Configure Platform Event Filtering (PEF)" },
 	{ ipmi_sol_main,	"sol",		"Configure IPMIv2.0 Serial-over-LAN" },
 	{ ipmi_isol_main,	"isol",		"Configure Intel IPMIv1.5 Serial-over-LAN" },
 	{ ipmi_user_main,	"user",		"Configure BMC users" },

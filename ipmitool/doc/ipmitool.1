@@ -310,6 +310,22 @@ This command will query the BMC for information about the SDR.
 This command will read the SDR and extract sensor information, then query each sensor and print its name, reading, and status.
 .RE
 .TP
+.I pef
+.RS
+.TP
+.I info
+This command will query the BMC and print information about the PEF supported features.
+.TP
+.I status
+This command prints the current PEF status (the last SEL entry processed by the BMC, etc).
+.TP
+.I policy
+This command lists the PEF policy table entries.  Each policy entry describes an alert destination.  A policy set is a collection of table entries.  PEF alert actions reference policy sets.
+.TP
+.I list
+This command lists the PEF table entries.  Each PEF entry relates a sensor event to an action.  When PEF is active, each platform event causes the BMC to scan this table for entries matching the event, and possible actions to be taken.  Actions are performed in priority order (higher criticality first).
+.RE
+.TP
 .I sensor
 .RS
 .TP

@@ -554,6 +554,7 @@ static void ipmi_fru_print_all(struct ipmi_intf * intf)
 	struct sdr_get_rs * header;
 	struct sdr_record_fru_device_locator * fru;
 	char desc[17];
+	unsigned char sav_addr;
 
 	printf ("Builtin FRU device\n");
 	ipmi_fru_print(intf, 0); /* TODO: Figure out if FRU device 0 may show up in SDR records. */
@@ -582,16 +583,17 @@ static void ipmi_fru_print_all(struct ipmi_intf * intf)
 		switch (fru->device_type_modifier) {
 		case 0x00:
 		case 0x02:
+			sav_addr = intf->target_addr;
 			intf->target_addr = ((fru->keys.dev_access_addr << 1)
 			                  |  (fru->keys.__reserved2 << 7));
 
 			if (intf->target_addr == IPMI_BMC_SLAVE_ADDR
 			&&  fru->keys.fru_device_id == 0)
 				printf("  (Builtin FRU device)\n");
-			else {
+			else
 				ipmi_fru_print(intf, fru->keys.fru_device_id);
-				intf->target_addr = IPMI_BMC_SLAVE_ADDR;
-			}
+
+			intf->target_addr = sav_addr;
 			break;
 		case 0x01:
 			ipmi_spd_print(intf, fru->keys.fru_device_id);
