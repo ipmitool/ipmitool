@@ -368,6 +368,39 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
+/* ipmi_mc_get_guid  -  print this MC GUID
+ *
+ * @intf:	ipmi interface
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+static int
+ipmi_mc_get_guid(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_GUID;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get GUID command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get GUID command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	printf("System GUID: %s\n", buf2str(rsp->data, rsp->data_len));
+
+	return 0;
+}
+
 /* ipmi_mc_main  -  top-level handler for MC functions
  *
  * @intf:	ipmi interface
@@ -401,6 +434,9 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (strncmp(argv[0], "info", 4) == 0) {
 		rc = ipmi_mc_get_deviceid(intf);
+	}
+	else if (strncmp(argv[0], "guid", 4) == 0) {
+		rc = ipmi_mc_get_guid(intf);
 	}
 	else if (strncmp(argv[0], "getenables", 10) == 0) {
 		rc = ipmi_mc_get_enables(intf);
