@@ -182,7 +182,7 @@ ipmitool_usage(void)
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 #ifndef __sun
 	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=USER]");
-	lprintf(LOG_NOTICE, "       -A authtype    Force use of authentication type NONE, PASSWORD, MD2, MD5 or OEM");
+	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
