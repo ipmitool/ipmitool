@@ -122,7 +122,7 @@ ipmi_sel_get_sensor_type(unsigned char code)
 			return st->type;
 		st++;
 	}
-	return NULL;
+	return "Unknown";
 }
 
 static void
@@ -437,8 +437,12 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 			printf("SEL Next ID: %04x\n", next_id);
 
 		next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
-		if (!next_id)
-			break;
+		if (!next_id) {
+			/* retry */
+			next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+			if (!next_id)
+				break;
+		}
 
 		if (verbose)
 			ipmi_sel_print_std_entry_verbose(&evt);
