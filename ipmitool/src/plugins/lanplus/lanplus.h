@@ -137,15 +137,11 @@
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_vals[];
 
-extern struct ipmi_session lan_session;
+extern struct ipmi_intf ipmi_lanplus_intf;
 
 struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 int  ipmi_lanplus_open(struct ipmi_intf * intf);
 void ipmi_lanplus_close(struct ipmi_intf * intf);
 int ipmiv2_lan_ping(struct ipmi_intf * intf);
-
-
-int lanplus_intf_setup(struct ipmi_intf ** intf);
-
 
 #endif /*IPMI_LAN_H*/

@@ -53,7 +53,6 @@
 #include <config.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
-#include <ipmitool/md5.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
@@ -80,6 +79,7 @@ static struct ipmi_rq_entry * ipmi_req_entries_tail;
 static sigjmp_buf jmpbuf;
 
 
+static int ipmi_lanplus_setup(struct ipmi_intf * intf);
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
@@ -114,11 +114,15 @@ static void ack_sol_packet(
 
 
 struct ipmi_intf ipmi_lanplus_intf = {
-	.open        = ipmi_lanplus_open,
-	.close       = ipmi_lanplus_close,
-	.sendrecv    = ipmi_lanplus_send_ipmi_cmd,
-	.recv_sol    = ipmi_lanplus_recv_sol,
-	.send_sol    = ipmi_lanplus_send_sol
+	name:		"lanplus",
+	desc:		"IPMI v2.0 RMCP+ LAN Interface",
+	setup:		ipmi_lanplus_setup,
+	open:		ipmi_lanplus_open,
+	close:		ipmi_lanplus_close,
+	sendrecv:	ipmi_lanplus_send_ipmi_cmd,
+	recv_sol:	ipmi_lanplus_recv_sol,
+	send_sol:	ipmi_lanplus_send_sol,
+	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
 
@@ -432,26 +436,6 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 
 	return 1;
 }
-
-
-/* special packet, no idea what it does */
-static int
-ipmiv2_lan_first(struct ipmi_intf * intf)
-{
-	unsigned char data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				   0x07, 0x20, 0x18, 0xc8, 0xc2, 0x01, 0x01, 0x3c };
-	ipmi_lan_send_packet(intf, data, 16);
-	return 0;
-}
-
-static int
-ipmi_lan_pedantic(struct ipmi_intf * intf)
-{
-	unsigned char data[10] = "dummy";
-	ipmi_lan_send_packet(intf, data, 10);
-	return 0;
-}
-
 
 
 /**
@@ -1460,7 +1444,7 @@ ipmi_lanplus_build_v2x_msg(
 	if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
 		(session->v2_data.auth_alg      != IPMI_AUTH_RAKP_NONE))
 	{
-		unsigned int i, hmac_length, integrity_pad_size, hmac_input_size;
+		unsigned int i, hmac_length, integrity_pad_size = 0, hmac_input_size;
 		unsigned char * hmac_output;
 		unsigned int start_of_session_trailer =
 			IPMI_LANPLUS_OFFSET_PAYLOAD +
@@ -1926,9 +1910,6 @@ ipmi_lanplus_send_payload(
 			printf("ipmi_lan_send_cmd failed\n");
 			return NULL;
 		}
-
-		if (intf->pedantic)
-			ipmi_lan_pedantic(intf);
 
 		usleep(100); 			/* Not sure what this is for */
 
@@ -2843,6 +2824,7 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 		free(intf->session);
 	
 	intf->session = NULL;
+	intf->opened = 0;
 	intf = NULL;
 }
 
@@ -2936,10 +2918,6 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		intf->close(intf);
 		return -1;
 	}
-
-
-	if (intf->pedantic)
-		ipmiv2_lan_first(intf);
 
 
 	/*
@@ -3095,22 +3073,15 @@ void test_crypt2()
 /**
  * lanplus_intf_setup
  */
-int
-lanplus_intf_setup(struct ipmi_intf ** intf)
+static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 {
 	//test_crypt1();
-    assert("lanplus_intf_setup");
+	assert("lanplus_intf_setup");
 
 	if (lanplus_seed_prng(16))
 		return -1;
 
-    *intf = &ipmi_lanplus_intf;
-	(*intf)->session = malloc(sizeof(struct ipmi_session));
-	memset((*intf)->session, 0, sizeof(struct ipmi_session));
-	return ((*intf)->session) ? 0 : -1;
+	intf->session = malloc(sizeof(struct ipmi_session));
+	memset(intf->session, 0, sizeof(struct ipmi_session));
+	return (intf->session) ? 0 : -1;
 }
-
-
-int
-intf_setup(struct ipmi_intf ** intf)
-	__attribute__ ((weak, alias("lanplus_intf_setup")));
