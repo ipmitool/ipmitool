@@ -65,7 +65,19 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char
 	k1 = __TO_B_EXP(sensor->bacc);
 	k2 = __TO_R_EXP(sensor->bacc);
 
-	return (float)(((m * val) + (b * pow(10, k1))) * pow(10, k2));
+	switch (sensor->unit.analog)
+	{
+	case 0:
+		return (float)(((m * val) + (b * pow(10, k1))) * pow(10, k2));
+	case 1:
+		if (val & 0x80) val ++;
+		/* Deliberately fall through to case 2. */
+	case 2:
+		return (float)(((m * (signed char)val) + (b * pow(10, k1))) * pow(10, k2));
+	default:
+		/* Ops! This isn't an analog sensor. */
+		return 0;
+	}
 }
 
 #define READING_UNAVAILABLE	0x20
@@ -91,6 +103,18 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
 	rsp = intf->sendrecv(intf, &req);
 
 	return rsp;
+}
+
+static const char *
+ipmi_sdr_get_sensor_type_desc(const unsigned char type)
+{
+	if (type <= SENSOR_TYPE_MAX)
+		return  sensor_type_desc[type];
+
+	if (type < 0xc0)
+		return "reserved";
+
+	return "OEM reserved";
 }
 
 static const char *
@@ -249,84 +273,121 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		}
 	}
 
-	if (!verbose) {
+	if (csv_output)
+	{
 		/*
-		 * print sensor name, reading, state
+		 * print sensor name, reading, unit, state
 		 */
-		if (csv_output)
-			printf("%s,",
-			       sensor->id_code ? desc : NULL);
+		printf("%s,", sensor->id_code ? desc : NULL);
+
+		if (validread)
+			printf("%.*f,", (val==(int)val) ? 0 : 3, val);
 		else
+			printf(",");
+
+		printf("%s,%s",
+			do_unit ? unitstr : "",
+			ipmi_sdr_get_status(rsp->data[2]));
+
+		if (verbose)
+		{
+			printf(",%d.%d,%s,%s,",
+				sensor->entity.id, sensor->entity.instance,
+				val2str(sensor->entity.id, entity_id_vals),
+				ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+
+#define CSV_PRINT_HELPER(flag,value) \
+	if(flag) printf("%.3f,", sdr_convert_sensor_reading(sensor, value)); else printf(",");
+
+			CSV_PRINT_HELPER(sensor->analog_flag.nominal_read, sensor->nominal_read);
+			CSV_PRINT_HELPER(sensor->analog_flag.normal_min, sensor->normal_min);
+			CSV_PRINT_HELPER(sensor->analog_flag.normal_max, sensor->normal_max);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x20, sensor->threshold.upper.non_recover);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x10, sensor->threshold.upper.critical);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x08, sensor->threshold.upper.non_critical);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x04, sensor->threshold.lower.non_recover);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x02, sensor->threshold.lower.critical);
+			CSV_PRINT_HELPER(sensor->mask.threshold.set & 0x01, sensor->threshold.lower.non_critical);
+
+			printf ("%.3f,%.3f",
+				sdr_convert_sensor_reading(sensor, sensor->sensor_min),
+				sdr_convert_sensor_reading(sensor, sensor->sensor_max));
+		}
+		printf("\n");
+	}
+	else
+	{
+		if (!verbose)
+		{
+			/*
+			 * print sensor name, reading, state
+			 */
 			printf("%-16s | ",
 			       sensor->id_code ? desc : NULL);
 
-		memset(sval, 0, sizeof(sval));
-		if (validread) {
-			i += snprintf(sval, sizeof(sval), "%.*f",
-				      (val==(int)val) ? 0 : 3, val);
-		} else {
-			i += snprintf(sval, sizeof(sval), "no reading");
+			i = 0;
+			memset(sval, 0, sizeof(sval));
+			if (validread) {
+				i += snprintf(sval, sizeof(sval), "%.*f %s",
+					(val==(int)val) ? 0 : 3, val,
+					do_unit ? unitstr : "");
+			} else {
+				i += snprintf(sval, sizeof(sval), "no reading ");
+			}
+			printf("%s", sval);
+
 			i--;
-		}
-		printf("%s", sval);
-
-		if (csv_output)
-			printf(",");
-
-		if (validread) {
-			if (!csv_output)
-				printf(" ");
-			if (do_unit)
-				printf("%s", unitstr);
-		}
-
-		if (csv_output)
-			printf(",");
-		else {
 			for (; i<sizeof(sval); i++)
 				printf(" ");
 			printf(" | ");
+
+			printf("%s", ipmi_sdr_get_status(rsp->data[2]));
+			printf("\n");
 		}
-
-		printf("%s", ipmi_sdr_get_status(rsp->data[2]));
-		printf("\n");
-	}
-	else {
-		printf("Sensor ID              : %s (0x%x)\n",
-		       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
-		printf("Entity ID              : %d.%d (%s)\n",
-		       sensor->entity.id, sensor->entity.instance,
-		       val2str(sensor->entity.id, entity_id_vals));
-
-		printf("Sensor Reading         : ");
-		if (validread)
-			printf("%.*f %s\n", (val==(int)val) ? 0 : 3, val, unitstr);
 		else
-			printf("not present\n");
+		{
+			printf("Sensor ID              : %s (0x%x)\n",
+			       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
+			printf("Entity ID              : %d.%d (%s)\n",
+			       sensor->entity.id, sensor->entity.instance,
+			       val2str(sensor->entity.id, entity_id_vals));
 
-		printf("Status                 : %s\n",
-		       ipmi_sdr_get_status(rsp->data[2]));
+			printf("Sensor Type            : %s\n", ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 
-		printf("Nominal Reading        : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->nominal_read));
-		printf("Normal Minimum         : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->normal_min));
-		printf("Normal Maximum         : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->normal_max));
+			printf("Sensor Reading         : ");
+			if (validread)
+				printf("%.*f %s\n", (val==(int)val) ? 0 : 3, val, unitstr);
+			else
+				printf("not present\n");
 
-		printf("Upper non-recoverable  : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_recover));
-		printf("Upper critical         : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.critical));
-		printf("Upper non-critical     : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_critical));
-		printf("Lower non-recoverable  : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_recover));
-		printf("Lower critical         : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.critical));
-		printf("Lower non-critical     : %.3f\n",
-		       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_critical));
-		printf("\n");
+			printf("Status                 : %s\n",
+			       ipmi_sdr_get_status(rsp->data[2]));
+
+			printf("Nominal Reading        : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->nominal_read));
+			printf("Normal Minimum         : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->normal_min));
+			printf("Normal Maximum         : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->normal_max));
+
+			printf("Upper non-recoverable  : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_recover));
+			printf("Upper critical         : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.critical));
+			printf("Upper non-critical     : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.upper.non_critical));
+			printf("Lower non-recoverable  : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_recover));
+			printf("Lower critical         : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.critical));
+			printf("Lower non-critical     : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->threshold.lower.non_critical));
+			printf("Minimum sensor range   : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->sensor_min));
+			printf("Maximum sensor range   : %.3f\n",
+			       sdr_convert_sensor_reading(sensor, sensor->sensor_max));
+			printf("\n");
+		}
 	}
 }
 
@@ -360,8 +421,8 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		printf("Entity ID              : %d.%d (%s)\n",
 		       sensor->entity.id, sensor->entity.instance,
 		       val2str(sensor->entity.id, entity_id_vals));
+		printf("Sensor Type            : %s\n", ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 		if (verbose > 1) {
-			printf("Sensor Type Code       : 0x%02x\n", sensor->sensor.type);
 			printf("Event Type Code        : 0x%02x\n", sensor->event_type);
 			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR READING");
 		}

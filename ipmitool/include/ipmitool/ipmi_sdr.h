@@ -368,6 +368,19 @@ static const char * unit_desc[] __attribute__((unused)) = {
 	"error", "correctable error", "uncorrectable error",
 };
 
+/* sensor type codes (IPMI v1.5 table 36.3) */
+#define SENSOR_TYPE_MAX 0x29
+static const char * sensor_type_desc[] __attribute__((unused)) = {
+	"reserved",
+	"Temperature", "Voltage", "Current", "Fan", "Physical Security", "Platform Security Violation Attempt",
+	"Processor", "Power Supply", "Power Unit", "Cooling Device", "Other", "Memory", "Drive Slot / Bay",
+	"POST Memory Resize", "System Firmware Progress", "Event Logging Disabled", "Watchdog", "System Event",
+	"Critical Interrupt", "Button", "Module / Board", "Microcontroller / Coprocessor", "Add-in Card",
+	"Chassis", "Chip Set", "Other FRU", "Cable / Interconnect", "Terminator", "System Boot Initiated",
+	"Boot Error", "OS Boot", "OS Critical Stop", "Slot / Connector", "System ACPI Power State", "Watchdog",
+	"Platform Alert", "Entity Presence", "Monitor ASIC / IC", "LAN", "Management Subsystem Health", "Battery"
+};
+
 struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
 struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
