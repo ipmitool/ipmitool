@@ -145,5 +145,8 @@ ipmitool_lan_set "defgw macaddr" $DEF_ROUTE_MAC
 ipmitool_lan_set "auth callback,user,operator,admin" "md2,md5"
 ipmitool_lan_set "access" "on"
 ipmitool_lan_set "user"
+ipmitool_lan_set "arp generate" "on"
+ipmitool_lan_set "arp interval" "8"
 
 exit 0
+
