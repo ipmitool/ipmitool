@@ -54,46 +54,12 @@
 #include <ipmitool/ipmi_channel.h>
 
 static int
-ipmi_current_channel_medium(struct ipmi_intf * intf)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char channel = 0xE;
-	struct get_channel_info_rsp info;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = IPMI_GET_CHANNEL_INFO;
-	req.msg.data = &channel;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("Error in Get Channel Info command\n");
-		return -1;
-	}
-	else if (rsp->ccode) {
-		printf("Error in Get Channel Info command: %s\n",
-		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	memcpy(&info, rsp->data, sizeof(struct get_channel_info_rsp));
-
-	if (verbose)
-		printf("Channel type: %s\n",
-		       val2str(info.channel_medium, ipmi_channel_medium_vals));
-
-	return info.channel_medium;
-}
-
-static int
 ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char rqdata[8];
-	int chmed;
+	unsigned char chmed;
 	int p = 0;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -107,17 +73,17 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 	req.msg.data_len = 7;
 
 	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == 0xc) {
+	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
 		/* system interface, need extra generator ID */
 		req.msg.data_len = 8;
 		rqdata[p++] = 0x20;
 	}
 
-	printf("Sending ");
 	/* IPMB/LAN/etc */
 	switch (num) {
 	case 1:			/* temperature */
-		printf("Temperature - Upper Critical - Going High");
+		printf("Sending SAMPLE event: Temperature - "
+		       "Upper Critical - Going High\n");
 		rqdata[p++] = 0x04;	/* EvMRev */
 		rqdata[p++] = 0x01;	/* Sensor Type */
 		rqdata[p++] = 0x30;	/* Sensor # */
@@ -127,7 +93,8 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 		rqdata[p++] = 0x00;	/* Event Data 3 */
 		break;
 	case 2:			/* voltage error */
-		printf("Voltage Threshold - Lower Critical - Going Low");
+		printf("Sending SAMPLE event: Voltage Threshold - "
+		       "Lower Critical - Going Low\n");
 		rqdata[p++] = 0x04;	/* EvMRev */
 		rqdata[p++] = 0x02;	/* Sensor Type */
 		rqdata[p++] = 0x60;	/* Sensor # */
@@ -137,7 +104,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 		rqdata[p++] = 0x00;	/* Event Data 3 */
 		break;
 	case 3:			/* correctable ECC */
-		printf("Memory - Correctable ECC");
+		printf("Sending SAMPLE event: Memory - Correctable ECC\n");
 		rqdata[p++] = 0x04;	/* EvMRev */
 		rqdata[p++] = 0x0c;	/* Sensor Type */
 		rqdata[p++] = 0x53;	/* Sensor # */
@@ -147,22 +114,25 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 		rqdata[p++] = 0x00;	/* Event Data 3 */
 		break;
 	default:
-		printf("Invalid event number: %d\n", num);
+		lprintf(LOG_ERR, "Invalid event number: %d", num);
 		return -1;
 	}
 
-	printf(" event to BMC\n");
-
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Platform Event Message Command\n", rsp?rsp->ccode:0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Platform Event Message command failed");
+		return -1;
+	}
+	else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Platform Event Message command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
 	return 0;
 }
 
-static void
+static int
 ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 {
 	FILE * fp;
@@ -172,10 +142,12 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	unsigned char rqdata[8];
 	char buf[1024];
 	char * ptr, * tok;
-	int i, j, chmed;
+	int i, j;
+	unsigned char chmed;
+	int rc = 0;
 
-	if (!file)
-		return;
+	if (file == NULL)
+		return -1;
 
 	/* must be admin privilege to do this */
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -190,18 +162,18 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	req.msg.data_len = 7;
 
 	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == 0xc) {
+	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
 		/* system interface, need extra generator ID */
 		rqdata[0] = 0x20;
 		req.msg.data_len = 8;
 	}
 
 	fp = ipmi_open_file_read(file);
-	if (!fp)
-		return;
+	if (fp == NULL)
+		return -1;
 
-	while (!feof(fp)) {
-		if (!fgets(buf, 1024, fp))
+	while (feof(fp) != 0) {
+		if (fgets(buf, 1024, fp) == NULL)
 			continue;
 
 		/* clip off optional comment tail indicated by # */
@@ -218,7 +190,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		ptr = buf;
 		while (isspace(*ptr))
 			ptr++;
-		if (!strlen(ptr))
+		if (strlen(ptr) == 0)
 			continue;
 
 		/* parse the event, 7 bytes with optional comment */
@@ -229,7 +201,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			if (i == 7)
 				break;
 			j = i++;
-			if (chmed == 0xc)
+			if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM)
 				j++;
 			rqdata[j] = (unsigned char)strtol(tok, NULL, 0);
 			tok = strtok(NULL, " ");
@@ -244,7 +216,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		sel_event.record_id = 0;
 		sel_event.gen_id = 2;
 
-		j = (chmed == 0xc) ? 1 : 0;
+		j = (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) ? 1 : 0;
 		sel_event.evm_rev = rqdata[j++];
 		sel_event.sensor_type = rqdata[j++];
 		sel_event.sensor_num = rqdata[j++];
@@ -257,39 +229,48 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		ipmi_sel_print_std_entry(&sel_event);
 		
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL)
+		if (rsp == NULL) {
 			lprintf(LOG_ERR, "Platform Event Message command failed");
-		else if (rsp->ccode > 0)
+			rc = -1;
+		}
+		else if (rsp->ccode > 0) {
 			lprintf(LOG_ERR, "Platform Event Message command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
+			rc = -1;
+		}
 	}
 
 	fclose(fp);
+	return rc;
 }
 
-int ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	unsigned char c;
+	int rc = 0;
 
-	if (!argc || !strncmp(argv[0], "help", 4)) {
-		printf("usage: event <num>\n");
-		printf("   1 : Temperature - Upper Critical - Going High\n");
-		printf("   2 : Voltage Threshold - Lower Critical - Going Low\n");
-		printf("   3 : Memory - Correctable ECC\n");
-		printf("usage: event file <filename>\n");
-		printf("   Will read list of events from file\n");
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "usage: event <num>");
+		lprintf(LOG_NOTICE, "   1 : Temperature - Upper Critical - Going High");
+		lprintf(LOG_NOTICE, "   2 : Voltage Threshold - Lower Critical - Going Low");
+		lprintf(LOG_NOTICE, "   3 : Memory - Correctable ECC");
+		lprintf(LOG_NOTICE, "usage: event file <filename>");
+		lprintf(LOG_NOTICE, "   Will read list of events from file");
 		return 0;
 	}
 
-	if (!strncmp(argv[0], "file", 4)) {
-		if (argc < 2)
-			printf("usage: event file <filename>\n");
-		else
-			ipmi_event_fromfile(intf, argv[1]);
+	if (strncmp(argv[0], "file", 4) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: event file <filename>\n");
+			rc = -1;
+		} else {
+			rc = ipmi_event_fromfile(intf, argv[1]);
+		}
 	} else {
 		c = (unsigned char)strtol(argv[0], NULL, 0);
-		ipmi_send_platform_event(intf, c);
+		rc = ipmi_send_platform_event(intf, c);
 	}
 
-	return 0;
+	return rc;
 }

@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_user.h>
@@ -98,10 +99,15 @@ ipmi_get_user_access(
 	
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-	{
-		printf("Error:%x Get User Access Command (user 0x%x)\n",
-		       rsp ? rsp->ccode : 0, msg_data[1]);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get User Access command failed "
+			"(channel %d, user %d)", channel_number, user_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get User Access command failed "
+			"(channel %d, user %d): %s", channel_number, user_id,
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -146,10 +152,14 @@ ipmi_get_user_name(
 	
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-	{
-		printf("Error:%x Get User Name Command (user 0x%x)\n",
-		       rsp ? rsp->ccode : 0, msg_data[0]);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get User Name command failed (user %d)",
+			user_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get User Name command failed (user %d): %s",
+			user_id, val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -320,13 +330,16 @@ ipmi_user_set_username(
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-	{
-		printf("Error:%x Set User Name Command\n",
-		       rsp ? rsp->ccode : 0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Set User Name command failed (user %d, name %s)",
+			user_id, name);
 		return -1;
 	}
-
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set User Name command failed (user %d, name %s): %s",
+			user_id, name, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
 
 	return 0;
 }
@@ -351,7 +364,6 @@ ipmi_user_set_password(
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
 	char	             * msg_data;
-	int                    ret = 0;
 
 	int password_length = (is_twenty_byte_password? 20 : 16);
 
@@ -375,20 +387,23 @@ ipmi_user_set_password(
 
 	memset(msg_data + 2, 0, password_length);
 
-	if (password)
+	if (password != NULL)
 		strncpy(msg_data + 2, password, password_length);
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-	{
-		printf("Error:%x Set User Password Command\n",
-		       rsp ? rsp->ccode : 0);
-		ret = (rsp? rsp->ccode : -1);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
+			user_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set User Password command failed (user %d): %s",
+			user_id, val2str(rsp->ccode, completion_code_vals));
+		return rsp->ccode;
 	}
 
-
-	return ret;
+	return 0;
 }
 
 
@@ -413,16 +428,21 @@ ipmi_user_test_password(
 				     password,
 				     is_twenty_byte_password);
 
-	if (! ret)
+	switch (ret) {
+	case 0:
 		printf("Success\n");
-	else if (ret == 0x80)
+		break;
+	case 0x80:
 		printf("Failure: password incorrect\n");
- 	else if (ret == 0x81)
+		break;
+	case 0x81:
 		printf("Failure: wrong password size\n");
-	else
+		break;
+	default:
 		printf("Unknown error\n");
+	}
 
-	return (ret ? -1 : 0);
+	return ((ret == 0) ? 0 : -1);
 }
 
 	
@@ -433,25 +453,22 @@ ipmi_user_test_password(
 void
 print_user_usage()
 {
-	printf("\n");
-	printf("User Commands: summary [<channel number>]\n");
-	printf("		   list	   [<channel number>]\n");
-	printf("		   set name	<user id> <username>\n");
-	printf("		   set password <user id> [<password>]\n");
-	printf("		   disable	<user id> [<channel number>]\n");
-	printf("		   enable	<user id> [<channel number>]\n");
-	printf("		   test		<user id> <16|20> [<password]>\n");
-	printf("\n");
+	lprintf(LOG_NOTICE, "User Commands: summary [<channel number>]");
+	lprintf(LOG_NOTICE, "		   list	   [<channel number>]");
+	lprintf(LOG_NOTICE, "		   set name	<user id> <username>");
+	lprintf(LOG_NOTICE, "		   set password <user id> [<password>]");
+	lprintf(LOG_NOTICE, "		   disable	<user id> [<channel number>]");
+	lprintf(LOG_NOTICE, "		   enable	<user id> [<channel number>]");
+	lprintf(LOG_NOTICE, "		   test		<user id> <16|20> [<password]>\n");
 }
-
-
 
 
 const char *
 ipmi_user_build_password_prompt(unsigned char user_id)
 {
 	static char prompt[128];
-	sprintf(prompt, "Password for user %d: ", user_id);
+	memset(prompt, 0, 128);
+	snprintf(prompt, 128, "Password for user %d: ", user_id);
 	return prompt;
 }
 
@@ -472,13 +489,16 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Help
 	 */
-	if (!argc || !strncmp(argv[0], "help", 4))
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0)
+	{
 		print_user_usage();
+	}
 
 	/*
 	 * Summary
 	 */
-	else if (!strncmp(argv[0], "summary", 7)) {
+	else if (strncmp(argv[0], "summary", 7) == 0)
+	{
 		unsigned char channel;
 
 		if (argc == 1)
@@ -498,7 +518,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * List
 	 */
-	else if (!strncmp(argv[0], "list", 4)) {
+	else if (strncmp(argv[0], "list", 4) == 0)
+	{
 		unsigned char channel;
 
 		if (argc == 1)
@@ -519,21 +540,21 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Test
 	 */
-	else if (!strncmp(argv[0], "test", 4))
+	else if (strncmp(argv[0], "test", 4) == 0)
 	{
 		// a little fucking irritating, isn't it
 		if ((argc == 3 || argc == 4)  &&
-		    ((!strncmp(argv[2], "16", 2)) ||
-		     (!strncmp(argv[2], "20", 2))))
+		    ((strncmp(argv[2], "16", 2) == 0) ||
+		     (strncmp(argv[2], "20", 2) == 0)))
 		{
 			char * password = NULL;
 			int password_length = atoi(argv[2]);
 			unsigned char user_id = (unsigned char)strtol(argv[1],
 								      NULL,
 								      0);
-			if (! user_id)
+			if (user_id == 0)
 			{
-				printf("Error. Invalid user ID: %d\n", user_id);
+				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
 				return -1;
 			}
 
@@ -547,20 +568,17 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 					ipmi_user_build_password_prompt(user_id);
 				
 #ifdef HAVE_GETPASSPHRASE
-				if ((tmp = getpassphrase (password_prompt)))
+				tmp = getpassphrase (password_prompt);
 #else
-				if ((tmp = (char*)getpass(password_prompt)))
+				tmp = (char*)getpass (password_prompt);
 #endif
-				{
+				if (tmp != NULL)
 					password = strdup(tmp);
-					
-				}
-				
 			}
 			else
 				password = argv[3];
 
-			
+
 			retval = ipmi_user_test_password(intf,
 							 user_id,
 							 password,
@@ -579,21 +597,21 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Set
 	 */
-	else if (!strncmp(argv[0], "set", 3))
+	else if (strncmp(argv[0], "set", 3) == 0)
 	{
 		/*
 		 * Set Password
 		 */
 		if ((argc >= 3) &&
-		    (! strcmp("password", argv[1]))) 
+		    (strncmp("password", argv[1], 8) == 0)) 
 		{
 			char * password = NULL;
 			unsigned char user_id = (unsigned char)strtol(argv[2],
 								      NULL,
 								      0);
-			if (! user_id)
+			if (user_id == 0)
 			{
-				printf("Error. Invalid user ID: %d\n", user_id);
+				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
 				return -1;
 			}
 
@@ -607,25 +625,32 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 					ipmi_user_build_password_prompt(user_id);
 
 #ifdef HAVE_GETPASSPHRASE
-				if ((tmp = getpassphrase (password_prompt)))
+				tmp = getpassphrase (password_prompt);
 #else
-				if ((tmp = (char*)getpass (password_prompt)))
+				tmp = (char*)getpass (password_prompt);
 #endif
+				if (tmp != NULL)
 				{
 					password = strdup(tmp);
 
 #ifdef HAVE_GETPASSPHRASE
-					if ((tmp = getpassphrase (password_prompt)))
+					tmp = getpassphrase (password_prompt);
 #else
-						if ((tmp = (char*)getpass (password_prompt)))
+					tmp = (char*)getpass (password_prompt);
 #endif
+					if (tmp != NULL)
+					{
+						if (strlen(password) != strlen(tmp))
 						{
-							if (strcmp(password, tmp))
-							{
-								printf("Error.  Passwords to not match.\n");
-								return -1;
-							}
+							lprintf(LOG_ERR, "Passwords do not match");
+							return -1;
 						}
+						if (strncmp(password, tmp, strlen(tmp)))
+						{
+							lprintf(LOG_ERR, "Passwords to not match");
+							return -1;
+						}
+					}
 				}
 			}
 			else
@@ -633,7 +658,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			if (strlen(password) > 20)
 			{
-				printf("Error.  Password is too long (> 20 bytes).\n");
+				lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
 				return -1;
 			}
 			
@@ -650,7 +675,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		 * Set Name
 		 */
 		else if ((argc >= 2) &&
-			 (! strcmp("name", argv[1])))
+			 (strncmp("name", argv[1], 4) == 0))
 		{
 			if (argc != 4)
 			{
@@ -675,8 +700,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Disable / Enable
 	 */
-	else if ((!strncmp(argv[0], "disable", 7)) ||
-		 (!strncmp(argv[0], "enable",  6)))
+	else if ((strncmp(argv[0], "disable", 7) == 0) ||
+		 (strncmp(argv[0], "enable",  6) == 0))
 	{
 		unsigned char user_id;
 		unsigned char operation;
@@ -693,15 +718,15 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		user_id = (unsigned char)strtol(argv[1],
 						NULL,
 						0);
-		if (! user_id)
+		if (user_id == 0)
 		{
-			printf("Error. Invalid user ID: %d\n", user_id);
+			lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
 			return -1;
 		}
 
 
-		operation = (!strncmp(argv[0], "disable", 7))?
-			IPMI_PASSWORD_DISABLE_USER: IPMI_PASSWORD_ENABLE_USER;
+		operation = (strncmp(argv[0], "disable", 7) == 0) ?
+			IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
 
 		retval = ipmi_user_set_password(intf,
 						user_id,
@@ -715,7 +740,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else
 	{
 		print_user_usage();
-		retval = -1;
 	}
 
 	return retval;

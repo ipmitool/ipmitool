@@ -51,8 +51,10 @@
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_lanp.h>
+#include <ipmitool/ipmi_channel.h>
 
 extern int verbose;
 
@@ -82,11 +84,11 @@ get_lan_param(struct ipmi_intf * intf, unsigned char chan, int param)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-		lprintf(LOG_INFO, "Unable to get LAN Parameter");
+		lprintf(LOG_INFO, "Get LAN Parameter command failed");
 		return NULL;
 	}
 	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Lan Parameter failed: %s",
+		lprintf(LOG_ERR, "Get LAN Parameter command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return NULL;
 	}
@@ -323,7 +325,22 @@ static int
 ipmi_lan_print(struct ipmi_intf * intf, unsigned char chan)
 {
 	struct lan_param * p;
+	unsigned char medium;
 	int rc = 0;
+
+	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
+		lprintf(LOG_ERR, "Invalid Channel %d", chan);
+		return -1;
+	}
+
+	/* find type of channel and only accept 802.3 LAN */
+	medium = ipmi_get_channel_medium(intf, chan);
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
+	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
+			chan, val2str(medium, ipmi_channel_medium_vals), medium);
+		return -1;
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
 	if (p)
@@ -681,7 +698,7 @@ static int
 ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	unsigned char data[32];
-	unsigned char chan;
+	unsigned char chan, medium;
 	int rc = 0;
 
 	if (argc < 2) {
@@ -689,13 +706,26 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 
-	chan = (unsigned char)strtol(argv[0], NULL, 0);
-
-	if ((chan < 1) || (chan > IPMI_CHANNEL_NUMBER_MAX) ||
-	    (strncmp(argv[0], "help", 4) == 0) ||
-	    (strncmp(argv[1], "help", 4) == 0)) {
+	if (strncmp(argv[0], "help", 4) == 0 ||
+	    strncmp(argv[1], "help", 4) == 0) {
 		ipmi_lan_set_usage();
 		return 0;
+	}
+
+	chan = (unsigned char)strtol(argv[0], NULL, 0);
+
+	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
+		lprintf(LOG_ERR, "Invalid Channel %d", chan);
+		ipmi_lan_set_usage();
+		return -1;
+	}
+
+	/* find type of channel and only accept 802.3 LAN */
+	medium = ipmi_get_channel_medium(intf, chan);
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN ||
+	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		lprintf(LOG_ERR, "Channel %d is not a LAN channel!", chan);
+		return -1;
 	}
 
 	memset(&data, 0, sizeof(data));

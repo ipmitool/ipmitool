@@ -222,8 +222,9 @@ struct set_user_access_data {
 #endif
 } __attribute__ ((packed));
 
-
-int ipmi_channel_main(struct ipmi_intf *, int, char **);
+unsigned char ipmi_get_channel_medium(struct ipmi_intf * intf, unsigned char channel);
+unsigned char ipmi_current_channel_medium(struct ipmi_intf * intf);
+int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);
 int ipmi_get_channel_auth_cap(struct ipmi_intf * intf, unsigned char channel, unsigned char priv);
 int ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 

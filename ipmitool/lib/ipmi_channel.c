@@ -526,21 +526,59 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
+unsigned char
+ipmi_get_channel_medium(struct ipmi_intf * intf, unsigned char channel)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct get_channel_info_rsp info;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_GET_CHANNEL_INFO;
+	req.msg.data = &channel;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get Channel Info command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Info command failed: %s",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	memcpy(&info, rsp->data, sizeof(struct get_channel_info_rsp));
+
+	lprintf(LOG_DEBUG, "Channel type: %s",
+		val2str(info.channel_medium, ipmi_channel_medium_vals));
+
+	return info.channel_medium;
+}
+
+unsigned char
+ipmi_current_channel_medium(struct ipmi_intf * intf)
+{
+	return ipmi_get_channel_medium(intf, 0xE);
+}
+
 void
 printf_channel_usage()
 {
-	printf("Channel Commands: authcap   <channel number> <max privilege>\n");
-	printf("                  getaccess <channel number> [user id]\n");
-	printf("                  setaccess <channel number> <user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]\n");
-	printf("                  info      [channel number]\n");
-	printf("\n");
-	printf("Possible privilege levels are:\n");
-	printf("   1   Callback level\n");
-	printf("   2   User level\n");
-	printf("   3   Operator level\n");
-	printf("   4   Administrator level\n");
-	printf("   5   OEM Proprietary level\n");
-	printf("  15   No access\n");
+	lprintf(LOG_NOTICE, "Channel Commands: authcap   <channel number> <max privilege>");
+	lprintf(LOG_NOTICE, "                  getaccess <channel number> [user id]");
+	lprintf(LOG_NOTICE, "                  setaccess <channel number> "
+		"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
+	lprintf(LOG_NOTICE, "                  info      [channel number]\n");
+	lprintf(LOG_NOTICE, "Possible privilege levels are:");
+	lprintf(LOG_NOTICE, "   1   Callback level");
+	lprintf(LOG_NOTICE, "   2   User level");
+	lprintf(LOG_NOTICE, "   3   Operator level");
+	lprintf(LOG_NOTICE, "   4   Administrator level");
+	lprintf(LOG_NOTICE, "   5   OEM Proprietary level");
+	lprintf(LOG_NOTICE, "  15   No access");
 }
 
 

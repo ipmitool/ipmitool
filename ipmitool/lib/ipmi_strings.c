@@ -210,19 +210,19 @@ const struct valstr ipmi_channel_protocol_vals[] = {
 
 
 const struct valstr ipmi_channel_medium_vals[] = {
-	{ 0x00, "reserved" },
-	{ 0x01, "IPMB (I2C)" },
-	{ 0x02, "ICMB v1.0" },
-	{ 0x03, "ICMB v0.9" },
-	{ 0x04, "802.3 LAN" },
-	{ 0x05, "Serial/Modem" },
-	{ 0x06, "Other LAN" },
-	{ 0x07, "PCI SMBus" },
-	{ 0x08, "SMBus v1.0/v1.1" },
-	{ 0x09, "SMBus v2.0" },
-	{ 0x0a, "USB 1.x" },
-	{ 0x0b, "USB 2.x" },
-	{ 0x0c, "System Interface" },
+	{ IPMI_CHANNEL_MEDIUM_RESERVED,	"reserved" },
+	{ IPMI_CHANNEL_MEDIUM_IPMB,	"IPMB (I2C)" },
+	{ IPMI_CHANNEL_MEDIUM_ICMB_1,	"ICMB v1.0" },
+	{ IPMI_CHANNEL_MEDIUM_ICMB_09,	"ICMB v0.9" },
+	{ IPMI_CHANNEL_MEDIUM_LAN,	"802.3 LAN" },
+	{ IPMI_CHANNEL_MEDIUM_SERIAL,	"Serial/Modem" },
+	{ IPMI_CHANNEL_MEDIUM_LAN_OTHER,"Other LAN" },
+	{ IPMI_CHANNEL_MEDIUM_SMBUS_PCI,"PCI SMBus" },
+	{ IPMI_CHANNEL_MEDIUM_SMBUS_1,	"SMBus v1.0/v1.1" },
+	{ IPMI_CHANNEL_MEDIUM_SMBUS_2,	"SMBus v2.0" },
+	{ IPMI_CHANNEL_MEDIUM_USB_1,	"USB 1.x" },
+	{ IPMI_CHANNEL_MEDIUM_USB_2,	"USB 2.x" },
+	{ IPMI_CHANNEL_MEDIUM_SYSTEM,	"System Interface" },
 	{ 0x00, NULL },
 };
 
