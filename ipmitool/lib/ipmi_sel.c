@@ -652,6 +652,8 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 		else
 			ipmi_sel_print_std_entry(&evt);
 	}
+
+	return 0;
 }
 
 static uint16_t
