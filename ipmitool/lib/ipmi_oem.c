@@ -49,9 +49,10 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		setup:	ipmi_oem_supermicro,
 	},
 	{
-		name:	"intelwv2",
-		desc:	"Intel SE7501WV2 BMC with extra LAN communication support",
+		name:	"intelplus",
+		desc:	"Intel IPMI 2.0 BMC with RMCP+ communication support",
 	},
+
 	{ 0 },
 };
 
@@ -70,9 +71,7 @@ ipmi_oem_print(void)
 {
 	struct ipmi_oem_handle * oem;
 	lprintf(LOG_NOTICE, "\nOEM Support:");
-	for (oem=ipmi_oem_list; oem->setup != NULL; oem++) {
-		if (oem->name == NULL || oem->desc == NULL)
-			continue;
+	for (oem=ipmi_oem_list; oem->name != NULL && oem->desc != NULL; oem++) {
 		lprintf(LOG_NOTICE, "\t%-12s %s", oem->name, oem->desc);
 	}
 	lprintf(LOG_NOTICE, "");
@@ -90,6 +89,7 @@ int
 ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 {
 	struct ipmi_oem_handle * oem;
+	int i;
 	int rc = 0;
 
 	if (strncmp(oemtype, "help", 4) == 0 ||
@@ -99,7 +99,7 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 		return -1;
 	}
 
-	for (oem=ipmi_oem_list; oem->setup != NULL; oem++) {
+	for (oem=ipmi_oem_list, i=0; i < sizeof(ipmi_oem_list)/sizeof(struct ipmi_oem_handle); oem++, i++) {
 		if (oem->name == NULL)
 			continue;
 		if (strncmp(oemtype, oem->name, strlen(oem->name)) == 0)
