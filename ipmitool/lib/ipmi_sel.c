@@ -117,6 +117,7 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 
         if (desc == NULL)
 	        return;
+	*desc = NULL;
 
 	if (rec->event_type == 0x6f) {
 		evt = sensor_specific_types;
