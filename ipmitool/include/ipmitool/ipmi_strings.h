@@ -39,6 +39,10 @@
 
 #include <ipmitool/helper.h>
 
+extern const struct valstr completion_code_vals[];
+extern const struct valstr entity_id_vals[];
+extern const struct valstr entity_device_type_vals[];
+
 extern const struct valstr ipmi_channel_activity_type_vals[];
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr impi_bit_rate_vals[];
@@ -47,8 +51,5 @@ extern const struct valstr ipmi_authtype_session_vals[];
 extern const struct valstr ipmi_authtype_vals[];
 extern const struct valstr ipmi_channel_protocol_vals[];
 extern const struct valstr ipmi_channel_medium_vals[];
-extern const struct valstr ipmi_completion_code_vals[];
-extern const struct valstr entity_id_vals[];
-extern const struct valstr entity_device_type_vals[];
 
 #endif /*IPMI_STRINGS_H*/
