@@ -213,6 +213,8 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
 
 	printf("POH Counter  : %li hours total (%li days, %li hours)\n",
 	       (long)count, (long)(count / 24), (long)(count % 24));
+
+	return 0;
 }
 
 static int
