@@ -1973,7 +1973,8 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 	}
 
 	/* If it's not an ACK, remember that we saw it. */
-	if (rsp->payload.sol_packet.packet_sequence_number)
+	if (rsp &&
+		rsp->payload.sol_packet.packet_sequence_number)
 	{
 		intf->session->sol_data.last_received_sequence_number =
 			rsp->payload.sol_packet.packet_sequence_number;
@@ -2096,7 +2097,7 @@ static int impi_close_session_cmd(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		printf("error in Close Session Command\n");
+		/* Looks like the session was closed */
 		return -1;
 	}
 	if (verbose > 2)
