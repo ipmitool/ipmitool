@@ -132,3 +132,45 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 	return intf;
 }
 
+
+int ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
+{
+	if (!intf || !intf->session)
+		return -1;
+	memset(intf->session->hostname, 0, 16);
+	memcpy(intf->session->hostname, hostname, min(strlen(hostname), 64));
+}
+
+int ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
+{
+	if (!intf || !intf->session)
+		return -1;
+	memset(intf->session->username, 0, 16);
+	memcpy(intf->session->username, username, min(strlen(username), 16));
+}
+
+int ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
+{
+	if (!intf || !intf->session)
+		return -1;
+	memset(intf->session->authcode, 0, 16);
+	if (password) {
+		intf->session->password = 1;
+		memcpy(intf->session->authcode, password, min(strlen(password), 16));
+	}
+}
+
+int ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char level)
+{
+	if (!intf || !intf->session)
+		return -1;
+	if (!intf->session->privlvl)
+		intf->session->privlvl = level;
+}
+
+int ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
+{
+	if (!intf || !intf->session)
+		return -1;
+	intf->session->port = port;
+}
