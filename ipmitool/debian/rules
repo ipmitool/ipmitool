@@ -18,9 +18,12 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./configure --enable-intf-lan --enable-intf-open \
+	./configure --prefix=/usr \
+		    --with-pluginpath=/usr/lib/ipmitool \
+		    --enable-intf-lan=static \
+		    --enable-intf-open=static \
 		    --enable-ipmievd \
-		    --prefix=/usr --mandir=/usr/share/man
+		    --mandir=/usr/share/man
 	touch configure-stamp
 
 #Architecture 

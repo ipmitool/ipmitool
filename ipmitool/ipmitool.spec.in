@@ -32,7 +32,11 @@ fi
 %setup
 
 %build
-./configure @ac_configure_args@ \
+./configure \
+	--enable-ipmievd \
+	--enable-intf-lan=static \
+	--enable-intf-open=static \
+	--with-kerneldir=/usr/src/linux-2.4 \
 	--prefix=%{_prefix} \
 	--bindir=%{_bindir} \
 	--datadir=%{_datadir} \
@@ -55,8 +59,6 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %defattr(-,root,root)
 %doc %{_mandir}/man1/*
 %{_bindir}/*
-%dir %{_libdir}/ipmitool
-%attr(755,root,root) %{_libdir}/ipmitool/*
 
 %files dev
 %defattr(-,root,root)
