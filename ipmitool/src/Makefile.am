@@ -40,8 +40,7 @@ MAINTAINERCLEANFILES	= Makefile.in
 LIBIPMITOOL		= $(top_srcdir)/lib/libipmitool.la
 LIBIPMIINTF		= $(top_srcdir)/src/plugins/libintf.la
 
-bin_SCRIPTS		= bmcautoconf.sh
-EXTRA_DIST		= bmcautoconf.sh @IPMIEVD_SRC@
+EXTRA_DIST		= @IPMIEVD_SRC@
 
 if IPMIADM
 ipmiadm_SOURCES		= ipmitool.c
