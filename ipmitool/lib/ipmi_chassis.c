@@ -40,12 +40,14 @@
 
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_chassis.h>
 
 extern int verbose;
 
-static int ipmi_chassis_power_status(struct ipmi_intf * intf)
+static int
+ipmi_chassis_power_status(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -56,14 +58,19 @@ static int ipmi_chassis_power_status(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("error in Chassis Status Command\n");
-		return 0;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to get Chassis Power Status");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Chassis Power Status failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
 	printf("Chassis Power is %s\n", (rsp->data[0] & 0x1) ? "on" : "off");
 
-	return rsp->data[0] & 0x1;
+	return 0;
 }
 
 static const struct valstr ipmi_chassis_power_control_vals[] = {
@@ -76,7 +83,8 @@ static const struct valstr ipmi_chassis_power_control_vals[] = {
 	{ 0x00, NULL },
 };
 
-static void ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ctl)
+static int
+ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ctl)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -90,18 +98,29 @@ static void ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ct
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode) {
-		printf("Unable to set Chassis Power Control to %s\n",
-		       val2str(ctl, ipmi_chassis_power_control_vals));
-	} else {
-		printf("Chassis Power Control: %s\n",
-		       val2str(ctl, ipmi_chassis_power_control_vals));
-		intf->abort = 1;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to set Chassis Power Control to %s",
+			val2str(ctl, ipmi_chassis_power_control_vals));
+		return -1;
 	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Chassis Power Control to %s failed: %s",
+			val2str(ctl, ipmi_chassis_power_control_vals),
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	printf("Chassis Power Control: %s\n",
+	       val2str(ctl, ipmi_chassis_power_control_vals));
+
+	/* sessions often get lost when changing chassis power */
+	intf->abort = 1;
+
+	return 0;
 }
 
-static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
+static int
+ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
@@ -117,17 +136,15 @@ static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x4;
 
-	if (arg) {
-                if (!strcmp(arg, "force")){
-                        identify_data.interval = 0;
-                        identify_data.force_on = 1;
-                } else {
-                        identify_data.interval = (unsigned char)atoi(arg);
-                        identify_data.force_on = 0;
-                }
-
+	if (arg != NULL) {
+		if (strncmp(arg, "force", 5) == 0) {
+			identify_data.interval = 0;
+			identify_data.force_on = 1;
+		} else {
+			identify_data.interval = (unsigned char)atoi(arg);
+			identify_data.force_on = 0;
+		}
 		req.msg.data = (unsigned char *)&identify_data;
-
 		/* The Force Identify On byte is optional and not
 		 * supported by all devices-- if force is not specified,
 		 * we pass only one data byte; if specified, we pass two
@@ -137,34 +154,41 @@ static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	}
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("ERROR:%x Chassis Identify Command\n", rsp->ccode);
-		if (identify_data.force_on) {
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to set Chassis Identify");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Chassis Identify failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		if (identify_data.force_on != 0) {
 			/* Intel SE7501WV2 F/W 1.2 returns CC 0xC7, but
 			 * the IPMI v1.5 spec does not standardize a CC
 			 * if unsupported, so we warn
 			 */
-			printf("Chassis may not support Force Identify On\n");
+			lprintf(LOG_WARNING, "Chassis may not support Force Identify On\n");
 		}
-		return;
+		return -1;
 	}
+
 	printf("Chassis identify interval: ");
-	if (!arg) {
+	if (arg == NULL) {
 		printf("default (15 seconds)\n");
 	} else {
-		if (identify_data.force_on) {
+		if (identify_data.force_on != 0) {
 			printf("indefinate\n");
 		} else {
-			if (identify_data.interval) {
-				printf("%i seconds\n", identify_data.interval);
-			} else {
+			if (identify_data.interval == 0)
 				printf("off\n");
-			}
+			else
+				printf("%i seconds\n", identify_data.interval);
 		}
 	}
+	return 0;
 }
 
-static void ipmi_chassis_poh(struct ipmi_intf * intf)
+static int
+ipmi_chassis_poh(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -175,9 +199,15 @@ static void ipmi_chassis_poh(struct ipmi_intf * intf)
 	req.msg.cmd = 0xf;
 
 	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode)
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to get Chassis Power-On-Hours");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Chassis Power-On-Hours failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
 
 	memcpy(&count, rsp->data+1, 4);
 
@@ -185,7 +215,8 @@ static void ipmi_chassis_poh(struct ipmi_intf * intf)
 	       (long)count, (long)(count / 24), (long)(count % 24));
 }
 
-static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
+static int
+ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -195,9 +226,15 @@ static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 	req.msg.cmd = 0x7;
 
 	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode)
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to get Chassis Restart Cause");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Chassis Restart Cause failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
 
 	printf("System restart cause: ");
 
@@ -233,11 +270,14 @@ static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 		printf("power-cycle via PEF\n");
 		break;
 	default:
-		printf("error!\n");
+		printf("invalid\n");
 	}
+
+	return 0;
 }
 
-static void ipmi_chassis_status(struct ipmi_intf * intf)
+static int
+ipmi_chassis_status(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -247,14 +287,14 @@ static void ipmi_chassis_status(struct ipmi_intf * intf)
 	req.msg.cmd = 0x1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("Error sending Chassis Status command\n");
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error sending Chassis Status command");
+		return -1;
 	}
 	if (rsp->ccode > 0) {
-		printf("Error sending Chassis Status command: %s\n",
-		       val2str(rsp->ccode, completion_code_vals));
-		return;
+		lprintf(LOG_ERR, "Error sending Chassis Status command: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
 	/* byte 1 */
@@ -299,25 +339,27 @@ static void ipmi_chassis_status(struct ipmi_intf * intf)
 	printf("Drive Fault          : %s\n", (rsp->data[2] & 0x4) ? "true" : "false");
 	printf("Cooling/Fan Fault    : %s\n", (rsp->data[2] & 0x8) ? "true" : "false");
 
-        if (rsp->data_len > 3)
-        {
-            /* optional byte 4 */
-            if (rsp->data[3] == 0) {
-	        printf("Front Panel Control  : none\n");
-            } else {
-	        printf("Sleep Button Disable : %s\n", (rsp->data[3] & 0x80) ? "allowed" : "not allowed");
-	        printf("Diag Button Disable  : %s\n", (rsp->data[3] & 0x40) ? "allowed" : "not allowed");
-	        printf("Reset Button Disable : %s\n", (rsp->data[3] & 0x20) ? "allowed" : "not allowed");
-	        printf("Power Button Disable : %s\n", (rsp->data[3] & 0x10) ? "allowed" : "not allowed");
-	        printf("Sleep Button Disabled: %s\n", (rsp->data[3] & 0x80) ? "true" : "false");
-	        printf("Diag Button Disabled : %s\n", (rsp->data[3] & 0x40) ? "true" : "false");
-	        printf("Reset Button Disabled: %s\n", (rsp->data[3] & 0x20) ? "true" : "false");
-	        printf("Power Button Disabled: %s\n", (rsp->data[3] & 0x10) ? "true" : "false");
-            }
+        if (rsp->data_len > 3) {
+		/* optional byte 4 */
+		if (rsp->data[3] == 0) {
+			printf("Front Panel Control  : none\n");
+		} else {
+			printf("Sleep Button Disable : %s\n", (rsp->data[3] & 0x80) ? "allowed" : "not allowed");
+			printf("Diag Button Disable  : %s\n", (rsp->data[3] & 0x40) ? "allowed" : "not allowed");
+			printf("Reset Button Disable : %s\n", (rsp->data[3] & 0x20) ? "allowed" : "not allowed");
+			printf("Power Button Disable : %s\n", (rsp->data[3] & 0x10) ? "allowed" : "not allowed");
+			printf("Sleep Button Disabled: %s\n", (rsp->data[3] & 0x80) ? "true" : "false");
+			printf("Diag Button Disabled : %s\n", (rsp->data[3] & 0x40) ? "true" : "false");
+			printf("Reset Button Disabled: %s\n", (rsp->data[3] & 0x20) ? "true" : "false");
+			printf("Power Button Disabled: %s\n", (rsp->data[3] & 0x10) ? "true" : "false");
+		}
         }
+
+	return 0;
 }
 
-static void ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char param, unsigned char * data, int len)
+static int
+ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char param, unsigned char * data, int len)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -336,21 +378,28 @@ static void ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char pa
 	req.msg.data_len = len + 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error setting Chassis Boot Parameter %d\n", param);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error setting Chassis Boot Parameter %d", param);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
+			param, val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
-	printf("Chassis Set Boot Param %d to %s\n", param, data);
+	printf("Chassis Set Boot Parameter %d to %s\n", param, data);
+	return 0;
 }
 
-static void ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
+static int
+ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char msg_data[3];
 
-	if (!arg)
+	if (arg == NULL)
 		return;
 
 	memset(msg_data, 0, 3);
@@ -366,8 +415,15 @@ static void ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode)
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error Getting Chassis Boot Parameter %s", arg);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Chassis Boot Parameter %s failed: %s",
+			arg, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
 
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "Boot Option");
@@ -378,45 +434,47 @@ static void ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	printf("Boot parameter data: %s\n", buf2str(rsp->data+2, rsp->data_len - 2));
 }
 
-static void ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
+static int
+ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
 {
 	unsigned char flags[5];
+	int rc = 0;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
-	if (!arg) {
-		printf("Error: no bootflag argument supplied\n");
-		return;
+	if (arg == NULL) {
+		lprintf(LOG_ERR, "No bootflag argument supplied");
+		return -1;
 	}
 
-	if (!strncmp(arg, "force_pxe", 9)) {
-		flags[1] = 0x04; // 00000100
-	}
-	else if (!strncmp(arg, "force_disk", 10)) {
-		flags[1] = 0x08; // 00001000
-	}
-	else if (!strncmp(arg, "force_diag", 10)) {
-		flags[1] = 0x10; // 00010000
-	}
-	else if (!strncmp(arg, "force_cdrom", 11)) {
-		flags[1] = 0x14; // 00010100
-	}
-	else if (!strncmp(arg, "force_floppy", 12)) {
-		flags[1] = 0x3c; // 00111100
-	}
+	if (strncmp(arg, "force_pxe", 9) == 0)
+		flags[1] = 0x04;
+	else if (strncmp(arg, "force_disk", 10) == 0)
+		flags[1] = 0x08;
+	else if (strncmp(arg, "force_diag", 10) == 0)
+		flags[1] = 0x10;
+	else if (strncmp(arg, "force_cdrom", 11) == 0)
+		flags[1] = 0x14;
+	else if (strncmp(arg, "force_floppy", 12) == 0)
+		flags[1] = 0x3c;
 	else {
-		printf("Invalid bootflag: %s\n", arg);
-		return;
+		lprintf(LOG_ERR, "Invalid bootflag: %s", arg);
+		return -1;
 	}
 
 	flags[0] = 0x80;	/* set flag valid bit */
-	ipmi_chassis_set_bootparam(intf, 5, flags, 5);
+	rc = ipmi_chassis_set_bootparam(intf, 5, flags, 5);
 
-	flags[0] = 0x08;	/* don't automatically clear boot flag valid bit in 60 seconds */
-	ipmi_chassis_set_bootparam(intf, 3, flags, 1);
+	if (rc < 0) {
+		flags[0] = 0x08;	/* don't automatically clear boot flag valid bit in 60 seconds */
+		rc = ipmi_chassis_set_bootparam(intf, 3, flags, 1);
+	}
+
+	return rc;
 }
 
-static void ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char policy)
+static int
+ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char policy)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -430,14 +488,15 @@ static void ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char pol
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-	if (rsp->ccode > 0) {
-		printf("BMC Power Restore Policy command failed: %s\n",
-                       val2str(rsp->ccode, completion_code_vals));
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Power Restore Policy command");
+		return -1;
 	}
-
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Power Restore Policy command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
 
 	if (policy == IPMI_CHASSIS_POLICY_NO_CHANGE) {
 		printf("Supported chassis power policy:  ");
@@ -465,121 +524,119 @@ static void ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char pol
 			printf("unknown\n");
 		}
 	}
+	return 0;
 }
 
-int ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc || !strncmp(argv[0], "help", 4)) {
-		printf("Chassis Commands:  status, power, identify, policy, restart_cause, poh\n");
-		return 0;
+	int rc = 0;
+
+	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh");
 	}
-	else if (!strncmp(argv[0], "status", 6)) {
-		ipmi_chassis_status(intf);
+	else if (strncmp(argv[0], "status", 6) == 0) {
+		rc = ipmi_chassis_status(intf);
 	}
-	else if (!strncmp(argv[0], "power", 5)) {
+	else if (strncmp(argv[0], "power", 5) == 0) {
 		unsigned char ctl = 0;
 
-		if (argc < 2 || !strncmp(argv[1], "help", 4)) {
-			printf("chassis power Commands: status, on, off, cycle, reset, diag, soft\n");
+		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+			lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
 			return 0;
 		}
-		if (!strncmp(argv[1], "status", 6)) {
-			ipmi_chassis_power_status(intf);
-			return 0;
+		if (strncmp(argv[1], "status", 6) == 0) {
+			rc = ipmi_chassis_power_status(intf);
+			return rc;
 		}
-
-		if (!strncmp(argv[1], "up", 2) || !strncmp(argv[1], "on", 2))
+		if ((strncmp(argv[1], "up", 2) == 0) || (strncmp(argv[1], "on", 2) == 0))
 			ctl = IPMI_CHASSIS_CTL_POWER_UP;
-		else if (!strncmp(argv[1], "down", 4) || !strncmp(argv[1], "off", 3))
+		else if ((strncmp(argv[1], "down", 4) == 0) || (strncmp(argv[1], "off", 3) == 0))
 			ctl = IPMI_CHASSIS_CTL_POWER_DOWN;
-		else if (!strncmp(argv[1], "cycle", 5))
+		else if (strncmp(argv[1], "cycle", 5) == 0)
 			ctl = IPMI_CHASSIS_CTL_POWER_CYCLE;
-		else if (!strncmp(argv[1], "reset", 5))
+		else if (strncmp(argv[1], "reset", 5) == 0)
 			ctl = IPMI_CHASSIS_CTL_HARD_RESET;
-		else if (!strncmp(argv[1], "diag", 5))
+		else if (strncmp(argv[1], "diag", 4) == 0)
 			ctl = IPMI_CHASSIS_CTL_PULSE_DIAG;
-		else if (!strncmp (argv[1], "acpi", 4) || !strncmp(argv[1], "soft", 4))
+		else if ((strncmp(argv[1], "acpi", 4) == 0) || (strncmp(argv[1], "soft", 4) == 0))
 			ctl = IPMI_CHASSIS_CTL_ACPI_SOFT;
 		else {
-			printf("Invalid chassis power command: %s\n", argv[1]);
+			lprintf(LOG_ERR, "Invalid chassis power command: %s", argv[1]);
 			return -1;
 		}
 
-		ipmi_chassis_power_control(intf, ctl);
+		rc = ipmi_chassis_power_control(intf, ctl);
 	}
-	else if (!strncmp(argv[0], "identify", 8)) {
+	else if (strncmp(argv[0], "identify", 8) == 0) {
 		if (argc < 2) {
-			ipmi_chassis_identify(intf, NULL);
+			rc = ipmi_chassis_identify(intf, NULL);
 		}
-		else if (!strncmp(argv[1], "help", 4)) {
-			printf("chassis identify <interval>\n");
-			printf("                 default is 15 seconds\n");
-			printf("                 0 to turn off\n");
-			printf("                 force to turn on indefinitely\n");
+		else if (strncmp(argv[1], "help", 4) == 0) {
+			lprintf(LOG_NOTICE, "chassis identify <interval>");
+			lprintf(LOG_NOTICE, "                 default is 15 seconds");
+			lprintf(LOG_NOTICE, "                 0 to turn off");
+			lprintf(LOG_NOTICE, "                 force to turn on indefinitely");
 		} else {
-			ipmi_chassis_identify(intf, argv[1]);
+			rc = ipmi_chassis_identify(intf, argv[1]);
 		}
 	}
-	else if (!strncmp(argv[0], "poh", 3)) {
-		ipmi_chassis_poh(intf);
+	else if (strncmp(argv[0], "poh", 3) == 0) {
+		rc = ipmi_chassis_poh(intf);
 	}
-	else if (!strncmp(argv[0], "restart_cause", 13)) {
-		ipmi_chassis_restart_cause(intf);
+	else if (strncmp(argv[0], "restart_cause", 13) == 0) {
+		rc = ipmi_chassis_restart_cause(intf);
 	}
-	else if (!strncmp(argv[0], "policy", 4)) {
-		if (argc < 2 || !strncmp(argv[1], "help", 4)) {
-			printf("chassis policy <state>\n");
-			printf("   list        : return supported policies\n");
-			printf("   always-on   : turn on when power is restored\n");
-			printf("   previous    : return to previous state when power is restored\n");
-			printf("   always-off  : stay off after power is restored\n");
+	else if (strncmp(argv[0], "policy", 4) == 0) {
+		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+			lprintf(LOG_NOTICE, "chassis policy <state>");
+			lprintf(LOG_NOTICE, "   list        : return supported policies");
+			lprintf(LOG_NOTICE, "   always-on   : turn on when power is restored");
+			lprintf(LOG_NOTICE, "   previous    : return to previous state when power is restored");
+			lprintf(LOG_NOTICE, "   always-off  : stay off after power is restored");
 		} else {
 			unsigned char ctl;
-
-			if (!strncmp(argv[1], "list", 4))
+			if (strncmp(argv[1], "list", 4) == 0)
 				ctl = IPMI_CHASSIS_POLICY_NO_CHANGE;
-			else if (!strncmp(argv[1], "always-on", 9))
+			else if (strncmp(argv[1], "always-on", 9) == 0)
 				ctl = IPMI_CHASSIS_POLICY_ALWAYS_ON;
-			else if (!strncmp(argv[1], "previous", 8))
+			else if (strncmp(argv[1], "previous", 8) == 0)
 				ctl = IPMI_CHASSIS_POLICY_PREVIOUS;
-			else if (!strncmp(argv[1], "always-off", 10))
+			else if (strncmp(argv[1], "always-off", 10) == 0)
 				ctl = IPMI_CHASSIS_POLICY_ALWAYS_OFF;
 			else {
-				printf("invalid chassis policy: %s\n", argv[1]);
+				lprintf(LOG_ERR, "Invalid chassis policy: %s", argv[1]);
 				return -1;
 			}
-
-			ipmi_chassis_power_policy(intf, ctl);
+			rc = ipmi_chassis_power_policy(intf, ctl);
 		}
 	}
-	else if (!strncmp(argv[0], "bootparam", 7)) {
-		if (argc < 3 || !strncmp(argv[1], "help", 4)) {
-			printf("bootparam get|set <option> [value ...]\n");
+	else if (strncmp(argv[0], "bootparam", 7) == 0) {
+		if ((argc < 3) || (strncmp(argv[1], "help", 4) == 0)) {
+			lprintf(LOG_NOTICE, "bootparam get|set <option> [value ...]");
 		}
 		else {
-			if (!strncmp(argv[1], "get", 3)) {
-				ipmi_chassis_get_bootparam(intf, argv[2]);
+			if (strncmp(argv[1], "get", 3) == 0) {
+				rc = ipmi_chassis_get_bootparam(intf, argv[2]);
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (strncmp(argv[1], "set", 3) == 0) {
 				if (argc < 4) {
-					printf("bootparam set <option> [value ...]\n");
+					lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				} else {
-					if (!strncmp(argv[2], "bootflag", 8)) {
-						ipmi_chassis_set_bootflag(intf, argv[3]);
-					}
-					else {
-						printf("bootparam set <option> [value ...]\n");
-					}
+					if (strncmp(argv[2], "bootflag", 8) == 0)
+						rc = ipmi_chassis_set_bootflag(intf, argv[3]);
+					else
+						lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				}
 			}
-			else {
-				printf("bootparam get|set <option> [value]\n");
-			}
+			else
+				lprintf(LOG_NOTICE, "bootparam get|set <option> [value ...]");
 		}
 	}
 	else {
-		printf("Invalid Chassis command: %s\n", argv[0]);
+		lprintf(LOG_ERR, "Invalid Chassis command: %s", argv[0]);
 		return -1;
 	}
-	return 0;
+
+	return rc;
 }

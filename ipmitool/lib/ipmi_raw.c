@@ -39,10 +39,13 @@
 #include <stdio.h>
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/log.h>
+#include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_raw.h>
 
-int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -50,8 +53,8 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i;
 	unsigned char data[32];
 
-	if (argc < 2 || !strncmp(argv[0], "help", 4)) {
-		printf("RAW Commands:  raw <netfn> <cmd> [data]\n");
+	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
 		return -1;
 	}
 
@@ -69,30 +72,31 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
 	}
-	if (verbose && req.msg.data_len) {
-		for (i=0; i<req.msg.data_len; i++) {
-			if (((i%16) == 0) && (i != 0))
-				printf("\n");
-			printf(" %2.2x", req.msg.data[i]);
-		}
-		printf("\n");
-	}
 
-	if (verbose)
-		printf("RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)\n",
-		       req.msg.netfn, req.msg.cmd, req.msg.data_len);
+	lprintf(LOG_INFO, "RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)",
+		req.msg.netfn, req.msg.cmd, req.msg.data_len);
+
+	printbuf(req.msg.data, req.msg.data_len, "RAW REQUEST");
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x sending RAW command\n",
-		       rsp ? rsp->ccode : 0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to send RAW command "
+			"(netfn=0x%x cmd=0x%x)",
+			req.msg.netfn, req.msg.cmd);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Unable to send RAW command "
+			"(netfn=0x%x cmd=0x%x): %s",
+			req.msg.netfn, req.msg.cmd,
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
-	if (verbose)
-		printf("RAW RSP (%d bytes)\n", rsp->data_len);
+	lprintf(LOG_INFO, "RAW RSP (%d bytes)", rsp->data_len);
 
+	/* print the raw response buffer */
 	for (i=0; i<rsp->data_len; i++) {
 		if (((i%16) == 0) && (i != 0))
 			printf("\n");

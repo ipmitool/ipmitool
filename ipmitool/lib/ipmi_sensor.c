@@ -636,10 +636,10 @@ static void ipmi_sensor_get(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
 				break;
 			case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-				ipmi_sdr_print_fru_locator(intf, sdr->record.fruloc);
+				ipmi_sdr_print_sensor_fru_locator(intf, sdr->record.fruloc);
 				break;
 			case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-				ipmi_sdr_print_mc_locator(intf, sdr->record.mcloc);
+				ipmi_sdr_print_sensor_mc_locator(intf, sdr->record.mcloc);
 				break;
 			}
 			verbose = v;

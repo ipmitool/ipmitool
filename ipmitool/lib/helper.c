@@ -47,6 +47,8 @@
 
 #include <ipmitool/helper.h>
 
+extern int verbose;
+
 uint32_t buf2long(unsigned char * buf)
 {
 	return (uint32_t)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
@@ -79,16 +81,19 @@ void printbuf(const unsigned char * buf, int len, const char * desc)
 {
 	int i;
 
-	if (!len)
+	if (len <= 0)
 		return;
 
-	printf("%s (%d bytes)\n", desc, len);
+	if (verbose < 1)
+		return;
+
+	fprintf(stderr, "%s (%d bytes)\n", desc, len);
 	for (i=0; i<len; i++) {
 		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
+			fprintf(stderr, "\n");
+		fprintf(stderr, " %2.2x", buf[i]);
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 }
 
 const char * val2str(unsigned short val, const struct valstr *vs)

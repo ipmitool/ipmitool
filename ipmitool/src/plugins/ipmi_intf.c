@@ -41,6 +41,7 @@
 #include <config.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/log.h>
 
 #ifdef IPMI_INTF_OPEN
 extern struct ipmi_intf ipmi_open_intf;
@@ -50,6 +51,9 @@ extern struct ipmi_intf ipmi_imb_intf;
 #endif
 #ifdef IPMI_INTF_LIPMI
 extern struct ipmi_intf ipmi_lipmi_intf;
+#endif
+#ifdef IPMI_INTF_BMC
+extern struct ipmi_intf ipmi_bmc_intf;
 #endif
 #ifdef IPMI_INTF_LAN
 extern struct ipmi_intf ipmi_lan_intf;
@@ -68,6 +72,9 @@ struct ipmi_intf * ipmi_intf_table[] = {
 #ifdef IPMI_INTF_LIPMI
 	&ipmi_lipmi_intf,
 #endif
+#ifdef IPMI_INTF_BMC
+	&ipmi_bmc_intf,
+#endif
 #ifdef IPMI_INTF_LAN
 	&ipmi_lan_intf,
 #endif
@@ -77,106 +84,141 @@ struct ipmi_intf * ipmi_intf_table[] = {
 	NULL
 };
 
+/* ipmi_intf_print  -  Print list of interfaces
+ *
+ * no meaningful return code
+ */
 void ipmi_intf_print(void)
 {
 	struct ipmi_intf ** intf;
 	int def = 1;
 
-	printf("Interfaces:\n");
+	lprintf(LOG_NOTICE, "Interfaces:");
 
 	for (intf = ipmi_intf_table; intf && *intf; intf++) {
-		printf("\t%-12s %s", (*intf)->name, (*intf)->desc);
-		if (def) {
-			printf(" [default]");
-			def = 0;
-		}
-		printf("\n");
+		lprintf(LOG_NOTICE, "\t%-12s %s %s",
+			(*intf)->name, (*intf)->desc,
+			def ? "[default]" : "");
+		def = 0;
 	}
-	printf("\n");
+	lprintf(LOG_NOTICE, "");
 }
 
-/* Load an interface from the interface table above
- * If no interface name is given return first entry
+/* ipmi_intf_load  -  Load an interface from the interface table above
+ *                    If no interface name is given return first entry
+ *
+ * @name:	interface name to try and load
+ *
+ * returns pointer to inteface structure if found
+ * returns NULL on error
  */
 struct ipmi_intf * ipmi_intf_load(char * name)
 {
 	struct ipmi_intf ** intf;
 	struct ipmi_intf * i;
 
-	if (!name) {
+	if (name == NULL) {
 		i = ipmi_intf_table[0];
-		if (i->setup && (i->setup(i) < 0)) {
-			printf("ERROR: Unable to setup interface %s\n", name);
+		if (i->setup != NULL && (i->setup(i) < 0)) {
+			lprintf(LOG_ERR, "Unable to setup "
+				"interface %s", name);
 			return NULL;
 		}
 		return i;
 	}
 
-	for (intf = ipmi_intf_table; intf && *intf ; intf++) {
+	for (intf = ipmi_intf_table;
+	     ((intf != NULL) && (*intf != NULL));
+	     intf++) {
 		i = *intf;
-		if (!strncmp(name, i->name, strlen(name))) {
-			if (i->setup && (i->setup(i) < 0)) {
-				printf("ERROR: Unable to setup interface %s\n", name);
+		if (strncmp(name, i->name, strlen(name)) == 0) {
+			if (i->setup != NULL && (i->setup(i) < 0)) {
+				lprintf(LOG_ERR, "Unable to setup "
+					"interface %s", name);
 				return NULL;
 			}
 			return i;
 		}
 	}
+
 	return NULL;
 }
 
-void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
+void
+ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 {
-	if (intf && intf->session) {
-		memset(intf->session->hostname, 0, 16);
-		if (hostname)
-			memcpy(intf->session->hostname, hostname, min(strlen(hostname), 64));
+	if (intf->session == NULL)
+		return;
+
+	memset(intf->session->hostname, 0, 16);
+
+	if (hostname != NULL) {
+		memcpy(intf->session->hostname, hostname,
+		       min(strlen(hostname), 64));
 	}
 }
 
-void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
+void
+ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 {
-	if (intf && intf->session) {
-		memset(intf->session->username, 0, 16);
-		if (username)
-			memcpy(intf->session->username, username, min(strlen(username), 16));
-	}
+	if (intf->session == NULL)
+		return;
+
+	memset(intf->session->username, 0, 16);
+
+	if (username == NULL)
+		return;
+
+	memcpy(intf->session->username, username, min(strlen(username), 16));
 }
 
-void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
+void
+ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 {
-	if (intf && intf->session) {
-		memset(intf->session->authcode, 0, sizeof(intf->session->authcode));
+	if (intf->session == NULL)
+		return;
+
+	memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
+
+	if (password == NULL) {
 		intf->session->password = 0;
-		if (password) {
-			intf->session->password = 1;
-			memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
-			memcpy(intf->session->authcode,
-			       password,
-			       min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
-		}
+		return;
 	}
+
+	intf->session->password = 1;
+	memcpy(intf->session->authcode, password,
+	       min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
 }
 
-void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char level)
+void
+ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char level)
 {
-	if (intf && intf->session)
-		intf->session->privlvl = level;
+	if (intf->session == NULL)
+		return;
+
+	intf->session->privlvl = level;
 }
 
-void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
+void
+ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
 {
-	if (intf && intf->session)
-		intf->session->port = port;
+	if (intf->session == NULL)
+		return;
+
+	intf->session->port = port;
 }
 
-void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char authtype)
+void
+ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char authtype)
 {
-	if (intf && intf->session)
-		intf->session->authtype_set = authtype;
+	if (intf->session == NULL)
+		return;
+
+	intf->session->authtype_set = authtype;
 }
 
-void ipmi_cleanup(struct ipmi_intf * intf)
+void
+ipmi_cleanup(struct ipmi_intf * intf)
 {
 	ipmi_sdr_list_empty(intf);
 }

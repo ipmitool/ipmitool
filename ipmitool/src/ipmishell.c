@@ -42,6 +42,7 @@
 #include <ctype.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_session.h>
@@ -77,9 +78,9 @@ static int rl_event_keepalive(void)
 {
 	static int internal_timer = 0;
 
-	if (!shell_intf)
+	if (shell_intf == NULL)
 		return -1;
-	if (!shell_intf->keepalive)
+	if (shell_intf->keepalive == NULL)
 		return 0;
 #if defined (RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
 	if (internal_timer++ < RL_TIMEOUT)
@@ -122,11 +123,13 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			free(pbuf);
 			continue;
 		}
-		if (!strncmp(pbuf, "quit", 4) || !strncmp(pbuf, "exit", 4)) {
+		if (strncmp(pbuf, "quit", 4) == 0 ||
+		    strncmp(pbuf, "exit", 4) == 0) {
 			free(pbuf);
 			return 0;
 		}
-		if (!strncmp(pbuf, "help", 4) || !strncmp(pbuf, "?", 1)) {
+		if (strncmp(pbuf, "help", 4) == 0 ||
+		    strncmp(pbuf, "?", 1) == 0) {
 			ipmi_cmd_print();
 			free(pbuf);
 			continue;
@@ -138,7 +141,9 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		__argc = 0;
 		ap = __argv;
 
-		for (*ap = strtok(pbuf, " \t"); *ap != NULL; *ap = strtok(NULL, " \t")) {
+		for (*ap = strtok(pbuf, " \t");
+		     *ap != NULL;
+		     *ap = strtok(NULL, " \t")) {
 			__argc++;
 			if (**ap != '\0') {
 				if (++ap >= &__argv[20])
@@ -147,7 +152,10 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		if (__argc && __argv[0])
-			rc = ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
+			rc = ipmi_cmd_run(intf,
+					  __argv[0],
+					  __argc-1,
+					  &(__argv[1]));
 
 		free(pbuf);
 	}	
@@ -156,44 +164,46 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 #else  /* HAVE_READLINE */
 
-int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	printf("Compiled without readline support, shell is disabled.\n");
+	lprintf(LOG_ERR, "Compiled without readline, shell is disabled");
 	return -1;
 }
 
 #endif /* HAVE_READLINE */
 
-static void ipmi_set_usage(void)
+static void
+ipmi_set_usage(void)
 {
-	printf("Usage: set <option> <value>\n\n");
-	printf("Options are:\n");
-	printf("    hostname <host>        Session hostname\n");
-	printf("    username <user>        Session username\n");
-	printf("    password <pass>        Session password\n");
-	printf("    privlvl <level>        Session privilege level force\n");
-	printf("    authtype <type>        Authentication type force\n");
-	printf("    localaddr <addr>       Local IPMB address\n");
-	printf("    targetaddr <addr>      Remote target IPMB address\n");
-	printf("    port <port>            Remote RMCP port\n");
-	printf("    csv [level]            enable output in comma separated format\n");
-	printf("    verbose [level]        Verbose level\n");
-	printf("\n");
+	lprintf(LOG_NOTICE, "Usage: set <option> <value>\n");
+	lprintf(LOG_NOTICE, "Options are:");
+	lprintf(LOG_NOTICE, "    hostname <host>        Session hostname");
+	lprintf(LOG_NOTICE, "    username <user>        Session username");
+	lprintf(LOG_NOTICE, "    password <pass>        Session password");
+	lprintf(LOG_NOTICE, "    privlvl <level>        Session privilege level force");
+	lprintf(LOG_NOTICE, "    authtype <type>        Authentication type force");
+	lprintf(LOG_NOTICE, "    localaddr <addr>       Local IPMB address");
+	lprintf(LOG_NOTICE, "    targetaddr <addr>      Remote target IPMB address");
+	lprintf(LOG_NOTICE, "    port <port>            Remote RMCP port");
+	lprintf(LOG_NOTICE, "    csv [level]            enable output in comma separated format");
+	lprintf(LOG_NOTICE, "    verbose [level]        Verbose level");
+	lprintf(LOG_NOTICE, "");
 }
 
 int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc || !strncmp(argv[0], "help", 4)) {
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
 		ipmi_set_usage();
 		return -1;
 	}
 
 	/* these options can have no arguments */
-	if (!strncmp(argv[0], "verbose", 7)) {
+	if (strncmp(argv[0], "verbose", 7) == 0) {
 		verbose = (argc > 1) ? atoi(argv[1]) : verbose+1;
 		return 0;
 	}
-	if (!strncmp(argv[0], "csv", 3)) {
+	if (strncmp(argv[0], "csv", 3) == 0) {
 		csv_output = (argc > 1) ? atoi(argv[1]) : 1;
 		return 0;
 	}
@@ -204,42 +214,45 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	if (!strncmp(argv[0], "host", 4) || !strncmp(argv[0], "hostname", 8)) {
+	if (strncmp(argv[0], "host", 4) == 0 ||
+	    strncmp(argv[0], "hostname", 8) == 0) {
 		ipmi_intf_session_set_hostname(intf, argv[1]);
 		printf("Set session hostname to %s\n", intf->session->hostname);
 	}
-	else if (!strncmp(argv[0], "user", 4) || !strncmp(argv[0], "username", 8)) {
+	else if (strncmp(argv[0], "user", 4) == 0 ||
+		 strncmp(argv[0], "username", 8) == 0) {
 		ipmi_intf_session_set_username(intf, argv[1]);
 		printf("Set session username to %s\n", intf->session->username);
 	}
-	else if (!strncmp(argv[0], "pass", 4) || !strncmp(argv[0], "password", 8)) {
+	else if (strncmp(argv[0], "pass", 4) == 0 ||
+		 strncmp(argv[0], "password", 8) == 0) {
 		ipmi_intf_session_set_password(intf, argv[1]);
 		printf("Set session password\n");
 	}
-	else if (!strncmp(argv[0], "authtype", 8)) {
+	else if (strncmp(argv[0], "authtype", 8) == 0) {
 		unsigned char authtype;
 		authtype = (unsigned char)str2val(argv[1], ipmi_authtype_session_vals);
 		ipmi_intf_session_set_authtype(intf, authtype);
 		printf("Set session authtype to %s\n",
 		       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
 	}
-	else if (!strncmp(argv[0], "privlvl", 7)) {
+	else if (strncmp(argv[0], "privlvl", 7) == 0) {
 		unsigned char privlvl;
 		privlvl = (unsigned char)str2val(argv[1], ipmi_privlvl_vals);
 		ipmi_intf_session_set_privlvl(intf, privlvl);
 		printf("Set session privilege level to %s\n",
 		       val2str(intf->session->privlvl, ipmi_privlvl_vals));
 	}
-	else if (!strncmp(argv[0], "port", 4)) {
+	else if (strncmp(argv[0], "port", 4) == 0) {
 		int port = atoi(argv[1]);
 		ipmi_intf_session_set_port(intf, port);
 		printf("Set session port to %d\n", intf->session->port);
 	}
-	else if (!strncmp(argv[0], "localaddr", 9)) {
+	else if (strncmp(argv[0], "localaddr", 9) == 0) {
 		intf->my_addr = (unsigned char)strtol(argv[1], NULL, 0);
 		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
 	}
-	else if (!strncmp(argv[0], "targetaddr", 10)) {
+	else if (strncmp(argv[0], "targetaddr", 10) == 0) {
 		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
 		printf("Set remote IPMB address to 0x%02x\n", intf->target_addr);
 	}
@@ -260,15 +273,15 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc=0;
 
 	if (argc < 1) {
-		printf("Usage: exec <filename>\n");
+		lprintf(LOG_ERR, "Usage: exec <filename>");
 		return -1;
 	}
 
 	fp = ipmi_open_file_read(argv[0]);
-	if (!fp)
+	if (fp == NULL)
 		return -1;
 
-	while (!feof(fp)) {
+	while (feof(fp) == 0) {
 		ret = fgets(buf, EXEC_BUF_SIZE, fp);
 		if (!ret)
 			continue;
@@ -287,7 +300,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ptr = buf;
 		while (isspace(*ptr))
 			ptr++;
-		if (!strlen(ptr))
+		if (strlen(ptr) == 0)
 			continue;
 
 		/* parse it and make argument list */
@@ -314,6 +327,6 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	fclose(fp);
-	return 0;
+	return rc;
 }
 

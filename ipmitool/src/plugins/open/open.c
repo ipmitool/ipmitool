@@ -60,30 +60,35 @@
 extern int verbose;
 
 #define IPMI_OPENIPMI_DEV	"/dev/ipmi0"
+#define IPMI_OPENIPMI_DEVFS	"/dev/ipmi/0"
 
-static int ipmi_openipmi_open(struct ipmi_intf * intf)
+static int
+ipmi_openipmi_open(struct ipmi_intf * intf)
 {
 	int i = 0;
 
 	intf->fd = open(IPMI_OPENIPMI_DEV, O_RDWR);
 
 	if (intf->fd < 0) {
-		lperror(LOG_ERR, "Could not open ipmi device");
+		intf->fd = open(IPMI_OPENIPMI_DEVFS, O_RDWR);
+		lperror(LOG_ERR, "intf_open: Could not open device at %s or %s",
+			IPMI_OPENIPMI_DEV, IPMI_OPENIPMI_DEVFS);
 		return -1;
 	}
 
-	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i)) {
-		lperror(LOG_ERR, "Could not set to get events");
+	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i) < 0) {
+		lperror(LOG_ERR, "intf_open: Could not enable event receiver");
 		return -1;
 	}
 
-	if (intf->my_addr) {
+	if (intf->my_addr != 0) {
 		unsigned int a = intf->my_addr;
-		if (ioctl(intf->fd, IPMICTL_SET_MY_ADDRESS_CMD, &a)) {
-			lperror(LOG_ERR, "Could not set IPMB address");
+		if (ioctl(intf->fd, IPMICTL_SET_MY_ADDRESS_CMD, &a) < 0) {
+			lperror(LOG_ERR, "intf_open: Could not set IPMB address");
 			return -1;
 		}
-		lprintf(LOG_DEBUG, "Set my IPMB address to 0x%x", intf->my_addr);
+		lprintf(LOG_DEBUG, "intf_open: Set IPMB address to 0x%x",
+			intf->my_addr);
 	}
 
 	intf->opened = 1;
@@ -91,14 +96,19 @@ static int ipmi_openipmi_open(struct ipmi_intf * intf)
 	return intf->fd;
 }
 
-static void ipmi_openipmi_close(struct ipmi_intf * intf)
+static void
+ipmi_openipmi_close(struct ipmi_intf * intf)
 {
-	if (intf && intf->fd >= 0)
+	if (intf->fd >= 0) {
 		close(intf->fd);
+		intf->fd = -1;
+	}
+
 	intf->opened = 0;
 }
 
-static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
+static struct ipmi_rs *
+ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct ipmi_recv recv;
 	struct ipmi_addr addr;
@@ -114,13 +124,15 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 	static int curr_seq = 0;
 	fd_set rset;
 
-	if (!intf || !req)
+	if (intf == NULL || req == NULL)
 		return NULL;
-	if (!intf->opened && intf->open && intf->open(intf) < 0)
-		return NULL;
+	if (intf->opened == 0 && intf->open != NULL)
+		if (intf->open(intf) < 0)
+			return NULL;
 
 	if (verbose > 2)
-		printbuf(req->msg.data, req->msg.data_len, "send_cmd");
+		printbuf(req->msg.data, req->msg.data_len,
+			 "intf_open: request message");
 
 	/*
 	 * setup and send message
@@ -128,17 +140,18 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 
 	memset(&_req, 0, sizeof(struct ipmi_req));
 
-	if (intf->target_addr &&
+	if (intf->target_addr != 0 &&
 	    intf->target_addr != intf->my_addr) {
 		/* use IPMB address if needed */
 		ipmb_addr.slave_addr = intf->target_addr;
 		_req.addr = (char *) &ipmb_addr;
 		_req.addr_len = sizeof(ipmb_addr);
-		lprintf(LOG_DEBUG, "Sending request to IPMB target @ 0x%x",
-			intf->target_addr);
+		lprintf(LOG_DEBUG, "intf_open: Sending request to "
+			"IPMB target @ 0x%x", intf->target_addr);
 	} else {
 		/* otherwise use system interface */
-		lprintf(LOG_DEBUG+2, "Sending request to System Interface");
+		lprintf(LOG_DEBUG+2, "intf_open: Sending request to "
+			"System Interface");
 		_req.addr = (char *) &bmc_addr;
 		_req.addr_len = sizeof(bmc_addr);
 	}
@@ -150,7 +163,7 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 	_req.msg.data_len = req->msg.data_len;
 
 	if (ioctl(intf->fd, IPMICTL_SEND_COMMAND, &_req) < 0) {
-		lperror(LOG_ERR, "Error sending command");
+		lperror(LOG_ERR, "intf_open: Unable to send command");
 		return NULL;
 	}
 
@@ -162,11 +175,11 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 	FD_SET(intf->fd, &rset);
 
 	if (select(intf->fd+1, &rset, NULL, NULL, NULL) < 0) {
-		lperror(LOG_ERR, "Error doing select");
+		lperror(LOG_ERR, "intf_open: I/O Error");
 		return NULL;
 	}
-	if (!FD_ISSET(intf->fd, &rset)) {
-		lprintf(LOG_ERR, "Error no data available");
+	if (FD_ISSET(intf->fd, &rset) == 0) {
+		lprintf(LOG_ERR, "intf_open: No data available");
 		return NULL;
 	}
 
@@ -177,7 +190,7 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 
 	/* get data */
 	if (ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv) < 0) {
-		lperror(LOG_ERR, "Error receiving message");
+		lperror(LOG_ERR, "intf_open: Error receiving message");
 		if (errno != EMSGSIZE)
 			return NULL;
 	}
@@ -201,7 +214,7 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 	rsp.data_len = recv.msg.data_len - 1;
 
 	/* save response data for caller */
-	if (!rsp.ccode && rsp.data_len) {
+	if (rsp.ccode == 0 && rsp.data_len > 0) {
 		memmove(rsp.data, rsp.data + 1, rsp.data_len);
 		rsp.data[recv.msg.data_len] = 0;
 	}

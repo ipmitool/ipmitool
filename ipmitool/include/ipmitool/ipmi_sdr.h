@@ -589,20 +589,20 @@ struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
 struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
 void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
-void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type);
-void ipmi_sdr_print_rawentry(struct ipmi_intf * intf, unsigned char type, unsigned char * raw, int len);
-void ipmi_sdr_print_listentry(struct ipmi_intf * intf, struct sdr_record_list * entry);
+int ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type);
+int ipmi_sdr_print_rawentry(struct ipmi_intf * intf, unsigned char type, unsigned char * raw, int len);
+int ipmi_sdr_print_listentry(struct ipmi_intf * intf, struct sdr_record_list * entry);
 const char * ipmi_sdr_get_status(unsigned char stat);
 float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char val);
 unsigned char sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val);
 struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor);
 const char * ipmi_sdr_get_sensor_type_desc(const unsigned char type);
 
-void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf, struct sdr_record_full_sensor * sensor);
-void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf, struct sdr_record_compact_sensor * sensor);
-void ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf, struct sdr_record_eventonly_sensor * sensor);
-void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
-void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
+int ipmi_sdr_print_sensor_full(struct ipmi_intf * intf, struct sdr_record_full_sensor * sensor);
+int ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf, struct sdr_record_compact_sensor * sensor);
+int ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf, struct sdr_record_eventonly_sensor * sensor);
+int ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
+int ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
 
 struct sdr_record_list * ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity);
 struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, unsigned char num, unsigned char type);

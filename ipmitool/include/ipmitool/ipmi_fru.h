@@ -223,6 +223,6 @@ static const char * chassis_type_desc[] __attribute__((unused)) = {
 };
 
 int ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv);
-void ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
+int ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
 
 #endif /* IPMI_FRU_H */

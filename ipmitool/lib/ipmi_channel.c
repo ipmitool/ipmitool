@@ -48,6 +48,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_strings.h>
@@ -61,23 +62,19 @@ void printf_channel_usage (void);
  * Create a string describing the supported authentication types as 
  * specificed by the parameter n
  */
-const char * ipmi_1_5_authtypes(unsigned char n)
+static const char *
+ipmi_1_5_authtypes(unsigned char n)
 {
 	unsigned int i;
 	static char supportedTypes[128];
 
 	bzero(supportedTypes, 128);
 
-	i = 0;
-	while (ipmi_authtype_vals[i].val)
-	{
-		if (n & ipmi_authtype_vals[i].val)
-		{
+	for (i = 0; ipmi_authtype_vals[i].val != 0; i++) {
+		if (n & ipmi_authtype_vals[i].val) {
 			strcat(supportedTypes, ipmi_authtype_vals[i].str);
 			strcat(supportedTypes, " ");
 		}
-
-		++i;
 	}
 
 	return supportedTypes;
@@ -91,16 +88,16 @@ const char * ipmi_1_5_authtypes(unsigned char n)
  * return 0 on success
  *        -1 on failure
  */
-int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
-                              unsigned char channel,
-                              unsigned char priv)
+int
+ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
+			  unsigned char channel,
+			  unsigned char priv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct get_channel_auth_cap_rsp auth_cap;
-
-
 	unsigned char msg_data[2];
+
 	msg_data[0] = channel | 0x80; // Ask for IPMI v2 data as well
 	msg_data[1] = priv;
 
@@ -112,8 +109,7 @@ int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-	{
+	if ((rsp == NULL) || (rsp->ccode > 0))	{
 		/*
 		 * It's very possible that this failed because we asked for IPMI v2 data
 		 * Ask again, without requesting IPMI v2 data
@@ -121,15 +117,18 @@ int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 		msg_data[0] &= 0x7F;
 		
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp || rsp->ccode) {
-			printf("Error:%x Get Channel Authentication Capabilities Command (0x%x)\n",
-				   rsp ? rsp->ccode : 0, channel);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to Get Channel Authentication Capabilities");
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get Channel Authentication Capabilities failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
 			return -1;
 		}
 	}
 
 	memcpy(&auth_cap, rsp->data, sizeof(struct get_channel_auth_cap_rsp));
-
 
 	printf("Channel number             : %d\n",
 		   auth_cap.channel_number);
@@ -152,8 +151,7 @@ int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 	printf("Anonymous login enabled    : %s\n",
 		   (auth_cap.anon_login_enabled) ? "yes" : "no");
 
-	if (auth_cap.v20_data_available)
-	{
+	if (auth_cap.v20_data_available) {
 		printf("Channel supports IPMI v1.5 : %s\n",
 			   (auth_cap.ipmiv15_support) ? "yes" : "no");
 		printf("Channel supports IPMI v2.0 : %s\n",
@@ -164,8 +162,7 @@ int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 	 * If there is support for an OEM authentication type, there is some
 	 * information.
 	 */
-	if (auth_cap.enabled_auth_types & IPMI_1_5_AUTH_TYPE_BIT_OEM)
-	{
+	if (auth_cap.enabled_auth_types & IPMI_1_5_AUTH_TYPE_BIT_OEM) {
 		printf("IANA Number for OEM        : %d\n",
 			   auth_cap.oem_id[0]      | 
 			   auth_cap.oem_id[1] << 8 | 
@@ -202,16 +199,17 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get Channel Info Command (0x%x)\n",
-			   rsp ? rsp->ccode : 0, channel);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get Channel Info");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Info failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
-
 	memcpy(&channel_info, rsp->data, sizeof(struct get_channel_info_rsp));
-
 
 	printf("Channel 0x%x info:\n", channel_info.channel_number);
 
@@ -260,7 +258,13 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get Channel Access (volatile)");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Access (volatile) failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -298,7 +302,13 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 
 	rqdata[1] = 0x40; /* 0x40=non-volatile */
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get Channel Access (non-volatile)");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Access (non-volatile) failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -331,7 +341,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 			break;
 	}
 
-    return 0;
+	return 0;
 }
 
 static int
@@ -345,7 +355,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
-	curr_uid = userid ? userid : 1;
+	curr_uid = userid ? : 1;
 
 	memset(&req1, 0, sizeof(req1));
 	req1.msg.netfn = IPMI_NETFN_APP;
@@ -365,39 +375,53 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 		rqdata[1] = curr_uid & 0x3f;
 
 		rsp = intf->sendrecv(intf, &req1);
-		if (!rsp || rsp->ccode) {
-			printf("Error:%x Get User Access Command (0x%x)\n",
-			       rsp ? rsp->ccode : 0, channel);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to Get User Access (channel %d id %d)",
+				rqdata[0], rqdata[1]);
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get User Access (channel %d id %d) failed: %s",
+				rqdata[0], rqdata[1],
+				val2str(rsp->ccode, completion_code_vals));
 			return -1;
 		}
 
 		memcpy(&user_access, rsp->data, sizeof(struct get_user_access_rsp));
 
-
 		rqdata[0] = curr_uid & 0x3f;
 
 		rsp = intf->sendrecv(intf, &req2);
-		if (!rsp || rsp->ccode) {
-			printf("Error:%x Get User Name Command (0x%x)\n",
-			       rsp ? rsp->ccode : 0, channel);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to Get User Name (id %d)", rqdata[0]);
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get User Name (id %d) failed: %s",
+				rqdata[0], val2str(rsp->ccode, completion_code_vals));
 			return -1;
 		}
 
-		if (init)
-		{
+		if (init) {
 			printf("Maximum User IDs     : %d\n", user_access.max_user_ids);
 			printf("Enabled User IDs     : %d\n", user_access.enabled_user_ids);
 			max_uid = user_access.max_user_ids;
 			init = 0;
 		}
 
-		printf("\nUser ID              : %d\n", curr_uid);
+		printf("\n");
+		printf("User ID              : %d\n", curr_uid);
 		printf("User Name            : %s\n", rsp->data);
-		printf("Fixed Name           : %s\n", curr_uid <= user_access.fixed_user_ids ? "Yes" : "No");
-		printf("Access Available     : %s\n", user_access.callin_callback ? "callback" : "call-in / callback");
-		printf("Link Authentication  : %sabled\n", user_access.link_auth ? "en" : "dis");
-		printf("IPMI Messaging       : %sabled\n", user_access.ipmi_messaging ? "en" : "dis");
-		printf("Privilege Level      : %s\n", val2str(user_access.privilege_limit, ipmi_privlvl_vals));
+		printf("Fixed Name           : %s\n",
+		       (curr_uid <= user_access.fixed_user_ids) ? "Yes" : "No");
+		printf("Access Available     : %s\n",
+		       (user_access.callin_callback) ? "callback" : "call-in / callback");
+		printf("Link Authentication  : %sabled\n",
+		       (user_access.link_auth) ? "en" : "dis");
+		printf("IPMI Messaging       : %sabled\n",
+		       (user_access.ipmi_messaging) ? "en" : "dis");
+		printf("Privilege Level      : %s\n",
+		       val2str(user_access.privilege_limit, ipmi_privlvl_vals));
 
 		curr_uid ++;
 
@@ -406,7 +430,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 	return 0;
 }
 
-static void
+static int
 ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	unsigned char channel, userid;
@@ -419,9 +443,9 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
-        if (argc < 3 || !strncmp(argv[0], "help", 4)) {
+        if ((argc < 3) || (strncmp(argv[0], "help", 4) == 0)) {
 		printf_channel_usage();
-                return;
+                return 0;
         }
 
 	channel = (unsigned char)strtol(argv[0], NULL, 0);
@@ -437,10 +461,16 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	rqdata[1] = userid & 0x3f;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get User Access Command (0x%x)\n",
-		       rsp ? rsp->ccode : 0, channel);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get User Access (channel %d id %d)",
+			rqdata[0], rqdata[1]);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get User Access (channel %d id %d) failed: %s",
+			rqdata[0], rqdata[1],
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
 	memcpy(&user_access, rsp->data, sizeof(struct get_user_access_rsp));
@@ -456,21 +486,21 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 
 	for (i = 2; i < argc; i ++)
 	{
-		if (!strncmp(argv[i], "callin=", 7)) {
-			set_access.callin_callback = !strncmp (argv[i]+7, "off", 3);
+		if (strncmp(argv[i], "callin=", 7) == 0) {
+			set_access.callin_callback = !(strncmp (argv[i]+7, "off", 3));
 		}
-		else if (!strncmp(argv[i], "link=", 5)) {
+		else if (strncmp(argv[i], "link=", 5) == 0) {
 			set_access.link_auth = strncmp (argv[i]+5, "off", 3);
 		}
-		else if (!strncmp(argv[i], "ipmi=", 5)) {
+		else if (strncmp(argv[i], "ipmi=", 5) == 0) {
 			set_access.ipmi_messaging = strncmp (argv[i]+5, "off", 3);
 		}
-		else if (!strncmp(argv[i], "privilege=", 10)) {
+		else if (strncmp(argv[i], "privilege=", 10) == 0) {
 			set_access.privilege_limit = strtol (argv[i]+10, NULL, 0);
 		}
 		else {
 			printf ("Invalid option: %s\n", argv [i]);
-			return;
+			return -1;
 		}
 	}
 
@@ -481,13 +511,19 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Set User Access Command (0x%x)\n",
-		       rsp ? rsp->ccode : 0, channel);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Set User Access (channel %d id %d)",
+			set_access.channel, set_access.user_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set User Access (channel %d id %d) failed: %s",
+			set_access.channel, set_access.user_id,
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
-	return;
+	return 0;
 }
 
 void
@@ -513,11 +549,11 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
 
-	if (!argc || !strncmp(argv[0], "help", 4))
+	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0))
 	{
 		printf_channel_usage();
 	}
-	else if (!strncmp(argv[0], "authcap", 7))
+	else if (strncmp(argv[0], "authcap", 7) == 0)
 	{
 		if (argc != 3)
 			printf_channel_usage();
@@ -526,9 +562,9 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
                                                (unsigned char)strtol(argv[1], NULL, 0),
                                                (unsigned char)strtol(argv[2], NULL, 0));
 	}
-	else if (!strncmp(argv[0], "getaccess", 10))
+	else if (strncmp(argv[0], "getaccess", 10) == 0)
 	{
-		if (argc < 2 || argc > 3)
+		if ((argc < 2) || (argc > 3))
 			printf_channel_usage();
 		else {
 			unsigned char ch = (unsigned char)strtol(argv[1], NULL, 0);
@@ -538,11 +574,11 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			retval = ipmi_get_user_access(intf, ch, id);
 		}
 	}
-	else if (!strncmp(argv[0], "setaccess", 9))
+	else if (strncmp(argv[0], "setaccess", 9) == 0)
 	{
-		ipmi_set_user_access(intf, argc-1, &(argv[1]));
+		retval = ipmi_set_user_access(intf, argc-1, &(argv[1]));
 	}
-	else if (!strncmp(argv[0], "info", 4))
+	else if (strncmp(argv[0], "info", 4) == 0)
 	{
 		if (argc > 2)
 			printf_channel_usage();
@@ -557,7 +593,7 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	{
 		printf("Invalid CHANNEL command: %s\n", argv[0]);
 		printf_channel_usage();
-		retval = 1;
+		retval = -1;
 	}
 
 	return retval;

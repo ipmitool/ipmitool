@@ -48,6 +48,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_channel.h>
@@ -234,7 +235,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			tok = strtok(NULL, " ");
 		}
 		if (i < 7) {
-			printf("Invalid Event: %s\n",
+			lprintf(LOG_ERR, "Invalid Event: %s",
 			       buf2str(rqdata, sizeof(rqdata)));
 			continue;
 		}
@@ -256,11 +257,11 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		ipmi_sel_print_std_entry(&sel_event);
 		
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp)
-			printf("Error in Platform Event Message Command\n");
-		else if (rsp->ccode)
-			printf("Error in Platform Event Message Command: %s\n",
-			       val2str(rsp->ccode, completion_code_vals));
+		if (rsp == NULL)
+			lprintf(LOG_ERR, "Platform Event Message command failed");
+		else if (rsp->ccode > 0)
+			lprintf(LOG_ERR, "Platform Event Message command failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
 	}
 
 	fclose(fp);

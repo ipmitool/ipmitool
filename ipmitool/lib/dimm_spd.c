@@ -35,6 +35,8 @@
  */
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/log.h>
+#include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
 
@@ -670,7 +672,8 @@ const struct valstr jedec_id5_vals[] = {
 	{ 0x00, NULL },
 };
 
-void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
+int
+ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -687,14 +690,26 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode)
-		return;
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
 	fru.size = (rsp->data[1] << 8) | rsp->data[0];
 	fru.access = rsp->data[2] & 0x1;
 
-	if (verbose > 1)
-		printf("fru.size = %d bytes (accessed by %s)\n",
-		       fru.size, fru.access ? "words" : "bytes");
+	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
+		fru.size, fru.access ? "words" : "bytes");
+
+	if (fru.size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
+		return -1;
+	}
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -711,14 +726,14 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 		msg_data[3] = 32;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp) {
+		if (rsp == NULL) {
 			printf(" Device not present (No Response)\n");
-			return;
+			return -1;
 		}
-		if(rsp->ccode) {
+		if (rsp->ccode > 0) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
-			return;
+			return -1;
 		}
 
 		len = rsp->data[0];
@@ -726,33 +741,43 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 		offset += len;
 	} while (offset < fru.size);
 
-	if (verbose)
+	if (verbose > 1)
 		printbuf(spd_data, offset, "SPD DATA");
 
 	if (offset < 92)
-		return;		/* we need first 91 bytes to do our thing */
+		return -1; /* we need first 91 bytes to do our thing */
 
 	size = spd_data[5] * (spd_data[31] << 2);
 	printf(" Memory Size           : %d MB\n", size);
-	printf(" Memory Type           : %s\n", val2str(spd_data[2], spd_memtype_vals));
-	printf(" Voltage Intf          : %s\n", val2str(spd_data[8], spd_voltage_vals));
-	printf(" Error Detect/Cor      : %s\n", val2str(spd_data[11], spd_config_vals));
+	printf(" Memory Type           : %s\n",
+	       val2str(spd_data[2], spd_memtype_vals));
+	printf(" Voltage Intf          : %s\n",
+	       val2str(spd_data[8], spd_voltage_vals));
+	printf(" Error Detect/Cor      : %s\n",
+	       val2str(spd_data[11], spd_config_vals));
 
 	/* handle jedec table bank continuation values */
 	printf(" Manufacturer          : ");
 	if (spd_data[64] != 0x7f)
-		printf("%s\n", val2str(spd_data[64], jedec_id1_vals));
+		printf("%s\n",
+		       val2str(spd_data[64], jedec_id1_vals));
 	else {
 		if (spd_data[65] != 0x7f)
-			printf("%s\n", val2str(spd_data[65], jedec_id2_vals));
+			printf("%s\n",
+			       val2str(spd_data[65], jedec_id2_vals));
 		else {
 			if (spd_data[66] != 0x7f)
-				printf("%s\n", val2str(spd_data[66], jedec_id3_vals));
+				printf("%s\n",
+				       val2str(spd_data[66], jedec_id3_vals));
 			else {
 				if (spd_data[67] != 0x7f)
-					printf("%s\n", val2str(spd_data[67], jedec_id4_vals));
+					printf("%s\n",
+					       val2str(spd_data[67],
+						       jedec_id4_vals));
 				else
-					printf("%s\n", val2str(spd_data[68], jedec_id5_vals));
+					printf("%s\n",
+					       val2str(spd_data[68],
+						       jedec_id5_vals));
 			}
 		}
 	}
@@ -763,4 +788,6 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 		part[18] = 0;
 		printf(" Part Number           : %s\n", part);
 	}
+
+	return 0;
 }

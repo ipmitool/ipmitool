@@ -139,24 +139,25 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct ipmi_rq_entry * e = malloc(sizeof(struct ipmi_rq_entry));
 
-	if (e == NULL)
-		printf("WARNING: no memory!\n");
-	else {
-		memset(e, 0, sizeof(struct ipmi_rq_entry));
-		memcpy(&e->req, req, sizeof(struct ipmi_rq));
-
-		e->intf = intf;
-
-		if (!ipmi_req_entries) {
-			ipmi_req_entries = e;
-		} else {
-			ipmi_req_entries_tail->next = e;
-		}
-		ipmi_req_entries_tail = e;
-		if (verbose > 3)
-			printf("added list entry seq=0x%02x cmd=0x%02x\n",
-			       e->rq_seq, e->req.msg.cmd);
+	if (e == NULL) {
+		fprintf(stderr, "ipmitool: malloc failure\n");
+		return NULL;
 	}
+
+	memset(e, 0, sizeof(struct ipmi_rq_entry));
+	memcpy(&e->req, req, sizeof(struct ipmi_rq));
+
+	e->intf = intf;
+
+	if (!ipmi_req_entries)
+		ipmi_req_entries = e;
+	else
+		ipmi_req_entries_tail->next = e;
+
+	ipmi_req_entries_tail = e;
+	if (verbose > 3)
+		printf("added list entry seq=0x%02x cmd=0x%02x\n",
+		       e->rq_seq, e->req.msg.cmd);
 	return e;
 }
 
@@ -381,6 +382,10 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 	int rv;
 
 	data = malloc(len);
+	if (data == NULL) {
+		fprintf(stderr, "ipmitool: malloc failure\n");
+		return -1;
+	}
 	memset(data, 0, len);
 	memcpy(data, &rmcp_ping, sizeof(rmcp_ping));
 	memcpy(data+sizeof(rmcp_ping), &asf_ping, sizeof(asf_ping));
@@ -591,6 +596,10 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	if (s->active && s->authtype)
 		len += 16;
 	msg = malloc(len);
+	if (msg == NULL) {
+		fprintf(stderr, "ipmitool: malloc failure\n");
+		return NULL;
+	}
 	memset(msg, 0, len);
 
 	/* rmcp header */
@@ -719,8 +728,10 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rs * rsp;
 	int try = 0;
 
-	if (!intf->opened && intf->open && intf->open(intf) < 0)
-		return NULL;
+	if (intf->opened == 0 && intf->open != NULL) {
+		if (intf->open(intf) < 0)
+			return NULL;
+	}
 
 	entry = ipmi_lan_build_cmd(intf, req);
 	if (!entry) {
@@ -772,6 +783,10 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 		len += 16;
 
 	msg = malloc(len);
+	if (msg == NULL) {
+		fprintf(stderr, "ipmitool: malloc failure\n");
+		return NULL;
+	}
 	memset(msg, 0, len);
 
 	/* rmcp header */
@@ -1413,6 +1428,10 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 static int ipmi_lan_setup(struct ipmi_intf * intf)
 {
 	intf->session = malloc(sizeof(struct ipmi_session));
+	if (intf->session == NULL) {
+		fprintf(stderr, "ipmitool: malloc failure\n");
+		return -1;
+	}
 	memset(intf->session, 0, sizeof(struct ipmi_session));
-	return (intf->session) ? 0 : -1;
+	return 0;
 }

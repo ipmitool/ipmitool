@@ -40,6 +40,7 @@
 #include <time.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
@@ -146,7 +147,7 @@ ipmi_sel_get_sensor_type(unsigned char code)
 	return "Unknown";
 }
 
-static void
+static int
 ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -159,12 +160,14 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-	if (rsp->ccode) {
-		printf("Error%x in Get SEL Info command\n",
-		       rsp ? rsp->ccode : 0);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get SEL Info command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
@@ -173,6 +176,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	printf("Version          : %x%x\n",
 	       (rsp->data[0] & 0xf0) >> 4, rsp->data[0] & 0xf);
 
+	/* save the entry count and free space to determine percent full */
 	e = buf2short(rsp->data + 1);
 	f = buf2short(rsp->data + 3);
 	printf("Entries          : %d\n", e);
@@ -199,19 +203,23 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	printf("Get Alloc Info   : %ssupported\n",
 	       rsp->data[13] & 0x1 ? "" : "un");
 
-	if (rsp->data[13] & 0x1) {
-		/* get sel allocation info */
+	/* get sel allocation info if supported */
+	if (rsp->data[13] & 1) {
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_STORAGE;
 		req.msg.cmd = IPMI_CMD_GET_SEL_ALLOC_INFO;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp)
-			return;
-		if (rsp->ccode) {
-			printf("error%d in Get SEL Allocation Info command\n",
-			       rsp ? rsp->ccode : 0);
-			return;
+		if (rsp == NULL) {
+			lprintf(LOG_ERR,
+				"Get SEL Allocation Info command failed");
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR,
+				"Get SEL Allocation Info command failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
 		}
 
 		printf("# of Alloc Units : %d\n", buf2short(rsp->data));
@@ -223,11 +231,13 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 }
 
 static unsigned short
-ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_event_record * evt)
+ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id,
+		       struct sel_event_record * evt)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
 	unsigned char msg_data[6];
+	unsigned short next;
 
 	memset(msg_data, 0, 6);
 	msg_data[0] = 0x00;	/* no reserve id, not partial get */
@@ -244,27 +254,33 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return 0;
-	if (rsp->ccode) {
-		printf("Error %x in Get SEL Entry %x Command\n",
-		       rsp ? rsp->ccode : 0, id);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get SEL Entry %x command failed", id);
 		return 0;
 	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get SEL Entry %x command failed: %s",
+			id, val2str(rsp->ccode, completion_code_vals));
+		return 0;
+	}
+
+	/* save next entry id */
+	next = (rsp->data[1] << 8) | rsp->data[0];
+
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "SEL Entry");
 
-
 	if (rsp->data[4] >= 0xc0) {
-		if (verbose)
-			printf("Entry %04xh not a standard SEL entry!\n", id);
-		return (rsp->data[1] << 8) | rsp->data[0];
+		lprintf(LOG_INFO, "Entry %x not a standard SEL entry", id);
+		return next;
 	}
 
+	/* save response into SEL event structure */
 	memset(evt, 0, sizeof(*evt));
 	evt->record_id = (rsp->data[3] << 8) | rsp->data[2];
 	evt->record_type = rsp->data[4];
-	evt->timestamp = (rsp->data[8] << 24) | (rsp->data[7] << 16) | (rsp->data[6] << 8) | rsp->data[5];
+	evt->timestamp = (rsp->data[8] << 24) |	(rsp->data[7] << 16) |
+		(rsp->data[6] << 8) | rsp->data[5];
 	evt->gen_id = (rsp->data[10] << 8) | rsp->data[9];
 	evt->evm_rev = rsp->data[11];
 	evt->sensor_type = rsp->data[12];
@@ -275,7 +291,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 	evt->event_data[1] = rsp->data[16];
 	evt->event_data[2] = rsp->data[17];
 
-	return (rsp->data[1] << 8) | rsp->data[0];
+	return next;
 }
 
 void
@@ -415,21 +431,23 @@ ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_
 
 	if (evt->record_type == 0xf0)
 	{
-		printf (" Record Type           : Linux kernel panic (OEM record %02x)\n", evt->record_type);
-		printf (" Panic string          : %.11s\n\n", (char *) evt + 5);
+		printf (" Record Type           : "
+			"Linux kernel panic (OEM record %02x)\n",
+			evt->record_type);
+		printf (" Panic string          : %.11s\n\n",
+			(char *) evt + 5);
 		return;
 	}
 
+	printf(" Record Type           : ");
 	if (evt->record_type >= 0xc0)
-		printf(" Record Type           : OEM record %02x\n", evt->record_type >= 0xc0);
+		printf("OEM record %02x\n", evt->record_type >= 0xc0);
 	else
-		printf(" Record Type           : %02x\n", evt->record_type);
+		printf("%02x\n", evt->record_type);
 
 	if (evt->record_type < 0xe0)
-	{
 		printf(" Timestamp             : %s\n",
 		       ipmi_sel_timestamp(evt->timestamp));
-	}
 
 	if (evt->record_type >= 0xc0)
 	{
@@ -556,7 +574,7 @@ ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_
 	printf("\n");
 }
 
-static void
+static int
 ipmi_sel_list_entries(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -569,19 +587,21 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-	if (rsp->ccode) {
-		printf("Error: %x from Get SEL Info command\n",
-		       rsp ? rsp->ccode : 0);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get SEL Info command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
-	if (!rsp->data[1] && !rsp->data[2]) {
-		printf("SEL has no entries\n");
-		return;
+	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
+		lprintf(LOG_ERR, "SEL has no entries");
+		return -1;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -589,24 +609,29 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-	if (rsp->ccode) {
-		printf("Error: %x from Reserve SEL command\n",
-		       rsp ? rsp->ccode : 0);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Reserve SEL command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Reserve SEL command failed: %s",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
 	while (next_id != 0xffff) {
 		curr_id = next_id;
-		if (verbose > 1)
-			printf("SEL Next ID: %04x\n", curr_id);
+		lprintf(LOG_DEBUG, "SEL Next ID: %04x", curr_id);
 
 		next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
-		if (!next_id) {
-			/* retry */
+		if (next_id == 0) {
+			/*
+			 * usually next_id of zero means end but
+			 * retry because some hardware has quirks
+			 * and will return 0 randomly.
+			 */
 			next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
-			if (!next_id)
+			if (next_id == 0)
 				break;
 		}
 
@@ -628,15 +653,17 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
+	if (rsp == NULL) {
+		lprintf(LOG_WARN, "Unable to reserve SEL");
 		return 0;
-	if (rsp->ccode) {
-		printf("Error:%x unable to reserve SEL\n",
-		       rsp ? rsp->ccode : 0);
+	}
+	if (rsp->ccode > 0) {
+		printf("Unable to reserve SEL: %s",
+		       val2str(rsp->ccode, completion_code_vals));
 		return 0;
 	}
 
-	return rsp->data[0] | rsp->data[1] << 8;
+	return (rsp->data[0] | (rsp->data[1] << 8));
 }
 
 
@@ -662,16 +689,18 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get SEL Time Command\n",  rsp ? rsp->ccode : 0);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get SEL Time command failed");
 		return -1;
 	}
-
-
-	if (rsp->data_len != 4) 
-	{
-		printf("Error:Invalid data length (0x%x) from Get SEL Time Command\n",
-			   rsp->data_len);
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get SEL Time command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	if (rsp->data_len != 4) {
+		lprintf(LOG_ERR, "Get SEL Time command failed: "
+			"Invalid data length %d", rsp->data_len);
 		return -1;
 	}
 	
@@ -710,15 +739,14 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	req.msg.cmd      = IPMI_SET_SEL_TIME;
 
 	/* Now how do we get our time_t from our ascii version? */
-	if (! strptime(time_string, time_format, &tm))
-	{
-		printf("Error.  Specified time could not be parsed.\n");
+	if (strptime(time_string, time_format, &tm) == 0) {
+		lprintf(LOG_ERR, "Specified time could not be parsed");
 		return -1;
 	}
 
-	if ((time = mktime(&tm)) == 0xFFFFFFFF)
-	{
-		printf("Error.  Specified time could not be parsed.\n");
+	time = mktime(&tm);
+	if (time < 0) {
+		lprintf(LOG_ERR, "Specified time could not be parsed");
 		return -1;
 	}
 
@@ -729,13 +757,15 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 #if WORDS_BIGENDIAN
 	time = BSWAP_32(time);
 #endif
-	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode) {
-		printf("Error in Set SEL Time Command");
-		if (rsp)
-			printf(": %s", val2str(rsp->ccode, completion_code_vals));
-		printf("\n");
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Set SEL Time command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set SEL Time command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -744,7 +774,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 
 
-static void
+static int
 ipmi_sel_clear(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -756,7 +786,7 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 
 	reserve_id = ipmi_sel_reserve(intf);
 	if (reserve_id == 0)
-		return;
+		return -1;
 
 	memset(msg_data, 0, 6);
 	msg_data[0] = reserve_id & 0xff;
@@ -773,38 +803,43 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-	if (rsp->ccode) {
-		printf("Error:%x unable to clear SEL\n", rsp ? rsp->ccode : 0);
-		return;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to clear SEL: %s");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Unable to clear SEL: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
 	}
 
 	printf("Clearing SEL.  Please allow a few seconds to erase.\n");
+	return 0;
 }
 
-static void
+static int
 ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned short id;
 	unsigned char msg_data[4];
+	int rc = 0;
 
-	if (!argc || !strncmp(argv[0], "help", 4))
-	{
-		printf("usage: delete <id>...<id>\n");
-		return;
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_ERR, "usage: delete <id>...<id>\n");
+		return -1;
 	}
 
 	id = ipmi_sel_reserve(intf);
 	if (id == 0)
-		return;
+		return -1;
 
 	memset(msg_data, 0, 4);
 	msg_data[0] = id & 0xff;
 	msg_data[1] = id >> 8;
-	while (argc)
+
+	for (argc; argc != 0; argc--)
 	{
 		id = atoi(argv[argc-1]);
 		msg_data[2] = id & 0xff;
@@ -817,23 +852,24 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data_len = 4;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp)
-		{
-			printf("No response\n");
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to delete entry %d", id);
+			rc = -1;
 		}
-		else if (rsp->ccode) 
-		{
-			printf("Error %x unable to delete entry %d\n", rsp ? rsp->ccode : 0, id);
+		else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Unable to delete entry %d: %s", id,
+				val2str(rsp->ccode, completion_code_vals));
+			rc = -1;
 		}
-		else
-		{
+		else {
 			printf("Deleted entry %d\n", id);
 		}
-                argc--;
 	}
+
+	return rc;
 }
 
-static void
+static int
 ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
@@ -844,27 +880,37 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 	struct sdr_record_list * sdr;
 	struct entity_id entity;
 	struct sdr_record_list * list, * entry;
+	int rc = 0;
 
-	if (!argc || !strncmp(argv[0], "help", 4))
-	{
-		printf("usage: sel get <id>...<id>\n");
-		return;
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_ERR, "usage: sel get <id>...<id>");
+		return -1;
 	}
 
-	if (!ipmi_sel_reserve(intf))
-		return;
+	if (ipmi_sel_reserve(intf) == 0)
+		return -1;
 
 	for (i=0; i<argc; i++) {
 		id = (unsigned short)strtol(argv[i], NULL, 0);
 
+		lprintf(LOG_DEBUG, "Looking up SEL entry 0x%x", id);
+
 		/* lookup SEL entry based on ID */
 		ipmi_sel_get_std_entry(intf, id, &evt);
+		if (evt.sensor_num == 0 && evt.sensor_type == 0) {
+			lprintf(LOG_WARN, "SEL Entry 0x%x not found", id);
+			rc = -1;
+			continue;
+		}
+		
 		/* lookup SDR entry based on sensor number and type */
 		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sensor_num, evt.sensor_type);
-		if (!sdr)
+		if (sdr == NULL)
 			continue;
+
 		/* print SEL extended entry */
 		ipmi_sel_print_extended_entry_verbose(&evt, sdr);
+
 		/* print SDR entry */
 		oldv = verbose;
 		verbose = verbose ? : 1;
@@ -901,48 +947,55 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		if ((argc > 1) && (i<(argc-1)))
 			printf("----------------------\n\n");
 	}
+
+	return rc;
 }
 
 int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc)
-		ipmi_sel_get_info(intf);
-	else if (!strncmp(argv[0], "help", 4))
-		printf("SEL Commands:  info clear delete list time\n");
-	else if (!strncmp(argv[0], "info", 4))
-		ipmi_sel_get_info(intf);
-	else if (!strncmp(argv[0], "list", 4))
-		ipmi_sel_list_entries(intf);
-	else if (!strncmp(argv[0], "clear", 5))
-		ipmi_sel_clear(intf);
-	else if (!strncmp(argv[0], "delete", 6)) {
-		if (argc < 2)
-			printf("usage: sel delete <id>...<id>\n");
-		else
-			ipmi_sel_delete(intf, argc-1, &argv[1]);
-	}
-	else if (!strncmp(argv[0], "get", 3)) {
-		if (argc < 2)
-			printf("usage: sel get <entry>\n");
-		else
-			ipmi_sel_show_entry(intf, argc-1, &argv[1]);
-	}
-	else if (!strncmp(argv[0], "time", 4)) {
-		if (argc < 2)
-			printf("sel time commands: get set\n");
-		else if (!strncmp(argv[1], "get", 3))
-			ipmi_sel_get_time(intf);
-		else if (!strncmp(argv[1], "set", 3)) {
-			if (argc < 3)
-				printf("usage: sel time set \"mm/dd/yyyy hh:mm:ss\"\n");
-			else
-				ipmi_sel_set_time(intf, argv[2]);
-		} else
-			printf("sel time commands: get set\n");
-	}			
+	int rc = 0;
 
-	else
-		printf("Invalid SEL command: %s\n", argv[0]);
-	return 0;
+	if (argc == 0)
+		rc = ipmi_sel_get_info(intf);
+	else if (strncmp(argv[0], "help", 4) == 0)
+		lprintf(LOG_ERR, "SEL Commands:  info clear delete list time");
+	else if (strncmp(argv[0], "info", 4) == 0)
+		rc = ipmi_sel_get_info(intf);
+	else if (strncmp(argv[0], "list", 4) == 0)
+		rc = ipmi_sel_list_entries(intf);
+	else if (strncmp(argv[0], "clear", 5) == 0)
+		rc = ipmi_sel_clear(intf);
+	else if (strncmp(argv[0], "delete", 6) == 0) {
+		if (argc < 2)
+			lprintf(LOG_ERR, "usage: sel delete <id>...<id>");
+		else
+			rc = ipmi_sel_delete(intf, argc-1, &argv[1]);
+	}
+	else if (strncmp(argv[0], "get", 3) == 0) {
+		if (argc < 2)
+			lprintf(LOG_ERR, "usage: sel get <entry>");
+		else
+			rc = ipmi_sel_show_entry(intf, argc-1, &argv[1]);
+	}
+	else if (strncmp(argv[0], "time", 4) == 0) {
+		if (argc < 2)
+			lprintf(LOG_ERR, "sel time commands: get set");
+		else if (strncmp(argv[1], "get", 3) == 0)
+			ipmi_sel_get_time(intf);
+		else if (strncmp(argv[1], "set", 3) == 0) {
+			if (argc < 3)
+				lprintf(LOG_ERR, "usage: sel time set \"mm/dd/yyyy hh:mm:ss\"");
+			else
+				rc = ipmi_sel_set_time(intf, argv[2]);
+		} else {
+			lprintf(LOG_ERR, "sel time commands: get set");
+		}
+	}			
+	else {
+		lprintf(LOG_ERR, "Invalid SEL command: %s", argv[0]);
+		rc = -1;
+	}
+
+	return rc;
 }
 
