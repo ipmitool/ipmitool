@@ -43,7 +43,7 @@
 #include <netinet/in.h>
 #include <ipmitool/helper.h>
 
-#define BUF_SIZE 1024
+#define IPMI_BUF_SIZE 1024
 
 /* From table 13.16 of the IPMI v2 specification */
 #define IPMI_PAYLOAD_TYPE_IPMI               0x00
@@ -115,7 +115,7 @@ struct ipmi_v2_payload {
 		} rakp_4_message;
 
 		struct {
-			unsigned char data[BUF_SIZE];
+			unsigned char data[IPMI_BUF_SIZE];
 			unsigned short character_count;
 			unsigned char packet_sequence_number;
 			unsigned char acked_packet_number;
@@ -148,7 +148,7 @@ struct ipmi_rq_entry {
 
 struct ipmi_rs {
 	unsigned char ccode;
-	unsigned char data[BUF_SIZE];
+	unsigned char data[IPMI_BUF_SIZE];
 
 	/*
 	 * Looks like this is the length of the entire packet, including the RMCP

@@ -256,7 +256,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	}
 
 	alarm(IPMI_LAN_TIMEOUT);
-	rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
+	rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 	alarm(0);
 
 	/* the first read may return ECONNREFUSED because the rmcp ping
@@ -271,7 +271,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 */
 	if (rc < 0) {
 		alarm(IPMI_LAN_TIMEOUT);
-		rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
+		rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 		alarm(0);
 		if (rc < 0) {
 			perror("recv failed");
@@ -519,7 +519,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	if (rsp && rsp->data_len > x) {
 		rsp->data_len -= x + 1;
 		memmove(rsp->data, rsp->data + x, rsp->data_len);
-		memset(rsp->data + rsp->data_len, 0, BUF_SIZE - rsp->data_len);
+		memset(rsp->data + rsp->data_len, 0, IPMI_BUF_SIZE - rsp->data_len);
 	}
 
 	return rsp;

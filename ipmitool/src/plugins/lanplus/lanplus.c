@@ -282,7 +282,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	}
 
 	alarm(intf->session->timeout);
-	rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
+	rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 	alarm(0);
 
 	/* the first read may return ECONNREFUSED because the rmcp ping
@@ -297,7 +297,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 */
 	if (rc < 0) {
 		alarm(intf->session->timeout);
-		rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
+		rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 		alarm(0);
 		if (rc < 0) {
 			perror("recv failed");
