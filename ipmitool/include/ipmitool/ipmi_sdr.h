@@ -331,6 +331,23 @@ struct sdr_record_mc_locator {
 	unsigned char id_string[16];
 } __attribute__ ((packed));
 
+struct sdr_record_fru_locator {
+	unsigned char __reserved1 : 1, dev_slave_addr : 7;
+	unsigned char device_id;
+	unsigned char logical : 1, __reserved2 : 2, lun : 2, bus : 3;
+	unsigned char channel_num : 4, __reserved3 : 4;
+	unsigned char __reserved4;
+	unsigned char dev_type;
+	unsigned char dev_type_modifier;
+	struct {
+		unsigned char id;
+		unsigned char instance;
+	} entity;
+	unsigned char oem;
+	unsigned char id_code;
+	unsigned char id_string[16];
+} __attribute__ ((packed));
+
 struct ipmi_sdr_iterator
 {
 	unsigned short reservation;
