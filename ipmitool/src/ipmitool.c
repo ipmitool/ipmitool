@@ -88,7 +88,7 @@ struct ipmi_cmd {
 	{ ipmi_lanp_main,	"lan",		"Configure LAN Channels" },
 	{ ipmi_chassis_main,	"chassis",	"Get chassis status and set power state" },
 	{ ipmi_event_main,	"event",	"Send pre-defined events to BMC" },
-	{ ipmi_bmc_main,	"bmc",		"Print BMC status and configure global enables" },
+	{ ipmi_bmc_main,	"ipmc",		"Print BMC status and configure global enables" },
 	{ ipmi_sdr_main,	"sdr",		"Print Sensor Data Repository entries and readings" },
 	{ ipmi_sensor_main,	"sensor",	"Print detailed sensor information" },
 	{ ipmi_fru_main,	"fru",		"Print built-in FRU and scan SDR for FRU locators" },
@@ -102,6 +102,7 @@ struct ipmi_cmd {
 	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
 	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
 	{ ipmi_set_main,	"set",		"Set runtime variable for shell and exec" },
+	{ ipmi_bmc_main,	"bmc",		NULL },
 	{ NULL },
 };
 
@@ -379,6 +380,9 @@ int main(int argc, char ** argv)
 
 	/* now we finally run the command */
 	ipmi_cmd_run(intf, argv[optind], argc-optind-1, &(argv[optind+1]));
+
+	/* clean repository caches */
+	ipmi_cleanup(intf);
 
 	if (intf->opened && intf->close)
 		intf->close(intf);
