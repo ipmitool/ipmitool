@@ -138,8 +138,9 @@ static const struct valstr ipmi_channel_medium_vals[] = {
 static struct ipmi_rq_entry *
 ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
-	struct ipmi_rq_entry * e = malloc(sizeof(struct ipmi_rq_entry));
+	struct ipmi_rq_entry * e;
 
+	e = malloc(sizeof(struct ipmi_rq_entry));
 	if (e == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
@@ -424,8 +425,10 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq_entry * entry;
 	int x=0, rv;
+
 	rsp = ipmi_lan_recv_packet(intf);
-	while (rsp) {
+
+	while (rsp != NULL) {
 
 		/* parse response headers */
 		memcpy(&rmcp_rsp, rsp->data, 4);
@@ -1359,7 +1362,7 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	if (s->privlvl == 0)
 		s->privlvl = IPMI_SESSION_PRIV_ADMIN;
 
-	if (strlen(s->hostname) == 0) {
+	if (s->hostname == NULL || strlen(s->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
