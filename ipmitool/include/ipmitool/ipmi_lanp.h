@@ -60,21 +60,26 @@ enum {
 	IPMI_LANP_AUTH_TYPE_ENABLE,
 	IPMI_LANP_IP_ADDR,
 	IPMI_LANP_IP_ADDR_SRC,
-	IPMI_LANP_MAC_ADDR,
+	IPMI_LANP_MAC_ADDR,            /* 5 */
 	IPMI_LANP_SUBNET_MASK,
 	IPMI_LANP_IP_HEADER,
 	IPMI_LANP_PRI_RMCP_PORT,
 	IPMI_LANP_SEC_RMCP_PORT,
-	IPMI_LANP_BMC_ARP,
+	IPMI_LANP_BMC_ARP,             /* 10 */
 	IPMI_LANP_GRAT_ARP,
 	IPMI_LANP_DEF_GATEWAY_IP,
 	IPMI_LANP_DEF_GATEWAY_MAC,
 	IPMI_LANP_BAK_GATEWAY_IP,
-	IPMI_LANP_BAK_GATEWAY_MAC,
+	IPMI_LANP_BAK_GATEWAY_MAC,     /* 15 */
 	IPMI_LANP_SNMP_STRING,
 	IPMI_LANP_NUM_DEST,
 	IPMI_LANP_DEST_TYPE,
 	IPMI_LANP_DEST_ADDR,
+	IPMI_LANP_VLAN_ID,             /* 20 */
+	IPMI_LANP_VLAN_PRIORITY,
+	IPMI_LANP_RMCP_CIPHER_SUPPORT,
+	IPMI_LANP_RMCP_CIPHERS,
+	IPMI_LANP_RMCP_PRIV_LEVELS,
 	IPMI_LANP_OEM_ALERT_STRING=96,
 	IPMI_LANP_ALERT_RETRY=97,
 	IPMI_LANP_UTC_OFFSET=98,
@@ -96,27 +101,32 @@ static struct lan_param {
 	{ IPMI_LANP_AUTH_TYPE_ENABLE,	5,	"Auth Type Enable"	},
 	{ IPMI_LANP_IP_ADDR,		4,	"IP Address"		},
 	{ IPMI_LANP_IP_ADDR_SRC,	1,	"IP Address Source"	},
-	{ IPMI_LANP_MAC_ADDR,		6,	"MAC Address"		},
+	{ IPMI_LANP_MAC_ADDR,		6,	"MAC Address"		}, /* 5 */
 	{ IPMI_LANP_SUBNET_MASK,	4,	"Subnet Mask"		},
 	{ IPMI_LANP_IP_HEADER,		3,	"IP Header"		},
 	{ IPMI_LANP_PRI_RMCP_PORT,	2,	"Primary RMCP Port"	},
 	{ IPMI_LANP_SEC_RMCP_PORT,	2,	"Secondary RMCP Port"	},
-	{ IPMI_LANP_BMC_ARP,		1,	"BMC ARP Control"	},
+	{ IPMI_LANP_BMC_ARP,		1,	"BMC ARP Control"	}, /* 10 */
 	{ IPMI_LANP_GRAT_ARP,		1,	"Gratituous ARP Intrvl"	},
 	{ IPMI_LANP_DEF_GATEWAY_IP,	4,	"Default Gateway IP"	},
 	{ IPMI_LANP_DEF_GATEWAY_MAC,	6,	"Default Gateway MAC"	},
 	{ IPMI_LANP_BAK_GATEWAY_IP,	4,	"Backup Gateway IP"	},
-	{ IPMI_LANP_BAK_GATEWAY_MAC,	6,	"Backup Gateway MAC"	},
+	{ IPMI_LANP_BAK_GATEWAY_MAC,	6,	"Backup Gateway MAC"	}, /* 15 */
 	{ IPMI_LANP_SNMP_STRING,	18,	"SNMP Community String"	},
 	{ IPMI_LANP_NUM_DEST,		1,	"Number of Destinations"},
 	{ IPMI_LANP_DEST_TYPE,		4,	"Destination Type"	},
 	{ IPMI_LANP_DEST_ADDR,		13,	"Destination Addresses"	},
-	{ IPMI_LANP_OEM_ALERT_STRING,	28,	"OEM Alert String"	},
+	{ IPMI_LANP_VLAN_ID,		2,	"802.1q VLAN ID"        }, /* 20 */
+	{ IPMI_LANP_VLAN_PRIORITY,	1,	"802.1q VLAN Priority"  },
+	{ IPMI_LANP_RMCP_CIPHER_SUPPORT,1,	"RMCP+ Cipher Suite Count" },
+	{ IPMI_LANP_RMCP_CIPHERS,	16,	"RMCP+ Cipher Suites"   },
+	{ IPMI_LANP_RMCP_PRIV_LEVELS,	9,	"Cipher Suite Priv Max"	},
+	{ IPMI_LANP_OEM_ALERT_STRING,	28,	"OEM Alert String"	}, /* 25 */
 	{ IPMI_LANP_ALERT_RETRY,	1,	"Alert Retry Algorithm" },
 	{ IPMI_LANP_UTC_OFFSET,		3,	"UTC Offset"		},
 	{ IPMI_LANP_DHCP_SERVER_IP,	4,	"DHCP Server IP"	},
-	{ IPMI_LANP_DHCP_SERVER_MAC,	6,	"DHDP Server MAC"	},
-	{ IPMI_LANP_DHCP_ENABLE,	1,	"DHCP Enable"		},
+	{ IPMI_LANP_DHCP_SERVER_MAC,	6,	"DHDP Server MAC"	}, 
+	{ IPMI_LANP_DHCP_ENABLE,	1,	"DHCP Enable"		}, /* 30 */
 	{ IPMI_LANP_CHAN_ACCESS_MODE,	2,	"Channel Access Mode"	},
 	{ -1 }
 };
