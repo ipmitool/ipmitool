@@ -53,6 +53,8 @@ void printbuf(const unsigned char * buf, int len, const char * desc);
 
 void signal_handler(int sig, void * handler);
 
+unsigned char ipmi_csum(unsigned char * d, int s);
+
 #define SIG_IGNORE(s)         ((void)signal((s), SIG_IGN))
 #define SIG_DEFAULT(s)        ((void)signal((s), SIG_DFL))
 #define SIG_HANDLE(s,h)       ((void)signal_handler((s), (h)))
