@@ -173,7 +173,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	if (fp == NULL)
 		return -1;
 
-	while (feof(fp) != 0) {
+	while (feof(fp) == 0) {
 		if (fgets(buf, 1024, fp) == NULL)
 			continue;
 
