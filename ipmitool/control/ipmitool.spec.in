@@ -58,6 +58,28 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
+* Wed Mar 16 2005 <duncan@iceblink.org>  1.8.0-1
+ - Fix IPMIv2.0 issues
+ - Fix chassis boot parameter support
+ - Add support for linear sensors
+ - Update bmc plugin to work with new Solaris bmc driver (new ioctl
+   for interface detection and new STREAMS message-based interface)
+
+* Tue Jan 18 2005 <duncan@iceblink.org>  1.7.0-1
+ - Propogate errors correctly so exit status will be useful
+ - More consistent display of errors including completion code text
+ - Errors and debug is send to stderr now
+ - New "sel get" command that will print details about SEL entry
+   and corresponding SDR records as well as FRUs via entity association
+ - Improved event generator, now supports reading events from text file
+ - New "-o oemtype" option for specifying OEM boards
+   exsting types are "supermicro" and "intelwv2"
+ - New PEF subsystem from Tim Murphy at Dell
+ - New "bmc" plugin for Solaris 10 x86
+ - Many bugfixes and contributed patches
+ - Support for Supermicro BMC OEM authentication method
+ - Fix minor problem with LAN parameter setting
+
 * Wed Aug 18 2004 <duncan@iceblink.org>  1.6.0-1
  - Add a README
  - Add support for IPMIv2 and Serial-over-LAN from Newisys
