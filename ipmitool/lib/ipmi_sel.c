@@ -402,7 +402,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short reserve_id, next_id = 0;
+	unsigned short next_id = 0;
 	struct sel_event_record evt;
 
 	memset(&req, 0, sizeof(req));
@@ -437,10 +437,6 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 		       rsp ? rsp->ccode : 0);
 		return;
 	}
-
-	reserve_id = rsp->data[0] | rsp->data[1] << 8;
-	if (verbose)
-		printf("SEL Reservation ID: %04x\n", reserve_id);
 
 	while (next_id != 0xffff) {
 		if (verbose > 1)
