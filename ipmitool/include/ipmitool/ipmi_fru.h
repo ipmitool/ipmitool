@@ -147,10 +147,24 @@ static const char * combined_voltage_desc[] __attribute__((unused)) = {
 };
 
 struct fru_multirec_dcoutput {
-};
+	unsigned char  output_number : 4, __reserved : 3, standby : 1;
+	short nominal_voltage;
+	short max_neg_dev;
+	short max_pos_dev;
+	unsigned short ripple_and_noise;
+	unsigned short min_current;
+	unsigned short max_current;
+} __attribute__ ((packed));
 
 struct fru_multirec_dcload {
-};
+	unsigned char  output_number : 4, __reserved : 4;
+	short nominal_voltage;
+	short min_voltage;
+	short max_voltage;
+	unsigned short ripple_and_noise;
+	unsigned short min_current;
+	unsigned short max_current;
+} __attribute__ ((packed));
 
 static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Unspecified", "Other", "Unknown",

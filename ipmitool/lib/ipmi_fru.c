@@ -279,12 +279,15 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 	{
 		struct fru_multirec_header * h;
 		struct fru_multirec_powersupply * ps;
+		struct fru_multirec_dcoutput * dc;
+		struct fru_multirec_dcload * dl;
 
 		i = header.offset.multi;
-		h = (struct fru_multirec_header *) (fru_data + i);
 
 		do
 		{
+			h = (struct fru_multirec_header *) (fru_data + i);
+
 			switch (h->type)
 			{
 			case FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION:
@@ -320,13 +323,34 @@ static void ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 
 				break;
 
-			//default:
-			//	printf ("Not supported yet!\n");
+			case FRU_RECORD_TYPE_DC_OUTPUT:
+				dc = (struct fru_multirec_dcoutput *) (fru_data + i + sizeof (struct fru_multirec_header));
+
+				printf ("  DC Output Record\n");
+				printf ("    Output Number          : %d\n", dc->output_number);
+				printf ("    Standby power          : %s\n", dc->standby ? "Yes" : "No");
+				printf ("    Nominal voltage        : %.2f V\n", (double) dc->nominal_voltage / 100);
+				printf ("    Max negative deviation : %.2f V\n", (double) dc->max_neg_dev / 100);
+				printf ("    Max positive deviation : %.2f V\n", (double) dc->max_pos_dev / 100);
+				printf ("    Ripple and noise pk-pk : %d mV\n", dc->ripple_and_noise);
+				printf ("    Minimum current draw   : %.3f A\n", (double) dc->min_current / 1000);
+				printf ("    Maximum current draw   : %.3f A\n", (double) dc->max_current / 1000);
+				break;
+
+			case FRU_RECORD_TYPE_DC_LOAD:
+				dl = (struct fru_multirec_dcload *) (fru_data + i + sizeof (struct fru_multirec_header));
+
+				printf ("  DC Load Record\n");
+				printf ("    Output Number          : %d\n", dl->output_number);
+				printf ("    Nominal voltage        : %.2f V\n", (double) dl->nominal_voltage / 100);
+				printf ("    Min voltage allowed    : %.2f V\n", (double) dl->min_voltage / 100);
+				printf ("    Max voltage allowed    : %.2f V\n", (double) dl->max_voltage / 100);
+				printf ("    Ripple and noise pk-pk : %d mV\n", dl->ripple_and_noise);
+				printf ("    Minimum current load   : %.3f A\n", (double) dl->min_current / 1000);
+				printf ("    Maximum current load   : %.3f A\n", (double) dl->max_current / 1000);
+				break;
 			}
-			//printf ("len: %d\n", h->len);
-			i += h->len;
-			h = (struct fru_multirec_header *) (fru_data + i + sizeof (struct fru_multirec_header));
-			if (h->len == 0) break;
+			i += h->len + sizeof (struct fru_multirec_header);
 		} while (!(h->format & 0x80));
 	}
 }
