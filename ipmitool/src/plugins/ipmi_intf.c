@@ -201,6 +201,15 @@ ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t level)
 }
 
 void
+ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id)
+{
+	if (intf->session == NULL)
+		return;
+
+	intf->session->cipher_suite_id = cipher_suite_id;
+}
+
+void
 ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
 {
 	if (intf->session == NULL)
