@@ -36,15 +36,16 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <signal.h>
 #include <ipmitool/helper.h>
 
 #include <string.h>
 
 
-unsigned long buf2long(unsigned char * buf)
+uint32_t buf2long(unsigned char * buf)
 {
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
+	return (uint32_t)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
 }
 
 unsigned short buf2short(unsigned char * buf)

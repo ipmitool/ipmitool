@@ -228,7 +228,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 }
 
 static char *
-ipmi_sel_timestamp(unsigned long stamp)
+ipmi_sel_timestamp(uint32_t stamp)
 {
 	static unsigned char tbuf[40];
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&stamp));
@@ -236,7 +236,7 @@ ipmi_sel_timestamp(unsigned long stamp)
 }
 
 static char *
-ipmi_sel_timestamp_date(unsigned long stamp)
+ipmi_sel_timestamp_date(uint32_t stamp)
 {
 	static unsigned char tbuf[11];
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&stamp));
@@ -244,7 +244,7 @@ ipmi_sel_timestamp_date(unsigned long stamp)
 }
 
 static char *
-ipmi_sel_timestamp_time(unsigned long stamp)
+ipmi_sel_timestamp_time(uint32_t stamp)
 {
 	static unsigned char tbuf[9];
 	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&stamp));

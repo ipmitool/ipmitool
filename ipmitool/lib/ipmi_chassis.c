@@ -134,7 +134,7 @@ static void ipmi_chassis_poh(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned long count;
+	uint32_t count;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -148,7 +148,7 @@ static void ipmi_chassis_poh(struct ipmi_intf * intf)
 	memcpy(&count, rsp->data+1, 4);
 
 	printf("POH Counter  : %li hours total (%li days, %li hours)\n",
-	       count, (unsigned long)(count / 24), (unsigned long)(count % 24));
+	       count, (uint32_t)(count / 24), (uint32_t)(count % 24));
 }
 
 static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
