@@ -215,6 +215,7 @@ struct ipmi_intf ipmi_open_intf = {
 	open:		ipmi_openipmi_open,
 	close:		ipmi_openipmi_close,
 	sendrecv:	ipmi_openipmi_send_cmd,
+	my_addr:	IPMI_BMC_SLAVE_ADDR,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
