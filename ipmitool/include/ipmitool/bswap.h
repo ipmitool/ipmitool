@@ -41,6 +41,9 @@
 # include <config.h>
 #endif
 
+#undef BSWAP_16
+#undef BSWAP_32
+
 #if HAVE_BYTESWAP_H
 # include <byteswap.h>
 # define BSWAP_16(x) bswap_16(x)
