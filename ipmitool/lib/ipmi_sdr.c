@@ -1071,8 +1071,8 @@ ipmi_sdr_print_sensor_oem_intel(struct ipmi_intf * intf,
 	case 0x07:	/* Ambient Temperature Fan Speed Control */
 		break;
 	default:
-		if (verbose > 1)
-			printf("Unknown Intel OEM SDR Record type %02x\n", oem->data[3]);
+		lprintf(LOG_DEBUG, "Unknown Intel OEM SDR Record type %02x",
+			oem->data[3]);
 	}
 
 	return 0;
