@@ -1450,18 +1450,21 @@ ipmi_lanplus_build_v2x_msg(
 			((session->v2_data.integrity_alg  != IPMI_INTEGRITY_NONE)? 0x40 : 0x00);
 	}
 
-	/* Session ID  -- making it LSB */
-	msg[IMPI_LANPLUS_OFFSET_SESSION_ID    ] = session->v2_data.bmc_id         & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 1] = (session->v2_data.bmc_id >> 8)  & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 2] = (session->v2_data.bmc_id >> 16) & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 3] = (session->v2_data.bmc_id >> 24) & 0xff;
 
+	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
+ 	{
+		/* Session ID  -- making it LSB */
+		msg[IMPI_LANPLUS_OFFSET_SESSION_ID    ] = session->v2_data.bmc_id         & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 1] = (session->v2_data.bmc_id >> 8)  & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 2] = (session->v2_data.bmc_id >> 16) & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 3] = (session->v2_data.bmc_id >> 24) & 0xff;
 
-	/* Sequence Number -- making it LSB */
-	msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM    ] = session->out_seq         & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 1] = (session->out_seq >> 8)  & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
+		/* Sequence Number -- making it LSB */
+		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM    ] = session->out_seq         & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 1] = (session->out_seq >> 8)  & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
+		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
+	}
 
 	
 	/*
