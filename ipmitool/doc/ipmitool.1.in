@@ -57,7 +57,7 @@ This can be used to get command-line help on @IPMITOOL_BIN@ commands.  It may al
 .PP
 @IPMITOOL_BIN@ -I open help
 .br
-Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel
+Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, isol, userinfo, channel
 .LP
 .PP
 @IPMITOOL_BIN@ -I open chassis help
@@ -368,11 +368,19 @@ Queries the BMC for information about the session with the specified handle.  Th
 .RE
 .RE
 .TP
+
 .I sol
 .RS
 .TP
+\fIinfo\fP [\fBchannel\fR]
+Retrieve information about the Serial-Over-LAN configuration on the specified channel.  If no channel is given, it will display SOL configuration data for the currently used channel.
+.RE
+
+.I isol
+.RS
+.TP
 .I setup
-Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.
+Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.  This sub-command is specifice to Intel motherboards.
 .RE
 .SH "OPEN INTERFACE"
 .LP 
