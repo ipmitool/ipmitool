@@ -71,7 +71,8 @@
  *        1 on failure (the authcode does not match)
  */
 int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t       * bmc_mac)
+							   const uint8_t    * bmc_mac,
+							   struct ipmi_intf * intf)
 {
 	char         * buffer;
 	int           bufferLength, i;
@@ -167,19 +168,17 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		printbuf((char*)(session->authcode), IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp2 mac key");
 	}
 
-	
 	/*
 	 * The buffer is complete.  Let's hash.
 	 */
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 session->authcode,
-				 (session->authcode[IPMI_AUTHCODE_BUFFER_SIZE] == 0?
-				  strlen(session->authcode): IPMI_AUTHCODE_BUFFER_SIZE),
+				 IPMI_AUTHCODE_BUFFER_SIZE,
 				 buffer,
 				 bufferLength,
 				 mac,
 				 &macLength);
-	
+
 	free(buffer);
 
 
@@ -213,9 +212,11 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
  * 
  * return 1 on success (the authcode matches)
  *        0 on failure (the authcode does not match)
+ *
  */
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t       * bmc_mac)
+							   const uint8_t    * bmc_mac,
+							   struct ipmi_intf * intf)
 {
 	char         * buffer;
 	int           bufferLength, i;
@@ -224,9 +225,22 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 
 	uint32_t SIDc_lsbf;
 
-	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
-		return 1;
-	
+	if (ipmi_oem_active(intf, "intelplus")){
+		/* Intel BMC responds with the integrity Algorithm in RAKP4 */
+		if (session->v2_data.integrity_alg == IPMI_INTEGRITY_NONE)
+			return 1;
+		
+		/* We don't yet support other alogrithms */
+		assert(session->v2_data.integrity_alg == IPMI_INTEGRITY_HMAC_SHA1_96);
+		
+	} else {
+		if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
+			return 1;		
+
+		/* We don't yet support other alogrithms */	
+		assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);	
+	}
+
 	bufferLength =
 		16 +   /* Rm    */
 		4  +   /* SIDc  */
@@ -281,9 +295,11 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 	/*
 	 * The buffer is complete.  Let's hash.
 	 */
-	lanplus_HMAC(session->v2_data.auth_alg,
+	lanplus_HMAC((ipmi_oem_active(intf, "intelplus")) 
+	             ? session->v2_data.integrity_alg 
+	             : session->v2_data.auth_alg ,
 				 session->v2_data.sik,
-				 20,
+				 IPMI_SIK_BUFFER_SIZE,
 				 buffer,
 				 bufferLength,
 				 mac,
@@ -329,7 +345,8 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
  */
 int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 									const struct ipmi_session * session,
-									uint32_t              * mac_length)
+									uint32_t                  * mac_length,
+									struct ipmi_intf          * intf)
 {
 	int ret = 0;
 	int input_buffer_length, i;
@@ -381,7 +398,10 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 	memcpy(input_buffer + 16, &SIDm_lsbf, 4);
 	
 	/* ROLEm */
-	input_buffer[20] = session->v2_data.requested_role;
+	if (ipmi_oem_active(intf, "intelplus")) 
+		input_buffer[20] = session->privlvl;
+	else 
+		input_buffer[20] = session->v2_data.requested_role;
 
 	/* ULENGTHm */
 	input_buffer[21] = strlen(session->username);
@@ -396,11 +416,9 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
         printbuf((char*)(session->authcode), IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
     }
     
-
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 session->authcode,
-				 (session->authcode[IPMI_AUTHCODE_BUFFER_SIZE - 1] == 0?
-				  strlen(session->authcode): IPMI_AUTHCODE_BUFFER_SIZE),
+				 IPMI_AUTHCODE_BUFFER_SIZE,
 				 input_buffer,
 				 input_buffer_length,
 				 output_buffer,
@@ -448,7 +466,6 @@ int lanplus_generate_sik(struct ipmi_session * session)
 	char * input_buffer;
 	int input_buffer_length, i;
 	char * input_key;
-	int input_key_length;
 	uint32_t mac_length;
 	
 
@@ -519,20 +536,20 @@ int lanplus_generate_sik(struct ipmi_session * session)
 		assert(0);
 
 		input_key        = session->v2_data.kg;
-		input_key_length = strlen(session->v2_data.kg);
 	}
 	else
 	{
 		/* We will be hashing with Kuid */
 		input_key        = session->authcode;
-		input_key_length = (session->authcode[IPMI_AUTHCODE_BUFFER_SIZE - 1] == 0?
-							strlen(session->authcode): IPMI_AUTHCODE_BUFFER_SIZE);
 	}
 
 	
+	if (verbose >= 2)
+		printbuf(input_buffer, input_buffer_length, "session integrity key input");
+
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 input_key,
-				 input_key_length,
+				 IPMI_AUTHCODE_BUFFER_SIZE,
 				 input_buffer,
 				 input_buffer_length,
 				 session->v2_data.sik,
@@ -580,7 +597,7 @@ int lanplus_generate_k1(struct ipmi_session * session)
 	{
 		lanplus_HMAC(session->v2_data.auth_alg,
 					 session->v2_data.sik,
-					 20, /* SIK length */
+					 IPMI_SIK_BUFFER_SIZE, /* SIK length */
 					 CONST_1,
 					 20,
 					 session->v2_data.k1,
@@ -623,7 +640,7 @@ int lanplus_generate_k2(struct ipmi_session * session)
 	{
 		lanplus_HMAC(session->v2_data.auth_alg,
 					 session->v2_data.sik,
-					 20, /* SIK length */
+					 IPMI_SIK_BUFFER_SIZE, /* SIK length */
 					 CONST_2,
 					 20,
 					 session->v2_data.k2,
@@ -782,7 +799,7 @@ int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 
 	lanplus_HMAC(session->v2_data.integrity_alg,
 				 session->v2_data.k1,
-				 20,
+				 IPMI_AUTHCODE_BUFFER_SIZE,
 				 rs->data + IMPI_LANPLUS_OFFSET_AUTHTYPE,
 				 rs->data_len - IMPI_LANPLUS_OFFSET_AUTHTYPE - IPMI_SHA1_AUTHCODE_SIZE,
 				 generated_authcode,
