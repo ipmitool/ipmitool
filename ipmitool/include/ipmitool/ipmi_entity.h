@@ -37,8 +37,6 @@
 #ifndef IPMI_ENTITY_H
 #define IPMI_ENTITY_H
 
-#include <ipmitool/helper.h>
-
 struct entity_id {
 	unsigned char	id;			/* physical entity id */
 #if WORDS_BIGENDIAN
@@ -49,8 +47,5 @@ struct entity_id {
 	unsigned char	logical     : 1;	/* physical/logical */
 #endif
 } __attribute__ ((packed));
-
-extern const struct valstr entity_id_vals[];
-extern const struct valstr device_type_vals[];
 
 #endif /* IPMI_ENTITY_H */
