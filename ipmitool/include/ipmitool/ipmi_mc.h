@@ -34,8 +34,8 @@
  * facility.
  */
 
-#ifndef IPMI_BMC_H
-#define IPMI_BMC_H
+#ifndef IPMI_MC_H
+#define IPMI_MC_H
 
 #include <ipmitool/ipmi.h>
 
@@ -46,7 +46,7 @@
 #define BMC_SET_GLOBAL_ENABLES		0x2e
 #define BMC_GET_GLOBAL_ENABLES		0x2f
 
-int ipmi_bmc_main(struct ipmi_intf *, int, char **);
+int ipmi_mc_main(struct ipmi_intf *, int, char **);
 
 /* 
  * Response data from IPM Get Device ID Command (IPMI rev 1.5, section 17.1)
@@ -83,4 +83,4 @@ struct ipm_devid_rsp {
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8) 
 
-#endif /*IPMI_BMC_H*/
+#endif /*IPMI_MC_H*/

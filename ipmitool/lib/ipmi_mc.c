@@ -46,7 +46,7 @@
 
 extern int verbose;
 
-static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
+static int ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -58,11 +58,11 @@ static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		printf("Error in BMC Reset Command\n");
+		printf("Error in MC Reset Command\n");
 		return -1;
 	}
 	if (rsp->ccode) {
-		printf("BMC Reset Command returned %x\n", rsp->ccode);
+		printf("MC Reset Command returned %x\n", rsp->ccode);
 		return -1;
 	}
 
@@ -144,7 +144,7 @@ struct bitfield_data bmc_enables_bf[] = {
 	{ NULL },
 };
 
-static void printf_bmc_usage()
+static void printf_mc_usage()
 {
 	struct bitfield_data * bf;
 	printf("BMC Commands:\n");
@@ -199,7 +199,7 @@ static int ipmi_bmc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	if (argc < 1 || !strncmp(argv[0], "help", 4)) {
-		printf_bmc_usage();
+		printf_mc_usage();
 		return 0;
 	}
 
@@ -275,7 +275,7 @@ const char *ipm_dev_adtl_dev_support[8] = {
         "Chassis Device"         /* bit 7 */
 };
 
-static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
+static int ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -289,11 +289,11 @@ static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		printf("Error in BMC Get Device ID Command\n");
+		printf("Error in MC Get Device ID Command\n");
 		return -1;
 	}
 	if (rsp->ccode) {
-		printf("BMC Get Device ID returned %x\n", rsp->ccode);
+		printf("MC Get Device ID returned %x\n", rsp->ccode);
 		return -1;
 	}
 
@@ -335,10 +335,10 @@ static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
-int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
+int ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc || !strncmp(argv[0], "help", 4)) {
-		printf_bmc_usage();
+		printf_mc_usage();
 		return 0;
 	}
 	else if (!strncmp(argv[0], "reset", 5)) {
@@ -346,17 +346,17 @@ int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("reset commands: warm, cold\n");
 		}
 		else if (!strncmp(argv[1], "cold", 4)) {
-			ipmi_bmc_reset(intf, BMC_COLD_RESET);
+			ipmi_mc_reset(intf, BMC_COLD_RESET);
 		}
 		else if (!strncmp(argv[1], "warm", 4)) {
-			ipmi_bmc_reset(intf, BMC_WARM_RESET);
+			ipmi_mc_reset(intf, BMC_WARM_RESET);
 		}
 		else {
 			printf("reset commands: warm, cold\n");
 		}
 	}
 	else if (!strncmp(argv[0], "info", 4)) {
-		ipmi_bmc_get_deviceid(intf);
+		ipmi_mc_get_deviceid(intf);
 	}
 	else if (!strncmp(argv[0], "getenables", 7)) {
 		ipmi_bmc_get_enables(intf);
