@@ -1296,7 +1296,7 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	if (!s->privlvl)
 		s->privlvl = IPMI_SESSION_PRIV_USER;
 
-	if (!s->hostname) {
+	if (!strlen(s->hostname)) {
 		printf("No hostname specified!\n");
 		return -1;
 	}
