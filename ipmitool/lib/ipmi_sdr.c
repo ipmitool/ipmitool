@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_entity.h>
+#include <ipmitool/ipmi_constants.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -1150,6 +1151,156 @@ void ipmi_sdr_list_empty(struct ipmi_intf * intf)
 	}
 }
 
+
+
+/*
+ * ipmi_sdr_get_info
+ *
+ * Execute the GET SDR REPOSITORY INFO command, and populate the sdr_info
+ * structure.
+ * See section 33.9 of the IPMI v2 specification for details
+ *
+ * returns 0 on success
+ *         -1 on transport error
+ *         > 0 for other errors
+ */
+int
+ipmi_sdr_get_info(struct ipmi_intf * intf,
+				  struct get_sdr_repository_info_rsp * sdr_repository_info)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof(req));
+
+	req.msg.netfn    = IPMI_NETFN_STORAGE;           // 0x0A
+	req.msg.cmd      = IPMI_GET_SDR_REPOSITORY_INFO; // 0x20
+	req.msg.data     = 0;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode)
+	{
+		printf("Error:%x Get SDR Repository Info Command\n",
+			   rsp ? rsp->ccode : 0);
+		return (rsp? rsp->ccode : -1);
+	}
+
+	memcpy(sdr_repository_info,
+		   rsp->data,
+		   min(sizeof(struct get_sdr_repository_info_rsp),rsp->data_len));
+
+	return 0;
+}
+
+static char *
+ipmi_sdr_timestamp(uint32_t stamp)
+{
+	static unsigned char tbuf[40];
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+	return tbuf;
+}
+
+
+/*
+ * ipmi_sdr_print_info
+ *
+ * Display the return data of the GET SDR REPOSITORY INFO command
+ * See section 33.9 of the IPMI v2 specification for details
+ *
+ * returns 0 on success
+ *         -1 on error
+ */
+int
+ipmi_sdr_print_info(struct ipmi_intf * intf)
+{
+	uint32_t timestamp;
+	uint16_t free_space;
+
+	struct get_sdr_repository_info_rsp sdr_repository_info;
+	
+	if (ipmi_sdr_get_info(intf, &sdr_repository_info) != 0)
+		return -1;
+
+	printf("SDR Version                         : 0x%x\n",
+		   sdr_repository_info.sdr_version);
+	printf("Record Count                        : %d\n",
+		   (sdr_repository_info.record_count_msb << 8) |
+		   sdr_repository_info.record_count_lsb);
+	
+	free_space =
+		(sdr_repository_info.free_space[0] << 8) |
+		sdr_repository_info.free_space[1];
+	
+	printf("Free Space                          : ");
+	switch (free_space)
+	{
+	case 0x0000:
+		printf("none (full)\n");
+		break;
+	case 0xFFFF:
+		printf("unspecified\n");
+		break;
+	case 0xFFFE:
+		printf("> 64Kb - 2 bytes\n");
+		break;
+	default:
+		printf("%d bytes\n");
+		break;
+	}
+
+	timestamp =
+		(sdr_repository_info.most_recent_addition_timestamp[3] << 24) |
+		(sdr_repository_info.most_recent_addition_timestamp[2] << 16) |
+		(sdr_repository_info.most_recent_addition_timestamp[1] << 8) |
+		sdr_repository_info.most_recent_addition_timestamp[0];
+	printf("Most recent Addition                : %s\n",
+		   ipmi_sdr_timestamp(timestamp));
+
+	timestamp =
+		(sdr_repository_info.most_recent_erase_timestamp[3] << 24) |
+		(sdr_repository_info.most_recent_erase_timestamp[2] << 16) |
+		(sdr_repository_info.most_recent_erase_timestamp[1] << 8) |
+		sdr_repository_info.most_recent_erase_timestamp[0];
+	printf("Most recent Erase                   : %s\n", ipmi_sdr_timestamp(timestamp));
+
+	printf("SDR overflow                        : %s\n",
+		   (sdr_repository_info.overflow_flag? "yes": "no"));
+
+	printf("SDR Repository Update Support       : ");
+	switch (sdr_repository_info.modal_update_support)
+	{
+	case 0:
+		printf("unspecified\n");
+		break;
+	case 1:
+		printf("non-modal\n");
+		break;
+	case 2:
+		printf("modal\n");
+		break;
+	case 3:
+		printf("modal and non-modal\n");
+		break;
+	default:
+		printf("error in response\n");
+		break;
+	}
+
+	printf("Delete SDR supported                : %s\n",
+		   sdr_repository_info.delete_sdr_supported? "yes" : "no");
+	printf("Partial Add SDR supported           : %s\n",
+		   sdr_repository_info.partial_add_sdr_supported? "yes" : "no");
+	printf("Reserve SDR repository supported    : %s\n",
+		   sdr_repository_info.reserve_sdr_repository_supported? "yes" : "no");
+	printf("SDR Repository Alloc info supported : %s\n",
+		   sdr_repository_info.delete_sdr_supported? "yes" : "no");
+}
+
+
+
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	srand (time (NULL));
@@ -1158,12 +1309,13 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_sdr_print_sdr(intf, 0xff);
 	else if (!strncmp(argv[0], "help", 4)) {
 		printf("SDR Commands:  list [all|full|compact|event|mcloc|fru]\n");
-		printf("               all        All SDR Records\n");
-		printf("               full       Full Sensor Record\n");
-		printf("               compact    Compact Sensor Record\n");
-		printf("               event      Event-Only Sensor Record\n");
-		printf("               mcloc      Management Controller Locator Record\n");
-		printf("               fru        FRU Locator Record\n");
+		printf("                     all        All SDR Records\n");
+		printf("                     full       Full Sensor Record\n");
+		printf("                     compact    Compact Sensor Record\n");
+		printf("                     event      Event-Only Sensor Record\n");
+		printf("                     mcloc      Management Controller Locator Record\n");
+		printf("                     fru        FRU Locator Record\n");
+		printf("               info\n");
 	}
 	else if (!strncmp(argv[0], "list", 4)) {
 		if (argc > 1) {
@@ -1184,6 +1336,9 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else {
 			ipmi_sdr_print_sdr(intf, 0xff);
 		}
+	}
+	else if (!strncmp(argv[0], "info", 4)) {
+		ipmi_sdr_print_info(intf);
 	}
 	else
 		printf("Invalid SDR command: %s\n", argv[0]);
