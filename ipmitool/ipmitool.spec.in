@@ -1,0 +1,61 @@
+Summary:      Utility for interfacing with IPMI hardware
+Name:         ipmitool
+Version:      @@VERSION@@
+Release:      1
+Copyright:    Sun Microsystems
+License:      BSD
+Group:        Applications/System
+Source:       ipmitool.tar.gz
+
+%description
+This package contains a utility for interfacing with IPMI
+hardware through either the Linux OpenIPMI kernel driver or
+over ethernet LAN.  It provides some basic functions for
+reading the SDR and displaying sensor values, printing FRU
+information, LAN configuration, and chassis power control.
+
+%prep
+[ "$RPM_BUILD_ROOT" ] && rm -rf $RPM_BUILD_ROOT
+
+%setup -q -n ipmitool
+mkdir -p $RPM_BUILD_ROOT/usr/sbin
+mkdir -p $RPM_BUILD_ROOT/usr/share/man/man1
+
+%build
+make 
+
+%install
+mkdir -p $RPM_BUILD_ROOT/usr/sbin
+make install DESTDIR=$RPM_BUILD_ROOT
+make install-man DESTDIR=$RPM_BUILD_ROOT
+install -m 0755 -o root -g root bmcautoconf.sh $RPM_BUILD_ROOT/usr/sbin
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+/usr/sbin/ipmitool
+/usr/sbin/bmcautoconf.sh
+/usr/share/man/man1/ipmitool.1.gz
+
+%changelog
+* Wed Nov 12 2003 <duncan@sun.com>  1.4.1.1-1
+ - first public release
+
+* Wed May 28 2003 <duncan@sun.com>  1.4.0-1
+ - make UDP packet handling more robust
+
+* Thu May 22 2003 <duncan@sun.com>  1.3-1
+ - update manpage
+ - rework of low-level network handling
+
+* Wed Apr  2 2003 <duncan@sun.com>  1.2-1
+ - change command line option parsing
+ - support for more chassis commands
+
+* Tue Apr  1 2003 <duncan@sun.com>  1.1-1
+ - minor fixes.
+
+* Sun Mar 30 2003 <duncan@sun.com>  1.0-1
+ - Initial release.
+

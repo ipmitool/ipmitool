@@ -1,0 +1,25 @@
+ipmitool (1.4.1.1-1) unstable; urgency=low
+
+  * First public source relese
+
+ -- Duncan Laurie <duncan@sun.com>  Wed, 12 Nov 2003 09:23:18 -0700
+
+ipmitool (1.2-1) unstable; urgency=low
+
+  * New command line option parsing
+  * More chassis commands supported
+
+ -- Duncan Laurie <duncan@sun.com>  Wed,  2 Apr 2003 17:44:17 -0700
+
+ipmitool (1.1-1) unstable; urgency=low
+
+  * Minor fixes
+
+ -- Duncan Laurie <duncan@sun.com>  Tue,  1 Apr 2003 14:31:10 -0700
+
+ipmitool (1.0-1) unstable; urgency=low
+
+  * Initial Release
+
+ -- Duncan Laurie <duncan@sun.com>  Sun, 30 Mar 2003 21:30:46 -0700
+
