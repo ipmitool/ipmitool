@@ -34,6 +34,6 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-EXTRA_DIST		= bmcautoconf.sh \
+dist_pkgdata_DATA	= bmclanconf README \
 	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
 

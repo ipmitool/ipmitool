@@ -32,7 +32,7 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-EXTRA_DIST = ipmitool.spec.in AUTHORS COPYING ChangeLog \
+EXTRA_DIST = AUTHORS COPYING ChangeLog \
 	debian/changelog debian/control debian/copyright \
 	debian/dirs debian/docs debian/rules
 
@@ -43,17 +43,34 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	mkinstalldirs config.h.in stamp-h.in \
 	$(distdir).tar.gz $(distdir).tar.bz2
 
-SUBDIRS = libltdl lib src include doc contrib control
+SUBDIRS = lib src include doc contrib control
 
-dist-hook: ipmitool.spec
-	cp ipmitool.spec $(distdir)
+dist-hook:
+	cp control/ipmitool.spec $(distdir)
 
-pkg: PKG := @IPMITOOL_BIN@-@VERSION@-@OS@-@ARCH@
+.PHONY: pkg
+pkg: PKG := ipmitool-@VERSION@-@OS@-@ARCH@
 pkg: control/pkginfo
-	$(STRIP) src/@IPMITOOL_BIN@
-# this needs done twice to workaround bug in gnu binutils
-	$(STRIP) src/@IPMITOOL_BIN@
+	$(STRIP) src/ipmitool
+	$(STRIP) src/ipmitool
 	(cd control ; pkgmk -o -d /tmp)
-	pkgtrans -s /tmp $(PKG) @IPMITOOL_BIN@
+	pkgtrans -s /tmp $(PKG) ipmitool
 	gzip -c /tmp/$(PKG) > $(PKG).gz
-	-rm -rf /tmp/@IPMITOOL_BIN@ /tmp/$(PKG)
+	-rm -rf /tmp/ipmitool /tmp/$(PKG)
+
+BUILDDIR = ${shell cd $(top_builddir) ; pwd | sed -e 's,^[^:\\/]:[\\/],/,'}
+SRCDIR   = ${shell cd $(top_srcdir) ; pwd | sed -e 's,^[^:\\/]:[\\/],/,'}
+RPMDIR   = $(BUILDDIR)/rpmbuild
+
+.PHONY: rpm
+rpm: control/ipmitool.spec dist
+	mkdir -p $(RPMDIR)/{BUILD,RPMS,SRPMS,SOURCES,SPECS,tmp}
+	cp control/ipmitool.spec $(RPMDIR)/SPECS
+	BUILDDIR=$(RPMDIR) CONFIGDIR=$(BUILDDIR)/control \
+	  @RPMBUILD@ -ba --rcfile $(SRCDIR)/control/rpmrc \
+	  $(RPMDIR)/SPECS/ipmitool.spec
+
+.PHONY: clean-rpm
+clean-rpm:
+	-rm -rf $(RPMDIR)
+

@@ -34,9 +34,7 @@
 
 MAINTAINERCLEANFILES = Makefile.in
 
-ipmitooldir = $(includedir)/ipmitool
-
-noinst_HEADERS = bswap.h helper.h ipmi.h ipmi_intf.h \
+noinst_HEADERS = log.h bswap.h helper.h ipmi.h ipmi_intf.h \
 	ipmi_chassis.h ipmi_entity.h ipmi_fru.h ipmi_lanp.h \
 	ipmi_sdr.h ipmi_sel.h ipmi_sol.h ipmi_bmc.h \
 	ipmi_channel.h ipmi_sensor.h ipmi_event.h ipmi_session.h \
