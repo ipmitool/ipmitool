@@ -1981,7 +1981,7 @@ static int ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	 * Requested maximum privilege level.
 	 */
 	msg[24]  = 0x10; /* We will specify a name-only lookup */
-	msg[24] |= IPMI_PRIV_ADMIN;
+	msg[24] |= session->privlvl;
 	session->v2_data.requested_role = msg[24];
 	
 	msg[25] = 0; /* reserved */
