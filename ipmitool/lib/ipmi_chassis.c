@@ -84,7 +84,7 @@ static const struct valstr ipmi_chassis_power_control_vals[] = {
 };
 
 static int
-ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ctl)
+ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -126,8 +126,8 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	struct ipmi_rs * rsp;
 
 	struct {
-		unsigned char interval;
-		unsigned char force_on;
+		uint8_t interval;
+		uint8_t force_on;
 	} identify_data;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -141,10 +141,10 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 			identify_data.interval = 0;
 			identify_data.force_on = 1;
 		} else {
-			identify_data.interval = (unsigned char)atoi(arg);
+			identify_data.interval = (uint8_t)atoi(arg);
 			identify_data.force_on = 0;
 		}
-		req.msg.data = (unsigned char *)&identify_data;
+		req.msg.data = (uint8_t *)&identify_data;
 		/* The Force Identify On byte is optional and not
 		 * supported by all devices-- if force is not specified,
 		 * we pass only one data byte; if specified, we pass two
@@ -359,11 +359,11 @@ ipmi_chassis_status(struct ipmi_intf * intf)
 }
 
 static int
-ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char param, unsigned char * data, int len)
+ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * data, int len)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[16];
+	uint8_t msg_data[16];
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
@@ -397,14 +397,14 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[3];
+	uint8_t msg_data[3];
 
 	if (arg == NULL)
 		return -1;
 
 	memset(msg_data, 0, 3);
 
-	msg_data[0] = (unsigned char)atoi(arg) & 0x7f;
+	msg_data[0] = (uint8_t)atoi(arg) & 0x7f;
 	msg_data[1] = 0;
 	msg_data[2] = 0;
 
@@ -437,7 +437,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 static int
 ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
 {
-	unsigned char flags[5];
+	uint8_t flags[5];
 	int rc = 0;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -474,7 +474,7 @@ ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
 }
 
 static int
-ipmi_chassis_power_policy(struct ipmi_intf * intf, unsigned char policy)
+ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -539,7 +539,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_chassis_status(intf);
 	}
 	else if (strncmp(argv[0], "power", 5) == 0) {
-		unsigned char ctl = 0;
+		uint8_t ctl = 0;
 
 		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
@@ -595,7 +595,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "   previous    : return to previous state when power is restored");
 			lprintf(LOG_NOTICE, "   always-off  : stay off after power is restored");
 		} else {
-			unsigned char ctl;
+			uint8_t ctl;
 			if (strncmp(argv[1], "list", 4) == 0)
 				ctl = IPMI_CHASSIS_POLICY_NO_CHANGE;
 			else if (strncmp(argv[1], "always-on", 9) == 0)

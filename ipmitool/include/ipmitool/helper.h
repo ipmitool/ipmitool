@@ -42,17 +42,17 @@
 #include <stdio.h>
 
 struct valstr {
-	unsigned short val;
+	uint16_t val;
 	const char * str;
 };
-const char * val2str(unsigned short val, const struct valstr * vs);
-unsigned short str2val(const char * str, const struct valstr * vs);
+const char * val2str(uint16_t val, const struct valstr * vs);
+uint16_t str2val(const char * str, const struct valstr * vs);
 
-unsigned short buf2short(unsigned char * buf);
-uint32_t buf2long(unsigned char * buf);
-const char * buf2str(unsigned char * buf, int len);
-void printbuf(const unsigned char * buf, int len, const char * desc);
-unsigned char ipmi_csum(unsigned char * d, int s);
+uint16_t buf2short(uint8_t * buf);
+uint32_t buf2long(uint8_t * buf);
+const char * buf2str(uint8_t * buf, int len);
+void printbuf(const uint8_t * buf, int len, const char * desc);
+uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)

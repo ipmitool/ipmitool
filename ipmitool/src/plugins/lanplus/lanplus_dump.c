@@ -83,7 +83,7 @@ void lanplus_dump_open_session_response(const struct ipmi_rs * rsp)
 
 
 
-void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, unsigned char auth_alg)
+void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 {
 	int i;
 
@@ -137,7 +137,7 @@ void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, unsigned char auth_a
 
 
 
-void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, unsigned char auth_alg)
+void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 {
 	int i;
 

@@ -68,6 +68,6 @@ struct asf_hdr {
 	uint8_t len;
 } __attribute__((packed));
 
-int handle_asf(struct ipmi_intf * intf, unsigned char * data, int data_len);
+int handle_asf(struct ipmi_intf * intf, uint8_t * data, int data_len);
 
 #endif /* IPMI_ASF_H */

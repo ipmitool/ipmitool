@@ -78,12 +78,12 @@ extern int verbose;
 int
 ipmi_get_sol_info(
 				  struct ipmi_intf * intf,
-				  unsigned char channel,
+				  uint8_t channel,
 				  struct sol_config_parameters * params)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char data[4];	
+	uint8_t data[4];	
 
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd      = IMPI_GET_SOL_CONFIG_PARAMETERS;
@@ -346,7 +346,7 @@ ipmi_get_sol_info(
  * ipmi_print_sol_info
  */
 static int
-ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
+ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
 {
 	struct sol_config_parameters params;
 	if (ipmi_get_sol_info(intf, channel, &params))
@@ -426,13 +426,13 @@ ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
  */
 static int
 ipmi_sol_set_param(struct ipmi_intf * intf,
-				   unsigned char      channel,
+				   uint8_t      channel,
 				   const char       * param,
 				   const char       * value)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
-	unsigned char    data[4];	 
+	uint8_t    data[4];	 
 	int              bGuarded = 1; /* Use set-in-progress indicator? */
 
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;           /* 0x0c */ 
@@ -611,7 +611,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
-		data[2] = (unsigned char)strtol(value, NULL, 0);
+		data[2] = (uint8_t)strtol(value, NULL, 0);
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -634,7 +634,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
-		data[3] = (unsigned char)strtol(value, NULL, 0);
+		data[3] = (uint8_t)strtol(value, NULL, 0);
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -657,7 +657,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_SOL_RETRY;
-		data[2] = (unsigned char)strtol(value, NULL, 0) & 0x03;
+		data[2] = (uint8_t)strtol(value, NULL, 0) & 0x03;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -680,7 +680,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_SOL_RETRY;
-		data[3] = (unsigned char)strtol(value, NULL, 0);
+		data[3] = (uint8_t)strtol(value, NULL, 0);
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -983,7 +983,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
-	unsigned char    data[6];	 
+	uint8_t    data[6];	 
 
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
@@ -1026,8 +1026,8 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 static int
 processSolUserInput(
 					struct ipmi_intf * intf,
-					unsigned char    * input,
-					unsigned short     buffer_length)
+					uint8_t    * input,
+					uint16_t     buffer_length)
 {
 	static int escape_pending = 0;
 	static int last_was_cr    = 1;
@@ -1254,9 +1254,9 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
 	struct activate_payload_rsp ap_rsp;
-	unsigned char    data[6];	 
-	unsigned char    bSolEncryption     = 1;
-	unsigned char    bSolAuthentication = 1;
+	uint8_t    data[6];	 
+	uint8_t    bSolEncryption     = 1;
+	uint8_t    bSolAuthentication = 1;
 
 	/*
 	 * This command is only available over RMCP+ (the lanplus
@@ -1426,12 +1426,12 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * Info
 	 */
  	else if (!strncmp(argv[0], "info", 4)) {
-		unsigned char channel;
+		uint8_t channel;
 
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 2)
-			channel = (unsigned char)strtol(argv[1], NULL, 0);
+			channel = (uint8_t)strtol(argv[1], NULL, 0);
 		else
 		{
 			print_sol_usage();	
@@ -1446,12 +1446,12 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * Set a parameter value
 	 */
 	else if (!strncmp(argv[0], "set", 3)) {
-		unsigned char channel;
+		uint8_t channel;
 
 		if (argc == 3)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 4)
-			channel = (unsigned char)strtol(argv[3], NULL, 0);
+			channel = (uint8_t)strtol(argv[3], NULL, 0);
 		else
 		{
 			print_sol_set_usage();

@@ -70,15 +70,15 @@ static struct sdr_record_list * sdr_list_head = NULL;
 static struct sdr_record_list * sdr_list_tail = NULL;
 static struct ipmi_sdr_iterator * sdr_list_itr = NULL;
 
-/* utos  -  convert unsigned value to 2's complement signed
+/* utos  -  convert unsigned 32bit value to 2's complement signed
  *
  * @val:	unsigned value to convert
  * @bits:	number of bits in value
  *
  * returns 2s complement signed integer
  */
-int
-utos(unsigned val, unsigned bits)
+int32_t
+utos(uint32_t val, int bits)
 {
 	int x = pow(10, bits-1);
 	if (val & x) {
@@ -97,7 +97,7 @@ utos(unsigned val, unsigned bits)
  */
 float
 sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
-			   unsigned char val)
+			   uint8_t val)
 {
 	int m, b, k1, k2;
 
@@ -115,7 +115,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 		if (val & 0x80) val ++;
 		/* Deliberately fall through to case 2. */
 	case 2:
-		return (float)(((m * (signed char)val) +
+		return (float)(((m * (int8_t)val) +
 				(b * pow(10, k1))) * pow(10, k2));
 	default:
 		/* Oops! This isn't an analog sensor. */
@@ -130,7 +130,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
  *
  * returns raw sensor reading
  */
-unsigned char
+uint8_t
 sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
 				float val)
 {
@@ -153,9 +153,9 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
         result = (((val / pow(10, k2)) - (b * pow(10, k1))) / m);
 
 	if ((result -(int)result) >= .5)
-		return (unsigned char)ceil(result);
+		return (uint8_t)ceil(result);
         else
-		return (unsigned char)result;
+		return (uint8_t)result;
 }
 
 /* ipmi_sdr_get_sensor_reading  -  retrieve a raw sensor reading
@@ -166,7 +166,7 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
  * returns ipmi response structure
  */
 struct ipmi_rs *
-ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
+ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor)
 {
 	struct ipmi_rq req;
 
@@ -189,7 +189,7 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
  *   or "OEM reserved"
  */
 const char *
-ipmi_sdr_get_sensor_type_desc(const unsigned char type)
+ipmi_sdr_get_sensor_type_desc(const uint8_t type)
 {
 	if (type <= SENSOR_TYPE_MAX)
 		return sensor_type_desc[type];
@@ -210,7 +210,7 @@ ipmi_sdr_get_sensor_type_desc(const unsigned char type)
  *   us = unspecified (not used)
  */
 const char *
-ipmi_sdr_get_status(unsigned char stat)
+ipmi_sdr_get_status(uint8_t stat)
 {
 	if (stat & (SDR_SENSOR_STAT_LO_NR | SDR_SENSOR_STAT_HI_NR))
 		return "nr";
@@ -232,8 +232,8 @@ ipmi_sdr_get_status(unsigned char stat)
  * returns NULL on error
  */
 static struct sdr_get_rs *
-ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id,
-		    unsigned short record_id)
+ipmi_sdr_get_header(struct ipmi_intf * intf, uint16_t reserve_id,
+		    uint16_t record_id)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
@@ -249,7 +249,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id,
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
 	req.msg.cmd = GET_SDR;
-	req.msg.data = (unsigned char *)&sdr_rq;
+	req.msg.data = (uint8_t *)&sdr_rq;
 	req.msg.data_len = sizeof(sdr_rq);
 
 	rsp = intf->sendrecv(intf, &req);
@@ -366,7 +366,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	int i=0, validread=1, do_unit=1;
 	float val = 0.0;
 	struct ipmi_rs * rsp;
-        unsigned char min_reading, max_reading;
+        uint8_t min_reading, max_reading;
 
 	if (sensor == NULL)
 		return -1;
@@ -544,7 +544,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 		printf(" Sensor Reading        : ");
 		if (validread)
-			printf("%xh\n", (unsigned int)val);
+			printf("%xh\n", (uint32_t)val);
 		else
 			printf("Not Present\n");
 		ipmi_sdr_print_discrete_state(sensor->sensor.type,
@@ -560,7 +560,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 
 	printf(" Sensor Reading        : ");
 	if (validread) {
-		unsigned short raw_tol = __TO_TOL(sensor->mtol);
+		uint16_t raw_tol = __TO_TOL(sensor->mtol);
 		float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
 		printf("%.*f (+/- %.*f) %s\n",
 		       (val==(int)val) ? 0 : 3, 
@@ -585,7 +585,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	SENSOR_PRINT_THRESH("Lower critical", lower.critical, 0x02);
 	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, 0x01);
 
-	min_reading = (unsigned char)sdr_convert_sensor_reading(
+	min_reading = (uint8_t)sdr_convert_sensor_reading(
 		sensor, sensor->sensor_min);
 	if ((sensor->unit.analog == 0 && sensor->sensor_min == 0x00) ||
 	    (sensor->unit.analog == 1 && sensor->sensor_min == 0xff) ||
@@ -594,7 +594,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	else
 		printf(" Minimum sensor range  : %.3f\n", (float)min_reading);
 
-	max_reading = (unsigned char)sdr_convert_sensor_reading(
+	max_reading = (uint8_t)sdr_convert_sensor_reading(
 		sensor, sensor->sensor_max);
 	if ((sensor->unit.analog == 0 && sensor->sensor_max == 0xff) ||
 	    (sensor->unit.analog == 1 && sensor->sensor_max == 0x00) ||
@@ -623,7 +623,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 }
 
 static inline int
-get_offset(unsigned char x)
+get_offset(uint8_t x)
 {
 	int i;
 	for (i=0; i<8; i++)
@@ -641,11 +641,11 @@ get_offset(unsigned char x)
  *
  * no meaningful return value
  */
-void ipmi_sdr_print_discrete_state(unsigned char sensor_type,
-				   unsigned char event_type,
-				   unsigned char state)
+void ipmi_sdr_print_discrete_state(uint8_t sensor_type,
+				   uint8_t event_type,
+				   uint8_t state)
 {
-	unsigned char typ;
+	uint8_t typ;
 	struct ipmi_event_sensor_types *evt;
 	int pre = 0;
 
@@ -1125,8 +1125,8 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf * intf,
  * returns -1 on error
  */
 int
-ipmi_sdr_print_rawentry(struct ipmi_intf * intf, unsigned char type,
-			unsigned char * raw, int len)
+ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type,
+			uint8_t * raw, int len)
 {
 	int rc = 0;
 
@@ -1224,7 +1224,7 @@ ipmi_sdr_print_listentry(struct ipmi_intf * intf,
  * returns -1 on error
  */
 int
-ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
+ipmi_sdr_print_sdr(struct ipmi_intf * intf, uint8_t type)
 {
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
@@ -1239,7 +1239,7 @@ ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 	}
 
 	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
-		unsigned char * rec;
+		uint8_t * rec;
 
 		if (type != header->type && type != 0xff)
 			continue;
@@ -1272,7 +1272,7 @@ ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
  */
 int
 ipmi_sdr_get_reservation(struct ipmi_intf * intf,
-			 unsigned short *reserve_id)
+			 uint16_t *reserve_id)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1369,14 +1369,14 @@ ipmi_sdr_start(struct ipmi_intf * intf)
  * returns raw SDR data
  * returns NULL on error
  */
-unsigned char *
+uint8_t *
 ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		    struct ipmi_sdr_iterator * itr)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
 	struct sdr_get_rq sdr_rq;
-	unsigned char * data;
+	uint8_t * data;
 	int i = 0, len = header->length;
 
 	if (len < 1)
@@ -1395,7 +1395,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
 	req.msg.cmd = GET_SDR;
-	req.msg.data = (unsigned char *)&sdr_rq;
+	req.msg.data = (uint8_t *)&sdr_rq;
 	req.msg.data_len = sizeof(sdr_rq);
 
 	/* read SDR record with partial reads
@@ -1567,8 +1567,8 @@ ipmi_sdr_list_empty(struct ipmi_intf * intf)
  * returns NULL on error
  */
 struct sdr_record_list *
-ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, unsigned char num,
-			    unsigned char type)
+ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num,
+			    uint8_t type)
 {
 	struct sdr_get_rs * header;
 	struct sdr_record_list * e;
@@ -1612,7 +1612,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, unsigned char num,
 
 	/* now keep looking */
 	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
-		unsigned char * rec;
+		uint8_t * rec;
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
@@ -1726,7 +1726,7 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity)
 
 	/* now keep looking */
 	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
-		unsigned char * rec;
+		uint8_t * rec;
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
@@ -1844,7 +1844,7 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 
 	/* now keep looking */
 	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
-		unsigned char * rec;
+		uint8_t * rec;
 		struct sdr_record_list * sdrr;
 
 		sdrr = malloc(sizeof(struct sdr_record_list));
@@ -2104,8 +2104,8 @@ ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 	/* go through sdr records */
 	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
 		int r;
-		unsigned char h[5];
-		unsigned char * rec;
+		uint8_t h[5];
+		uint8_t * rec;
 
 		lprintf(LOG_INFO, "Record ID %04x (%d bytes)",
 			header->id, header->length);
@@ -2156,7 +2156,7 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 {
 	struct sdr_record_list * list, * entry;
 	struct entity_id entity;
-	unsigned int id, instance;
+	uint32_t id, instance;
 	int rc = 0;
 
 	if (sscanf(entitystr, "%u.%u", &id, &instance) != 2) {

@@ -48,41 +48,41 @@
  */
 struct user_access_rsp {
 #if WORDS_BIGENDIAN
-	unsigned char __reserved1 : 2;
-	unsigned char maximum_ids : 6;
+	uint8_t __reserved1 : 2;
+	uint8_t maximum_ids : 6;
 #else
-	unsigned char maximum_ids : 6;
-	unsigned char __reserved1 : 2;
+	uint8_t maximum_ids : 6;
+	uint8_t __reserved1 : 2;
 #endif
 
 #if WORDS_BIGENDIAN
-	unsigned char __reserved2        : 2;
-	unsigned char enabled_user_count : 6;
+	uint8_t __reserved2        : 2;
+	uint8_t enabled_user_count : 6;
 #else
-	unsigned char enabled_user_count : 6;
-	unsigned char __reserved2        : 2;
+	uint8_t enabled_user_count : 6;
+	uint8_t __reserved2        : 2;
 #endif
 
 #if WORDS_BIGENDIAN
-	unsigned char __reserved3      : 2;
-	unsigned char fixed_name_count : 6;
+	uint8_t __reserved3      : 2;
+	uint8_t fixed_name_count : 6;
 #else
-	unsigned char fixed_name_count : 6;
-	unsigned char __reserved3      : 2;
+	uint8_t fixed_name_count : 6;
+	uint8_t __reserved3      : 2;
 #endif
 
 #if WORDS_BIGENDIAN
-	unsigned char __reserved4             : 1;
-	unsigned char no_callin_access        : 1;
-	unsigned char link_auth_access        : 1;
-	unsigned char ipmi_messaging_access   : 1;
-	unsigned char channel_privilege_limit : 4;
+	uint8_t __reserved4             : 1;
+	uint8_t no_callin_access        : 1;
+	uint8_t link_auth_access        : 1;
+	uint8_t ipmi_messaging_access   : 1;
+	uint8_t channel_privilege_limit : 4;
 #else
-	unsigned char channel_privilege_limit : 4;
-	unsigned char ipmi_messaging_access   : 1;
-	unsigned char link_auth_access        : 1;
-	unsigned char no_callin_access        : 1;
-	unsigned char __reserved4             : 1;
+	uint8_t channel_privilege_limit : 4;
+	uint8_t ipmi_messaging_access   : 1;
+	uint8_t link_auth_access        : 1;
+	uint8_t no_callin_access        : 1;
+	uint8_t __reserved4             : 1;
 #endif
 } __attribute__ ((packed));
 

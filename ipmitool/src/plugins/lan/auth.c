@@ -66,11 +66,11 @@
  *
  * Use OpenSSL implementation of MD5 algorithm if found
  */
-unsigned char * ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int data_len)
+uint8_t * ipmi_auth_md5(struct ipmi_session * s, uint8_t * data, int data_len)
 {
 #ifdef HAVE_CRYPTO_MD5
 	MD5_CTX ctx;
-	static unsigned char md[16];
+	static uint8_t md[16];
 	uint32_t temp;
 
 #if WORDS_BIGENDIAN
@@ -82,11 +82,11 @@ unsigned char * ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int
 	memset(&ctx, 0, sizeof(MD5_CTX));
 
 	MD5_Init(&ctx);
-	MD5_Update(&ctx, (const unsigned char *)s->authcode, 16);
-	MD5_Update(&ctx, (const unsigned char *)&s->session_id, 4);
-	MD5_Update(&ctx, (const unsigned char *)data, data_len);
-	MD5_Update(&ctx, (const unsigned char *)&temp, sizeof(uint32_t));
-	MD5_Update(&ctx, (const unsigned char *)s->authcode, 16);
+	MD5_Update(&ctx, (const uint8_t *)s->authcode, 16);
+	MD5_Update(&ctx, (const uint8_t *)&s->session_id, 4);
+	MD5_Update(&ctx, (const uint8_t *)data, data_len);
+	MD5_Update(&ctx, (const uint8_t *)&temp, sizeof(uint32_t));
+	MD5_Update(&ctx, (const uint8_t *)s->authcode, 16);
 	MD5_Final(md, &ctx);
 
 	if (verbose > 3)
@@ -130,11 +130,11 @@ unsigned char * ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int
  * Use OpenSSL implementation of MD2 algorithm if found.
  * This function is analogous to ipmi_auth_md5
  */
-unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int data_len)
+uint8_t * ipmi_auth_md2(struct ipmi_session * s, uint8_t * data, int data_len)
 {
 #ifdef HAVE_CRYPTO_MD2
 	MD2_CTX ctx;
-	static unsigned char md[16];
+	static uint8_t md[16];
 	uint32_t temp;
 
 #if WORDS_BIGENDIAN
@@ -146,11 +146,11 @@ unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int
 	memset(&ctx, 0, sizeof(MD2_CTX));
 
 	MD2_Init(&ctx);
-	MD2_Update(&ctx, (const unsigned char *)s->authcode, 16);
-	MD2_Update(&ctx, (const unsigned char *)&s->session_id, 4);
-	MD2_Update(&ctx, (const unsigned char *)data, data_len);
-	MD2_Update(&ctx, (const unsigned char *)&temp, sizeof(uint32_t));
-	MD2_Update(&ctx, (const unsigned char *)s->authcode, 16);
+	MD2_Update(&ctx, (const uint8_t *)s->authcode, 16);
+	MD2_Update(&ctx, (const uint8_t *)&s->session_id, 4);
+	MD2_Update(&ctx, (const uint8_t *)data, data_len);
+	MD2_Update(&ctx, (const uint8_t *)&temp, sizeof(uint32_t));
+	MD2_Update(&ctx, (const uint8_t *)s->authcode, 16);
 	MD2_Final(md, &ctx);
 
 	if (verbose > 3)
@@ -158,7 +158,7 @@ unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int
 
 	return md;
 #else /*HAVE_CRYPTO_MD2*/
-	static unsigned char md[16];
+	static uint8_t md[16];
 	memset(md, 0, 16);
 	printf("WARNING: No internal support for MD2!  "
 	       "Please re-compile with OpenSSL.\n");
@@ -167,12 +167,12 @@ unsigned char * ipmi_auth_md2(struct ipmi_session * s, unsigned char * data, int
 }
 
 /* special authentication method */
-unsigned char * ipmi_auth_special(struct ipmi_session * s)
+uint8_t * ipmi_auth_special(struct ipmi_session * s)
 {
 #ifdef HAVE_CRYPTO_MD5
 	MD5_CTX ctx;
-	static unsigned char md[16];
-	unsigned char challenge[16];
+	static uint8_t md[16];
+	uint8_t challenge[16];
 	int i;
 
 	memset(challenge, 0, 16);
@@ -180,7 +180,7 @@ unsigned char * ipmi_auth_special(struct ipmi_session * s)
 	memset(&ctx, 0, sizeof(MD5_CTX));
 
 	MD5_Init(&ctx);
-	MD5_Update(&ctx, (const unsigned char *)s->authcode, strlen(s->authcode));
+	MD5_Update(&ctx, (const uint8_t *)s->authcode, strlen(s->authcode));
 	MD5_Final(md, &ctx);
 
 	for (i=0; i<16; i++)
@@ -190,7 +190,7 @@ unsigned char * ipmi_auth_special(struct ipmi_session * s)
 	memset(&ctx, 0, sizeof(MD5_CTX));
 
 	MD5_Init(&ctx);
-	MD5_Update(&ctx, (const unsigned char *)challenge, 16);
+	MD5_Update(&ctx, (const uint8_t *)challenge, 16);
 	MD5_Final(md, &ctx);
 
 	return md;
@@ -198,7 +198,7 @@ unsigned char * ipmi_auth_special(struct ipmi_session * s)
 	int i;
 	md5_state_t state;
 	static md5_byte_t digest[16];
-	unsigned char challenge[16];
+	uint8_t challenge[16];
 
 	memset(challenge, 0, 16);
 	memset(digest, 0, 16);

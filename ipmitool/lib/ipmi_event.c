@@ -59,8 +59,8 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[8];
-	unsigned char chmed;
+	uint8_t rqdata[8];
+	uint8_t chmed;
 	int p = 0;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -140,11 +140,11 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct sel_event_record sel_event;
-	unsigned char rqdata[8];
+	uint8_t rqdata[8];
 	char buf[1024];
 	char * ptr, * tok;
 	int i, j;
-	unsigned char chmed;
+	uint8_t chmed;
 	int rc = 0;
 
 	if (file == NULL)
@@ -204,7 +204,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			j = i++;
 			if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM)
 				j++;
-			rqdata[j] = (unsigned char)strtol(tok, NULL, 0);
+			rqdata[j] = (uint8_t)strtol(tok, NULL, 0);
 			tok = strtok(NULL, " ");
 		}
 		if (i < 7) {
@@ -248,7 +248,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 int
 ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	unsigned char c;
+	uint8_t c;
 	int rc = 0;
 
 	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
@@ -269,7 +269,7 @@ ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_event_fromfile(intf, argv[1]);
 		}
 	} else {
-		c = (unsigned char)strtol(argv[0], NULL, 0);
+		c = (uint8_t)strtol(argv[0], NULL, 0);
 		rc = ipmi_send_platform_event(intf, c);
 	}
 

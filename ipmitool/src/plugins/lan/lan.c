@@ -76,7 +76,7 @@ extern int verbose;
 
 static sigjmp_buf jmpbuf;
 
-static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
+static int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static int ipmi_lan_setup(struct ipmi_intf * intf);
@@ -162,7 +162,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
 }
 
 static struct ipmi_rq_entry *
-ipmi_req_lookup_entry(unsigned char seq, unsigned char cmd)
+ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * e = ipmi_req_entries;
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
@@ -174,7 +174,7 @@ ipmi_req_lookup_entry(unsigned char seq, unsigned char cmd)
 }
 
 static void
-ipmi_req_remove_entry(unsigned char seq, unsigned char cmd)
+ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * p, * e;
 
@@ -222,12 +222,12 @@ ipmi_req_clear_entries(void)
 }
 
 static int
-get_random(void *data, unsigned int len)
+get_random(void *data, int len)
 {
 	int fd = open("/dev/urandom", O_RDONLY);
 	int rv;
 
-	if (fd == -1)
+	if (fd < 0 || len < 0)
 		return errno;
 
 	rv = read(fd, data, len);
@@ -236,7 +236,7 @@ get_random(void *data, unsigned int len)
 	return rv;
 }
 
-int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len)
+int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len)
 {
 	if (verbose > 2)
 		printbuf(data, data_len, "send_packet");
@@ -368,7 +368,7 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 		.class	= RMCP_CLASS_ASF,
 		.seq	= 0xff,
 	};
-	unsigned char * data;
+	uint8_t * data;
 	int len = sizeof(rmcp_ping) + sizeof(asf_ping);
 	int rv;
 
@@ -406,14 +406,14 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 static void ipmi_lan_thump_first(struct ipmi_intf * intf)
 {
 	/* is this random data? */
-	unsigned char data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	uint8_t data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				   0x07, 0x20, 0x18, 0xc8, 0xc2, 0x01, 0x01, 0x3c };
 	ipmi_lan_send_packet(intf, data, 16);
 }
 
 static void ipmi_lan_thump(struct ipmi_intf * intf)
 {
-	unsigned char data[10] = "thump";
+	uint8_t data[10] = "thump";
 	ipmi_lan_send_packet(intf, data, 10);
 }
 
@@ -575,7 +575,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		.class		= RMCP_CLASS_IPMI,
 		.seq		= 0xff,
 	};
-	unsigned char * msg, * temp;
+	uint8_t * msg, * temp;
 	int cs, mp, tmp;
 	int ap = 0;
 	int len = 0;
@@ -761,7 +761,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return rsp;
 }
 
-unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
+uint8_t * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
 {
 	struct rmcp_hdr rmcp = {
 		.ver	= RMCP_VERSION_1,
@@ -771,7 +771,7 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 	struct ipmi_session * s = intf->session;
 	int cs, mp, ap = 0, tmp;
 	int len;
-	unsigned char * msg;
+	uint8_t * msg;
 
 	len = rsp->data_len + 22;
 	if (s->active)
@@ -836,7 +836,7 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
 	if (s->active) {
-		unsigned char * d;
+		uint8_t * d;
 		switch (s->authtype) {
 		case IPMI_SESSION_AUTHTYPE_MD5:
 			d = ipmi_auth_md5(s, msg+mp, msg[mp-1]);
@@ -855,7 +855,7 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 
 int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 {
-	unsigned char * msg;
+	uint8_t * msg;
 	int len, rv;
 
 	msg = ipmi_lan_build_rsp(intf, rsp, &len);
@@ -912,7 +912,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipmi_session * s = intf->session;
-	unsigned char msg_data[2];
+	uint8_t msg_data[2];
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E;
 	msg_data[1] = s->privlvl;
@@ -1026,7 +1026,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipmi_session * s = intf->session;
-	unsigned char msg_data[17];
+	uint8_t msg_data[17];
 
 	memset(msg_data, 0, 17);
 	msg_data[0] = s->authtype;
@@ -1080,7 +1080,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipmi_session * s = intf->session;
-	unsigned char msg_data[22];
+	uint8_t msg_data[22];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -1090,7 +1090,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	msg_data[1] = s->privlvl;
 
 	if (s->authspecial) {
-		unsigned char * special = ipmi_auth_special(s);
+		uint8_t * special = ipmi_auth_special(s);
 		memcpy(s->authcode, special, 16);
 		memset(msg_data + 2, 0, 16);
 		lprintf(LOG_DEBUG, "  OEM Auth        : %s",
@@ -1188,7 +1188,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char privlvl = intf->session->privlvl;
+	uint8_t privlvl = intf->session->privlvl;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
 		return 0;	/* no need to set higher */
@@ -1225,7 +1225,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[4];
+	uint8_t msg_data[4];
 	uint32_t session_id = intf->session->session_id;
 
 	if (intf->session->active == 0)

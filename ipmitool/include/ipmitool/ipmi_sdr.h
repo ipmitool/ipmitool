@@ -48,25 +48,25 @@
 #include <ipmitool/ipmi_entity.h>
 
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
-int utos(unsigned val, unsigned bits);
+int32_t utos(uint32_t val, int bits);
 
 #if WORDS_BIGENDIAN
-# define __TO_TOL(mtol)     (unsigned short)(mtol & 0x3f)
-# define __TO_M(mtol)       (signed short)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (signed int)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
-# define __TO_ACC(bacc)     (unsigned int)(((bacc & 0x3f0000) >> 16) | ((bacc & 0xf000) >> 6))
-# define __TO_ACC_EXP(bacc) (unsigned int)((bacc & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (signed int)(utos(((bacc & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (signed int)(utos((bacc & 0xf), 4))
+# define __TO_TOL(mtol)     (uint16_t)(mtol & 0x3f)
+# define __TO_M(mtol)       (int16_t)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (int32_t)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
+# define __TO_ACC(bacc)     (uint32_t)(((bacc & 0x3f0000) >> 16) | ((bacc & 0xf000) >> 6))
+# define __TO_ACC_EXP(bacc) (uint32_t)((bacc & 0xc00) >> 10)
+# define __TO_R_EXP(bacc)   (int32_t)(utos(((bacc & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (int32_t)(utos((bacc & 0xf), 4))
 #else
-# define __TO_TOL(mtol)     (unsigned short)(BSWAP_16(mtol) & 0x3f)
-# define __TO_M(mtol)       (signed short)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (signed int)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
+# define __TO_TOL(mtol)     (uint16_t)(BSWAP_16(mtol) & 0x3f)
+# define __TO_M(mtol)       (int16_t)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (int32_t)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
                             ((BSWAP_32(bacc) & 0xc00000) >> 14)), 10))
-# define __TO_ACC(bacc)     (unsigned int)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
-# define __TO_ACC_EXP(bacc) (unsigned int)((BSWAP_32(bacc) & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (signed int)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (signed int)(utos((BSWAP_32(bacc) & 0xf), 4))
+# define __TO_ACC(bacc)     (uint32_t)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
+# define __TO_ACC_EXP(bacc) (uint32_t)((BSWAP_32(bacc) & 0xc00) >> 10)
+# define __TO_R_EXP(bacc)   (int32_t)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (int32_t)(utos((BSWAP_32(bacc) & 0xf), 4))
 #endif
 
 #define GET_SDR_REPO_INFO	0x20
@@ -80,32 +80,32 @@ int utos(unsigned val, unsigned bits);
 #define SDR_SENSOR_STAT_HI_NR	(1<<5)
 
 struct sdr_repo_info_rs {
-	unsigned char	version;	/* SDR version (51h) */
-	unsigned short	count;		/* number of records */
-	unsigned short	free;		/* free space in SDR */
+	uint8_t	version;	/* SDR version (51h) */
+	uint16_t	count;		/* number of records */
+	uint16_t	free;		/* free space in SDR */
 	uint32_t	add_stamp;	/* last add timestamp */
 	uint32_t	erase_stamp;	/* last del timestamp */
-	unsigned char	op_support;	/* supported operations */
+	uint8_t	op_support;	/* supported operations */
 } __attribute__ ((packed));
 
 #define GET_SDR_RESERVE_REPO	0x22
 struct sdr_reserve_repo_rs {
-	unsigned short	reserve_id;	/* reservation ID */
+	uint16_t	reserve_id;	/* reservation ID */
 } __attribute__ ((packed));
 
 #define GET_SDR		0x23
 struct sdr_get_rq {
-	unsigned short	reserve_id;	/* reservation ID */
-	unsigned short	id;		/* record ID */
-	unsigned char	offset;		/* offset into SDR */
+	uint16_t	reserve_id;	/* reservation ID */
+	uint16_t	id;		/* record ID */
+	uint8_t	offset;		/* offset into SDR */
 #define GET_SDR_ENTIRE_RECORD	0xff
-	unsigned char	length;		/* length to read */
+	uint8_t	length;		/* length to read */
 } __attribute__ ((packed));
 
 struct sdr_get_rs {
-	unsigned short	next;		/* next record id */
-	unsigned short	id;		/* record ID */
-	unsigned char	version;	/* SDR version (51h) */
+	uint16_t	next;		/* next record id */
+	uint16_t	id;		/* record ID */
+	uint8_t	version;	/* SDR version (51h) */
 #define SDR_RECORD_TYPE_FULL_SENSOR		0x01
 #define SDR_RECORD_TYPE_COMPACT_SENSOR		0x02
 #define SDR_RECORD_TYPE_EVENTONLY_SENSOR	0x03
@@ -117,23 +117,23 @@ struct sdr_get_rs {
 #define SDR_RECORD_TYPE_MC_CONFIRMATION		0x13
 #define SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO	0x14
 #define SDR_RECORD_TYPE_OEM			0xc0
-	unsigned char	type;		/* record type */
-	unsigned char	length;		/* remaining record bytes */
+	uint8_t	type;		/* record type */
+	uint8_t	length;		/* remaining record bytes */
 } __attribute__ ((packed));
 
 struct sdr_record_compact_sensor {
 	struct {
-		unsigned char	owner_id;
+		uint8_t	owner_id;
 #if WORDS_BIGENDIAN
-		unsigned char	channel     : 4;	/* channel number */
-		unsigned char	__reserved  : 2;
-		unsigned char	lun         : 2;	/* sensor owner lun */
+		uint8_t	channel     : 4;	/* channel number */
+		uint8_t	__reserved  : 2;
+		uint8_t	lun         : 2;	/* sensor owner lun */
 #else
-		unsigned char	lun         : 2;	/* sensor owner lun */
-		unsigned char	__reserved  : 2;
-		unsigned char	channel     : 4;	/* channel number */
+		uint8_t	lun         : 2;	/* sensor owner lun */
+		uint8_t	__reserved  : 2;
+		uint8_t	channel     : 4;	/* channel number */
 #endif
-		unsigned char	sensor_num;		/* unique sensor number */
+		uint8_t	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct entity_id entity;
@@ -141,168 +141,168 @@ struct sdr_record_compact_sensor {
 	struct {
 		struct {
 #if WORDS_BIGENDIAN
-			unsigned char	__reserved   : 1;
-			unsigned char	scanning     : 1;
-			unsigned char	events       : 1;
-			unsigned char	thresholds   : 1;
-			unsigned char	hysteresis   : 1;
-			unsigned char	type         : 1;
-			unsigned char	event_gen    : 1;
-			unsigned char	sensor_scan  : 1;
+			uint8_t	__reserved   : 1;
+			uint8_t	scanning     : 1;
+			uint8_t	events       : 1;
+			uint8_t	thresholds   : 1;
+			uint8_t	hysteresis   : 1;
+			uint8_t	type         : 1;
+			uint8_t	event_gen    : 1;
+			uint8_t	sensor_scan  : 1;
 #else
-			unsigned char	sensor_scan  : 1;
-			unsigned char	event_gen    : 1;
-			unsigned char	type         : 1;
-			unsigned char	hysteresis   : 1;
-			unsigned char	thresholds   : 1;
-			unsigned char	events       : 1;
-			unsigned char	scanning     : 1;
-			unsigned char	__reserved   : 1;
+			uint8_t	sensor_scan  : 1;
+			uint8_t	event_gen    : 1;
+			uint8_t	type         : 1;
+			uint8_t	hysteresis   : 1;
+			uint8_t	thresholds   : 1;
+			uint8_t	events       : 1;
+			uint8_t	scanning     : 1;
+			uint8_t	__reserved   : 1;
 #endif
 		} init;
 		struct {
 #if WORDS_BIGENDIAN
-			unsigned char	ignore       : 1;
-			unsigned char	rearm        : 1;
-			unsigned char	hysteresis   : 2;
-			unsigned char	threshold    : 2;
-			unsigned char	event_msg    : 2;
+			uint8_t	ignore       : 1;
+			uint8_t	rearm        : 1;
+			uint8_t	hysteresis   : 2;
+			uint8_t	threshold    : 2;
+			uint8_t	event_msg    : 2;
 #else
-			unsigned char	event_msg    : 2;
-			unsigned char	threshold    : 2;
-			unsigned char	hysteresis   : 2;
-			unsigned char	rearm        : 1;
-			unsigned char	ignore       : 1;
+			uint8_t	event_msg    : 2;
+			uint8_t	threshold    : 2;
+			uint8_t	hysteresis   : 2;
+			uint8_t	rearm        : 1;
+			uint8_t	ignore       : 1;
 #endif
 		} capabilities;
-		unsigned char	type; /* sensor type */
+		uint8_t	type; /* sensor type */
 	} sensor;
 
-	unsigned char	event_type; /* event/reading type code */
+	uint8_t	event_type; /* event/reading type code */
 
 	union {
 		struct {
-			unsigned short	assert_event;	/* assertion event mask */
-			unsigned short	deassert_event;	/* de-assertion event mask */
-			unsigned short	read;		/* discrete reaading mask */
+			uint16_t	assert_event;	/* assertion event mask */
+			uint16_t	deassert_event;	/* de-assertion event mask */
+			uint16_t	read;		/* discrete reaading mask */
 		} discrete;
 		struct {
-			unsigned short	lower;		/* lower threshold reading mask */
-			unsigned short	upper;		/* upper threshold reading mask */
-			unsigned char	set;		/* settable threshold mask */
-			unsigned char	read;		/* readable threshold mask */
+			uint16_t	lower;		/* lower threshold reading mask */
+			uint16_t	upper;		/* upper threshold reading mask */
+			uint8_t	set;		/* settable threshold mask */
+			uint8_t	read;		/* readable threshold mask */
 		} threshold;
 	} mask;
 
 	struct {
 #if WORDS_BIGENDIAN
-		unsigned char	analog        : 2;
-		unsigned char	rate          : 3;
-		unsigned char	modifier      : 2;
-		unsigned char	pct           : 1;
+		uint8_t	analog        : 2;
+		uint8_t	rate          : 3;
+		uint8_t	modifier      : 2;
+		uint8_t	pct           : 1;
 #else
-		unsigned char	pct           : 1;
-		unsigned char	modifier      : 2;
-		unsigned char	rate          : 3;
-		unsigned char	analog        : 2;
+		uint8_t	pct           : 1;
+		uint8_t	modifier      : 2;
+		uint8_t	rate          : 3;
+		uint8_t	analog        : 2;
 #endif
 		struct {
-			unsigned char	base;
-			unsigned char	modifier;
+			uint8_t	base;
+			uint8_t	modifier;
 		} type;
 	} unit;
 
 	struct {
 #if WORDS_BIGENDIAN
-		unsigned char	__reserved  : 2;
-		unsigned char	mod_type    : 2;
-		unsigned char	count       : 4;
+		uint8_t	__reserved  : 2;
+		uint8_t	mod_type    : 2;
+		uint8_t	count       : 4;
 #else
-		unsigned char	count       : 4;
-		unsigned char	mod_type    : 2;
-		unsigned char	__reserved  : 2;
+		uint8_t	count       : 4;
+		uint8_t	mod_type    : 2;
+		uint8_t	__reserved  : 2;
 #endif
 #if WORDS_BIGENDIAN
-		unsigned char	entity_inst : 1;
-		unsigned char	mod_offset  : 7;
+		uint8_t	entity_inst : 1;
+		uint8_t	mod_offset  : 7;
 #else
-		unsigned char	mod_offset  : 7;
-		unsigned char	entity_inst : 1;
+		uint8_t	mod_offset  : 7;
+		uint8_t	entity_inst : 1;
 #endif
 	} share;
 
 	struct {
 		struct {
-			unsigned char	positive;
-			unsigned char	negative;
+			uint8_t	positive;
+			uint8_t	negative;
 		} hysteresis;
 	} threshold;
 
-	unsigned char	__reserved[3];
-	unsigned char	oem;		/* reserved for OEM use */
-	unsigned char	id_code;	/* sensor ID string type/length code */
-	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t	__reserved[3];
+	uint8_t	oem;		/* reserved for OEM use */
+	uint8_t	id_code;	/* sensor ID string type/length code */
+	uint8_t	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
 } __attribute__ ((packed));
 
 struct sdr_record_eventonly_sensor {
 	struct {
-		unsigned char	owner_id;
+		uint8_t	owner_id;
 #if WORDS_BIGENDIAN
-		unsigned char	channel     : 4;	/* channel number */
-		unsigned char	fru_owner   : 2;        /* fru device owner lun */
-		unsigned char	lun         : 2;	/* sensor owner lun */
+		uint8_t	channel     : 4;	/* channel number */
+		uint8_t	fru_owner   : 2;        /* fru device owner lun */
+		uint8_t	lun         : 2;	/* sensor owner lun */
 #else
-		unsigned char	lun         : 2;	/* sensor owner lun */
-		unsigned char	fru_owner   : 2;        /* fru device owner lun */
-		unsigned char	channel     : 4;	/* channel number */
+		uint8_t	lun         : 2;	/* sensor owner lun */
+		uint8_t	fru_owner   : 2;        /* fru device owner lun */
+		uint8_t	channel     : 4;	/* channel number */
 #endif
-		unsigned char	sensor_num;		/* unique sensor number */
+		uint8_t	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct entity_id entity;
 
-	unsigned char	sensor_type;			/* sensor type */
-	unsigned char	event_type;			/* event/reading type code */
+	uint8_t	sensor_type;			/* sensor type */
+	uint8_t	event_type;			/* event/reading type code */
 
 	struct {
 #if WORDS_BIGENDIAN
-		unsigned char	__reserved  : 2;
-		unsigned char	mod_type    : 2;
-		unsigned char	count       : 4;
+		uint8_t	__reserved  : 2;
+		uint8_t	mod_type    : 2;
+		uint8_t	count       : 4;
 #else
-		unsigned char	count       : 4;
-		unsigned char	mod_type    : 2;
-		unsigned char	__reserved  : 2;
+		uint8_t	count       : 4;
+		uint8_t	mod_type    : 2;
+		uint8_t	__reserved  : 2;
 #endif
 #if WORDS_BIGENDIAN
-		unsigned char	entity_inst : 1;
-		unsigned char	mod_offset  : 7;
+		uint8_t	entity_inst : 1;
+		uint8_t	mod_offset  : 7;
 #else
-		unsigned char	mod_offset  : 7;
-		unsigned char	entity_inst : 1;
+		uint8_t	mod_offset  : 7;
+		uint8_t	entity_inst : 1;
 #endif
 	} share;
 
-	unsigned char	__reserved;
-	unsigned char	oem;		/* reserved for OEM use */
-	unsigned char	id_code;	/* sensor ID string type/length code */
-	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t	__reserved;
+	uint8_t	oem;		/* reserved for OEM use */
+	uint8_t	id_code;	/* sensor ID string type/length code */
+	uint8_t	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
 
 } __attribute__ ((packed));
 
 struct sdr_record_full_sensor {
 	struct {
-		unsigned char	owner_id;
+		uint8_t	owner_id;
 #if WORDS_BIGENDIAN
-		unsigned char	channel     : 4;	/* channel number */
-		unsigned char	__reserved  : 2;
-		unsigned char	lun         : 2;	/* sensor owner lun */
+		uint8_t	channel     : 4;	/* channel number */
+		uint8_t	__reserved  : 2;
+		uint8_t	lun         : 2;	/* sensor owner lun */
 #else
-		unsigned char	lun         : 2;	/* sensor owner lun */
-		unsigned char	__reserved  : 2;
-		unsigned char	channel     : 4;	/* channel number */
+		uint8_t	lun         : 2;	/* sensor owner lun */
+		uint8_t	__reserved  : 2;
+		uint8_t	channel     : 4;	/* channel number */
 #endif
-		unsigned char	sensor_num;		/* unique sensor number */
+		uint8_t	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct entity_id entity;
@@ -310,181 +310,181 @@ struct sdr_record_full_sensor {
 	struct {
 		struct {
 #if WORDS_BIGENDIAN
-			unsigned char	 __reserved  : 1;
-			unsigned char	scanning     : 1;
-			unsigned char	events       : 1;
-			unsigned char	thresholds   : 1;
-			unsigned char	hysteresis   : 1;
-			unsigned char	type         : 1;
-			unsigned char	event_gen    : 1;
-			unsigned char	sensor_scan  : 1;
+			uint8_t	 __reserved  : 1;
+			uint8_t	scanning     : 1;
+			uint8_t	events       : 1;
+			uint8_t	thresholds   : 1;
+			uint8_t	hysteresis   : 1;
+			uint8_t	type         : 1;
+			uint8_t	event_gen    : 1;
+			uint8_t	sensor_scan  : 1;
 #else
-			unsigned char	sensor_scan  : 1;
-			unsigned char	event_gen    : 1;
-			unsigned char	type         : 1;
-			unsigned char	hysteresis   : 1;
-			unsigned char	thresholds   : 1;
-			unsigned char	events       : 1;
-			unsigned char	scanning     : 1;
-			unsigned char	 __reserved  : 1;
+			uint8_t	sensor_scan  : 1;
+			uint8_t	event_gen    : 1;
+			uint8_t	type         : 1;
+			uint8_t	hysteresis   : 1;
+			uint8_t	thresholds   : 1;
+			uint8_t	events       : 1;
+			uint8_t	scanning     : 1;
+			uint8_t	 __reserved  : 1;
 #endif
 		} init;
 		struct {
 #if WORDS_BIGENDIAN
-			unsigned char	ignore       : 1;
-			unsigned char	rearm        : 1;
-			unsigned char	hysteresis   : 2;
-			unsigned char	threshold    : 2;
-			unsigned char	event_msg    : 2;
+			uint8_t	ignore       : 1;
+			uint8_t	rearm        : 1;
+			uint8_t	hysteresis   : 2;
+			uint8_t	threshold    : 2;
+			uint8_t	event_msg    : 2;
 #else
-			unsigned char	event_msg    : 2;
-			unsigned char	threshold    : 2;
-			unsigned char	hysteresis   : 2;
-			unsigned char	rearm        : 1;
-			unsigned char	ignore       : 1;
+			uint8_t	event_msg    : 2;
+			uint8_t	threshold    : 2;
+			uint8_t	hysteresis   : 2;
+			uint8_t	rearm        : 1;
+			uint8_t	ignore       : 1;
 #endif
 		} capabilities;
-		unsigned char	type;
+		uint8_t	type;
 	} sensor;
 
-	unsigned char	event_type;			/* event/reading type code */
+	uint8_t	event_type;			/* event/reading type code */
 
 	union {
 		struct {
-			unsigned short	assert_event;	/* assertion event mask */
-			unsigned short	deassert_event;	/* de-assertion event mask */
-			unsigned short	read;		/* discrete reaading mask */
+			uint16_t	assert_event;	/* assertion event mask */
+			uint16_t	deassert_event;	/* de-assertion event mask */
+			uint16_t	read;		/* discrete reaading mask */
 		} discrete;
 		struct {
-			unsigned short	lower;		/* lower threshold reading mask */
-			unsigned short	upper;		/* upper threshold reading mask */
-			unsigned char	set;		/* settable threshold mask */
-			unsigned char	read;		/* readable threshold mask */
+			uint16_t	lower;		/* lower threshold reading mask */
+			uint16_t	upper;		/* upper threshold reading mask */
+			uint8_t	set;		/* settable threshold mask */
+			uint8_t	read;		/* readable threshold mask */
 		} threshold;
 	} mask;
 
 	struct {
 #if WORDS_BIGENDIAN
-		unsigned char	analog        : 2;
-		unsigned char	rate          : 3;
-		unsigned char	modifier      : 2;
-		unsigned char	pct           : 1;
+		uint8_t	analog        : 2;
+		uint8_t	rate          : 3;
+		uint8_t	modifier      : 2;
+		uint8_t	pct           : 1;
 #else
-		unsigned char	pct           : 1;
-		unsigned char	modifier      : 2;
-		unsigned char	rate          : 3;
-		unsigned char	analog        : 2;
+		uint8_t	pct           : 1;
+		uint8_t	modifier      : 2;
+		uint8_t	rate          : 3;
+		uint8_t	analog        : 2;
 #endif
 		struct {
-			unsigned char	base;
-			unsigned char	modifier;
+			uint8_t	base;
+			uint8_t	modifier;
 		} type;
 	} unit;
 
-	unsigned char	linearization;	/* 70h=non linear, 71h-7Fh=non linear, OEM */
-	unsigned short	mtol;		/* M, tolerance */
+	uint8_t	linearization;	/* 70h=non linear, 71h-7Fh=non linear, OEM */
+	uint16_t	mtol;		/* M, tolerance */
 	uint32_t	bacc;		/* accuracy, B, Bexp, Rexp */
 
 	struct {
 #if WORDS_BIGENDIAN
-		unsigned char	__reserved    : 5;
-		unsigned char	normal_min    : 1;	/* normal min field specified */
-		unsigned char	normal_max    : 1;	/* normal max field specified */
-		unsigned char	nominal_read  : 1;	/* nominal reading field specified */
+		uint8_t	__reserved    : 5;
+		uint8_t	normal_min    : 1;	/* normal min field specified */
+		uint8_t	normal_max    : 1;	/* normal max field specified */
+		uint8_t	nominal_read  : 1;	/* nominal reading field specified */
 #else
-		unsigned char	nominal_read  : 1;	/* nominal reading field specified */
-		unsigned char	normal_max    : 1;	/* normal max field specified */
-		unsigned char	normal_min    : 1;	/* normal min field specified */
-		unsigned char	__reserved    : 5;
+		uint8_t	nominal_read  : 1;	/* nominal reading field specified */
+		uint8_t	normal_max    : 1;	/* normal max field specified */
+		uint8_t	normal_min    : 1;	/* normal min field specified */
+		uint8_t	__reserved    : 5;
 #endif
 	} analog_flag;
 
-	unsigned char	nominal_read;	/* nominal reading, raw value */
-	unsigned char	normal_max;	/* normal maximum, raw value */
-	unsigned char	normal_min;	/* normal minimum, raw value */
-	unsigned char	sensor_max;	/* sensor maximum, raw value */
-	unsigned char	sensor_min;	/* sensor minimum, raw value */
+	uint8_t	nominal_read;	/* nominal reading, raw value */
+	uint8_t	normal_max;	/* normal maximum, raw value */
+	uint8_t	normal_min;	/* normal minimum, raw value */
+	uint8_t	sensor_max;	/* sensor maximum, raw value */
+	uint8_t	sensor_min;	/* sensor minimum, raw value */
 
 	struct {
 		struct {
-			unsigned char	non_recover;
-			unsigned char	critical;
-			unsigned char	non_critical;
+			uint8_t	non_recover;
+			uint8_t	critical;
+			uint8_t	non_critical;
 		} upper;
 		struct {
-			unsigned char	non_recover;
-			unsigned char	critical;
-			unsigned char	non_critical;
+			uint8_t	non_recover;
+			uint8_t	critical;
+			uint8_t	non_critical;
 		} lower;
 		struct {
-			unsigned char	positive;
-			unsigned char	negative;
+			uint8_t	positive;
+			uint8_t	negative;
 		} hysteresis;
 	} threshold;
-	unsigned char	__reserved[2];
-	unsigned char	oem;		/* reserved for OEM use */
-	unsigned char	id_code;	/* sensor ID string type/length code */
-	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t	__reserved[2];
+	uint8_t	oem;		/* reserved for OEM use */
+	uint8_t	id_code;	/* sensor ID string type/length code */
+	uint8_t	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
 } __attribute__ ((packed));
 
 struct sdr_record_mc_locator {
-	unsigned char dev_slave_addr;
+	uint8_t dev_slave_addr;
 #if WORDS_BIGENDIAN
-	unsigned char __reserved2	: 4;
-	unsigned char channel_num 	: 4;
+	uint8_t __reserved2	: 4;
+	uint8_t channel_num 	: 4;
 #else
-	unsigned char channel_num 	: 4;
-	unsigned char __reserved2	: 4;
+	uint8_t channel_num 	: 4;
+	uint8_t __reserved2	: 4;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char pwr_state_notif	: 3;
-	unsigned char __reserved3	: 1;
-	unsigned char global_init	: 4;
+	uint8_t pwr_state_notif	: 3;
+	uint8_t __reserved3	: 1;
+	uint8_t global_init	: 4;
 #else
-	unsigned char global_init	: 4;
-	unsigned char __reserved3	: 1;
-	unsigned char pwr_state_notif	: 3;
+	uint8_t global_init	: 4;
+	uint8_t __reserved3	: 1;
+	uint8_t pwr_state_notif	: 3;
 #endif
-	unsigned char dev_support;
-	unsigned char __reserved4[3];
+	uint8_t dev_support;
+	uint8_t __reserved4[3];
 	struct entity_id entity;
-	unsigned char oem;
-	unsigned char id_code;
-	unsigned char id_string[16];
+	uint8_t oem;
+	uint8_t id_code;
+	uint8_t id_string[16];
 } __attribute__ ((packed));
 
 struct sdr_record_fru_locator {
-	unsigned char dev_slave_addr;
-	unsigned char device_id;
+	uint8_t dev_slave_addr;
+	uint8_t device_id;
 #if WORDS_BIGENDIAN
-	unsigned char bus		: 3;
-	unsigned char lun		: 2;
-	unsigned char __reserved2	: 2;
-	unsigned char logical		: 1;
+	uint8_t bus		: 3;
+	uint8_t lun		: 2;
+	uint8_t __reserved2	: 2;
+	uint8_t logical		: 1;
 #else
-	unsigned char logical		: 1;
-	unsigned char __reserved2	: 2;
-	unsigned char lun		: 2;
-	unsigned char bus		: 3;
+	uint8_t logical		: 1;
+	uint8_t __reserved2	: 2;
+	uint8_t lun		: 2;
+	uint8_t bus		: 3;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved3	: 4;
-	unsigned char channel_num	: 4;
+	uint8_t __reserved3	: 4;
+	uint8_t channel_num	: 4;
 #else
-	unsigned char channel_num	: 4;
-	unsigned char __reserved3	: 4;
+	uint8_t channel_num	: 4;
+	uint8_t __reserved3	: 4;
 #endif
-	unsigned char __reserved4;
-	unsigned char dev_type;
-	unsigned char dev_type_modifier;
+	uint8_t __reserved4;
+	uint8_t dev_type;
+	uint8_t dev_type_modifier;
 	struct entity_id entity;
-	unsigned char oem;
-	unsigned char id_code;
-	unsigned char id_string[16];
+	uint8_t oem;
+	uint8_t id_code;
+	uint8_t id_string[16];
 } __attribute__ ((packed));
 
 struct sdr_record_oem {
-	unsigned char * data;
+	uint8_t * data;
 	int data_len;
 };
 
@@ -493,28 +493,28 @@ struct sdr_record_oem {
  * From table 33-3 of the IPMI v2.0 spec
  */
 struct get_sdr_repository_info_rsp {
-	unsigned char sdr_version;
-	unsigned char record_count_lsb;
-	unsigned char record_count_msb;
-	unsigned char free_space[2];
-	unsigned char most_recent_addition_timestamp[4];
-	unsigned char most_recent_erase_timestamp[4];
+	uint8_t sdr_version;
+	uint8_t record_count_lsb;
+	uint8_t record_count_msb;
+	uint8_t free_space[2];
+	uint8_t most_recent_addition_timestamp[4];
+	uint8_t most_recent_erase_timestamp[4];
 #if WORDS_BIGENDIAN	
-	unsigned char overflow_flag                          : 1;
-	unsigned char modal_update_support                   : 2;
-	unsigned char __reserved1                            : 1;
-	unsigned char delete_sdr_supported                   : 1;
-	unsigned char partial_add_sdr_supported              : 1;
-	unsigned char reserve_sdr_repository_supported       : 1;
-	unsigned char get_sdr_repository_allo_info_supported : 1;
+	uint8_t overflow_flag                          : 1;
+	uint8_t modal_update_support                   : 2;
+	uint8_t __reserved1                            : 1;
+	uint8_t delete_sdr_supported                   : 1;
+	uint8_t partial_add_sdr_supported              : 1;
+	uint8_t reserve_sdr_repository_supported       : 1;
+	uint8_t get_sdr_repository_allo_info_supported : 1;
 #else
-	unsigned char get_sdr_repository_allo_info_supported : 1;
-	unsigned char reserve_sdr_repository_supported       : 1;
-	unsigned char partial_add_sdr_supported              : 1;
-	unsigned char delete_sdr_supported                   : 1;
-	unsigned char __reserved1                            : 1;
-	unsigned char modal_update_support                   : 2;
-	unsigned char overflow_flag                          : 1;
+	uint8_t get_sdr_repository_allo_info_supported : 1;
+	uint8_t reserve_sdr_repository_supported       : 1;
+	uint8_t partial_add_sdr_supported              : 1;
+	uint8_t delete_sdr_supported                   : 1;
+	uint8_t __reserved1                            : 1;
+	uint8_t modal_update_support                   : 2;
+	uint8_t overflow_flag                          : 1;
 #endif
 } __attribute__ ((packed));
 
@@ -523,14 +523,14 @@ struct get_sdr_repository_info_rsp {
 
 struct ipmi_sdr_iterator
 {
-	unsigned short reservation;
+	uint16_t reservation;
 	int total;
 	int next;
 };
 
 struct sdr_record_list {
-	unsigned short id;
-	unsigned char type;
+	uint16_t id;
+	uint8_t type;
 	struct sdr_record_list * next;
 	union {
 		struct sdr_record_full_sensor * full;
@@ -587,16 +587,16 @@ static const char * sensor_type_desc[] __attribute__((unused)) = {
 
 struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
 struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
-unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
+uint8_t * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
 void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
-int ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type);
-int ipmi_sdr_print_rawentry(struct ipmi_intf * intf, unsigned char type, unsigned char * raw, int len);
+int ipmi_sdr_print_sdr(struct ipmi_intf * intf, uint8_t type);
+int ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type, uint8_t * raw, int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf * intf, struct sdr_record_list * entry);
-const char * ipmi_sdr_get_status(unsigned char stat);
-float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char val);
-unsigned char sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val);
-struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor);
-const char * ipmi_sdr_get_sensor_type_desc(const unsigned char type);
+const char * ipmi_sdr_get_status(uint8_t stat);
+float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, uint8_t val);
+uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val);
+struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor);
+const char * ipmi_sdr_get_sensor_type_desc(const uint8_t type);
 
 int ipmi_sdr_print_sensor_full(struct ipmi_intf * intf, struct sdr_record_full_sensor * sensor);
 int ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf, struct sdr_record_compact_sensor * sensor);
@@ -605,10 +605,10 @@ int ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf * intf, struct sdr_record
 int ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
 
 struct sdr_record_list * ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity);
-struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, unsigned char num, unsigned char type);
+struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num, uint8_t type);
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
-void ipmi_sdr_print_discrete_state(unsigned char sensor_type, unsigned char event_type, unsigned char state);
+void ipmi_sdr_print_discrete_state(uint8_t sensor_type, uint8_t event_type, uint8_t state);
 
 #endif  /* IPMI_SDR_H */

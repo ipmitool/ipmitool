@@ -60,12 +60,12 @@ extern int verbose;
 
 
 static struct lan_param *
-get_lan_param(struct ipmi_intf * intf, unsigned char chan, int param)
+get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 {
 	struct lan_param * p;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[4];
+	uint8_t msg_data[4];
 
 	p = &ipmi_lan_params[param];
 	if (p == NULL)
@@ -103,8 +103,8 @@ get_lan_param(struct ipmi_intf * intf, unsigned char chan, int param)
  * this may take a long time...
  */
 static int
-set_lan_param_wait(struct ipmi_intf * intf, unsigned char chan,
-		   int param, unsigned char * data, int len)
+set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
+		   int param, uint8_t * data, int len)
 {
 	struct lan_param * p;
 	int timeout = 3;	/* 3 second timeout */
@@ -148,12 +148,12 @@ set_lan_param_wait(struct ipmi_intf * intf, unsigned char chan,
 }
 
 static int
-__set_lan_param(struct ipmi_intf * intf, unsigned char chan,
-		int param, unsigned char * data, int len, int wait)
+__set_lan_param(struct ipmi_intf * intf, uint8_t chan,
+		int param, uint8_t * data, int len, int wait)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[32];
+	uint8_t msg_data[32];
 	
 	if (param < 0)
 		return -1;
@@ -205,7 +205,7 @@ __set_lan_param(struct ipmi_intf * intf, unsigned char chan,
 }
 
 static int
-ipmi_lanp_lock_state(struct ipmi_intf * intf, unsigned char chan)
+ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
@@ -213,9 +213,9 @@ ipmi_lanp_lock_state(struct ipmi_intf * intf, unsigned char chan)
 }
 
 static void
-ipmi_lanp_lock(struct ipmi_intf * intf, unsigned char chan)
+ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
 {
-	unsigned char val = 1;
+	uint8_t val = 1;
 	int inp, try = 3;
 
 	while ((inp = ipmi_lanp_lock_state(intf, chan)) != val) {
@@ -226,9 +226,9 @@ ipmi_lanp_lock(struct ipmi_intf * intf, unsigned char chan)
 }
 
 static void
-ipmi_lanp_unlock(struct ipmi_intf * intf, unsigned char chan)
+ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
 {
-	unsigned char val;
+	uint8_t val;
 	int rc;
 
 	val = 2;
@@ -241,8 +241,8 @@ ipmi_lanp_unlock(struct ipmi_intf * intf, unsigned char chan)
 }
 
 static int
-set_lan_param(struct ipmi_intf * intf, unsigned char chan,
-	      int param, unsigned char * data, int len)
+set_lan_param(struct ipmi_intf * intf, uint8_t chan,
+	      int param, uint8_t * data, int len)
 {
 	int rc;
 	ipmi_lanp_lock(intf, chan);
@@ -254,10 +254,10 @@ set_lan_param(struct ipmi_intf * intf, unsigned char chan,
 
 static int
 lan_set_arp_interval(struct ipmi_intf * intf,
-		     unsigned char chan, unsigned char * ival)
+		     uint8_t chan, uint8_t * ival)
 {
 	struct lan_param *lp;
-	unsigned char interval;
+	uint8_t interval;
 	int rc = 0;
 	
 	lp = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
@@ -265,7 +265,7 @@ lan_set_arp_interval(struct ipmi_intf * intf,
 		return -1;
 
 	if (ival != 0) {
-		interval = ((unsigned char)atoi(ival) * 2) - 1;
+		interval = ((uint8_t)atoi(ival) * 2) - 1;
 		rc = set_lan_param(intf, chan, IPMI_LANP_GRAT_ARP, &interval, 1);
 	} else {
 		interval = lp->data[0];
@@ -279,10 +279,10 @@ lan_set_arp_interval(struct ipmi_intf * intf,
 
 static int
 lan_set_arp_generate(struct ipmi_intf * intf,
-		     unsigned char chan, unsigned char ctl)
+		     uint8_t chan, uint8_t ctl)
 {
 	struct lan_param *lp;
-	unsigned char data;
+	uint8_t data;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
 	if (lp == NULL)
@@ -301,10 +301,10 @@ lan_set_arp_generate(struct ipmi_intf * intf,
 
 static int
 lan_set_arp_respond(struct ipmi_intf * intf,
-		    unsigned char chan, unsigned char ctl)
+		    uint8_t chan, uint8_t ctl)
 {
 	struct lan_param *lp;
-	unsigned char data;
+	uint8_t data;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
 	if (lp == NULL)
@@ -322,10 +322,10 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 }
 
 static int
-ipmi_lan_print(struct ipmi_intf * intf, unsigned char chan)
+ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
-	unsigned char medium;
+	uint8_t medium;
 	int rc = 0;
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
@@ -446,10 +446,10 @@ ipmi_lan_print(struct ipmi_intf * intf, unsigned char chan)
 
 /* Configure Authentication Types */
 static int
-ipmi_lan_set_auth(struct ipmi_intf * intf, unsigned char chan, char * level, char * types)
+ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * types)
 {
-	unsigned char data[5];
-	unsigned char authtype = 0;
+	uint8_t data[5];
+	uint8_t authtype = 0;
 	char * p;
 	struct lan_param * lp;
 
@@ -504,11 +504,11 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, unsigned char chan, char * level, cha
 
 static int
 ipmi_lan_set_password(struct ipmi_intf * intf,
-	unsigned char userid, unsigned char * password)
+	uint8_t userid, uint8_t * password)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char data[18];
+	uint8_t data[18];
 
 	memset(&data, 0, sizeof(data));
 	data[0] = userid & 0x3f;/* user ID */
@@ -543,11 +543,11 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 }
 
 static int
-ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned char enable)
+ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[3];
+	uint8_t rqdata[3];
 
 	memset(&req, 0, sizeof(req));
 
@@ -602,11 +602,11 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 }
 
 static int
-ipmi_set_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned char userid)
+ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[4];
+	uint8_t rqdata[4];
 
 	memset(rqdata, 0, 4);
 	rqdata[0] = 0x90 | (channel & 0xf);
@@ -635,9 +635,9 @@ ipmi_set_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 }
 
 static int
-get_cmdline_macaddr(char * arg, unsigned char * buf)
+get_cmdline_macaddr(char * arg, uint8_t * buf)
 {
-	unsigned m1, m2, m3, m4, m5, m6;
+	uint8_t m1, m2, m3, m4, m5, m6;
 	if (sscanf(arg, "%02x:%02x:%02x:%02x:%02x:%02x",
 		   &m1, &m2, &m3, &m4, &m5, &m6) != 6) {
 		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
@@ -653,9 +653,9 @@ get_cmdline_macaddr(char * arg, unsigned char * buf)
 }
 
 static int
-get_cmdline_ipaddr(char * arg, unsigned char * buf)
+get_cmdline_ipaddr(char * arg, uint8_t * buf)
 {
-	unsigned ip1, ip2, ip3, ip4;
+	uint8_t ip1, ip2, ip3, ip4;
 	if (sscanf(arg, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
 		lprintf(LOG_ERR, "Invalid IP address: %s", arg);
 		return -1;
@@ -697,8 +697,8 @@ static void ipmi_lan_set_usage(void)
 static int
 ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	unsigned char data[32];
-	unsigned char chan, medium;
+	uint8_t data[32];
+	uint8_t chan, medium;
 	int rc = 0;
 
 	if (argc < 2) {
@@ -712,7 +712,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 
-	chan = (unsigned char)strtol(argv[0], NULL, 0);
+	chan = (uint8_t)strtol(argv[0], NULL, 0);
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
 		lprintf(LOG_ERR, "Invalid Channel %d", chan);
@@ -926,9 +926,9 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if ((strncmp(argv[0], "printconf", 9) == 0) ||
 	    (strncmp(argv[0], "print", 5) == 0)) {
-		unsigned char chan = 7;
+		uint8_t chan = 7;
 		if (argc > 1)
-			chan = (unsigned char)strtol(argv[1], NULL, 0);
+			chan = (uint8_t)strtol(argv[1], NULL, 0);
 		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
 			lprintf(LOG_NOTICE, "usage: lan print <channel>");
 		else

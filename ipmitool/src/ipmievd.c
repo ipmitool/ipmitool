@@ -135,7 +135,7 @@ static int enable_event_msg_buffer(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char bmc_global_enables;
+	uint8_t bmc_global_enables;
 
 	/* we must read/modify/write bmc global enables */
 	memset(&req, 0, sizeof(req));
@@ -192,7 +192,7 @@ static void read_event(struct ipmi_intf * intf)
 {
 	struct ipmi_addr addr;
 	struct ipmi_recv recv;
-	unsigned char data[80];
+	uint8_t data[80];
 	int rv;
 
 	recv.addr = (char *) &addr;

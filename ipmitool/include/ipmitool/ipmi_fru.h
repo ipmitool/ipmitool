@@ -65,35 +65,35 @@ enum {
 };
 
 struct fru_info {
-	unsigned short size;
-	unsigned char access : 1;
+	uint16_t size;
+	uint8_t access : 1;
 } __attribute__ ((packed));
 
 struct fru_header {
-	unsigned char version;
+	uint8_t version;
 	struct {
-		unsigned char internal;
-		unsigned char chassis;
-		unsigned char board;
-		unsigned char product;
-		unsigned char multi;
+		uint8_t internal;
+		uint8_t chassis;
+		uint8_t board;
+		uint8_t product;
+		uint8_t multi;
 	} offset;
-	unsigned char pad;
-	unsigned char checksum;
+	uint8_t pad;
+	uint8_t checksum;
 } __attribute__ ((packed));
 
 struct fru_area_chassis {
-	unsigned char area_ver;
-	unsigned char type;
-	unsigned short area_len;
+	uint8_t area_ver;
+	uint8_t type;
+	uint16_t area_len;
 	char * part;
 	char * serial;
 };
 
 struct fru_area_board {
-	unsigned char area_ver;
-	unsigned char lang;
-	unsigned short area_len;
+	uint8_t area_ver;
+	uint8_t lang;
+	uint16_t area_len;
 	uint32_t mfg_date_time;
 	char * mfg;
 	char * prod;
@@ -103,9 +103,9 @@ struct fru_area_board {
 };
 
 struct fru_area_product {
-	unsigned char area_ver;
-	unsigned char lang;
-	unsigned short area_len;
+	uint8_t area_ver;
+	uint8_t lang;
+	uint16_t area_len;
 	char * mfg;
 	char * name;
 	char * part;
@@ -122,55 +122,55 @@ struct fru_multirec_header {
 #define FRU_RECORD_TYPE_MANAGEMENT_ACCESS 0x03
 #define FRU_RECORD_TYPE_BASE_COMPATIBILITY 0x04
 #define FRU_RECORD_TYPE_EXTENDED_COMPATIBILITY 0x05
-	unsigned char type;
-	unsigned char format;
-	unsigned char len;
-	unsigned char record_checksum;
-	unsigned char header_checksum;
+	uint8_t type;
+	uint8_t format;
+	uint8_t len;
+	uint8_t record_checksum;
+	uint8_t header_checksum;
 } __attribute__ ((packed));
 
 struct fru_multirec_powersupply {
 #if WORDS_BIGENDIAN
-	unsigned short capacity;
+	uint16_t capacity;
 #else
-	unsigned short capacity		: 12;
-	unsigned short __reserved1	: 4;
+	uint16_t capacity		: 12;
+	uint16_t __reserved1	: 4;
 #endif
-	unsigned short peak_va;
-	unsigned char  inrush_current;
-	unsigned char  inrush_interval;
-	unsigned short lowend_input1;
-	unsigned short highend_input1;
-	unsigned short lowend_input2;
-	unsigned short highend_input2;
-	unsigned char  lowend_freq;
-	unsigned char  highend_freq;
-	unsigned char  dropout_tolerance;
+	uint16_t peak_va;
+	uint8_t  inrush_current;
+	uint8_t  inrush_interval;
+	uint16_t lowend_input1;
+	uint16_t highend_input1;
+	uint16_t lowend_input2;
+	uint16_t highend_input2;
+	uint8_t  lowend_freq;
+	uint8_t  highend_freq;
+	uint8_t  dropout_tolerance;
 #if WORDS_BIGENDIAN
-	unsigned char  __reserved2	: 3;
-	unsigned char  tach		: 1;
-	unsigned char  hotswap		: 1;
-	unsigned char  autoswitch	: 1;
-	unsigned char  pfc		: 1;
-	unsigned char  predictive_fail	: 1;
+	uint8_t  __reserved2	: 3;
+	uint8_t  tach		: 1;
+	uint8_t  hotswap		: 1;
+	uint8_t  autoswitch	: 1;
+	uint8_t  pfc		: 1;
+	uint8_t  predictive_fail	: 1;
 #else
-	unsigned char  predictive_fail	: 1;
-	unsigned char  pfc		: 1;
-	unsigned char  autoswitch	: 1;
-	unsigned char  hotswap		: 1;
-	unsigned char  tach		: 1;
-	unsigned char  __reserved2	: 3;
+	uint8_t  predictive_fail	: 1;
+	uint8_t  pfc		: 1;
+	uint8_t  autoswitch	: 1;
+	uint8_t  hotswap		: 1;
+	uint8_t  tach		: 1;
+	uint8_t  __reserved2	: 3;
 #endif
-	unsigned short peak_cap_ht;
+	uint16_t peak_cap_ht;
 #if WORDS_BIGENDIAN
-	unsigned char  combined_voltage1 : 4;
-	unsigned char  combined_voltage2 : 4;
+	uint8_t  combined_voltage1 : 4;
+	uint8_t  combined_voltage2 : 4;
 #else
-	unsigned char  combined_voltage2 : 4;
-	unsigned char  combined_voltage1 : 4;
+	uint8_t  combined_voltage2 : 4;
+	uint8_t  combined_voltage1 : 4;
 #endif
-	unsigned short combined_capacity;
-	unsigned char  rps_threshold;
+	uint16_t combined_capacity;
+	uint8_t  rps_threshold;
 } __attribute__ ((packed));
 
 static const char * combined_voltage_desc[] __attribute__((unused)) = {
@@ -179,36 +179,36 @@ static const char * combined_voltage_desc[] __attribute__((unused)) = {
 
 struct fru_multirec_dcoutput {
 #if WORDS_BIGENDIAN
-	unsigned char  standby		: 1;
-	unsigned char  __reserved	: 3;
-	unsigned char  output_number	: 4;
+	uint8_t  standby		: 1;
+	uint8_t  __reserved	: 3;
+	uint8_t  output_number	: 4;
 #else
-	unsigned char  output_number	: 4;
-	unsigned char  __reserved	: 3;
-	unsigned char  standby		: 1;
+	uint8_t  output_number	: 4;
+	uint8_t  __reserved	: 3;
+	uint8_t  standby		: 1;
 #endif
 	short nominal_voltage;
 	short max_neg_dev;
 	short max_pos_dev;
-	unsigned short ripple_and_noise;
-	unsigned short min_current;
-	unsigned short max_current;
+	uint16_t ripple_and_noise;
+	uint16_t min_current;
+	uint16_t max_current;
 } __attribute__ ((packed));
 
 struct fru_multirec_dcload {
 #if WORDS_BIGENDIAN
-	unsigned char  __reserved	: 4;
-	unsigned char  output_number	: 4;
+	uint8_t  __reserved	: 4;
+	uint8_t  output_number	: 4;
 #else
-	unsigned char  output_number	: 4;
-	unsigned char  __reserved	: 4;
+	uint8_t  output_number	: 4;
+	uint8_t  __reserved	: 4;
 #endif
 	short nominal_voltage;
 	short min_voltage;
 	short max_voltage;
-	unsigned short ripple_and_noise;
-	unsigned short min_current;
-	unsigned short max_current;
+	uint16_t ripple_and_noise;
+	uint16_t min_current;
+	uint16_t max_current;
 } __attribute__ ((packed));
 
 static const char * chassis_type_desc[] __attribute__((unused)) = {

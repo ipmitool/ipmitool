@@ -48,19 +48,19 @@
 
 
 struct sol_config_parameters {
-	unsigned char  set_in_progress;
-	unsigned char  enabled;
-	unsigned char  force_encryption;
-	unsigned char  force_authentication;
-	unsigned char  privilege_level;
-	unsigned char  character_accumulate_level;
-	unsigned char  character_send_threshold;
-	unsigned char  retry_count;
-	unsigned char  retry_interval;
-	unsigned char  non_volatile_bit_rate;
-	unsigned char  volatile_bit_rate;
-	unsigned char  payload_channel;
-	unsigned short payload_port;
+	uint8_t  set_in_progress;
+	uint8_t  enabled;
+	uint8_t  force_encryption;
+	uint8_t  force_authentication;
+	uint8_t  privilege_level;
+	uint8_t  character_accumulate_level;
+	uint8_t  character_send_threshold;
+	uint8_t  retry_count;
+	uint8_t  retry_interval;
+	uint8_t  non_volatile_bit_rate;
+	uint8_t  volatile_bit_rate;
+	uint8_t  payload_channel;
+	uint16_t payload_port;
 };
 
 
@@ -69,17 +69,17 @@ struct sol_config_parameters {
  * From table 24-2 of the IPMI v2.0 spec
  */
 struct activate_payload_rsp {
-	unsigned char auxiliary_data[4];
-	unsigned char inbound_payload_size[2];  /* LS byte first */
-	unsigned char outbound_payload_size[2]; /* LS byte first */
-	unsigned char payload_udp_port[2];      /* LS byte first */
-	unsigned char payload_vlan_number[2];   /* LS byte first */
+	uint8_t auxiliary_data[4];
+	uint8_t inbound_payload_size[2];  /* LS byte first */
+	uint8_t outbound_payload_size[2]; /* LS byte first */
+	uint8_t payload_udp_port[2];      /* LS byte first */
+	uint8_t payload_vlan_number[2];   /* LS byte first */
 } __attribute__ ((packed));
 
 
 int ipmi_sol_main(struct ipmi_intf *, int, char **);
 int ipmi_get_sol_info(struct ipmi_intf             * intf,
-					  unsigned char                  channel,
+					  uint8_t                  channel,
 					  struct sol_config_parameters * params);
 
 

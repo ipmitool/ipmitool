@@ -82,7 +82,7 @@ static struct lan_param {
 	int cmd;
 	int size;
 	char desc[24];
-	unsigned char * data;
+	uint8_t * data;
 	int data_len;
 } ipmi_lan_params[] __attribute__((unused)) = {
 	{ IPMI_LANP_SET_IN_PROGRESS,	1,	"Set in Progress"	},

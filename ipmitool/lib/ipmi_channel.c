@@ -63,9 +63,9 @@ void printf_channel_usage (void);
  * specificed by the parameter n
  */
 static const char *
-ipmi_1_5_authtypes(unsigned char n)
+ipmi_1_5_authtypes(uint8_t n)
 {
-	unsigned int i;
+	uint32_t i;
 	static char supportedTypes[128];
 
 	bzero(supportedTypes, 128);
@@ -90,13 +90,13 @@ ipmi_1_5_authtypes(unsigned char n)
  */
 int
 ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
-			  unsigned char channel,
-			  unsigned char priv)
+			  uint8_t channel,
+			  uint8_t priv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct get_channel_auth_cap_rsp auth_cap;
-	unsigned char msg_data[2];
+	uint8_t msg_data[2];
 
 	msg_data[0] = channel | 0x80; // Ask for IPMI v2 data as well
 	msg_data[1] = priv;
@@ -184,11 +184,11 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
  *
  */
 int
-ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
+ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[2];
+	uint8_t rqdata[2];
 	struct get_channel_info_rsp   channel_info;
 	struct get_channel_access_rsp channel_access;
 
@@ -345,11 +345,11 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 }
 
 static int
-ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned char userid)
+ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req1, req2;
-	unsigned char rqdata[2];
+	uint8_t rqdata[2];
 	struct get_user_access_rsp user_access;
 	int curr_uid, max_uid = 0, init = 1;
 
@@ -433,10 +433,10 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 static int
 ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	unsigned char channel, userid;
+	uint8_t channel, userid;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[2];
+	uint8_t rqdata[2];
 	struct get_user_access_rsp user_access;
 	struct set_user_access_data set_access;
 	int i;
@@ -448,8 +448,8 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
                 return 0;
         }
 
-	channel = (unsigned char)strtol(argv[0], NULL, 0);
-	userid = (unsigned char)strtol(argv[1], NULL, 0);
+	channel = (uint8_t)strtol(argv[0], NULL, 0);
+	userid = (uint8_t)strtol(argv[1], NULL, 0);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -507,7 +507,7 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = IPMI_SET_USER_ACCESS;
-	req.msg.data = (unsigned char *) &set_access;
+	req.msg.data = (uint8_t *) &set_access;
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
@@ -526,8 +526,8 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
-unsigned char
-ipmi_get_channel_medium(struct ipmi_intf * intf, unsigned char channel)
+uint8_t
+ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -558,7 +558,7 @@ ipmi_get_channel_medium(struct ipmi_intf * intf, unsigned char channel)
 	return info.channel_medium;
 }
 
-unsigned char
+uint8_t
 ipmi_current_channel_medium(struct ipmi_intf * intf)
 {
 	return ipmi_get_channel_medium(intf, 0xE);
@@ -597,18 +597,18 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf_channel_usage();
 		else
 			retval = ipmi_get_channel_auth_cap(intf,
-                                               (unsigned char)strtol(argv[1], NULL, 0),
-                                               (unsigned char)strtol(argv[2], NULL, 0));
+                                               (uint8_t)strtol(argv[1], NULL, 0),
+                                               (uint8_t)strtol(argv[2], NULL, 0));
 	}
 	else if (strncmp(argv[0], "getaccess", 10) == 0)
 	{
 		if ((argc < 2) || (argc > 3))
 			printf_channel_usage();
 		else {
-			unsigned char ch = (unsigned char)strtol(argv[1], NULL, 0);
-			unsigned char id = 0;
+			uint8_t ch = (uint8_t)strtol(argv[1], NULL, 0);
+			uint8_t id = 0;
 			if (argc == 3)
-				id = (unsigned char)strtol(argv[2], NULL, 0);
+				id = (uint8_t)strtol(argv[2], NULL, 0);
 			retval = ipmi_get_user_access(intf, ch, id);
 		}
 	}
@@ -621,9 +621,9 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc > 2)
 			printf_channel_usage();
 		else {
-			unsigned char ch = 0xe;
+			uint8_t ch = 0xe;
 			if (argc == 2)
-				ch = (unsigned char)strtol(argv[1], NULL, 0);
+				ch = (uint8_t)strtol(argv[1], NULL, 0);
 			retval = ipmi_get_channel_info(intf, ch);
 		}
 	}

@@ -54,7 +54,7 @@
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_seed_prng(unsigned int bytes)
+int lanplus_seed_prng(uint32_t bytes)
 {
 	if (! RAND_load_file("/dev/urandom", bytes))
 		return 1;
@@ -77,7 +77,7 @@ int lanplus_seed_prng(unsigned int bytes)
  *        1 on failure
  */
 int
-lanplus_rand(unsigned char * buffer, unsigned int num_bytes)
+lanplus_rand(uint8_t * buffer, uint32_t num_bytes)
 {
 #define IPMI_LANPLUS_FAKE_RAND 1
 #ifdef IPMI_LANPLUS_FAKE_RAND
@@ -111,14 +111,14 @@ lanplus_rand(unsigned char * buffer, unsigned int num_bytes)
  *
  * returns a pointer to md
  */
-unsigned char *
-lanplus_HMAC(unsigned char        mac,
+uint8_t *
+lanplus_HMAC(uint8_t        mac,
 			 const void          *key,
 			 int                  key_len,
-			 const unsigned char *d,
+			 const uint8_t *d,
 			 int                  n,
-			 unsigned char       *md,
-			 unsigned int        *md_len)
+			 uint8_t       *md,
+			 uint32_t        *md_len)
 {
 	
 	const EVP_MD *evp_md;
@@ -152,12 +152,12 @@ lanplus_HMAC(unsigned char        mac,
  *       to 0 on failure, or if 0 bytes were input.
  */
 void
-lanplus_encrypt_aes_cbc_128(const unsigned char * iv,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned int        * bytes_written)
+lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint32_t        * bytes_written)
 {
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
@@ -193,7 +193,7 @@ lanplus_encrypt_aes_cbc_128(const unsigned char * iv,
 	}
 	else
 	{
-		unsigned int tmplen;
+		uint32_t tmplen;
 
 		if(!EVP_EncryptFinal_ex(&ctx, output + *bytes_written, &tmplen))
 		{
@@ -226,12 +226,12 @@ lanplus_encrypt_aes_cbc_128(const unsigned char * iv,
  *       to 0 on failure, or if 0 bytes were input.
  */
 void
-lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned int        * bytes_written)
+lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint32_t        * bytes_written)
 {
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
@@ -268,7 +268,7 @@ lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
 	}
 	else
 	{
-		unsigned int tmplen;
+		uint32_t tmplen;
 
 		if(!EVP_DecryptFinal_ex(&ctx, output + *bytes_written, &tmplen))
 		{

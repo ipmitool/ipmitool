@@ -70,14 +70,14 @@
  *        1 on failure (the authcode does not match)
  */
 int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
-							   const unsigned char       * bmc_mac)
+							   const uint8_t       * bmc_mac)
 {
 	char         * buffer;
 	int           bufferLength, i;
-	unsigned char mac[20];
+	uint8_t mac[20];
 	int           macLength;
 
-	unsigned int SIDm_lsbf, SIDc_lsbf;
+	uint32_t SIDm_lsbf, SIDc_lsbf;
 
 
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
@@ -210,14 +210,14 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
  *        1 on failure (the authcode does not match)
  */
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
-							   const unsigned char       * bmc_mac)
+							   const uint8_t       * bmc_mac)
 {
 	char         * buffer;
 	int           bufferLength, i;
-	unsigned char mac[20];
+	uint8_t mac[20];
 	int           macLength;
 
-	unsigned int SIDc_lsbf;
+	uint32_t SIDc_lsbf;
 
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 1;
@@ -323,12 +323,12 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
  */
 int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 									const struct ipmi_session * session,
-									unsigned int              * mac_length)
+									uint32_t              * mac_length)
 {
 	int ret = 0;
 	int input_buffer_length, i;
 	char * input_buffer;
-	unsigned int SIDm_lsbf;
+	uint32_t SIDm_lsbf;
 	
 
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
@@ -554,9 +554,9 @@ int lanplus_generate_sik(struct ipmi_session * session)
  */
 int lanplus_generate_k1(struct ipmi_session * session)
 {
-	unsigned int mac_length;
+	uint32_t mac_length;
 
-	unsigned char CONST_1[] =
+	uint8_t CONST_1[] =
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 		 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 
@@ -597,9 +597,9 @@ int lanplus_generate_k1(struct ipmi_session * session)
  */
 int lanplus_generate_k2(struct ipmi_session * session)
 {
-	unsigned int mac_length;
+	uint32_t mac_length;
 
-	unsigned char CONST_2[] =
+	uint8_t CONST_2[] =
 		{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
 		 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02};
 
@@ -645,16 +645,16 @@ int lanplus_generate_k2(struct ipmi_session * session)
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_encrypt_payload(unsigned char         crypt_alg,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned short      * bytes_written)
+int lanplus_encrypt_payload(uint8_t         crypt_alg,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint16_t      * bytes_written)
 {
-	unsigned char * padded_input;
-	unsigned int    mod, i, bytes_encrypted;
-	unsigned char   pad_length = 0;
+	uint8_t * padded_input;
+	uint32_t    mod, i, bytes_encrypted;
+	uint8_t   pad_length = 0;
 
 	if (crypt_alg == IPMI_CRYPT_NONE)
 	{
@@ -678,7 +678,7 @@ int lanplus_encrypt_payload(unsigned char         crypt_alg,
 	if (mod)
 		pad_length = IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE - mod;
 
-	padded_input = (unsigned char*)malloc(input_length + pad_length + 1);
+	padded_input = (uint8_t*)malloc(input_length + pad_length + 1);
 	memcpy(padded_input, input, input_length);
 
 	/* add the pad */
@@ -745,9 +745,9 @@ int lanplus_encrypt_payload(unsigned char         crypt_alg,
 int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 								struct ipmi_session * session)
 {
-	unsigned char * bmc_authcode;
-	unsigned char   generated_authcode[IPMI_MAX_MAC_SIZE];
-	unsigned int    generated_authcode_length;
+	uint8_t * bmc_authcode;
+	uint8_t   generated_authcode[IPMI_MAX_MAC_SIZE];
+	uint32_t    generated_authcode_length;
 	
 
 	if ((rs->session.authtype != IPMI_SESSION_AUTHTYPE_RMCP_PLUS) ||
@@ -802,15 +802,15 @@ int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
  * returns 0 on success (we were able to successfully decrypt the packet)
  *         1 on failure (we were unable to successfully decrypt the packet)
  */
-int lanplus_decrypt_payload(unsigned char         crypt_alg,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned short      * payload_size)
+int lanplus_decrypt_payload(uint8_t         crypt_alg,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint16_t      * payload_size)
 {
-	unsigned char * decrypted_payload;
-	unsigned int    bytes_decrypted;
+	uint8_t * decrypted_payload;
+	uint32_t    bytes_decrypted;
 
 	if (crypt_alg == IPMI_CRYPT_NONE)
 	{
@@ -823,7 +823,7 @@ int lanplus_decrypt_payload(unsigned char         crypt_alg,
 	/* We only support AES */
 	assert(crypt_alg == IPMI_CRYPT_AES_CBC_128);
 
-	decrypted_payload = (unsigned char*)malloc(input_length);
+	decrypted_payload = (uint8_t*)malloc(input_length);
 
 	lanplus_decrypt_aes_cbc_128(input,                                /* IV              */
 								key,                                  /* Key             */
@@ -837,7 +837,7 @@ int lanplus_decrypt_payload(unsigned char         crypt_alg,
 	if (bytes_decrypted != 0)
 	{
 		/* Success */
-		unsigned char conf_pad_length;
+		uint8_t conf_pad_length;
 		int i;
 
 		memmove(output,

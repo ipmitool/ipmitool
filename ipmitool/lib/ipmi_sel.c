@@ -56,7 +56,7 @@ static const struct valstr event_dir_vals[] = {
 };
 
 static const char *
-ipmi_get_event_type(unsigned char code)
+ipmi_get_event_type(uint8_t code)
 {
         if (code == 0)
                 return "Unspecified";
@@ -74,7 +74,7 @@ ipmi_get_event_type(unsigned char code)
 static char *
 ipmi_sel_timestamp(uint32_t stamp)
 {
-	static unsigned char tbuf[40];
+	static uint8_t tbuf[40];
 	time_t s = (time_t)stamp;
 	memset(tbuf, 0, 40);
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
@@ -84,7 +84,7 @@ ipmi_sel_timestamp(uint32_t stamp)
 static char *
 ipmi_sel_timestamp_date(uint32_t stamp)
 {
-	static unsigned char tbuf[11];
+	static uint8_t tbuf[11];
 	time_t s = (time_t)stamp;
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
 	return tbuf;
@@ -93,7 +93,7 @@ ipmi_sel_timestamp_date(uint32_t stamp)
 static char *
 ipmi_sel_timestamp_time(uint32_t stamp)
 {
-	static unsigned char tbuf[9];
+	static uint8_t tbuf[9];
 	time_t s = (time_t)stamp;
 	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
 	return tbuf;
@@ -102,7 +102,7 @@ ipmi_sel_timestamp_time(uint32_t stamp)
 void
 ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 {
-	unsigned char code, offset;
+	uint8_t code, offset;
 	struct ipmi_event_sensor_types *evt;
 
         if (desc == NULL)
@@ -136,7 +136,7 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 }
 
 const char *
-ipmi_sel_get_sensor_type(unsigned char code)
+ipmi_sel_get_sensor_type(uint8_t code)
 {
 	struct ipmi_event_sensor_types *st = sensor_specific_types;
 	while (st->type) {
@@ -152,7 +152,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short e, f;
+	uint16_t e, f;
 	int pctfull = 0;
 
 	memset(&req, 0, sizeof(req));
@@ -231,14 +231,14 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	return 0;
 }
 
-static unsigned short
-ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id,
+static uint16_t
+ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 		       struct sel_event_record * evt)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
-	unsigned char msg_data[6];
-	unsigned short next;
+	uint8_t msg_data[6];
+	uint16_t next;
 
 	memset(msg_data, 0, 6);
 	msg_data[0] = 0x00;	/* no reserve id, not partial get */
@@ -580,7 +580,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short next_id = 0, curr_id = 0;
+	uint16_t next_id = 0, curr_id = 0;
 	struct sel_event_record evt;
 
 	memset(&req, 0, sizeof(req));
@@ -643,7 +643,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	}
 }
 
-static unsigned short
+static uint16_t
 ipmi_sel_reserve(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -680,7 +680,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	static unsigned char tbuf[40];
+	static uint8_t tbuf[40];
 	uint32_t timei;
 	time_t time;
 
@@ -752,7 +752,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	}
 
 	timei = (uint32_t)time;
-	req.msg.data = (unsigned char *)&timei;	
+	req.msg.data = (uint8_t *)&timei;	
 	req.msg.data_len = 4;
 
 #if WORDS_BIGENDIAN
@@ -780,8 +780,8 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short reserve_id;
-	unsigned char msg_data[6];
+	uint16_t reserve_id;
+	uint8_t msg_data[6];
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
@@ -823,8 +823,8 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short id;
-	unsigned char msg_data[4];
+	uint16_t id;
+	uint8_t msg_data[4];
 	int rc = 0;
 
 	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
@@ -873,7 +873,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	unsigned short id;
+	uint16_t id;
 	int i, oldv;
 	struct sel_event_record evt;
 	struct sdr_record_list * sdr;
@@ -890,7 +890,7 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 
 	for (i=0; i<argc; i++) {
-		id = (unsigned short)strtol(argv[i], NULL, 0);
+		id = (uint16_t)strtol(argv[i], NULL, 0);
 
 		lprintf(LOG_DEBUG, "Looking up SEL entry 0x%x", id);
 

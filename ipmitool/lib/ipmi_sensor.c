@@ -49,7 +49,7 @@ extern int verbose;
 
 static
 struct ipmi_rs *
-ipmi_sensor_get_sensor_thresholds(struct ipmi_intf * intf, unsigned char sensor)
+ipmi_sensor_get_sensor_thresholds(struct ipmi_intf * intf, uint8_t sensor)
 {
     struct ipmi_rs * rsp;
     struct ipmi_rq req;
@@ -68,9 +68,9 @@ ipmi_sensor_get_sensor_thresholds(struct ipmi_intf * intf, unsigned char sensor)
 static
 struct ipmi_rs *
 ipmi_sensor_set_sensor_thresholds(struct ipmi_intf * intf, 
-                                  unsigned char sensor,
-                                  unsigned char threshold,
-                                  unsigned char setting)
+                                  uint8_t sensor,
+                                  uint8_t threshold,
+                                  uint8_t setting)
 {
     struct ipmi_rs * rsp;
     struct ipmi_rq req;
@@ -97,7 +97,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf * intf,
     memset(&req, 0, sizeof(req));
     req.msg.netfn = IPMI_NETFN_SE;
     req.msg.cmd = SET_SENSOR_THRESHOLDS;
-    req.msg.data = (unsigned char *)&set_thresh_rq;
+    req.msg.data = (uint8_t *)&set_thresh_rq;
     req.msg.data_len = sizeof(set_thresh_rq);
 
     rsp = intf->sendrecv(intf, &req);
@@ -112,7 +112,7 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
     char id[17];
     char * unitstr = "discrete";
     int validread=1;
-    unsigned char val = 0;
+    uint8_t val = 0;
     struct ipmi_rs * rsp;
 
     if (!sensor)
@@ -330,12 +330,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 
             printf(" Sensor Reading        : ");
             if (validread) {
-#if WORDS_BIGENDIAN
-                unsigned raw_tol = sensor->mtol & 0x3f;
-#else
-                unsigned raw_tol = (sensor->mtol & 0x3f00) >> 8;
-#endif
-
+                uint16_t raw_tol = __TO_TOL(sensor->mtol);
                 float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
                 printf("%.*f (+/- %.*f) %s\n",
                        (val==(int)val) ? 0 : 3, 
@@ -400,7 +395,7 @@ void ipmi_sensor_print_compact(struct ipmi_intf * intf,
     char id[17];
     char * unitstr = "discrete";
     int validread=1;
-    unsigned char val = 0;
+    uint8_t val = 0;
     struct ipmi_rs * rsp;
 
     if (!sensor)
@@ -491,7 +486,7 @@ ipmi_sensor_list(struct ipmi_intf * intf)
 
     while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
     {
-        unsigned char * rec = ipmi_sdr_get_record(intf, header, itr);
+        uint8_t * rec = ipmi_sdr_get_record(intf, header, itr);
         if (!rec)
             continue;
 
@@ -524,7 +519,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 {
     char * id,
          * thresh;
-    unsigned char settingMask;
+    uint8_t settingMask;
     float setting;
     struct sdr_record_list * sdr;
     struct ipmi_rs * rsp;

@@ -81,22 +81,22 @@ static sigjmp_buf jmpbuf;
 
 static int ipmi_lanplus_setup(struct ipmi_intf * intf);
 static int ipmi_lanplus_keepalive(struct ipmi_intf * intf);
-static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
+static int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lanplus_send_ipmi_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 static struct ipmi_rs * ipmi_lanplus_send_payload(struct ipmi_intf * intf,
 												  struct ipmi_v2_payload * payload);
 static void getIpmiPayloadWireRep(
-								  unsigned char  * out,
+								  uint8_t  * out,
 								  struct ipmi_rq * req,
-								  unsigned char    rq_seq);
+								  uint8_t    rq_seq);
 static void getSolPayloadWireRep(
-								 unsigned char          * msg,
+								 uint8_t          * msg,
 								 struct ipmi_v2_payload * payload);
 static void read_open_session_response(struct ipmi_rs * rsp, int offset);
-static void read_rakp2_message(struct ipmi_rs * rsp, int offset, unsigned char alg);
-static void read_rakp4_message(struct ipmi_rs * rsp, int offset, unsigned char alg);
+static void read_rakp2_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
+static void read_rakp4_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
 static void read_session_data(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
 static void read_session_data_v15(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
 static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
@@ -135,11 +135,11 @@ extern int verbose;
  * Reverse the order of arbitrarily long strings of bytes
  */
 void lanplus_swap(
-				  unsigned char * buffer,
+				  uint8_t * buffer,
                   int             length)
 {
 	int i;
-	unsigned char temp;
+	uint8_t temp;
 
 	for (i =0; i < length/2; ++i)
 	{
@@ -194,7 +194,7 @@ static const struct valstr ipmi_channel_medium_vals[] = {
 };
 
 static struct ipmi_rq_entry *
-ipmi_req_lookup_entry(unsigned char seq, unsigned char cmd)
+ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * e = ipmi_req_entries;
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
@@ -206,7 +206,7 @@ ipmi_req_lookup_entry(unsigned char seq, unsigned char cmd)
 }
 
 static void
-ipmi_req_remove_entry(unsigned char seq, unsigned char cmd)
+ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * p, * e;
 
@@ -258,7 +258,7 @@ ipmi_req_clear_entries(void)
 int
 ipmi_lan_send_packet(
 					 struct ipmi_intf * intf,
-					 unsigned char * data, int
+					 uint8_t * data, int
 					 data_len)
 {
 	if (verbose >= 2)
@@ -352,9 +352,9 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		struct asf_hdr asf;
 		uint32_t iana;
 		uint32_t oem;
-		unsigned char sup_entities;
-		unsigned char sup_interact;
-		unsigned char reserved[6];
+		uint8_t sup_entities;
+		uint8_t sup_interact;
+		uint8_t reserved[6];
 	} * pong;
 
 	if (!rsp)
@@ -412,7 +412,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 		.class	= RMCP_CLASS_ASF,
 		.seq	= 0xff,
 	};
-	unsigned char * data;
+	uint8_t * data;
 	int len = sizeof(rmcp_ping) + sizeof(asf_ping);
 	int rv;
 
@@ -457,7 +457,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	struct ipmi_session * session = intf->session;
 	
 	int offset, rv;
-	unsigned short payload_size;
+	uint16_t payload_size;
 
 	rsp = ipmi_lan_recv_packet(intf);
 
@@ -772,7 +772,7 @@ void
 read_rakp2_message(
 				   struct ipmi_rs * rsp,
 				   int offset,
-				   unsigned char auth_alg)
+				   uint8_t auth_alg)
 {
 	 int i;
 
@@ -853,7 +853,7 @@ void
 read_rakp4_message(
 				   struct ipmi_rs * rsp,
 				   int offset,
-				   unsigned char integrity_alg)
+				   uint8_t integrity_alg)
 {
 	 int i;
 
@@ -1152,9 +1152,9 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
  * param rq_seq [in] is the IPMI command sequence number.
  */
 void getIpmiPayloadWireRep(
-						   unsigned char  * msg,
+						   uint8_t  * msg,
 						   struct ipmi_rq * req,
-						   unsigned char    rq_seq)
+						   uint8_t    rq_seq)
 {
 	int cs, mp, tmp, i;
 
@@ -1205,7 +1205,7 @@ void getIpmiPayloadWireRep(
  * param payload [in] holds the v2 payload with our SOL data
  */
 void getSolPayloadWireRep(
-						  unsigned char          * msg,     /* output */
+						  uint8_t          * msg,     /* output */
 						  struct ipmi_v2_payload * payload) /* input */
 {
 	int i = 0;
@@ -1277,9 +1277,9 @@ ipmi_lanplus_build_v2x_msg(
 						   struct ipmi_intf       * intf,     /* in  */
 						   struct ipmi_v2_payload * payload,  /* in  */
 						   int                    * msg_len,  /* out */
-						   unsigned char         ** msg_data) /* out */
+						   uint8_t         ** msg_data) /* out */
 {
-	unsigned int session_trailer_length = 0;
+	uint32_t session_trailer_length = 0;
 	struct ipmi_session * session = intf->session;
 	struct rmcp_hdr rmcp = {
 		.ver		= RMCP_VERSION_1,
@@ -1288,7 +1288,7 @@ ipmi_lanplus_build_v2x_msg(
 	};
 
 	/* msg will hold the entire message to be sent */
-	unsigned char * msg;
+	uint8_t * msg;
 
 	int len = 0;
 
@@ -1446,9 +1446,9 @@ ipmi_lanplus_build_v2x_msg(
 	if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
 		(session->v2_data.auth_alg      != IPMI_AUTH_RAKP_NONE))
 	{
-		unsigned int i, hmac_length, integrity_pad_size = 0, hmac_input_size;
-		unsigned char * hmac_output;
-		unsigned int start_of_session_trailer =
+		uint32_t i, hmac_length, integrity_pad_size = 0, hmac_input_size;
+		uint8_t * hmac_output;
+		uint32_t start_of_session_trailer =
 			IPMI_LANPLUS_OFFSET_PAYLOAD +
 			payload->payload_length;
 
@@ -1457,7 +1457,7 @@ ipmi_lanplus_build_v2x_msg(
 		 * Determine the required integrity pad length.  We have to make the
 		 * data range covered by the authcode a multiple of 4.
 		 */
-		unsigned int length_before_authcode =
+		uint32_t length_before_authcode =
 			12                          + /* the stuff before the payload */
 			payload->payload_length     +
 			1                           + /* pad length field  */
@@ -1552,7 +1552,7 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	 * know the sequence number when we generate our IPMI
 	 * representation far below.
 	 */
- 	static unsigned char curr_seq = 0;
+ 	static uint8_t curr_seq = 0;
 	if (curr_seq >= 64)
 		curr_seq = 0;
 	
@@ -1632,7 +1632,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 		.class		= RMCP_CLASS_IPMI,
 		.seq		= 0xff,
 	};
-	unsigned char * msg;
+	uint8_t * msg;
 	int cs, mp, len = 0, tmp;
 	struct ipmi_session  * session = intf->session;
 	struct ipmi_rq_entry * entry;
@@ -1775,7 +1775,7 @@ ipmi_lanplus_send_payload(
 						  struct ipmi_v2_payload * payload)
 {
 	struct ipmi_rs      * rsp = NULL;
-	unsigned char       * msg_data;
+	uint8_t       * msg_data;
 	int                   msg_length;
 	struct ipmi_session * session = intf->session;
 	int                   try = 0;
@@ -1793,7 +1793,7 @@ ipmi_lanplus_send_payload(
 
 		if (verbose >= 1)
 		{
-			unsigned short i;
+			uint16_t i;
 
 			printf("\n");
 			printf(">> Sending IPMI command payload\n");
@@ -2127,8 +2127,8 @@ check_sol_packet_for_new_data(
 							  struct ipmi_intf * intf,
 							  struct ipmi_rs *rsp)
 {
-	static unsigned char last_received_sequence_number = 0;
-	static unsigned char last_received_byte_count      = 0;
+	static uint8_t last_received_sequence_number = 0;
+	static uint8_t last_received_byte_count      = 0;
 	int new_data_size                                  = 0;
 
 
@@ -2137,7 +2137,7 @@ check_sol_packet_for_new_data(
 		(rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL))
 	{
 		/* Store the data length before we mod it */
-		unsigned char unaltered_data_len = rsp->data_len;
+		uint8_t unaltered_data_len = rsp->data_len;
 		
 		
 		if (rsp->payload.sol_packet.packet_sequence_number ==
@@ -2292,7 +2292,7 @@ ipmi_get_auth_capabilities_cmd(
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[2];
+	uint8_t msg_data[2];
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E | 0x80; // Ask for IPMI v2 data as well
 	msg_data[1] = intf->session->privlvl;
@@ -2338,7 +2338,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[4];
+	uint8_t msg_data[4];
 	uint32_t bmc_session_lsbf;
 
 	if (intf->session->v2_data.session_state != LANPLUS_STATE_ACTIVE)
@@ -2395,7 +2395,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_session * session = intf->session;
-	unsigned char * msg;
+	uint8_t * msg;
 	struct ipmi_rs * rsp;
 	int rc = 0;
 
@@ -2403,7 +2403,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	/*
 	 * Build an Open Session Request Payload
 	 */
-	msg = (unsigned char*)malloc(IPMI_OPEN_SESSION_REQUEST_SIZE);
+	msg = (uint8_t*)malloc(IPMI_OPEN_SESSION_REQUEST_SIZE);
 	memset(msg, 0, IPMI_OPEN_SESSION_REQUEST_SIZE);
 
 	msg[0] = 0; /* Message tag */
@@ -2522,14 +2522,14 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_session * session = intf->session;
-	unsigned char * msg;
+	uint8_t * msg;
 	struct ipmi_rs * rsp;
 	int rc = 0;
 
 	/*
 	 * Build a RAKP 1 message
 	 */
-	msg = (unsigned char*)malloc(IPMI_RAKP1_MESSAGE_SIZE);
+	msg = (uint8_t*)malloc(IPMI_RAKP1_MESSAGE_SIZE);
 	memset(msg, 0, IPMI_RAKP1_MESSAGE_SIZE);
 
 
@@ -2664,7 +2664,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_session * session = intf->session;
-	unsigned char * msg;
+	uint8_t * msg;
 	struct ipmi_rs * rsp;
 
 	assert(session->v2_data.session_state == LANPLUS_STATE_RAKP_2_RECEIVED);
@@ -2672,7 +2672,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	/*
 	 * Build a RAKP 3 message
 	 */
-	msg = (unsigned char*)malloc(IPMI_RAKP3_MESSAGE_MAX_SIZE);
+	msg = (uint8_t*)malloc(IPMI_RAKP3_MESSAGE_MAX_SIZE);
 	memset(msg, 0, IPMI_RAKP3_MESSAGE_MAX_SIZE);
 
 
@@ -2980,16 +2980,16 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 void test_crypt1()
 {
-	unsigned char key[]  =
+	uint8_t key[]  =
 		{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
 		 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
 
-	unsigned short  bytes_encrypted;
-	unsigned short  bytes_decrypted;
-	unsigned char   decrypt_buffer[1000];
-	unsigned char   encrypt_buffer[1000];
+	uint16_t  bytes_encrypted;
+	uint16_t  bytes_decrypted;
+	uint8_t   decrypt_buffer[1000];
+	uint8_t   encrypt_buffer[1000];
 
-	unsigned char data[] =
+	uint8_t data[] =
 		{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
 		 0x11, 0x12};
@@ -3029,13 +3029,13 @@ void test_crypt1()
 
 void test_crypt2()
 {
-	unsigned char key[]  =
+	uint8_t key[]  =
 		{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
 		 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
-	unsigned char iv[]  =
+	uint8_t iv[]  =
         {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
          0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
-	unsigned char * data = "12345678";
+	uint8_t * data = "12345678";
 
 	char encrypt_buffer[1000];
     char decrypt_buffer[1000];

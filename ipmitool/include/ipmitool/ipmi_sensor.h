@@ -77,14 +77,14 @@
 #define STATE_14_ASSERTED  0x40
 
 struct sensor_set_thresh_rq {
-	unsigned char	sensor_num;     	/* sensor # */
-	unsigned char	set_mask;       	/* threshold setting mask */
-	unsigned char	lower_non_crit;	        /* new lower non critical threshold*/
-	unsigned char	lower_crit;	        /* new lower critical threshold*/
-	unsigned char	lower_non_recov;	/* new lower non recoverable threshold*/
-	unsigned char	upper_non_crit;	        /* new upper non critical threshold*/
-	unsigned char	upper_crit;	        /* new upper critical threshold*/
-	unsigned char	upper_non_recov;	/* new upper non recoverable threshold*/
+	uint8_t	sensor_num;     	/* sensor # */
+	uint8_t	set_mask;       	/* threshold setting mask */
+	uint8_t	lower_non_crit;	        /* new lower non critical threshold*/
+	uint8_t	lower_crit;	        /* new lower critical threshold*/
+	uint8_t	lower_non_recov;	/* new lower non recoverable threshold*/
+	uint8_t	upper_non_crit;	        /* new upper non critical threshold*/
+	uint8_t	upper_crit;	        /* new upper critical threshold*/
+	uint8_t	upper_non_recov;	/* new upper non recoverable threshold*/
 } __attribute__ ((packed));
 
 

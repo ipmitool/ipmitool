@@ -50,17 +50,17 @@
 
 extern int verbose;
 
-uint32_t buf2long(unsigned char * buf)
+uint32_t buf2long(uint8_t * buf)
 {
 	return (uint32_t)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
 }
 
-unsigned short buf2short(unsigned char * buf)
+uint16_t buf2short(uint8_t * buf)
 {
-	return (unsigned short)(buf[1] << 8 | buf[0]);
+	return (uint16_t)(buf[1] << 8 | buf[0]);
 }
 
-const char * buf2str(unsigned char * buf, int len)
+const char * buf2str(uint8_t * buf, int len)
 {
 	static char str[1024];
 	int i;
@@ -78,7 +78,7 @@ const char * buf2str(unsigned char * buf, int len)
 	return (const char *)str;
 }
 
-void printbuf(const unsigned char * buf, int len, const char * desc)
+void printbuf(const uint8_t * buf, int len, const char * desc)
 {
 	int i;
 
@@ -97,7 +97,7 @@ void printbuf(const unsigned char * buf, int len, const char * desc)
 	fprintf(stderr, "\n");
 }
 
-const char * val2str(unsigned short val, const struct valstr *vs)
+const char * val2str(uint16_t val, const struct valstr *vs)
 {
 	static char un_str[16];
 	int i = 0;
@@ -114,7 +114,7 @@ const char * val2str(unsigned short val, const struct valstr *vs)
 	return un_str;
 }
 
-unsigned short str2val(const char *str, const struct valstr *vs)
+uint16_t str2val(const char *str, const struct valstr *vs)
 {
 	int i = 0;
 
@@ -132,10 +132,10 @@ unsigned short str2val(const char *str, const struct valstr *vs)
  * @d:		buffer to check
  * @s:		position in buffer to start checksum from
  */
-unsigned char
-ipmi_csum(unsigned char * d, int s)
+uint8_t
+ipmi_csum(uint8_t * d, int s)
 {
-	unsigned char c = 0;
+	uint8_t c = 0;
 	for (; s > 0; s--, d++)
 		c += *d;
 	return -c;

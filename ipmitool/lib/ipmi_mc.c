@@ -84,23 +84,23 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 
 struct bmc_enables_data {
 #if WORDS_BIGENDIAN
-	unsigned char oem2		: 1;
-	unsigned char oem1		: 1;
-	unsigned char oem0		: 1;
-	unsigned char __reserved	: 1;
-	unsigned char system_event_log	: 1;
-	unsigned char event_msgbuf	: 1;
-	unsigned char event_msgbuf_intr	: 1;
-	unsigned char receive_msg_intr	: 1;
+	uint8_t oem2		: 1;
+	uint8_t oem1		: 1;
+	uint8_t oem0		: 1;
+	uint8_t __reserved	: 1;
+	uint8_t system_event_log	: 1;
+	uint8_t event_msgbuf	: 1;
+	uint8_t event_msgbuf_intr	: 1;
+	uint8_t receive_msg_intr	: 1;
 #else
-	unsigned char receive_msg_intr	: 1;
-	unsigned char event_msgbuf_intr	: 1;
-	unsigned char event_msgbuf	: 1;
-	unsigned char system_event_log	: 1;
-	unsigned char __reserved	: 1;
-	unsigned char oem0		: 1;
-	unsigned char oem1		: 1;
-	unsigned char oem2		: 1;
+	uint8_t receive_msg_intr	: 1;
+	uint8_t event_msgbuf_intr	: 1;
+	uint8_t event_msgbuf	: 1;
+	uint8_t system_event_log	: 1;
+	uint8_t __reserved	: 1;
+	uint8_t oem0		: 1;
+	uint8_t oem1		: 1;
+	uint8_t oem2		: 1;
 #endif
 } __attribute__ ((packed));
 
@@ -216,7 +216,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct bitfield_data * bf;
-	unsigned char en;
+	uint8_t en;
 	int i;
 
 	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
@@ -346,7 +346,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	printf("Manufacturer ID           : %lu\n",
 		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
 	printf("Product ID                : %u (0x%02x%02x)\n",
-		buf2short((unsigned char *)(devid->product_id)),
+		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
 	printf("Device Available          : %s\n",
 		(devid->fw_rev1 & IPM_DEV_FWREV1_AVAIL_MASK) ? 

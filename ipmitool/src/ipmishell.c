@@ -230,15 +230,15 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session password\n");
 	}
 	else if (strncmp(argv[0], "authtype", 8) == 0) {
-		unsigned char authtype;
-		authtype = (unsigned char)str2val(argv[1], ipmi_authtype_session_vals);
+		uint8_t authtype;
+		authtype = (uint8_t)str2val(argv[1], ipmi_authtype_session_vals);
 		ipmi_intf_session_set_authtype(intf, authtype);
 		printf("Set session authtype to %s\n",
 		       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
 	}
 	else if (strncmp(argv[0], "privlvl", 7) == 0) {
-		unsigned char privlvl;
-		privlvl = (unsigned char)str2val(argv[1], ipmi_privlvl_vals);
+		uint8_t privlvl;
+		privlvl = (uint8_t)str2val(argv[1], ipmi_privlvl_vals);
 		ipmi_intf_session_set_privlvl(intf, privlvl);
 		printf("Set session privilege level to %s\n",
 		       val2str(intf->session->privlvl, ipmi_privlvl_vals));
@@ -249,11 +249,11 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session port to %d\n", intf->session->port);
 	}
 	else if (strncmp(argv[0], "localaddr", 9) == 0) {
-		intf->my_addr = (unsigned char)strtol(argv[1], NULL, 0);
+		intf->my_addr = (uint8_t)strtol(argv[1], NULL, 0);
 		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
 	}
 	else if (strncmp(argv[0], "targetaddr", 10) == 0) {
-		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
+		intf->target_addr = (uint8_t)strtol(argv[1], NULL, 0);
 		printf("Set remote IPMB address to 0x%02x\n", intf->target_addr);
 	}
 	else {

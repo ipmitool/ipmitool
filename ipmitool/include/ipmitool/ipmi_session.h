@@ -49,46 +49,46 @@
  */
 struct get_session_info_rsp
 {
-	unsigned char session_handle;
+	uint8_t session_handle;
 
 	#if WORDS_BIGENDIAN
-	unsigned char __reserved1        : 2;
-	unsigned char session_slot_count : 6; /* 1-based */
+	uint8_t __reserved1        : 2;
+	uint8_t session_slot_count : 6; /* 1-based */
 	#else
-	unsigned char session_slot_count : 6; /* 1-based */
-	unsigned char __reserved1        : 2;
+	uint8_t session_slot_count : 6; /* 1-based */
+	uint8_t __reserved1        : 2;
 	#endif
 
 	#if WORDS_BIGENDIAN
-	unsigned char __reserved2          : 2;
-	unsigned char active_session_count : 6; /* 1-based */
+	uint8_t __reserved2          : 2;
+	uint8_t active_session_count : 6; /* 1-based */
 	#else
-	unsigned char active_session_count : 6; /* 1-based */
-	unsigned char __reserved2          : 2;
+	uint8_t active_session_count : 6; /* 1-based */
+	uint8_t __reserved2          : 2;
 	#endif
 
 	#if WORDS_BIGENDIAN
-	unsigned char __reserved3          : 2;
-	unsigned char user_id              : 6;
+	uint8_t __reserved3          : 2;
+	uint8_t user_id              : 6;
 	#else
-	unsigned char user_id              : 6;
-	unsigned char __reserved3          : 2;
+	uint8_t user_id              : 6;
+	uint8_t __reserved3          : 2;
 	#endif
 
 	#if WORDS_BIGENDIAN
-	unsigned char __reserved4          : 4;
-	unsigned char privilege_level      : 4;
+	uint8_t __reserved4          : 4;
+	uint8_t privilege_level      : 4;
 	#else
-	unsigned char privilege_level      : 4;
-	unsigned char __reserved4          : 4;
+	uint8_t privilege_level      : 4;
+	uint8_t __reserved4          : 4;
 	#endif
 
 	#if WORDS_BIGENDIAN
-	unsigned char auxiliary_data       : 4;
-	unsigned char channel_number       : 4;
+	uint8_t auxiliary_data       : 4;
+	uint8_t channel_number       : 4;
 	#else
-	unsigned char channel_number       : 4;
-	unsigned char auxiliary_data       : 4;
+	uint8_t channel_number       : 4;
+	uint8_t auxiliary_data       : 4;
 	#endif
 
 	union
@@ -96,25 +96,25 @@ struct get_session_info_rsp
 		/* Only exists if channel type is 802.3 LAN */
 		struct
 		{
-			unsigned char console_ip[4];  /* MSBF */
-			unsigned char console_mac[6]; /* MSBF */
+			uint8_t console_ip[4];  /* MSBF */
+			uint8_t console_mac[6]; /* MSBF */
 			uint16_t      console_port;   /* LSBF */
 		} lan_data;
 
 		/* Only exists if channel type is async. serial modem */
 		struct
 		{
-			unsigned char session_channel_activity_type;
+			uint8_t session_channel_activity_type;
 		
 			#if WORDS_BIGENDIAN
-			unsigned char __reserved5          : 4;
-			unsigned char destination_selector : 4;
+			uint8_t __reserved5          : 4;
+			uint8_t destination_selector : 4;
 			#else
-			unsigned char destination_selector : 4;
-			unsigned char __reserved5          : 4;
+			uint8_t destination_selector : 4;
+			uint8_t __reserved5          : 4;
 			#endif
 
- 			unsigned char console_ip[4];   /* MSBF */
+ 			uint8_t console_ip[4];   /* MSBF */
 
 			/* Only exists if session is PPP */
 			uint16_t console_port;        /* LSBF */

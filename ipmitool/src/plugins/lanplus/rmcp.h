@@ -75,6 +75,6 @@ struct rmcp_hdr {
 	uint8_t class;
 } __attribute__((packed));
 
-int handle_rmcp(struct ipmi_intf * intf, unsigned char * data, int data_len);
+int handle_rmcp(struct ipmi_intf * intf, uint8_t * data, int data_len);
 
 #endif /* IPMI_RMCP_H */

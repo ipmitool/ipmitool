@@ -141,7 +141,7 @@ ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, uint32_t val)
 }
 
 static void
-ipmi_pef_print_field(const char * fmt[2], const char * label, uint32_t val)
+ipmi_pef_print_field(const char * fmt[2], const char * label, unsigned long val)
 {	/*
 	// print a 'field' (observes 'verbose' flag)
 	*/
@@ -176,7 +176,7 @@ ipmi_pef_print_hex(const char * text, uint32_t val)
 void 
 ipmi_pef_print_str(const char * text, const char * val)
 {	/* string */
-	ipmi_pef_print_field(pef_fld_fmts[F_STR], text, (uint32_t)val);
+	ipmi_pef_print_field(pef_fld_fmts[F_STR], text, (unsigned long)val);
 }
 
 void 
@@ -526,7 +526,7 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 	//  print PEF entry Event info: class, severity, trigger, etc.
 	*/
 	static char * classes[] = {"Discrete", "Threshold", "OEM"};
-	unsigned short offmask;
+	uint16_t offmask;
 	char * p;
 	int i;
 	uint8_t t;

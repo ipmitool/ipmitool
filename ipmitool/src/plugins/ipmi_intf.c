@@ -192,7 +192,7 @@ ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 }
 
 void
-ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char level)
+ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t level)
 {
 	if (intf->session == NULL)
 		return;
@@ -210,7 +210,7 @@ ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
 }
 
 void
-ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char authtype)
+ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype)
 {
 	if (intf->session == NULL)
 		return;

@@ -49,7 +49,7 @@
 #endif
 
 extern int verbose;
-extern int ipmi_spd_print(struct ipmi_intf * intf, unsigned char id);
+extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
 
 /* get_fru_area_str  -  Parse FRU area string from raw data
  *
@@ -59,7 +59,7 @@ extern int ipmi_spd_print(struct ipmi_intf * intf, unsigned char id);
  * returns pointer to FRU area string
  */
 static char *
-get_fru_area_str(unsigned char * data, int * offset)
+get_fru_area_str(uint8_t * data, int * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
 	char * str;
@@ -164,14 +164,14 @@ get_fru_area_str(unsigned char * data, int * offset)
  * returns 0 if successful
  */
 static int
-read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
-	      unsigned int offset, unsigned int length, unsigned char *frubuf)
+read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+	      uint32_t offset, uint32_t length, uint8_t *frubuf)
 {
-	static unsigned int fru_data_rqst_size = 32;
-	unsigned int off = offset, tmp, finish;
+	static uint32_t fru_data_rqst_size = 32;
+	uint32_t off = offset, tmp, finish;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[4];
+	uint8_t msg_data[4];
 
 	if (offset > fru->size) {
 		lprintf(LOG_ERR, "Read FRU Area offset incorrect: %d > %d",
@@ -198,13 +198,13 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
 	do {
 		tmp = fru->access ? off >> 1 : off;
 		msg_data[0] = id;
-		msg_data[1] = (unsigned char)(tmp & 0xff);
-		msg_data[2] = (unsigned char)(tmp >> 8);
+		msg_data[1] = (uint8_t)(tmp & 0xff);
+		msg_data[2] = (uint8_t)(tmp >> 8);
 		tmp = finish - off;
 		if (tmp > fru_data_rqst_size)
-			msg_data[3] = (unsigned char)fru_data_rqst_size;
+			msg_data[3] = (uint8_t)fru_data_rqst_size;
 		else
-			msg_data[3] = (unsigned char)tmp;
+			msg_data[3] = (uint8_t)tmp;
 
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
@@ -245,10 +245,10 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
  */
 static void
 fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
-		    unsigned char id, unsigned int offset)
+		    uint8_t id, uint32_t offset)
 {
-	unsigned char * fru_area, * fru_data;
-	unsigned int fru_len, area_len, i;
+	uint8_t * fru_area, * fru_data;
+	uint32_t fru_len, area_len, i;
 
 	i = offset;
 	fru_len = 0;
@@ -317,10 +317,10 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
  */
 static void
 fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
-		     unsigned char id, unsigned int offset)
+		     uint8_t id, uint32_t offset)
 {
-	unsigned char * fru_area, * fru_data;
-	unsigned int fru_len, area_len, i;
+	uint8_t * fru_area, * fru_data;
+	uint32_t fru_len, area_len, i;
 
 	i = offset;
 	fru_len = 0;
@@ -401,10 +401,10 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
  */
 static void
 fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
-		       unsigned char id, unsigned int offset)
+		       uint8_t id, uint32_t offset)
 {
-	unsigned char * fru_area, * fru_data;
-	unsigned int fru_len, area_len, i;
+	uint8_t * fru_area, * fru_data;
+	uint32_t fru_len, area_len, i;
 
 	i = offset;
 	fru_len = 0;
@@ -504,17 +504,17 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
  */
 static void
 fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
-			unsigned char id, unsigned int offset)
+			uint8_t id, uint32_t offset)
 {
-	unsigned char * fru_data;
-	unsigned int fru_len, i;
+	uint8_t * fru_data;
+	uint32_t fru_len, i;
 	struct fru_multirec_header * h;
 	struct fru_multirec_powersupply * ps;
 	struct fru_multirec_dcoutput * dc;
 	struct fru_multirec_dcload * dl;
-	unsigned short peak_capacity;
-	unsigned char peak_hold_up_time;
-	unsigned int last_off, len;
+	uint16_t peak_capacity;
+	uint8_t peak_hold_up_time;
+	uint32_t last_off, len;
 
 	i = last_off = offset;
 	fru_len = 0;
@@ -680,13 +680,13 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
  * returns 1 if device not present
  */
 static int
-__ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
+__ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
 	struct fru_header header;
-	unsigned char msg_data[4];
+	uint8_t msg_data[4];
 
 	memset(&fru, 0, sizeof(struct fru_info));
 	memset(&header, 0, sizeof(struct fru_header));
@@ -816,7 +816,7 @@ int
 ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 {
 	char desc[17];
-	unsigned char save_addr;
+	uint8_t save_addr;
 	int rc = 0;
 
 	if (fru == NULL)

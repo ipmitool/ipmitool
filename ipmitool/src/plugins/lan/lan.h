@@ -53,7 +53,7 @@ struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req
 int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 int  ipmi_lan_open(struct ipmi_intf * intf);
 void ipmi_lan_close(struct ipmi_intf * intf);
-void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
+void ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel);
 int ipmi_lan_ping(struct ipmi_intf * intf);
 
 extern struct ipmi_intf ipmi_lan_intf;

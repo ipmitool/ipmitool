@@ -263,7 +263,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char rqdata[5]; //  max length of the variable length request
+	uint8_t rqdata[5]; //  max length of the variable length request
 	struct get_session_info_rsp   session_info;
 
 	memset(&req, 0, sizeof(req));
@@ -294,7 +294,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 			break;
 		case IPMI_SESSION_REQUEST_BY_HANDLE:
 			rqdata[0]        = 0xFE;
-			rqdata[1]        = (unsigned char)id_or_handle;
+			rqdata[1]        = (uint8_t)id_or_handle;
 			req.msg.data_len = 2;
 			break;
 		case IPMI_SESSION_REQUEST_ALL:

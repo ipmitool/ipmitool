@@ -237,9 +237,9 @@ int
 main(int argc, char ** argv)
 {
 	struct ipmi_intf * intf = NULL;
-	unsigned char privlvl = 0;
-	unsigned char target_addr = 0;
-	unsigned char my_addr = 0;
+	uint8_t privlvl = 0;
+	uint8_t target_addr = 0;
+	uint8_t my_addr = 0;
 	int authtype = -1;
 	char * tmp = NULL;
 	char * hostname = NULL;
@@ -264,7 +264,7 @@ main(int argc, char ** argv)
 			intfname = strdup(optarg);
 			if (intfname == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				exit(EXIT_FAILURE);
+				goto out_free;
 			}
 			break;
 		case 'h':
@@ -288,7 +288,7 @@ main(int argc, char ** argv)
 			hostname = strdup(optarg);
 			if (hostname == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				exit(EXIT_FAILURE);
+				goto out_free;
 			}
 			break;
 		case 'f':
@@ -311,7 +311,7 @@ main(int argc, char ** argv)
 				password = strdup(tmp);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
-					exit(EXIT_FAILURE);
+					goto out_free;
 				}
 			}
 			break;
@@ -319,7 +319,7 @@ main(int argc, char ** argv)
 			username = strdup(optarg);
 			if (username == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				exit(EXIT_FAILURE);
+				goto out_free;
 			}
 			break;
 #ifndef __sun		/* some options not enabled on solaris yet */
@@ -335,7 +335,7 @@ main(int argc, char ** argv)
 			password = strdup(optarg);
 			if (password == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				exit(EXIT_FAILURE);
+				goto out_free;
 			}
 
 			/* Prevent password snooping with ps */
@@ -350,7 +350,7 @@ main(int argc, char ** argv)
 				password = strdup(tmp);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
-					exit(EXIT_FAILURE);
+					goto out_free;
 				}
 			}
 			else if ((tmp = getenv("IPMI_PASSWORD")))
@@ -360,7 +360,7 @@ main(int argc, char ** argv)
 				password = strdup(tmp);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
-					exit(EXIT_FAILURE);
+					goto out_free;
 				}
 			}
 			else {
@@ -368,7 +368,7 @@ main(int argc, char ** argv)
 			}
 			break;
 		case 'L':
-			privlvl = (unsigned char)str2val(optarg, ipmi_privlvl_vals);
+			privlvl = (uint8_t)str2val(optarg, ipmi_privlvl_vals);
 			if (!privlvl)
 				lprintf(LOG_WARN, "Invalid privilege level %s", optarg);
 			break;
@@ -376,10 +376,10 @@ main(int argc, char ** argv)
 			authtype = (int)str2val(optarg, ipmi_authtype_session_vals);
 			break;
 		case 't':
-			target_addr = (unsigned char)strtol(optarg, NULL, 0);
+			target_addr = (uint8_t)strtol(optarg, NULL, 0);
 			break;
 		case 'm':
-			my_addr = (unsigned char)strtol(optarg, NULL, 0);
+			my_addr = (uint8_t)strtol(optarg, NULL, 0);
 			break;
 #endif
 		default:
@@ -398,23 +398,6 @@ main(int argc, char ** argv)
 		ipmitool_usage();
 		goto out_free;
 	}
-
-	/* load interface */
-	intf = ipmi_intf_load(intfname);
-	if (!intf) {
-		lprintf(LOG_ERR, "Error loading interface %s", intfname);
-		goto out_free;
-	}
-
-	intf->thump = thump;
-
-	if (authspecial) {
-		intf->session->authspecial = authspecial;
-		ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
-	}
-
-	/* setup log */
-	log_init(progname, 0, verbose);
 
 	/*
 	 * If the user has specified a hostname (-H option)
@@ -435,10 +418,35 @@ main(int argc, char ** argv)
 			password = strdup(tmp);
 			if (password == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				exit(EXIT_FAILURE);
+				goto out_free;
 			}
 		}
 	}
+
+	/* if no interface was specified but a
+	 * hostname was then use LAN by default
+	 * otherwise the default is hardcoded
+	 * to use the first entry in the list
+	 */
+	if (intfname == NULL && hostname != NULL)
+		intfname = strdup("lan");
+
+	/* load interface */
+	intf = ipmi_intf_load(intfname);
+	if (intf == NULL) {
+		lprintf(LOG_ERR, "Error loading interface %s", intfname);
+		goto out_free;
+	}
+
+	intf->thump = thump;
+
+	if (authspecial > 0) {
+		intf->session->authspecial = authspecial;
+		ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	}
+
+	/* setup log */
+	log_init(progname, 0, verbose);
 
 	/* set session variables */
 	if (hostname != NULL)
@@ -450,7 +458,7 @@ main(int argc, char ** argv)
 	if (port > 0)
 		ipmi_intf_session_set_port(intf, port);
 	if (authtype >= 0)
-		ipmi_intf_session_set_authtype(intf, (unsigned char)authtype);
+		ipmi_intf_session_set_authtype(intf, (uint8_t)authtype);
 	if (privlvl > 0)
 		ipmi_intf_session_set_privlvl(intf, privlvl);
 	else

@@ -673,12 +673,12 @@ const struct valstr jedec_id5_vals[] = {
 };
 
 int
-ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
+ipmi_spd_print(struct ipmi_intf * intf, uint8_t id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
-	unsigned char spd_data[256], msg_data[4];
+	uint8_t spd_data[256], msg_data[4];
 	int len, offset, size;
 
 	msg_data[0] = id;

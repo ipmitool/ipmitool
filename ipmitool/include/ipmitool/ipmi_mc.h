@@ -53,15 +53,15 @@ int ipmi_mc_main(struct ipmi_intf *, int, char **);
  * The following really apply to any IPM device, not just BMCs... 
  */
 struct ipm_devid_rsp {
-	unsigned char device_id;
-	unsigned char device_revision;
-	unsigned char fw_rev1;
-	unsigned char fw_rev2;
-	unsigned char ipmi_version;
-	unsigned char adtl_device_support;
-	unsigned char manufacturer_id[3];
-	unsigned char product_id[2];
-	unsigned char aux_fw_rev[4];
+	uint8_t device_id;
+	uint8_t device_revision;
+	uint8_t fw_rev1;
+	uint8_t fw_rev2;
+	uint8_t ipmi_version;
+	uint8_t adtl_device_support;
+	uint8_t manufacturer_id[3];
+	uint8_t product_id[2];
+	uint8_t aux_fw_rev[4];
 } __attribute__ ((packed));
 
 #define IPM_DEV_DEVICE_ID_SDR_MASK     (0x80) /* 1 = provides SDRs      */

@@ -44,27 +44,27 @@
  */
 
 int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
-							   const unsigned char * hmac);
+							   const uint8_t * hmac);
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
-							   const unsigned char * hmac);
+							   const uint8_t * hmac);
 int lanplus_generate_rakp3_authcode(char                      * buffer,
 									const struct ipmi_session * session,
-									unsigned int              * auth_length);
+									uint32_t              * auth_length);
 int lanplus_generate_sik(struct ipmi_session * session);
 int lanplus_generate_k1(struct ipmi_session * session);
 int lanplus_generate_k2(struct ipmi_session * session);
-int lanplus_encrypt_payload(unsigned char         crypt_alg,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned short      * bytesWritten);
-int lanplus_decrypt_payload(unsigned char         crypt_alg,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned short      * payload_size);
+int lanplus_encrypt_payload(uint8_t         crypt_alg,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint16_t      * bytesWritten);
+int lanplus_decrypt_payload(uint8_t         crypt_alg,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint16_t      * payload_size);
 int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 								struct ipmi_session * session);
 

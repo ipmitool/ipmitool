@@ -39,32 +39,32 @@
 
 
 int
-lanplus_seed_prng(unsigned int bytes);
+lanplus_seed_prng(uint32_t bytes);
 
 int
-lanplus_rand(unsigned char * buffer,  unsigned int num_bytes);
+lanplus_rand(uint8_t * buffer,  uint32_t num_bytes);
 
-unsigned char *
-lanplus_HMAC(unsigned char mac, const void *key, int key_len,
-			 const unsigned char *d, int n, unsigned char *md,
-			 unsigned int *md_len);
-
-void
-lanplus_encrypt_aes_cbc_128(const unsigned char * iv,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned int        * bytes_written);
-
+uint8_t *
+lanplus_HMAC(uint8_t mac, const void *key, int key_len,
+			 const uint8_t *d, int n, uint8_t *md,
+			 uint32_t *md_len);
 
 void
-lanplus_decrypt_aes_cbc_128(const unsigned char * iv,
-							const unsigned char * key,
-							const unsigned char * input,
-							unsigned int          input_length,
-							unsigned char       * output,
-							unsigned int        * bytes_written);
+lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint32_t        * bytes_written);
+
+
+void
+lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
+							const uint8_t * key,
+							const uint8_t * input,
+							uint32_t          input_length,
+							uint8_t       * output,
+							uint32_t        * bytes_written);
 
 
 #endif /* IPMI_LANPLUS_CRYPT_IMPL_H */

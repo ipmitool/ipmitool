@@ -57,44 +57,44 @@
  * From table 22-15 of the IPMI v2.0 spec
  */
 struct get_channel_auth_cap_rsp {
-	unsigned char channel_number;
+	uint8_t channel_number;
 #if WORDS_BIGENDIAN
-	unsigned char v20_data_available : 1; /* IPMI v2.0 data is available */
-	unsigned char __reserved1        : 1; 
-	unsigned char enabled_auth_types : 6; /* IPMI v1.5 enabled auth types */
+	uint8_t v20_data_available : 1; /* IPMI v2.0 data is available */
+	uint8_t __reserved1        : 1; 
+	uint8_t enabled_auth_types : 6; /* IPMI v1.5 enabled auth types */
 #else
-	unsigned char enabled_auth_types : 6; /* IPMI v1.5 enabled auth types */
-	unsigned char __reserved1        : 1;
-	unsigned char v20_data_available : 1; /* IPMI v2.0 data is available */
+	uint8_t enabled_auth_types : 6; /* IPMI v1.5 enabled auth types */
+	uint8_t __reserved1        : 1;
+	uint8_t v20_data_available : 1; /* IPMI v2.0 data is available */
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved2        : 2;
-	unsigned char kg_status          : 1; /* two-key login status */
-	unsigned char per_message_auth   : 1; /* per-message authentication status */
-	unsigned char user_level_auth    : 1; /* user-level authentication status */
-	unsigned char non_null_usernames : 1; /* one or more non-null users exist */
-	unsigned char null_usernames     : 1; /* one or more null usernames non-null pwds */
-	unsigned char anon_login_enabled : 1; /* a null-named, null-pwd user exists */
+	uint8_t __reserved2        : 2;
+	uint8_t kg_status          : 1; /* two-key login status */
+	uint8_t per_message_auth   : 1; /* per-message authentication status */
+	uint8_t user_level_auth    : 1; /* user-level authentication status */
+	uint8_t non_null_usernames : 1; /* one or more non-null users exist */
+	uint8_t null_usernames     : 1; /* one or more null usernames non-null pwds */
+	uint8_t anon_login_enabled : 1; /* a null-named, null-pwd user exists */
 #else
-	unsigned char anon_login_enabled : 1; /* a null-named, null-pwd user exists */
-	unsigned char null_usernames     : 1; /* one or more null usernames non-null pwds */
-	unsigned char non_null_usernames : 1; /* one or more non-null users exist */
-	unsigned char user_level_auth    : 1; /* user-level authentication status */
-	unsigned char per_message_auth   : 1; /* per-message authentication status */
-	unsigned char kg_status          : 1; /* two-key login status */
-	unsigned char __reserved2        : 2;
+	uint8_t anon_login_enabled : 1; /* a null-named, null-pwd user exists */
+	uint8_t null_usernames     : 1; /* one or more null usernames non-null pwds */
+	uint8_t non_null_usernames : 1; /* one or more non-null users exist */
+	uint8_t user_level_auth    : 1; /* user-level authentication status */
+	uint8_t per_message_auth   : 1; /* per-message authentication status */
+	uint8_t kg_status          : 1; /* two-key login status */
+	uint8_t __reserved2        : 2;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved3        : 6;
-	unsigned char ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
-	unsigned char ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
+	uint8_t __reserved3        : 6;
+	uint8_t ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
+	uint8_t ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
 #else
-	unsigned char ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
-	unsigned char ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
-	unsigned char __reserved3        : 6;
+	uint8_t ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
+	uint8_t ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
+	uint8_t __reserved3        : 6;
 #endif
-	unsigned char oem_id[3];    /* IANA enterprise number for auth type */
-	unsigned char oem_aux_data; /* Additional OEM specific data for oem auths */
+	uint8_t oem_id[3];    /* IANA enterprise number for auth type */
+	uint8_t oem_aux_data; /* Additional OEM specific data for oem auths */
 } __attribute__ ((packed));
 
 
@@ -105,35 +105,35 @@ struct get_channel_auth_cap_rsp {
  */
 struct get_channel_info_rsp {
 #if WORDS_BIGENDIAN
-	unsigned char __reserved1       : 4; 
-	unsigned char channel_number    : 4; /* channel number */
+	uint8_t __reserved1       : 4; 
+	uint8_t channel_number    : 4; /* channel number */
 #else
-	unsigned char channel_number    : 4; /* channel number */
-	unsigned char __reserved1       : 4; 
+	uint8_t channel_number    : 4; /* channel number */
+	uint8_t __reserved1       : 4; 
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved2       : 1;
-	unsigned char channel_medium    : 7; /* Channel medium type per table 6-3 */
+	uint8_t __reserved2       : 1;
+	uint8_t channel_medium    : 7; /* Channel medium type per table 6-3 */
 #else
-	unsigned char channel_medium    : 7; /* Channel medium type per table 6-3 */
-	unsigned char __reserved2       : 1;
+	uint8_t channel_medium    : 7; /* Channel medium type per table 6-3 */
+	uint8_t __reserved2       : 1;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved3       : 3;
-	unsigned char channel_protocol  : 5; /* Channel protocol per table 6-2 */
+	uint8_t __reserved3       : 3;
+	uint8_t channel_protocol  : 5; /* Channel protocol per table 6-2 */
 #else
-	unsigned char channel_protocol  : 5; /* Channel protocol per table 6-2 */
-	unsigned char __reserved3       : 3;
+	uint8_t channel_protocol  : 5; /* Channel protocol per table 6-2 */
+	uint8_t __reserved3       : 3;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char session_support   : 2; /* Description of session support */
-	unsigned char active_sessions   : 6; /* Count of active sessions */
+	uint8_t session_support   : 2; /* Description of session support */
+	uint8_t active_sessions   : 6; /* Count of active sessions */
 #else
-	unsigned char active_sessions   : 6; /* Count of active sessions */
-	unsigned char session_support   : 2; /* Description of session support */
+	uint8_t active_sessions   : 6; /* Count of active sessions */
+	uint8_t session_support   : 2; /* Description of session support */
 #endif
-	unsigned char vendor_id[3]; /* For OEM that specified the protocol */
-	unsigned char aux_info[2];  /* Not used*/
+	uint8_t vendor_id[3]; /* For OEM that specified the protocol */
+	uint8_t aux_info[2];  /* Not used*/
 } __attribute__ ((packed));
 
 
@@ -144,88 +144,88 @@ struct get_channel_info_rsp {
  */
 struct get_channel_access_rsp {
 #if WORDS_BIGENDIAN
-	unsigned char __reserved1        : 2;
-	unsigned char alerting           : 1;
-	unsigned char per_message_auth   : 1;
-	unsigned char user_level_auth    : 1;
-	unsigned char access_mode        : 3;
+	uint8_t __reserved1        : 2;
+	uint8_t alerting           : 1;
+	uint8_t per_message_auth   : 1;
+	uint8_t user_level_auth    : 1;
+	uint8_t access_mode        : 3;
 #else
-	unsigned char access_mode        : 3;
-	unsigned char user_level_auth    : 1;
-	unsigned char per_message_auth   : 1;
-	unsigned char alerting           : 1;
-	unsigned char __reserved1        : 2;
+	uint8_t access_mode        : 3;
+	uint8_t user_level_auth    : 1;
+	uint8_t per_message_auth   : 1;
+	uint8_t alerting           : 1;
+	uint8_t __reserved1        : 2;
 #endif
 #if WORDS_BIGENDIAN
-	unsigned char __reserved2        : 4;
-	unsigned char channel_priv_limit : 4; /* Channel privilege level limit */
+	uint8_t __reserved2        : 4;
+	uint8_t channel_priv_limit : 4; /* Channel privilege level limit */
 #else
-	unsigned char channel_priv_limit : 4; /* Channel privilege level limit */
-	unsigned char __reserved2        : 4;
+	uint8_t channel_priv_limit : 4; /* Channel privilege level limit */
+	uint8_t __reserved2        : 4;
 #endif
 } __attribute__ ((packed));
 
 
 struct get_user_access_rsp {
 #if WORDS_BIGENDIAN
-	unsigned char __reserved1        : 2;
-	unsigned char max_user_ids       : 6;
-	unsigned char __reserved2        : 2;
-	unsigned char enabled_user_ids   : 6;
-	unsigned char __reserved3        : 2;
-	unsigned char fixed_user_ids     : 6;
-	unsigned char __reserved4        : 1;
-	unsigned char callin_callback    : 1;
-	unsigned char link_auth          : 1;
-	unsigned char ipmi_messaging     : 1;
-	unsigned char privilege_limit    : 4;
+	uint8_t __reserved1        : 2;
+	uint8_t max_user_ids       : 6;
+	uint8_t __reserved2        : 2;
+	uint8_t enabled_user_ids   : 6;
+	uint8_t __reserved3        : 2;
+	uint8_t fixed_user_ids     : 6;
+	uint8_t __reserved4        : 1;
+	uint8_t callin_callback    : 1;
+	uint8_t link_auth          : 1;
+	uint8_t ipmi_messaging     : 1;
+	uint8_t privilege_limit    : 4;
 #else
-	unsigned char max_user_ids       : 6;
-	unsigned char __reserved1        : 2;
-	unsigned char enabled_user_ids   : 6;
-	unsigned char __reserved2        : 2;
-	unsigned char fixed_user_ids     : 6;
-	unsigned char __reserved3        : 2;
-	unsigned char privilege_limit    : 4;
-	unsigned char ipmi_messaging     : 1;
-	unsigned char link_auth          : 1;
-	unsigned char callin_callback    : 1;
-	unsigned char __reserved4        : 1;
+	uint8_t max_user_ids       : 6;
+	uint8_t __reserved1        : 2;
+	uint8_t enabled_user_ids   : 6;
+	uint8_t __reserved2        : 2;
+	uint8_t fixed_user_ids     : 6;
+	uint8_t __reserved3        : 2;
+	uint8_t privilege_limit    : 4;
+	uint8_t ipmi_messaging     : 1;
+	uint8_t link_auth          : 1;
+	uint8_t callin_callback    : 1;
+	uint8_t __reserved4        : 1;
 #endif
 } __attribute__ ((packed));
 
 struct set_user_access_data {
 #if WORDS_BIGENDIAN
-	unsigned char change_bits        : 1;
-	unsigned char callin_callback    : 1;
-	unsigned char link_auth          : 1;
-	unsigned char ipmi_messaging     : 1;
-	unsigned char channel            : 4;
-	unsigned char __reserved1        : 2;
-	unsigned char user_id            : 6;
-	unsigned char __reserved2        : 4;
-	unsigned char privilege_limit    : 4;
-	unsigned char __reserved3        : 4;
-	unsigned char session_limit      : 4;
+	uint8_t change_bits        : 1;
+	uint8_t callin_callback    : 1;
+	uint8_t link_auth          : 1;
+	uint8_t ipmi_messaging     : 1;
+	uint8_t channel            : 4;
+	uint8_t __reserved1        : 2;
+	uint8_t user_id            : 6;
+	uint8_t __reserved2        : 4;
+	uint8_t privilege_limit    : 4;
+	uint8_t __reserved3        : 4;
+	uint8_t session_limit      : 4;
 #else
-	unsigned char channel            : 4;
-	unsigned char ipmi_messaging     : 1;
-	unsigned char link_auth          : 1;
-	unsigned char callin_callback    : 1;
-	unsigned char change_bits        : 1;
-	unsigned char user_id            : 6;
-	unsigned char __reserved1        : 2;
-	unsigned char privilege_limit    : 4;
-	unsigned char __reserved2        : 4;
-	unsigned char session_limit      : 4;
-	unsigned char __reserved3        : 4;
+	uint8_t channel            : 4;
+	uint8_t ipmi_messaging     : 1;
+	uint8_t link_auth          : 1;
+	uint8_t callin_callback    : 1;
+	uint8_t change_bits        : 1;
+	uint8_t user_id            : 6;
+	uint8_t __reserved1        : 2;
+	uint8_t privilege_limit    : 4;
+	uint8_t __reserved2        : 4;
+	uint8_t session_limit      : 4;
+	uint8_t __reserved3        : 4;
 #endif
 } __attribute__ ((packed));
 
-unsigned char ipmi_get_channel_medium(struct ipmi_intf * intf, unsigned char channel);
-unsigned char ipmi_current_channel_medium(struct ipmi_intf * intf);
+uint8_t ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel);
+uint8_t ipmi_current_channel_medium(struct ipmi_intf * intf);
 int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);
-int ipmi_get_channel_auth_cap(struct ipmi_intf * intf, unsigned char channel, unsigned char priv);
-int ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
+int ipmi_get_channel_auth_cap(struct ipmi_intf * intf, uint8_t channel, uint8_t priv);
+int ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel);
 
 #endif /*IPMI_CHANNEL_H*/

@@ -61,50 +61,50 @@ enum {
 };
 
 struct sel_get_rq {
-	unsigned short	reserve_id;
-	unsigned short	record_id;
-	unsigned char	offset;
-	unsigned char	length;
+	uint16_t	reserve_id;
+	uint16_t	record_id;
+	uint8_t	offset;
+	uint8_t	length;
 } __attribute__ ((packed));
 
 struct sel_event_record {
-	unsigned short	record_id;
-	unsigned char	record_type;
+	uint16_t	record_id;
+	uint8_t	record_type;
 	uint32_t	timestamp;
-	unsigned short	gen_id;
-	unsigned char	evm_rev;
-	unsigned char	sensor_type;
-	unsigned char	sensor_num;
-	unsigned char	event_type : 7;
-	unsigned char	event_dir  : 1;
+	uint16_t	gen_id;
+	uint8_t	evm_rev;
+	uint8_t	sensor_type;
+	uint8_t	sensor_num;
+	uint8_t	event_type : 7;
+	uint8_t	event_dir  : 1;
 #define DATA_BYTE2_SPECIFIED_MASK 0xc0    /* event_data[0] bit mask */
 #define DATA_BYTE3_SPECIFIED_MASK 0x30    /* event_data[0] bit mask */
 #define EVENT_OFFSET_MASK         0x0f    /* event_data[0] bit mask */
-	unsigned char	event_data[3];
+	uint8_t	event_data[3];
 } __attribute__ ((packed));
 
 struct sel_oem_record_ts {
-	unsigned short	next_id;
-	unsigned short	record_id;
-	unsigned char	record_type;
+	uint16_t	next_id;
+	uint16_t	record_id;
+	uint8_t	record_type;
 	uint32_t	timestamp;
-	unsigned char	mfg_id[3];
-	unsigned char	oem_defined[6];
+	uint8_t	mfg_id[3];
+	uint8_t	oem_defined[6];
 } __attribute__ ((packed));
 
 struct sel_oem_record_nots {
-	unsigned short	next_id;
-	unsigned short	record_id;
-	unsigned char	record_type;
-	unsigned char	oem_defined[13];
+	uint16_t	next_id;
+	uint16_t	record_id;
+	uint8_t	record_type;
+	uint8_t	oem_defined[13];
 } __attribute__ ((packed));
 
 struct ipmi_event_sensor_types {
-	unsigned char	code;
-	unsigned char	offset;
+	uint8_t	code;
+	uint8_t	offset;
 #define ALL_OFFSETS_SPECIFIED  0xff
-        unsigned char   data;
-	unsigned char	class;
+        uint8_t   data;
+	uint8_t	class;
 	const char	* type;
 	const char	* desc;
 };
@@ -383,6 +383,6 @@ int ipmi_sel_main(struct ipmi_intf *, int, char **);
 void ipmi_sel_print_std_entry(struct sel_event_record * evt);
 void ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt);
 void ipmi_get_event_desc(struct sel_event_record * rec, char ** desc);
-const char * ipmi_sel_get_sensor_type(unsigned char code);
+const char * ipmi_sel_get_sensor_type(uint8_t code);
 
 #endif /* IPMI_SEL_H */

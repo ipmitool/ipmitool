@@ -38,13 +38,13 @@
 #define IPMI_ENTITY_H
 
 struct entity_id {
-	unsigned char	id;			/* physical entity id */
+	uint8_t	id;			/* physical entity id */
 #if WORDS_BIGENDIAN
-	unsigned char	logical     : 1;	/* physical/logical */
-	unsigned char	instance    : 7;	/* instance number */
+	uint8_t	logical     : 1;	/* physical/logical */
+	uint8_t	instance    : 7;	/* instance number */
 #else
-	unsigned char	instance    : 7;	/* instance number */
-	unsigned char	logical     : 1;	/* physical/logical */
+	uint8_t	instance    : 7;	/* instance number */
+	uint8_t	logical     : 1;	/* physical/logical */
 #endif
 } __attribute__ ((packed));
 

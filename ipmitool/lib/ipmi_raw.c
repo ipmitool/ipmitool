@@ -49,17 +49,17 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char netfn, cmd;
+	uint8_t netfn, cmd;
 	int i;
-	unsigned char data[32];
+	uint8_t data[32];
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
 		lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
 		return -1;
 	}
 
-	netfn = (unsigned char)strtol(argv[0], NULL, 0);
-	cmd = (unsigned char)strtol(argv[1], NULL, 0);
+	netfn = (uint8_t)strtol(argv[0], NULL, 0);
+	cmd = (uint8_t)strtol(argv[1], NULL, 0);
 
 	memset(data, 0, sizeof(data));
 	memset(&req, 0, sizeof(req));
@@ -68,7 +68,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data = data;
 
 	for (i=2; i<argc; i++) {
-		unsigned char val = (unsigned char)strtol(argv[i], NULL, 0);
+		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
 	}

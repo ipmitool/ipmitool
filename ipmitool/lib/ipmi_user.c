@@ -77,14 +77,14 @@ extern int csv_output;
 static int
 ipmi_get_user_access(
 		     struct ipmi_intf * intf,	   
-		     unsigned char	channel_number,
-		     unsigned char	user_id,       
+		     uint8_t	channel_number,
+		     uint8_t	user_id,       
 		     struct		user_access_rsp * user_access)
 					 
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	unsigned char	       msg_data[2];
+	uint8_t	       msg_data[2];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
@@ -134,13 +134,13 @@ ipmi_get_user_access(
 static int
 ipmi_get_user_name(
 		   struct ipmi_intf * intf,	   
-		   unsigned char      user_id,	     
+		   uint8_t      user_id,	     
 		   char		    * user_name)
 					 
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	unsigned char	       msg_data[1];
+	uint8_t	       msg_data[1];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	   /* 0x06 */
@@ -173,7 +173,7 @@ ipmi_get_user_name(
 
 static void
 dump_user_access(
-		 unsigned char		  user_id,
+		 uint8_t		  user_id,
 		 const		   char * user_name,
 		 struct user_access_rsp * user_access)
 {
@@ -201,7 +201,7 @@ dump_user_access(
 
 static void
 dump_user_access_csv(
-		     unsigned char	      user_id,
+		     uint8_t	      user_id,
 		     const char		    * user_name,
 		     struct user_access_rsp * user_access)
 {
@@ -220,12 +220,12 @@ dump_user_access_csv(
 static int
 ipmi_print_user_list(
 		     struct ipmi_intf * intf,
-		     unsigned char	channel_number)
+		     uint8_t	channel_number)
 {
 	/* This is where you were! */
 	char user_name[17];
 	struct user_access_rsp  user_access;
-	unsigned char current_user_id = 1;
+	uint8_t current_user_id = 1;
 
 
 	do
@@ -271,7 +271,7 @@ ipmi_print_user_list(
 static int
 ipmi_print_user_summary(
 			struct ipmi_intf * intf,
-			unsigned char	   channel_number)
+			uint8_t	   channel_number)
 {
 	struct user_access_rsp     user_access;
 
@@ -309,12 +309,12 @@ ipmi_print_user_summary(
 static int
 ipmi_user_set_username(
 		       struct ipmi_intf * intf,	   
-		       unsigned char	  user_id,	 
+		       uint8_t	  user_id,	 
 		       const char	* name)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	unsigned char	       msg_data[17];
+	uint8_t	       msg_data[17];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
@@ -356,8 +356,8 @@ ipmi_user_set_username(
 static int
 ipmi_user_set_password(
 		       struct ipmi_intf * intf,	   
-		       unsigned char	  user_id,
-		       unsigned char	  operation,
+		       uint8_t	  user_id,
+		       uint8_t	  operation,
 		       const char	* password,
 		       int                is_twenty_byte_password)
 {
@@ -416,7 +416,7 @@ ipmi_user_set_password(
 static int
 ipmi_user_test_password(
 			struct ipmi_intf * intf,
-			unsigned char      user_id,
+			uint8_t      user_id,
 			const char       * password,
 			int                is_twenty_byte_password)
 {
@@ -464,7 +464,7 @@ print_user_usage()
 
 
 const char *
-ipmi_user_build_password_prompt(unsigned char user_id)
+ipmi_user_build_password_prompt(uint8_t user_id)
 {
 	static char prompt[128];
 	memset(prompt, 0, 128);
@@ -499,12 +499,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
 	else if (strncmp(argv[0], "summary", 7) == 0)
 	{
-		unsigned char channel;
+		uint8_t channel;
 
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 2)
-			channel = (unsigned char)strtol(argv[1], NULL, 0);
+			channel = (uint8_t)strtol(argv[1], NULL, 0);
 		else
 		{
 			print_user_usage();	
@@ -520,12 +520,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
 	else if (strncmp(argv[0], "list", 4) == 0)
 	{
-		unsigned char channel;
+		uint8_t channel;
 
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 2)
-			channel = (unsigned char)strtol(argv[1], NULL, 0);
+			channel = (uint8_t)strtol(argv[1], NULL, 0);
 		else
 		{
 			print_user_usage();	
@@ -549,7 +549,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			char * password = NULL;
 			int password_length = atoi(argv[2]);
-			unsigned char user_id = (unsigned char)strtol(argv[1],
+			uint8_t user_id = (uint8_t)strtol(argv[1],
 								      NULL,
 								      0);
 			if (user_id == 0)
@@ -606,7 +606,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		    (strncmp("password", argv[1], 8) == 0)) 
 		{
 			char * password = NULL;
-			unsigned char user_id = (unsigned char)strtol(argv[2],
+			uint8_t user_id = (uint8_t)strtol(argv[2],
 								      NULL,
 								      0);
 			if (user_id == 0)
@@ -684,7 +684,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 
 			retval = ipmi_user_set_username(intf,
-							(unsigned char)strtol(argv[2],
+							(uint8_t)strtol(argv[2],
 									      NULL,
 									      0),
 							argv[3]);
@@ -703,8 +703,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if ((strncmp(argv[0], "disable", 7) == 0) ||
 		 (strncmp(argv[0], "enable",  6) == 0))
 	{
-		unsigned char user_id;
-		unsigned char operation;
+		uint8_t user_id;
+		uint8_t operation;
 		char null_password[16]; /* Not used, but required */
 
 		memset(null_password, 0, sizeof(null_password));
@@ -715,7 +715,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		user_id = (unsigned char)strtol(argv[1],
+		user_id = (uint8_t)strtol(argv[1],
 						NULL,
 						0);
 		if (user_id == 0)
