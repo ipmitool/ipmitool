@@ -184,7 +184,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id, unsigned
 	req.msg.data_len = sizeof(sdr_rq);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || !rsp->data_len) {
+	if (!rsp || !rsp->data_len || rsp->ccode) {
 		printf("Error getting SDR record id 0x%04x\n", record_id);
 		return NULL;
 	}
@@ -848,6 +848,29 @@ ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 	ipmi_sdr_end(intf, itr);
 }
 
+int
+ipmi_sdr_get_reservation (struct ipmi_intf * intf, unsigned short *reserve_id)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+
+	/* obtain reservation ID */
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_SDR_RESERVE_REPO;
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || !rsp->data_len || rsp->ccode)
+		return 0;
+
+	*reserve_id = ((struct sdr_reserve_repo_rs *) &(rsp->data))->reserve_id;
+
+	if (verbose > 1)
+		printf("SDR reserveration ID %04x\n", *reserve_id);
+
+	return 1;
+}
+
 struct ipmi_sdr_iterator *
 ipmi_sdr_start(struct ipmi_intf * intf)
 {
@@ -855,7 +878,6 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct sdr_repo_info_rs sdr_info;
-	struct sdr_reserve_repo_rs sdr_reserve;
 	struct sdr_get_rs * header;
 
 	if (!(itr = malloc (sizeof (struct ipmi_sdr_iterator))))
@@ -867,7 +889,7 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 	req.msg.cmd = GET_SDR_REPO_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || !rsp->data_len)
+	if (!rsp || !rsp->data_len || rsp->ccode)
 	{
 		free (itr);
 		return NULL;
@@ -886,20 +908,11 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 		printf("SDR records: %d\n", sdr_info.count);
 	}
 
-	/* obtain reservation ID */
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_SDR_RESERVE_REPO;
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || !rsp->data_len)
+	if (!ipmi_sdr_get_reservation (intf, &(itr->reservation)))
 	{
 		free (itr);
 		return NULL;
 	}
-	memcpy(&sdr_reserve, rsp->data, sizeof(sdr_reserve));
-	itr->reservation = sdr_reserve.reserve_id;
-	if (verbose > 1)
-		printf("SDR reserveration ID %04x\n", sdr_reserve.reserve_id);
 
 	itr->next = 0;
 
@@ -914,10 +927,11 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	struct ipmi_rs * rsp;
 	struct sdr_get_rq sdr_rq;
 	unsigned char * data;
-	int i, len = header->length;
+	int i = 0, len = header->length;
 
 	if (!(data = malloc(len+1)))
 		return NULL;
+
 	memset(data, 0, len+1);
 
 	memset(&sdr_rq, 0, sizeof(sdr_rq));
@@ -935,15 +949,40 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	 * because a full read (0xff) exceeds the maximum
 	 * transport buffer size.  (completion code 0xca)
 	 */
-	for (i=0; i<len; i+=GET_SDR_MAX_LEN) {
+	while (i < len) {
 		sdr_rq.length = (len-i < GET_SDR_MAX_LEN) ? len-i : GET_SDR_MAX_LEN;
 		sdr_rq.offset = i+5; /* 5 header bytes */
 		if (verbose > 1)
 			printf("getting %d bytes from SDR at offset %d\n",
 			       sdr_rq.length, sdr_rq.offset);
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp && rsp->data)
-			memcpy(data+i, rsp->data+2, sdr_rq.length);
+
+		if (!rsp) {
+			free (data);
+			return NULL;
+		}
+
+		if (rsp->ccode == 0xc5) {
+			if (verbose > 1)
+				printf("SDR reserveration canceled. Sleeping a bit and retrying...\n");
+
+			sleep (rand () & 3);
+
+			if (!ipmi_sdr_get_reservation (intf, &(itr->reservation))) {
+				free (data);
+				return NULL;
+			}
+			sdr_rq.reserve_id = itr->reservation;
+			continue;
+		}
+
+		if (!rsp->data_len || rsp->ccode) {
+			free (data);
+			return NULL;
+		}
+
+		memcpy(data+i, rsp->data+2, sdr_rq.length);
+		i+=GET_SDR_MAX_LEN;
 	}
 
 	return data;
@@ -982,6 +1021,8 @@ ipmi_sdr_find_sdr(struct ipmi_intf * intf, char * id)
 
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
+	srand (time (NULL));
+
 	if (!argc)
 		ipmi_sdr_print_sdr(intf, 0xff);
 	else if (!strncmp(argv[0], "help", 4)) {
