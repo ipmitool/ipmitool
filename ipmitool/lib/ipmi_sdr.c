@@ -476,10 +476,11 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 			}
 			printf("%s", sval);
 
+			if (csv_output)
+			    	printf(",");
+
 			if (validread) {
-				if (csv_output)
-					printf(",");
-				else
+				if (!csv_output)
 					printf(" ");
 				if (do_unit)
 					printf("%s", unitstr);
