@@ -51,10 +51,16 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_rq req;
 	uint8_t netfn, cmd;
 	int i;
-	uint8_t data[32];
+
+	uint8_t data[256];
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
 		lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
+		return -1;
+	}
+	else if (argc > sizeof(data))
+	{
+		printf("Raw command input limit (%d bytes) exceeded\n", sizeof(data));
 		return -1;
 	}
 
