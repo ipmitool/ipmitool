@@ -75,9 +75,11 @@ extern int verbose;
 /*
  * ipmi_get_sol_info
  */
-int ipmi_get_sol_info(struct ipmi_intf * intf,
-					  unsigned char channel,
-					  struct sol_config_parameters * params)
+int
+ipmi_get_sol_info(
+				  struct ipmi_intf * intf,
+				  unsigned char channel,
+				  struct sol_config_parameters * params)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -343,7 +345,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 /*
  * ipmi_print_sol_info
  */
-static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
+static int
+ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 {
 	struct sol_config_parameters params;
 	if (ipmi_get_sol_info(intf, channel, &params))
@@ -421,10 +424,11 @@ static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
  * return 0 on success,
  *        -1 on failure
  */
-static int ipmi_sol_set_param(struct ipmi_intf * intf,
-							  unsigned char      channel,
-							  const char       * param,
-							  const char       * value)
+static int
+ipmi_sol_set_param(struct ipmi_intf * intf,
+				   unsigned char      channel,
+				   const char       * param,
+				   const char       * value)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
@@ -681,7 +685,8 @@ static int ipmi_sol_set_param(struct ipmi_intf * intf,
 
 
 
-void leave_raw_mode(void)
+void
+leave_raw_mode(void)
 {
 	if (!_in_raw_mode)
 		return;
@@ -693,7 +698,8 @@ void leave_raw_mode(void)
 
 
 
-void enter_raw_mode(void)
+void
+enter_raw_mode(void)
 {
 	struct termios tio;
 	if (tcgetattr(fileno(stdin), &tio) == -1) {
@@ -718,7 +724,8 @@ void enter_raw_mode(void)
 }
 
 
-static void sendBreak(struct ipmi_intf * intf)
+static void
+sendBreak(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload  v2_payload;
 
@@ -740,7 +747,8 @@ static void sendBreak(struct ipmi_intf * intf)
  * param bRestoreTty specifies whether we will put our self back
  *       in raw mode when we resume
  */
-static void suspendSelf(int bRestoreTty)
+static void
+suspendSelf(int bRestoreTty)
 {
 	leave_raw_mode();
 	kill(getpid(), SIGTSTP);
@@ -756,7 +764,8 @@ static void suspendSelf(int bRestoreTty)
  *
  * Send some useful documentation to the user
  */
-void printSolEscapeSequences()
+void
+printSolEscapeSequences()
 {
 	printf(
 		   "%c?\r\n\
@@ -774,6 +783,7 @@ void printSolEscapeSequences()
 		   SOL_ESCAPE_CHARACTER,
 		   SOL_ESCAPE_CHARACTER,
 		   SOL_ESCAPE_CHARACTER,
+		   SOL_ESCAPE_CHARACTER,
 		   SOL_ESCAPE_CHARACTER);
 }
 
@@ -784,13 +794,17 @@ void printSolEscapeSequences()
  *
  * Send the specified data to stdout
  */
-static void output(char * data, int length)
+static void
+output(struct ipmi_rs * rsp)
 {
-	int i;
-	for (i = 0; i < length; ++i)
-		putc(data[i], stdout);
+	if (rsp)
+	{
+		int i;
+		for (i = 0; i < rsp->data_len; ++i)
+			putc(rsp->data[i], stdout);
 
-	fflush(stdout);
+		fflush(stdout);
+	}
 }
 
 
@@ -798,7 +812,8 @@ static void output(char * data, int length)
 /*
  * impi_sol_deactivate
  */
-static int ipmi_sol_deactivate(struct ipmi_intf * intf)
+static int
+ipmi_sol_deactivate(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
@@ -842,9 +857,11 @@ static int ipmi_sol_deactivate(struct ipmi_intf * intf)
  *          1 if we should exit
  *        < 0 on error (BMC probably closed the session)
  */
-static int processSolUserInput(struct ipmi_intf * intf,
-							   unsigned char    * input,
-							   unsigned short     buffer_length)
+static int
+processSolUserInput(
+					struct ipmi_intf * intf,
+					unsigned char    * input,
+					unsigned short     buffer_length)
 {
 	static int escape_pending = 0;
 	static int last_was_cr    = 1;
@@ -920,7 +937,9 @@ static int processSolUserInput(struct ipmi_intf * intf,
 
 	
 	/*
-	 * If there is anything left to process we dispatch it to the BMC
+	 * If there is anything left to process we dispatch it to the BMC,
+	 * send intf->session->sol_data.max_outbound_payload_size bytes
+	 * at a time.
 	 */
 	if (length)
 	{
@@ -929,18 +948,17 @@ static int processSolUserInput(struct ipmi_intf * intf,
 		v2_payload.payload_length = length;
 		rsp = intf->send_sol(intf, &v2_payload);
 
-		/* This will always fail until we wait for our ACKs */
 		if (! rsp)
 		{
-			//printf("Error sending SOL data\n");
-			//retval = -1;
+			printf("Error sending SOL data\n");
+			retval = -1;
 		}
 
 		/* If the sequence number is set we know we have new data */
-		//else if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
-		//		 (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
-		//		 (rsp->payload.sol_packet.packet_sequence_number))
-		//	output(rsp->data, rsp->data_len);
+		else if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+				 (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
+				 (rsp->payload.sol_packet.packet_sequence_number))
+			output(rsp);
 	}
 
 	return retval;
@@ -951,10 +969,11 @@ static int processSolUserInput(struct ipmi_intf * intf,
 /*
  * ipmi_sol_red_pill
  */
-static int ipmi_sol_red_pill(struct ipmi_intf * intf)
+static int
+ipmi_sol_red_pill(struct ipmi_intf * intf)
 {
 	
-	char   buffer[256];
+	char   * buffer;
 	int    numRead;
 	int    bShouldExit       = 0;
 	int    bBmcClosedSession = 0;
@@ -963,6 +982,9 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 	int    retval;
 	size_t num_read;
 	char   c;
+	int    buffer_size = intf->session->sol_data.max_inbound_payload_size;
+
+	buffer = (char*)malloc(buffer_size);
 
 	enter_raw_mode();
 
@@ -995,8 +1017,9 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 	 		{
 				bzero(buffer, sizeof(buffer));
 				numRead = read(fileno(stdin),
-							   buffer, sizeof(buffer));
-
+							   buffer,
+							   buffer_size);
+				
 				if (numRead > 0)
 				{
 					int rc = processSolUserInput(intf, buffer, numRead);
@@ -1028,7 +1051,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 					bShouldExit = bBmcClosedSession = 1;
 				}
 				else
-					output(rs->data, rs->data_len);
+					output(rs);
  			}
 
 			
@@ -1059,12 +1082,11 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 
 
 
-
-
 /*
  * impi_sol_activate
  */
-static int ipmi_sol_activate(struct ipmi_intf * intf)
+static int
+ipmi_sol_activate(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
@@ -1083,6 +1105,15 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 			   "lanplus interface\n");
 		return -1;
 	}
+
+
+	/*
+	 * Setup a callback so that the lanplus processing knows what
+	 * to do with packets that come unexpectedly (while waiting for
+	 * an ACK, perhaps.
+	 */
+	intf->session->sol_data.sol_input_handler = output;
+
 
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_ACTIVATE_PAYLOAD;
@@ -1130,6 +1161,7 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 	intf->session->sol_data.port =
 		(ap_rsp.payload_udp_port[1] << 8) |
 		ap_rsp.payload_udp_port[0];
+	
 
 
 	#if WORDS_BIGENDIAN
@@ -1140,7 +1172,10 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 	intf->session->sol_data.port =
 		BSWAP_16(intf->session->sol_data.port);
 	#endif
-	
+
+
+	intf->session->timeout = 3;
+
 
 	if (intf->session->sol_data.port != intf->session->port)
 	{
@@ -1173,7 +1208,8 @@ static int ipmi_sol_activate(struct ipmi_intf * intf)
 /*
  * print_sol_usage
  */
-void print_sol_usage()
+void
+print_sol_usage()
 {
 	printf("SOL Commands: info [<channel number>]\n");
 	printf("              set <parameter> <value> [channel]\n");
@@ -1186,7 +1222,8 @@ void print_sol_usage()
 /*
  * ipmi_sol_main
  */
-int ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
 
