@@ -94,8 +94,8 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
-			"(netfn=0x%x cmd=0x%x): %s",
-			req.msg.netfn, req.msg.cmd,
+			"(netfn=0x%x cmd=0x%x rsp=0x%x): %s",
+			req.msg.netfn, req.msg.cmd, rsp->ccode,
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
