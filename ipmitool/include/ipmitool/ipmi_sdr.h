@@ -124,35 +124,65 @@ struct sdr_get_rs {
 struct sdr_record_compact_sensor {
 	struct {
 		unsigned char	owner_id;
-		unsigned char	lun         : 2,	/* sensor owner lun */
-				__reserved  : 2,
-				channel     : 4;	/* channel number */
+#if WORDS_BIGENDIAN
+		unsigned char	channel     : 4;	/* channel number */
+		unsigned char	__reserved  : 2;
+		unsigned char	lun         : 2;	/* sensor owner lun */
+#else
+		unsigned char	lun         : 2;	/* sensor owner lun */
+		unsigned char	__reserved  : 2;
+		unsigned char	channel     : 4;	/* channel number */
+#endif
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct {
 		unsigned char	id;			/* physical entity id */
-		unsigned char	instance    : 7,	/* instance number */
-				logical     : 1;	/* physical/logical */
+#if WORDS_BIGENDIAN
+		unsigned char	logical     : 1;	/* physical/logical */
+		unsigned char	instance    : 7;	/* instance number */
+#else
+		unsigned char	instance    : 7;	/* instance number */
+		unsigned char	logical     : 1;	/* physical/logical */
+#endif
 	} entity;
 	
 	struct {
 		struct {
-			unsigned char	sensor_scan  : 1,
-					event_gen    : 1,
-					type         : 1,
-					hysteresis   : 1,
-					thresholds   : 1,
-					events       : 1,
-					scanning     : 1,
-				        __reserved   : 1;
+#if WORDS_BIGENDIAN
+			unsigned char	__reserved   : 1;
+			unsigned char	scanning     : 1;
+			unsigned char	events       : 1;
+			unsigned char	thresholds   : 1;
+			unsigned char	hysteresis   : 1;
+			unsigned char	type         : 1;
+			unsigned char	event_gen    : 1;
+			unsigned char	sensor_scan  : 1;
+#else
+			unsigned char	sensor_scan  : 1;
+			unsigned char	event_gen    : 1;
+			unsigned char	type         : 1;
+			unsigned char	hysteresis   : 1;
+			unsigned char	thresholds   : 1;
+			unsigned char	events       : 1;
+			unsigned char	scanning     : 1;
+			unsigned char	__reserved   : 1;
+#endif
 		} init;
 		struct {
-			unsigned char	event_msg    : 2,
-					threshold    : 2,
-					hysteresis   : 2,
-					rearm        : 1,
-					ignore       : 1;
+#if WORDS_BIGENDIAN
+			unsigned char	ignore       : 1;
+			unsigned char	rearm        : 1;
+			unsigned char	hysteresis   : 2;
+			unsigned char	threshold    : 2;
+			unsigned char	event_msg    : 2;
+#else
+			unsigned char	event_msg    : 2;
+			unsigned char	threshold    : 2;
+			unsigned char	hysteresis   : 2;
+			unsigned char	rearm        : 1;
+			unsigned char	ignore       : 1;
+#endif
 		} capabilities;
 		unsigned char	type; /* sensor type */
 	} sensor;
@@ -174,10 +204,17 @@ struct sdr_record_compact_sensor {
 	} mask;
 
 	struct {
-		unsigned char		pct           : 1,
-				modifier      : 2,
-				rate          : 3,
-				analog        : 2;
+#if WORDS_BIGENDIAN
+		unsigned char	analog        : 2;
+		unsigned char	rate          : 3;
+		unsigned char	modifier      : 2;
+		unsigned char	pct           : 1;
+#else
+		unsigned char	pct           : 1;
+		unsigned char	modifier      : 2;
+		unsigned char	rate          : 3;
+		unsigned char	analog        : 2;
+#endif
 		struct {
 			unsigned char	base;
 			unsigned char	modifier;
@@ -185,11 +222,22 @@ struct sdr_record_compact_sensor {
 	} unit;
 
 	struct {
-		unsigned char	count       : 4,
-				mod_type    : 2,
-				__reserved  : 2;
-		unsigned char	mod_offset  : 7,
-				entity_inst : 1;
+#if WORDS_BIGENDIAN
+		unsigned char	__reserved  : 2;
+		unsigned char	mod_type    : 2;
+		unsigned char	count       : 4;
+#else
+		unsigned char	count       : 4;
+		unsigned char	mod_type    : 2;
+		unsigned char	__reserved  : 2;
+#endif
+#if WORDS_BIGENDIAN
+		unsigned char	entity_inst : 1;
+		unsigned char	mod_offset  : 7;
+#else
+		unsigned char	mod_offset  : 7;
+		unsigned char	entity_inst : 1;
+#endif
 	} share;
 
 	struct {
@@ -203,33 +251,54 @@ struct sdr_record_compact_sensor {
 	unsigned char	oem;		/* reserved for OEM use */
 	unsigned char	id_code;	/* sensor ID string type/length code */
 	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
-
 } __attribute__ ((packed));
 
 struct sdr_record_eventonly_sensor {
 	struct {
 		unsigned char	owner_id;
-		unsigned char	lun         : 2,	/* sensor owner lun */
-				fru_owner   : 2,        /* fru device owner lun */
-				channel     : 4;	/* channel number */
+#if WORDS_BIGENDIAN
+		unsigned char	channel     : 4;	/* channel number */
+		unsigned char	fru_owner   : 2;        /* fru device owner lun */
+		unsigned char	lun         : 2;	/* sensor owner lun */
+#else
+		unsigned char	lun         : 2;	/* sensor owner lun */
+		unsigned char	fru_owner   : 2;        /* fru device owner lun */
+		unsigned char	channel     : 4;	/* channel number */
+#endif
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct {
 		unsigned char	id;			/* physical entity id */
-		unsigned char	instance    : 7,	/* instance number */
-				logical     : 1;	/* physical/logical */
+#if WORDS_BIGENDIAN
+		unsigned char	logical     : 1;	/* physical/logical */
+		unsigned char	instance    : 7;	/* instance number */
+#else
+		unsigned char	instance    : 7;	/* instance number */
+		unsigned char	logical     : 1;	/* physical/logical */
+#endif
 	} entity;
 	
 	unsigned char	sensor_type;			/* sensor type */
 	unsigned char	event_type;			/* event/reading type code */
 
 	struct {
-		unsigned char	count       : 4,
-				mod_type    : 2,
-				__reserved  : 2;
-		unsigned char	mod_offset  : 7,
-				entity_inst : 1;
+#if WORDS_BIGENDIAN
+		unsigned char	__reserved  : 2;
+		unsigned char	mod_type    : 2;
+		unsigned char	count       : 4;
+#else
+		unsigned char	count       : 4;
+		unsigned char	mod_type    : 2;
+		unsigned char	__reserved  : 2;
+#endif
+#if WORDS_BIGENDIAN
+		unsigned char	entity_inst : 1;
+		unsigned char	mod_offset  : 7;
+#else
+		unsigned char	mod_offset  : 7;
+		unsigned char	entity_inst : 1;
+#endif
 	} share;
 
 	unsigned char	__reserved;
@@ -242,35 +311,65 @@ struct sdr_record_eventonly_sensor {
 struct sdr_record_full_sensor {
 	struct {
 		unsigned char	owner_id;
-		unsigned char	lun         : 2,	/* sensor owner lun */
-				__reserved  : 2,
-				channel     : 4;	/* channel number */
+#if WORDS_BIGENDIAN
+		unsigned char	channel     : 4;	/* channel number */
+		unsigned char	__reserved  : 2;
+		unsigned char	lun         : 2;	/* sensor owner lun */
+#else
+		unsigned char	lun         : 2;	/* sensor owner lun */
+		unsigned char	__reserved  : 2;
+		unsigned char	channel     : 4;	/* channel number */
+#endif
 		unsigned char	sensor_num;		/* unique sensor number */
 	} keys;
 
 	struct {
 		unsigned char	id;			/* physical entity id */
-		unsigned char	instance    : 7,	/* instance number */
-				logical     : 1;	/* physical/logical */
+#if WORDS_BIGENDIAN
+		unsigned char	logical     : 1;	/* physical/logical */
+		unsigned char	instance    : 7;	/* instance number */
+#else
+		unsigned char	instance    : 7;	/* instance number */
+		unsigned char	logical     : 1;	/* physical/logical */
+#endif
 	} entity;
 
 	struct {
 		struct {
-			unsigned char	sensor_scan  : 1,
-					event_gen    : 1,
-					type         : 1,
-					hysteresis   : 1,
-					thresholds   : 1,
-					events       : 1,
-					scanning     : 1,
-				        __reserved   : 1;
+#if WORDS_BIGENDIAN
+			unsigned char	 __reserved  : 1;
+			unsigned char	scanning     : 1;
+			unsigned char	events       : 1;
+			unsigned char	thresholds   : 1;
+			unsigned char	hysteresis   : 1;
+			unsigned char	type         : 1;
+			unsigned char	event_gen    : 1;
+			unsigned char	sensor_scan  : 1;
+#else
+			unsigned char	sensor_scan  : 1;
+			unsigned char	event_gen    : 1;
+			unsigned char	type         : 1;
+			unsigned char	hysteresis   : 1;
+			unsigned char	thresholds   : 1;
+			unsigned char	events       : 1;
+			unsigned char	scanning     : 1;
+			unsigned char	 __reserved  : 1;
+#endif
 		} init;
 		struct {
-			unsigned char	event_msg    : 2,
-					threshold    : 2,
-					hysteresis   : 2,
-					rearm        : 1,
-					ignore       : 1;
+#if WORDS_BIGENDIAN
+			unsigned char	ignore       : 1;
+			unsigned char	rearm        : 1;
+			unsigned char	hysteresis   : 2;
+			unsigned char	threshold    : 2;
+			unsigned char	event_msg    : 2;
+#else
+			unsigned char	event_msg    : 2;
+			unsigned char	threshold    : 2;
+			unsigned char	hysteresis   : 2;
+			unsigned char	rearm        : 1;
+			unsigned char	ignore       : 1;
+#endif
 		} capabilities;
 		unsigned char	type;
 	} sensor;
@@ -292,10 +391,17 @@ struct sdr_record_full_sensor {
 	} mask;
 
 	struct {
-		unsigned char	pct           : 1,
-				modifier      : 2,
-				rate          : 3,
-				analog        : 2;
+#if WORDS_BIGENDIAN
+		unsigned char	analog        : 2;
+		unsigned char	rate          : 3;
+		unsigned char	modifier      : 2;
+		unsigned char	pct           : 1;
+#else
+		unsigned char	pct           : 1;
+		unsigned char	modifier      : 2;
+		unsigned char	rate          : 3;
+		unsigned char	analog        : 2;
+#endif
 		struct {
 			unsigned char	base;
 			unsigned char	modifier;
@@ -307,10 +413,17 @@ struct sdr_record_full_sensor {
 	uint32_t	bacc;		/* accuracy, B, Bexp, Rexp */
 
 	struct {
-		unsigned char	nominal_read  : 1,	/* nominal reading field specified */
-				normal_max    : 1,	/* normal max field specified */
-				normal_min    : 1,	/* normal min field specified */
-				__reserved    : 5;
+#if WORDS_BIGENDIAN
+		unsigned char	__reserved    : 5;
+		unsigned char	normal_min    : 1;	/* normal min field specified */
+		unsigned char	normal_max    : 1;	/* normal max field specified */
+		unsigned char	nominal_read  : 1;	/* nominal reading field specified */
+#else
+		unsigned char	nominal_read  : 1;	/* nominal reading field specified */
+		unsigned char	normal_max    : 1;	/* normal max field specified */
+		unsigned char	normal_min    : 1;	/* normal min field specified */
+		unsigned char	__reserved    : 5;
+#endif
 	} analog_flag;
 
 	unsigned char	nominal_read;	/* nominal reading, raw value */
@@ -343,10 +456,34 @@ struct sdr_record_full_sensor {
 
 struct sdr_record_fru_device_locator {
 	struct {
-		unsigned char __reserved1 : 1, dev_access_addr : 6;
+#if WORDS_BIGENDIAN
+		unsigned char __reserved2	: 1;
+		unsigned char dev_access_addr	: 6;
+		unsigned char __reserved1	: 1;
+#else
+		unsigned char __reserved1	: 1;
+		unsigned char dev_access_addr	: 6;
+		unsigned char __reserved2	: 1;
+#endif
 		unsigned char fru_device_id;
-		unsigned char private_bus : 3, access_lun : 2, __reserved3 : 2, logical_dev : 1;
-		unsigned char __reserved4 : 4, channel_num : 4;
+#if WORDS_BIGENDIAN
+		unsigned char logical_dev	: 1;
+		unsigned char __reserved3	: 2;
+		unsigned char access_lun	: 2;
+		unsigned char private_bus	: 3;
+#else
+		unsigned char private_bus	: 3;
+		unsigned char access_lun	: 2;
+		unsigned char __reserved3	: 2;
+		unsigned char logical_dev	: 1;
+#endif
+#if WORDS_BIGENDIAN
+		unsigned char channel_num	: 4;
+		unsigned char __reserved4	: 4;
+#else
+		unsigned char __reserved4	: 4;
+		unsigned char channel_num	: 4;
+#endif
 	} keys;
 
 	unsigned char __reserved;
@@ -360,9 +497,29 @@ struct sdr_record_fru_device_locator {
 } __attribute__ ((packed));
 
 struct sdr_record_mc_locator {
-	unsigned char __reserved1 : 1, dev_slave_addr : 7;
-	unsigned char channel_num : 4, __reserved2 : 4;
-	unsigned char global_init : 4, __reserved3 : 1, pwr_state_notif : 3;
+#if WORDS_BIGENDIAN
+	unsigned char dev_slave_addr	: 7;
+	unsigned char __reserved1	: 1;
+#else
+	unsigned char __reserved1	: 1;
+	unsigned char dev_slave_addr	: 7;
+#endif
+#if WORDS_BIGENDIAN
+	unsigned char __reserved2	: 4;
+	unsigned char channel_num 	: 4;
+#else
+	unsigned char channel_num 	: 4;
+	unsigned char __reserved2	: 4;
+#endif
+#if WORDS_BIGENDIAN
+	unsigned char pwr_state_notif	: 3;
+	unsigned char __reserved3	: 1;
+	unsigned char global_init	: 4;
+#else
+	unsigned char global_init	: 4;
+	unsigned char __reserved3	: 1;
+	unsigned char pwr_state_notif	: 3;
+#endif
 	unsigned char dev_support;
 	unsigned char __reserved4[3];
 	struct {
@@ -375,10 +532,32 @@ struct sdr_record_mc_locator {
 } __attribute__ ((packed));
 
 struct sdr_record_fru_locator {
-	unsigned char __reserved1 : 1, dev_slave_addr : 7;
+#if WORDS_BIGENDIAN
+	unsigned char dev_slave_addr	: 7;
+	unsigned char __reserved1	: 1;
+#else
+	unsigned char __reserved1	: 1;
+	unsigned char dev_slave_addr	: 7;
+#endif
 	unsigned char device_id;
-	unsigned char logical : 1, __reserved2 : 2, lun : 2, bus : 3;
-	unsigned char channel_num : 4, __reserved3 : 4;
+#if WORDS_BIGENDIAN
+	unsigned char bus		: 3;
+	unsigned char lun		: 2;
+	unsigned char __reserved2	: 2;
+	unsigned char logical		: 1;
+#else
+	unsigned char logical		: 1;
+	unsigned char __reserved2	: 2;
+	unsigned char lun		: 2;
+	unsigned char bus		: 3;
+#endif
+#if WORDS_BIGENDIAN
+	unsigned char __reserved3	: 4;
+	unsigned char channel_num	: 4;
+#else
+	unsigned char channel_num	: 4;
+	unsigned char __reserved3	: 4;
+#endif
 	unsigned char __reserved4;
 	unsigned char dev_type;
 	unsigned char dev_type_modifier;

@@ -42,6 +42,10 @@
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_entity.h>
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 extern int verbose;
 
 /* convert unsigned value to 2's complement signed */
@@ -367,7 +371,11 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 
                             printf("Sensor Reading         : ");
                             if (validread) {
+#if WORDS_BIGENDIAN
+                                    unsigned raw_tol = sensor->mtol & 0x3f;
+#else
                                     unsigned raw_tol = (sensor->mtol & 0x3f00) >> 8;
+#endif
                                     float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
                                     printf("%.*f (+/- %.*f) %s\n",
                                            (val==(int)val) ? 0 : 3, 
