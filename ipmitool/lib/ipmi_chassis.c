@@ -187,6 +187,12 @@ static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 	case 9:
 		printf("power-cycle via PEF\n");
 		break;
+	case 10:
+		printf("soft reset (ctrl-alt-del)\n");
+		break;
+	case 11:
+		printf("wake-up via RTC\n");
+		break;
 	default:
 		printf("error!\n");
 	}
