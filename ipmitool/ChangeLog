@@ -1,0 +1,46 @@
+version 1.5.8
+	* Enable static compilation of interfaces
+	* Fix types to be 64-bit safe
+	* Fix compilation problems on Solaris
+	* Fix multiple big-endian problems for Solaris/SPARC
+	* Fix channel access to save settings to NVRAM
+	* Set channel privilege limit to ADMIN during "access on"
+	* Enable gratuitous ARP in bmcautoconf.sh
+	* Add support for Linux kernel panic messages in SEL output
+	* Add support for type 3 SDR records
+
+version 1.5.7
+	* Add IPMIv1.5 eratta fixes
+	* Additions to FRU printing and FRU multirecords
+	* Better handling of SDR printing
+	* Contrib scripts for creating rrdtool graphs
+
+version 1.5.6
+	* Fix SEL event decoding for generic events
+	* Handle empty SEL gracefully when doing "sel list"
+	* Fix sdr handling of sensors that do not return a reading
+	* Fix for CSV display of sensor readings/units from Fredrik Öhrn
+
+version 1.5.5
+	* Add -U option for setting LAN username
+	* Fix -v usage for plugin interfaces
+
+version 1.5.4
+	* Put interface plugin API into library
+	* Fix ipmievd
+
+version 1.5.3
+	* Add -g option to work with grizzly bmc
+
+version 1.5.2
+	* Add support for setting gratuitous arp interval
+
+version 1.5.1
+	* Better SEL support
+	* Fix display bug in SDR list
+
+version 1.5.0
+	* More robust UDP packet handling
+	* Add Intel IMB driver support
+	* Use autoconf/automake/libtool
+

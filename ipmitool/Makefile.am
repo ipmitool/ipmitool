@@ -32,7 +32,7 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-EXTRA_DIST = ipmitool.spec.in AUTHORS COPYING debian/*
+EXTRA_DIST = ipmitool.spec.in AUTHORS COPYING ChangeLog debian/*
 
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	config.guess config.sub depcomp install-sh ltmain.sh missing \
