@@ -56,7 +56,7 @@
  */
 int lanplus_seed_prng(unsigned int bytes)
 {
-	if (! RAND_load_file("/dev/random", bytes))
+	if (! RAND_load_file("/dev/urandom", bytes))
 		return 1;
 	else
 		return 0;
