@@ -252,40 +252,46 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 
 	if (evt->record_type == 0xf0)
 	{
-		char tmp [12];
-		memcpy (tmp, (char *) evt + 5, 11);
-		tmp [11] = 0;
+		if (csv_output)
+			printf(",,");
 
-		printf ("Linux kernel panic: %s\n", tmp);
-
+		printf ("Linux kernel panic: %.11s\n", (char *) evt + 5);
 		return;
+	}
+
+	if (evt->record_type < 0xe0)
+	{
+		if (evt->timestamp < 0x20000000) {
+			printf("Pre-Init Time-stamp");
+			if (csv_output)
+				printf(",,");
+			else
+				printf("   | ");
+		}
+		else {
+			printf("%s", ipmi_sel_timestamp_date(evt->timestamp));
+			if (csv_output)
+				printf(",");
+			else
+				printf(" | ");
+
+			printf("%s", ipmi_sel_timestamp_time(evt->timestamp));
+			if (csv_output)
+				printf(",");
+			else
+				printf(" | ");
+		}
+	}
+	else
+	{
+		if (csv_output)
+			printf(",,");
 	}
 
 	if (evt->record_type >= 0xc0)
 	{
-		printf ("OEM record\n");
+		printf ("OEM record %02x\n", evt->record_type);
 		return;
-	}
-
-	if (evt->timestamp < 0x20000000) {
-		printf("Pre-Init Time-stamp");
-		if (csv_output)
-			printf(",");
-		else
-			printf("   | ");
-	}
-	else {
-		printf("%s", ipmi_sel_timestamp_date(evt->timestamp));
-		if (csv_output)
-			printf(",");
-		else
-			printf(" | ");
-
-		printf("%s", ipmi_sel_timestamp_time(evt->timestamp));
-		if (csv_output)
-			printf(",");
-		else
-			printf(" | ");
 	}
 
 	printf("%s #0x%02x", ipmi_sel_get_sensor_type(evt->sensor_type), evt->sensor_num);
@@ -308,27 +314,28 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 
 	if (evt->record_type == 0xf0)
 	{
-		char tmp [12];
-		printf (" Record Type     : Linux kernel panic (OEM record).\n");
-
-		memcpy (tmp, (char *) evt + 5, 11);
-		tmp [11] = 0;
-
-		printf (" Panic string    : %s\n\n", tmp);
-
+		printf (" Record Type     : Linux kernel panic (OEM record %02x)\n", evt->record_type);
+		printf (" Panic string    : %.11s\n\n", (char *) evt + 5);
 		return;
 	}
 
 	if (evt->record_type >= 0xc0)
+		printf(" Record Type     : OEM record %02x\n", evt->record_type >= 0xc0);
+	else
+		printf(" Record Type     : %02x\n", evt->record_type);
+
+	if (evt->record_type < 0xe0)
 	{
-		printf (" Record Type     : OEM record\n");
+		printf(" Timestamp       : %s\n",
+		       ipmi_sel_timestamp(evt->timestamp));
+	}
+
+	if (evt->record_type >= 0xc0)
+	{
+		printf("\n");
 		return;
 	}
 
-	printf(" Record Type     : %02x\n",
-	       evt->record_type);
-	printf(" Timestamp       : %s\n",
-	       ipmi_sel_timestamp(evt->timestamp));
 	printf(" Generator ID    : %04x\n",
 	       evt->gen_id);
 	printf(" EvM Revision    : %02x\n",
