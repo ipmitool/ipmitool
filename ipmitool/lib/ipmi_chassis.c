@@ -104,39 +104,62 @@ static void ipmi_chassis_power_control(struct ipmi_intf * intf, unsigned char ct
 static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 {
 	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+
+	struct {
+		unsigned char interval;
+		unsigned char force_on;
+	} identify_data;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x4;
 
-	printf("Chassis identify interval: ");
-
 	if (arg) {
-                struct {
-                    unsigned char interval;
-                    unsigned char force_on;
-                } identify_data;
-                
                 if (!strcmp(arg, "force")){
                         identify_data.interval = 0;
                         identify_data.force_on = 1;
-			printf("indefinite\n");
                 } else {
                         identify_data.interval = (unsigned char)atoi(arg);
                         identify_data.force_on = 0;
-                        if (identify_data.interval)
-			    printf("%d seconds\n", identify_data.interval);
-                        else
-			    printf("off\n");
                 }
 
 		req.msg.data = (unsigned char *)&identify_data;
-		req.msg.data_len = 2;
-	} else {
-		printf("default (15 seconds)\n");
+
+		/* The Force Identify On byte is optional and not
+		 * supported by all devices-- if force is not specified,
+		 * we pass only one data byte; if specified, we pass two
+		 * data bytes and check for an error completion code
+		 */	
+		req.msg.data_len = (identify_data.force_on) ? 2 : 1;
 	}
 
-	intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp || rsp->ccode) {
+		printf("ERROR:%x Chassis Identify Command\n", rsp->ccode);
+		if (identify_data.force_on) {
+			/* Intel SE7501WV2 F/W 1.2 returns CC 0xC7, but
+			 * the IPMI v1.5 spec does not standardize a CC
+			 * if unsupported, so we warn
+			 */
+			printf("Chassis may not support Force Identify On\n");
+		}
+		return;
+	}
+	printf("Chassis identify interval: ");
+	if (!arg) {
+		printf("default (15 seconds)\n");
+	} else {
+		if (identify_data.force_on) {
+			printf("indefinate\n");
+		} else {
+			if (identify_data.interval) {
+				printf("%i seconds\n", identify_data.interval);
+			} else {
+				printf("off\n");
+			}
+		}
+	}
 }
 
 static void ipmi_chassis_poh(struct ipmi_intf * intf)
