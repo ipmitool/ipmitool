@@ -207,7 +207,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	       rsp->data[13] & 0x80 ? "true" : "false");
 	printf("Delete cmd       : %ssupported\n",
 	       rsp->data[13] & 0x8 ? "" : "un");
-	printf("Parial add cmd   : %ssupported\n",
+	printf("Partial add cmd  : %ssupported\n",
 	       rsp->data[13] & 0x4 ? "" : "un");
 	printf("Reserve cmd      : %ssupported\n",
 	       rsp->data[13] & 0x2 ? "" : "un");
