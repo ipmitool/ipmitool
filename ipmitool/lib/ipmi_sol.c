@@ -600,19 +600,181 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		data[2] |= params.force_encryption?     0x80 : 0x00;
 		data[2] |= params.force_authentication? 0x40 : 0x00;
 	}
-	
 
 
 	/*
-	  TODO:
-	  SOL_PARAMETER_CHARACTER_INTERVAL        0x03
-	  SOL_PARAMETER_SOL_RETRY                 0x04
-	  SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE 0x05
-	  SOL_PARAMETER_SOL_VOLATILE_BIT_RATE     0x06
-	  SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
-	  SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
+	 * character-accumulate-level
 	 */
+	else if (! strcmp(param, "character-accumulate-level"))
+	{
+		struct sol_config_parameters params;
 
+		req.msg.data_len = 4;
+		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
+		data[2] = (unsigned char)strtol(value, NULL, 0);
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+		
+		data[3] = params.character_send_threshold;
+	}
+
+
+	/*
+	 * character-send-threshold
+	 */
+	else if (! strcmp(param, "character-send-threshold"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 4;
+		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
+		data[3] = (unsigned char)strtol(value, NULL, 0);
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+
+		data[2] = params.character_accumulate_level;
+	}
+	
+
+	/*
+	 * retry-count
+	 */
+	else if (! strcmp(param, "retry-count"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 4;
+		data[1] = SOL_PARAMETER_SOL_RETRY;
+		data[2] = (unsigned char)strtol(value, NULL, 0) & 0x03;
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+
+		data[3] = params.retry_interval;
+	}
+
+
+	/*
+	 * retry-interval
+	 */
+	else if (! strcmp(param, "retry-interval"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 4;
+		data[1] = SOL_PARAMETER_SOL_RETRY;
+		data[3] = (unsigned char)strtol(value, NULL, 0);
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+		
+		data[2] = params.retry_count;
+	}
+
+	
+	/*
+	 * non-volatile-bit-rate
+	 */
+	else if (! strcmp(param, "non-volatile-bit-rate"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE;
+
+		if (!strcmp(value, "serial"))
+		{
+			data[2] = 0x00;
+		}
+		else if (!strcmp(value, "19.2"))
+		{
+			data[2] = 0x07;
+		}
+		else if (!strcmp(value, "38.4"))
+		{
+			data[2] = 0x08;
+		}
+		else if (!strcmp(value, "57.6"))
+		{
+			data[2] = 0x09;
+		}
+		else if (!strcmp(value, "115.2"))
+		{
+			data[2] = 0x0A;
+		}
+		else
+		{
+			printf("Invalid value \"%s\" for parameter \"%s\"\n",
+				   value,
+				   param);
+			printf("Valid values are serial, 19.2, 38.4, 57.6 and 115.2\n");
+			return -1;
+		}
+	}
+	
+
+	/*
+	 * volatile-bit-rate
+	 */
+	else if (! strcmp(param, "volatile-bit-rate"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_VOLATILE_BIT_RATE;
+
+		if (!strcmp(value, "serial"))
+		{
+			data[2] = 0x00;
+		}
+		else if (!strcmp(value, "19.2"))
+		{
+			data[2] = 0x07;
+		}
+		else if (!strcmp(value, "38.4"))
+		{
+			data[2] = 0x08;
+		}
+		else if (!strcmp(value, "57.6"))
+		{
+			data[2] = 0x09;
+		}
+		else if (!strcmp(value, "115.2"))
+		{
+			data[2] = 0x0A;
+		}
+		else
+		{
+			printf("Invalid value \"%s\" for parameter \"%s\"\n",
+				   value,
+				   param);
+			printf("Valid values are serial, 19.2, 38.4, 57.6 and 115.2\n");
+			return -1;
+		}
+	}
+	
 	else
 	{
 		printf("Error: invalid SOL parameter %s\n", param);
@@ -731,8 +893,8 @@ sendBreak(struct ipmi_intf * intf)
 
 	memset(&v2_payload, 0, sizeof(v2_payload));
 
-	v2_payload.payload_length = 0;
-	v2_payload.payload.sol_packet.generate_break = 1;
+	v2_payload.payload.sol_packet.character_count = 0;
+	v2_payload.payload.sol_packet.generate_break  = 1;
 
 	intf->send_sol(intf, &v2_payload);
 }
@@ -945,7 +1107,7 @@ processSolUserInput(
 	{
 		struct ipmi_rs * rsp;
 		
-		v2_payload.payload_length = length;
+		v2_payload.payload.sol_packet.character_count = length;
 		rsp = intf->send_sol(intf, &v2_payload);
 
 		if (! rsp)
@@ -957,7 +1119,7 @@ processSolUserInput(
 		/* If the sequence number is set we know we have new data */
 		else if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
 				 (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
-				 (rsp->payload.sol_packet.packet_sequence_number))
+		 		 (rsp->payload.sol_packet.packet_sequence_number))
 			output(rsp);
 	}
 
@@ -1220,6 +1382,32 @@ print_sol_usage()
 
 
 /*
+ * print_sol_set_usage
+ */
+void
+print_sol_set_usage()
+{
+	printf("\nSOL set parameters and values: \n\n");
+  	printf("  set-in-progress             set-complete | "
+		   "set-in-progress | commit-write\n");
+	printf("  enabled                     true | false\n");
+	printf("  force-encryption            true | false\n");
+	printf("  force-authentication        true | false\n");
+	printf("  privilege-level             user | operator | admin | oem\n");
+	printf("  character-accumulate-level  <in 5 ms increments>\n");
+	printf("  character-send-threshold    N\n");
+	printf("  retry-count                 N\n");
+	printf("  retry-interval              <in 10 ms increments>\n");
+	printf("  non-volatile-bit-rate       "
+		   "serial | 19.2 | 38.4 | 57.6 | 115.2\n");
+	printf("  volatile-bit-rate           "
+		   "serial | 19.2 | 38.4 | 57.6 | 115.2\n");
+	printf("\n");
+}
+
+
+
+/*
  * ipmi_sol_main
  */
 int
@@ -1265,7 +1453,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			channel = (unsigned char)strtol(argv[3], NULL, 0);
 		else
 		{
-			print_sol_usage();
+			print_sol_set_usage();
 			return -1;
 		}
 			
