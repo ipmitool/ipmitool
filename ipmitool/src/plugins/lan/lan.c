@@ -329,7 +329,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		"  ASF Version %s\n"
 		"  RMCP Version %s\n"
 		"  RMCP Sequence %d\n"
-		"  IANA Enterprise %d\n",
+		"  IANA Enterprise %ld\n",
 		(pong->sup_entities & 0x80) ? "" : " NOT",
 		(pong->sup_entities & 0x01) ? "1.0" : "unknown",
 		(pong->rmcp.ver == 6) ? "1.0" : "unknown",
@@ -362,7 +362,7 @@ int
 ipmi_lan_ping(struct ipmi_intf * intf)
 {
 	struct asf_hdr asf_ping = {
-		.iana	= ASF_RMCP_IANA,
+		.iana	= htonl(ASF_RMCP_IANA),
 		.type	= ASF_TYPE_PING,
 	};
 	struct rmcp_hdr rmcp_ping = {
@@ -1295,7 +1295,7 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	/* don't fail on ping because its not always supported.
 	 * Supermicro's IPMI LAN 1.5 cards don't tolerate pings.
 	 */
-	if (ipmi_oem_active(intf, "supermicro"))
+	if (!ipmi_oem_active(intf, "supermicro"))
 		ipmi_lan_ping(intf);
 
 	/* Some particular Intel boards need special help
