@@ -50,19 +50,10 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_lanp.h>
 
 extern int verbose;
-
-const struct valstr ipmi_privlvl_vals[] = {
-	{ IPMI_SESSION_PRIV_CALLBACK,	"CALLBACK" },
-	{ IPMI_SESSION_PRIV_USER,	"USER" },
-	{ IPMI_SESSION_PRIV_OPERATOR,	"OPERATOR" },
-	{ IPMI_SESSION_PRIV_ADMIN,	"ADMINISTRATOR" },
-	{ IPMI_SESSION_PRIV_OEM,	"OEM" },
-	{ 0xF,				"NO ACCESS" },
-	{ 0,				NULL },
-};
 
 
 static struct lan_param *
