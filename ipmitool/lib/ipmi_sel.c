@@ -405,6 +405,158 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 }
 
 static void
+ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_record_list * sdr)
+{
+        char * description;
+	if (!evt || !sdr)
+		return;
+
+	printf("SEL Record ID          : %04x\n", evt->record_id);
+
+	if (evt->record_type == 0xf0)
+	{
+		printf (" Record Type           : Linux kernel panic (OEM record %02x)\n", evt->record_type);
+		printf (" Panic string          : %.11s\n\n", (char *) evt + 5);
+		return;
+	}
+
+	if (evt->record_type >= 0xc0)
+		printf(" Record Type           : OEM record %02x\n", evt->record_type >= 0xc0);
+	else
+		printf(" Record Type           : %02x\n", evt->record_type);
+
+	if (evt->record_type < 0xe0)
+	{
+		printf(" Timestamp             : %s\n",
+		       ipmi_sel_timestamp(evt->timestamp));
+	}
+
+	if (evt->record_type >= 0xc0)
+	{
+		printf("\n");
+		return;
+	}
+
+	printf(" Generator ID          : %04x\n",
+	       evt->gen_id);
+	printf(" EvM Revision          : %02x\n",
+	       evt->evm_rev);
+	printf(" Sensor Type           : %s\n",
+	       ipmi_sel_get_sensor_type(evt->sensor_type));
+	printf(" Sensor Number         : %02x\n",
+	       evt->sensor_num);
+	printf(" Event Type            : %s\n",
+	       ipmi_get_event_type(evt->event_type));
+	printf(" Event Direction       : %s\n",
+	       val2str(evt->event_dir, event_dir_vals));
+	printf(" Event Data (RAW)      : %02x%02x%02x\n",
+	       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
+
+	/* break down event data field
+	 * as per IPMI Spec 2.0 Table 29-6 */
+	if (evt->event_type == 1 && sdr->type == SDR_RECORD_TYPE_FULL_SENSOR) {
+		/* Threshold */
+		switch ((evt->event_data[0] >> 6) & 3) {  /* EV1[7:6] */
+		case 0:
+			/* unspecified byte 2 */
+			break;
+		case 1:
+			/* trigger reading in byte 2 */
+			printf(" Trigger Reading       : %.3f",
+			       sdr_convert_sensor_reading(sdr->record.full,
+							  evt->event_data[1]));
+			/* determine units with possible modifiers */
+			switch (sdr->record.full->unit.modifier) {
+			case 2:
+				printf(" %s * %s\n",
+				      unit_desc[sdr->record.full->unit.type.base],
+				      unit_desc[sdr->record.full->unit.type.modifier]);
+				break;
+			case 1:
+				printf(" %s/%s\n",
+				      unit_desc[sdr->record.full->unit.type.base],
+				      unit_desc[sdr->record.full->unit.type.modifier]);
+				break;
+			case 0:
+				printf(" %s\n",
+				       unit_desc[sdr->record.full->unit.type.base]);
+				break;
+			default:
+				printf("\n");
+				break;
+			}
+			break;
+		case 2:
+			/* oem code in byte 2 */
+			printf(" OEM Data              : %02x\n",
+			       evt->event_data[1]);
+			break;
+		case 3:
+			/* sensor-specific extension code in byte 2 */
+			printf(" Sensor Extension Code : %02x\n",
+			       evt->event_data[1]);
+			break;
+		}
+		switch ((evt->event_data[0] >> 4) & 3) {   /* EV1[5:4] */
+		case 0:
+			/* unspecified byte 3 */
+			break;
+		case 1:
+			/* trigger threshold value in byte 3 */
+			printf(" Trigger Threshold     : %.3f",
+			       sdr_convert_sensor_reading(sdr->record.full,
+							  evt->event_data[2]));
+			/* determine units with possible modifiers */
+			switch (sdr->record.full->unit.modifier) {
+			case 2:
+				printf(" %s * %s\n",
+				      unit_desc[sdr->record.full->unit.type.base],
+				      unit_desc[sdr->record.full->unit.type.modifier]);
+				break;
+			case 1:
+				printf(" %s/%s\n",
+				      unit_desc[sdr->record.full->unit.type.base],
+				      unit_desc[sdr->record.full->unit.type.modifier]);
+				break;
+			case 0:
+				printf(" %s\n",
+				       unit_desc[sdr->record.full->unit.type.base]);
+				break;
+			default:
+				printf("\n");
+				break;
+			}
+			break;
+		case 2:
+			/* OEM code in byte 3 */
+			printf(" OEM Data              : %02x\n",
+			       evt->event_data[2]);
+			break;
+		case 3:
+			/* sensor-specific extension code in byte 3 */
+			printf(" Sensor Extension Code : %02x\n",
+			       evt->event_data[2]);
+			break;
+		}
+	} else if ((evt->event_type >= 0x2 && evt->event_type <= 0xc) ||
+		   (evt->event_type == 0x6f)) {
+		/* Discrete */
+	} else if (evt->event_type >= 0x70 && evt->event_type <= 0x7f) {
+		/* OEM */
+	} else {
+		printf(" Event Data            : %02x%02x%02x\n",
+		       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
+	}
+
+        ipmi_get_event_desc(evt, &description);
+	printf(" Description           : %s\n",
+               description ? description : "");
+        free(description);
+
+	printf("\n");
+}
+
+static void
 ipmi_sel_list_entries(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -707,12 +859,12 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* lookup SEL entry based on ID */
 		ipmi_sel_get_std_entry(intf, id, &evt);
-		/* print SEL entry */
-		ipmi_sel_print_std_entry_verbose(&evt);
 		/* lookup SDR entry based on sensor number and type */
 		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sensor_num, evt.sensor_type);
 		if (!sdr)
 			continue;
+		/* print SEL extended entry */
+		ipmi_sel_print_extended_entry_verbose(&evt, sdr);
 		/* print SDR entry */
 		oldv = verbose;
 		verbose = verbose ? : 1;
