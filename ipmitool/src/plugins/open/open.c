@@ -138,7 +138,7 @@ static struct ipmi_rs *ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ip
 			intf->target_addr);
 	} else {
 		/* otherwise use system interface */
-		lprintf(LOG_DEBUG, "Sending request to System Interface");
+		lprintf(LOG_DEBUG+2, "Sending request to System Interface");
 		_req.addr = (char *) &bmc_addr;
 		_req.addr_len = sizeof(bmc_addr);
 	}
