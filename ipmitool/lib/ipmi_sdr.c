@@ -68,6 +68,9 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char
 	return (float)(((m * val) + (b * pow(10, k1))) * pow(10, k2));
 }
 
+#define READING_UNAVAILABLE	0x20
+#define SCANNING_DISABLED	0x80
+
 #define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_FACTORS      0x23
 #define GET_SENSOR_THRES	0x27
@@ -213,10 +216,15 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			return;
 		}
 	} else {
-		if (!(rsp->data[1] & 0x80))
+		if (rsp->data[1] & READING_UNAVAILABLE) {
+			val = 0.0;
+			validread = 0;
+		}
+		else if (!(rsp->data[1] & SCANNING_DISABLED))
 			return; /* Sensor Scanning Disabled */
-		/* convert RAW reading into units */
-		val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
+		else
+			/* convert RAW reading into units */
+			val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
 	}
 
 	if (do_unit && validread) {
