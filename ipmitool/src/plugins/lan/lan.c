@@ -582,8 +582,10 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	/* ipmi session header */
 	msg[len++] = lan_session.active ? lan_session.authtype : 0;
 
-	memcpy(msg+len, &lan_session.in_seq, 4);
-	len += 4;
+	msg[len++] = lan_session.in_seq & 0xff;
+	msg[len++] = (lan_session.in_seq >> 8) & 0xff;
+	msg[len++] = (lan_session.in_seq >> 16) & 0xff;
+	msg[len++] = (lan_session.in_seq >> 24) & 0xff;
 	memcpy(msg+len, &lan_session.id, 4);
 	len += 4;
 
@@ -919,7 +921,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	}
 
 	memcpy(&lan_session.id, rsp->data + 1, 4);
-	memcpy(&lan_session.in_seq, rsp->data + 5, 4);
+	lan_session.in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
 
 	if (verbose > 1) {
 		printf("\nSession Activated\n");
@@ -1117,7 +1119,7 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 	if (rc <= 0) {
 		struct hostent *host = gethostbyname(hostname);
 		if (!host) {
-			herror("address lookup failed");
+			printf("address lookup failed\n");
 			return -1;
 		}
 		intf->addr.sin_family = host->h_addrtype;
