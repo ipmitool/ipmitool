@@ -1,13 +1,12 @@
-Name:         @IPMITOOL_BIN@
-Summary:      @IPMITOOL_BIN@ - Utility for IPMI control
+Name:         ipmitool
+Summary:      ipmitool - Utility for IPMI control
 Version:      @VERSION@
 Release:      1
 Copyright:    BSD
 Group:        Utilities
-Vendor:       Sun Microsystems
-Packager:     Duncan Laurie <duncan@sun.com>
-Source:       @IPMITOOL_BIN@-@VERSION@.tar.gz
-Buildroot:    /var/tmp/@IPMITOOL_BIN@-root
+Packager:     Duncan Laurie <duncan@iceblink.org>
+Source:       ipmitool-@VERSION@.tar.gz
+Buildroot:    /var/tmp/ipmitool-root
 
 %description
 This package contains a utility for interfacing with IPMI-enabled devices
@@ -24,11 +23,7 @@ fi
 %setup
 
 %build
-./configure \
-	--enable-ipmievd \
-	--enable-intf-lan=static \
-	--enable-intf-open=static \
-	--with-kerneldir=/usr/src/linux-2.4 \
+./configure --with-kerneldir \
 	--prefix=%{_prefix} \
 	--bindir=%{_bindir} \
 	--datadir=%{_datadir} \
@@ -41,26 +36,36 @@ make
 %install
 make DESTDIR=$RPM_BUILD_ROOT install-strip
 
-DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/@IPMITOOL_BIN@-@VERSION@
+DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/ipmitool-@VERSION@
 mkdir -p $DOCDIR
 for DOC in COPYING AUTHORS ChangeLog ; do
-    install -m 644 -o root -g root $DOC $DOCDIR/$DOC
+    install -m 644 $DOC $DOCDIR/$DOC
 done
 
 %clean
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
     rm -rf $RPM_BUILD_ROOT
 fi
-rm -rf $RPM_BUILD_DIR/@IPMITOOL_BIN@-@VERSION@
+rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 
 %files
 %defattr(-,root,root)
 %doc %{_mandir}/man1/*
 %{_bindir}/*
-%{_datadir}/doc/@IPMITOOL_BIN@-@VERSION@/*
+%{_datadir}/doc/ipmitool-@VERSION@/*
+%dir %{_datadir}/ipmitool
+%{_datadir}/ipmitool/*
 
 %changelog
-* Sat May 27 2004 <duncan@sun.com>  1.5.9-1
+* Wed Aug 18 2004 <duncan@iceblink.org>  1.6.0-1
+ - Add support for IPMIv2 and Serial-over-LAN from Newisys
+ - Add Solaris x86 interface plugin
+ - Add support for building Solaris packages
+ - Fix segfault when doing "sel list" (from Matthew Braithwaite)
+ - Fix "chassis identify" on some BMCs (from ebrower@sourceforge)
+ - Add "bmc info" and related output (from ebrower@sourceforge)
+
+* Sat May 27 2004 <duncan@iceblink.org>  1.5.9-1
  - Add ability to get a particular sensor by name
  - Add ability to set a particular sensor threshold
  - Add support for displaying V2 channel authentication levels
@@ -73,7 +78,7 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_BIN@-@VERSION@
  - Add configure option for changing binary to ipmiadm for Solaris
  - Fix compile problem on Solaris 8
 
-* Tue Jan 27 2004 <duncan@sun.com>  1.5.8-1
+* Tue Jan 27 2004 <duncan@iceblink.org>  1.5.8-1
  - Enable static compilation of interfaces
  - Fix types to be 64-bit safe
  - Fix compilation problems on Solaris
@@ -84,56 +89,56 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_BIN@-@VERSION@
  - Add support for Linux kernel panic messages in SEL output
  - Add support for type 3 SDR records
 
-* Mon Jan  5 2004 <duncan@sun.com>  1.5.7-1
+* Mon Jan  5 2004 <duncan@iceblink.org>  1.5.7-1
  - add IPMIv1.5 eratta fixes
  - additions to FRU printing and FRU multirecords
  - better handling of SDR printing
  - contrib scripts for creating rrdtool graphs
 
-* Thu Dec  4 2003 <duncan@sun.com>  1.5.6-1
+* Thu Dec  4 2003 <duncan@iceblink.org>  1.5.6-1
  - Fix SEL event decoding for generic events
  - Handle empty SEL gracefully when doing "sel list"
  - Fix sdr handling of sensors that do not return a reading
  - Fix for CSV display of sensor readings/units from Fredrik Öhrn
 
-* Tue Nov 25 2003 <duncan@sun.com>  1.5.5-1
+* Tue Nov 25 2003 <duncan@iceblink.org>  1.5.5-1
  - Add -U option for setting LAN username
  - Fix -v usage for plugin interfaces
 
-* Fri Nov 14 2003 <duncan@sun.com>  1.5.4-1
+* Fri Nov 14 2003 <duncan@iceblink.org>  1.5.4-1
  - pull interface plugin api into library
  - fix ipmievd
 
-* Fri Oct 31 2003 <duncan@sun.com>  1.5.3-1
+* Fri Oct 31 2003 <duncan@iceblink.org>  1.5.3-1
  - add -g optin for pedantic ipmi-over-lan communication
 
-* Fri Oct 24 2003 <duncan@sun.com>  1.5.2-1
+* Fri Oct 24 2003 <duncan@iceblink.org>  1.5.2-1
  - add gratuitous arp interval setting
 
-* Wed Oct  8 2003 <duncan@sun.com>  1.5.1-1
+* Wed Oct  8 2003 <duncan@iceblink.org>  1.5.1-1
  - better SEL support
  - fix display bug in SDR list
 
-* Fri Sep  5 2003 <duncan@sun.com>  1.5.0-1
+* Fri Sep  5 2003 <duncan@iceblink.org>  1.5.0-1
  - use automake/autoconf/libtool
  - dynamic loading interface plugins
 
-* Wed May 28 2003 <duncan@sun.com>  1.4.0-1
+* Wed May 28 2003 <duncan@iceblink.org>  1.4.0-1
  - make UDP packet handling more robust
  - fix imb driver support
 
-* Thu May 22 2003 <duncan@sun.com>  1.3-1
+* Thu May 22 2003 <duncan@iceblink.org>  1.3-1
  - update manpage
  - rework of low-level network handling
  - add basic imb driver support
 
-* Wed Apr  2 2003 <duncan@sun.com>  1.2-1
+* Wed Apr  2 2003 <duncan@iceblink.org>  1.2-1
  - change command line option parsing
  - support for more chassis commands
 
-* Tue Apr  1 2003 <duncan@sun.com>  1.1-1
+* Tue Apr  1 2003 <duncan@iceblink.org>  1.1-1
  - minor fixes.
 
-* Sun Mar 30 2003 <duncan@sun.com>  1.0-1
+* Sun Mar 30 2003 <duncan@iceblink.org>  1.0-1
  - Initial release.
 
