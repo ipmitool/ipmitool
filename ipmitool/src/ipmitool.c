@@ -177,13 +177,13 @@ ipmitool_usage(void)
 	lprintf(LOG_NOTICE, "       -H hostname   Remote host name for LAN interface");
 	lprintf(LOG_NOTICE, "       -p port       Remote RMCP port [default=623]");
 	lprintf(LOG_NOTICE, "       -U username   Remote session username");
+	lprintf(LOG_NOTICE, "       -f file       Read remote session password from file");
 #ifndef __sun
 	lprintf(LOG_NOTICE, "       -L level      Remote session privilege level [default=USER]");
 	lprintf(LOG_NOTICE, "       -A authtype   Force use of authentication type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password   Remote session password");
 	lprintf(LOG_NOTICE, "       -a            Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -E            Read password from IPMI_PASSWORD environment variable");
-	lprintf(LOG_NOTICE, "       -f file       Read remote session password from file");
 	lprintf(LOG_NOTICE, "       -m address    Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -t address    Bridge request to remote target address");
 	lprintf(LOG_NOTICE, "       -o oemtype    Setup for OEM (use 'list' to see available OEM types)");
