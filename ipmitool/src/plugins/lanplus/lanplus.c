@@ -101,15 +101,17 @@ static void read_session_data_v15(struct ipmi_rs * rsp, int * offset, struct ipm
 static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
 static void read_ipmi_response(struct ipmi_rs * rsp, int * offset);
 static void read_sol_packet(struct ipmi_rs * rsp, int * offset);
-struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
+static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
+static int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
+								 struct ipmi_v2_payload * payload);
 
 
 struct ipmi_intf ipmi_lanplus_intf = {
 	.open        = ipmi_lanplus_open,
 	.close       = ipmi_lanplus_close,
 	.sendrecv    = ipmi_lanplus_send_ipmi_cmd,
-	.recv_sol    = ipmi_lanplus_recv_sol
-	/* .send_sol    = ipmi_lanplus_send_sol */
+	.recv_sol    = ipmi_lanplus_recv_sol,
+	.send_sol    = ipmi_lanplus_send_sol
 };
 
 
@@ -524,8 +526,6 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 									rsp->session.msglen,
 									rsp->data + offset,
 									&payload_size);
-
-			printf("DECRYPTING PAYLOAD size %d\n", payload_size);
 		}
 		else
 			payload_size = rsp->session.msglen;
@@ -665,6 +665,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				rsp->data_len = extra_data_length;
 				memmove(rsp->data, rsp->data + offset, extra_data_length);
 			}
+			else
+				rsp->data_len = 0;
 
 			break;
 		}
@@ -1877,6 +1879,37 @@ struct ipmi_rs *
 
 
 /*
+ * ipmi_lanplus_send_sol
+ *
+ * Sends a SOL packet
+ *
+ * return 0 on success
+ *        -1 on error
+ */
+int ipmi_lanplus_send_sol(struct ipmi_intf * intf,
+						  struct ipmi_v2_payload * v2_payload)
+{
+	v2_payload->payload_type   = IPMI_PAYLOAD_TYPE_SOL;
+
+	/*
+	 * Payload length is just the length of the character
+	 * data here.
+	 */
+	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
+
+	v2_payload->payload.sol_packet.packet_sequence_number =
+		intf->session->sol_data.sequence_number++;
+	
+	v2_payload->payload.sol_packet.accepted_character_count = 0; /* NA */
+		
+	ipmi_lanplus_send_payload(intf, v2_payload);
+
+	return 0;
+}
+
+
+
+/*
  * ipmi_lanplus_recv_sol
  *
  * Receive a SOL packet and send an ACK in response.
@@ -1888,7 +1921,7 @@ struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
 	
 	/* If the SOL packet looks good, ACK it */
-	if (rsp)
+	if (rsp && (rsp->data_len > 4))
 	{
 		bzero(&ack, sizeof(struct ipmi_v2_payload));
 

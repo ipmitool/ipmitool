@@ -675,6 +675,7 @@ static int ipmi_sol_set_param(struct ipmi_intf * intf,
  */
 static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 {
+	struct ipmi_v2_payload v2_payload;
 	char   buffer[255];
 	int    bShouldExit = 0;
 	fd_set read_fds;
@@ -709,26 +710,35 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				/*
 				 * Received input from the user
 				 */
-				bzero(buffer, sizeof(buffer));
-				num_read = read(0, buffer, sizeof(buffer));
-				printf("read %d characters\n", num_read);
-				printf("buffer : %s\n", buffer);
+				bzero(&v2_payload, sizeof(v2_payload));
+				v2_payload.payload_length =
+					read(0,
+						 v2_payload.payload.sol_packet.data,
+						 sizeof(v2_payload.payload.sol_packet.data));
+
+				if (v2_payload.payload_length > 0)
+				{
+					if (intf->send_sol(intf, &v2_payload))
+					{
+						printf("Error sending SOL data\n");
+					}
+				}
+				else
+				{
+					/* ERROR */
+					perror("read of remote console input");
+				}
 			}
 
 			else if (FD_ISSET(intf->fd, &read_fds))
 			{
 				/*
-				 * Received input from the BMC
+				 * Received input from the BMC.
 				 */
-				char buffer[256];
 				int i;
-
 				bzero(buffer, sizeof(buffer));
-
-				printf("The BMC has data for us...\n");
-
+				//printf("The BMC has data for us...\n");
 				struct ipmi_rs * rs =intf->recv_sol(intf);
-				printf("sol data is %d bytes\n", rs->data_len);
 				for (i = 0; i < rs->data_len; ++i)
 					putc(rs->data[i], stdout);
 				fflush(stdout);
@@ -744,6 +754,43 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 
 	return 0;
 }
+
+
+
+/*
+ * impi_sol_deactivate
+ */
+static int ipmi_sol_deactivate(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq   req;
+	unsigned char    data[6];	 
+
+	req.msg.netfn    = IPMI_NETFN_APP;
+	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
+	req.msg.data_len = 6;
+	req.msg.data     = data;
+
+	bzero(data, sizeof(data));
+	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type              */
+	data[1] = 1;                      /* payload instance.  Guess! */
+
+	/* Lots of important data */
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = 0;
+	data[5] = 0;
+
+	//rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Dectivating SOL payload\n",
+			   rsp ? rsp->ccode : 0);
+		return -1;
+	}
+
+	return 0;
+}	
 
 
 
@@ -931,6 +978,13 @@ int ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
  	else if (!strncmp(argv[0], "activate", 8))
 		retval = ipmi_sol_activate(intf);
+
+	/*
+	 * Dectivate
+	 */
+	else if (!strncmp(argv[0], "deactivate", 10))
+		retval = ipmi_sol_deactivate(intf);
+	
 
 	else
 	{
