@@ -36,6 +36,7 @@
 
 #include <string.h>
 #include <math.h>
+#define __USE_XOPEN /* glibc2 needs this for strptime */
 #include <time.h>
 
 #include <ipmitool/helper.h>
@@ -49,22 +50,6 @@ static const struct valstr event_dir_vals[] = {
 	{ 0, "Assertion Event" },
 	{ 1, "Deassertion Event" },
 };
-
-static int
-ipmi_get_event_class(unsigned char code)
-{
-	if (code == 0)
-		return -1;
-	if (code == 1)
-		return IPMI_EVENT_CLASS_THRESHOLD;
-	if (code >= 0x02 && code <= 0x0b)
-		return IPMI_EVENT_CLASS_DISCRETE;
-	if (code == 0x6f)
-		return IPMI_EVENT_CLASS_DISCRETE;
-	if (code >= 0x70 && code <= 0x7f)
-		return IPMI_EVENT_CLASS_OEM;
-	return -1;
-}
 
 static const char *
 ipmi_get_event_type(unsigned char code)
@@ -87,6 +72,7 @@ ipmi_sel_timestamp(uint32_t stamp)
 {
 	static unsigned char tbuf[40];
 	time_t s = (time_t)stamp;
+	memset(tbuf, 0, 40);
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
 	return tbuf;
 }
@@ -227,7 +213,6 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
 	unsigned char msg_data[6];
-	unsigned char type;
 
 	memset(msg_data, 0, 6);
 	msg_data[0] = 0x00;	/* no reserve id, not partial get */
@@ -476,7 +461,7 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp)
-		return;
+		return 0;
 	if (rsp->ccode) {
 		printf("Error:%x unable to reserve SEL\n",
 		       rsp ? rsp->ccode : 0);
@@ -546,7 +531,6 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 {
 	struct ipmi_rs     * rsp;
 	struct ipmi_rq       req;
-	static unsigned char tbuf[40];
 	struct tm            tm;
 	time_t               time;
 	const char *         time_format = "%m/%d/%Y %H:%M:%S";
