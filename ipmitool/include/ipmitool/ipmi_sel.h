@@ -320,11 +320,11 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 
 	{ 0x21, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Fault Status asserted" },
 	{ 0x21, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Identify Status asserted" },
-	{ 0x21, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot/Connector Device installed/attached" },
-	{ 0x21, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot/Connector ready for device installation" },
-	{ 0x21, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot/Connector ready for device removal" },
+	{ 0x21, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Device installed/attached" },
+	{ 0x21, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Ready for device installation" },
+	{ 0x21, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Ready for device removal" },
 	{ 0x21, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot Power is off" },
-	{ 0x21, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot/Connector device removal request" },
+	{ 0x21, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Device removal request" },
 	{ 0x21, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Interlock asserted" },
 	{ 0x21, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot is disabled" },
 
