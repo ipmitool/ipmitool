@@ -49,6 +49,7 @@
 /* From table 13.16 of the IPMI v2 specification */
 #define IPMI_PAYLOAD_TYPE_IPMI               0x00
 #define IPMI_PAYLOAD_TYPE_SOL                0x01
+#define IPMI_PAYLOAD_TYPE_OEM                0x02
 #define IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST  0x10
 #define IPMI_PAYLOAD_TYPE_RMCP_OPEN_RESPONSE 0x11
 #define IPMI_PAYLOAD_TYPE_RAKP_1             0x12
