@@ -39,16 +39,13 @@
 
 #include <ipmitool/ipmi.h>
 
-//#define ACTIVATE_SOL			0x01
-//#define SET_SOL_CONFIG			0x03
-//#define GET_SOL_CONFIG			0x04
 
-//#define SOL_ENABLE_PARAM		0x01
-//#define SOL_AUTHENTICATION_PARAM	0x02
-//#define SOL_ENABLE_FLAG			0x01
-//#define SOL_PRIVILEGE_LEVEL_USER	0x02
-//#define SOL_BAUD_RATE_PARAM		0x05
-//#define SOL_PREFERRED_BAUD_RATE	0x07
+#define IPMI_SOL_SERIAL_ALERT_MASK_SUCCEED  0x08
+#define IPMI_SOL_SERIAL_ALERT_MASK_DEFERRED 0x04
+#define IPMI_SOL_SERIAL_ALERT_MASK_FAIL     0x00
+#define IPMI_SOL_BMC_ASSERTS_CTS_MASK_TRUE  0x00
+#define IPMI_SOL_BMC_ASSERTS_CTS_MASK_FALSE 0x02
+
 
 struct sol_config_parameters {
 	unsigned char  set_in_progress;
@@ -65,6 +62,19 @@ struct sol_config_parameters {
 	unsigned char  payload_channel;
 	unsigned short payload_port;
 };
+
+
+/*
+ * The ACTIVATE PAYLOAD command reponse structure
+ * From table 24-2 of the IPMI v2.0 spec
+ */
+struct activate_payload_rsp {
+	unsigned char auxiliary_data[4];
+	unsigned char inbound_payload_size[2];  /* LS byte first */
+	unsigned char outbound_payload_size[2]; /* LS byte first */
+	unsigned char payload_udp_port[2];      /* LS byte first */
+	unsigned char payload_vlan_number[2];   /* LS byte first */
+} __attribute__ ((packed));
 
 
 int ipmi_sol_main(struct ipmi_intf *, int, char **);
