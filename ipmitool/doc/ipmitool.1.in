@@ -2,10 +2,12 @@
 .SH "NAME"
 .LP 
 @IPMITOOL_BIN@ \- utility for controlling IPMI-enabled devices
-.SH "SYNTAX"
+.SH "SYNOPSIS"
 .LP 
 @IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-L\fR \fIprivlvl\fP] [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
-.br 
+.LP
+@IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIlanplus\fP \fB\-H\fR \fIhostname\fP [\fB\-L\fR \fIprivlvl\fP] [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+.LP
 @IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
 .LP 
@@ -29,7 +31,7 @@ Display version information.
 Increase verbose output level.  This option may be specified multiple times to increase the level of debug output.  If given three times you will get hexdumps of all incoming and outgoing packets.
 .TP 
 \fB\-I\fR <\fIinterface\fP>
-Selects IPMI interface to use.  Possible interfaces are \fIlan\fP or \fIopen\fP.
+Selects IPMI interface to use.  Possible interfaces are \fIlan\fP, \fIlanplus\fP or \fIopen\fP.  The lanplus interface connects to the BMC with RMCP+ as specified by the IPMI v2.0 specification.
 .TP 
 \fB\-H\fR <\fIaddress\fP>
 Remote server address, can be IP address or hostname.  This option is required for the LAN interface connection.
@@ -368,14 +370,81 @@ Queries the BMC for information about the session with the specified handle.  Th
 .RE
 .RE
 .TP
-
 .I sol
 .RS
 .TP
 \fIinfo\fP [\fBchannel\fR]
 Retrieve information about the Serial-Over-LAN configuration on the specified channel.  If no channel is given, it will display SOL configuration data for the currently used channel.
 .RE
-
+.RS
+.TP
+\fIset\fP <\fBparameter\fR> <\fBvalue\fR> [\fBchannel\fR]
+Configure parameters for Serial Over Lan.  If no channel is given, it will display SOL configuration data for the currently used channel.  Configuration parameter updates are automatically guarded with the updates to the set-in-progress parameter.
+.RS
+.TP
+Valid parameters and values are:
+.br
+.TP
+set-in-progress  
+set-complete set-in-progress commit-write
+.TP
+enabled
+true false
+.TP
+force-encryption
+true false
+.TP
+force-authentication
+true false
+.TP
+privilege-level
+user operator admin oem
+.TP
+character-accumulate-level
+Decimal number given in 5 milliseconds increments
+.TP
+character-send-threshold
+Decimal number
+.TP
+retry-count
+Decimal number.  0 indicates no retries after packet is transmitted.
+.TP
+retry-interval
+Decimal number in 10 millisend increments.  0 indicates that retries should be sent back to back.
+.TP
+non-volatile-bit-rate
+serial, 19.2, 38.4, 57.6, 115.2.  Setting this value to serial indiates that the BMC should use the setting used by the IPMI over serial channel.
+.TP
+volatile-bit-rate
+serial, 19.2, 38.4, 57.6, 115.2.  Setting this value to serial indiates that the BMC should use the setting used by the IPMI over serial channel.
+.LP
+.RE
+.RE
+.RS
+.TP
+.I activate
+This command causes ipmitool to enter Serial Over LAN mode, and is only available when using the lanplus interface.  An RMCP+ connection is made to the BMC, the terminal is set to raw mode, and user input is sent to the serial console on the remote server.  On exit, the the SOL payload mode is deactivated and the terminal is reset to its original settings.
+.RS
+.TP
+Special escape sequences are provided to control the SOL session:
+~.   Terminate connection
+.br
+~^Z  Suspend ipmitool
+.br
+~B   Send break
+.br
+~~   Send the escape character by typing it twice
+.br
+~?   Print the supported escape sequences
+.LP
+.RE
+.RE
+.RS
+.TP
+.I deactivate
+This command deactives Serial Over LAN mode on the BMC.  Exiting Serial Over LAN mode should automatically cause this command to be sent to the BMC, but in the case of an unintentional exit from SOL mode, this command may be necessary to reset the state the BMC.
+.RE
+.RE
 .I isol
 .RS
 .TP
