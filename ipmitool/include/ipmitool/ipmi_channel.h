@@ -42,14 +42,16 @@
 #endif
 #include <ipmitool/ipmi.h>
 
-#define IPMI_GET_CHANNEL_AUTH_CAP 0x38
-#define IPMI_GET_CHANNEL_ACCESS   0x41
-#define IPMI_GET_CHANNEL_INFO     0x42
-#define IPMI_SET_USER_ACCESS      0x43
-#define IPMI_GET_USER_ACCESS      0x44
-#define IPMI_SET_USER_NAME        0x45
-#define IPMI_GET_USER_NAME        0x46
-#define IPMI_SET_USER_PASSWORD    0x47
+
+#define IPMI_GET_CHANNEL_AUTH_CAP      0x38
+#define IPMI_GET_CHANNEL_ACCESS        0x41
+#define IPMI_GET_CHANNEL_INFO          0x42
+#define IPMI_SET_USER_ACCESS           0x43
+#define IPMI_GET_USER_ACCESS           0x44
+#define IPMI_SET_USER_NAME             0x45
+#define IPMI_GET_USER_NAME             0x46
+#define IPMI_SET_USER_PASSWORD         0x47
+#define IPMI_GET_CHANNEL_CIPHER_SUITES 0x54
 
 
 /*

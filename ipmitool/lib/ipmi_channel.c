@@ -54,6 +54,9 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
 
+extern int csv_output;
+extern int verbose;
+
 void printf_channel_usage (void);
 
 /**
@@ -526,6 +529,205 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
+
+static const char *
+iana_string(uint32_t iana)
+{
+	static char s[10];
+
+	if (iana)
+	{
+		sprintf(s, "%06x", iana);
+		return s;
+	}
+	else
+		return "N/A";
+}
+
+
+static int
+ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
+			       const char * which,
+			       const char * payload_type,
+			       uint8_t channel)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	uint8_t  oem_record;
+	uint8_t  rqdata[3];
+	uint32_t iana;
+	uint8_t  auth_alg, integrity_alg, crypt_alg;
+	uint8_t  cipher_suite_id;
+	uint8_t  list_index = 0;
+	uint8_t  cipher_suite_data[1024]; // 0x40 sets * 16 bytes per set
+	uint16_t offset = 0;
+	uint16_t cipher_suite_data_length = 0; // how much was returned, total
+
+	memset(cipher_suite_data, 0, sizeof(cipher_suite_data));
+	
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;                 // 0x06
+	req.msg.cmd   = IPMI_GET_CHANNEL_CIPHER_SUITES; // 0x54
+	req.msg.data = rqdata;
+	req.msg.data_len = 3;
+
+	rqdata[0] = channel;
+	rqdata[1] = ((strncmp(payload_type, "ipmi", 4) == 0)? 0: 1);
+	rqdata[2] = ((strncmp(which, "all", 3) == 0)? 0x80: 0);
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Cipher Suites failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+
+	// Grab the returned channel number once.  We assume it's the same
+	// in future calls.
+	if (rsp->data_len >= 1)
+		channel = rsp->data[0];
+		
+
+	while ((rsp->data_len > 1) && (list_index < 0x3F))
+	{
+		//
+		// We got back cipher suite data -- store it.
+		//
+		//printf("copying data to offset %d\n", offset);
+		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
+		offset += rsp->data_len - 1;
+		
+		//
+		// Increment our list for the next call
+		//
+		++list_index;
+		rqdata[2] =  (rqdata[2] & 0x80) + list_index; 
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get Channel Cipher Suites failed: %s",
+					val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+	}
+
+
+	//
+	// We can chomp on all our data now.
+	//
+	cipher_suite_data_length = offset;
+	offset = 0;
+
+	if (! csv_output)
+		printf("ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg\n");
+	
+	while (offset < cipher_suite_data_length)
+	{
+		if (cipher_suite_data[offset++] == 0xC0)
+		{
+			oem_record = 0; // standard type
+			iana       = 0;
+
+			// Verify that we have at least a full record left
+			if ((cipher_suite_data_length - offset) < 4) // id + 3 algs
+			{
+				lprintf(LOG_ERR, "Incomplete data record in cipher suite data");
+				return -1;
+			}
+			
+			cipher_suite_id = cipher_suite_data[offset++];
+				
+		}
+		else if (cipher_suite_data[offset++] == 0xC1)
+		{
+			oem_record = 1; // OEM record type    
+
+			// Verify that we have at least a full record left
+			if ((cipher_suite_data_length - offset) < 4) // id + iana + 3 algs
+			{
+				lprintf(LOG_ERR, "Incomplete data record in cipher suite data");
+				return -1;
+			}
+
+			cipher_suite_id = cipher_suite_data[offset++];
+
+			//
+			// Grab the IANA
+			//
+			iana =
+				cipher_suite_data[offset]            | 
+				(cipher_suite_data[offset + 1] << 8) | 
+				(cipher_suite_data[offset + 2] << 16);
+			offset += 3;
+		}
+		else
+		{
+			lprintf(LOG_ERR, "Bad start of record byte in cipher suite data");
+			return -1;
+		}
+
+		//
+		// Grab the algorithms for this cipher suite.  I guess we can't be
+		// sure of what order they'll come in.  Also, I suppose we default
+		// to the NONE algorithm if one were absent.  This part of the spec is
+		// poorly written -- I have read the errata document.  For now, I'm only
+		// allowing one algorithm per type (auth, integrity, crypt) because I
+		// don't I understand how it could be otherwise.
+		//
+		auth_alg      = IPMI_AUTH_RAKP_NONE;
+		integrity_alg = IPMI_INTEGRITY_NONE;
+		crypt_alg     = IPMI_CRYPT_NONE;
+		
+		while (((cipher_suite_data[offset] & 0xC0) != 0xC0) &&
+			   ((cipher_suite_data_length - offset) > 0))
+		{
+			switch (cipher_suite_data[offset] & 0xC0)
+			{
+			case 0x00:
+				// Authentication algorithm specifier
+				auth_alg = cipher_suite_data[offset++] & 0x3F;
+				break;
+			case 0x40:
+				// Interity algorithm specifier
+				integrity_alg = cipher_suite_data[offset++] & 0x3F;
+				break;
+			case 0x80:
+				// Confidentiality algorithm specifier
+				crypt_alg = cipher_suite_data[offset++] & 0x3F;
+				break;
+			}
+		}
+
+
+		//
+		// We have everything we need to spit out a cipher suite record
+		//
+		printf((csv_output? "%d,%s,%s,%s,%s\n" :
+			"%-4d %-7s %-15s %-15s %-15s\n"),
+		       cipher_suite_id,
+		       iana_string(iana),
+		       val2str(auth_alg, ipmi_auth_algorithms),
+		       val2str(integrity_alg, ipmi_integrity_algorithms),
+		       val2str(crypt_alg, ipmi_encryption_algorithms));
+	}
+	
+	
+	return 0;
+}
+
+
+
 uint8_t
 ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 {
@@ -571,7 +773,8 @@ printf_channel_usage()
 	lprintf(LOG_NOTICE, "                  getaccess <channel number> [user id]");
 	lprintf(LOG_NOTICE, "                  setaccess <channel number> "
 		"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
-	lprintf(LOG_NOTICE, "                  info      [channel number]\n");
+	lprintf(LOG_NOTICE, "                  info      [channel number]");
+	lprintf(LOG_NOTICE, "                  getciphers <all | supported> <ipmi | sol> [channel]\n");
 	lprintf(LOG_NOTICE, "Possible privilege levels are:");
 	lprintf(LOG_NOTICE, "   1   Callback level");
 	lprintf(LOG_NOTICE, "   2   User level");
@@ -625,6 +828,25 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (argc == 2)
 				ch = (uint8_t)strtol(argv[1], NULL, 0);
 			retval = ipmi_get_channel_info(intf, ch);
+		}
+	}
+
+	// it channel getciphers <all | supported> <ipmi | sol> [channel] 
+	else if (strncmp(argv[0], "getciphers", 10) == 0)
+	{
+		if ((argc < 3) || (argc > 4)                                         ||
+		    (strncmp(argv[1], "all", 3) && strncmp(argv[1], "supported", 9)) ||
+		    (strncmp(argv[2], "ipmi", 4) && strncmp(argv[2], "sol",  3) == 0))
+			printf_channel_usage();
+		else
+		{
+			uint8_t ch = 0xe;
+			if (argc == 4)
+				ch = (uint8_t)strtol(argv[3], NULL, 0);
+			retval = ipmi_get_channel_cipher_suites(intf,
+								argv[1], // all | supported
+								argv[2], // ipmi | sol
+								ch);
 		}
 	}
 	else
