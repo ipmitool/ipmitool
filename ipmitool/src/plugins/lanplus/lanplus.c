@@ -56,10 +56,12 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/bswap.h>
 #include <openssl/rand.h>
 
 #include "lanplus.h"
 #include "lanplus_crypt.h"
+#include "lanplus_crypt_impl.h"
 #include "lanplus_dump.h"
 #include "rmcp.h"
 #include "asf.h"
@@ -106,7 +108,7 @@ struct ipmi_intf ipmi_lanplus_intf = {
 };
 
 
-int verbose;
+extern int verbose;
 
 
 /*
@@ -230,22 +232,6 @@ ipmi_req_clear_entries(void)
 		e = p;
 	}
 }
-
-static int
-get_random(void *data, unsigned int len)
-{
-	int fd = open("/dev/random", O_RDONLY);
-	int rv;
-
-	if (fd == -1)
-		return errno;
-
-	rv = read(fd, data, len);
-
-	close(fd);
-	return rv;
-}
-
 
 
 int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len)
@@ -429,6 +415,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 
 
 /* special packet, no idea what it does */
+static int
 ipmiv2_lan_first(struct ipmi_intf * intf)
 {
 	unsigned char data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -665,8 +652,6 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
  */
 void read_open_session_response(struct ipmi_rs * rsp, int offset)
 {
-	 unsigned int id;
-
 	 /*  Message tag */
 	 rsp->payload.open_session_response.message_tag = rsp->data[offset];
 
@@ -812,7 +797,7 @@ void read_rakp4_message(struct ipmi_rs * rsp, int offset, unsigned char integrit
 			4);
 	 #if WORDS_BIGENDIAN
 	 rsp->payload.rakp4_message.console_id =
-		 BSWAP_32(rsp->payload.rakp_message.console_id);
+		 BSWAP_32(rsp->payload.rakp4_message.console_id);
 	 #endif
 
 	 
@@ -1315,9 +1300,8 @@ void
 
 	// msg will hold the entire message to be sent
 	unsigned char * msg;
-	unsigned short payloadLength;
 
-	int cs, mp, ap = 0, len = 0, tmp, bytes_encrypted;
+	int len = 0;
 
 
 	len =
@@ -1656,7 +1640,7 @@ static struct ipmi_rq_entry *
 		.seq		= 0xff,
 	};
 	unsigned char * msg;
-	int cs, mp, ap = 0, len = 0, tmp;
+	int cs, mp, len = 0, tmp;
 	struct ipmi_session  * session = intf->session;
 	struct ipmi_rq_entry * entry;
 
@@ -2170,7 +2154,7 @@ static int ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	struct ipmi_session * session = intf->session;
 	unsigned char * msg;
 	struct ipmi_rs * rsp;
-	int i, rc = 0;
+	int rc = 0;
 
 	/*
 	 * Build a RAKP 1 message
@@ -2310,7 +2294,6 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	struct ipmi_session * session = intf->session;
 	unsigned char * msg;
 	struct ipmi_rs * rsp;
-	int i;
 
 	assert(session->v2_data.session_state == LANPLUS_STATE_RAKP_2_RECEIVED);
 	
@@ -2614,9 +2597,6 @@ void test_crypt1()
 	unsigned char key[]  =
 		{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
 		 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
-	unsigned char iv[]  =
-        {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-         0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
 
 	unsigned short  bytes_encrypted;
 	unsigned short  bytes_decrypted;
