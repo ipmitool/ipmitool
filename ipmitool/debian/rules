@@ -41,10 +41,10 @@ build-indep-stamp: configure-stamp
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-arch-stamp build-indep-stamp config-stamp
+	rm -f build-arch-stamp build-indep-stamp configure-stamp
 
 # Add here commands to clean up after the build process.
-	-$(MAKE) clean
+	-$(MAKE) distclean
 
 	dh_clean
 
@@ -71,6 +71,17 @@ install-arch:
 # debian/tmp.
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/ipmitool
 
+	# No need to have two copies of the license text in the package.
+	$(RM) $(CURDIR)/debian/ipmitool/usr/share/doc/ipmitool/COPYING
+
+	# Move upstream changelog to correct filename.
+	mv $(CURDIR)/debian/ipmitool/usr/share/doc/ipmitool/ChangeLog \
+	  $(CURDIR)/debian/ipmitool/usr/share/doc/ipmitool/changelog
+
+	# Compress to avoid lintian warning.  Not sure why dh_compress
+	# isn't fixing this.
+	gzip -9 $(CURDIR)/debian/ipmitool/usr/share/doc/ipmitool/changelog
+
 #	dh_movefiles -a
 # Must not depend on anything. This is to be called by
 # binary-arch/binary-multi
@@ -78,27 +89,15 @@ install-arch:
 binary-common:
 	dh_testdir
 	dh_testroot
-#	dh_installdebconf	
 	dh_installdocs
-#	dh_installexamples
-#	dh_installmenu
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installinit
-#	dh_installcron
-#	dh_installmanpages
-#	dh_installinfo
-#	dh_undocumented
-#	dh_installchangelogs 
+	dh_installchangelogs 
 	dh_link
 	dh_strip
 	dh_compress 
 	dh_fixperms
-# You may want to make some executables suid here.
-#	dh_suidregister
 	dh_makeshlibs
+	dh_shlibdeps
 	dh_installdeb
-#	dh_perl
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

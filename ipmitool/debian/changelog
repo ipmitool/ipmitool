@@ -1,3 +1,22 @@
+ipmitool (1.8.0-1) unstable; urgency=low
+
+  * Initial upload into Debian, based on the upstream build
+    rules. (Closes: #299924)
+  * Convert debian/changelog to UTF-8.
+  * Change section from 'contrib' to 'utils'.
+  * Build-depend on debhelper (>> 4.0.0) to match the rules file.
+  * Set Standards-version to 3.6.1.
+  * Make sure binary dependency is properly generated.
+  * Add long description, copied from the project README.
+  * Drop useless provides 'ipmitool', as the package is called 'ipmitool'.
+  * Don't install the COPYING file, as the license text already is
+    included in debian/copyright.
+  * Remove unused parts of the rules file.
+  * Correct clean target in rules file, to use 'distclean' and remove
+    configure-stamp not bogus config-stamp.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sun,  3 Apr 2005 20:52:02 +0200
+
 ipmitool (1.8.0) unstable; urgency=low
 
   * Fix IPMIv2.0 issues
@@ -100,7 +119,7 @@ ipmitool (1.5.6) unstable; urgency=low
   * Fix SEL event decoding for generic events
   * Handle empty SEL gracefully when doing "sel list"
   * Fix sdr handling of sensors that do not return a reading
-  * Fix for CSV display of sensor readings/units from Fredrik Öhrn
+  * Fix for CSV display of sensor readings/units from Fredrik Ã–hrn
 
  -- Duncan Laurie <duncan@sun.com>  Thu,  4 Dec 2003 14:47:19 -0700
 
