@@ -98,6 +98,7 @@ struct ipmi_cmd {
 	{ ipmi_chassis_main, "chassis", "Get chassis status and set power state" },
 	{ ipmi_event_main,   "event",   "Send pre-defined events to MC" },
 	{ ipmi_mc_main,      "mc",      "Management Controller status and global enables" },
+	{ ipmi_mc_main,      "bmc",     NULL },	/* for backwards compatibility */
 	{ ipmi_sdr_main,     "sdr",     "Print Sensor Data Repository entries and readings" },
 	{ ipmi_sensor_main,  "sensor",  "Print detailed sensor information" },
 	{ ipmi_fru_main,     "fru",     "Print built-in FRU and scan SDR for FRU locators" },
@@ -275,10 +276,12 @@ main(int argc, char ** argv)
 			break;
 		case 'h':
 			ipmitool_usage();
+			rc = 0;
 			goto out_free;
 			break;
 		case 'V':
 			printf("%s version %s\n", progname, VERSION);
+			rc = 0;
 			goto out_free;
 			break;
 		case 'p':
@@ -415,6 +418,7 @@ main(int argc, char ** argv)
 	}
 	if (strncmp(argv[optind], "help", 4) == 0) {
 		ipmi_cmd_print();
+		rc = 0;
 		goto out_free;
 	}
 
