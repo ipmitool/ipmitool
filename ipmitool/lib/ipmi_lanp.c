@@ -634,7 +634,8 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 	memset(data, 0, 5);
 	memcpy(data, lp->data, 5);
 
-	for (p = types; p != NULL; p++) {
+	p = types;
+	while (p) {
 		if (strncmp(p, "none", 4) == 0)
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_NONE;
 		else if (strncmp(p, "md2", 3) == 0)
@@ -648,9 +649,12 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 		else
 			lprintf(LOG_WARNING, "Invalid authentication type: %s", p);
 		p = strchr(p, ',');
+		if (p)
+			p++;
 	}
 
-	for (p = level; p != NULL; p++) {
+	p = level;
+	while (p) {
 		if (strncmp(p, "callback", 8) == 0)
 			data[0] = authtype;
 		else if (strncmp(p, "user", 4) == 0)
@@ -662,6 +666,8 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 		else 
 			lprintf(LOG_WARNING, "Invalid authentication level: %s", p);
 		p = strchr(p, ',');
+		if (p)
+			p++;
 	}
 
 	if (verbose > 1)
