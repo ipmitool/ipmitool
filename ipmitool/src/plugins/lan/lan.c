@@ -197,7 +197,7 @@ ipmi_req_clear_entries(void)
 static int
 get_random(void *data, unsigned int len)
 {
-	int fd = open("/dev/random", O_RDONLY);
+	int fd = open("/dev/urandom", O_RDONLY);
 	int rv;
 
 	if (fd == -1)
