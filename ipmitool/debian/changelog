@@ -1,3 +1,17 @@
+ipmitool (1.5.8) unstable; urgency=low
+
+  * Enable static compilation of interfaces
+  * Fix types to be 64-bit safe
+  * Fix compilation problems on Solaris
+  * Fix multiple big-endian problems for Solaris/SPARC
+  * Fix channel access to save settings to NVRAM
+  * Set channel privilege limit to ADMIN during "access on"
+  * Enable gratuitous ARP in bmcautoconf.sh
+  * Add support for Linux kernel panic messages in SEL output
+  * Add support for type 3 SDR records
+
+ -- Duncan Laurie <duncan@sun.com>  Tue, 27 Jan 2004 16:23:25 -0700
+
 ipmitool (1.5.7) unstable; urgency=low
 
   * add IPMIv1.5 eratta fixes

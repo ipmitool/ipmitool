@@ -66,6 +66,17 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %{_includedir}/ipmitool/*.h
 
 %changelog
+* Tue Jan 27 2004 <duncan@sun.com>  1.5.8-1
+ - Enable static compilation of interfaces
+ - Fix types to be 64-bit safe
+ - Fix compilation problems on Solaris
+ - Fix multiple big-endian problems for Solaris/SPARC
+ - Fix channel access to save settings to NVRAM
+ - Set channel privilege limit to ADMIN during "access on"
+ - Enable gratuitous ARP in bmcautoconf.sh
+ - Add support for Linux kernel panic messages in SEL output
+ - Add support for type 3 SDR records
+
 * Mon Jan  5 2004 <duncan@sun.com>  1.5.7-1
  - add IPMIv1.5 eratta fixes
  - additions to FRU printing and FRU multirecords
