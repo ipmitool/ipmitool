@@ -37,6 +37,8 @@
 #ifndef IPMI_HELPER_H
 #define IPMI_HELPER_H
 
+#include <stdint.h>
+
 struct valstr {
 	unsigned short val;
 	const char * str;
@@ -44,7 +46,7 @@ struct valstr {
 const char * val2str(unsigned short val, const struct valstr * vs);
 
 unsigned short buf2short(unsigned char * buf);
-unsigned long buf2long(unsigned char * buf);
+uint32_t buf2long(unsigned char * buf);
 const char * buf2str(unsigned char * buf, int len);
 void printbuf(unsigned char * buf, int len, char * desc);
 

@@ -37,6 +37,7 @@
 #ifndef IPMI_SDR_H
 #define IPMI_SDR_H
 
+#include <stdint.h>
 #include <math.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
@@ -73,8 +74,8 @@ struct sdr_repo_info_rs {
 	unsigned char	version;	/* SDR version (51h) */
 	unsigned short	count;		/* number of records */
 	unsigned short	free;		/* free space in SDR */
-	unsigned long	add_stamp;	/* last add timestamp */
-	unsigned long	erase_stamp;	/* last del timestamp */
+	uint32_t	add_stamp;	/* last add timestamp */
+	uint32_t	erase_stamp;	/* last del timestamp */
 	unsigned char	op_support;	/* supported operations */
 } __attribute__ ((packed));
 
@@ -295,7 +296,7 @@ struct sdr_record_full_sensor {
 
 	unsigned char	linearization;	/* 70h=non linear, 71h-7Fh=non linear, OEM */
 	unsigned short	mtol;		/* M, tolerance */
-	unsigned long	bacc;		/* accuracy, B, Bexp, Rexp */
+	uint32_t	bacc;		/* accuracy, B, Bexp, Rexp */
 
 	struct {
 		unsigned char	nominal_read  : 1,	/* nominal reading field specified */

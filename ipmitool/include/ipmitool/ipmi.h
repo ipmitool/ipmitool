@@ -39,6 +39,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <netinet/in.h>
 #include <ipmitool/helper.h>
 
@@ -54,9 +55,9 @@ struct ipmi_session {
 	unsigned char authtype;
 	unsigned char authcode[16];
 	unsigned char privlvl;
-	unsigned long in_seq;
-	unsigned long out_seq;
-	unsigned long id;
+	uint32_t in_seq;
+	uint32_t out_seq;
+	uint32_t id;
 	int active;
 };
 
@@ -85,8 +86,8 @@ struct ipmi_rs {
 	int data_len;
 	struct {
 		unsigned char authtype;
-		unsigned long seq;
-		unsigned long id;
+		uint32_t seq;
+		uint32_t id;
 	} session;
 	unsigned char msglen;
 	struct {

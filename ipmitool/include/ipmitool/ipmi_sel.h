@@ -37,6 +37,7 @@
 #ifndef IPMI_SEL_H
 #define IPMI_SEL_H
 
+#include <stdint.h>
 #include <ipmitool/ipmi.h>
 
 #define IPMI_CMD_GET_SEL_INFO		0x40
@@ -69,7 +70,7 @@ struct sel_get_rq {
 struct sel_event_record {
 	unsigned short	record_id;
 	unsigned char	record_type;
-	unsigned long	timestamp;
+	uint32_t	timestamp;
 	unsigned short	gen_id;
 	unsigned char	evm_rev;
 	unsigned char	sensor_type;
@@ -86,7 +87,7 @@ struct sel_oem_record_ts {
 	unsigned short	next_id;
 	unsigned short	record_id;
 	unsigned char	record_type;
-	unsigned long	timestamp;
+	uint32_t	timestamp;
 	unsigned char	mfg_id[3];
 	unsigned char	oem_defined[6];
 } __attribute__ ((packed));

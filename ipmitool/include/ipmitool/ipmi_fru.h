@@ -37,6 +37,7 @@
 #ifndef IPMI_FRU_H
 #define IPMI_FRU_H
 
+#include <stdint.h>
 #include <ipmitool/ipmi.h>
 
 #define GET_FRU_INFO		0x10
@@ -88,7 +89,7 @@ struct fru_area_board {
 	unsigned char area_ver;
 	unsigned char area_len;
 	unsigned char lang;
-	unsigned long mfg_date_time;
+	uint32_t mfg_date_time;
 	char * mfg;
 	char * prod;
 	char * serial;
