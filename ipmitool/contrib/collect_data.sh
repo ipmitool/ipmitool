@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+#  Copyright (c) 2003 Fredrik Ohrn.  All Rights Reserved.
+#
+#  See the included COPYING file for license details.
+# 
 
 # Edit the variables
 
