@@ -712,15 +712,14 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
-			printf("  Error while reading FRU data.\n");
+			printf(" Device not present (No Response)\n");
 			return;
 		}
-		if (rsp->ccode == 0xc3) {
-			printf("  Timeout while reading FRU data. (Device not present?)\n");
+		if(rsp->ccode) {
+			printf(" Device not present (%s)\n",
+			       val2str(rsp->ccode, completion_code_vals));
 			return;
 		}
-		if (rsp->ccode)
-			break;
 
 		len = rsp->data[0];
 		memcpy(&spd_data[offset], rsp->data + 1, len);
@@ -734,13 +733,13 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 		return;		/* we need first 91 bytes to do our thing */
 
 	size = spd_data[5] * (spd_data[31] << 2);
-	printf("  Memory Size      : %d MB\n", size);
-	printf("  Memory Type      : %s\n", val2str(spd_data[2], spd_memtype_vals));
-	printf("  Voltage Intf     : %s\n", val2str(spd_data[8], spd_voltage_vals));
-	printf("  Error Detect/Cor : %s\n", val2str(spd_data[11], spd_config_vals));
+	printf(" Memory Size           : %d MB\n", size);
+	printf(" Memory Type           : %s\n", val2str(spd_data[2], spd_memtype_vals));
+	printf(" Voltage Intf          : %s\n", val2str(spd_data[8], spd_voltage_vals));
+	printf(" Error Detect/Cor      : %s\n", val2str(spd_data[11], spd_config_vals));
 
 	/* handle jedec table bank continuation values */
-	printf("  Manufacturer     : ");
+	printf(" Manufacturer          : ");
 	if (spd_data[64] != 0x7f)
 		printf("%s\n", val2str(spd_data[64], jedec_id1_vals));
 	else {
@@ -762,6 +761,6 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 		char part[19];
 		memcpy(part, spd_data+73, 18);
 		part[18] = 0;
-		printf("  Part Number      : %s\n", part);
+		printf(" Part Number           : %s\n", part);
 	}
 }
