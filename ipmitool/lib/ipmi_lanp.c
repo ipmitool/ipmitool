@@ -103,7 +103,7 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 		/* parameter not supported
 		 * return lan_param without data
 		 */
-		p->data == NULL;
+		p->data = NULL;
 		p->data_len = 0;
 		return p;
 	}
@@ -414,6 +414,34 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 	return set_lan_param(intf, chan, IPMI_LANP_BMC_ARP, &data, 1);
 }
 
+
+static char priv_level_to_char(unsigned char priv_level)
+{
+	char ret = 'X';
+	
+	switch (priv_level)
+	{
+	case IPMI_SESSION_PRIV_CALLBACK:
+		ret = 'c';
+		break;
+	case IPMI_SESSION_PRIV_USER:
+		ret = 'u';
+		break;
+	case IPMI_SESSION_PRIV_OPERATOR:
+		ret = 'o';
+		break;
+	case IPMI_SESSION_PRIV_ADMIN:
+		ret = 'a';
+		break;
+	case IPMI_SESSION_PRIV_OEM:
+		ret = 'O';
+		break;
+	}
+
+ 	return ret;
+}
+
+
 static int
 ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 {
@@ -607,6 +635,79 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
 
+
+
+	/* Determine supported Cipher Suites -- Requires two calls */
+	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
+	if (p == NULL)
+		return -1;
+	else
+	{
+		unsigned char cipher_suite_count = p->data[0];
+
+		p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHERS);
+		if (p == NULL)
+			return -1;
+
+		printf("%-24s: ", p->desc);
+		if (cipher_suite_count == 0)
+			printf("None\n");
+		else
+		{
+			/* Now we're dangerous.  There are only 15 fixed cipher
+			   suite IDs, but the spec allows for 16 in the return data.*/
+			if ((p->data != NULL) && (p->data_len <= 16))
+			{
+				unsigned int i;
+				for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
+				{
+					printf("%s%d",
+					       (i > 0? ",": ""),
+					       p->data[i + 1]);
+				}
+				printf("\n");
+			}
+		}
+	}
+	
+
+
+	
+	/* RMCP+ Messaging Cipher Suite Privilege Levels */
+	/* These are the privilege levels for the 15 fixed cipher suites */
+	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS);
+	if (p == NULL)
+		return -1;
+	if ((p->data != NULL) && (p->data_len == 9))
+	{
+		printf("%-24s: %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", p->desc,
+		       priv_level_to_char(p->data[1] & 0x0F),
+		       priv_level_to_char(p->data[1] >> 4),
+		       priv_level_to_char(p->data[2] & 0x0F),
+		       priv_level_to_char(p->data[2] >> 4),
+		       priv_level_to_char(p->data[3] & 0x0F),
+		       priv_level_to_char(p->data[3] >> 4),
+		       priv_level_to_char(p->data[4] & 0x0F),
+		       priv_level_to_char(p->data[4] >> 4),
+		       priv_level_to_char(p->data[5] & 0x0F),
+		       priv_level_to_char(p->data[5] >> 4),
+		       priv_level_to_char(p->data[6] & 0x0F),
+		       priv_level_to_char(p->data[6] >> 4),
+		       priv_level_to_char(p->data[7] & 0x0F),
+		       priv_level_to_char(p->data[7] >> 4),
+		       priv_level_to_char(p->data[8] & 0x0F));
+		
+		/* Now print a legend */
+		printf("%-24s: %s\n", "", "    X=Cipher Suite Unused");
+		printf("%-24s: %s\n", "", "    c=CALLBACK");
+		printf("%-24s: %s\n", "", "    u=USER");
+		printf("%-24s: %s\n", "", "    o=OPERATOR");
+		printf("%-24s: %s\n", "", "    a=ADMIN");
+		printf("%-24s: %s\n", "", "    O=OEM");
+	}
+	else
+		printf("%-24s: Not Available\n", p->desc);
+
 	return rc;
 }
 
@@ -715,6 +816,8 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	ipmi_intf_session_set_password(intf, password);
 	printf("Password %s for user %d\n",
 	       (password == NULL) ? "cleared" : "set", userid);
+
+	return 0;
 }
 
 static int
@@ -1084,6 +1187,8 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
 		}
 	}
+
+	return rc;
 }
 
 int
