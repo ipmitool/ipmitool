@@ -1,5 +1,8 @@
 	* Add Solaris x86 interface plugin
 	* Add support for building Solaris packages
+	* Fix segfault when doing "sel list" (from Matthew Braithwaite)
+	* Fix "chassis identify" on some BMCs (from ebrower@sourceforge)
+	* Add command "bmc info" and related output (from ebrower@sourceforge)
 
 version 1.5.9
 	* Add ability to get a particular sensor by name
