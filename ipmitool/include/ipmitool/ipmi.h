@@ -111,6 +111,7 @@ struct ipmi_v2_payload {
 
 		struct {
 			unsigned char data[BUF_SIZE];
+			unsigned short character_count;
 			unsigned char packet_sequence_number;
 			unsigned char acked_packet_number;
 			unsigned char accepted_character_count;
