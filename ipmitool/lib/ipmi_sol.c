@@ -1128,7 +1128,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 				lprintf(LOG_ERR, "Info: SOL payload type disabled");
 				break;
 			default:
-				lprintf(LOG_ERR, "Error activating SOL payload: %s",
+				lprintf(LOG_ERR, "Error de-activating SOL payload: %s",
 					val2str(rsp->ccode, completion_code_vals));
 				break;
 		}
