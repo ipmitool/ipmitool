@@ -125,12 +125,21 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
                      ((rec->event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
                       (evt->data == rec->event_data[1]))))
                 {
-			*desc = (char *)malloc(strlen(evt->desc) + 32);
+			*desc = (char *)malloc(strlen(evt->desc) + 48);
 			if (*desc == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
 				return;
 			}
                         sprintf(*desc, "%s", evt->desc);
+						if(rec->event_type==0x01)
+			{
+				//Append asserted/deasserted state for
+				//threshold events
+				sprintf(
+						*desc+strlen(*desc),
+						" - %s",
+						rec->event_dir?"deasserted":"asserted");
+			}
 			return;
                 }
 		evt++;
