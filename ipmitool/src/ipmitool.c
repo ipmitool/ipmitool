@@ -50,6 +50,7 @@
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_isol.h>
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
@@ -89,7 +90,7 @@ void usage(void)
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
 	printf("Commands:  bmc, chassis, event, fru, lan, raw, "
-		   "sdr, sel, sensor, sol, channel,\n"
+		   "sdr, sel, sensor, sol, isol, channel,\n"
 		   "           session\n\n");
 	printf("\n\n");
 }
@@ -303,6 +304,9 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "sensor", 6)) {
 		submain = ipmi_sensor_main;
+	}
+	else if (!strncmp(argv[optind], "isol", 4)) {
+		submain = ipmi_isol_main;
 	}
 	else if (!strncmp(argv[optind], "sol", 3)) {
 		submain = ipmi_sol_main;
