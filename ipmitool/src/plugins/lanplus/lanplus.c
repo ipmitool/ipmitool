@@ -2207,6 +2207,7 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		}
 	}
 
+	intf->abort = 0;
 	return 0;
 }
 
@@ -2219,11 +2220,15 @@ void ipmi_lanplus_close(struct ipmi_intf * intf)
 {
 	if (!intf->abort)
 		impi_close_session_cmd(intf);
+	
 	if (intf->fd >= 0)
 		close(intf->fd);
+	
 	ipmi_req_clear_entries();
+	
 	if (intf->session)
 		free(intf->session);
+	
 	intf->session = NULL;
 	intf = NULL;
 }
