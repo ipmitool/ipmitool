@@ -56,7 +56,8 @@
 #endif
 
 #define READING_UNAVAILABLE	0x20
-#define SCANNING_DISABLED	0x80
+#define SCANNING_DISABLED	0x40
+#define EVENTS_DISABLED		0x80
 
 #define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_FACTORS      0x23
@@ -100,6 +101,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 			   uint8_t val)
 {
 	int m, b, k1, k2;
+	float result;
 
 	m  = __TO_M(sensor->mtol);
 	b  = __TO_B(sensor->bacc);
@@ -109,18 +111,61 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 	switch (sensor->unit.analog)
 	{
 	case 0:
-		return (float)(((m * val) +
+		result = (float)(((m * val) +
 				(b * pow(10, k1))) * pow(10, k2));
+		break;
 	case 1:
 		if (val & 0x80) val ++;
 		/* Deliberately fall through to case 2. */
 	case 2:
-		return (float)(((m * (int8_t)val) +
+		result = (float)(((m * (int8_t)val) +
 				(b * pow(10, k1))) * pow(10, k2));
+		break;
 	default:
 		/* Oops! This isn't an analog sensor. */
 		return 0.0;
 	}
+
+	switch (sensor->linearization & 0x7f) {
+	default:
+	case SDR_SENSOR_L_LINEAR:
+		break;
+	case SDR_SENSOR_L_LN:
+		result = log(result);
+		break;
+	case SDR_SENSOR_L_LOG10:
+		result = log10(result);
+		break;
+	case SDR_SENSOR_L_LOG2:
+		result = log2(result);
+		break;
+	case SDR_SENSOR_L_E:
+		result = exp(result);
+		break;
+	case SDR_SENSOR_L_EXP10:
+		result = exp10(result);
+		break;
+	case SDR_SENSOR_L_EXP2:
+		result = exp2(result);
+		break;
+	case SDR_SENSOR_L_1_X:
+		result = pow(result, -1.0); /*1/x w/o exception*/
+		break;
+	case SDR_SENSOR_L_SQR:
+		result = result * result;
+		break;
+	case SDR_SENSOR_L_CUBE:
+		result = pow(result, 3.0);
+		break;
+	case SDR_SENSOR_L_SQRT:
+		result = sqrt(result);
+		break;
+	case SDR_SENSOR_L_CUBERT:
+		result = cbrt(result);
+		break;
+        }
+
+	return result;
 }
 
 /* sdr_convert_sensor_value_to_raw  -  convert sensor reading back to raw
@@ -371,15 +416,14 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	if (sensor == NULL)
 		return -1;
 
-	/* only handles linear sensors (for now) */
-	if (sensor->linearization) {
-		lprintf(LOG_ERR, "Sensor #%02x is non-linear",
-			sensor->keys.sensor_num);
-		return -1;
-	}
-
 	memset(desc, 0, sizeof(desc));
 	memcpy(desc, sensor->id_string, 16);
+
+        /* only handle linear sensors and linearized sensors (for now) */
+        if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR) {
+                printf("sensor %s non-linear!\n", desc);
+                return;
+        }
 
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
@@ -407,7 +451,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		else if (!(rsp->data[1] & SCANNING_DISABLED)) {
 			/* Sensor Scanning Disabled
 			 * not an error condition so return 0 */
-			return 0;
+			validread = 0;
 		}
 		else if (rsp->data[0] != 0) { 
 			/* convert RAW reading into units */
@@ -509,9 +553,10 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			i += snprintf(sval, sizeof(sval), "%.*f %s",
 				      (val==(int)val) ? 0 : 2, val,
 				      do_unit ? unitstr : "");
+		else if (!(rsp->data[1] & SCANNING_DISABLED))
+			i += snprintf(sval, sizeof(sval), "disabled ");
 		else
-			i += snprintf(sval, sizeof(sval),
-				      "no reading ");
+			i += snprintf(sval, sizeof(sval), "no reading ");
 
 		printf("%s", sval);
 
@@ -568,7 +613,9 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		       (tol==(int)tol) ? 0 : 3, 
 		       tol, 
 		       unitstr);
-	} else
+	} else if (!(rsp->data[1] & SCANNING_DISABLED))
+		printf("Disabled\n");
+	else
 		printf("Not Present\n");
 
 	printf(" Status                : %s\n",

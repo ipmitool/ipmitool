@@ -381,6 +381,20 @@ struct sdr_record_full_sensor {
 		} type;
 	} unit;
 
+#define SDR_SENSOR_L_LINEAR     0x00
+#define SDR_SENSOR_L_LN         0x01
+#define SDR_SENSOR_L_LOG10      0x02
+#define SDR_SENSOR_L_LOG2       0x03
+#define SDR_SENSOR_L_E          0x04
+#define SDR_SENSOR_L_EXP10      0x05
+#define SDR_SENSOR_L_EXP2       0x06
+#define SDR_SENSOR_L_1_X        0x07
+#define SDR_SENSOR_L_SQR        0x08
+#define SDR_SENSOR_L_CUBE       0x09
+#define SDR_SENSOR_L_SQRT       0x0a
+#define SDR_SENSOR_L_CUBERT     0x0b
+#define SDR_SENSOR_L_NONLINEAR  0x70
+
 	uint8_t	linearization;	/* 70h=non linear, 71h-7Fh=non linear, OEM */
 	uint16_t	mtol;		/* M, tolerance */
 	uint32_t	bacc;		/* accuracy, B, Bexp, Rexp */

@@ -189,15 +189,14 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 	if (sensor == NULL)
 		return -1;
 
-	/* only handle linear sensors (for now) */
-	if (sensor->linearization) {
-		lprintf(LOG_ERR, "Sensor #%02x is non-linear",
-			sensor->keys.sensor_num);
-		return -1;
-	}
-
 	memset(id, 0, sizeof(id));
 	memcpy(id, sensor->id_string, 16);
+
+	/* only handle linear and linearized sensors (for now) */
+	if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR) {
+		printf("sensor %s non-linear!\n", id);
+		return;
+	}
 
 	/*
 	 * Get current reading
