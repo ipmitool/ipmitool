@@ -138,7 +138,7 @@ static struct ipmi_event_sensor_types generic_event_types[] __attribute__((unuse
 	{ 0x06, 0x01, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Digital State",  "Performance Lags" },
 	/* Severity Event States */
 	{ 0x07, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to OK" },
-	{ 0x07, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to Non-critial from OK" },
+	{ 0x07, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to Non-critical from OK" },
 	{ 0x07, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to Critical from less severe" },
 	{ 0x07, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to Non-recoverable from less severe" },
 	{ 0x07, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Transition to Non-critical from more severe" },
@@ -194,7 +194,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x05, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "FAN area intrusion" },
 
 	{ 0x06, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Front Panel Lockout violation attempted" },
-	{ 0x06, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Pre-boot password viiolation - user password" },
+	{ 0x06, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Pre-boot password violation - user password" },
 	{ 0x06, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Pre-boot password violation - setup password" },
 	{ 0x06, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Pre-boot password violation - network boot password" },
 	{ 0x06, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Other pre-boot password violation" },
@@ -267,7 +267,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x12, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "System Reconfigured" },
 	{ 0x12, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "OEM System boot event" },
 	{ 0x12, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Undetermined system hardware failure" },
-	{ 0x12, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Entry added to auxillary log" },
+	{ 0x12, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Entry added to auxiliary log" },
 	{ 0x12, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "PEF Action" },
 	{ 0x12, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Timestamp Clock Sync." },
 
