@@ -3,7 +3,7 @@ dnl autoconf for ipmitool
 dnl
 AC_INIT([src/ipmitool.c])
 AM_INIT_AUTOMAKE([ipmitool], [1.5.8])
-AM_CONFIG_HEADER([config.h])
+AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_PREREQ(2.50)
 
@@ -13,7 +13,6 @@ AC_SUBST(ac_configure_args)
 
 dnl check for programs
 AC_PROG_CC
-AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -21,23 +20,18 @@ AC_PROG_MAKE_SET
 AC_CHECK_PROG(SED, sed, sed)
 
 dnl setup libtool
+AC_LIB_LTDL
 AC_LIBTOOL_DLOPEN
+AC_LIBLTDL_CONVENIENCE
 AM_PROG_LIBTOOL
-LIBTOOL="$LIBTOOL --silent"
-
-AC_CHECK_LIB([m], [pow], [], [
-	echo "** libm library pow() not found!"
-	exit 1
-	])
+dnl LIBTOOL="$LIBTOOL --silent"
+AC_SUBST(INCLTDL)
+AC_SUBST(LIBLTDL)
+AC_CONFIG_SUBDIRS(libltdl)
 
 AC_SEARCH_LIBS(gethostbyname, nsl)
 AC_SEARCH_LIBS(socket, socket, ,
 	[AC_CHECK_LIB(nsl, socket, LIBS="$LIBS -lsocket -lnsl", , -lsocket)])
-
-AC_CHECK_LIB([ltdl], [lt_dlopen], [], [
-	echo "** libltdl library lt_dlopen() not found!"
-	exit 1
-	])
 
 dnl check for headers
 AC_HEADER_STDC
@@ -47,9 +41,9 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/socket.h])
 dnl check for typedefs, structs, and compiler options
 AC_C_CONST
 AC_C_INLINE
+AC_C_BIGENDIAN
 
 dnl check for lib functions
-AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STAT
@@ -58,9 +52,7 @@ AC_CHECK_FUNCS([alarm gethostbyname socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
 
 dnl check for byteswap functionality
-AC_CHECK_HEADERS([asm/byteorder.h byteswap.h])
-AC_CHECK_FUNCS([bswap_16 bswap_32])
-AC_C_BIGENDIAN
+AC_CHECK_HEADERS([sys/byteorder.h byteswap.h])
 
 dnl set kernel directory for openipmi header files
 AC_ARG_WITH([kerneldir],
@@ -106,15 +98,16 @@ AC_ARG_ENABLE([intf-lan],
 	    AC_SUBST(INTF_LAN,lan)
             PLUGIN_INTF_LAN="libintf_lan.la"
             LDFLAGS_INTF_LAN="-rpath $pluginpath -avoid-version"
-            DYNAMIC_INTF_LIST="$DYNAMIC_INTF_LIST lan" 
+            DYNAMIC_INTF_LIST="lan $DYNAMIC_INTF_LIST" 
          elif test "x$enableval" = "xstatic"; then
             AC_SUBST(INTF_LAN,lan)
             STATIC_INTF_LAN="libintf_lan.la"
-            STATIC_INTF_LIST="$STATIC_INTF_LIST lan"
+            STATIC_INTF_LIST="lan $STATIC_INTF_LIST"
 	fi],
 	[AC_SUBST(INTF_LAN,lan)
          PLUGIN_INTF_LAN="libintf_lan.la"
          LDFLAGS_INTF_LAN="-rpath $pluginpath -avoid-version"
+         DYNAMIC_INTF_LIST="lan $DYNAMIC_INTF_LIST"
         ])
 AC_SUBST(PLUGIN_INTF_LAN)
 AC_SUBST(STATIC_INTF_LAN)
@@ -130,7 +123,7 @@ AC_ARG_ENABLE([intf-open],
 		AC_SUBST(INTF_OPEN,open)
                 PLUGIN_INTF_OPEN="libintf_open.la"
                 LDFLAGS_INTF_OPEN="-rpath $pluginpath -avoid-version"
-                DYNAMIC_INTF_LIST="$DYNAMIC_INTF_LIST open" 
+                DYNAMIC_INTF_LIST="open $DYNAMIC_INTF_LIST" 
 	    else
 		echo "** Unable to build OpenIPMI interface support!"
 		exit 1
@@ -138,7 +131,7 @@ AC_ARG_ENABLE([intf-open],
          elif test "x$enableval" = "xstatic"; then
             AC_SUBST(INTF_OPEN,open)
             STATIC_INTF_OPEN="libintf_open.la"
-            STATIC_INTF_LIST="$STATIC_INTF_LIST open"
+            STATIC_INTF_LIST="open $STATIC_INTF_LIST"
 	fi])
 AC_SUBST(PLUGIN_INTF_OPEN)
 AC_SUBST(STATIC_INTF_OPEN)
@@ -154,6 +147,7 @@ AC_SUBST(STATIC_INTF)
 AC_SUBST(STATIC_INTF_EXT)
 AC_SUBST(STATIC_INTF_LIB)
 
+enable_ipmievd=no
 AC_ARG_ENABLE([ipmievd],
 	[[  --enable-ipmievd        enable IPMI event daemon [default=no]]],,)
 AM_CONDITIONAL(IPMIEVD, test "x$enable_ipmievd" = "xyes")
@@ -173,12 +167,12 @@ AC_CONFIG_FILES([ipmitool.spec
 
 AC_OUTPUT
 
-echo
-echo $PACKAGE $VERSION
-echo
-echo Interface Path........ : $pluginpath
-echo Static Interfaces..... : $STATIC_INTF_LIST
-echo Dynamic Interfaces.... : $DYNAMIC_INTF_LIST
-echo Build ipmievd......... : $enable_ipmievd
-echo
+AC_MSG_RESULT([])
+AC_MSG_RESULT([$PACKAGE $VERSION])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([  Interface Path........ : $pluginpath])
+AC_MSG_RESULT([  Static Interfaces..... : $STATIC_INTF_LIST])
+AC_MSG_RESULT([  Dynamic Interfaces.... : $DYNAMIC_INTF_LIST])
+AC_MSG_RESULT([  Build ipmievd......... : $enable_ipmievd])
+AC_MSG_RESULT([])
 
