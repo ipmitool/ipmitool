@@ -45,54 +45,45 @@
 #include <sys/stropts.h>
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
+
 #include <sys/lipmi/lipmi_intf.h>
 
-#include "lipmi.h"
+#define IPMI_LIPMI_DEV		"/dev/lipmi"
 
 extern int verbose;
 
-struct ipmi_intf ipmi_lipmi_intf = {
-	.open     = ipmi_lipmi_open,
-	.close    = ipmi_lipmi_close,
-	.sendrecv = ipmi_lipmi_send_cmd,
-};
-
-void ipmi_lipmi_close(struct ipmi_intf * intf)
+static int ipmi_lipmi_open(struct ipmi_intf * intf)
 {
-	if (intf && intf->fd >= 0)
-		close(intf->fd);
-	intf->fd = -1;
-}
-
-int ipmi_lipmi_open(struct ipmi_intf * intf)
-{
-	intf->fd = open(LIPMI_DEV, O_RDWR);
+	intf->fd = open(IPMI_LIPMI_DEV, O_RDWR);
 	if (intf->fd < 0) {
 		perror("Could not open lipmi device");
 		return -1;
 	}
-
+	intf->opened = 1;
 	return intf->fd;
 }
 
-struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
+static void ipmi_lipmi_close(struct ipmi_intf * intf)
+{
+	if (intf && intf->fd >= 0)
+		close(intf->fd);
+	intf->fd = -1;
+	intf->opened = 0;
+}
+
+static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct strioctl istr;
 	static struct lipmi_reqrsp reqrsp;
 	static struct ipmi_rs rsp;	
 	static int curr_seq = 0;
 
-	if (!intf)
+	if (!intf || !req)
 		return NULL;
 
-	if (!intf->opened) {
-		intf->opened = 1;
-		if (intf->open(intf) < 0) {
-			printf("Unable to open LIPMI interface!\n");
-			intf->opened = 0;
-			return NULL;
-		}
-	}
+	if (!intf->opened && intf->open && intf->open(intf) < 0)
+		return NULL;
 
 	memset(&reqrsp, 0, sizeof(reqrsp));
 	reqrsp.req.fn = req->msg.netfn;
@@ -129,11 +120,12 @@ struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * r
 	return &rsp;
 }
 
-int lipmi_intf_setup(struct ipmi_intf ** intf)
-{
-	*intf = &ipmi_lipmi_intf;
-	return 0;
-}
-
-int intf_setup(struct ipmi_intf ** intf) __attribute__ ((weak, alias("lipmi_intf_setup")));
+struct ipmi_intf ipmi_lipmi_intf = {
+	name:		"lipmi",
+	desc:		"Solaris x86 LIPMI Interface",
+	open:		ipmi_lipmi_open,
+	close:		ipmi_lipmi_close,
+	sendrecv:	ipmi_lipmi_send_cmd,
+	target_addr:	IPMI_BMC_SLAVE_ADDR,
+};
 
