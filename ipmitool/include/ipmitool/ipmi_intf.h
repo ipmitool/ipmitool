@@ -77,6 +77,8 @@ struct ipmi_session {
 	uint32_t in_seq;
 	uint32_t out_seq;
 
+	uint32_t timeout;
+
 	/*
 	 * This struct holds state data specific to IMPI v2 / RMCP+ sessions
 	 */
@@ -124,7 +126,7 @@ struct ipmi_session {
 		/*  This data describes the last SOL packet */
 		unsigned char last_received_sequence_number;
 		unsigned char last_received_byte_count;
-		
+		void (*sol_input_handler)(struct ipmi_rs * rsp);
 	} sol_data;
 };
 
