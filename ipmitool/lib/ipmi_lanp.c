@@ -636,15 +636,16 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 
 	p = types;
 	while (p) {
-		if (strncmp(p, "none", 4) == 0)
+		if (strncasecmp(p, "none", 4) == 0)
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_NONE;
-		else if (strncmp(p, "md2", 3) == 0)
+		else if (strncasecmp(p, "md2", 3) == 0)
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_MD2;
-		else if (strncmp(p, "md5", 3) == 0)
+		else if (strncasecmp(p, "md5", 3) == 0)
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_MD5;
-		else if (strncmp(p, "key", 3) == 0)
+		else if ((strncasecmp(p, "password", 8) == 0) ||
+			 (strncasecmp(p, "key", 3) == 0))
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_KEY;
-		else if (strncmp(p, "oem", 3) == 0)
+		else if (strncasecmp(p, "oem", 3) == 0)
 			authtype |= 1 << IPMI_SESSION_AUTHTYPE_OEM;
 		else
 			lprintf(LOG_WARNING, "Invalid authentication type: %s", p);
@@ -655,13 +656,13 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 
 	p = level;
 	while (p) {
-		if (strncmp(p, "callback", 8) == 0)
+		if (strncasecmp(p, "callback", 8) == 0)
 			data[0] = authtype;
-		else if (strncmp(p, "user", 4) == 0)
+		else if (strncasecmp(p, "user", 4) == 0)
 			data[1] = authtype;
-		else if (strncmp(p, "operator", 8) == 0)
+		else if (strncasecmp(p, "operator", 8) == 0)
 			data[2] = authtype;
-		else if (strncmp(p, "admin", 5) == 0)
+		else if (strncasecmp(p, "admin", 5) == 0)
 			data[3] = authtype;
 		else 
 			lprintf(LOG_WARNING, "Invalid authentication level: %s", p);
@@ -859,8 +860,8 @@ static void ipmi_lan_set_usage(void)
 	lprintf(LOG_NOTICE, "  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
 	lprintf(LOG_NOTICE, "  arp interval <seconds>         Set gratuitous ARP generation interval");
 	lprintf(LOG_NOTICE, "  auth <level> <type,..>         Set channel authentication types");
-	lprintf(LOG_NOTICE, "    level  = callback, user, operator, admin");
-	lprintf(LOG_NOTICE, "    type   = none, md2, md5, key");
+	lprintf(LOG_NOTICE, "    level  = CALLBACK, USER, OPERATOR, ADMIN");
+	lprintf(LOG_NOTICE, "    type   = NONE, MD2, MD5, PASSWORD, OEM");
 	lprintf(LOG_NOTICE, "  ipsrc <source>                 Set IP Address source");
 	lprintf(LOG_NOTICE, "    none   = unspecified source");
 	lprintf(LOG_NOTICE, "    static = address manually configured to be static");
@@ -967,9 +968,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE,
 				"lan set <channel> auth <level> <type,type,...>\n"
-				"  level = callback, user, operator, admin\n"
-				"  types = none, md2, md5, key, oem\n"
-				"example: lan set 7 auth admin key,md5\n");
+				"  level = CALLBACK, USER, OPERATOR, ADMIN\n"
+				"  types = NONE, MD2, MD5, PASSWORD, OEM\n"
+				"example: lan set 7 auth ADMIN PASSWORD,MD5\n");
 		} else {
 			rc = ipmi_lan_set_auth(intf, chan, argv[2], argv[3]);
 		}
