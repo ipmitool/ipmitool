@@ -349,7 +349,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 		if (retval < 0)
 		{
 			if ((session_request_type == IPMI_SESSION_REQUEST_CURRENT) &&
-			    (strncmp(intf->name, "intf_lan", 8) != 0))
+			    (strncmp(intf->name, "lan", 3) != 0))
 				lprintf(LOG_ERR, "It is likely that the channel in use "
 					"does not support sessions");
 		}
