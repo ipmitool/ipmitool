@@ -457,22 +457,22 @@ struct sdr_record_fru_locator {
 	uint8_t dev_slave_addr;
 	uint8_t device_id;
 #if WORDS_BIGENDIAN
-	uint8_t bus		: 3;
-	uint8_t lun		: 2;
-	uint8_t __reserved2	: 2;
 	uint8_t logical		: 1;
+	uint8_t __reserved2	: 2;
+	uint8_t lun		: 2;
+	uint8_t bus		: 3;
 #else
-	uint8_t logical		: 1;
-	uint8_t __reserved2	: 2;
-	uint8_t lun		: 2;
 	uint8_t bus		: 3;
+	uint8_t lun		: 2;
+	uint8_t __reserved2	: 2;
+	uint8_t logical		: 1;
 #endif
 #if WORDS_BIGENDIAN
-	uint8_t __reserved3	: 4;
 	uint8_t channel_num	: 4;
+	uint8_t __reserved3	: 4;
 #else
-	uint8_t channel_num	: 4;
 	uint8_t __reserved3	: 4;
+	uint8_t channel_num	: 4;
 #endif
 	uint8_t __reserved4;
 	uint8_t dev_type;
