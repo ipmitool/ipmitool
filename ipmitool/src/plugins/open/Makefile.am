@@ -32,16 +32,12 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-MAINTAINERCLEANFILES = Makefile.in
+MAINTAINERCLEANFILES	= Makefile.in
 
-plugindir = $(pluginpath)
-
-INCLUDES = -I$(top_srcdir)/include
+INCLUDES		= -I$(top_srcdir)/include
 
 EXTRA_LTLIBRARIES	= libintf_open.la
-plugin_LTLIBRARIES	= @PLUGIN_INTF_OPEN@
-noinst_LTLIBRARIES	= @STATIC_INTF_OPEN@
-libintf_open_la_LDFLAGS	= @LDFLAGS_INTF_OPEN@
-libintf_open_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
+noinst_LTLIBRARIES	= @INTF_OPEN_LIB@
+libintf_open_la_LIBADD	= $(top_builddir)/lib/libipmitool.la
 libintf_open_la_SOURCES	= open.c open.h
 

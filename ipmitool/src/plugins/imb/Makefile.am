@@ -32,12 +32,12 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-MAINTAINERCLEANFILES		= Makefile.in
+MAINTAINERCLEANFILES	= Makefile.in
 
-INCLUDES			= -I$(top_srcdir)/include
+INCLUDES 		= -I$(top_srcdir)/include
 
-EXTRA_LTLIBRARIES		= libintf_lipmi.la
-noinst_LTLIBRARIES		= @INTF_LIPMI_LIB@
-libintf_lipmi_la_LIBADD		= $(top_builddir)/lib/libipmitool.la
-libintf_lipmi_la_SOURCES	= lipmi.c
+EXTRA_LTLIBRARIES	= libintf_imb.la
+noinst_LTLIBRARIES	= @INTF_IMB_LIB@
+libintf_imb_la_LIBADD	= $(top_builddir)/lib/libipmitool.la
+libintf_imb_la_SOURCES	= imbapi.c imbapi.h imb.c
 
