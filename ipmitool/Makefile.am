@@ -32,7 +32,7 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-DOCDIR = $(DESTDIR)/$(datadir)/doc/$(distdir)
+DOCDIR = $(DESTDIR)/$(datadir)/doc/$(PACKAGE)
 DOCLIST = README COPYING AUTHORS ChangeLog
 
 EXTRA_DIST = $(DOCLIST) \

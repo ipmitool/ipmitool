@@ -6,7 +6,7 @@ Build-Depends: debhelper (>> 3.0.0)
 Standards-Version: 3.5.8
 
 Package: ipmitool
-Architecture: i386
+Architecture: i386 amd64
 Provides: ipmitool
 Description: Utility for IPMI control with kernel driver or LAN interface
 

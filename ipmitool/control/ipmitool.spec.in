@@ -52,11 +52,10 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 
 %files
 %defattr(-,root,root)
-%doc %{_mandir}/man1/*
 %{_bindir}/*
-%{_datadir}/doc/ipmitool-@VERSION@/*
-%dir %{_datadir}/ipmitool
 %{_datadir}/ipmitool/*
+%doc %{_mandir}/man1/*
+%doc %{_datadir}/doc/ipmitool/*
 
 %changelog
 * Wed Aug 18 2004 <duncan@iceblink.org>  1.6.0-1
