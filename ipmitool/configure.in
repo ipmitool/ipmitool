@@ -168,10 +168,10 @@ PLUGIN_INTF_LIPMI=
 STATIC_INTF_LIPMI=
 LDFLAGS_INTF_LIPMI=
 AC_ARG_ENABLE([intf-lipmi],
-[[  --enable-intf-lipmi     enable Solaris Limited IPMI interface]]
+[[  --enable-intf-lipmi     enable Solaris x86 IPMI interface]]
 [[                           plugin : build dynamic]]
 [[                           static : link statically [default]]]
-[[  --diable-intf-lipmi     disable Solaris Limited IPMI interface]],
+[[  --diable-intf-lipmi     disable Solaris x86 IPMI interface]],
 	[if test "x$have_lipmi" = "xyes"; then
 	    if test "x$enableval" = "xplugin" || test "x$enableval" = "xdynamic"; then
                 AC_SUBST(INTF_LIPMI,lipmi)
@@ -184,7 +184,7 @@ AC_ARG_ENABLE([intf-lipmi],
                 STATIC_INTF_LIST="lipmi $STATIC_INTF_LIST"
             fi
 	else
-            echo "** Unable to build Solaris Limited IPMI interface support!"
+            echo "** Unable to build Solaris x86 IPMI interface support!"
 	fi],
 	[if test "x$have_lipmi" = "xyes"; then
             AC_SUBST(INTF_LIPMI,lipmi)
