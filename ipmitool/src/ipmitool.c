@@ -87,9 +87,10 @@ void usage(void)
 	printf("       -P password   Remote password\n");
 	printf("       -L level      Session privilege level [default=USER]\n");
 	printf("       -I intf       Inteface to use\n");
-	printf("\n");
-	printf("\nCommands:  bmc, chassis, event, fru, lan, raw, "
-		   "sdr, sel, sensor, sol, channel, session\n\n");
+	printf("\n\n");
+	printf("Commands:  bmc, chassis, event, fru, lan, raw, "
+		   "sdr, sel, sensor, sol, channel,\n"
+		   "           session\n\n");
 	printf("\n\n");
 }
 
