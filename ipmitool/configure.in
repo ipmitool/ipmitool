@@ -62,13 +62,10 @@ CFLAGS="$CFLAGS -I${kerneldir}/include"
 AC_SUBST(CFLAGS)
 
 have_openipmi=no
-AC_CHECK_HEADER([linux/ipmi.h],
-	[have_openipmi=yes],
-	[AC_MSG_WARN([Unable to find OpenIPMI header files])])
+AC_CHECK_HEADER([linux/ipmi.h], [have_openipmi=yes])
 
 have_lipmi=no
-AC_CHECK_HEADER([sys/lipmi/lipmi_intf.h],
-	[have_lipmi=yes])
+AC_CHECK_HEADER([sys/lipmi/lipmi_intf.h], [have_lipmi=yes])
 
 if test "x$prefix" = "xNONE"; then
   prefix="$ac_default_prefix"
