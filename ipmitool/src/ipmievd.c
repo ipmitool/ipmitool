@@ -45,10 +45,16 @@
 #include <sys/types.h>
 #include <sys/poll.h>
 
-#include <linux/ipmi.h>
 #include <config.h>
 
+#ifdef HAVE_OPENIPMI_H
+# include <linux/ipmi.h>
+#else
+# include "plugins/open/open.h"
+#endif
+
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
@@ -56,6 +62,66 @@
 extern int errno;
 int verbose = 0;
 int csv_output = 0;
+
+static void daemonize(void)
+{
+	pid_t pid;
+	int fd;
+	sigset_t sighup;
+
+	/* if we are started from init no need to become daemon */
+	if (getppid() == 1)
+		return;
+
+#ifdef SIGHUP
+	sigemptyset(&sighup);
+	sigaddset(&sighup, SIGHUP);
+	if (sigprocmask(SIG_UNBLOCK, &sighup, nil) < 0)
+		fprintf(stderr, "ERROR: could not unblock SIGHUP signal\n");
+	SIG_IGNORE(SIGHUP);
+#endif
+#ifdef SIGTTOU
+	SIG_IGNORE(SIGTTOU);
+#endif
+#ifdef SIGTTIN
+	SIG_IGNORE(SIGTTIN);
+#endif
+#ifdef SIGQUIT
+	SIG_IGNORE(SIGQUIT);
+#endif
+#ifdef SIGTSTP
+	SIG_IGNORE(SIGTSTP);
+#endif
+
+	pid = (pid_t) fork();
+	if (pid < 0 || pid > 0)
+		exit(0);
+	
+#if defined(SIGTSTP) && defined(TIOCNOTTY)
+	if (setpgid(0, getpid()) == -1)
+		exit(1);
+	if ((fd = open(_PATH_TTY, O_RDWR)) >= 0) {
+		ioctl(fd, TIOCNOTTY, NULL);
+		close(fd);
+	}
+#else
+	if (setpgrp() == -1)
+		exit(1);
+	pid = (pid_t) fork();
+	if (pid < 0 || pid > 0)
+		exit(0);
+#endif
+
+	chdir("/");
+	umask(0);
+
+	for (fd=0; fd<64; fd++)
+		close(fd);
+
+	open("/dev/null", O_RDWR);
+	dup(0);
+	dup(0);
+}
 
 static int enable_event_msg_buffer(struct ipmi_intf * intf)
 {
@@ -71,7 +137,7 @@ static int enable_event_msg_buffer(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("ERROR:%x Get BMC Global Enables command\n",
+		lprintf(LOG_WARNING, "Get BMC Global Enables command filed [ccode %02x]",
 		       rsp ? rsp->ccode : 0);
 		return -1;
 	}
@@ -83,15 +149,36 @@ static int enable_event_msg_buffer(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("ERROR:%x Set BMC Global Enables command\n",
+		lprintf(LOG_WARNING, "Set BMC Global Enables command failed [ccode %02x]",
 		       rsp ? rsp->ccode : 0);
 		return -1;
 	}
 
-	if (verbose)
-		printf("BMC Event Message Buffer enabled.\n");
+	lprintf(LOG_DEBUG, "BMC Event Message Buffer enabled");
 
 	return 0;
+}
+
+static void log_event(struct sel_event_record * evt)
+{
+	char *desc;
+
+	if (!evt)
+		return;
+
+	if (evt->record_type == 0xf0)
+		lprintf(LOG_ALERT, "Linux kernel panic: %.11s", (char *) evt + 5);
+	else if (evt->record_type >= 0xc0)
+		lprintf(LOG_NOTICE, "IPMI Event OEM Record %02x", evt->record_type);
+	else {
+		ipmi_get_event_desc(evt, &desc);
+		if (desc) {
+			lprintf(LOG_NOTICE, "%s Sensor %02x - %s",
+				ipmi_sel_get_sensor_type(evt->sensor_type),
+				evt->sensor_num, desc);
+			free(desc);
+		}
+	}
 }
 
 static void read_event(struct ipmi_intf * intf)
@@ -108,125 +195,121 @@ static void read_event(struct ipmi_intf * intf)
 
 	rv = ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv);
 	if (rv < 0) {
-		if (errno == EINTR)
-			/* abort */
-			return;
-		if (errno == EMSGSIZE) {
-			/* message truncated */
-			recv.msg.data_len = sizeof(data);
-		} else {
-			printf("ERROR: receiving IPMI message: %s\n",
-			       strerror(errno));
+		switch (errno) {
+		case EINTR:
+			return; /* abort */
+		case EMSGSIZE:
+			recv.msg.data_len = sizeof(data); /* truncated */
+			break;
+		default:
+			lperror(LOG_ERR, "Unable to receive IPMI message");
 			return;
 		}
 	}
 
 	if (!recv.msg.data || recv.msg.data_len == 0) {
-		printf("ERROR: No data in event!\n");
+		lprintf(LOG_ERR, "No data in event");
 		return;
 	}
-
-	if (verbose > 1) {
-		printf("  type      = %d\n",   recv.recv_type);
-		printf("  channel   = 0x%x\n", addr.channel);
-		printf("  msgid     = %ld\n",  recv.msgid);
-		printf("  netfn     = 0x%x\n", recv.msg.netfn);
-		printf("  cmd       = 0x%x\n", recv.msg.cmd);
-		printf("  data_len  = %d\n",   recv.msg.data_len);
-		printbuf(recv.msg.data, recv.msg.data_len, "data");
-	}
-
 	if (recv.recv_type != IPMI_ASYNC_EVENT_RECV_TYPE) {
-		printf("ERROR: Not an event!\n");
+		lprintf(LOG_ERR, "Type %x is not an event", recv.recv_type);
 		return;
 	}
 
-	if (verbose)
-		ipmi_sel_print_std_entry_verbose((struct sel_event_record *)recv.msg.data);
-	else
-		ipmi_sel_print_std_entry((struct sel_event_record *)recv.msg.data);
+	lprintf(LOG_DEBUG, "netfn:%x cmd:%x ccode:%d",
+	    recv.msg.netfn, recv.msg.cmd, recv.msg.data[0]);
+
+	log_event((struct sel_event_record *)recv.msg.data);
 }
 
 static int do_exit(struct ipmi_intf * intf, int rv)
 {
 	if (intf)
 		intf->close(intf);
-	ipmi_intf_exit();
+	log_halt();
 	exit(rv);
 }
 
 static void usage(void)
 {
-	printf("usage: ipmievd [-hv]\n");
-	printf("\n");
-	printf("       -h        This help\n");
-	printf("       -v        Verbose (can use multiple times)\n");
-	printf("\n");
+	fprintf(stderr, "usage: ipmievd [-hvd]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "       -h        This help\n");
+	fprintf(stderr, "       -v        Verbose (can use multiple times)\n");
+	fprintf(stderr, "       -s        Do NOT daemonize\n");
+	fprintf(stderr, "\n");
 }
 
 int main(int argc, char ** argv)
 {
 	struct ipmi_intf * intf;
-	int r, i=1, a;
+	int r, a;
+	int i = 1;
+	int daemon = 1;
 	struct pollfd pfd;
 
-	while ((a = getopt(argc, (char **)argv, "hv")) != -1) {
+	/* make sure we have UID 0 */
+	if (geteuid() || getuid()) {
+		fprintf(stderr, "Inadequate privledges\n");
+		do_exit(NULL, EXIT_FAILURE);
+	}
+
+	while ((a = getopt(argc, (char **)argv, "hvs")) != -1) {
 		switch (a) {
 		case 'h':
 			usage();
+			do_exit(NULL, EXIT_SUCCESS);
 			break;
 		case 'v':
 			verbose++;
 			break;
+		case 's':
+			daemon = 0;
+			break;
 		default:
 			usage();
+			do_exit(NULL, EXIT_FAILURE);
 		}
 	}
 
-	if (verbose)
-		printf("Loading OpenIPMI interface plugin.\n");
+	if (daemon)
+		daemonize();
 
-	/* init interface plugin support */
-	r = ipmi_intf_init();
-	if (r < 0) {
-		printf("ERROR: Unable to initialize plugin interface\n");
-		exit(EXIT_FAILURE);
-	}
+	log_init("ipmievd", daemon, verbose);
 
-	/* load interface plugin */
-	intf = ipmi_intf_load("intf_open");
+	/* load interface */
+	lprintf(LOG_DEBUG, "Loading OpenIPMI interface");
+	intf = ipmi_intf_load("open");
 	if (!intf) {
-		printf("ERROR: unable to load OpenIPMI interface plugin\n");
-		exit(EXIT_FAILURE);
+		lprintf(LOG_ERR, "Unable to load OpenIPMI interface");
+		do_exit(NULL, EXIT_FAILURE);
 	}
-
-	if (verbose)
-		printf("Connecting to OpenIPMI device.\n");
 
 	/* open connection to openipmi device */
+	lprintf(LOG_DEBUG, "Connecting to OpenIPMI device");
 	r = intf->open(intf);
 	if (r < 0) {
-		printf("ERROR: Unable to open OpenIPMI device\n");
-		exit(EXIT_FAILURE);
+		lprintf(LOG_ERR, "Unable to open OpenIPMI device");
+		do_exit(NULL, EXIT_FAILURE);
 	}
 
 	/* enable event message buffer */
+	lprintf(LOG_DEBUG, "Enabling event message buffer");
 	r = enable_event_msg_buffer(intf);
 	if (r < 0) {
-		printf("ERROR: Unable to enable event message buffer.\n");
+		lprintf(LOG_ERR, "Could not enable event message buffer");
 		do_exit(intf, EXIT_FAILURE);
 	}
-
-	if (verbose)
-		printf("Enabling event receiver.\n");
 
 	/* enable OpenIPMI event receiver */
-	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i)) {
-		perror("ERROR: Could not enable event receiver");
+	lprintf(LOG_DEBUG, "Enabling event receiver");
+	r = ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i);
+	if (r != 0) {
+		lperror(LOG_ERR, "Could not enable event receiver");
 		do_exit(intf, EXIT_FAILURE);
 	}
 
-	printf("ipmievd loaded, waiting for events...\n");
+	lprintf(LOG_NOTICE, "Waiting for events...");
 
 	for (;;) {
 		pfd.fd = intf->fd;	/* wait on openipmi device */
@@ -238,7 +321,7 @@ int main(int argc, char ** argv)
 			/* timeout is disabled */
 			break;
 		case -1:
-			perror("ERROR: poll operation failed");
+			lperror(LOG_CRIT, "Unable to read from IPMI device");
 			do_exit(intf, EXIT_FAILURE);
 			break;
 		default:
@@ -247,8 +330,6 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	if (verbose)
-		printf("Exiting.\n");
-
+	lprintf(LOG_DEBUG, "Shutting down...");
 	do_exit(intf, EXIT_SUCCESS);
 }
