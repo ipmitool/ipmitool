@@ -1334,9 +1334,15 @@ ipmi_sdr_start(struct ipmi_intf * intf)
 
 	memcpy(&sdr_info, rsp->data, sizeof(sdr_info));
 
-	/* version should be 0x01 for IPMIv1.0 and 0x51 for IPMI1.5 */
-	if ((sdr_info.version != 0x51) && (sdr_info.version != 0x01)) {
-		lprintf(LOG_WARN, "WARNING: SDR repository version mismatch");
+	/* IPMIv1.0 == 0x01
+	 * IPMIv1.5 == 0x51
+	 * IPMIv2.0 == 0x02
+	 */
+	if ((sdr_info.version != 0x51) &&
+	    (sdr_info.version != 0x01) &&
+	    (sdr_info.version != 0x02)) {
+		lprintf(LOG_WARN, "WARNING: Unknown SDR repository "
+			"version 0x%02x", sdr_info.version);
 	}
 
 	itr->total = sdr_info.count;
