@@ -47,6 +47,7 @@
 #include <termios.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sol.h>
@@ -102,15 +103,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -129,15 +130,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -156,15 +157,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -185,15 +186,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -213,15 +214,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -241,15 +242,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -268,15 +269,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -295,15 +296,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -322,15 +323,15 @@ ipmi_get_sol_info(
 	
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error requesting SOL parameter %d\n",
+		lprintf(LOG_ERR, "Error:%x Error requesting SOL parameter %d",
 			   rsp ? rsp->ccode : 0,
 			   data[1]);
 		return -1;
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) "
-			   "received for SOL paraemeter %d\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) "
+			   "received for SOL paraemeter %d",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -459,10 +460,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			data[2] = 0x02;
 		else
 		{
-			printf("Invalid value %s for parameter %s\n",
+			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 				   value, param);
-			printf("Valid values are set-complete, set-in-progress "
-				   "and commit-write\n");
+			lprintf(LOG_ERR, "Valid values are set-complete, set-in-progress "
+				   "and commit-write");
 			return -1;
 		}
 	}
@@ -482,9 +483,9 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			data[2] = 0x00;
 		else
 		{
-			printf("Invalid value %s for parameter %s\n",
+			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 				   value, param);
-			printf("Valid values are true and false");
+			lprintf(LOG_ERR, "Valid values are true and false");
 			return -1;
 		}
 	}
@@ -506,9 +507,9 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			data[2] = 0x00;
 		else
 		{
-			printf("Invalid value %s for parameter %s\n",
+			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 				   value, param);
-			printf("Valid values are true and false");
+			lprintf(LOG_ERR, "Valid values are true and false");
 			return -1;
 		}
 
@@ -516,7 +517,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -542,9 +543,9 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			data[2] = 0x00;
 		else
 		{
-			printf("Invalid value %s for parameter %s\n",
+			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 				   value, param);
-			printf("Valid values are true and false");
+			lprintf(LOG_ERR, "Valid values are true and false");
 			return -1;
 		}
 
@@ -552,7 +553,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -582,9 +583,9 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			data[2] = 0x05;
 		else
 		{
-			printf("Invalid value %s for parameter %s\n",
+			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 				   value, param);
-			printf("Valid values are user, operator, admin, and oem\n");
+			lprintf(LOG_ERR, "Valid values are user, operator, admin, and oem");
 			return -1;
 		}
 
@@ -592,7 +593,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -616,7 +617,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -639,7 +640,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -662,7 +663,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -685,7 +686,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
 		{
-			printf("Error fetching SOL parameters for %s update\n",
+			lprintf(LOG_ERR, "Error fetching SOL parameters for %s update",
 				   param);
 			return -1;
 		}
@@ -728,10 +729,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		}
 		else
 		{
-			printf("Invalid value \"%s\" for parameter \"%s\"\n",
+			lprintf(LOG_ERR, "Invalid value \"%s\" for parameter \"%s\"",
 				   value,
 				   param);
-			printf("Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2\n");
+			lprintf(LOG_ERR, "Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2");
 			return -1;
 		}
 	}
@@ -771,17 +772,17 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		}
 		else
 		{
-			printf("Invalid value \"%s\" for parameter \"%s\"\n",
+			lprintf(LOG_ERR, "Invalid value \"%s\" for parameter \"%s\"",
 				   value,
 				   param);
-			printf("Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2\n");
+			lprintf(LOG_ERR, "Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2");
 			return -1;
 		}
 	}
 	
 	else
 	{
-		printf("Error: invalid SOL parameter %s\n", param);
+		lprintf(LOG_ERR, "Error: invalid SOL parameter %s", param);
 		return -1;
 	}
 
@@ -795,7 +796,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 							"set-in-progress",
 							"set-in-progress")))
 	{
-		printf("Error: set of parameter \"%s\" failed\n", param);
+		lprintf(LOG_ERR, "Error: set of parameter \"%s\" failed", param);
 		return -1;
 	}
 
@@ -805,7 +806,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Error setting SOL parameter %s\n",
+		lprintf(LOG_ERR, "Error:%x Error setting SOL parameter %s",
 			   rsp ? rsp->ccode : 0,
 			   param);
 
@@ -815,8 +816,8 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 								"set-in-progress",
 								"set-complete")))
 		{
-			printf("Error could not set \"set-in-progress\" "
-				   "to \"set-complete\"\n");
+			lprintf(LOG_ERR, "Error could not set \"set-in-progress\" "
+				   "to \"set-complete\"");
 			return -1;
 		}
 		
@@ -841,8 +842,8 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			 			   "set-in-progress",
 						   "set-complete"))
 	{
-		printf("Error could not set \"set-in-progress\" "
-			   "to \"set-complete\"\n");
+		lprintf(LOG_ERR, "Error could not set \"set-in-progress\" "
+			   "to \"set-complete\"");
 		return -1;
 	}
 
@@ -1003,7 +1004,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 	rsp = intf->sendrecv(intf, &req);
 
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Dectivating SOL payload\n",
+		lprintf(LOG_ERR, "Error:%x Dectivating SOL payload",
 			   rsp ? rsp->ccode : 0);
 		return -1;
 	}
@@ -1116,7 +1117,7 @@ processSolUserInput(
 
 		if (! rsp)
 		{
-			printf("Error sending SOL data\n");
+			lprintf(LOG_ERR, "Error sending SOL data");
 			retval = -1;
 		}
 
@@ -1149,6 +1150,10 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	int    buffer_size = intf->session->sol_data.max_inbound_payload_size;
 
 	buffer = (char*)malloc(buffer_size);
+	if (buffer == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return -1;
+	}
 
 	enter_raw_mode();
 
@@ -1223,7 +1228,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 			 */
  			else
 			{
-				printf("Error: Select returned with nothing to read\n");
+				lprintf(LOG_ERR, "Error: Select returned with nothing to read");
 				bShouldExit = 1;
 			}
 		}
@@ -1233,7 +1238,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 
 	if (bBmcClosedSession)
 	{
-		printf("SOL session closed by BMC\n");
+		lprintf(LOG_ERR, "SOL session closed by BMC");
 		exit(1);
 	}
 	else
@@ -1262,10 +1267,10 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	 * This command is only available over RMCP+ (the lanplus
 	 * interface).
 	 */
-	if (strncmp(intf->name, "lanplus", 7))
+	if (strncmp(intf->name, "lanplus", 7) != 0)
 	{
-		printf("Error: This command is only available over the "
-			   "lanplus interface\n");
+		lprintf(LOG_ERR, "Error: This command is only available over the "
+			   "lanplus interface");
 		return -1;
 	}
 
@@ -1299,14 +1304,14 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	rsp = intf->sendrecv(intf, &req);
 
 	if (!rsp || rsp->ccode) {
-		printf("Error:%x Activating SOL payload\n",
+		lprintf(LOG_ERR, "Error:%x Activating SOL payload",
 			   rsp ? rsp->ccode : 0);
 		return -1;
 	}
 	if (rsp->data_len != 12)
 	{
-		printf("Error: Unexpected data length (%d) received "
-			   "in payload activation response\n",
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
+			   "in payload activation response",
 			   rsp->data_len);
 		return -1;
 	}
@@ -1342,7 +1347,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 
 	if (intf->session->sol_data.port != intf->session->port)
 	{
-		printf("Error: BMC requests SOL session on different port\n");
+		lprintf(LOG_ERR, "Error: BMC requests SOL session on different port");
 		return -1;
 	}
 	
@@ -1359,7 +1364,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	 */
 	if (ipmi_sol_red_pill(intf))
 	{
-		printf("Error in SOL session\n");
+		lprintf(LOG_ERR, "Error in SOL session");
 		return -1;
 	}
 
@@ -1374,10 +1379,10 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 void
 print_sol_usage()
 {
-	printf("SOL Commands: info [<channel number>]\n");
-	printf("              set <parameter> <value> [channel]\n");
-	printf("              activate\n");
-	printf("              deactivate\n");
+	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
+	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
+	lprintf(LOG_NOTICE, "              activate");
+	lprintf(LOG_NOTICE, "              deactivate");
 }
 
 
@@ -1388,22 +1393,22 @@ print_sol_usage()
 void
 print_sol_set_usage()
 {
-	printf("\nSOL set parameters and values: \n\n");
-  	printf("  set-in-progress             set-complete | "
-		   "set-in-progress | commit-write\n");
-	printf("  enabled                     true | false\n");
-	printf("  force-encryption            true | false\n");
-	printf("  force-authentication        true | false\n");
-	printf("  privilege-level             user | operator | admin | oem\n");
-	printf("  character-accumulate-level  <in 5 ms increments>\n");
-	printf("  character-send-threshold    N\n");
-	printf("  retry-count                 N\n");
-	printf("  retry-interval              <in 10 ms increments>\n");
-	printf("  non-volatile-bit-rate       "
-		   "serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2\n");
-	printf("  volatile-bit-rate           "
-		   "serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2\n");
-	printf("\n");
+	lprintf(LOG_NOTICE, "\nSOL set parameters and values: \n");
+  	lprintf(LOG_NOTICE, "  set-in-progress             set-complete | "
+		"set-in-progress | commit-write");
+	lprintf(LOG_NOTICE, "  enabled                     true | false");
+	lprintf(LOG_NOTICE, "  force-encryption            true | false");
+	lprintf(LOG_NOTICE, "  force-authentication        true | false");
+	lprintf(LOG_NOTICE, "  privilege-level             user | operator | admin | oem");
+	lprintf(LOG_NOTICE, "  character-accumulate-level  <in 5 ms increments>");
+	lprintf(LOG_NOTICE, "  character-send-threshold    N");
+	lprintf(LOG_NOTICE, "  retry-count                 N");
+	lprintf(LOG_NOTICE, "  retry-interval              <in 10 ms increments>");
+	lprintf(LOG_NOTICE, "  non-volatile-bit-rate       "
+		"serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2");
+	lprintf(LOG_NOTICE, "  volatile-bit-rate           "
+		"serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2");
+	lprintf(LOG_NOTICE, "");
 }
 
 
