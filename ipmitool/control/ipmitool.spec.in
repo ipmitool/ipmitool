@@ -1,7 +1,9 @@
+%define _release 1%{?target_os:.%{target_os}}
+
 Name:         ipmitool
 Summary:      ipmitool - Utility for IPMI control
 Version:      @VERSION@
-Release:      1
+Release:      %{_release}
 Copyright:    BSD
 Group:        Utilities
 Packager:     Duncan Laurie <duncan@iceblink.org>
@@ -9,11 +11,19 @@ Source:       ipmitool-@VERSION@.tar.gz
 Buildroot:    /var/tmp/ipmitool-root
 
 %description
-This package contains a utility for interfacing with IPMI-enabled devices
-through either the OpenIPMI kernel driver or with IPMI-over-LAN protocol.
-It provides some basic functions for reading the SDR and displaying sensor
-values, displaying the contents of the SEL, printing FRU information,
-reading and setting LAN configuration, and chassis power control.
+This package contains a utility for interfacing with devices that support
+the Intelligent Platform Management Interface specification.  IPMI is
+an open standard for machine health, inventory, and remote power control.
+
+This utility can communicate with IPMI-enabled devices through either a
+kernel driver such as OpenIPMI or over the RMCP LAN protocol defined in
+the IPMI specification.  IPMIv2 adds support for encrypted LAN
+communications and remote Serial-over-LAN functionality.
+
+It provides commands for reading the Sensor Data Repository (SDR) and
+displaying sensor values, displaying the contents of the System Event
+Log (SEL), printing Field Replaceable Unit (FRU) information, reading and
+setting LAN configuration, and chassis power control.
 
 %prep
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
