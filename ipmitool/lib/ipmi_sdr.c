@@ -86,9 +86,6 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (!rsp || rsp->ccode)
-		return NULL;
-
 	return rsp;
 }
 
@@ -343,7 +340,7 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 	struct sdr_get_rs * header;
 	struct sdr_record_full_sensor * sensor;
 
-	int next = 0, i = 0, total;
+	int next = 0, i = 0, total, validread;
 	unsigned short reservation;
 	float val;
 	char sval[16], unitstr[16];
@@ -386,6 +383,7 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 		printf("SDR reserveration ID %04x\n", reservation);
 
 	while (next < total) {
+		validread = 1;
 		i = 0;
 
 		header = ipmi_sdr_get_header(intf, reservation, next);
@@ -421,14 +419,21 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 
 		rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
 		if (!rsp || rsp->ccode) {
-			printf("error reading sensor\n");
-			continue;
+			if (rsp && rsp->ccode == 0xcb) {
+				/* sensor not found */
+				val = 0.0;
+				validread = 0;
+			} else {
+				printf("Error reading sensor: %s\n",
+				       val2str(rsp->ccode, completion_code_vals));
+				continue;
+			}
+		} else {
+			/* convert RAW reading into units */
+			val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
 		}
 
-		/* convert RAW reading into units */
-		val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
-
-		if (do_unit) {
+		if (do_unit && validread) {
 			memset(unitstr, 0, sizeof(unitstr));
 			/* determine units with possible modifiers */
 			switch (sensor->unit.modifier) {
@@ -462,11 +467,16 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 				       sensor->id_code ? desc : NULL);
 
 			memset(sval, 0, sizeof(sval));
-			i += snprintf(sval, sizeof(sval), "%.*f",
-				     (val==(int)val) ? 0 : 3, val);
+			if (validread) {
+				i += snprintf(sval, sizeof(sval), "%.*f",
+					      (val==(int)val) ? 0 : 3, val);
+			} else {
+				i += snprintf(sval, sizeof(sval), "no reading");
+				i--;
+			}
 			printf("%s", sval);
 
-			if (do_unit)
+			if (do_unit && validread)
 				printf(" %s", unitstr);
 
 			if (csv_output)
@@ -487,8 +497,11 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf, int do_unit)
 			printf("Entity  | %d.%d (%s)\n",
 			       sensor->entity.id, sensor->entity.instance,
 			       val2str(sensor->entity.id, entity_id_vals));
-			printf("Reading | %.*f %s\n",
-			       (val==(int)val) ? 0 : 3, val, unitstr);
+			if (validread)
+				printf("Reading | %.*f %s\n",
+				       (val==(int)val) ? 0 : 3, val, unitstr);
+			else
+				printf("Reading | not present\n");
 			printf("Status  | %s\n",
 			       ipmi_sdr_get_status(rsp->data[2]));
 			printf("\n");

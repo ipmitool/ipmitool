@@ -44,6 +44,34 @@
 
 extern int verbose;
 
+const struct valstr completion_code_vals[] = {
+	{ 0x00, "Command completed normally" },
+	{ 0xc0, "Node busy" },
+	{ 0xc1, "Invalid command" },
+	{ 0xc2, "Invalid command on LUN" },
+	{ 0xc3, "Timeout" },
+	{ 0xc4, "Out of space" },
+	{ 0xc5, "Reservation cancelled or invalid" },
+	{ 0xc6, "Request data truncated" },
+	{ 0xc7, "Request data length invalid" },
+	{ 0xc8, "Request data field length limit exceeded" },
+	{ 0xc9, "Parameter out of range" },
+	{ 0xca, "Cannot return number of requested data bytes" },
+	{ 0xcb, "Requested sensor, data, or record not found" },
+	{ 0xcc, "Invalid data field in request" },
+	{ 0xcd, "Command illegal for specified sensor or record type" },
+	{ 0xce, "Command response could not be provided" },
+	{ 0xcf, "Cannot execute duplicated request" },
+	{ 0xd0, "SDR Repository in update mode" },
+	{ 0xd1, "Device firmeware in update mode" },
+	{ 0xd2, "BMC initialization in progress" },
+	{ 0xd3, "Destination unavailable" },
+	{ 0xd4, "Insufficient priviledge level" },
+	{ 0xd5, "Command not supported in present state" },
+	{ 0xff, "Unspecified error" },
+	{ 0x00, NULL }
+};
+
 static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
 {
 	struct ipmi_rs * rsp;
