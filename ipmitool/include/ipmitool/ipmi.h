@@ -104,7 +104,7 @@ struct ipmi_intf {
 	struct sockaddr_in addr;
 	int abort;
 	int pedantic;
-	int (*open)(struct ipmi_intf *, char *, int, char *);
+	int (*open)(struct ipmi_intf *, char *, int, char *, char *);
 	void (*close)(struct ipmi_intf *);
 	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
 };

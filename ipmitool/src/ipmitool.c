@@ -226,14 +226,14 @@ int main(int argc, char ** argv)
 {
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
-	char * hostname = NULL, * password = NULL;
+	char * hostname = NULL, * password = NULL, * username = NULL;
 	int argflag, i, rc=0, port = 623, pedantic = 0;
 	char intfname[32];
 
 	if (ipmi_intf_init() < 0)
 		exit(EXIT_FAILURE);
 
-	while ((argflag = getopt(argc, (char **)argv, "hVvcgI:H:P:p:")) != -1)
+	while ((argflag = getopt(argc, (char **)argv, "hVvcgI:H:P:U:p:")) != -1)
 	{
 		switch (argflag) {
 		case 'h':
@@ -267,6 +267,9 @@ int main(int argc, char ** argv)
 		case 'P':
 			password = strdup(optarg);
 			break;
+		case 'U':
+			username = strdup(optarg);
+			break;
 		case 'p':
 			port = atoi(optarg);
 			break;
@@ -292,7 +295,7 @@ int main(int argc, char ** argv)
 		goto out_free;
 	}
 	else if (!strncmp(argv[optind], "event", 5)) {
-		if (intf->open(intf, hostname, port, password) < 0)
+		if (intf->open(intf, hostname, port, username, password) < 0)
 			goto out_free;
 		ipmi_send_platform_event(intf);
 		goto out_close;
@@ -324,7 +327,7 @@ int main(int argc, char ** argv)
 	else if (!strncmp(argv[optind], "userinfo", 8)) {
 		if (argc-optind-1 > 0) {
 			unsigned char c = strtod(argv[optind+1], NULL);
-			rc = intf->open(intf, hostname, port, password);
+			rc = intf->open(intf, hostname, port, username, password);
 			if (rc < 0)
 				goto out_free;
 			ipmi_get_user_access(intf, c, 1);
@@ -338,7 +341,7 @@ int main(int argc, char ** argv)
 	else if (!strncmp(argv[optind], "chaninfo", 8)) {
 		if (argc-optind-1 > 0) {
 			unsigned char c = strtod(argv[optind+1], NULL);
-			rc = intf->open(intf, hostname, port, password);
+			rc = intf->open(intf, hostname, port, username, password);
 			if (rc < 0)
 				goto out_free;
 			verbose++;
@@ -361,7 +364,7 @@ int main(int argc, char ** argv)
 		goto out_free;
 
 	if (intf->open) {
-		rc = intf->open(intf, hostname, port, password);
+		rc = intf->open(intf, hostname, port, username, password);
 		if (rc < 0)
 			goto out_free;
 	}
@@ -377,6 +380,8 @@ int main(int argc, char ** argv)
  out_free:
 	if (hostname)
 		free(hostname);
+	if (username)
+		free(username);
 	if (password)
 		free(password);
 

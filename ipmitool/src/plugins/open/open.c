@@ -66,7 +66,7 @@ void ipmi_openipmi_close(struct ipmi_intf * intf)
 		close(intf->fd);
 }
 
-int ipmi_openipmi_open(struct ipmi_intf * intf, char * dev, int __unused1, char * __unused2)
+int ipmi_openipmi_open(struct ipmi_intf * intf, char * dev, int __unused1, char * __unused2, char * __unused3)
 {
 	int i = 0;
 
