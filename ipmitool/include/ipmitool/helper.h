@@ -38,10 +38,10 @@
 #define IPMI_HELPER_H
 
 struct valstr {
-	unsigned char val;
+	unsigned short val;
 	const char * str;
 };
-const char * val2str(unsigned char val, const struct valstr * vs);
+const char * val2str(unsigned short val, const struct valstr * vs);
 
 unsigned short buf2short(unsigned char * buf);
 unsigned long buf2long(unsigned char * buf);

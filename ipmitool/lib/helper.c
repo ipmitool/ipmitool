@@ -86,7 +86,7 @@ void printbuf(unsigned char * buf, int len, char * desc)
 	printf("\n");
 }
 
-const char * val2str(unsigned char val, const struct valstr *vs)
+const char * val2str(unsigned short val, const struct valstr *vs)
 {
 	static char un_str[16];
 	int i = 0;
