@@ -20,15 +20,10 @@ AC_PROG_MAKE_SET
 
 AC_CHECK_PROG(SED, sed, sed)
 
-dnl setup libtool and ltdl
-AC_LIB_LTDL
+dnl setup libtool
 AC_LIBTOOL_DLOPEN
-AC_LIBLTDL_CONVENIENCE
 AM_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"
-AC_SUBST(LTDLINCL)
-AC_SUBST(LIBLTDL)
-AC_CONFIG_SUBDIRS(libltdl)
 
 AC_CHECK_LIB([m], [pow], [], [
 	echo "** libm library pow() not found!"

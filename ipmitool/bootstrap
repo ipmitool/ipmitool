@@ -35,7 +35,7 @@
 # facility.
 
 aclocal
-libtoolize --automake --copy --ltdl
+libtoolize --automake --copy
 
 autoheader
 automake --foreign --add-missing --copy
