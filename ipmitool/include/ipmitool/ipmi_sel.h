@@ -381,5 +381,8 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
 void ipmi_sel_print_std_entry(struct sel_event_record * evt);
+void ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt);
+void ipmi_get_event_desc(struct sel_event_record * rec, char ** desc);
+const char * ipmi_sel_get_sensor_type(unsigned char code);
 
 #endif /* IPMI_SEL_H */

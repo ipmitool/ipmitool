@@ -109,7 +109,7 @@ ipmi_sel_timestamp_time(uint32_t stamp)
 	return tbuf;
 }
 
-static void
+void
 ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 {
 	unsigned char code, offset;
@@ -143,7 +143,7 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 	}
 }
 
-static const char *
+const char *
 ipmi_sel_get_sensor_type(unsigned char code)
 {
 	struct ipmi_event_sensor_types *st = sensor_specific_types;
@@ -339,9 +339,13 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		printf(",");
 	else
 		printf(" | ");
+
         ipmi_get_event_desc(evt, &description);
-	printf("%s\n", description ? description : "");
-        free(description);
+	if (description) {
+		printf("%s", description);
+		free(description);
+	}
+	printf("\n");
 }
 
 void
@@ -592,6 +596,8 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	unsigned short reserve_id;
 	unsigned char msg_data[6];
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	reserve_id = ipmi_sel_reserve(intf);
 	if (reserve_id == 0)
