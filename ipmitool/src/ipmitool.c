@@ -293,6 +293,11 @@ int main(int argc, char ** argv)
 			break;
 		case 'P':
 			password = strdup(optarg);
+
+			/* Prevent password snooping with ps */
+			i = strlen (optarg);
+			memset (optarg, 'X', i);
+
 			break;
 		case 'U':
 			username = strdup(optarg);
