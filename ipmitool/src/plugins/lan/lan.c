@@ -62,6 +62,15 @@ static struct ipmi_rq_entry * ipmi_req_entries_tail;
 
 int verbose;
 
+const struct valstr ipmi_authtype_session_vals[] = {
+	{ IPMI_SESSION_AUTHTYPE_NONE,     "NONE" },
+	{ IPMI_SESSION_AUTHTYPE_MD2,      "MD2" },
+	{ IPMI_SESSION_AUTHTYPE_MD5,      "MD5" },
+	{ IPMI_SESSION_AUTHTYPE_PASSWORD, "PASSWORD" },
+	{ IPMI_SESSION_AUTHTYPE_OEM,      "OEM" },
+	{ 0,                               NULL },
+};
+
 static int recv_timeout = IPMI_LAN_TIMEOUT;
 static int curr_seq;
 static sigjmp_buf jmpbuf;
@@ -464,7 +473,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			printbuf(rsp->data, x, "ipmi message header");
 			printf("<< IPMI Response Session Header\n");
 			printf("<<   Authtype   : %s\n",
-			       val2str(rsp->session.authtype, ipmi_authtype_vals));
+			       val2str(rsp->session.authtype, ipmi_authtype_session_vals));
 			printf("<<   Sequence   : 0x%08lx\n", rsp->session.seq);
 			printf("<<   Session ID : 0x%08lx\n", rsp->session.id);
 			
@@ -610,7 +619,8 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	if (verbose > 2) {
 		printf(">> IPMI Request Session Header\n");
-		printf(">>   Authtype   : %s\n", val2str(lan_session.authtype, ipmi_authtype_vals));
+		printf(">>   Authtype   : %s\n",
+		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
 		printf(">>   Sequence   : 0x%08lx\n", lan_session.in_seq);
 		printf(">>   Session ID : 0x%08lx\n", lan_session.id);
 		
@@ -732,8 +742,8 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 			printf("MD2 ");
 		if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5)
 			printf("MD5 ");
-		if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_KEY)
-			printf("KEY ");
+		if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD)
+			printf("PASSWORD ");
 		if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM)
 			printf("OEM ");
 		printf("\n");
@@ -755,8 +765,8 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 		lan_session.authtype = IPMI_SESSION_AUTHTYPE_MD5;
 	}
 	else if (lan_session.password &&
-		 rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_KEY) {
-		lan_session.authtype = IPMI_SESSION_AUTHTYPE_KEY;
+		 rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) {
+		lan_session.authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
 	}
 	else if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) {
 		lan_session.authtype = IPMI_SESSION_AUTHTYPE_NONE;
@@ -768,7 +778,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 
 	if (verbose > 1)
 		printf("Proceeding with AuthType %s\n",
-		       val2str(lan_session.authtype, ipmi_authtype_vals));
+		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
 
 	return 0;
 }
@@ -862,7 +872,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		printf("  Privilege Level : %s\n",
 		       val2str(msg_data[1], ipmi_privlvl_vals));
 		printf("  Auth Type       : %s\n",
-		       val2str(lan_session.authtype, ipmi_authtype_vals));
+		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
 		if (lan_session.authtype)
 			printf("  AuthCode        : %s\n",
 			       lan_session.authcode);
@@ -915,7 +925,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	if (verbose > 1) {
 		printf("\nSession Activated\n");
 		printf("  Auth Type       : %s\n",
-		       val2str(rsp->data[0], ipmi_authtype_vals));
+		       val2str(rsp->data[0], ipmi_authtype_session_vals));
 		printf("  Max Priv Level  : %s\n",
 		       val2str(rsp->data[9], ipmi_privlvl_vals));
 		printf("  Session ID      : %08lx\n", lan_session.id);
