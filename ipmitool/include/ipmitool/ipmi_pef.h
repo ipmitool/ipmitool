@@ -103,7 +103,7 @@ struct bit_desc_map {				/* description text container */
 };
 
 static struct bit_desc_map
-pef_b2s_actions = {
+pef_b2s_actions __attribute__((unused)) = {
 BIT_DESC_MAP_ALL,
 {	{"Alert",						PEF_ACTION_ALERT},
 	{"Power-off",					PEF_ACTION_POWER_DOWN},
@@ -115,7 +115,7 @@ BIT_DESC_MAP_ALL,
 }	};
 
 static struct bit_desc_map
-pef_b2s_severities = {
+pef_b2s_severities __attribute__((unused)) = {
 BIT_DESC_MAP_ANY,
 {	{"Non-recoverable",			PEF_SEVERITY_NON_RECOVERABLE},
 	{"Critical",					PEF_SEVERITY_CRITICAL},
@@ -127,7 +127,7 @@ BIT_DESC_MAP_ANY,
 }	};
 
 static struct bit_desc_map
-pef_b2s_sensortypes = {
+pef_b2s_sensortypes __attribute__((unused)) = {
 BIT_DESC_MAP_LIST,
 {	{"Any",								255},
 	{"Temperature",					1},
@@ -304,7 +304,7 @@ BIT_DESC_MAP_LIST,
 }	};
 
 static struct bit_desc_map *
-pef_b2s_generic_ER[] = {
+pef_b2s_generic_ER[] __attribute__((unused)) = {
 	&pef_b2s_gentype_1,
 	&pef_b2s_gentype_2,
 	&pef_b2s_gentype_3,
@@ -341,7 +341,7 @@ struct pef_policy_entry {
 } __attribute__ ((packed));
 
 static struct bit_desc_map
-pef_b2s_policies = {
+pef_b2s_policies __attribute__((unused)) = {
 BIT_DESC_MAP_LIST,
 {	{"Match-always",				PEF_POLICY_FLAGS_MATCH_ALWAYS},
 	{"Try-next-entry",			PEF_POLICY_FLAGS_PREV_OK_SKIP},
@@ -352,7 +352,7 @@ BIT_DESC_MAP_LIST,
 }	};
 
 static struct bit_desc_map
-pef_b2s_ch_medium = {
+pef_b2s_ch_medium __attribute__((unused)) = {
 #define PEF_CH_MEDIUM_TYPE_IPMB			1
 #define PEF_CH_MEDIUM_TYPE_ICMB_10		2
 #define PEF_CH_MEDIUM_TYPE_ICMB_09		3
@@ -417,7 +417,7 @@ struct pef_cfgparm_control {
 } __attribute__ ((packed));
 
 static struct bit_desc_map
-pef_b2s_control = {
+pef_b2s_control __attribute__((unused)) = {
 BIT_DESC_MAP_ALL,
 {	{"PEF",							PEF_CONTROL_ENABLE},
 	{"PEF event messages",		PEF_CONTROL_ENABLE_EVENT_MESSAGES},
@@ -532,7 +532,7 @@ struct pef_lan_cfgparm_dest_type {
 } __attribute__ ((packed));
 
 static struct bit_desc_map
-pef_b2s_lan_desttype = {
+pef_b2s_lan_desttype __attribute__((unused)) = {
 BIT_DESC_MAP_LIST,
 {	{"Acknowledged",		PEF_LAN_DEST_TYPE_ACK},
 	{"PET",					PEF_LAN_DEST_TYPE_PET},
@@ -608,7 +608,7 @@ struct pef_serial_cfgparm_dest_info {
 } __attribute__ ((packed));
 
 static struct bit_desc_map
-pef_b2s_serial_desttype = {
+pef_b2s_serial_desttype __attribute__((unused)) = {
 BIT_DESC_MAP_LIST,
 {	{"Acknowledged",		PEF_SERIAL_DEST_TYPE_ACK},
 	{"TAP page",			PEF_SERIAL_DEST_TYPE_TAP},
@@ -658,7 +658,7 @@ struct pef_serial_cfgparm_tap_svc_settings {
 } __attribute__ ((packed));
 
 static struct bit_desc_map
-pef_b2s_tap_svc_confirm = {
+pef_b2s_tap_svc_confirm __attribute__((unused)) = {
 BIT_DESC_MAP_LIST,
 {	{"ACK",						PEF_SERIAL_TAP_CONFIRMATION_ACK_AFTER_ETX},
 	{"211+ACK",					PEF_SERIAL_TAP_CONFIRMATION_211_ACK_AFTER_ETX},
