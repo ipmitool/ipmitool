@@ -44,11 +44,6 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h string.h sys/ioctl.h sys/stat.h unistd.h])
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/socket.h])
 
-have_openipmi=no
-AC_CHECK_HEADER([linux/ipmi.h],
-	[have_openipmi=yes],
-	[AC_MSG_WARN([Unable to find OpenIPMI header files])])
-
 dnl check for typedefs, structs, and compiler options
 AC_C_CONST
 AC_C_INLINE
@@ -66,6 +61,19 @@ dnl check for byteswap functionality
 AC_CHECK_HEADERS([asm/byteorder.h byteswap.h])
 AC_CHECK_FUNCS([bswap_16 bswap_32])
 AC_C_BIGENDIAN
+
+dnl set kernel directory for openipmi header files
+AC_ARG_WITH([kerneldir],
+	[[  --with-kerneldir=DIR    Set kernel path to DIR]],
+	[kerneldir="$withval"],
+	[kerneldir="/usr/src/linux-2.4"])
+CFLAGS="$CFLAGS -I${kerneldir}/include"
+AC_SUBST(CFLAGS)
+
+have_openipmi=no
+AC_CHECK_HEADER([linux/ipmi.h],
+	[have_openipmi=yes],
+	[AC_MSG_WARN([Unable to find OpenIPMI header files])])
 
 if test "x$prefix" = "xNONE"; then
   prefix="$ac_default_prefix"
