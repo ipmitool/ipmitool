@@ -4,7 +4,7 @@
 ipmitool \- utility for controlling IPMI-enabled devices
 .SH "SYNTAX"
 .LP 
-ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
 .br 
 ipmitool [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
@@ -34,11 +34,17 @@ Selects IPMI interface to use.  Possible interfaces are \fIlan\fP or \fIopen\fP.
 \fB\-H\fR <\fIaddress\fP>
 Remote server address, can be IP address or hostname.  This option is required for the LAN interface connection.
 .TP 
-\fB\-P\fR <\fIpassword\fP>
-Remote server password, 16 character maximum.  This is optional for the LAN interface, if it is not provided the session will not be authenticated.
-.TP
 \fB\-U\fR <\fIusername\fP>
 Remote username, default is NULL user.
+.TP 
+\fB\-a\fR
+Promt for the remote server password, 16 character maximum. This is optional for the LAN interface, if a password is not provided the session will not be authenticated.
+.TP 
+\fB\-E\fR
+The remote server password is specified by the environment variable \fBIPMITOOL_PASSWORD\fR. This option is intended for shell scripts.
+.TP 
+\fB\-P\fR <\fIpassword\fP>
+Remote server password. \fBNote!\fR Specifying the password as a commandline option is not recommended since it will be visible in the process list.
 .SH "EXPRESSIONS"
 .LP
 .TP

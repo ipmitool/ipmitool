@@ -76,7 +76,10 @@ void usage(void)
 	printf("       -g            Attempt to be extra robust in LAN communications\n");
 	printf("       -H hostname   Remote host name for LAN interface\n");
 	printf("       -p port       Remote RMCP port (default is 623)\n");
-	printf("       -P password   Remote administrator password\n");
+	printf("       -U username   Remote username\n");
+	printf("       -a            Prompt for remote password\n");
+	printf("       -E            Read remote password from environment\n");
+	printf("       -P password   Remote password\n");
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
 
@@ -255,14 +258,14 @@ int main(int argc, char ** argv)
 {
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
-	char * hostname = NULL, * password = NULL, * username = NULL;
+	char * hostname = NULL, * password = NULL, * username = NULL, * tmp;
 	int argflag, i, rc=0, port = 623, pedantic = 0;
 	char intfname[32];
 
 	if (ipmi_intf_init() < 0)
 		exit(EXIT_FAILURE);
 
-	while ((argflag = getopt(argc, (char **)argv, "hVvcgI:H:P:U:p:")) != -1)
+	while ((argflag = getopt(argc, (char **)argv, "hVvcgEaI:H:P:U:p:")) != -1)
 	{
 		switch (argflag) {
 		case 'h':
@@ -294,6 +297,9 @@ int main(int argc, char ** argv)
 			hostname = strdup(optarg);
 			break;
 		case 'P':
+			if (password)
+				free (password);
+
 			password = strdup(optarg);
 
 			/* Prevent password snooping with ps */
@@ -301,6 +307,31 @@ int main(int argc, char ** argv)
 			memset (optarg, 'X', i);
 
 			break;
+
+		case 'E':
+			if ((tmp = getenv ("IPMITOOL_PASSWORD")))
+			{
+				if (password)
+					free (password);
+
+				password = strdup (tmp);
+			}
+			break;
+
+		case 'a':
+#ifdef HAVE_GETPASSPHRASE
+			if ((tmp = getpassphrase ("Password: ")))
+#else
+			if ((tmp = getpass ("Password: ")))
+#endif
+			{
+				if (password)
+					free (password);
+
+				password = strdup (tmp);
+			}
+			break;
+
 		case 'U':
 			username = strdup(optarg);
 			break;

@@ -50,6 +50,7 @@ AC_FUNC_STAT
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([alarm gethostbyname socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
+AC_CHECK_FUNCS([getpassphrase])
 
 dnl check for byteswap functionality
 AC_CHECK_HEADERS([sys/byteorder.h byteswap.h])
