@@ -65,8 +65,12 @@
 # include <config.h>
 #endif
 
+#define IPMITOOL_OPTIONS "I:hVvcgEaH:P:f:U:p:L:A:t:m:"
+
 int csv_output = 0;
 int verbose = 0;
+
+extern const struct valstr ipmi_authtype_session_vals[];
 
 void usage(void)
 {
@@ -82,6 +86,7 @@ void usage(void)
 	printf("       -H hostname   Remote host name for LAN interface\n");
 	printf("       -p port       Remote RMCP port [default=623]\n");
 	printf("       -L level      Remote session privilege level [default=USER]\n");
+	printf("       -A authtype   Force use of authentication type NONE, PASSWORD, MD2 or MD5\n");
 	printf("       -U username   Remote session username\n");
 	printf("       -P password   Remote session password\n");
 	printf("       -f file       Read remote session password from file\n");
@@ -218,11 +223,22 @@ int main(int argc, char ** argv)
 {
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
-	char * tmp, * hostname = NULL, * username = NULL, * password = NULL, * intfname = NULL;
-	int port = 0, argflag, i, intfarg = 0, rc = 0, thump = 0;
-	unsigned char privlvl = 0, target_addr = 0, my_addr = 0;
+	unsigned char privlvl = 0;
+	unsigned char target_addr = 0;
+	unsigned char my_addr = 0;
+	unsigned char authtype = 0;
+	char * tmp = NULL;
+	char * hostname = NULL;
+	char * username = NULL;
+	char * password = NULL;
+	char * intfname = NULL;
+	int port = 0;
+	int argflag, i;
+	int intfarg = 0;
+	int rc = 0;
+	int thump = 0;
 
-	while ((argflag = getopt(argc, (char **)argv, "I:hVvcgEaH:P:f:U:p:L:t:m:")) != -1)
+	while ((argflag = getopt(argc, (char **)argv, IPMITOOL_OPTIONS)) != -1)
 	{
 		switch (argflag) {
 		case 'I':
@@ -299,6 +315,9 @@ int main(int argc, char ** argv)
 			if (!privlvl)
 				printf("Invalid privilege level %s!\n", optarg);
 			break;
+		case 'A':
+			authtype = (int)str2val(optarg, ipmi_authtype_session_vals);
+			break;
 		case 'p':
 			port = atoi(optarg);
 			break;
@@ -341,6 +360,8 @@ int main(int argc, char ** argv)
 		ipmi_intf_session_set_port(intf, port);
 	if (privlvl)
 		ipmi_intf_session_set_privlvl(intf, privlvl);
+	if (authtype)
+		ipmi_intf_session_set_authtype(intf, authtype);
 
 	intf->thump = thump;
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;

@@ -71,6 +71,7 @@ struct ipmi_session {
 	unsigned char authcode[IPMI_AUTHCODE_BUFFER_SIZE];
 	unsigned char challenge[16];
 	unsigned char authtype;
+	unsigned char authtype_set;
 	unsigned char privlvl;
 	int password;
 	int port;
@@ -165,5 +166,6 @@ void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
 void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char privlvl);
 void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
+void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char authtype);
 
 #endif /* IPMI_INTF_H */

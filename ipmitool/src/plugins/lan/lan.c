@@ -53,14 +53,15 @@
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 
 #include "lan.h"
-#include "md5.h"
 #include "rmcp.h"
 #include "asf.h"
+#include "auth.h"
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_vals[];
@@ -415,51 +416,17 @@ ipmi_lan_ping(struct ipmi_intf * intf)
  */
 static void ipmi_lan_thump_first(struct ipmi_intf * intf)
 {
+	/* is this random data? */
 	unsigned char data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				   0x07, 0x20, 0x18, 0xc8, 0xc2, 0x01, 0x01, 0x3c };
 	ipmi_lan_send_packet(intf, data, 16);
 }
+
 static void ipmi_lan_thump(struct ipmi_intf * intf)
 {
 	unsigned char data[10] = "thump";
 	ipmi_lan_send_packet(intf, data, 10);
 }
-
-/*
- * multi-session authcode generation for md5
- * H(password + session_id + msg + session_seq + password)
- */
-static unsigned char *
-ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int data_len)
-{
-	md5_state_t state;
-	static md5_byte_t digest[16];
-	uint32_t temp;
-
-	memset(digest, 0, 16);
-	memset(&state, 0, sizeof(md5_state_t));
-
-	md5_init(&state);
-
-	md5_append(&state, (const md5_byte_t *)s->authcode, 16);
-	md5_append(&state, (const md5_byte_t *)&s->session_id, 4);
-	md5_append(&state, (const md5_byte_t *)data, data_len);
-
-#if WORDS_BIGENDIAN
-	temp = BSWAP_32(s->in_seq);
-#else
-	temp = s->in_seq;
-#endif
-	md5_append(&state, (const md5_byte_t *)&temp, 4);
-	md5_append(&state, (const md5_byte_t *)s->authcode, 16);
-
-	md5_finish(&state, digest);
-
-	if (verbose > 3)
-		printf("  MD5 AuthCode    : %s\n", buf2str(digest, 16));
-	return digest;
-}
-
 
 static struct ipmi_rs *
 ipmi_lan_poll_recv(struct ipmi_intf * intf)
@@ -475,13 +442,15 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		/* parse response headers */
 		memcpy(&rmcp_rsp, rsp->data, 4);
 
-		if (rmcp_rsp.class == RMCP_CLASS_ASF) {
-			/* might be ping response packet */
+		switch (rmcp_rsp.class) {
+		case RMCP_CLASS_ASF:
+			/* ping response packet */
 			rv = ipmi_handle_pong(intf, rsp);
 			return (rv <= 0) ? NULL : rsp;
-		}
-			
-		if (rmcp_rsp.class != RMCP_CLASS_IPMI) {
+		case RMCP_CLASS_IPMI:
+			/* handled by rest of function */
+			break;
+		default:
 			if (verbose > 1)
 				printf("Invalid RMCP class: %x\n", rmcp_rsp.class);
 			rsp = ipmi_lan_recv_packet(intf);
@@ -599,7 +568,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		.class		= RMCP_CLASS_IPMI,
 		.seq		= 0xff,
 	};
-	unsigned char * msg;
+	unsigned char * msg, * temp;
 	int cs, cs2, mp, tmp;
 	int ap = 0;
 	int len = 0;
@@ -708,10 +677,17 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		msg[len++] = ipmi_csum(msg+cs2, tmp);
 	}
 
-	if (s->active &&
-	    s->authtype == IPMI_SESSION_AUTHTYPE_MD5) {
-		unsigned char * d = ipmi_auth_md5(intf->session, msg+mp, msg[mp-1]);
-		memcpy(msg+ap, d, 16);
+	if (s->active) {
+		switch (s->authtype) {
+		case IPMI_SESSION_AUTHTYPE_MD5:
+			temp = ipmi_auth_md5(intf->session, msg+mp, msg[mp-1]);
+			memcpy(msg+ap, temp, 16);
+			break;
+		case IPMI_SESSION_AUTHTYPE_MD2:
+			temp = ipmi_auth_md2(intf->session, msg+mp, msg[mp-1]);
+			memcpy(msg+ap, temp, 16);
+			break;
+		}
 	}
 
 	if (s->in_seq) {
@@ -941,18 +917,38 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	}
 
 	if (s->password &&
-	    rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) {
+	    (!s->authtype_set ||
+	     s->authtype_set == IPMI_SESSION_AUTHTYPE_MD5) &&
+	    (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5))
+	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_MD5;
 	}
 	else if (s->password &&
-		 rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) {
+		 (!s->authtype_set ||
+		  s->authtype_set == IPMI_SESSION_AUTHTYPE_MD2) &&
+		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2))
+	{
+		s->authtype = IPMI_SESSION_AUTHTYPE_MD2;
+	}
+	else if (s->password &&
+		 (!s->authtype_set ||
+		  s->authtype_set == IPMI_SESSION_AUTHTYPE_PASSWORD) &&
+		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD))
+	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
 	}
-	else if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) {
+	else if ((!s->authtype_set ||
+		  s->authtype_set == IPMI_SESSION_AUTHTYPE_NONE) &&
+		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE))
+	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_NONE;
 	}
 	else {
-		printf("No supported authtypes found!\n");
+		if (!(rsp->data[1] & 1<<s->authtype_set))
+			printf("Authentication type %s not supported!\n",
+			       val2str(s->authtype_set, ipmi_authtype_session_vals));
+		else
+			printf("No supported authtypes found!\n");
 		return -1;
 	}
 

@@ -39,5 +39,5 @@ INCLUDES		= -I$(top_srcdir)/include
 EXTRA_LTLIBRARIES	= libintf_lan.la
 noinst_LTLIBRARIES	= @INTF_LAN_LIB@
 libintf_lan_la_LIBADD	= $(top_builddir)/lib/libipmitool.la
-libintf_lan_la_SOURCES	= lan.c lan.h asf.h rmcp.h md5.c md5.h
+libintf_lan_la_SOURCES	= lan.c lan.h asf.h rmcp.h auth.c auth.h md5.c md5.h
 

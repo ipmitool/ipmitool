@@ -162,3 +162,9 @@ void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
 	if (intf && intf->session)
 		intf->session->port = port;
 }
+
+void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, unsigned char authtype)
+{
+	if (intf && intf->session)
+		intf->session->authtype_set = authtype;
+}
