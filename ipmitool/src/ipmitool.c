@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2004 Sun Microsystems, Inc.  All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -77,16 +77,16 @@ int verbose = 0;
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
+static int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
+static int ipmi_delay_main(struct ipmi_intf * intf, int argc, char ** argv);
 
 struct ipmi_cmd {
 	int (*func)(struct ipmi_intf * intf, int argc, char ** argv);
 	char * name;
 	char * desc;
 } ipmi_cmd_list[] = {
-	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
-	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
 	{ ipmi_raw_main,	"raw",		"Send a RAW IPMI request and print response" },
 	{ ipmi_lanp_main,	"lan",		"Configure LAN Channels" },
 	{ ipmi_chassis_main,	"chassis",	"Get chassis status and set power state" },
@@ -101,6 +101,10 @@ struct ipmi_cmd {
 	{ ipmi_user_main,	"user",		"Configure BMC users" },
 	{ ipmi_channel_main,	"channel",	"Configure BMC channels" },
 	{ ipmi_session_main,	"session",	"Print session information" },
+	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
+	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
+	{ ipmi_set_main,	"set",		"Set runtime variable for shell and exec" },
+	{ ipmi_delay_main,	"delay",	NULL },
 	{ NULL },
 };
 
@@ -108,8 +112,11 @@ void ipmi_cmd_print(void)
 {
 	struct ipmi_cmd * cmd;
 	printf("Commands:\n");
-	for (cmd=ipmi_cmd_list; cmd->func; cmd++)
+	for (cmd=ipmi_cmd_list; cmd->func; cmd++) {
+		if (!cmd->desc)
+			continue;
 		printf("\t%-12s %s\n", cmd->name, cmd->desc);
+	}
 	printf("\n");
 }
 
@@ -142,7 +149,7 @@ static void usage(void)
 	printf("       -V            Show version information\n");
 	printf("       -v            Verbose (can use multiple times)\n");
 	printf("       -c            Display output in comma separated format\n");
-	printf("       -I intf       Inteface to use\n");
+	printf("       -I intf       Interface to use\n");
 	printf("       -H hostname   Remote host name for LAN interface\n");
 	printf("       -p port       Remote RMCP port [default=623]\n");
 	printf("       -L level      Remote session privilege level [default=USER]\n");
@@ -190,6 +197,82 @@ static char * ipmi_password_file_read(char * filename)
 
 	fclose(fp);
 	return pass;
+}
+
+static void ipmi_set_usage(void)
+{
+	printf("Usage: set <option> <value>\n\n");
+	printf("Options are:\n");
+	printf("  hostname <host>    Set session hostname\n");
+	printf("  username <user>    Set session username\n");
+	printf("  password <pass>    Set session password\n");
+	printf("  privlvl <level>    Set session privilege level\n");
+	printf("  authtype <type>    Set authentication type too use\n");
+	printf("  localaddr <addr>   Set local IPMB address\n");
+	printf("  targetaddr <addr>  Set remote target IPMB address\n");
+	printf("  port <port>        Set remote RMCP port\n");
+	printf("  csv [level]        Enable output in comma separated format\n");
+	printf("  verbose [level]    Set verbose level\n");
+	printf("\n");
+}
+
+static int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	if (!argc || !strncmp(argv[0], "help", 4)) {
+		ipmi_set_usage();
+		return -1;
+	}
+
+	/* these options can have no arguments */
+	if (!strncmp(argv[0], "verbose", 7)) {
+		verbose = (argc > 1) ? atoi(argv[1]) : verbose+1;
+		return 0;
+	}
+	if (!strncmp(argv[0], "csv", 3)) {
+		csv_output = (argc > 1) ? atoi(argv[1]) : 1;
+		return 0;
+	}
+
+	/* the rest need an argument */
+	if (argc == 1) {
+		ipmi_set_usage();
+		return -1;
+	}
+
+	if (!strncmp(argv[0], "hostname", 8)) {
+		ipmi_intf_session_set_hostname(intf, argv[1]);
+	}
+	else if (!strncmp(argv[0], "username", 8)) {
+		ipmi_intf_session_set_username(intf, argv[1]);
+	}
+	else if (!strncmp(argv[0], "password", 8)) {
+		ipmi_intf_session_set_password(intf, argv[1]);
+	}
+	else if (!strncmp(argv[0], "authtype", 8)) {
+		unsigned char authtype;
+		authtype = (unsigned char)str2val(argv[1], ipmi_authtype_session_vals);
+		ipmi_intf_session_set_authtype(intf, authtype);
+	}
+	else if (!strncmp(argv[0], "privlvl", 7)) {
+		unsigned char privlvl;
+		privlvl = (unsigned char)str2val(argv[1], ipmi_privlvl_vals);
+		ipmi_intf_session_set_privlvl(intf, privlvl);
+	}
+	else if (!strncmp(argv[0], "port", 4)) {
+		int port = atoi(argv[1]);
+		ipmi_intf_session_set_port(intf, port);
+	}
+	else if (!strncmp(argv[0], "localaddr", 9)) {
+		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
+	}
+	else if (!strncmp(argv[0], "targetaddr", 10)) {
+		intf->target_addr = (unsigned char)strtol(argv[1], NULL, 0);
+	}
+	else {
+		ipmi_set_usage();
+		return -1;
+	}
+	return 0;
 }
 
 static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
@@ -259,25 +342,26 @@ static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int __argc, rc=0;
 
 	while ((pbuf = (char *)readline(PROMPT)) != NULL) {
-		if (strlen(pbuf) == 0) {
+		if (strlen(pbuf) == 0)
+			continue;
+		if (!strncmp(pbuf, "quit", 4))
+			return 0;
+		if (!strncmp(pbuf, "exit", 4))
+			return 0;
+		if (!strncmp(pbuf, "help", 4) || !strncmp(pbuf, "?", 1)) {
+			ipmi_cmd_print();
 			continue;
 		}
-		
-		if (!strncmp(pbuf, "quit", 4)) {
-			return 0;
-		}
 
-		if (!strncmp(pbuf, "exit", 4)) {
-			return 0;
-		}
+		/* for the all-important up arrow :) */
+		add_history(pbuf);
 		
 		__argc = 0;
 		for (ap = __argv; (*ap = strsep(&pbuf, " \t")) != NULL;) {
 			__argc++;
 			if (**ap != '\0') {
-				if (++ap >= &__argv[10]) {
+				if (++ap >= &__argv[10])
 					break;
-				}
 			}
 		}
 
@@ -288,6 +372,18 @@ static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printf("Compiled without readline support, ipmishell is disabled.\n");
 	return -1;
 #endif
+}
+
+static int
+ipmi_delay_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	int delay = 1;
+	if (argc > 0) {
+		delay = atoi(argv[0]);
+	}
+	printf("Delaying %d seconds...\n", delay);
+	sleep(delay);
+	return 0;
 }
 
 int main(int argc, char ** argv)
