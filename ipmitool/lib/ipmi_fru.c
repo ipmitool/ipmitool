@@ -35,6 +35,7 @@
  */
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sdr.h>
 
