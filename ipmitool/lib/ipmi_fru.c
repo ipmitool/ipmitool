@@ -944,7 +944,8 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_fru_print_all(intf);
 	else if (strncmp(argv[0], "help", 4) == 0)
 		lprintf(LOG_ERR, "FRU Commands:  print");
-	else if (strncmp(argv[0], "print", 5) == 0)
+	else if (strncmp(argv[0], "print", 5) == 0 ||
+		strncmp(argv[0], "list", 4) == 0)
 		rc = ipmi_fru_print_all(intf);
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
