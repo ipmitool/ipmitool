@@ -1,17 +1,13 @@
-Name:         @IPMITOOL_PKG@
-Summary:      @IPMITOOL_PKG@ - Utility for interfacing with IPMI devices
+Name:         @IPMITOOL_BIN@
+Summary:      @IPMITOOL_BIN@ - Utility for IPMI control
 Version:      @VERSION@
 Release:      1
 Copyright:    BSD
 Group:        Utilities
 Vendor:       Sun Microsystems
 Packager:     Duncan Laurie <duncan@sun.com>
-Source:       @IPMITOOL_PKG@-@VERSION@.tar.gz
-Buildroot:    /var/tmp/@IPMITOOL_PKG@-root
-
-%package dev
-Summary: Development files for ipmitool
-Group: Utilities
+Source:       @IPMITOOL_BIN@-@VERSION@.tar.gz
+Buildroot:    /var/tmp/@IPMITOOL_BIN@-root
 
 %description
 This package contains a utility for interfacing with IPMI-enabled devices
@@ -19,10 +15,6 @@ through either the OpenIPMI kernel driver or with IPMI-over-LAN protocol.
 It provides some basic functions for reading the SDR and displaying sensor
 values, displaying the contents of the SEL, printing FRU information,
 reading and setting LAN configuration, and chassis power control.
-
-%description dev
-Additional development files for creating applications or interface plugins
-for ipmitool.
 
 %prep
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
@@ -49,7 +41,7 @@ make
 %install
 make DESTDIR=$RPM_BUILD_ROOT install-strip
 
-DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/@IPMITOOL_PKG@-@VERSION@
+DOCDIR=$RPM_BUILD_ROOT%{_datadir}/doc/@IPMITOOL_BIN@-@VERSION@
 mkdir -p $DOCDIR
 for DOC in COPYING AUTHORS ChangeLog ; do
     install -m 644 -o root -g root $DOC $DOCDIR/$DOC
@@ -59,18 +51,13 @@ done
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
     rm -rf $RPM_BUILD_ROOT
 fi
-rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
+rm -rf $RPM_BUILD_DIR/@IPMITOOL_BIN@-@VERSION@
 
 %files
 %defattr(-,root,root)
 %doc %{_mandir}/man1/*
 %{_bindir}/*
-%{_datadir}/doc/@IPMITOOL_PKG@-@VERSION@/*
-
-%files dev
-%defattr(-,root,root)
-%dir %{_includedir}/ipmitool
-%{_includedir}/ipmitool/*.h
+%{_datadir}/doc/@IPMITOOL_BIN@-@VERSION@/*
 
 %changelog
 * Sat May 27 2004 <duncan@sun.com>  1.5.9-1
