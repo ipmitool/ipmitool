@@ -1,8 +1,14 @@
+version 1.6.0
+	* Add a README file
 	* Add Solaris x86 interface plugin
 	* Add support for building Solaris packages
 	* Fix segfault when doing "sel list" (from Matthew Braithwaite)
 	* Fix "chassis identify" on some BMCs (from ebrower@sourceforge)
 	* Add command "bmc info" and related output (from ebrower@sourceforge)
+	* Add support for IPMIv2 and Serial-over-LAN from Jeremy at Newisys
+	* Add support for building RPMs as non-root user
+	* Add new "shell" and "exec" commands
+	* Lots of other contributed patches
 
 version 1.5.9
 	* Add ability to get a particular sensor by name
