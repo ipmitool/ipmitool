@@ -323,7 +323,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
             }
             else
             {
-                printf("| %-11s | %-10s | %-6s",
+                printf("| %-10s | %-10s | %-6s",
                        "na",
                        unitstr,
                        "na");
@@ -603,6 +603,16 @@ ipmi_sensor_list(struct ipmi_intf * intf)
     }
 }
 
+const struct valstr threshold_vals[] = {
+	{ UPPER_NON_RECOV_SPECIFIED,	"Upper Non-Recoverable" },
+	{ UPPER_CRIT_SPECIFIED,		"Upper Critical" },
+	{ UPPER_NON_CRIT_SPECIFIED,	"Upper Non-Critical" },
+	{ LOWER_NON_RECOV_SPECIFIED,	"Lower Non-Recoverable" },
+	{ LOWER_CRIT_SPECIFIED,		"Lower Critical" },
+	{ LOWER_NON_CRIT_SPECIFIED,	"Lower Non-Critical" },
+	{ 0x00,				NULL },
+};
+
 static void
 ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -661,9 +671,12 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
         return;
     }
 
+    printf("Locating sensor record...\n");
     sdr = ipmi_sdr_find_sdr(intf, id);
     if (sdr)
     {
+	printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+	       id, val2str(settingMask, threshold_vals), setting);
         rsp = ipmi_sensor_set_sensor_thresholds(intf, 
                                                 sdr->keys.sensor_num,
                                                 settingMask,
