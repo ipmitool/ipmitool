@@ -1063,13 +1063,7 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	int rc;
 
 	/* don't fail on ping because its not always supported */
-	rc = ipmi_lan_ping(intf);
-	if (rc <= 0) {
-		if (verbose > 1)
-			printf("RMCP Pong : IPMI not supported!\n");
-		/* send again */
-		ipmi_lan_ping(intf);
-	}
+	ipmi_lan_ping(intf);
 
 	if (intf->pedantic)
 		ipmi_lan_first(intf);
