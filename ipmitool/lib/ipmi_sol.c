@@ -40,6 +40,8 @@
 #include <sys/select.h>
 #include <sys/time.h>
 
+#include <termios.h>
+
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
@@ -58,6 +60,8 @@
 #define SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
 #define SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
 
+static struct termios _saved_tio;
+static int _in_raw_mode = 0;
 
 extern int verbose;
 
@@ -670,19 +674,59 @@ static int ipmi_sol_set_param(struct ipmi_intf * intf,
 }
 
 
+
+void leave_raw_mode(void)
+{
+	if (!_in_raw_mode)
+		return;
+	if (tcsetattr(fileno(stdin), TCSADRAIN, &_saved_tio) == -1)
+		perror("tcsetattr");
+	else
+		_in_raw_mode = 0;
+}
+
+
+
+void enter_raw_mode(void)
+{
+	struct termios tio;
+	if (tcgetattr(fileno(stdin), &tio) == -1) {
+		perror("tcgetattr");
+		return;
+	}
+	_saved_tio = tio;
+	tio.c_iflag |= IGNPAR;
+	tio.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF)\
+		;
+	tio.c_lflag &= ~(ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL);
+	//	#ifdef IEXTEN
+	tio.c_lflag &= ~IEXTEN;
+	//	#endif
+	tio.c_oflag &= ~OPOST;
+	tio.c_cc[VMIN] = 1;
+	tio.c_cc[VTIME] = 0;
+	if (tcsetattr(fileno(stdin), TCSADRAIN, &tio) == -1)
+		perror("tcsetattr");
+	else
+		_in_raw_mode = 1;
+}
+
+
+
 /*
  * ipmi_sol_red_pill
  */
 static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload v2_payload;
-	char   buffer[255];
 	int    bShouldExit = 0;
 	fd_set read_fds;
 	struct timeval tv;
 	int    retval;
 	size_t num_read;
 	char   c;
+
+	enter_raw_mode();
 
 	while (! bShouldExit)
 	{
@@ -736,7 +780,6 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 				 * Received input from the BMC.
 				 */
 				int i;
-				bzero(buffer, sizeof(buffer));
 				//printf("The BMC has data for us...\n");
 				struct ipmi_rs * rs =intf->recv_sol(intf);
 				for (i = 0; i < rs->data_len; ++i)
@@ -751,6 +794,8 @@ static int ipmi_sol_red_pill(struct ipmi_intf * intf)
 			}
 		}
 	}		
+
+	leave_raw_mode();
 
 	return 0;
 }
