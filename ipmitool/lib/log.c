@@ -74,7 +74,7 @@ void lprintf(int level, const char * format, ...)
 	if (logpriv->daemon)
 		syslog(level, "%s", logmsg);
 	else
-		printf("%s\n", logmsg);
+		fprintf(stderr, "%s\n", logmsg);
 	return;
 }
 
