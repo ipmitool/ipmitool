@@ -44,7 +44,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <config.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
@@ -59,15 +58,21 @@
 #include <ipmitool/ipmi_channel.h>
 
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#else
+# define IPMITOOL_BIN	"ipmitool"
+#endif
+
 struct ipmi_session lan_session;
 int csv_output = 0;
 int verbose = 0;
 
 void usage(void)
 {
-	printf("ipmitool version %s\n", VERSION);
+	printf("%s version %s\n", IPMITOOL_BIN, VERSION);
 	printf("\n");
-	printf("usage: ipmitool [options...] <command>\n");
+	printf("usage: %s [options...] <command>\n", IPMITOOL_BIN);
 	printf("\n");
 	printf("       -h            This help\n");
 	printf("       -V            Show version information\n");
@@ -78,12 +83,10 @@ void usage(void)
 	printf("       -p port       Remote RMCP port (default is 623)\n");
 	printf("       -U username   Remote username\n");
 	printf("       -a            Prompt for remote password\n");
-	printf("       -E            Read remote password from environment\n");
+	printf("       -E            Read remote password from environment variable IPMITOOL_PASSWORD\n");
 	printf("       -P password   Remote password\n");
 	printf("       -I intf       Inteface to use\n");
 	printf("\n\n");
-
-	exit(EXIT_SUCCESS);
 }
 
 int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
@@ -259,21 +262,21 @@ int main(int argc, char ** argv)
 	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
 	char * hostname = NULL, * password = NULL, * username = NULL, * tmp;
-	int argflag, i, rc=0, port = 623, pedantic = 0;
+	int argflag, intfarg = 0, rc = 0, port = 623, pedantic = 0;
 	char intfname[32];
 
-	if (ipmi_intf_init() < 0)
-		exit(EXIT_FAILURE);
+	memset(intfname, 0, sizeof(intfname));
 
 	while ((argflag = getopt(argc, (char **)argv, "hVvcgEaI:H:P:U:p:")) != -1)
 	{
 		switch (argflag) {
 		case 'h':
 			usage();
+			goto out_free;
 			break;
 		case 'V':
-			printf("ipmitool version %s\n", VERSION);
-			exit(EXIT_SUCCESS);
+			printf("%s version %s\n", IPMITOOL_BIN, VERSION);
+			goto out_free;
 			break;
 		case 'g':
 			pedantic = 1;
@@ -285,13 +288,7 @@ int main(int argc, char ** argv)
 			csv_output = 1;
 			break;
 		case 'I':
-			memset(intfname, 0, sizeof(intfname));
-			i = snprintf(intfname, sizeof(intfname), "intf_%s", optarg);
-			intf = ipmi_intf_load(intfname);
-			if (!intf) {
-				printf("Error loading interface %s\n", optarg);
-				exit(EXIT_FAILURE);
-			}
+			intfarg = snprintf(intfname, sizeof(intfname), "intf_%s", optarg);
 			break;
 		case 'H':
 			hostname = strdup(optarg);
@@ -340,17 +337,27 @@ int main(int argc, char ** argv)
 			break;
 		default:
 			usage();
+			goto out_free;
 		}
 	}
 
 	if (argc-optind <= 0) {
 		printf("No command provided!\n");
 		usage();
+		goto out_free;
 	}
 
-	if (!intf) {
+	if (intfarg) {
+		intf = ipmi_intf_load(intfname);
+		if (!intf) {
+			printf("Error loading interface %s\n", optarg);
+			goto out_free;
+		}
+	}
+	else {
 		printf("No interface specified!\n");
 		usage();
+		goto out_free;
 	}
 
 	intf->pedantic = pedantic;
@@ -436,9 +443,9 @@ int main(int argc, char ** argv)
 	if (intf->close)
 		intf->close(intf);
 
+ out_free:
 	ipmi_intf_exit();
 
- out_free:
 	if (hostname)
 		free(hostname);
 	if (username)

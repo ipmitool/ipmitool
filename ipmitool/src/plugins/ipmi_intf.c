@@ -97,6 +97,9 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 		i++;
 	}
 
+	if (ipmi_intf_init() < 0)
+		return NULL;
+
 	memset(libname, 0, 16);
 	if (snprintf(libname, sizeof(libname), "lib%s", name) <= 0) {
 		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
