@@ -50,13 +50,14 @@ extern struct static_intf static_intf_list[];
 int ipmi_intf_init(void)
 {
 	if (lt_dlinit() < 0) {
-		printf("ERROR: Unable to initialize ltdl\n");
+		printf("ERROR: Unable to initialize ltdl: %s\n",
+                       lt_dlerror());
 		return -1;
 	}
 
 	if (lt_dlsetsearchpath(PLUGIN_PATH) < 0) {
-		printf("ERROR: Unable to set ltdl plugin path to %s\n",
-		       PLUGIN_PATH);
+		printf("ERROR: Unable to set ltdl plugin path to %s: %s\n",
+		       PLUGIN_PATH, lt_dlerror());
 		lt_dlexit();
 		return -1;
 	}
@@ -70,7 +71,8 @@ int ipmi_intf_init(void)
 void ipmi_intf_exit(void)
 {
 	if (lt_dlexit() < 0)
-		printf("ERROR: Unable to cleanly exit ltdl\n");
+		printf("ERROR: Unable to cleanly exit ltdl: %s\n",
+                       lt_dlerror());
 }
 
 /* ipmi_intf_load
@@ -104,14 +106,16 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 
 	handle = lt_dlopenext(libname);
 	if (handle == NULL) {
-		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
-		       libname, PLUGIN_PATH);
+		printf("ERROR: Unable to find plugin '%s' in '%s': %s\n",
+		       libname, PLUGIN_PATH, lt_dlerror());
 		return NULL;
 	}
 
 	setup = lt_dlsym(handle, "intf_setup");
 	if (!setup) {
-		printf("ERROR: Unable to find interface setup symbol in plugin %s\n", name);
+		printf("ERROR: Unable to find interface setup symbol "
+                       "in plugin %s: %s\n", name,
+                       lt_dlerror());
 		lt_dlclose(handle);
 		return NULL;
 	}
