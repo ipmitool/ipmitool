@@ -50,7 +50,12 @@
 #include <fcntl.h>
 
 #include <ipmitool/helper.h>
+#include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 
 #include "lan.h"
 #include "md5.h"
@@ -397,13 +402,23 @@ unsigned char * ipmi_auth_md5(unsigned char * data, int data_len)
 {
 	md5_state_t state;
 	static md5_byte_t digest[16];
+	uint32_t temp;
+
+	memset(digest, 0, 16);
+	memset(&state, 0, sizeof(md5_state_t));
 
 	md5_init(&state);
 
 	md5_append(&state, (const md5_byte_t *)lan_session.authcode, 16);
 	md5_append(&state, (const md5_byte_t *)&lan_session.id, 4);
 	md5_append(&state, (const md5_byte_t *)data, data_len);
-	md5_append(&state, (const md5_byte_t *)&lan_session.in_seq, 4);
+
+#if WORDS_BIGENDIAN
+	temp = BSWAP_32(lan_session.in_seq);
+#else
+	temp = lan_session.in_seq;
+#endif
+	md5_append(&state, (const md5_byte_t *)&temp, 4);
 	md5_append(&state, (const md5_byte_t *)lan_session.authcode, 16);
 
 	md5_finish(&state, digest);
@@ -873,9 +888,6 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		       val2str(msg_data[1], ipmi_privlvl_vals));
 		printf("  Auth Type       : %s\n",
 		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
-		if (lan_session.authtype)
-			printf("  AuthCode        : %s\n",
-			       lan_session.authcode);
 	}
 
 	rsp = intf->sendrecv(intf, &req);
