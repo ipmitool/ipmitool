@@ -187,8 +187,8 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	}
 }
 
-static struct sel_event_record *
-ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
+static unsigned short
+ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_event_record * evt)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
@@ -198,7 +198,8 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 	memset(msg_data, 0, 6);
 	msg_data[0] = 0x00;	/* no reserve id, not partial get */
 	msg_data[1] = 0x00;
-	memcpy(msg_data+2, next_id, sizeof(*next_id));
+	msg_data[2] = id & 0xff;
+	msg_data[3] = (id >> 8) & 0xff;
 	msg_data[4] = 0x00;	/* offset */
 	msg_data[5] = 0xff;	/* length */
 
@@ -211,27 +212,41 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short * next_id)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
 		printf("Error %x in Get SEL Entry %x Command\n",
-		       rsp ? rsp->ccode : 0, *next_id);
-		return NULL;
+		       rsp ? rsp->ccode : 0, id);
+		return 0;
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "SEL Entry");
 
-	*next_id = (rsp->data[1] << 8) | rsp->data[0];
 
 	if (rsp->data[4] >= 0xc0) {
 		printf("Not a standard SEL Entry!\n");
-		return NULL;
+		return 0;
 	}
 
-	return (struct sel_event_record *) &rsp->data[2];
+	memset(evt, 0, sizeof(*evt));
+	evt->record_id = (rsp->data[3] << 8) | rsp->data[2];
+	evt->record_type = rsp->data[4];
+	evt->timestamp = (rsp->data[8] << 24) | (rsp->data[7] << 16) | (rsp->data[6] << 8) | rsp->data[5];
+	evt->gen_id = (rsp->data[10] << 8) | rsp->data[9];
+	evt->evm_rev = rsp->data[11];
+	evt->sensor_type = rsp->data[12];
+	evt->sensor_num = rsp->data[13];
+	evt->event_type = rsp->data[14] & 0x7f;
+	evt->event_dir = (rsp->data[14] & 0x80) >> 7;
+	evt->event_data[0] = rsp->data[15];
+	evt->event_data[1] = rsp->data[16];
+	evt->event_data[2] = rsp->data[17];
+
+	return (rsp->data[1] << 8) | rsp->data[0];
 }
 
 static char *
 ipmi_sel_timestamp(uint32_t stamp)
 {
 	static unsigned char tbuf[40];
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&stamp));
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
 	return tbuf;
 }
 
@@ -239,7 +254,8 @@ static char *
 ipmi_sel_timestamp_date(uint32_t stamp)
 {
 	static unsigned char tbuf[11];
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&stamp));
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
 	return tbuf;
 }
 
@@ -247,7 +263,8 @@ static char *
 ipmi_sel_timestamp_time(uint32_t stamp)
 {
 	static unsigned char tbuf[9];
-	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&stamp));
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
 	return tbuf;
 }
 
@@ -380,7 +397,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned short reserve_id, next_id = 0;
-	struct sel_event_record * evt;
+	struct sel_event_record evt;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -418,14 +435,15 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	while (next_id != 0xffff) {
 		if (verbose > 1)
 			printf("SEL Next ID: %04x\n", next_id);
-		/* next_id is updated by this function */
-		evt = ipmi_sel_get_std_entry(intf, &next_id);
-		if (!evt)
+
+		next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+		if (!next_id)
 			break;
+
 		if (verbose)
-			ipmi_sel_print_std_entry_verbose(evt);
+			ipmi_sel_print_std_entry_verbose(&evt);
 		else
-			ipmi_sel_print_std_entry(evt);
+			ipmi_sel_print_std_entry(&evt);
 	}
 }
 
