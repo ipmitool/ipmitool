@@ -749,7 +749,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* default gateway settings */
 	else if (!strncmp(argv[1], "defgw", 5)) {
 		if (argc < 4 || !strncmp(argv[2], "help", 4)) {
-			printf("LAN set default gateway Commands: ipaddr, mac\n");
+			printf("LAN set default gateway Commands: ipaddr, macaddr\n");
 		}
 		else if (!strncmp(argv[2], "ipaddr", 5) &&
 			 !get_cmdline_ipaddr(argv[3], data)) {
@@ -769,7 +769,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* backup gateway settings */
 	else if (!strncmp(argv[1], "bakgw", 5)) {
 		if (argc < 4 || !strncmp(argv[2], "help", 4)) {
-			printf("LAN set backup gateway commands: ipaddr, mac\n");
+			printf("LAN set backup gateway commands: ipaddr, macaddr\n");
 		}
 		else if (!strncmp(argv[2], "ipaddr", 5) &&
 			 !get_cmdline_ipaddr(argv[3], data)) {
