@@ -35,93 +35,57 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <ipmitool/helper.h>
-
 #include <string.h>
+#include <stdio.h>
 
+#include <ipmitool/helper.h>
+#include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_bmc.h>
 
-unsigned long buf2long(unsigned char * buf)
+extern int verbose;
+
+static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
 {
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = cmd;
+	req.msg.data_len = 0;
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
-
-	if (!len || len > 1024)
-		return NULL;
-
-	memset(str, 0, 1024);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("Error in BMC Reset Command\n");
+		return -1;
 	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
+	if (rsp->ccode) {
+		printf("BMC Reset Command returned %x\n", rsp->ccode);
+		return -1;
 	}
 
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
+	return 0;
 }
 
-void signal_handler(int sig, void * handler)
+int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
+	if (!argc || !strncmp(argv[0], "help", 4)) {
+		printf("BMC Commands:  reset\n");
+		return 0;
 	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
+	else if (!strncmp(argv[0], "reset", 5)) {
+		if (argc < 2 || !strncmp(argv[1], "help", 4)) {
+			printf("reset commands: warm, cold\n");
+		}
+		else if (!strncmp(argv[1], "cold", 4)) {
+			ipmi_bmc_reset(intf, BMC_COLD_RESET);
+		}
+		else if (!strncmp(argv[1], "warm", 4)) {
+			ipmi_bmc_reset(intf, BMC_WARM_RESET);
+		}
+		else {
+			printf("reset commands: warm, cold\n");
+		}
 	}
+	return 0;
 }
-

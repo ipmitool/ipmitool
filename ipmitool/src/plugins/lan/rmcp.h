@@ -34,94 +34,47 @@
  * facility.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
+#ifndef IPMI_RMCP_H
+#define IPMI_RMCP_H
+
 #include <ipmitool/helper.h>
+#include "lan.h"
 
-#include <string.h>
+#define RMCP_VERSION_1		0x06
 
+#define RMCP_UDP_PORT		0x26f /* port 623 */
+#define RMCP_UDP_SECURE_PORT	0x298 /* port 664 */
 
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+#define RMCP_TYPE_MASK		0x80
+#define RMCP_TYPE_NORM		0x00
+#define RMCP_TYPE_ACK		0x01
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+static const struct valstr rmcp_type_vals[] __attribute__((unused)) = {
+	{ RMCP_TYPE_NORM,	"Normal RMCP" },
+	{ RMCP_TYPE_ACK,	"RMCP ACK" },
+	{ 0,			NULL }
+};
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
+#define RMCP_CLASS_MASK		0x1f
+#define RMCP_CLASS_ASF		0x06
+#define RMCP_CLASS_IPMI		0x07
+#define RMCP_CLASS_OEM		0x08
 
-	if (!len || len > 1024)
-		return NULL;
+static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
+	{ RMCP_CLASS_ASF,	"ASF" },
+	{ RMCP_CLASS_IPMI,	"IPMI" },
+	{ RMCP_CLASS_OEM,	"OEM" },
+	{ 0,			NULL }
+};
 
-	memset(str, 0, 1024);
+/* RMCP message header */
+struct rmcp_hdr {
+	unsigned char ver;
+	unsigned char __reserved;
+	unsigned char seq;
+	unsigned char class;
+} __attribute__((packed));
 
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
+int handle_rmcp(struct ipmi_intf * intf, unsigned char * data, int data_len);
 
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
+#endif /* IPMI_RMCP_H */

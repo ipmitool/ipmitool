@@ -1,1 +1,3 @@
-usr/sbin
+usr/bin
+usr/lib/ipmitool
+usr/include/ipmitool

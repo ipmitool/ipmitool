@@ -34,94 +34,40 @@
  * facility.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <ipmitool/helper.h>
+#ifndef IPMI_LAN_H
+#define IPMI_LAN_H
 
-#include <string.h>
+#include <ipmitool/ipmi.h>
 
+#define IPMI_LAN_CHANNEL_1	0x07
+#define IPMI_LAN_CHANNEL_2	0x06
+#define IPMI_LAN_CHANNEL_E	0x0e
 
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
+#define IPMI_SESSION_AUTHTYPE_NONE	0x0
+#define IPMI_SESSION_AUTHTYPE_MD2	0x1
+#define IPMI_SESSION_AUTHTYPE_MD5	0x2
+#define IPMI_SESSION_AUTHTYPE_KEY	0x4
+#define IPMI_SESSION_AUTHTYPE_OEM	0x5
 
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
+#define IPMI_SESSION_PRIV_CALLBACK	0x1
+#define IPMI_SESSION_PRIV_USER		0x2
+#define IPMI_SESSION_PRIV_OPERATOR	0x3
+#define IPMI_SESSION_PRIV_ADMIN		0x4
+#define IPMI_SESSION_PRIV_OEM		0x5
 
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
+extern const struct valstr ipmi_privlvl_vals[];
+extern const struct valstr ipmi_authtype_vals[];
 
-	if (!len || len > 1024)
-		return NULL;
+extern struct ipmi_session lan_session;
+unsigned char * ipmi_auth_md5(unsigned char * data, int data_len);
+unsigned char ipmi_csum(unsigned char * d, int s);
 
-	memset(str, 0, 1024);
+struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
+int  ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * password);
+void ipmi_lan_close(struct ipmi_intf * intf);
+void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
+int ipmi_lan_ping(struct ipmi_intf * intf);
 
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
+struct ipmi_intf ipmi_lan_intf;
 
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
-
+#endif /*IPMI_LAN_H*/

@@ -34,94 +34,72 @@
  * facility.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <signal.h>
-#include <ipmitool/helper.h>
+#include <stdlib.h>
+#include <ltdl.h>
 
-#include <string.h>
+#include <config.h>
+#include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi.h>
 
-
-unsigned long buf2long(unsigned char * buf)
+/* ipmi_intf_init
+ * initialize dynamic plugin interface
+ */
+int ipmi_intf_init(void)
 {
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
+	if (lt_dlinit() < 0) {
+		printf("ERROR: Unable to initialize ltdl\n");
+		return -1;
+	}
+
+	if (lt_dlsetsearchpath(PLUGIN_PATH) < 0) {
+		printf("ERROR: Unable to set ltdl plugin path to %s\n",
+		       PLUGIN_PATH);
+		lt_dlexit();
+		return -1;
+	}
+
+	return 0;
 }
 
-unsigned short buf2short(unsigned char * buf)
+/* ipmi_intf_exit
+ * close dynamic plugin interface
+ */
+void ipmi_intf_exit(void)
 {
-	return (unsigned short)(buf[1] << 8 | buf[0]);
+	if (lt_dlexit() < 0)
+		printf("ERROR: Unable to cleanly exit ltdl\n");
 }
 
-const char * buf2str(unsigned char * buf, int len)
+/* ipmi_intf_load
+ * name: interface plugin name to load
+ */
+struct ipmi_intf * ipmi_intf_load(char * name)
 {
-	static char str[1024];
-	int i;
+	lt_dlhandle handle;
+	struct ipmi_intf * intf;
+	int (*intf_setup)(struct ipmi_intf ** intf);
 
-	if (!len || len > 1024)
+	handle = lt_dlopenext(name);
+	if (handle == NULL) {
+		printf("ERROR: Unable to find plugin '%s' in '%s'\n",
+		       name, PLUGIN_PATH);
 		return NULL;
-
-	memset(str, 0, 1024);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
 	}
 
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
+	intf_setup = lt_dlsym(handle, "intf_setup");
+	if (!intf_setup) {
+		printf("ERROR: Unable to find interface setup symbol in plugin %s\n", name);
+		lt_dlclose(handle);
+		return NULL;
 	}
 
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
+	if (intf_setup(&intf) < 0) {
+		printf("ERROR: Unable to run interface setup for plugin %s\n", name);
+		lt_dlclose(handle);
+		return NULL;
 	}
+
+	return intf;
 }
 

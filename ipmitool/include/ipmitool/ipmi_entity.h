@@ -34,94 +34,55 @@
  * facility.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
+#ifndef IPMI_ENTITY_H
+#define IPMI_ENTITY_H
+
 #include <ipmitool/helper.h>
 
-#include <string.h>
+const struct valstr entity_id_vals[] __attribute__((unused)) = {
+	{ 0x00, "Unspecified" },
+	{ 0x01, "Other" },
+	{ 0x02, "Unknown" },
+	{ 0x03, "Processor" },
+	{ 0x04, "Disk or Disk Bay" },
+	{ 0x05, "Peripheral Bay" },
+	{ 0x06, "System Management Module" },
+	{ 0x07, "System Board" },
+	{ 0x08, "Memory Module" },
+	{ 0x09, "Processor Module" },
+	{ 0x0a, "Power Supply" },
+	{ 0x0b, "Add-in Card" },
+	{ 0x0c, "Front Panel Board" },
+	{ 0x0d, "Back Panel Board" },
+	{ 0x0e, "Power System Board" },
+	{ 0x0f, "Drive Backplane" },
+	{ 0x10, "System Internal Expansion Board" },
+	{ 0x11, "Other System Board" },
+	{ 0x12, "Processor Board" },
+	{ 0x13, "Power Unit" },
+	{ 0x14, "Power Module" },
+	{ 0x15, "Power Management" },
+	{ 0x16, "Chassis Back Panel Board" },
+	{ 0x17, "System Chassis" },
+	{ 0x18, "Sub-Chassis" },
+	{ 0x19, "Other Chassis Board" },
+	{ 0x1a, "Disk Drive Bay" },
+	{ 0x1b, "Peripheral Bay" },
+	{ 0x1c, "Device Bay" },
+	{ 0x1d, "Fan Device" },
+	{ 0x1e, "Cooling Unit" },
+	{ 0x1f, "Cable/Interconnect" },
+	{ 0x20, "Memory Device" },
+	{ 0x21, "System Management Software" },
+	{ 0x22, "BIOS" },
+	{ 0x23, "Operating System" },
+	{ 0x24, "System Bus" },
+	{ 0x25, "Group" },
+	{ 0x26, "Remote Management Device" },
+	{ 0x27, "External Environment" },
+	{ 0x28, "Battery" },
+	{ 0x00, NULL },
+};
 
-
-unsigned long buf2long(unsigned char * buf)
-{
-	return (unsigned long)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
-}
-
-unsigned short buf2short(unsigned char * buf)
-{
-	return (unsigned short)(buf[1] << 8 | buf[0]);
-}
-
-const char * buf2str(unsigned char * buf, int len)
-{
-	static char str[1024];
-	int i;
-
-	if (!len || len > 1024)
-		return NULL;
-
-	memset(str, 0, 1024);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
-
-	return (const char *)str;
-}
-
-void printbuf(unsigned char * buf, int len, char * desc)
-{
-	int i;
-
-	if (!len)
-		return;
-
-	printf("%s (%d bytes)\n", desc, len);
-	for (i=0; i<len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", buf[i]);
-	}
-	printf("\n");
-}
-
-const char * val2str(unsigned char val, const struct valstr *vs)
-{
-	static char un_str[16];
-	int i = 0;
-
-	while (vs[i].str) {
-		if (vs[i].val == val)
-			return vs[i].str;
-		i++;
-	}
-
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
-
-	return un_str;
-}
-
-void signal_handler(int sig, void * handler)
-{
-	struct sigaction act;
-
-	if (!sig || !handler)
-		return;
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handler;
-	act.sa_flags = 0;
-
-	if (sigemptyset(&act.sa_mask) < 0) {
-		psignal(sig, "unable to empty signal set");
-		return;
-	}
-
-	if (sigaction(sig, &act, NULL) < 0) {
-		psignal(sig, "unable to register handler");
-		return;
-	}
-}
+#endif /* IPMI_ENTITY_H */
 
