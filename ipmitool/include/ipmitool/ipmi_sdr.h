@@ -99,6 +99,7 @@ struct sdr_get_rs {
 	unsigned char	version;	/* SDR version (51h) */
 #define SDR_RECORD_TYPE_FULL_SENSOR	0x01
 #define SDR_RECORD_TYPE_COMPACT_SENSOR	0x02
+#define SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR 0x11
 	unsigned char	type;		/* record type */
 	unsigned char	length;		/* remaining record bytes */
 } __attribute__ ((packed));
@@ -292,6 +293,31 @@ struct sdr_record_full_sensor {
 	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
 } __attribute__ ((packed));
 
+struct sdr_record_fru_device_locator {
+	struct {
+		unsigned char __reserved1 : 1, dev_access_addr : 6;
+		unsigned char fru_device_id;
+		unsigned char private_bus : 3, access_lun : 2, __reserved3 : 2, logical_dev : 1;
+		unsigned char __reserved4 : 4, channel_num : 4;
+	} keys;
+
+	unsigned char __reserved;
+	unsigned char device_type;
+	unsigned char device_type_modifier;
+	unsigned char fru_entity_id;
+	unsigned char fru_entity_instance;
+	unsigned char oem;
+	unsigned char id_code;
+	unsigned char id_string[16];
+} __attribute__ ((packed));
+
+struct ipmi_sdr_iterator
+{
+	unsigned short reservation;
+	int total;
+	int next;
+};
+
 /* unit description codes (IPMI v1.5 section 37.16) */
 #define UNIT_MAX	0x90
 static const char * unit_desc[] __attribute__((unused)) = {
@@ -321,5 +347,10 @@ static const char * unit_desc[] __attribute__((unused)) = {
 	"messages", "characters",
 	"error", "correctable error", "uncorrectable error",
 };
+
+struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
+struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
+unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
+void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 
 #endif  /* IPMI_SDR_H */
