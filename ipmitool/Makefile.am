@@ -38,7 +38,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	config.guess config.sub depcomp install-sh ltmain.sh missing \
 	mkinstalldirs config.h.in stamp-h.in $(distdir).tar.gz
 
-SUBDIRS = lib src include doc contrib
+SUBDIRS = libltdl lib src include doc contrib
 
 dist-hook: ipmitool.spec
 	cp ipmitool.spec $(distdir)
