@@ -169,8 +169,8 @@ struct get_channel_access_rsp {
 
 
 
-int  ipmi_channel_main(struct ipmi_intf *, int, char **);
-void ipmi_get_channel_auth_cap(struct ipmi_intf * intf, unsigned char channel, unsigned char priv);
-void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
+int ipmi_channel_main(struct ipmi_intf *, int, char **);
+int ipmi_get_channel_auth_cap(struct ipmi_intf * intf, unsigned char channel, unsigned char priv);
+int ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 
 #endif /*IPMI_CHANNEL_H*/

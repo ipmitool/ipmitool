@@ -134,11 +134,12 @@ const char * ipmi_1_5_authtypes(unsigned char n)
 /**
  * ipmi_get_channel_auth_cap
  *
- * Wrapper around the Get Channel Authentication Capabilities command
+ * return 0 on success
+ *        -1 on failure
  */
-void ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
-							   unsigned char channel,
-							   unsigned char priv)
+int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
+                              unsigned char channel,
+                              unsigned char priv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -169,7 +170,7 @@ void ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 		if (!rsp || rsp->ccode) {
 			printf("Error:%x Get Channel Authentication Capabilities Command (0x%x)\n",
 				   rsp ? rsp->ccode : 0, channel);
-			return;
+			return -1;
 		}
 	}
 
@@ -218,6 +219,8 @@ void ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 		printf("OEM Auxiliary Data         : 0x%x\n",
 			   auth_cap.oem_aux_data);
 	}
+
+    return 0;
 }
 
 
@@ -225,9 +228,11 @@ void ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 /**
  * ipmi_get_channel_info
  *
- * Wrapper around the Get Channel Info command
+ * returns 0 on success
+ *         -1 on failure
+ *
  */
-void
+int
 ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 {
 	struct ipmi_rs * rsp;
@@ -247,7 +252,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 	if (!rsp || rsp->ccode) {
 		printf("Error:%x Get Channel Info Command (0x%x)\n",
 			   rsp ? rsp->ccode : 0, channel);
-		return;
+		return -1;
 	}
 
 
@@ -306,7 +311,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		return;
+		return -1;
 	}
 
 	memcpy(&channel_access, rsp->data, sizeof(struct get_channel_access_rsp));
@@ -344,7 +349,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 	rqdata[1] = 0x40; /* 0x40=non-volatile */
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
-		return;
+		return -1;
 	}
 
 	memcpy(&channel_access, rsp->data, sizeof(struct get_channel_access_rsp));
@@ -376,6 +381,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 			break;
 	}
 
+    return 0;
 }
 
 static int
@@ -446,9 +452,9 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc != 3)
 			printf_channel_usage();
 		else
-			ipmi_get_channel_auth_cap(intf,
-						  (unsigned char)strtol(argv[1], NULL, 0),
-						  (unsigned char)strtol(argv[2], NULL, 0));
+			retval = ipmi_get_channel_auth_cap(intf,
+                                               (unsigned char)strtol(argv[1], NULL, 0),
+                                               (unsigned char)strtol(argv[2], NULL, 0));
 	}
 	else if (!strncmp(argv[0], "user", 4))
 	{
@@ -459,7 +465,7 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			unsigned char id = 1;
 			if (argc == 3)
 				id = (unsigned char)strtol(argv[2], NULL, 0);
-			ipmi_get_user_access(intf, ch, id);
+			retval = ipmi_get_user_access(intf, ch, id);
 		}
 	}
 	else if (!strncmp(argv[0], "info", 4))
@@ -470,7 +476,7 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			unsigned char ch = 0xe;
 			if (argc == 2)
 				ch = (unsigned char)strtol(argv[1], NULL, 0);
-			ipmi_get_channel_info(intf, ch);
+			retval = ipmi_get_channel_info(intf, ch);
 		}
 	}
 	else
