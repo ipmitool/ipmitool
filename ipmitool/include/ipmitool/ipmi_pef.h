@@ -37,72 +37,68 @@
 #ifndef IPMI_PEF_H
 #define IPMI_PEF_H
 
-#include <inttypes.h>
 #include <ipmitool/ipmi.h>
-
-typedef unsigned char u8_t;
-typedef unsigned int u32_t;
 
 /* PEF */
 
 struct pef_capabilities {		/* "get pef capabilities" response */
-	u8_t version;
-	u8_t actions;						/* mapped by PEF_ACTION_xxx */
-	u8_t tblsize;
+	uint8_t version;
+	uint8_t actions;						/* mapped by PEF_ACTION_xxx */
+	uint8_t tblsize;
 };
 
 struct pef_table_entry {
 #define PEF_CONFIG_ENABLED 0x80
 #define PEF_CONFIG_PRECONFIGURED 0x40
-	u8_t config;
+	uint8_t config;
 #define PEF_ACTION_DIAGNOSTIC_INTERRUPT 0x20
 #define PEF_ACTION_OEM 0x10
 #define PEF_ACTION_POWER_CYCLE 0x08
 #define PEF_ACTION_RESET 0x04
 #define PEF_ACTION_POWER_DOWN 0x02
 #define PEF_ACTION_ALERT 0x01
-	u8_t action;
+	uint8_t action;
 #define PEF_POLICY_NUMBER_MASK 0x0f
-	u8_t policy_number;
+	uint8_t policy_number;
 #define PEF_SEVERITY_NON_RECOVERABLE 0x20
 #define PEF_SEVERITY_CRITICAL 0x10
 #define PEF_SEVERITY_WARNING 0x08
 #define PEF_SEVERITY_OK 0x04
 #define PEF_SEVERITY_INFORMATION 0x02
 #define PEF_SEVERITY_MONITOR 0x01
-	u8_t severity;
-	u8_t generator_ID_addr;
-	u8_t generator_ID_lun;
-	u8_t sensor_type;
+	uint8_t severity;
+	uint8_t generator_ID_addr;
+	uint8_t generator_ID_lun;
+	uint8_t sensor_type;
 #define PEF_SENSOR_NUMBER_MATCH_ANY 0xff
-	u8_t sensor_number;
+	uint8_t sensor_number;
 #define PEF_EVENT_TRIGGER_UNSPECIFIED 0x0
 #define PEF_EVENT_TRIGGER_THRESHOLD 0x1
 #define PEF_EVENT_TRIGGER_SENSOR_SPECIFIC 0x6f
 #define PEF_EVENT_TRIGGER_MATCH_ANY 0xff
-	u8_t event_trigger;
-	u8_t event_data_1_offset_mask[2];
-	u8_t event_data_1_AND_mask;
-	u8_t event_data_1_compare_1;
-	u8_t event_data_1_compare_2;
-	u8_t event_data_2_AND_mask;
-	u8_t event_data_2_compare_1;
-	u8_t event_data_2_compare_2;
-	u8_t event_data_3_AND_mask;
-	u8_t event_data_3_compare_1;
-	u8_t event_data_3_compare_2;
+	uint8_t event_trigger;
+	uint8_t event_data_1_offset_mask[2];
+	uint8_t event_data_1_AND_mask;
+	uint8_t event_data_1_compare_1;
+	uint8_t event_data_1_compare_2;
+	uint8_t event_data_2_AND_mask;
+	uint8_t event_data_2_compare_1;
+	uint8_t event_data_2_compare_2;
+	uint8_t event_data_3_AND_mask;
+	uint8_t event_data_3_compare_1;
+	uint8_t event_data_3_compare_2;
 } __attribute__ ((packed));
 
 struct desc_map {						/* maps a description to a value/mask */
 	const char *desc;
-	u32_t mask;
+	uint32_t mask;
 };
 
 struct bit_desc_map {				/* description text container */
 #define BIT_DESC_MAP_LIST 0x1		/* index-based text array */
 #define BIT_DESC_MAP_ANY 0x2		/* bitwise, but only print 1st one */
 #define BIT_DESC_MAP_ALL 0x3		/* bitwise, print them all */
-	u32_t desc_map_type;
+	uint32_t desc_map_type;
 	struct desc_map desc_maps[];
 };
 
@@ -335,13 +331,13 @@ struct pef_policy_entry {
 #define PEF_POLICY_FLAGS_PREV_OK_NEXT_POLICY_SET 2
 #define PEF_POLICY_FLAGS_PREV_OK_NEXT_CHANNEL_IN_SET 3
 #define PEF_POLICY_FLAGS_PREV_OK_NEXT_DESTINATION_IN_SET 4
-	u8_t policy;
+	uint8_t policy;
 #define PEF_POLICY_CHANNEL_MASK 0xf0
 #define PEF_POLICY_CHANNEL_SHIFT 4
 #define PEF_POLICY_DESTINATION_MASK 0x0f
-	u8_t chan_dest;
+	uint8_t chan_dest;
 #define PEF_POLICY_EVENT_SPECIFIC 0x80
-	u8_t alert_string_key;
+	uint8_t alert_string_key;
 } __attribute__ ((packed));
 
 static struct bit_desc_map
@@ -401,15 +397,15 @@ struct pef_cfgparm_selector {
 #define PEF_CFGPARM_ID_PEF_ALERT_STRING_TABLE_SIZE 11
 #define PEF_CFGPARM_ID_PEF_ALERT_STRING_KEY 12
 #define PEF_CFGPARM_ID_PEF_ALERT_STRING_TABLE_ENTRY 13
-	u8_t id;
-	u8_t set;
-	u8_t block;
+	uint8_t id;
+	uint8_t set;
+	uint8_t block;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_set_in_progress {
 #define PEF_SET_IN_PROGRESS_COMMIT_WRITE 0x02 
 #define PEF_SET_IN_PROGRESS 0x01
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_control {
@@ -417,7 +413,7 @@ struct pef_cfgparm_control {
 #define PEF_CONTROL_ENABLE_STARTUP_DELAY 0x04
 #define PEF_CONTROL_ENABLE_EVENT_MESSAGES 0x02
 #define PEF_CONTROL_ENABLE 0x01
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 static struct bit_desc_map
@@ -437,68 +433,68 @@ struct pef_cfgparm_action {
 #define PEF_ACTION_ENABLE_RESET 0x04
 #define PEF_ACTION_ENABLE_POWER_DOWN 0x02
 #define PEF_ACTION_ENABLE_ALERT 0x01
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_startup_delay {
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_alert_startup_delay {
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_filter_table_size {
 #define PEF_FILTER_TABLE_SIZE_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_filter_table_entry {
 #define PEF_FILTER_TABLE_ID_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 	struct pef_table_entry entry;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_filter_table_data_1 {
-	u8_t data1;
-	u8_t data2;
+	uint8_t data1;
+	uint8_t data2;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_policy_table_size {
 #define PEF_POLICY_TABLE_SIZE_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_policy_table_entry {
 #define PEF_POLICY_TABLE_ID_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 	struct pef_policy_entry entry;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_system_guid {
 #define PEF_SYSTEM_GUID_USED_IN_PET 0x01
-	u8_t data1;
-	u8_t guid[16];
+	uint8_t data1;
+	uint8_t guid[16];
 } __attribute__ ((packed));
 
 struct pef_cfgparm_alert_string_table_size {
 #define PEF_ALERT_STRING_TABLE_SIZE_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_alert_string_keys {
 #define PEF_ALERT_STRING_ID_MASK 0x7f
-	u8_t data1;
+	uint8_t data1;
 #define PEF_EVENT_FILTER_ID_MASK 0x7f
-	u8_t data2;
+	uint8_t data2;
 #define PEF_ALERT_STRING_SET_ID_MASK 0x7f
-	u8_t data3;
+	uint8_t data3;
 } __attribute__ ((packed));
 
 struct pef_cfgparm_alert_string_table_entry {
-	u8_t id;
-	u8_t blockno;
-	u8_t block[16];
+	uint8_t id;
+	uint8_t blockno;
+	uint8_t block[16];
 } __attribute__ ((packed));
 
 /* PEF - LAN */
@@ -510,29 +506,29 @@ struct pef_lan_cfgparm_selector {
 #define PEF_LAN_CFGPARM_ID_DEST_COUNT 17
 #define PEF_LAN_CFGPARM_ID_DESTTYPE 18
 #define PEF_LAN_CFGPARM_ID_DESTADDR 19
-	u8_t ch;
-	u8_t id;
-	u8_t set;
-	u8_t block;
+	uint8_t ch;
+	uint8_t id;
+	uint8_t set;
+	uint8_t block;
 } __attribute__ ((packed));
 
 struct pef_lan_cfgparm_dest_size {
 #define PEF_LAN_DEST_TABLE_SIZE_MASK 0x0f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_lan_cfgparm_dest_type {
 #define PEF_LAN_DEST_TYPE_ID_MASK 0x0f
-	u8_t dest;
+	uint8_t dest;
 #define PEF_LAN_DEST_TYPE_ACK 0x80
 #define PEF_LAN_DEST_TYPE_MASK 0x07
 #define PEF_LAN_DEST_TYPE_PET 0
 #define PEF_LAN_DEST_TYPE_OEM_1 6
 #define PEF_LAN_DEST_TYPE_OEM_2 7
-	u8_t dest_type;
-	u8_t alert_timeout;
+	uint8_t dest_type;
+	uint8_t alert_timeout;
 #define PEF_LAN_RETRIES_MASK 0x07
-	u8_t retries;
+	uint8_t retries;
 } __attribute__ ((packed));
 
 static struct bit_desc_map
@@ -547,15 +543,15 @@ BIT_DESC_MAP_LIST,
 
 struct pef_lan_cfgparm_dest_info {
 #define PEF_LAN_DEST_MASK 0x0f
-	u8_t dest;
+	uint8_t dest;
 #define PEF_LAN_DEST_ADDRTYPE_MASK 0xf0
 #define PEF_LAN_DEST_ADDRTYPE_SHIFT 4
 #define PEF_LAN_DEST_ADDRTYPE_IPV4_MAC 0x00
-	u8_t addr_type;
+	uint8_t addr_type;
 #define PEF_LAN_DEST_GATEWAY_USE_BACKUP 0x01
-	u8_t gateway;
-	u8_t ip[4];
-	u8_t mac[6];
+	uint8_t gateway;
+	uint8_t ip[4];
+	uint8_t mac[6];
 } __attribute__ ((packed));
 
 /* PEF - Serial/PPP */
@@ -570,20 +566,20 @@ struct pef_serial_cfgparm_selector {
 #define PEF_SERIAL_CFGPARM_ID_TAP_ACCT_COUNT 24
 #define PEF_SERIAL_CFGPARM_ID_TAP_ACCT_INFO 25
 #define PEF_SERIAL_CFGPARM_ID_TAP_ACCT_PAGER_STRING 27
-	u8_t ch;
-	u8_t id;
-	u8_t set;
-	u8_t block;
+	uint8_t ch;
+	uint8_t id;
+	uint8_t set;
+	uint8_t block;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_dest_size {
 #define PEF_SERIAL_DEST_TABLE_SIZE_MASK 0x0f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_dest_info {
 #define PEF_SERIAL_DEST_MASK 0x0f
-	u8_t dest;
+	uint8_t dest;
 #define PEF_SERIAL_DEST_TYPE_ACK 0x80
 #define PEF_SERIAL_DEST_TYPE_MASK 0x0f
 #define PEF_SERIAL_DEST_TYPE_DIAL 0
@@ -593,12 +589,12 @@ struct pef_serial_cfgparm_dest_info {
 #define PEF_SERIAL_DEST_TYPE_PPP_CALLBACK 4
 #define PEF_SERIAL_DEST_TYPE_OEM_1 14
 #define PEF_SERIAL_DEST_TYPE_OEM_2 15
-	u8_t dest_type;
-	u8_t alert_timeout;
+	uint8_t dest_type;
+	uint8_t alert_timeout;
 #define PEF_SERIAL_RETRIES_MASK 0x77
 #define PEF_SERIAL_RETRIES_POST_CONNECT_MASK 0x70
 #define PEF_SERIAL_RETRIES_PRE_CONNECT_MASK 0x07
-	u8_t retries;
+	uint8_t retries;
 #define PEF_SERIAL_DIALPAGE_STRING_ID_MASK 0xf0
 #define PEF_SERIAL_DIALPAGE_STRING_ID_SHIFT 4
 #define PEF_SERIAL_TAP_PAGE_SERVICE_ID_MASK 0x0f 
@@ -608,7 +604,7 @@ struct pef_serial_cfgparm_dest_info {
 #define PEF_SERIAL_CALLBACK_IPADDR_ID_MASK 0x0f
 #define PEF_SERIAL_CALLBACK_IPADDR_ID_SHIFT 4
 #define PEF_SERIAL_CALLBACK_ACCT_ID_MASK 0xf0
-	u8_t data5;
+	uint8_t data5;
 } __attribute__ ((packed));
 
 static struct bit_desc_map
@@ -626,39 +622,39 @@ BIT_DESC_MAP_LIST,
 
 struct pef_serial_cfgparm_dial_string_count {
 #define PEF_SERIAL_DIAL_STRING_COUNT_MASK 0x0f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_dial_string {
 #define PEF_SERIAL_DIAL_STRING_MASK 0x0f
-	u8_t data1;
-	u8_t data2;
-	u8_t data3;
+	uint8_t data1;
+	uint8_t data2;
+	uint8_t data3;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_tap_acct_count {
 #define PEF_SERIAL_TAP_ACCT_COUNT_MASK 0x0f
-	u8_t data1;
+	uint8_t data1;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_tap_acct_info {
-	u8_t data1;
+	uint8_t data1;
 #define PEF_SERIAL_TAP_ACCT_INFO_DIAL_STRING_ID_MASK 0xf0
 #define PEF_SERIAL_TAP_ACCT_INFO_DIAL_STRING_ID_SHIFT 4
 #define PEF_SERIAL_TAP_ACCT_INFO_SVC_SETTINGS_ID_MASK 0x0f
-	u8_t data2;
+	uint8_t data2;
 } __attribute__ ((packed));
 
 struct pef_serial_cfgparm_tap_svc_settings {
-	u8_t data1;
+	uint8_t data1;
 #define PEF_SERIAL_TAP_CONFIRMATION_ACK_AFTER_ETX 0x0
 #define PEF_SERIAL_TAP_CONFIRMATION_211_ACK_AFTER_ETX 0x01
 #define PEF_SERIAL_TAP_CONFIRMATION_21X_ACK_AFTER_ETX 0x02
-	u8_t confirmation_flags;
-	u8_t service_type[3];
-	u8_t escape_mask[4];
-	u8_t timeout_parms[3];
-	u8_t retry_parms[2];
+	uint8_t confirmation_flags;
+	uint8_t service_type[3];
+	uint8_t escape_mask[4];
+	uint8_t timeout_parms[3];
+	uint8_t retry_parms[2];
 } __attribute__ ((packed));
 
 static struct bit_desc_map
@@ -772,12 +768,12 @@ BIT_DESC_MAP_LIST,
 #define IPMI_CMD_LAN_GET_CONFIG 0x02
 #define IPMI_CMD_SERIAL_GET_CONFIG 0x11
 
-const char * ipmi_pef_bit_desc(struct bit_desc_map * map, u32_t val);
-void ipmi_pef_print_flags(struct bit_desc_map * map, u32_t type, u32_t val);
-void ipmi_pef_print_dec(const char * text, unsigned long val);
-void ipmi_pef_print_hex(const char * text, unsigned long val);
-void ipmi_pef_print_1xd(const char * text, unsigned long val);
-void ipmi_pef_print_2xd(const char * text, u8_t u1, u8_t u2);
+const char * ipmi_pef_bit_desc(struct bit_desc_map * map, uint32_t val);
+void ipmi_pef_print_flags(struct bit_desc_map * map, uint32_t type, uint32_t val);
+void ipmi_pef_print_dec(const char * text, uint32_t val);
+void ipmi_pef_print_hex(const char * text, uint32_t val);
+void ipmi_pef_print_1xd(const char * text, uint32_t val);
+void ipmi_pef_print_2xd(const char * text, uint8_t u1, uint8_t u2);
 void ipmi_pef_print_str(const char * text, const char * val);
 
 int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv);

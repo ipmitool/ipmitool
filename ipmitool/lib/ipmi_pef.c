@@ -84,7 +84,7 @@ typedef enum {
 static const char * listitem[] =	{" | %s", ",%s", "%s"};
 
 const char * 
-ipmi_pef_bit_desc(struct bit_desc_map * map, u32_t value)
+ipmi_pef_bit_desc(struct bit_desc_map * map, uint32_t value)
 {	/*
 	// return description/text label(s) for the given value.
 	//  NB: uses a static buffer
@@ -92,7 +92,7 @@ ipmi_pef_bit_desc(struct bit_desc_map * map, u32_t value)
 	static char buf[128];
 	char * p;
 	struct desc_map * pmap;
-	u32_t match, index;
+	uint32_t match, index;
 	
 	*(p = buf) = '\0';
 	index = 2;
@@ -117,13 +117,13 @@ ipmi_pef_bit_desc(struct bit_desc_map * map, u32_t value)
 }
 
 void
-ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, u32_t val)
+ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, uint32_t val)
 {	/*
 	// print features/flags, using val (a bitmask), according to map.
 	// observe the verbose flag, and print any labels, etc. based on type
 	*/
 	struct desc_map * pmap;
-	u32_t maskval, index;
+	uint32_t maskval, index;
 
 	index = 0;
 	for (pmap=map->desc_maps; pmap && pmap->desc; pmap++) {
@@ -141,7 +141,7 @@ ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, u32_t val)
 }
 
 static void
-ipmi_pef_print_field(const char * fmt[2], const char * label, unsigned long val)
+ipmi_pef_print_field(const char * fmt[2], const char * label, uint32_t val)
 {	/*
 	// print a 'field' (observes 'verbose' flag)
 	*/
@@ -156,19 +156,19 @@ ipmi_pef_print_field(const char * fmt[2], const char * label, unsigned long val)
 }
 
 void
-ipmi_pef_print_dec(const char * text, unsigned long val)
+ipmi_pef_print_dec(const char * text, uint32_t val)
 {	/* unsigned */
 	ipmi_pef_print_field(pef_fld_fmts[F_DEC], text, val);
 }
 
 void
-ipmi_pef_print_int(const char * text, unsigned long val)
+ipmi_pef_print_int(const char * text, uint32_t val)
 {	/* signed */
 	ipmi_pef_print_field(pef_fld_fmts[F_INT], text, val);
 }
 
 void
-ipmi_pef_print_hex(const char * text, unsigned long val)
+ipmi_pef_print_hex(const char * text, uint32_t val)
 {	/* hex */
 	ipmi_pef_print_field(pef_fld_fmts[F_HEX], text, val);
 }
@@ -176,18 +176,18 @@ ipmi_pef_print_hex(const char * text, unsigned long val)
 void 
 ipmi_pef_print_str(const char * text, const char * val)
 {	/* string */
-	ipmi_pef_print_field(pef_fld_fmts[F_STR], text, (unsigned long)val);
+	ipmi_pef_print_field(pef_fld_fmts[F_STR], text, (uint32_t)val);
 }
 
 void 
-ipmi_pef_print_2xd(const char * text, u8_t u1, u8_t u2)
+ipmi_pef_print_2xd(const char * text, uint8_t u1, uint8_t u2)
 {	/* 2 hex digits */
-	unsigned long val = ((u1 << 8) + u2) & 0xffff;
+	uint32_t val = ((u1 << 8) + u2) & 0xffff;
 	ipmi_pef_print_field(pef_fld_fmts[F_2XD], text, val);
 }
 
 void 
-ipmi_pef_print_1xd(const char * text, unsigned long val)
+ipmi_pef_print_1xd(const char * text, uint32_t val)
 {	/* 1 hex digit */
 	ipmi_pef_print_field(pef_fld_fmts[F_1XD], text, val);
 }
@@ -209,7 +209,7 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 	return(rsp);
 }
 
-static u8_t
+static uint8_t
 ipmi_pef_get_policy_table(struct ipmi_intf * intf,
 									struct pef_cfgparm_policy_table_entry ** table)
 {	/*
@@ -220,15 +220,15 @@ ipmi_pef_get_policy_table(struct ipmi_intf * intf,
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 	struct pef_cfgparm_policy_table_entry * ptbl, * ptmp;
-	u32_t i;
-	u8_t tbl_size;
+	uint32_t i;
+	uint8_t tbl_size;
 
 	memset(&psel, 0, sizeof(psel));
 	psel.id = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_SIZE;
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (u8_t *)&psel;
+	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert policy table size");
 	if (!rsp)
@@ -261,7 +261,7 @@ ipmi_pef_get_policy_table(struct ipmi_intf * intf,
 }
 
 static void
-ipmi_pef_print_lan_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
+ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 {	/*
 	// print LAN alert destination info
 	*/
@@ -271,7 +271,7 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
 	struct pef_lan_cfgparm_dest_type * ptype;
 	struct pef_lan_cfgparm_dest_info * pinfo;
 	char buf[32];
-	u8_t tbl_size, dsttype, timeout, retries;
+	uint8_t tbl_size, dsttype, timeout, retries;
 
 	memset(&lsel, 0, sizeof(lsel));
 	lsel.id = PEF_LAN_CFGPARM_ID_DEST_COUNT;
@@ -279,7 +279,7 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd = IPMI_CMD_LAN_GET_CONFIG;
-	req.msg.data = (u8_t *)&lsel;
+	req.msg.data = (uint8_t *)&lsel;
 	req.msg.data_len = sizeof(lsel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination count");
 	if (!rsp) {
@@ -352,7 +352,7 @@ ipmi_pef_print_serial_dest_dial(struct ipmi_intf * intf, char * label,
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd = IPMI_CMD_SERIAL_GET_CONFIG;
-	req.msg.data = (u8_t *)&tmp;
+	req.msg.data = (uint8_t *)&tmp;
 	req.msg.data_len = sizeof(tmp);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Dial string count");
 	if (!rsp || (rsp->data[1] & PEF_SERIAL_DIAL_STRING_COUNT_MASK) == 0)
@@ -393,14 +393,14 @@ ipmi_pef_print_serial_dest_tap(struct ipmi_intf * intf,
 	struct ipmi_rq req;
 	struct pef_serial_cfgparm_selector tmp;
 	struct pef_serial_cfgparm_tap_svc_settings * pset;
-	u8_t dialstr_id, setting_id;
+	uint8_t dialstr_id, setting_id;
 
 	memset(&tmp, 0, sizeof(tmp));
 	tmp.id = PEF_SERIAL_CFGPARM_ID_TAP_ACCT_COUNT;
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd = IPMI_CMD_SERIAL_GET_CONFIG;
-	req.msg.data = (u8_t *)&tmp;
+	req.msg.data = (uint8_t *)&tmp;
 	req.msg.data_len = sizeof(tmp);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Number of TAP accounts");
 	if (!rsp || (rsp->data[1] & PEF_SERIAL_TAP_ACCT_COUNT_MASK) == 0)
@@ -438,8 +438,6 @@ ipmi_pef_print_serial_dest_ppp(struct ipmi_intf * intf,
 {	/*
 	// print PPP destination info
 	*/
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 
 	/* TODO */
 }
@@ -450,21 +448,19 @@ ipmi_pef_print_serial_dest_callback(struct ipmi_intf * intf,
 {	/*
 	// print callback destination info
 	*/
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 
 	/* TODO */
 }
 
 static void
-ipmi_pef_print_serial_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
+ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 {	/*
 	// print Serial/PPP alert destination info
 	*/
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct pef_serial_cfgparm_selector ssel;
-	u8_t tbl_size, wrk;
+	uint8_t tbl_size, wrk;
 	struct pef_serial_cfgparm_dest_info * pinfo;
 
 	memset(&ssel, 0, sizeof(ssel));
@@ -473,7 +469,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd = IPMI_CMD_SERIAL_GET_CONFIG;
-	req.msg.data = (u8_t *)&ssel;
+	req.msg.data = (uint8_t *)&ssel;
 	req.msg.data_len = sizeof(ssel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert destination count");
 	if (!rsp) {
@@ -517,7 +513,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
 }
 
 static void
-ipmi_pef_print_dest(struct ipmi_intf * intf, u8_t ch, u8_t dest)
+ipmi_pef_print_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 {	/*
 	// print generic alert destination info
 	*/
@@ -533,7 +529,7 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 	unsigned short offmask;
 	char * p;
 	int i;
-	u8_t t;
+	uint8_t t;
 
 	ipmi_pef_print_str("Event severity", 
 				ipmi_pef_bit_desc(&pef_b2s_severities, pef->entry.severity));
@@ -574,13 +570,12 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 }
 
 static void
-ipmi_pef_print_entry(struct ipmi_rs * rsp, u8_t id,
+ipmi_pef_print_entry(struct ipmi_rs * rsp, uint8_t id,
 							struct pef_cfgparm_filter_table_entry * pef)
 {	/*
 	// print a PEF table entry
 	*/
-	struct pef_cfgparm_policy_table_entry * ptbl;
-	u8_t wrk, set;
+	uint8_t wrk, set;
 	char buf[128];
 
 	ipmi_pef_print_dec("PEF table entry", id);
@@ -622,8 +617,8 @@ ipmi_pef_list_entries(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 	struct pef_cfgparm_filter_table_entry * pcfg;
-	u32_t i;
-	u8_t max_filters;
+	uint32_t i;
+	uint8_t max_filters;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -638,7 +633,7 @@ ipmi_pef_list_entries(struct ipmi_intf * intf)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (u8_t *)&psel;
+	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	for (i=1; i<=max_filters; i++) {
 		if (i > 1)
@@ -663,10 +658,9 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 	*/
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	struct pef_lan_cfgparm_selector lsel;
 	struct pef_cfgparm_policy_table_entry * ptbl, * ptmp;
-	u32_t i;
-	u8_t wrk, ch, medium, tbl_size;
+	uint32_t i;
+	uint8_t wrk, ch, medium, tbl_size;
 
 	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
 	if (!tbl_size)
@@ -760,7 +754,7 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (u8_t *)&psel;
+	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "PEF control");
 	if (!rsp) {
@@ -780,8 +774,8 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	struct pef_capabilities * pcap;
 	struct pef_cfgparm_selector psel;
 	struct pef_cfgparm_policy_table_entry * ptbl;
-	u8_t * uid;
-	u8_t actions, tbl_size;
+	uint8_t * uid;
+	uint8_t actions, tbl_size;
 
 	if ((tbl_size = ipmi_pef_get_policy_table(intf, &ptbl)) > 0)
 		free(ptbl);
@@ -803,7 +797,7 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (u8_t *)&psel;
+	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	rsp = ipmi_pef_msg_exchange(intf, &req, "System GUID");
 	uid = NULL;
