@@ -650,6 +650,6 @@ void ipmi_sdr_print_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_l
 void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
 
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
-void ipmi_sdr_list_empty(void);
+void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 
 #endif  /* IPMI_SDR_H */

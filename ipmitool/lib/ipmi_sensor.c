@@ -694,46 +694,49 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
         printf("Sensor data record not found!\n");
     }
 
-    ipmi_sdr_list_empty();
+    ipmi_sdr_list_empty(intf);
 }
 
-static void ipmi_sensor_get(struct ipmi_intf * intf, char * id)
+static void ipmi_sensor_get(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct sdr_record_list * sdr;
+	int i;
 
-	if (!id || !strncmp(id, "help", 4)) {
-		printf("sensor get <id>\n");
+	if (argc < 1 || !strncmp(argv[0], "help", 4)) {
+		printf("sensor get <id> ... [id]\n");
 		printf("   id        : name of desired sensor\n");
 		return;
 	}
 	printf("Locating sensor record...\n");
 
 	/* lookup by sensor name */
-	sdr = ipmi_sdr_find_sdr_byid(intf, id);
-	if (sdr) {
-		verbose = verbose ? : 1;
-		switch (sdr->type) {
-		case SDR_RECORD_TYPE_FULL_SENSOR:
-			ipmi_sensor_print_full(intf, sdr->record.full);
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			ipmi_sensor_print_compact(intf, sdr->record.compact);
-			break;
-		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
-			break;
-		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-			ipmi_sdr_print_fru_locator(intf, sdr->record.fruloc);
-			break;
-		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			ipmi_sdr_print_mc_locator(intf, sdr->record.mcloc);
-			break;
+	for (i=0; i<argc; i++) {
+		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
+		if (sdr) {
+			verbose = verbose ? : 1;
+			switch (sdr->type) {
+			case SDR_RECORD_TYPE_FULL_SENSOR:
+				ipmi_sensor_print_full(intf, sdr->record.full);
+				break;
+			case SDR_RECORD_TYPE_COMPACT_SENSOR:
+				ipmi_sensor_print_compact(intf, sdr->record.compact);
+				break;
+			case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+				ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
+				break;
+			case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+				ipmi_sdr_print_fru_locator(intf, sdr->record.fruloc);
+				break;
+			case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+				ipmi_sdr_print_mc_locator(intf, sdr->record.mcloc);
+				break;
+			}
+		} else {
+			printf("Sensor data record \"%s\" not found!\n", argv[i]);
 		}
-	} else {
-		printf("Sensor data record not found!\n");
 	}
 
-	ipmi_sdr_list_empty();
+	ipmi_sdr_list_empty(intf);
 }
 
 int
@@ -751,7 +754,7 @@ ipmi_sensor_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_sensor_set_threshold(intf, argc-1, &argv[1]);
 	}
 	else if (!strncmp(argv[0], "get", 3)) {
-		ipmi_sensor_get(intf, argv[1]);
+		ipmi_sensor_get(intf, argc-1, &argv[1]);
 	}
 	else
 		printf("Invalid sensor command: %s\n", argv[0]);

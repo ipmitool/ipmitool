@@ -50,6 +50,7 @@ extern int verbose;
 static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
 
 static struct sdr_record_list * sdr_list_head = NULL;
+static struct ipmi_sdr_iterator * sdr_list_itr = NULL;
 
 /* convert unsigned value to 2's complement signed */
 int utos(unsigned val, unsigned bits)
@@ -998,74 +999,23 @@ ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 	free (itr);
 }
 
-int ipmi_sdr_list_fill(struct ipmi_intf * intf)
-{
-	struct sdr_get_rs * header;
-	struct ipmi_sdr_iterator * itr;
-	static struct sdr_record_list * sdr_list_tail;
-
-	itr = ipmi_sdr_start(intf);
-	if (!itr) {
-		printf("Unable to open SDR for reading\n");
-		return -1;
-	}
-
-	while (header = ipmi_sdr_get_next_header(intf, itr)) {
-		unsigned char * rec;
-		struct sdr_record_full_sensor * full;
-		struct sdr_record_compact_sensor * compact;
-		struct sdr_record_list * sdrr;
-
-		sdrr = malloc(sizeof(struct sdr_record_list));
-		memset(sdrr, 0, sizeof(struct sdr_record_list));
-		sdrr->id = header->id;
-		sdrr->type = header->type;
-
-		rec = ipmi_sdr_get_record(intf, header, itr);
-		if (!rec)
-			continue;
-
-		switch (header->type) {
-		case SDR_RECORD_TYPE_FULL_SENSOR:
-			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
-			break;
-		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
-			break;
-		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
-			break;
-		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
-			break;
-		default:
-			free(rec);
-			continue;
-		}
-
-		if (!sdr_list_head)
-			sdr_list_head = sdrr;
-		else
-			sdr_list_tail->next = sdrr;
-		sdr_list_tail = sdrr;
-	}
-
-	ipmi_sdr_end(intf, itr);
-
-	return 0;
-}
-
 struct sdr_record_list *
 ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 {
+	struct sdr_get_rs * header;
+	static struct sdr_record_list * sdr_list_tail;
 	static struct sdr_record_list * e;
+	int found = 0;
 
-	if (!sdr_list_head)
-		ipmi_sdr_list_fill(intf);
+	if (!sdr_list_itr) {
+		sdr_list_itr = ipmi_sdr_start(intf);
+		if (!sdr_list_itr) {
+			printf("Unable to open SDR for reading\n");
+			return NULL;
+		}
+	}
 
+	/* check what we've already read */
 	e = sdr_list_head;
 	while (e) {
 		switch (e->type) {
@@ -1098,12 +1048,76 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 		e = e->next;
 	}
 
+	/* now keep looking */
+	while (header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) {
+		unsigned char * rec;
+		struct sdr_record_full_sensor * full;
+		struct sdr_record_compact_sensor * compact;
+		struct sdr_record_list * sdrr;
+
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+
+		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
+		if (!rec)
+			continue;
+
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			if (!strncmp(sdrr->record.full->id_string, id,
+				     sdrr->record.full->id_code & 0x1f))
+				found = 1;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			if (!strncmp(sdrr->record.compact->id_string, id,
+				     sdrr->record.compact->id_code & 0x1f))
+				found = 1;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			if (!strncmp(sdrr->record.eventonly->id_string, id,
+				     sdrr->record.eventonly->id_code & 0x1f))
+				found = 1;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			if (!strncmp(sdrr->record.fruloc->id_string, id,
+				     sdrr->record.fruloc->id_code & 0x1f))
+				found = 1;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			if (!strncmp(sdrr->record.mcloc->id_string, id,
+				     sdrr->record.mcloc->id_code & 0x1f))
+				found = 1;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
+
+		if (!sdr_list_head)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+		sdr_list_tail = sdrr;
+
+		if (found)
+			return sdrr;
+	}
+
 	return NULL;
 }
 
-void ipmi_sdr_list_empty(void)
+void ipmi_sdr_list_empty(struct ipmi_intf * intf)
 {
 	struct sdr_record_list *list, *next;
+
+	ipmi_sdr_end(intf, sdr_list_itr);
 
 	list = sdr_list_head;
 	while (list) {
