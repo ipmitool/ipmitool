@@ -356,8 +356,6 @@ ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 	struct get_user_access_rsp user_access;
 	int curr_uid, max_uid = 0, init = 1;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	curr_uid = userid ? : 1;
 
 	memset(&req1, 0, sizeof(req1));
@@ -443,8 +441,6 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	struct get_user_access_rsp user_access;
 	struct set_user_access_data set_access;
 	int i;
-
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
         if ((argc < 3) || (strncmp(argv[0], "help", 4) == 0)) {
 		printf_channel_usage();

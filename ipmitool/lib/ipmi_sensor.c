@@ -532,8 +532,6 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	id = argv[0];
 	thresh = argv[1];
 	setting = (float)atof(argv[2]);

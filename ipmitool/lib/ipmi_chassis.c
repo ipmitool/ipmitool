@@ -89,8 +89,6 @@ ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x2;
@@ -129,8 +127,6 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 		uint8_t interval;
 		uint8_t force_on;
 	} identify_data;
-
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -367,8 +363,6 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 	struct ipmi_rq req;
 	uint8_t msg_data[16];
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	memset(msg_data, 0, 16);
 	msg_data[0] = param & 0x7f;
 	memcpy(msg_data+1, data, len);
@@ -442,8 +436,6 @@ ipmi_chassis_set_bootflag(struct ipmi_intf * intf, char * arg)
 	uint8_t flags[5];
 	int rc = 0;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	if (arg == NULL) {
 		lprintf(LOG_ERR, "No bootflag argument supplied");
 		return -1;
@@ -480,8 +472,6 @@ ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;

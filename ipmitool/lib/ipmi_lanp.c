@@ -1309,8 +1309,6 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	/* all the lan parameters commands need admin level */
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	if ((strncmp(argv[0], "printconf", 9) == 0) ||
 	    (strncmp(argv[0], "print", 5) == 0)) {

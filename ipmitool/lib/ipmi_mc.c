@@ -219,8 +219,6 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t en;
 	int i;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
 		printf_mc_usage();
 		return 0;

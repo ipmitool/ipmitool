@@ -484,8 +484,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	/*
 	 * Help
 	 */

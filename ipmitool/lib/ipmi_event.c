@@ -63,8 +63,6 @@ ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 	uint8_t chmed;
 	int p = 0;
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	memset(&req, 0, sizeof(req));
 	memset(rqdata, 0, 8);
 
@@ -149,9 +147,6 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 
 	if (file == NULL)
 		return -1;
-
-	/* must be admin privilege to do this */
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	memset(rqdata, 0, 8);
 

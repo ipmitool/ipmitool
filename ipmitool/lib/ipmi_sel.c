@@ -796,8 +796,6 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	uint16_t reserve_id;
 	uint8_t msg_data[6];
 
-	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
-
 	reserve_id = ipmi_sel_reserve(intf);
 	if (reserve_id == 0)
 		return -1;
