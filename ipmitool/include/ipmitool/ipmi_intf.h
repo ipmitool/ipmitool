@@ -107,6 +107,7 @@ struct ipmi_session {
 
 
 struct ipmi_intf {
+	char name[32];
 	int fd;
 	int opened;
 	int abort;
