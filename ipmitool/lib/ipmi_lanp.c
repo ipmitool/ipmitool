@@ -259,36 +259,6 @@ ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
 	}
 }
 
-#if 0
-static void suspend_lan_arp(struct ipmi_intf * intf, int suspend)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char msg_data[2];
-
-	msg_data[0] = IPMI_LAN_CHANNEL_1;
-	msg_data[1] = suspend;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_TRANSPORT;
-	req.msg.cmd = IPMI_LAN_SUSPEND_ARP;
-	req.msg.data = msg_data;
-	req.msg.data_len = 2;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp && !rsp->ccode)
-		printf("Suspend BMC ARP status  : 0x%x\n", rsp->data[0]);
-}
-
-static void set_lan_params(struct ipmi_intf * intf)
-{
-	lan_set_auth(intf);
-	lan_set_arp(intf);
-	suspend_lan_arp(intf, 0);
-}
-
-#endif
-
 static void
 lan_set_arp_interval(struct ipmi_intf * intf, unsigned char chan, unsigned char * ival)
 {
@@ -518,7 +488,7 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 	rqdata[1] = 0xa0;	/* set pef disabled, per-msg auth enabled */
 	if (enable)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
-	rqdata[2] = 0x04; 	/* don't change channel privilege limit */
+	rqdata[2] = 0x84; 	/* set channel privilege limit to ADMIN */
 	
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x40;
@@ -533,6 +503,10 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 	}
 
 	rqdata[1] = 0x60;	/* save to nvram */
+	if (enable)
+		rqdata[1] |= 0x2; /* set always available if enable is set */
+	rqdata[2] = 0x44;	/* save to nvram */
+
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
 		printf("Error:%x Set Channel Access Command (0x%x)\n",
