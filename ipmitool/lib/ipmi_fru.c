@@ -87,7 +87,7 @@ static char * get_fru_area_str(unsigned char * data, int * offset)
 	else {
 		switch(k) {
 			case 0:
-				strncpy(str, buf2str(&data[off], len));
+				strncpy(str, buf2str(&data[off], len), len);
 				break;
 
 			case 1:
@@ -334,18 +334,20 @@ static void __ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			chassis.serial = get_fru_area_str(fru_data, &i);
 
 			printf(" Chassis Type          : %s\n", chassis_type_desc[chassis.type]);
-			if (strlen(chassis.part) > 0)
+			if (chassis.part != NULL && strlen(chassis.part) > 0)
 				printf(" Chassis Part Number   : %s\n", chassis.part);
-			if (strlen(chassis.serial) > 0)
+			if (chassis.serial != NULL && strlen(chassis.serial) > 0)
 				printf(" Chassis Serial        : %s\n", chassis.serial);
 
 			while (fru_data[i] != 0xc1 && i < area_offsets[OFF_CHASSIS] + chassis.area_len)
 			{
-				char *extra;
-
-				extra = get_fru_area_str(fru_data, &i);
-				if (extra [0]) printf(" Chassis Extra          : %s\n", extra);
+				int j = i;
+				char *extra = get_fru_area_str(fru_data, &i);
+				if (extra != NULL)
+					printf(" Chassis Extra          : %s\n", extra);
 				free(extra);
+				if (i == j)
+					break;
 			}
 
 			free(chassis.part);
@@ -373,25 +375,27 @@ static void __ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			board.part = get_fru_area_str(fru_data, &i);
 			board.fru = get_fru_area_str(fru_data, &i);
 
-			if (strlen(board.mfg) > 0)
+			if (board.mfg != NULL && strlen(board.mfg) > 0)
 				printf(" Board Manufacturer    : %s\n", board.mfg);
-			if (strlen(board.prod) > 0)
+			if (board.prod != NULL && strlen(board.prod) > 0)
 				printf(" Board Product         : %s\n", board.prod);
-			if (strlen(board.serial) > 0)
+			if (board.serial != NULL && strlen(board.serial) > 0)
 				printf(" Board Serial          : %s\n", board.serial);
-			if (strlen(board.part) > 0)
+			if (board.part != NULL && strlen(board.part) > 0)
 				printf(" Board Part Number     : %s\n", board.part);
 
-			if ((verbose > 0) && (strlen(board.fru) > 0))
+			if ((verbose > 0) && (board.fru != NULL && strlen(board.fru) > 0))
 				printf(" Board FRU ID          : %s\n", board.fru);
 
 			while (fru_data[i] != 0xc1 && i < area_offsets[OFF_BOARD] + board.area_len)
 			{
-				char *extra;
-
-				extra = get_fru_area_str(fru_data, &i);
-				if (extra [0]) printf(" Board Extra           : %s\n", extra);
+				int j = i;
+				char *extra = get_fru_area_str(fru_data, &i);
+				if (extra != NULL)
+					printf(" Board Extra           : %s\n", extra);
 				free(extra);
+				if (i == j)
+					break;
 			}
 
 			free(board.mfg);
@@ -423,29 +427,31 @@ static void __ipmi_fru_print(struct ipmi_intf * intf, unsigned char id)
 			product.asset = get_fru_area_str(fru_data, &i);
 			product.fru = get_fru_area_str(fru_data, &i);
 
-			if (strlen(product.mfg) > 0)
+			if (product.mfg != NULL && strlen(product.mfg) > 0)
 				printf(" Product Manufacturer  : %s\n", product.mfg);
-			if (strlen(product.name) > 0)
+			if (product.name != NULL && strlen(product.name) > 0)
 				printf(" Product Name          : %s\n", product.name);
-			if (strlen(product.part) > 0)
+			if (product.part != NULL && strlen(product.part) > 0)
 				printf(" Product Part Number   : %s\n", product.part);
-			if (strlen(product.version) > 0)
+			if (product.version != NULL && strlen(product.version) > 0)
 				printf(" Product Version       : %s\n", product.version);
-			if (strlen(product.serial) > 0)
+			if (product.serial != NULL && strlen(product.serial) > 0)
 				printf(" Product Serial        : %s\n", product.serial);
-			if (strlen(product.asset) > 0)
+			if (product.asset != NULL && strlen(product.asset) > 0)
 				printf(" Product Asset Tag     : %s\n", product.asset);
 
-			if ((verbose > 0) && (strlen(product.fru) > 0))
+			if ((verbose > 0) && (product.fru != NULL && strlen(product.fru) > 0))
 				printf(" Product FRU ID        : %s\n", product.fru);
 
 			while (fru_data[i] != 0xc1 && i < area_offsets[OFF_PRODUCT] + product.area_len)
 			{
-				char *extra;
-
-				extra = get_fru_area_str(fru_data, &i);
-				if (extra [0]) printf(" Product Extra         : %s\n", extra);
+				int j = i;
+				char *extra = get_fru_area_str(fru_data, &i);
+				if (extra != NULL)
+					printf(" Product Extra         : %s\n", extra);
 				free(extra);
+				if (i == j)
+					break;
 			}
 
 			free(product.mfg);
