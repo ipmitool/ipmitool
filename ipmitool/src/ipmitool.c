@@ -75,6 +75,8 @@ int verbose = 0;
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
+
+static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
 
 struct ipmi_cmd {
@@ -83,6 +85,7 @@ struct ipmi_cmd {
 	char * desc;
 } ipmi_cmd_list[] = {
 	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
+	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
 	{ ipmi_raw_main,	"raw",		"Send a RAW IPMI request and print response" },
 	{ ipmi_lanp_main,	"lan",		"Configure LAN Channels" },
 	{ ipmi_chassis_main,	"chassis",	"Get chassis status and set power state" },
@@ -158,29 +161,94 @@ static void usage(void)
 
 static char * ipmi_password_file_read(char * filename)
 {
-	int fp;
+	FILE * fp;
 	char * pass = NULL;
+	int l;
 
 	fp = ipmi_open_file_read((const char *)filename);
-	if (fp < 0) {
-		printf("Unable to open password file %s\n", filename);
+	if (!fp) {
 		return NULL;
 	}
 
 	pass = malloc(16);
 	if (!pass) {
-		close(fp);
+		fclose(fp);
 		return NULL;
 	}
 
 	/* read in id */
-	if (read(fp, pass, 16) < 0) {
-		close(fp);
+	if (fgets(pass, 16, fp) == NULL) {
+		fclose(fp);
 		return NULL;
 	}
 
-	close(fp);
+	/* remove trailing whitespace */
+	l = strcspn(pass, " \r\n\t");
+	if (l > 0)
+		pass[l] = '\0';
+
+	fclose(fp);
 	return pass;
+}
+
+static int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	FILE * fp;
+	char buf[512];
+	char * ptr, * tok;
+	int __argc, i;
+	char * __argv[32];
+
+	if (argc < 1) {
+		printf("Usage: exec <filename>\n");
+		return -1;
+	}
+
+	fp = ipmi_open_file_read(argv[0]);
+	if (!fp) {
+		return -1;
+	}
+
+	while (fgets(buf, 512, fp) != NULL) {
+		/* clip off optional comment tail indicated by # */
+		ptr = strchr(buf, '#');
+		if (ptr)
+			*ptr = '\0';
+		else
+			ptr = buf + strlen(buf);
+
+		/* clip off trailing and leading whitespace */
+		ptr--;
+		while (isspace(*ptr) && ptr >= buf)
+			*ptr-- = '\0';
+		ptr = buf;
+		while (isspace(*ptr))
+			ptr++;
+		if (!strlen(ptr))
+			continue;
+
+		__argc = 0;
+
+		/* parse it and make argument list */
+		tok = strtok(ptr, " ");
+		while (tok) {
+			if (__argc < 32)
+				__argv[__argc++] = strdup(tok);
+			tok = strtok(NULL, " ");
+		}
+
+		ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
+
+		for (i=0; i<__argc; i++) {
+			if (__argv[i] != NULL) {
+				free(__argv[i]);
+				__argv[i] = NULL;
+			}
+		}
+	}
+
+	fclose(fp);
+	return 0;
 }
 
 static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
@@ -371,10 +439,12 @@ int main(int argc, char ** argv)
 		ipmi_intf_session_set_password(intf, password);
 	if (port)
 		ipmi_intf_session_set_port(intf, port);
-	if (privlvl)
-		ipmi_intf_session_set_privlvl(intf, privlvl);
 	if (authtype)
 		ipmi_intf_session_set_authtype(intf, authtype);
+	if (privlvl)
+		ipmi_intf_session_set_privlvl(intf, privlvl);
+	else
+		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
