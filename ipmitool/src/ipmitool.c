@@ -56,6 +56,7 @@
 #include <ipmitool/ipmi_bmc.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_event.h>
 
 #ifdef HAVE_CONFIG_H
@@ -86,6 +87,9 @@ void usage(void)
 	printf("       -P password   Remote password\n");
 	printf("       -L level      Session privilege level [default=USER]\n");
 	printf("       -I intf       Inteface to use\n");
+	printf("\n");
+	printf("\nCommands:  bmc, chassis, event, fru, lan, raw, "
+		   "sdr, sel, sensor, sol, channel, session\n\n");
 	printf("\n\n");
 }
 
@@ -149,6 +153,7 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	return 0;
 }
+
 
 
 int main(int argc, char ** argv)
@@ -247,13 +252,6 @@ int main(int argc, char ** argv)
 		goto out_free;
 	}
 
-	if (!strncmp(argv[optind], "help", 4)) {
-		usage();
-		printf("\nCommands:  bmc, chassis, event, fru, lan, raw, "
-		       "sdr, sel, sensor, sol, channel\n\n");
-		goto out_free;
-	}
-
 	/* load interface */
 	if (intfarg) {
 		intf = ipmi_intf_load(intfname);
@@ -312,6 +310,9 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "channel", 7)) {
 		submain = ipmi_channel_main;
+	}
+	else if (!strncmp(argv[optind], "session", 7)) {
+		submain = ipmi_session_main;
 	}
 	else {
 		printf("Invalid comand: %s\n", argv[optind]);
