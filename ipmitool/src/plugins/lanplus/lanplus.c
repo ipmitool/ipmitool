@@ -2727,7 +2727,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	 */
 	if (session->v2_data.rakp2_return_code == IPMI_RAKP_STATUS_NO_ERRORS)
 	{
-		int auth_length;
+		uint32_t auth_length;
 		
 		if (lanplus_generate_rakp3_authcode(msg + 8, session, &auth_length))
 		{
@@ -2892,7 +2892,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(session->port);
 
-	rc = inet_pton(AF_INET, session->hostname, &addr.sin_addr);
+	rc = inet_aton(session->hostname, &addr.sin_addr);
 	if (rc <= 0) {
 		struct hostent *host = gethostbyname(session->hostname);
 		if (host == NULL) {
@@ -3056,8 +3056,8 @@ void test_crypt2()
 
 	char encrypt_buffer[1000];
 	char decrypt_buffer[1000];
-	int bytes_encrypted;
-	int bytes_decrypted;
+	uint32_t bytes_encrypted;
+	uint32_t bytes_decrypted;
 
 	printbuf(data, strlen(data), "input data");
 

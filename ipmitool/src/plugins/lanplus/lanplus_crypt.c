@@ -75,8 +75,8 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 {
 	char         * buffer;
 	int           bufferLength, i;
-	uint8_t mac[20];
-	int           macLength;
+	uint8_t       mac[20];
+	uint32_t      macLength;
 
 	uint32_t SIDm_lsbf, SIDc_lsbf;
 
@@ -219,8 +219,8 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 {
 	char         * buffer;
 	int           bufferLength, i;
-	uint8_t mac[20];
-	int           macLength;
+	uint8_t       mac[20];
+	uint32_t      macLength;
 
 	uint32_t SIDc_lsbf;
 
@@ -452,7 +452,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 	int input_buffer_length, i;
 	char * input_key;
 	int input_key_length;
-	int mac_length;
+	uint32_t mac_length;
 	
 
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
