@@ -259,8 +259,8 @@ ipmi_print_user_list(
 
 
 		++current_user_id;
-	} while((current_user_id < user_access.maximum_ids) &&
-		(current_user_id < 63)); /* Absolute maximum allowed by spec */
+	} while((current_user_id <= user_access.maximum_ids) &&
+			(current_user_id <= 63)); /* Absolute maximum allowed by spec */
 
 
 	return 0;
