@@ -37,6 +37,10 @@
 #ifndef IPMI_SDR_H
 #define IPMI_SDR_H
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdint.h>
 #include <math.h>
 #include <ipmitool/bswap.h>
@@ -45,20 +49,24 @@
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
 int utos(unsigned val, unsigned bits);
 
-#define __TO_TOL(mtol)     (unsigned short)(BSWAP_16(mtol) & 0x3f)
-#define __TO_M(mtol)       (unsigned short)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
-#define __TO_B(bacc)       (unsigned int)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
-                           ((BSWAP_32(bacc) & 0xc00000) >> 14)), 10))
-#define __TO_ACC(bacc)     (unsigned int)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
-#define __TO_ACC_EXP(bacc) (unsigned int)((BSWAP_32(bacc) & 0xc00) >> 10)
-#define __TO_R_EXP(bacc)   (unsigned int)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
-#define __TO_B_EXP(bacc)   (unsigned int)(utos((BSWAP_32(bacc) & 0xf), 4))
-
-#define CONVERT_RAW(val, m, b, k1, k2)	(float)(((m * val) + (b * pow(10, k1))) * pow(10, k2))
-#define CONVERT_TOL(val, m, k2)		(float)(((m * val) / 2) * pow(10, k2))
-
-#define CONVERT_SENSOR_RAW(sensor, val) (float)(((__TO_M((sensor)->mtol) * val) + (__TO_B((sensor)->bacc) * pow(10, __TO_B_EXP((sensor)->bacc)))) * pow(10, __TO_R_EXP((sensor)->bacc)))
-#define CONVERT_SENSOR_TOL(sensor)	(float)((((__TO_M((sensor)->mtol) * __TO_TOL((sensor)->mtol)) / 2) * pow(10, __TO_R_EXP((sensor)->bacc))))
+#if WORDS_BIGENDIAN
+# define __TO_TOL(mtol)     (unsigned short)(mtol & 0x3f)
+# define __TO_M(mtol)       (unsigned short)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (unsigned int)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
+# define __TO_ACC(bacc)     (unsigned int)(((bacc & 0x3f0000) >> 16) | ((bacc & 0xf000) >> 6))
+# define __TO_ACC_EXP(bacc) (unsigned int)((bacc & 0xc00) >> 10)
+# define __TO_R_EXP(bacc)   (unsigned int)(utos(((bacc & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (unsigned int)(utos((bacc & 0xf), 4))
+#else
+# define __TO_TOL(mtol)     (unsigned short)(BSWAP_16(mtol) & 0x3f)
+# define __TO_M(mtol)       (unsigned short)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (unsigned int)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
+                            ((BSWAP_32(bacc) & 0xc00000) >> 14)), 10))
+# define __TO_ACC(bacc)     (unsigned int)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
+# define __TO_ACC_EXP(bacc) (unsigned int)((BSWAP_32(bacc) & 0xc00) >> 10)
+# define __TO_R_EXP(bacc)   (unsigned int)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (unsigned int)(utos((BSWAP_32(bacc) & 0xf), 4))
+#endif
 
 #define GET_SDR_REPO_INFO	0x20
 #define GET_SDR_ALLOC_INFO	0x21
