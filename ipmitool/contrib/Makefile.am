@@ -34,5 +34,6 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-EXTRA_DIST		= collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
+EXTRA_DIST		= bmcautoconf.sh \
+	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
 
