@@ -84,6 +84,29 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char
 	}
 }
 
+unsigned char
+sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, float val)
+{
+	int m, b, k1, k2;
+        double result;
+
+	m  = __TO_M(sensor->mtol);
+	b  = __TO_B(sensor->bacc);
+	k1 = __TO_B_EXP(sensor->bacc);
+	k2 = __TO_R_EXP(sensor->bacc);
+
+	if (sensor->unit.analog > 2) /* This isn't an analog sensor. */
+            return 0;
+        if (m == 0) /* don't divide by zero */
+            return 0;
+
+        result = ((val / pow(10, k2)) - (b * pow(10, k1))) / m;
+        if ((result -(int)result) >= .5)
+            return (unsigned char)ceil(result);
+        else
+            return (unsigned char)result;
+}
+
 #define READING_UNAVAILABLE	0x20
 #define SCANNING_DISABLED	0x80
 
@@ -109,7 +132,7 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
 	return rsp;
 }
 
-static const char *
+const char *
 ipmi_sdr_get_sensor_type_desc(const unsigned char type)
 {
 	if (type <= SENSOR_TYPE_MAX)
@@ -191,7 +214,7 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr
 {
 	struct sdr_get_rs *header;
 
-	if (itr->next > itr->total)
+	if (itr->next == 0xffff)
 		return NULL;
 
 	if (!(header = ipmi_sdr_get_header(intf, itr->reservation, itr->next)))
@@ -930,6 +953,31 @@ void
 ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 {
 	free (itr);
+}
+
+struct sdr_record_full_sensor *
+ipmi_sdr_find_sdr(struct ipmi_intf * intf, char * id)
+{
+    struct sdr_get_rs * header;
+    struct ipmi_sdr_iterator * itr;
+
+    itr = ipmi_sdr_start(intf);
+    if (!itr)
+    {
+        printf("Unable to open SDR for reading\n");
+        return;
+    }
+
+    while (header = ipmi_sdr_get_next_header(intf, itr)) 
+    {
+        struct sdr_record_full_sensor * sdr;
+        if (header->type != SDR_RECORD_TYPE_FULL_SENSOR)
+            continue;
+        sdr = (struct sdr_record_full_sensor *)ipmi_sdr_get_record(intf, header, itr);
+        if (sdr && !strncmp(sdr->id_string, id, sdr->id_code & 0x3f))
+            return sdr;
+    }
+    return NULL;
 }
 
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
