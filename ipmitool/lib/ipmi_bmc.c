@@ -96,6 +96,201 @@ static int ipmi_bmc_reset(struct ipmi_intf * intf, int cmd)
 	return 0;
 }
 
+struct bmc_enables_data {
+#if WORDS_BIGENDIAN
+	unsigned char oem2		: 1;
+	unsigned char oem1		: 1;
+	unsigned char oem0		: 1;
+	unsigned char __reserved	: 1;
+	unsigned char system_event_log	: 1;
+	unsigned char event_msgbuf	: 1;
+	unsigned char event_msgbuf_intr	: 1;
+	unsigned char receive_msg_intr	: 1;
+#else
+	unsigned char receive_msg_intr	: 1;
+	unsigned char event_msgbuf_intr	: 1;
+	unsigned char event_msgbuf	: 1;
+	unsigned char system_event_log	: 1;
+	unsigned char __reserved	: 1;
+	unsigned char oem0		: 1;
+	unsigned char oem1		: 1;
+	unsigned char oem2		: 1;
+#endif
+} __attribute__ ((packed));
+
+struct bitfield_data {
+	const char * name;
+	const char * desc;
+	uint32_t mask;
+	int write;
+};
+
+struct bitfield_data bmc_enables_bf[] = {
+	{
+		name:	"recv_msg_intr",
+		desc:	"Receive Message Queue Interrupt",
+		mask:	1<<0,
+		write:	1,
+	},
+	{
+		name:	"event_msg_intr",
+		desc:	"Event Message Buffer Full Interrupt",
+		mask:	1<<1,
+		write:	1,
+	},
+	{
+		name:	"event_msg",
+		desc:	"Event Message Buffer",
+		mask:	1<<2,
+		write:	1,
+	},
+	{
+		name:	"system_event_log",
+		desc:	"System Event Logging",
+		mask:	1<<3,
+		write:	1,
+	},
+	{
+		name:	"oem0",
+		desc:	"OEM 0",
+		mask:	1<<5,
+		write:	1,
+	},
+	{
+		name:	"oem1",
+		desc:	"OEM 1",
+		mask:	1<<6,
+		write:	1,
+	},
+	{
+		name:	"oem2",
+		desc:	"OEM 2",
+		mask:	1<<7,
+		write:	1,
+	},
+	{ NULL },
+};
+
+static void printf_bmc_usage()
+{
+	struct bitfield_data * bf;
+	printf("BMC Commands:\n");
+	printf("  reset <warm|cold>\n");
+	printf("  info\n");
+	printf("  getenables\n");
+	printf("  setenables <option=on|off> ...\n");
+	for (bf = bmc_enables_bf; bf->name; bf++) {
+		if (!bf->write)
+			continue;
+		printf("    %-20s  %s\n", bf->name, bf->desc);
+	}
+}
+
+static int ipmi_bmc_get_enables(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct bmc_enables_data en;
+	struct bitfield_data * bf;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("Error in BMC Get Global Enables Command\n");
+		return -1;
+	}
+	if (rsp->ccode) {
+		printf("BMC Get Global Enables command failed: %s\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	for (bf = bmc_enables_bf; bf->name; bf++) {
+		printf("%-40s : %sabled\n", bf->desc,
+		       rsp->data[0] & bf->mask ? "en" : "dis");
+	}
+
+	return 0;
+}
+
+static int ipmi_bmc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct bitfield_data * bf;
+	unsigned char en;
+	int i;
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
+	if (argc < 1 || !strncmp(argv[0], "help", 4)) {
+		printf_bmc_usage();
+		return 0;
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("Error in BMC Get Global Enables Command\n");
+		return -1;
+	}
+	if (rsp->ccode) {
+		printf("BMC Get Global Enables command failed: %s\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	en = rsp->data[0];
+
+	for (i = 0; i < argc; i++) {
+		for (bf = bmc_enables_bf; bf->name; bf++) {
+			int nl = strlen(bf->name);
+			if (!strncmp(argv[i], bf->name, nl)) {
+				if (!strncmp(argv[i]+nl+1, "off", 3)) {
+					printf("Disabling %s\n", bf->desc);
+					en &= ~bf->mask;
+				}
+				else if (!strncmp(argv[i]+nl+1, "on", 2)) {
+					printf("Enabling %s\n", bf->desc);
+					en |= bf->mask;
+				}
+				else {
+					printf("Unrecognized option: %s\n", argv[i]);
+				}
+			}
+		}
+	}
+
+	if (en == rsp->data[0]) {
+		printf("\nNothing to change...\n");
+		ipmi_bmc_get_enables(intf);
+		return 0;
+	}
+
+	req.msg.cmd = BMC_SET_GLOBAL_ENABLES;
+	req.msg.data = &en;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp)
+		printf("Error in BMC Set Global Enables Command\n");
+	else if (rsp->ccode)
+		printf("BMC Set Global Enables command failed: %s\n",
+		       val2str(rsp->ccode, completion_code_vals));
+	else {
+		printf("\nVerifying...\n");
+		ipmi_bmc_get_enables(intf);
+	}
+
+	return 0;
+}
+
 /* IPM Device, Get Device ID Command - Additional Device Support */
 const char *ipm_dev_adtl_dev_support[8] = {
         "Sensor Device",         /* bit 0 */
@@ -171,7 +366,7 @@ static int ipmi_bmc_get_deviceid(struct ipmi_intf * intf)
 int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc || !strncmp(argv[0], "help", 4)) {
-		printf("BMC Commands:  reset info\n");
+		printf_bmc_usage();
 		return 0;
 	}
 	else if (!strncmp(argv[0], "reset", 5)) {
@@ -190,6 +385,12 @@ int ipmi_bmc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (!strncmp(argv[0], "info", 4)) {
 		ipmi_bmc_get_deviceid(intf);
+	}
+	else if (!strncmp(argv[0], "getenables", 7)) {
+		ipmi_bmc_get_enables(intf);
+	}
+	else if (!strncmp(argv[0], "setenables", 7)) {
+		ipmi_bmc_set_enables(intf, argc-1, &(argv[1]));
 	}
 	return 0;
 }

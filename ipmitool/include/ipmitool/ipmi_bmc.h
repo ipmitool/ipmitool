@@ -43,6 +43,8 @@
 #define BMC_COLD_RESET			0x02
 #define BMC_WARM_RESET			0x03
 #define BMC_GET_SELF_TEST		0x04
+#define BMC_SET_GLOBAL_ENABLES		0x2e
+#define BMC_GET_GLOBAL_ENABLES		0x2f
 
 int ipmi_bmc_main(struct ipmi_intf *, int, char **);
 
