@@ -67,6 +67,10 @@ solaris*)
 	STRIP=gstrip
 	LD=gld
 	AR=gar
+	# disable the linux-specific interfaces
+	enable_intf_imb=no
+	enable_intf_open=no
+	enable_ipmievd=no
 	;;
 esac
 
