@@ -111,6 +111,8 @@ static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 		unsigned char force_on;
 	} identify_data;
 
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x4;

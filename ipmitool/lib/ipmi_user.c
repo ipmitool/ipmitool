@@ -46,6 +46,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_user.h>
+#include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/bswap.h>
 
@@ -428,6 +429,8 @@ int
 ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
+
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 
 	/*
 	 * Help
