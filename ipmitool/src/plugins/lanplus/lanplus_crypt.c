@@ -227,10 +227,6 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 1;
 	
-	/* We don't yet support other alogrithms */
-	assert(session->v2_data.auth_alg == IPMI_INTEGRITY_HMAC_SHA1_96);
-	
-
 	bufferLength =
 		16 +   /* Rm    */
 		4  +   /* SIDc  */
