@@ -569,6 +569,41 @@ struct sdr_record_fru_locator {
 	unsigned char id_string[16];
 } __attribute__ ((packed));
 
+
+
+/*
+ * The Get SDR Repository Info response structure
+ * From table 33-3 of the IPMI v2.0 spec
+ */
+struct get_sdr_repository_info_rsp {
+	unsigned char sdr_version;
+	unsigned char record_count_lsb;
+	unsigned char record_count_msb;
+	unsigned char free_space[2];
+	unsigned char most_recent_addition_timestamp[4];
+	unsigned char most_recent_erase_timestamp[4];
+#if WORDS_BIGENDIAN	
+	unsigned char overflow_flag                          : 1;
+	unsigned char modal_update_support                   : 2;
+	unsigned char __reserved1                            : 1;
+	unsigned char delete_sdr_supported                   : 1;
+	unsigned char partial_add_sdr_supported              : 1;
+	unsigned char reserve_sdr_repository_supported       : 1;
+	unsigned char get_sdr_repository_allo_info_supported : 1;
+#else
+	unsigned char get_sdr_repository_allo_info_supported : 1;
+	unsigned char reserve_sdr_repository_supported       : 1;
+	unsigned char partial_add_sdr_supported              : 1;
+	unsigned char delete_sdr_supported                   : 1;
+	unsigned char __reserved1                            : 1;
+	unsigned char modal_update_support                   : 2;
+	unsigned char overflow_flag                          : 1;
+#endif
+} __attribute__ ((packed));
+
+
+
+
 struct ipmi_sdr_iterator
 {
 	unsigned short reservation;
@@ -651,5 +686,6 @@ void ipmi_sdr_print_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_loc
 
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
+int ipmi_sdr_print_info(struct ipmi_intf * intf);
 
 #endif  /* IPMI_SDR_H */
