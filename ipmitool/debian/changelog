@@ -1,3 +1,12 @@
+ipmitool (1.5.7) unstable; urgency=low
+
+  * add IPMIv1.5 eratta fixes
+  * additions to FRU printing and FRU multirecords
+  * better handling of SDR printing
+  * contrib scripts for creating rrdtool graphs
+
+ -- Duncan Laurie <duncan@sun.com>  Mon,  5 Jan 2004 17:29:50 -0700
+
 ipmitool (1.5.6) unstable; urgency=low
 
   * Fix SEL event decoding for generic events

@@ -64,6 +64,12 @@ rm -rf $RPM_BUILD_DIR/@IPMITOOL_PKG@-@VERSION@
 %{_includedir}/ipmitool/*.h
 
 %changelog
+* Mon Jan  5 2004 <duncan@sun.com>  1.5.7-1
+ - add IPMIv1.5 eratta fixes
+ - additions to FRU printing and FRU multirecords
+ - better handling of SDR printing
+ - contrib scripts for creating rrdtool graphs
+
 * Thu Dec  4 2003 <duncan@sun.com>  1.5.6-1
  - Fix SEL event decoding for generic events
  - Handle empty SEL gracefully when doing "sel list"
