@@ -1,3 +1,22 @@
+version 1.7.0
+	* Propogate errors correctly so exit status will be useful
+	* More consistent display of errors including completion code text
+	* Errors and debug is send to stderr now
+	* New "sel get" command that will print details about SEL entry
+	  and corresponding SDR records as well as FRUs via entity association
+	* Improved event generator, now supports reading events from text file
+	* New "-o oemtype" option for specifying OEM boards
+	  exsting types are "supermicro" and "intelwv2"
+	* New PEF subsystem
+	* New "bmc" plugin for Solaris 10 x86
+	* Many bugfixes and contributed patches
+
+version 1.6.2
+	* Support for Supermicro BMC OEM authentication method
+
+version 1.6.1
+	* Fix minor problem with LAN parameter setting
+
 version 1.6.0
 	* Add a README file
 	* Add Solaris x86 interface plugin

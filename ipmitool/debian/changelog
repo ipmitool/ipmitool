@@ -1,3 +1,31 @@
+ipmitool (1.7.0) unstable; urgency=low
+
+  * Propogate errors correctly so exit status will be useful
+  * More consistent display of errors including completion code text
+  * Errors and debug is send to stderr now
+  * New "sel get" command that will print details about SEL entry
+    and corresponding SDR records as well as FRUs via entity association
+  * Improved event generator, now supports reading events from text file
+  * New "-o oemtype" option for specifying OEM boards
+    exsting types are "supermicro" and "intelwv2"
+  * New PEF subsystem
+  * New "bmc" plugin for Solaris 10 x86
+  * Many bugfixes and contributed patches
+
+ -- Duncan Laurie <duncan@iceblink.org>  Fri, Jan 7 2005 19:58:22 -0700
+
+ipmitool (1.6.2) unstable; urgency=low
+
+  * Support for Supermicro BMC OEM authentication method
+
+ -- Duncan Laurie <duncan@iceblink.org>  Mon, 16 Nov 2004 08:20:01 -0700
+
+ipmitool (1.6.1) unstable; urgency=low
+
+  * Fix minor problem with LAN parameter setting
+
+ -- Duncan Laurie <duncan@iceblink.org>  Wed, 29 Sep 2004 11:19:17 -0700
+
 ipmitool (1.6.0) unstable; urgency=low
 
   * Add a README
