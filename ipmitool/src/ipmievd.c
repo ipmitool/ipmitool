@@ -54,6 +54,7 @@
 #include <config.h>
 
 #ifdef HAVE_OPENIPMI_H
+# include <linux/compiler.h>
 # include <linux/ipmi.h>
 #else
 # include "plugins/open/open.h"
