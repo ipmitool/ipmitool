@@ -72,25 +72,33 @@ AC_SUBST(PSTAMP, $host)
 AC_SUBST(BASEDIR, $prefix)
 
 dnl check for OpenSSL functionality
+AC_ARG_ENABLE([internal-md5],
+	[AC_HELP_STRING([--enable-internal-md5],
+			[enable internal MD5 library [default=no]])],
+	[], [enable_internal_md5=no])
+
 AC_CHECK_LIB([crypto], [EVP_aes_128_cbc],
-	[have_crypto=yes; LIBS="$LIBS -lcrypto"],
-	[have_crypto=no], [-lcrypto])
+	[if test "x$enable_internal_md5" != "xyes"; then
+	    have_crypto=yes; LIBS="$LIBS -lcrypto"
+	fi], [have_crypto=no], [-lcrypto])
 
 AC_CHECK_LIB([crypto], [MD5_Init],
-	[if test "x$have_crypto" != "xyes"; then
-	    LIBS="$LIBS -lcrypto"
-	    have_md5=yes
-	fi
-	AC_DEFINE(HAVE_CRYPTO_MD5, [1], [Define to 1 if libcrypto supports MD5.])],
-	[], [-lcrypto])
+	[if test "x$enable_internal_md5" != "xyes"; then
+	    if test "x$have_crypto" != "xyes"; then
+	    	LIBS="$LIBS -lcrypto"
+		have_md5=yes
+	    fi
+	    AC_DEFINE(HAVE_CRYPTO_MD5, [1], [Define to 1 if libcrypto supports MD5.])
+	fi], [], [-lcrypto])
 
 AC_CHECK_LIB([crypto], [MD2_Init],
-	[if test "x$have_crypto" != "xyes" && test "x$have_md5" != "xyes"; then
-	    LIBS="$LIBS -lcrypto"
-	    have_md2=yes
-	fi
-	AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])],
-	[], [-lcrypto])	
+	[if test "x$enable_internal_md5" != "xyes"; then
+	    if test "x$have_crypto" != "xyes" && test "x$have_md5" != "xyes"; then
+	        LIBS="$LIBS -lcrypto"
+	        have_md2=yes
+	    fi
+	    AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])
+	fi], [], [-lcrypto])
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
@@ -124,6 +132,8 @@ if test "x$enable_intf_lanplus" = "xyes"; then
     AC_SUBST(INTF_LANPLUS, [lanplus])
     AC_SUBST(INTF_LANPLUS_LIB, [libintf_lanplus.la])
     IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lanplus/libintf_lanplus.la"
+else
+    enable_intf_lanplus=no
 fi
 
 dnl look for OpenIPMI header files
