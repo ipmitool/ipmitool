@@ -49,6 +49,10 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		setup:	ipmi_oem_supermicro,
 	},
 	{
+		name:	"intelwv2",
+		desc:	"Intel SE7501WV2 BMC with extra LAN communication support",
+	},
+	{
 		name:	"intelplus",
 		desc:	"Intel IPMI 2.0 BMC with RMCP+ communication support",
 	},
