@@ -295,6 +295,36 @@ This command will read all Field Replacable Unit inventory data and extract such
 This command will read the SDR and extract sensor information, then query each sensor and print its name, reading, and status.
 .RE
 .TP
+.I sensor
+.RS
+.TP
+.I list
+This command will list sensors and thresholds in a wide table format.
+.TP
+\fIget\fP <\fBid\fR>
+This command will print info for a single sensor specified by numeric ID or name.
+.TP
+\fIthresh\fP <\fBid\fR> <\fBthreshold\fR> <\fBsetting\fR>
+This allows you to set a particular sensor threshold value.  The sensor can be specified by numeric ID or name.
+.RS
+.TP
+Valid thresholds are:
+.br
+unr   Upper Non-Recoverable
+.br
+ucr   Upper Critical
+.br
+unc   Uperr Non-Critical
+.br
+lnc   Lower Non-Critical
+.br
+lcr   Lower Critical
+.br
+lnr   Lower Non-Recoverable
+.LP
+.RE
+.RE
+.TP
 .I sel
 .RS
 .TP
