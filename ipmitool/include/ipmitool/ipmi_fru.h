@@ -39,6 +39,7 @@
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sdr.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -221,7 +222,7 @@ static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Rack Mount Chassis"
 };
 
-void ipmi_print_fru(struct ipmi_intf *, unsigned char);
-int ipmi_fru_main(struct ipmi_intf *, int, char **);
+int ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv);
+void ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
 
 #endif /* IPMI_FRU_H */
