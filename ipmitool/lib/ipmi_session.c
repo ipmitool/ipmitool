@@ -97,11 +97,19 @@ print_session_info_csv(const struct  get_session_info_rsp * session_info,
 	if (data_len == 18)
 	{
 		/* We have 802.3 LAN data */
+#ifdef __CYGWIN__
+		printf(",%d.%d.%d.%d",
+			session_info->channel_data.lan_data.console_ip[0],
+			session_info->channel_data.lan_data.console_ip[1],
+			session_info->channel_data.lan_data.console_ip[2],
+			session_info->channel_data.lan_data.console_ip[3]);
+#else
 		printf(",%s",
 			   inet_ntop(AF_INET,
 						 &(session_info->channel_data.lan_data.console_ip),
 						 buffer,
 						 16));
+#endif
 
 		printf(",%02x:%02x:%02x:%02x:%02x:%02x",
 			   session_info->channel_data.lan_data.console_mac[0],
@@ -129,11 +137,19 @@ print_session_info_csv(const struct  get_session_info_rsp * session_info,
 		printf(",%d",
 			   session_info->channel_data.modem_data.destination_selector);
 
+#ifdef __CYGWIN__
+		printf(",%d.%d.%d.%d",
+			session_info->channel_data.modem_data.console_ip[0],
+			session_info->channel_data.modem_data.console_ip[1],
+			session_info->channel_data.modem_data.console_ip[2],
+			session_info->channel_data.modem_data.console_ip[3]);
+#else
 		printf(",%s",
 			   inet_ntop(AF_INET,
 						 &(session_info->channel_data.modem_data.console_ip),
 						 buffer,
 						 16));
+#endif
 
 		if (data_len == 14)
 		{
@@ -185,11 +201,19 @@ print_session_info_verbose(const struct  get_session_info_rsp * session_info,
 	if (data_len == 18)
 	{
 		/* We have 802.3 LAN data */
+#ifdef __CYGWIN__
+		printf("console ip                    : %d.%d.%d.%d\n",
+			session_info->channel_data.lan_data.console_ip[0],
+			session_info->channel_data.lan_data.console_ip[1],
+			session_info->channel_data.lan_data.console_ip[2],
+			session_info->channel_data.lan_data.console_ip[3]);
+#else
 		printf("console ip                    : %s\n",
 			   inet_ntop(AF_INET,
 						 &(session_info->channel_data.lan_data.console_ip),
 						 buffer,
 						 16));
+#endif
 
 		printf("console mac                   : %02x:%02x:%02x:%02x:%02x:%02x\n",
 			   session_info->channel_data.lan_data.console_mac[0],
@@ -217,11 +241,19 @@ print_session_info_verbose(const struct  get_session_info_rsp * session_info,
 		printf("Destination selector          : %d\n",
 			   session_info->channel_data.modem_data.destination_selector);
 
+#ifdef __CYGWIN__
+		printf("console ip                    : %d.%d.%d.%d\n",
+			session_info->channel_data.modem_data.console_ip[0],
+			session_info->channel_data.modem_data.console_ip[1],
+			session_info->channel_data.modem_data.console_ip[2],
+			session_info->channel_data.modem_data.console_ip[3]);
+#else
 		printf("console ip                    : %s\n",
 			   inet_ntop(AF_INET,
 						 &(session_info->channel_data.modem_data.console_ip),
 						 buffer,
 						 16));
+#endif
 
 		if (data_len == 14)
 		{
