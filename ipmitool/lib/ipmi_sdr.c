@@ -55,7 +55,7 @@ int utos(unsigned val, unsigned bits)
 	else return val;
 }
 
-static float
+float
 sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char val)
 {
 	int m, b, k1, k2;
@@ -88,7 +88,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char
 #define GET_SENSOR_THRES	0x27
 #define GET_SENSOR_TYPE		0x2f
 
-static inline struct ipmi_rs *
+struct ipmi_rs *
 ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor)
 {
 	struct ipmi_rs * rsp;
@@ -117,7 +117,7 @@ ipmi_sdr_get_sensor_type_desc(const unsigned char type)
 	return "OEM reserved";
 }
 
-static const char *
+const char *
 ipmi_sdr_get_status(unsigned char stat)
 {
 	/* cr = critical
@@ -187,7 +187,7 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr
 {
 	struct sdr_get_rs *header;
 
-	if (itr->next >= itr->total)
+	if (itr->next > itr->total)
 		return NULL;
 
 	if (!(header = ipmi_sdr_get_header(intf, itr->reservation, itr->next)))
@@ -232,7 +232,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
 
 	if (!rsp) {
-		printf("Error reading sensor %d\n", sensor->keys.sensor_num);
+		printf("Error reading sensor %s (#%02x)\n", desc, sensor->keys.sensor_num);
 		return;
 	}
 
@@ -242,7 +242,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			val = 0.0;
 			validread = 0;
 		} else {
-			printf("Error reading sensor %d, %s\n",
+			printf("Error reading sensor %s (#%02x), %s\n",
+			       desc,
 			       sensor->keys.sensor_num,
 			       val2str(rsp->ccode, completion_code_vals));
 			return;
@@ -751,7 +752,7 @@ ipmi_sdr_print_fru_locator(struct ipmi_intf * intf,
 	printf("\n");
 }
 
-static void
+void
 ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 {
 	struct sdr_get_rs * header;

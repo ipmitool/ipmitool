@@ -436,5 +436,10 @@ struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
 struct sdr_get_rs * ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 unsigned char * ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header, struct ipmi_sdr_iterator * i);
 void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
+void ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type);
+const char * ipmi_sdr_get_status(unsigned char stat);
+float sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char val);
+struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, unsigned char sensor);
+
 
 #endif  /* IPMI_SDR_H */

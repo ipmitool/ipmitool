@@ -55,6 +55,7 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_bmc.h>
+#include <ipmitool/ipmi_sensor.h>
 
 struct ipmi_session lan_session;
 int csv_output = 0;
@@ -349,6 +350,9 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "sel", 3)) {
 		submain = ipmi_sel_main;
+	}
+	else if (!strncmp(argv[optind], "sensor", 6)) {
+		submain = ipmi_sensor_main;
 	}
 	else if (!strncmp(argv[optind], "sol", 3)) {
 		submain = ipmi_sol_main;
