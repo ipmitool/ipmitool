@@ -37,15 +37,7 @@
 #include <stddef.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
-
-
-const struct valstr ipmi_channel_activity_type_vals[] = {
-	{ 0, "IPMI Messaging session active" },
-	{ 1, "Callback Messaging session active" },
-	{ 2, "Dial-out Alert active" },
-	{ 3, "TAP Page Active" },
-	{ 0x00, NULL },
-};
+#include <ipmitool/ipmi_sensor.h>
 
 
 /*
@@ -58,6 +50,14 @@ const struct valstr impi_bit_rate_vals[] = {
 	{ 0x08, "38.4" },
 	{ 0x09, "57.6" },
 	{ 0x0A, "115.2" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ipmi_channel_activity_type_vals[] = {
+	{ 0, "IPMI Messaging session active" },
+	{ 1, "Callback Messaging session active" },
+	{ 2, "Dial-out Alert active" },
+	{ 3, "TAP Page Active" },
 	{ 0x00, NULL },
 };
 
@@ -99,3 +99,158 @@ const struct valstr ipmi_authtype_vals[] = {
 	{ IPMI_1_5_AUTH_TYPE_BIT_OEM,      "OEM" },
 	{ 0,                               NULL },
 };
+
+const struct valstr entity_id_vals[] = {
+	{ 0x00, "Unspecified" },
+	{ 0x01, "Other" },
+	{ 0x02, "Unknown" },
+	{ 0x03, "Processor" },
+	{ 0x04, "Disk or Disk Bay" },
+	{ 0x05, "Peripheral Bay" },
+	{ 0x06, "System Management Module" },
+	{ 0x07, "System Board" },
+	{ 0x08, "Memory Module" },
+	{ 0x09, "Processor Module" },
+	{ 0x0a, "Power Supply" },
+	{ 0x0b, "Add-in Card" },
+	{ 0x0c, "Front Panel Board" },
+	{ 0x0d, "Back Panel Board" },
+	{ 0x0e, "Power System Board" },
+	{ 0x0f, "Drive Backplane" },
+	{ 0x10, "System Internal Expansion Board" },
+	{ 0x11, "Other System Board" },
+	{ 0x12, "Processor Board" },
+	{ 0x13, "Power Unit" },
+	{ 0x14, "Power Module" },
+	{ 0x15, "Power Management" },
+	{ 0x16, "Chassis Back Panel Board" },
+	{ 0x17, "System Chassis" },
+	{ 0x18, "Sub-Chassis" },
+	{ 0x19, "Other Chassis Board" },
+	{ 0x1a, "Disk Drive Bay" },
+	{ 0x1b, "Peripheral Bay" },
+	{ 0x1c, "Device Bay" },
+	{ 0x1d, "Fan Device" },
+	{ 0x1e, "Cooling Unit" },
+	{ 0x1f, "Cable/Interconnect" },
+	{ 0x20, "Memory Device" },
+	{ 0x21, "System Management Software" },
+	{ 0x22, "BIOS" },
+	{ 0x23, "Operating System" },
+	{ 0x24, "System Bus" },
+	{ 0x25, "Group" },
+	{ 0x26, "Remote Management Device" },
+	{ 0x27, "External Environment" },
+	{ 0x28, "Battery" },
+	{ 0x00, NULL },
+};
+
+const struct valstr entity_device_type_vals[] = {
+	{ 0x00, "Reserved" },
+	{ 0x01, "Reserved" },
+	{ 0x02, "DS1624 temperature sensor" },
+	{ 0x03, "DS1621 temperature sensor" },
+	{ 0x04, "LM75 Temperature Sensor" },
+	{ 0x05, "Heceta ASIC" },
+	{ 0x06, "Reserved" },
+	{ 0x07, "Reserved" },
+	{ 0x08, "EEPROM, 24C01" },
+	{ 0x09, "EEPROM, 24C02" },
+	{ 0x0a, "EEPROM, 24C04" },
+	{ 0x0b, "EEPROM, 24C08" },
+	{ 0x0c, "EEPROM, 24C16" },
+	{ 0x0d, "EEPROM, 24C17" },
+	{ 0x0e, "EEPROM, 24C32" },
+	{ 0x0f, "EEPROM, 24C64" },
+	{ 0x1000, "IPMI FRU Inventory" },
+	{ 0x1001, "DIMM Memory ID" },
+	{ 0x1002, "IPMI FRU Inventory" },
+	{ 0x1003, "System Processor Cartridge FRU" },
+	{ 0x11, "Reserved" },
+	{ 0x12, "Reserved" },
+	{ 0x13, "Reserved" },
+	{ 0x14, "PCF 8570 256 byte RAM" },
+	{ 0x15, "PCF 8573 clock/calendar" },
+	{ 0x16, "PCF 8574A I/O Port" },
+	{ 0x17, "PCF 8583 clock/calendar" },
+	{ 0x18, "PCF 8593 clock/calendar" },
+	{ 0x19, "Clock calendar" },
+	{ 0x1a, "PCF 8591 A/D, D/A Converter" },
+	{ 0x1b, "I/O Port" },
+	{ 0x1c, "A/D Converter" },
+	{ 0x1d, "D/A Converter" },
+	{ 0x1e, "A/D, D/A Converter" },
+	{ 0x1f, "LCD Controller/Driver" },
+	{ 0x20, "Core Logic (Chip set) Device" },
+	{ 0x21, "LMC6874 Intelligent Battery controller" },
+	{ 0x22, "Intelligent Batter controller" },
+	{ 0x23, "Combo Management ASIC" },
+	{ 0x24, "Maxim 1617 Temperature Sensor" },
+	{ 0xbf, "Other/Unspecified" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ipmi_channel_protocol_vals[] = {
+	{ 0x00, "reserved" },
+	{ 0x01, "IPMB-1.0" },
+	{ 0x02, "ICMB-1.0" },
+	{ 0x03, "reserved" },
+	{ 0x04, "IPMI-SMBus" },
+	{ 0x05, "KCS" },
+	{ 0x06, "SMIC" },
+	{ 0x07, "BT-10" },
+	{ 0x08, "BT-15" },
+	{ 0x09, "TMode" },
+	{ 0x1c, "OEM 1" },
+	{ 0x1d, "OEM 2" },
+	{ 0x1e, "OEM 3" },
+	{ 0x1f, "OEM 4" },
+	{ 0x00, NULL },
+};
+
+
+const struct valstr ipmi_channel_medium_vals[] = {
+	{ 0x00, "reserved" },
+	{ 0x01, "IPMB (I2C)" },
+	{ 0x02, "ICMB v1.0" },
+	{ 0x03, "ICMB v0.9" },
+	{ 0x04, "802.3 LAN" },
+	{ 0x05, "Serial/Modem" },
+	{ 0x06, "Other LAN" },
+	{ 0x07, "PCI SMBus" },
+	{ 0x08, "SMBus v1.0/v1.1" },
+	{ 0x09, "SMBus v2.0" },
+	{ 0x0a, "USB 1.x" },
+	{ 0x0b, "USB 2.x" },
+	{ 0x0c, "System Interface" },
+	{ 0x00, NULL },
+};
+
+const struct valstr completion_code_vals[] = {
+	{ 0x00, "Command completed normally" },
+	{ 0xc0, "Node busy" },
+	{ 0xc1, "Invalid command" },
+	{ 0xc2, "Invalid command on LUN" },
+	{ 0xc3, "Timeout" },
+	{ 0xc4, "Out of space" },
+	{ 0xc5, "Reservation cancelled or invalid" },
+	{ 0xc6, "Request data truncated" },
+	{ 0xc7, "Request data length invalid" },
+	{ 0xc8, "Request data field length limit exceeded" },
+	{ 0xc9, "Parameter out of range" },
+	{ 0xca, "Cannot return number of requested data bytes" },
+	{ 0xcb, "Requested sensor, data, or record not found" },
+	{ 0xcc, "Invalid data field in request" },
+	{ 0xcd, "Command illegal for specified sensor or record type" },
+	{ 0xce, "Command response could not be provided" },
+	{ 0xcf, "Cannot execute duplicated request" },
+	{ 0xd0, "SDR Repository in update mode" },
+	{ 0xd1, "Device firmeware in update mode" },
+	{ 0xd2, "BMC initialization in progress" },
+	{ 0xd3, "Destination unavailable" },
+	{ 0xd4, "Insufficient privilege level" },
+	{ 0xd5, "Command not supported in present state" },
+	{ 0xff, "Unspecified error" },
+	{ 0x00, NULL }
+};
+
