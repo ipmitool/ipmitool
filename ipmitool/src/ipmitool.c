@@ -81,7 +81,9 @@ extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
 /* defined in ipmishell.c */
+#ifdef HAVE_READLINE
 extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
+#endif
 extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 
@@ -104,7 +106,9 @@ struct ipmi_cmd {
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },
+#ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
+#endif
 	{ ipmi_exec_main,    "exec",    "Run list of commands from file" },
 	{ ipmi_set_main,     "set",     "Set runtime variable for shell and exec" },
 	{ NULL },
