@@ -45,6 +45,11 @@
 #define IMPI_SOL_ACTIVATING                     0x20
 #define IMPI_SET_SOL_CONFIG_PARAMETERS          0x21
 #define IMPI_GET_SOL_CONFIG_PARAMETERS          0x22
+#define IPMI_SET_USER_ACCESS                    0x43
+#define IPMI_GET_USER_ACCESS                    0x44
+#define IPMI_SET_USER_NAME                      0x45
+#define IPMI_GET_USER_NAME                      0x46
+#define IPMI_SET_USER_PASSWORD                  0x47
 #define IPMI_ACTIVATE_PAYLOAD                   0x48
 #define IPMI_DEACTIVATE_PAYLOAD                 0x49
 #define IPMI_SUSPEND_RESUME_PAYLOAD_ENCRYPTYION 0x55
