@@ -722,7 +722,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 
 	/* find type of channel and only accept 802.3 LAN */
 	medium = ipmi_get_channel_medium(intf, chan);
-	if (medium != IPMI_CHANNEL_MEDIUM_LAN ||
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
 	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
 		lprintf(LOG_ERR, "Channel %d is not a LAN channel!", chan);
 		return -1;
