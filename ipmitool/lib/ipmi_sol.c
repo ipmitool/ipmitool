@@ -43,6 +43,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/bswap.h>
 
 
 #define SOL_PARAMETER_SET_IN_PROGRESS           0x00
@@ -94,7 +95,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -120,7 +122,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -146,7 +149,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -174,7 +178,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -201,7 +206,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -215,8 +221,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	 */
 	memset(data, 0, sizeof(data));
 	data[0] = channel;                                 /* channel number     */
-	data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE; /* parameter selector */
-	data[2] = 0x00;                                    /* set selector       */
+ 	data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE; /* parameter selector */
+ 	data[2] = 0x00;                                    /* set selector       */
 	data[3] = 0x00;                                    /* block selector     */
 	
 	rsp = intf->sendrecv(intf, &req);
@@ -228,7 +234,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -254,7 +261,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -280,7 +288,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 2)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) received "
+			   "for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -306,7 +315,8 @@ int ipmi_get_sol_info(struct ipmi_intf * intf,
 	}
 	if (rsp->data_len != 3)
 	{
-		printf("Error: Unexpected data length (%d) received for SOL paraemeter %d\n",
+		printf("Error: Unexpected data length (%d) "
+			   "received for SOL paraemeter %d\n",
 			   rsp->data_len,
 			   data[1]);
 		return -1;
@@ -329,7 +339,9 @@ static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 	
 	if (csv_output)
 	{
-		printf("%s,", params.set_in_progress?"true": "false");
+		printf("%s,",
+			   val2str(params.set_in_progress & 0x03,
+					   ipmi_set_in_progress_vals));
 		printf("%s,", params.enabled?"true": "false");
 		printf("%s,", params.force_encryption?"true":"false");
 		printf("%s,", params.force_encryption?"true":"false");
@@ -351,16 +363,25 @@ static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 	}
 	else
 	{
-		printf("Set in progress                 : %s\n", params.set_in_progress?"true": "false");
-		printf("Enabled                         : %s\n", params.enabled?"true": "false");
-		printf("Force Encryption                : %s\n", params.force_encryption?"true":"false");
-		printf("Force Authentication            : %s\n", params.force_encryption?"true":"false");
+		printf("Set in progress                 : %s\n",
+			   val2str(params.set_in_progress & 0x03,
+					   ipmi_set_in_progress_vals));
+		printf("Enabled                         : %s\n",
+			   params.enabled?"true": "false");
+		printf("Force Encryption                : %s\n",
+			   params.force_encryption?"true":"false");
+		printf("Force Authentication            : %s\n",
+			   params.force_authentication?"true":"false");
 		printf("Privilege Level                 : %s\n",
 			   val2str(params.privilege_level, ipmi_privlvl_vals));
-		printf("Character Accumulate Level (ms) : %d\n", params.character_accumulate_level * 5);
-		printf("Character Send Threshold        : %d\n", params.character_send_threshold);
-		printf("Retry Count                     : %d\n", params.retry_count);
-		printf("Retry Interval (ms)             : %d\n", params.retry_interval * 10);
+		printf("Character Accumulate Level (ms) : %d\n",
+			   params.character_accumulate_level * 5);
+		printf("Character Send Threshold        : %d\n",
+			   params.character_send_threshold);
+		printf("Retry Count                     : %d\n",
+			   params.retry_count);
+		printf("Retry Interval (ms)             : %d\n",
+			   params.retry_interval * 10);
 
 		printf("Volatile Bit Rate (kbps)        : %s\n",
 			   val2str(params.volatile_bit_rate, impi_bit_rate_vals));
@@ -368,8 +389,10 @@ static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 		printf("Non-Volatile Bit Rate (kbps)    : %s\n",
 			   val2str(params.non_volatile_bit_rate, impi_bit_rate_vals));
 
-		printf("Payload Channel                 : %d\n", params.payload_channel);
-		printf("Payload Port                    : %d\n", params.payload_port);
+		printf("Payload Channel                 : %d\n",
+			   params.payload_channel);
+		printf("Payload Port                    : %d\n",
+			   params.payload_port);
 	}
 
 	return 0;
@@ -377,21 +400,394 @@ static int ipmi_print_sol_info(struct ipmi_intf * intf, unsigned char channel)
 
 
 
-void
-print_sol_usage()
+/*
+ * ipmi_sol_set_param
+ *
+ * Set the specified Serial Over LAN value to the specified
+ * value
+ *
+ * return 0 on success,
+ *        -1 on failure
+ */
+static int ipmi_sol_set_param(struct ipmi_intf * intf,
+							  unsigned char      channel,
+							  const char       * param,
+							  const char       * value)
 {
-	printf("SOL Commands: info [<channel number>]\n");
+	struct ipmi_rs * rsp;
+	struct ipmi_rq   req;
+	unsigned char    data[4];	 
+	int              bGuarded = 1; /* Use set-in-progress indicator? */
+
+	req.msg.netfn    = IPMI_NETFN_TRANSPORT;           /* 0x0c */ 
+	req.msg.cmd      = IMPI_SET_SOL_CONFIG_PARAMETERS; /* 0x21 */
+	req.msg.data     = data;
+	
+	data[0] = channel;
+	
+
+	/*
+	 * set-in-progress
+	 */
+	if (! strcmp(param, "set-in-progress"))
+	{
+		bGuarded = 0; /* We _ARE_ the set-in-progress indicator */
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SET_IN_PROGRESS;
+
+		if (! strcmp(value, "set-complete"))
+			data[2] = 0x00;
+		else if (! strcmp(value, "set-in-progress"))
+			data[2] = 0x01;
+		else if (! strcmp(value, "commit-write"))
+			data[2] = 0x02;
+		else
+		{
+			printf("Invalid value %s for parameter %s\n",
+				   value, param);
+			printf("Valid values are set-complete, set-in-progress "
+				   "and commit-write\n");
+			return -1;
+		}
+	}
+
+
+	/*
+	 * enabled
+	 */
+	else if (! strcmp(param, "enabled"))
+	{
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_ENABLE;
+
+		if (! strcmp(value, "true"))
+			data[2] = 0x01;
+		else if (! strcmp(value, "false"))
+			data[2] = 0x00;
+		else
+		{
+			printf("Invalid value %s for parameter %s\n",
+				   value, param);
+			printf("Valid values are true and false");
+			return -1;
+		}
+	}
+
+
+	/*
+	 * force-payload-encryption 
+	 */
+	else if (! strcmp(param, "force-encryption"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_AUTHENTICATION;
+
+		if (! strcmp(value, "true"))
+			data[2] = 0x80;
+		else if (! strcmp(value, "false"))
+			data[2] = 0x00;
+		else
+		{
+			printf("Invalid value %s for parameter %s\n",
+				   value, param);
+			printf("Valid values are true and false");
+			return -1;
+		}
+
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+			
+		data[2] |= params.force_authentication? 0x40 : 0x00;
+		data[2] |= params.privilege_level; 
+	}
+	
+
+	/*
+	 * force-payload-authentication
+	 */
+	else if (! strcmp(param, "force-authentication"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_AUTHENTICATION;
+
+		if (! strcmp(value, "true"))
+			data[2] = 0x40;
+		else if (! strcmp(value, "false"))
+			data[2] = 0x00;
+		else
+		{
+			printf("Invalid value %s for parameter %s\n",
+				   value, param);
+			printf("Valid values are true and false");
+			return -1;
+		}
+
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+
+		data[2] |= params.force_encryption? 0x80 : 0x00;
+		data[2] |= params.privilege_level; 
+	}
+	
+
+	/*
+	 * privilege-level
+	 */
+	else if (! strcmp(param, "privilege-level"))
+	{
+		struct sol_config_parameters params;
+
+		req.msg.data_len = 3;
+		data[1] = SOL_PARAMETER_SOL_AUTHENTICATION;
+
+		if (! strcmp(value, "user"))
+			data[2] = 0x02;
+		else if (! strcmp(value, "operator"))
+			data[2] = 0x03;
+		else if (! strcmp(value, "admin"))
+			data[2] = 0x04;
+		else if (! strcmp(value, "oem"))
+			data[2] = 0x05;
+		else
+		{
+			printf("Invalid value %s for parameter %s\n",
+				   value, param);
+			printf("Valid values are user, operator, admin, and oem\n");
+			return -1;
+		}
+
+
+		/* We need other values to complete the request */
+		if (ipmi_get_sol_info(intf, channel, &params))
+		{
+			printf("Error fetching SOL parameters for %s update\n",
+				   param);
+			return -1;
+		}
+
+		data[2] |= params.force_encryption?     0x80 : 0x00;
+		data[2] |= params.force_authentication? 0x40 : 0x00;
+	}
+	
+
+
+	/*
+	  TODO:
+	  SOL_PARAMETER_CHARACTER_INTERVAL        0x03
+	  SOL_PARAMETER_SOL_RETRY                 0x04
+	  SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE 0x05
+	  SOL_PARAMETER_SOL_VOLATILE_BIT_RATE     0x06
+	  SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
+	  SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
+	 */
+
+	else
+	{
+		printf("Error: invalid SOL parameter %s\n", param);
+		return -1;
+	}
+
+
+	/*
+	 * Execute the request
+	 */
+	if (bGuarded &&
+		(ipmi_sol_set_param(intf,
+							channel,
+							"set-in-progress",
+							"set-in-progress")))
+	{
+		printf("Error: set of parameter \"%s\" failed\n", param);
+		return -1;
+	}
+
+
+	/* The command proper */
+	rsp = intf->sendrecv(intf, &req);
+
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Error setting SOL parameter %s\n",
+			   rsp ? rsp->ccode : 0,
+			   param);
+
+		if (bGuarded &&
+			(ipmi_sol_set_param(intf,
+								channel,
+								"set-in-progress",
+								"set-complete")))
+		{
+			printf("Error could not set \"set-in-progress\" "
+				   "to \"set-complete\"\n");
+			return -1;
+		}
+		
+		return -1;
+	}
+
+
+	/*
+	 * The commit write could very well fail, but that's ok.
+	 * It may not be implemented.
+	 */
+	if (bGuarded)
+		ipmi_sol_set_param(intf,
+						   channel,
+						   "set-in-progress",
+						   "commit-write");
+
+
+	if (bGuarded &&
+ 		ipmi_sol_set_param(intf,
+		 				   channel,
+			 			   "set-in-progress",
+						   "set-complete"))
+	{
+		printf("Error could not set \"set-in-progress\" "
+			   "to \"set-complete\"\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
 
+/*
+ * impi_sol_activate
+ */
+static int ipmi_sol_activate(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq   req;
+	struct activate_payload_rsp ap_rsp;
+	unsigned char    data[6];	 
+	unsigned char    bSolEncryption     = 1;
+	unsigned char    bSolAuthentication = 1;
+
+	/*
+	 * This command is only available over RMCP+ (the lanplus
+	 * interface).
+	 */
+	if (strncmp(intf->name, "intf_lanplus", 12))
+	{
+		printf("Error: This command is only available over the "
+			   "lanplus interface\n");
+		return -1;
+	}
+
+	req.msg.netfn    = IPMI_NETFN_APP;
+	req.msg.cmd      = IPMI_ACTIVATE_PAYLOAD;
+	req.msg.data_len = 6;
+	req.msg.data     = data;
+
+	data[0] = IPMI_PAYLOAD_TYPE_IPMI;  /* payload type     */
+	data[1] = 1;                       /* payload instance */
+
+	/* Lots of important data.  Most is default */
+	data[2]  = bSolEncryption?     0x80 : 0;
+	data[2] |= bSolAuthentication? 0x40 : 0;
+	data[2] |= IPMI_SOL_SERIAL_ALERT_MASK_DEFERRED;
+	data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_FALSE;
+
+	data[3] = 0x00; /* reserved */
+	data[4] = 0x00; /* reserved */
+	data[5] = 0x00; /* reserved */
+	
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Activating SOL payload\n",
+			   rsp ? rsp->ccode : 0);
+		return -1;
+	}
+	if (rsp->data_len != 12)
+	{
+		printf("Error: Unexpected data length (%d) received "
+			   "in payload activation response\n",
+			   rsp->data_len);
+		return -1;
+	}
+	
+	memcpy(&ap_rsp, rsp->data, sizeof(struct activate_payload_rsp));
+
+	intf->session->sol_data.max_inbound_payload_size =
+		ap_rsp.inbound_payload_size[0] |
+		ap_rsp.inbound_payload_size[1];
+	
+	intf->session->sol_data.max_outbound_payload_size =
+		ap_rsp.outbound_payload_size[0] |
+		ap_rsp.outbound_payload_size[1];
+		
+	intf->session->sol_data.port =
+		ap_rsp.payload_udp_port[0] |
+		ap_rsp.payload_udp_port[1];
+
+	#if WORDS_BIGENDIAN
+	intf->session->sol_data.max_inbound_payload_size =
+		BSWAP_16(intf->session->sol_data.max_inbound_payload_size);
+	intf->session->sol_data.max_outbound_payload_size =
+		BSWAP_16(intf->session->sol_data.max_outbound_payload_size);
+	intf->session->sol_data.port =
+		BSWAP_16(intf->session->sol_data.port);
+	#endif
+	
+
+	printf("max inbound payload size : %d\n",
+		   intf->session->sol_data.max_inbound_payload_size);
+	printf("max outbound payload size : %d\n",
+		   intf->session->sol_data.max_outbound_payload_size);
+	printf("SOL port : %d\n", intf->session->sol_data.port);
+
+	return 0;
+}
+
+
+
+/*
+ * print_sol_usage
+ */
+void print_sol_usage()
+{
+	printf("SOL Commands: info [<channel number>]\n");
+	printf("              set <parameter> <value> [channel]\n");
+}
+
+
+
+/*
+ * ipmi_sol_main
+ */
 int ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc || !strncmp(argv[0], "help", 4)) {
+	int retval = 0;
+
+	/*
+	 * Help
+	 */
+	if (!argc || !strncmp(argv[0], "help", 4))
 		print_sol_usage();
-		return 0;
-	}
-	else if (!strncmp(argv[0], "info", 4)) {
+
+	/*
+	 * Info
+	 */
+ 	else if (!strncmp(argv[0], "info", 4)) {
 		unsigned char channel;
 
 		if (argc == 1)
@@ -404,8 +800,43 @@ int ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		ipmi_print_sol_info(intf, channel);
+		retval = ipmi_print_sol_info(intf, channel);
 	}
 
-	return 0;
+	/*
+	 * Set a parameter value
+	 */
+	else if (!strncmp(argv[0], "set", 3)) {
+		unsigned char channel;
+
+		if (argc == 3)
+			channel = 0x0E; /* Ask about the current channel */
+		else if (argc == 4)
+			channel = (unsigned char)strtol(argv[3], NULL, 0);
+		else
+		{
+			print_sol_usage();
+			return -1;
+		}
+			
+		retval = ipmi_sol_set_param(intf,
+									channel,
+									argv[1],
+									argv[2]);
+	}
+	
+
+	/*
+	 * Activate
+	 */
+ 	else if (!strncmp(argv[0], "activate", 8))
+		retval = ipmi_sol_activate(intf);
+
+	else
+	{
+		print_sol_usage();
+		retval = -1;
+	}
+
+	return retval;
 }
