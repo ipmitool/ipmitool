@@ -163,7 +163,8 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
 	EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
-
+	EVP_CIPHER_CTX_set_padding(&ctx, 0);
+	
 
 	*bytes_written = 0;
 
@@ -237,6 +238,8 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
 	EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
+	EVP_CIPHER_CTX_set_padding(&ctx, 0);
+		
 
 
 	if (verbose > 2)
