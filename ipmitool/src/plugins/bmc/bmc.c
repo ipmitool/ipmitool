@@ -132,7 +132,10 @@ ipmi_bmc_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	rsp.ccode = reqrsp.rsp.ccode;
 	rsp.data_len = reqrsp.rsp.datalength;
 
-	if (!rsp.ccode && rsp.data_len)
+	/* Decrement for sizeof lun, cmd and ccode */
+	rsp.data_len -= 3;
+
+	if (!rsp.ccode && (rsp.data_len > 0))
 		memcpy(rsp.data, reqrsp.rsp.data, rsp.data_len);
 
 	return (&rsp);
