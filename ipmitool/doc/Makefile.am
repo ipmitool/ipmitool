@@ -38,12 +38,14 @@ man_MANS		= ipmitool.1
 EXTRA_DIST		= ipmitool.1.in
 
 install-data-hook:
-	if test -e $(mandir)/man1/ipmitool.1 ; then \
-		mv $(mandir)/man1/ipmitool.1 $(mandir)/man1/@IPMITOOL_BIN@.1 ; \
+	if test @IPMITOOL_BIN@ != ipmitool && \
+	   test -e $(mandir)/man1/ipmitool.1 ; then \
+		mv -f $(mandir)/man1/ipmitool.1 $(mandir)/man1/@IPMITOOL_BIN@.1 ; \
 	fi
 
 uninstall-hook:
-	if test -e $(mandir)/man1/@IPMITOOL_BIN@.1 ; then \
-		mv $(mandir)/man1/@IPMITOOL_BIN@.1 $(mandir)/man1/ipmitool.1 ; \
+	if test @IPMITOOL_BIN@ != ipmitool && \
+	   test -e $(mandir)/man1/@IPMITOOL_BIN@.1 ; then \
+		mv -f $(mandir)/man1/@IPMITOOL_BIN@.1 $(mandir)/man1/ipmitool.1 ; \
 	fi
 
