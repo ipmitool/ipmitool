@@ -1,6 +1,11 @@
 /*
- * Copyright (c) 2003, 2004 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ * Copyright (c) 2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Use is subject to license terms.
+ */
+
+#pragma ident	"%Z%%M%	%I%	%E% SMI"
+
+/*
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -53,7 +58,7 @@
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
-#include <ipmitool/ipmi_bmc.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_session.h>
@@ -88,7 +93,7 @@ struct ipmi_cmd {
 	{ ipmi_lanp_main,	"lan",		"Configure LAN Channels" },
 	{ ipmi_chassis_main,	"chassis",	"Get chassis status and set power state" },
 	{ ipmi_event_main,	"event",	"Send pre-defined events to BMC" },
-	{ ipmi_bmc_main,	"ipmc",		"Print BMC status and configure global enables" },
+	{ ipmi_mc_main,		"mc",		"Management Controller status and global enables" },
 	{ ipmi_sdr_main,	"sdr",		"Print Sensor Data Repository entries and readings" },
 	{ ipmi_sensor_main,	"sensor",	"Print detailed sensor information" },
 	{ ipmi_fru_main,	"fru",		"Print built-in FRU and scan SDR for FRU locators" },
@@ -102,43 +107,45 @@ struct ipmi_cmd {
 	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
 	{ ipmi_exec_main,	"exec",		"Run list of commands from file" },
 	{ ipmi_set_main,	"set",		"Set runtime variable for shell and exec" },
-	{ ipmi_bmc_main,	"bmc",		NULL },
 	{ NULL },
 };
 
 /*
- * Print all the commands in the above table to stdout
+ * Print all the commands in the above table to stderr
  * used for help text on command line and shell
  */
 void ipmi_cmd_print(void)
 {
 	struct ipmi_cmd * cmd;
-	printf("Commands:\n");
+	fprintf(stderr, "Commands:\n");
 	for (cmd=ipmi_cmd_list; cmd->func; cmd++) {
-		if (!cmd->desc)
+		if (cmd->desc == NULL)
 			continue;
-		printf("\t%-12s %s\n", cmd->name, cmd->desc);
+		fprintf(stderr, "\t%-12s %s\n", cmd->name, cmd->desc);
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 }
 
 /*
- * Run a command from ipmi_cmd_list based on parameters.
+ * ipmi_cmd_run - run a command from list based on parameters
+ *                called from main()
+ *
+ *                - iterate through ipmi_cmd_list matching on name
+ *                - call func() for that command
  */
 int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 {
 	struct ipmi_cmd * cmd;
 
 	for (cmd=ipmi_cmd_list; cmd->func; cmd++) {
-		if (!strncmp(name, cmd->name, strlen(cmd->name)))
+		if (strncmp(name, cmd->name, strlen(cmd->name)) == 0)
 			break;
 	}
 
-	if (!cmd->func) {
+	if (cmd->func == NULL) {
 		printf("Invalid command: %s\n", name);
 		return -1;
 	}
-
 	return cmd->func(intf, argc, argv);
 }
 
@@ -176,11 +183,11 @@ static char * ipmi_password_file_read(char * filename)
 	int l;
 
 	pass = malloc(16);
-	if (!pass)
+	if (pass == NULL)
 		return NULL;
 
 	fp = ipmi_open_file_read((const char *)filename);
-	if (!fp)
+	if (fp == NULL)
 		return NULL;
 
 	/* read in id */
@@ -219,16 +226,18 @@ int main(int argc, char ** argv)
 	int authspecial = 0;
 
 	/* save program name */
-	if (!(progname = strrchr(argv[0], '/')))
-		progname = argv[0];
-	else
-		progname++;
+	progname = strrchr(argv[0], '/');
+	progname = ((progname == NULL) ? argv[0] : progname);
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
 		switch (argflag) {
 		case 'I':
 			intfname = strdup(optarg);
+			if (intfname == NULL) {
+				fprintf(stderr, "ipmitool: malloc failure\n");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'h':
 			ipmitool_usage();
@@ -252,52 +261,78 @@ int main(int argc, char ** argv)
 			break;
 		case 'H':
 			hostname = strdup(optarg);
+			if (hostname == NULL) {
+				fprintf(stderr, "ipmitool: malloc failure\n");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'P':
-			if (password)
+			if (password != NULL)
 				free(password);
 			password = strdup(optarg);
+			if (password == NULL) {
+				fprintf(stderr, "ipmitool: malloc failure\n");
+				exit(EXIT_FAILURE);
+			}
 
 			/* Prevent password snooping with ps */
-			i = strlen (optarg);
-			memset (optarg, 'X', i);
+			i = strlen(optarg);
+			memset(optarg, 'X', i);
 			break;
 		case 'f':
-			if (password)
+			if (password != NULL)
 				free(password);
 			password = ipmi_password_file_read(optarg);
-			if (!password)
-				printf("Unable to read password from file %s.\n", optarg);
+			if (password == NULL)
+				fprintf(stderr, "Unable to read password from file %s\n", optarg);
 			break;
 		case 'E':
-			if ((tmp = getenv ("IPMITOOL_PASSWORD")))
+			if ((tmp = getenv("IPMITOOL_PASSWORD")))
 			{
-				if (password)
+				if (password != NULL)
 					free(password);
 				password = strdup(tmp);
+				if (password == NULL) {
+					fprintf(stderr, "ipmitool: malloc failure\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 			else if ((tmp = getenv("IPMI_PASSWORD")))
 			{
-				if (password)
+				if (password != NULL)
 					free(password);
 				password = strdup(tmp);
+				if (password == NULL) {
+					fprintf(stderr, "ipmitool: malloc failure\n");
+					exit(EXIT_FAILURE);
+				}
 			}
-			else printf("Unable to read password from environment.\n");
+			else {
+				fprintf(stderr, "Unable to read password from environment.\n");
+			}
 			break;
 		case 'a':
 #ifdef HAVE_GETPASSPHRASE
-			if ((tmp = getpassphrase ("Password: ")))
+			if ((tmp = getpassphrase("Password: ")))
 #else
-			if ((tmp = getpass ("Password: ")))
+			if ((tmp = getpass("Password: ")))
 #endif
 			{
-				if (password)
+				if (password != NULL)
 					free(password);
 				password = strdup(tmp);
+				if (password == NULL) {
+					fprintf(stderr, "ipmitool: malloc failure\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 			break;
 		case 'U':
 			username = strdup(optarg);
+			if (username == NULL) {
+				fprintf(stderr, "ipmitool: malloc failure\n");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'L':
 			privlvl = (unsigned char)str2val(optarg, ipmi_privlvl_vals);
@@ -328,7 +363,7 @@ int main(int argc, char ** argv)
 		ipmitool_usage();
 		goto out_free;
 	}
-	if (!strncmp(argv[optind], "help", 4)) {
+	if (strncmp(argv[optind], "help", 4) == 0) {
 		ipmitool_usage();
 		goto out_free;
 	}
