@@ -1,3 +1,10 @@
+ipmitool (1.5.5) unstable; urgency=low
+
+  * Add -U option for setting LAN username
+  * Fix -v usage for plugin interfaces
+
+ -- Duncan Laurie <duncan@sun.com>  Tue, 25 Nov 2003 15:10:48 -0700
+
 ipmitool (1.5.4) unstable; urgency=low
 
   * Put interface plugin API into library

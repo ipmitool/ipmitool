@@ -83,39 +83,18 @@ ipmi_get_event_type(unsigned char code)
 static const char *
 ipmi_get_event_desc(struct sel_event_record * rec)
 {
-	int class;
-	unsigned char offset = 0;
-	unsigned char code = 0;
+	unsigned char code, offset;
 	struct ipmi_event_sensor_types *evt;
 
-	class = ipmi_get_event_class(rec->event_type);
-	if (class < 0)
-		return "Invalid Class";
-
-	switch (class) {
-	case IPMI_EVENT_CLASS_DISCRETE:
-		if (rec->event_type == 0x6f)
-			evt = sensor_specific_types;
-		else
-			evt = generic_event_types;
+	if (rec->event_type == 0x6f) {
+		evt = sensor_specific_types;
 		code = rec->sensor_type;
-		break;
-	case IPMI_EVENT_CLASS_DIGITAL:
+	} else {
 		evt = generic_event_types;
-		code = rec->sensor_type;
-		break;
-	case IPMI_EVENT_CLASS_THRESHOLD:
-		evt = generic_event_types;
-		code = 0x01;
-		break;
-	default:
-		return "Unknown Class";
+		code = rec->event_type;
 	}
 
 	offset = rec->event_data[0] & 0xf;
-
-	if (verbose > 2)
-		printf("offset: 0x%02x\n", offset);
 
 	while (evt->type) {
 		if (evt->code == code && evt->offset == offset)
