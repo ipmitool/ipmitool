@@ -60,6 +60,9 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
+* Wed Apr 06 2005 <duncan@iceblink.org>  1.8.1-1
+ - Install ipmievd into /usr/sbin
+
 * Wed Mar 16 2005 <duncan@iceblink.org>  1.8.0-1
  - Fix IPMIv2.0 issues
  - Fix chassis boot parameter support

@@ -1,3 +1,6 @@
+version 1.8.1
+	* ipmievd installs in /usr/sbin
+
 version 1.8.0
 	* Fix IPMIv2.0 issues
 	* Fix chassis boot parameter support

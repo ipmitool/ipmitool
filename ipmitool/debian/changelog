@@ -1,3 +1,7 @@
+ipmitool (1.8.1) unstable; urgency=low
+
+  * Install ipmievd into /usr/sbin
+
 ipmitool (1.8.0-1) unstable; urgency=low
 
   * Initial upload into Debian, based on the upstream build
@@ -31,7 +35,7 @@ ipmitool (1.7.1) unstable; urgency=low
     for interface detection and new STREAMS message-based interface).
 
  -- Seth Goldberg <sethmeisterg@hotmail.com>  Mon, Mar 7 2005 18:03:00 -0800
-	
+
 ipmitool (1.7.0) unstable; urgency=low
 
   * Propogate errors correctly so exit status will be useful
