@@ -2226,6 +2226,11 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 	uint32_t id, instance;
 	int rc = 0;
 
+	if (entitystr == NULL) {
+		lprintf(LOG_ERR, "No Entity ID supplied");
+		return -1;
+	}
+
 	if (sscanf(entitystr, "%u.%u", &id, &instance) != 2) {
 		/* perhaps no instance was passed
 		 * in which case we want all instances for this entity
@@ -2283,7 +2288,7 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "                     fru        FRU Locator Record");
 		lprintf(LOG_ERR, "               info");
 		lprintf(LOG_ERR, "                     Display information about the repository itself");
-		lprintf(LOG_ERR, "               entity <id>[.instance]");
+		lprintf(LOG_ERR, "               entity <id>[.<instance>]");
 		lprintf(LOG_ERR, "                     Display all sensors associated with an entity");
 		lprintf(LOG_ERR, "               dump <file>");
 		lprintf(LOG_ERR, "                     Dump raw SDR data to a file");
