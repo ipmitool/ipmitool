@@ -174,8 +174,10 @@ struct ipmi_rs * ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq 
 	return &rsp;
 }
 
-int intf_setup(struct ipmi_intf ** intf)
+int open_intf_setup(struct ipmi_intf ** intf)
 {
 	*intf = &ipmi_openipmi_intf;
 	return 0;
 }
+
+int intf_setup(struct ipmi_intf ** intf) __attribute__ ((weak, alias("open_intf_setup")));

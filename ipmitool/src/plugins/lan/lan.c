@@ -1161,9 +1161,10 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 	return intf->fd;
 }
 
-int intf_setup(struct ipmi_intf ** intf)
+int lan_intf_setup(struct ipmi_intf ** intf)
 {
 	*intf = &ipmi_lan_intf;
 	return 0;
 }
 
+int intf_setup(struct ipmi_intf ** intf) __attribute__ ((weak, alias("lan_intf_setup")));

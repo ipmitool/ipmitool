@@ -68,6 +68,7 @@ void ipmi_lan_close(struct ipmi_intf * intf);
 void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 int ipmi_lan_ping(struct ipmi_intf * intf);
 
+int lan_intf_setup(struct ipmi_intf ** intf);
 struct ipmi_intf ipmi_lan_intf;
 
 #endif /*IPMI_LAN_H*/

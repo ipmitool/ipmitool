@@ -44,5 +44,6 @@
 struct ipmi_rs * ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 int ipmi_openipmi_open(struct ipmi_intf * intf, char * dev, int __unused1, char * __unused2, char * __unused3);
 void ipmi_openipmi_close(struct ipmi_intf * intf);
+int open_intf_setup(struct ipmi_intf ** intf);
 
 #endif
