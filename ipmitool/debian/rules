@@ -19,10 +19,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	./configure --prefix=/usr \
-		    --with-pluginpath=/usr/lib/ipmitool \
-		    --enable-intf-lan=static \
-		    --enable-intf-open=static \
-		    --enable-ipmievd \
+		    --with-kerneldir \
 		    --mandir=/usr/share/man
 	touch configure-stamp
 
