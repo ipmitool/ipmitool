@@ -45,8 +45,9 @@
 #include <sys/stat.h>
 
 #include <ipmitool/helper.h>
-#include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_fru.h>
@@ -60,19 +61,77 @@
 #include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_user.h>
+#include <ipmitool/ipmi_raw.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
 
-#define IPMITOOL_OPTIONS "I:hVvcgEaH:P:f:U:p:L:A:t:m:"
+#ifdef HAVE_READLINE
+# include <readline/readline.h>
+# include <readline/history.h>
+# define PROMPT		"ipmitool> "
+#endif
 
 int csv_output = 0;
 int verbose = 0;
 
+extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
+static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
 
-void usage(void)
+struct ipmi_cmd {
+	int (*func)(struct ipmi_intf * intf, int argc, char ** argv);
+	char * name;
+	char * desc;
+} ipmi_cmd_list[] = {
+	{ ipmi_shell_main,	"shell",	"Launch interactive IPMI shell" },
+	{ ipmi_raw_main,	"raw",		"Send a RAW IPMI request and print response" },
+	{ ipmi_lanp_main,	"lan",		"Configure LAN Channels" },
+	{ ipmi_chassis_main,	"chassis",	"Get chassis status and set power state" },
+	{ ipmi_event_main,	"event",	"Send pre-defined events to BMC" },
+	{ ipmi_bmc_main,	"bmc",		"Print BMC status and configure global enables" },
+	{ ipmi_sdr_main,	"sdr",		"Print Sensor Data Repository entries and readings" },
+	{ ipmi_sensor_main,	"sensor",	"Print detailed sensor information" },
+	{ ipmi_fru_main,	"fru",		"Print built-in FRU and scan SDR for FRU locators" },
+	{ ipmi_sel_main,	"sel",		"Print System Evelnt Log" },
+	{ ipmi_sol_main,	"sol",		"Configure IPMIv2.0 Serial-over-LAN" },
+	{ ipmi_isol_main,	"isol",		"Configure Intel IPMIv1.5 Serial-over-LAN" },
+	{ ipmi_user_main,	"user",		"Configure BMC users" },
+	{ ipmi_channel_main,	"channel",	"Configure BMC channels" },
+	{ ipmi_session_main,	"session",	"Print session information" },
+	{ NULL },
+};
+
+void ipmi_cmd_print(void)
+{
+	struct ipmi_cmd * cmd;
+	printf("Commands:\n");
+	for (cmd=ipmi_cmd_list; cmd->func; cmd++)
+		printf("\t%-12s %s\n", cmd->name, cmd->desc);
+	printf("\n");
+}
+
+int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
+{
+	struct ipmi_cmd * cmd;
+
+	for (cmd=ipmi_cmd_list; cmd->func; cmd++) {
+		if (!strncmp(name, cmd->name, strlen(cmd->name)))
+			break;
+	}
+
+	if (!cmd->func) {
+		printf("Invalid command: %s\n", name);
+		return -1;
+	}
+
+	return cmd->func(intf, argc, argv);
+}
+
+#define OPTION_STRING	"I:hVvcgEaH:P:f:U:p:L:A:t:m:"
+
+static void usage(void)
 {
 	printf("ipmitool version %s\n", VERSION);
 	printf("\n");
@@ -94,74 +153,9 @@ void usage(void)
 	printf("       -E            Read password from IPMI_PASSWORD environment variable\n");
 	printf("       -m address    Set local IPMB address\n");
 	printf("       -t address    Bridge request to remote target address\n");
-	printf("\n\n");
-	printf("Commands:\n");
-	printf("\tbmc, chassis, event, fru, lan, raw, sol, isol,\n"
-	       "\tsel, sdr, sensor, user, channel, session\n\n");
-	printf("Interfaces:\n");
-	ipmi_intf_print();
-	printf("\n\n");
-}
-
-int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char netfn, cmd;
-	int i;
-	unsigned char data[32];
-
-	if (argc < 2 || !strncmp(argv[0], "help", 4)) {
-		printf("RAW Commands:  raw <netfn> <cmd> [data]\n");
-		return -1;
-	}
-
-	netfn = (unsigned char)strtol(argv[0], NULL, 0);
-	cmd = (unsigned char)strtol(argv[1], NULL, 0);
-
-	memset(data, 0, sizeof(data));
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = netfn;
-	req.msg.cmd = cmd;
-	req.msg.data = data;
-
-	for (i=2; i<argc; i++) {
-		unsigned char val = (unsigned char)strtol(argv[i], NULL, 0);
-		req.msg.data[i-2] = val;
-		req.msg.data_len++;
-	}
-	if (verbose && req.msg.data_len) {
-		for (i=0; i<req.msg.data_len; i++) {
-			if (((i%16) == 0) && (i != 0))
-				printf("\n");
-			printf(" %2.2x", req.msg.data[i]);
-		}
-		printf("\n");
-	}
-
-	if (verbose)
-		printf("RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)\n",
-		       req.msg.netfn, req.msg.cmd, req.msg.data_len);
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x sending RAW command\n",
-		       rsp ? rsp->ccode : 0);
-		return -1;
-	}
-
-	if (verbose)
-		printf("RAW RSP (%d bytes)\n", rsp->data_len);
-
-	for (i=0; i<rsp->data_len; i++) {
-		if (((i%16) == 0) && (i != 0))
-			printf("\n");
-		printf(" %2.2x", rsp->data[i]);
-	}
 	printf("\n");
-
-	return 0;
+	ipmi_intf_print();
+	ipmi_cmd_print();
 }
 
 
@@ -218,10 +212,46 @@ static char * ipmi_password_file_read(char * file)
 	return pass;
 }
 
+static int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+#ifdef HAVE_READLINE
+	char *pbuf, **ap, *__argv[10];
+	int __argc, rc=0;
+
+	while (pbuf = (char *)readline(PROMPT)) {
+		if (strlen(pbuf) == 0) {
+			continue;
+		}
+		
+		if (!strncmp(pbuf, "quit", 4)) {
+			return 0;
+		}
+
+		if (!strncmp(pbuf, "exit", 4)) {
+			return 0;
+		}
+		
+		__argc = 0;
+		for (ap = __argv; (*ap = strsep(&pbuf, " \t")) != NULL;) {
+			__argc++;
+			if (**ap != '\0') {
+				if (++ap >= &__argv[10]) {
+					break;
+				}
+			}
+		}
+
+		rc = ipmi_cmd_run(intf, __argv[0], __argc-1, &(__argv[1]));
+	}	
+	return rc;
+#else
+	printf("Compiled without readline support, ipmishell is disabled.\n");
+	return -1;
+#endif
+}
 
 int main(int argc, char ** argv)
 {
-	int (*submain)(struct ipmi_intf *, int, char **);
 	struct ipmi_intf * intf = NULL;
 	unsigned char privlvl = 0;
 	unsigned char target_addr = 0;
@@ -232,13 +262,19 @@ int main(int argc, char ** argv)
 	char * username = NULL;
 	char * password = NULL;
 	char * intfname = NULL;
+	char * progname = NULL;
 	int port = 0;
 	int argflag, i;
 	int intfarg = 0;
 	int rc = 0;
 	int thump = 0;
 
-	while ((argflag = getopt(argc, (char **)argv, IPMITOOL_OPTIONS)) != -1)
+	if (!(progname = strrchr(argv[0], '/')))
+		progname = argv[0];
+	else
+		progname++;
+
+	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
 		switch (argflag) {
 		case 'I':
@@ -249,7 +285,7 @@ int main(int argc, char ** argv)
 			goto out_free;
 			break;
 		case 'V':
-			printf("ipmitool version %s\n", VERSION);
+			printf("%s version %s\n", progname, VERSION);
 			goto out_free;
 			break;
 		case 'g':
@@ -333,8 +369,13 @@ int main(int argc, char ** argv)
 		}
 	}
 
+	/* check for command before doing anything */
 	if (argc-optind <= 0) {
 		printf("No command provided!\n");
+		usage();
+		goto out_free;
+	}
+	if (!strncmp(argv[optind], "help", 4)) {
 		usage();
 		goto out_free;
 	}
@@ -346,8 +387,10 @@ int main(int argc, char ** argv)
 		goto out_free;
 	}
 
+	intf->thump = thump;
+
 	/* setup log */
-	log_init("ipmitool", 0, verbose);
+	log_init(progname, 0, verbose);
 
 	/* set session variables */
 	if (hostname)
@@ -363,9 +406,8 @@ int main(int argc, char ** argv)
 	if (authtype)
 		ipmi_intf_session_set_authtype(intf, authtype);
 
-	intf->thump = thump;
+	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
-
 	if (target_addr) {
 		if (intf->open)
 			intf->open(intf);
@@ -373,63 +415,8 @@ int main(int argc, char ** argv)
 		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 	}
 
-	/* handle sub-commands */
-	if (!strncmp(argv[optind], "help", 4)) {
-		usage();
-		goto out_free;
-	}
-	if (!strncmp(argv[optind], "event", 5)) {
-		submain = ipmi_event_main;
-	}
-	else if (!strncmp(argv[optind], "bmc", 3)) {
-		submain = ipmi_bmc_main;
-	}
-	else if (!strncmp(argv[optind], "chassis", 7)) {
-		submain = ipmi_chassis_main;
-	}
-	else if (!strncmp(argv[optind], "fru", 3)) {
-		submain = ipmi_fru_main;
-	}
-	else if (!strncmp(argv[optind], "lan", 3)) {
-		submain = ipmi_lanp_main;
-	}
-	else if (!strncmp(argv[optind], "sdr", 3)) {
-		submain = ipmi_sdr_main;
-	}
-	else if (!strncmp(argv[optind], "sel", 3)) {
-		submain = ipmi_sel_main;
-	}
-	else if (!strncmp(argv[optind], "sensor", 6)) {
-		submain = ipmi_sensor_main;
-	}
-	else if (!strncmp(argv[optind], "user", 4)) {
-		submain = ipmi_user_main;
-	}
-	else if (!strncmp(argv[optind], "isol", 4)) {
-		submain = ipmi_isol_main;
-	}
-	else if (!strncmp(argv[optind], "sol", 3)) {
-		submain = ipmi_sol_main;
-	}
-	else if (!strncmp(argv[optind], "raw", 3)) {
-		submain = ipmi_raw_main;
-	}
-	else if (!strncmp(argv[optind], "channel", 7)) {
-		submain = ipmi_channel_main;
-	}
-	else if (!strncmp(argv[optind], "session", 7)) {
-		submain = ipmi_session_main;
-	}
-	else {
-		printf("Invalid command: %s\n", argv[optind]);
-		rc = -1;
-		goto out_free;
-	}
-
-	if (!submain)
-		goto out_free;
-
-	rc = submain(intf, argc-optind-1, &(argv[optind+1]));
+	/* now we finally run the command */
+	ipmi_cmd_run(intf, argv[optind], argc-optind-1, &(argv[optind+1]));
 
  out_close:
 	if (intf->opened && intf->close)
