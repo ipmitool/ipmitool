@@ -1778,14 +1778,8 @@ ipmi_lanplus_send_payload(
 	struct ipmi_session * session = intf->session;
 	int                   try = 0;
 
-	if (!intf->opened) {
-		intf->opened = 1;
-		if (intf->open(intf) < 0) {
-			intf->opened = 0;
-			return NULL;
-		}
-	}
-
+	if (!intf->opened && intf->open && intf->open(intf) < 0)
+		return NULL;
 
 	if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
 	{
@@ -2919,6 +2913,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
+	intf->opened = 1;
 
 	/*
 	 *
@@ -2977,6 +2972,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
  fail:
 	printf("Error: Unable to establish IPMI v2 / RMCP+ session\n");
+	intf->opened = 0;
 	return -1;
 }
 
