@@ -174,7 +174,9 @@ static void
 ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 			      struct sdr_record_compact_sensor * sensor)
 {
+	struct ipmi_rs * rsp;
 	char desc[17];
+	char state[20];
 
 	if (!sensor)
 		return;
@@ -182,26 +184,64 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	memset(desc, 0, sizeof(desc));
 	memcpy(desc, sensor->id_string, 16);
 	
+	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	if (!rsp || rsp->ccode) {
+		printf("Unable to get sensor %x reading\n", sensor->keys.sensor_num);
+		return;
+	}
+
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
 		       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
 		printf("Entity ID              : %d.%d (%s)\n",
 		       sensor->entity.id, sensor->entity.instance,
 		       val2str(sensor->entity.id, entity_id_vals));
-
 		if (verbose > 1) {
-			printf("sensor unit.pct: 0x%x\n", sensor->unit.pct);
-			printf("sensor unit.rate: 0x%x\n", sensor->unit.rate);
-			printf("sensor unit.analog: 0x%x\n", sensor->unit.analog);
-			printf("sensor unit.modifier: 0x%x\n", sensor->unit.modifier);
-			printf("sensor unit.type.base: 0x%x\n", sensor->unit.type.base);
-			printf("sensor unit.type.modifier: 0x%x\n", sensor->unit.type.modifier);
-			printf("sensor.type: 0x%02x\n", sensor->sensor.type);
-			printf("event_type:  0x%02x\n", sensor->event_type);
+			printf("Sensor Type Code       : 0x%02x\n", sensor->sensor.type);
+			printf("Event Type Code        : 0x%02x\n", sensor->event_type);
+			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR READING");
+		}
+	}
+
+	if (!(rsp->data[1] & 0x80))
+		return;		/* sensor scanning disabled */
+
+	/* TODO: handle this using SEL decode functions */
+	memset(state, 0, sizeof(state));
+	if (sensor->event_type == 0x6f) {
+		if (verbose)
+			printf("State                  : ");
+		else {
+			if (csv_output)
+				printf("%s,", sensor->id_code ? desc : NULL);
+			else
+				printf("%-16s | ", sensor->id_code ? desc : NULL);
 		}
 
+		switch (sensor->sensor.type) {
+		case 0x07:	/* processor */
+			if (rsp->data[2] & 0x80)
+				printf("Present           ");
+			else
+				printf("Not Present       ");
+			break;
+		case 0x21:	/* slot/connector */
+			if (rsp->data[2] & 0x04)
+				printf("Installed         ");
+			else
+				printf("Not Installed     ");
+			break;
+		default:
+			printf("Unknown           ");
+		}
+
+		if (!verbose)
+			printf("| ok");
 		printf("\n");
 	}
+
+	if (verbose)
+		printf("\n");
 }
 
 static void
@@ -237,6 +277,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			return;
 		}
 	} else {
+		if (!(rsp->data[1] & 0x80))
+			return; /* Sensor Scanning Disabled */
 		/* convert RAW reading into units */
 		val = rsp->data[0] ? sdr_convert_sensor_reading(sensor, rsp->data[0]) : 0;
 	}
