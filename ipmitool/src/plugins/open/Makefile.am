@@ -38,9 +38,10 @@ plugindir = $(pluginpath)
 
 INCLUDES = -I$(top_srcdir)/include
 
-intf_open_la_LDFLAGS	= -module -avoid-version
-intf_open_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
-intf_open_la_SOURCES	= open.c open.h
-
-plugin_LTLIBRARIES	= intf_open.la
+EXTRA_LTLIBRARIES	= libintf_open.la
+plugin_LTLIBRARIES	= @PLUGIN_INTF_OPEN@
+noinst_LTLIBRARIES	= @STATIC_INTF_OPEN@
+libintf_open_la_LDFLAGS	= @LDFLAGS@ @LDFLAGS_INTF_OPEN@
+libintf_open_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
+libintf_open_la_SOURCES	= open.c open.h
 

@@ -38,9 +38,10 @@ plugindir = $(pluginpath)
 
 INCLUDES = -I$(top_srcdir)/include
 
-intf_lan_la_LDFLAGS	= -module -avoid-version
-intf_lan_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
-intf_lan_la_SOURCES	= lan.c lan.h asf.h rmcp.h md5.c md5.h
-
-plugin_LTLIBRARIES	= intf_lan.la
+EXTRA_LTLIBRARIES	= libintf_lan.la
+plugin_LTLIBRARIES	= @PLUGIN_INTF_LAN@
+noinst_LTLIBRARIES	= @STATIC_INTF_LAN@
+libintf_lan_la_LDFLAGS	= @LDFLAGS@ @LDFLAGS_INTF_LAN@
+libintf_lan_la_LIBADD	= $(top_srcdir)/lib/libipmitool.la
+libintf_lan_la_SOURCES	= lan.c lan.h asf.h rmcp.h md5.c md5.h
 

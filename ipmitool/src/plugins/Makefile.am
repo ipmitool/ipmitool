@@ -32,10 +32,18 @@
 # in the design, construction, operation or maintenance of any nuclear
 # facility.
 
-MAINTAINERCLEANFILES = Makefile.in
+plugindir			= $(pluginpath)
 
-plugindir = $(pluginpath)
+INCLUDES			= -I$(top_srcdir)/include
+MAINTAINERCLEANFILES		= Makefile.in ipmi_intf_static.c
+EXTRA_DIST			= ipmi_intf_static.c.in
 
-SUBDIRS = @PLUGINS@
-DIST_SUBDIRS = lan open
+SUBDIRS				= @INTF_LAN@ @INTF_OPEN@
+DIST_SUBDIRS			= lan open
+
+noinst_LTLIBRARIES		= libintf.la
+libintf_la_SOURCES		= ipmi_intf.c ipmi_intf_static.c
+libintf_la_LDFLAGS		= -export-dynamic
+libintf_la_LIBADD		= $(LIBLTDL) @STATIC_INTF_LIB@
+libintf_la_DEPENDENCIES		= $(LIBLTDL) @STATIC_INTF_LIB@
 

@@ -92,29 +92,70 @@ AC_ARG_WITH([plugin-path],
 AC_DEFINE_UNQUOTED(PLUGIN_PATH, "$pluginpath", "IPMI interface plugin path")
 AC_SUBST(pluginpath)
 
+STATIC_INTF_LIST=
+STATIC_INTF=
+STATIC_INTF_EXT=
+STATIC_INTF_LIB=
+
+PLUGIN_INTF_LAN=
+STATIC_INTF_LAN=
+LDFLAGS_INTF_LAN=
 AC_ARG_ENABLE([intf-lan],
 	[[  --enable-intf-lan       enable IPMI-over-LAN interface [default=yes]]],
 	[if test "x$enableval" = "xyes"; then
-	    PLUGINS="$PLUGINS lan"
+	    AC_SUBST(INTF_LAN,lan)
+            PLUGIN_INTF_LAN="libintf_lan.la"
+            LDFLAGS_INTF_LAN="-rpath $pluginpath -avoid-version"
+            DYNAMIC_INTF_LIST="$DYNAMIC_INTF_LIST lan" 
+         elif test "x$enableval" = "xstatic"; then
+            AC_SUBST(INTF_LAN,lan)
+            STATIC_INTF_LAN="libintf_lan.la"
+            STATIC_INTF_LIST="$STATIC_INTF_LIST lan"
 	fi],
-	[PLUGINS="$PLUGINS lan"])
+	[AC_SUBST(INTF_LAN,lan)
+         PLUGIN_INTF_LAN="libintf_lan.la"
+         LDFLAGS_INTF_LAN="-rpath $pluginpath -avoid-version"
+        ])
+AC_SUBST(PLUGIN_INTF_LAN)
+AC_SUBST(STATIC_INTF_LAN)
+AC_SUBST(LDFLAGS_INTF_LAN)
 
+PLUGIN_INTF_OPEN=
+STATIC_INTF_OPEN=
+LDFLAGS_INTF_OPEN=
 AC_ARG_ENABLE([intf-open],
 	[[  --enable-intf-open      enable OpenIPMI device interface [default=no]]],
 	[if test "x$enableval" = "xyes"; then
 	    if test "x$have_openipmi" = "xyes"; then
-		PLUGINS="$PLUGINS open"
+		AC_SUBST(INTF_OPEN,open)
+                PLUGIN_INTF_OPEN="libintf_open.la"
+                LDFLAGS_INTF_OPEN="-rpath $pluginpath -avoid-version"
+                DYNAMIC_INTF_LIST="$DYNAMIC_INTF_LIST open" 
 	    else
 		echo "** Unable to build OpenIPMI interface support!"
 		exit 1
 	    fi
+         elif test "x$enableval" = "xstatic"; then
+            AC_SUBST(INTF_OPEN,open)
+            STATIC_INTF_OPEN="libintf_open.la"
+            STATIC_INTF_LIST="$STATIC_INTF_LIST open"
 	fi])
+AC_SUBST(PLUGIN_INTF_OPEN)
+AC_SUBST(STATIC_INTF_OPEN)
+AC_SUBST(LDFLAGS_INTF_OPEN)
 
-AC_SUBST(PLUGINS)
+for name in $STATIC_INTF_LIST; do
+        STATIC_INTF="$STATIC_INTF { \"intf_${name}\", ${name}_intf_setup },";
+        STATIC_INTF_EXT="$STATIC_INTF_EXT extern int ${name}_intf_setup(struct ipmi_intf ** intf);";
+        STATIC_INTF_LIB="$STATIC_INTF_LIB \$(top_builddir)/src/plugins/${name}/libintf_${name}.la";
+done
+
+AC_SUBST(STATIC_INTF)
+AC_SUBST(STATIC_INTF_EXT)
+AC_SUBST(STATIC_INTF_LIB)
 
 AC_ARG_ENABLE([ipmievd],
 	[[  --enable-ipmievd        enable IPMI event daemon [default=no]]],,)
-
 AM_CONDITIONAL(IPMIEVD, test "x$enable_ipmievd" = "xyes")
 
 AC_CONFIG_FILES([ipmitool.spec
@@ -125,6 +166,7 @@ AC_CONFIG_FILES([ipmitool.spec
 		include/Makefile
 		include/ipmitool/Makefile
 		src/Makefile
+		src/plugins/ipmi_intf_static.c
 		src/plugins/Makefile
 		src/plugins/lan/Makefile
 		src/plugins/open/Makefile])
@@ -132,6 +174,11 @@ AC_CONFIG_FILES([ipmitool.spec
 AC_OUTPUT
 
 echo
-echo Building $PACKAGE version $VERSION with interface plugins: $PLUGINS
-echo   Plugin Path:  $pluginpath
+echo $PACKAGE $VERSION
 echo
+echo Interface Path........ : $pluginpath
+echo Static Interfaces..... : $STATIC_INTF_LIST
+echo Dynamic Interfaces.... : $DYNAMIC_INTF_LIST
+echo Build ipmievd......... : $enable_ipmievd
+echo
+

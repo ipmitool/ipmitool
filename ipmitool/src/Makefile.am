@@ -38,23 +38,17 @@ SUBDIRS			= plugins
 MAINTAINERCLEANFILES	= Makefile.in
 
 if IPMIEVD
-
 EXTRA_DIST		= bmcautoconf.sh
 bin_PROGRAMS		= ipmievd ipmitool
 ipmievd_SOURCES		= ipmievd.c
-ipmievd_LDADD		= $(top_srcdir)/lib/libipmitool.la
-ipmievd_LDFLAGS		= 
-
+ipmievd_LDADD		= $(top_srcdir)/lib/libipmitool.la $(top_srcdir)/src/plugins/libintf.la
 else
-
 EXTRA_DIST		= bmcautoconf.sh ipmievd.c
 bin_PROGRAMS		= ipmitool
-
 endif
 
 ipmitool_SOURCES	= ipmitool.c
-ipmitool_LDADD		= $(top_srcdir)/lib/libipmitool.la
-ipmitool_LDFLAGS	= 
+ipmitool_LDADD		= $(top_srcdir)/lib/libipmitool.la $(top_srcdir)/src/plugins/libintf.la
 
 bin_SCRIPTS		= bmcautoconf.sh
 
