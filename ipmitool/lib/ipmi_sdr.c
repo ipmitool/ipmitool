@@ -96,12 +96,12 @@ utos(uint32_t val, int bits)
  *
  * returns floating-point sensor reading
  */
-float
+double
 sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 			   uint8_t val)
 {
 	int m, b, k1, k2;
-	float result;
+	double result;
 
 	m  = __TO_M(sensor->mtol);
 	b  = __TO_B(sensor->bacc);
@@ -111,14 +111,14 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 	switch (sensor->unit.analog)
 	{
 	case 0:
-		result = (float)(((m * val) +
+		result = (double)(((m * val) +
 				(b * pow(10, k1))) * pow(10, k2));
 		break;
 	case 1:
 		if (val & 0x80) val ++;
 		/* Deliberately fall through to case 2. */
 	case 2:
-		result = (float)(((m * (int8_t)val) +
+		result = (double)(((m * (int8_t)val) +
 				(b * pow(10, k1))) * pow(10, k2));
 		break;
 	default:
@@ -131,41 +131,37 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 	case SDR_SENSOR_L_LINEAR:
 		break;
 	case SDR_SENSOR_L_LN:
-		result = logf(result);
+		result = log(result);
 		break;
 	case SDR_SENSOR_L_LOG10:
-		result = log10f(result);
+		result = log10(result);
 		break;
 	case SDR_SENSOR_L_LOG2:
-		result = (float)(logf(result) / logf(2.0));
+		result = (double)(log(result) / log(2.0));
 		break;
 	case SDR_SENSOR_L_E:
-		result = expf(result);
+		result = exp(result);
 		break;
 	case SDR_SENSOR_L_EXP10:
-		result = powf(10.0, result);
+		result = pow(10.0, result);
 		break;
 	case SDR_SENSOR_L_EXP2:
-		result = powf(2.0, result);
+		result = pow(2.0, result);
 		break;
 	case SDR_SENSOR_L_1_X:
-		result = powf(result, -1.0); /*1/x w/o exception*/
+		result = pow(result, -1.0); /*1/x w/o exception*/
 		break;
 	case SDR_SENSOR_L_SQR:
-		result = powf(result, 2.0);
+		result = pow(result, 2.0);
 		break;
 	case SDR_SENSOR_L_CUBE:
-		result = powf(result, 3.0);
+		result = pow(result, 3.0);
 		break;
 	case SDR_SENSOR_L_SQRT:
-#ifdef __sun
-		result = (float)sqrt((double)result);
-#else
-		result = sqrtf(result);
-#endif
+		result = sqrt(result);
 		break;
 	case SDR_SENSOR_L_CUBERT:
-		result = cbrtf(result);
+		result = cbrt(result);
 		break;
         }
 
@@ -181,7 +177,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
  */
 uint8_t
 sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
-				float val)
+				double val)
 {
 	int m, b, k1, k2;
         double result;
@@ -413,7 +409,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 {
 	char sval[16], unitstr[16], desc[17];
 	int i=0, validread=1, do_unit=1;
-	float val = 0.0;
+	double val = 0.0;
 	struct ipmi_rs * rsp;
         uint8_t min_reading, max_reading;
 
@@ -616,7 +612,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	printf(" Sensor Reading        : ");
 	if (validread) {
 		uint16_t raw_tol = __TO_TOL(sensor->mtol);
-		float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
+		double tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
 		printf("%.*f (+/- %.*f) %s\n",
 		       (val==(int)val) ? 0 : 3, 
 		       val, 
@@ -649,7 +645,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	    (sensor->unit.analog == 2 && sensor->sensor_min == 0x80))
 		printf(" Minimum sensor range  : Unspecified\n");
 	else
-		printf(" Minimum sensor range  : %.3f\n", (float)min_reading);
+		printf(" Minimum sensor range  : %.3f\n", (double)min_reading);
 
 	max_reading = (uint8_t)sdr_convert_sensor_reading(
 		sensor, sensor->sensor_max);
@@ -658,7 +654,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	    (sensor->unit.analog == 2 && sensor->sensor_max == 0x7f))
 		printf(" Maximum sensor range  : Unspecified\n");
 	else
-		printf(" Maximum sensor range  : %.3f\n", (float)max_reading);
+		printf(" Maximum sensor range  : %.3f\n", (double)max_reading);
 
 	printf(" Event Message Control : ");
 	switch (sensor->sensor.capabilities.event_msg) {

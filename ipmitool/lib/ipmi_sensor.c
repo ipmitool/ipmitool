@@ -182,7 +182,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 {
 	char unitstr[16], id[17];
 	int i=0, validread=1, thresh_available = 1;
-	float val = 0.0;
+	double val = 0.0;
 	struct ipmi_rs * rsp;
 	char * status = NULL;
 
@@ -314,7 +314,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 			printf(" Sensor Reading        : ");
 			if (validread) {
 				uint16_t raw_tol = __TO_TOL(sensor->mtol);
-				float tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
+				double tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
 				printf("%.*f (+/- %.*f) %s\n",
 				       (val==(int)val) ? 0 : 3, 
 				       val, 
@@ -512,7 +512,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	char * id, * thresh;
 	uint8_t settingMask;
-	float setting;
+	double setting;
 	struct sdr_record_list * sdr;
 	struct ipmi_rs * rsp;
 
@@ -533,7 +533,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 
 	id = argv[0];
 	thresh = argv[1];
-	setting = (float)atof(argv[2]);
+	setting = (double)atof(argv[2]);
 	if (strncmp(thresh, "unr", 3) == 0)
 		settingMask = UPPER_NON_RECOV_SPECIFIED;
 	else if (strncmp(thresh, "ucr", 3) == 0)
