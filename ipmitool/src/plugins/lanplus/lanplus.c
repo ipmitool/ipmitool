@@ -498,11 +498,11 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		printf("  ASF Version %s\n"
 			   "  RMCP Version %s\n"
 			   "  RMCP Sequence %d\n"
-			   "  IANA Enterprise %ld\n\n",
+			   "  IANA Enterprise %lu\n\n",
 			   (pong->sup_entities & 0x01) ? "1.0" : "unknown",
 			   (pong->rmcp.ver == 6) ? "1.0" : "unknown",
 			   pong->rmcp.seq,
-			   ntohl(pong->iana));
+			   (unsigned long)ntohl(pong->iana));
 
 	return (pong->sup_entities & 0x80) ? 1 : 0;
 }

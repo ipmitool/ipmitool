@@ -60,7 +60,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (argc > sizeof(data))
 	{
-		printf("Raw command input limit (%d bytes) exceeded\n", sizeof(data));
+		lprintf(LOG_NOTICE, "Raw command input limit (256 bytes) exceeded");
 		return -1;
 	}
 

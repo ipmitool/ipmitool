@@ -35,8 +35,8 @@
  */
 
 #include <string.h>
-#include <math.h>
 
+#include <math.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -131,37 +131,37 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 	case SDR_SENSOR_L_LINEAR:
 		break;
 	case SDR_SENSOR_L_LN:
-		result = log(result);
+		result = logf(result);
 		break;
 	case SDR_SENSOR_L_LOG10:
-		result = log10(result);
+		result = log10f(result);
 		break;
 	case SDR_SENSOR_L_LOG2:
-		result = log2(result);
+		result = (float)(logf(result) / logf(2.0));
 		break;
 	case SDR_SENSOR_L_E:
-		result = exp(result);
+		result = expf(result);
 		break;
 	case SDR_SENSOR_L_EXP10:
-		result = exp10(result);
+		result = powf(10.0, result);
 		break;
 	case SDR_SENSOR_L_EXP2:
-		result = exp2(result);
+		result = powf(2.0, result);
 		break;
 	case SDR_SENSOR_L_1_X:
-		result = pow(result, -1.0); /*1/x w/o exception*/
+		result = powf(result, -1.0); /*1/x w/o exception*/
 		break;
 	case SDR_SENSOR_L_SQR:
-		result = result * result;
+		result = powf(result, 2.0);
 		break;
 	case SDR_SENSOR_L_CUBE:
-		result = pow(result, 3.0);
+		result = powf(result, 3.0);
 		break;
 	case SDR_SENSOR_L_SQRT:
-		result = sqrt(result);
+		result = sqrtf(result);
 		break;
 	case SDR_SENSOR_L_CUBERT:
-		result = cbrt(result);
+		result = cbrtf(result);
 		break;
         }
 
@@ -422,7 +422,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
         /* only handle linear sensors and linearized sensors (for now) */
         if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR) {
                 printf("sensor %s non-linear!\n", desc);
-                return;
+                return -1;
         }
 
 	/* get sensor reading */
