@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <ipmitool/helper.h>
 
@@ -63,6 +64,7 @@ struct ipmi_rq {
 	struct {
 		unsigned char netfn;
 		unsigned char cmd;
+		unsigned char target_cmd;
 		unsigned short data_len;
 		unsigned char *data;
 	} msg;
