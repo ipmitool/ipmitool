@@ -53,6 +53,7 @@
 
 static int curr_seq;
 extern int verbose;
+struct ipmi_session lan_session;
 
 struct ipmi_intf ipmi_openipmi_intf = {
 	.open     = ipmi_openipmi_open,
