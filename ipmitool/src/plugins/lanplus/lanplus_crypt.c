@@ -696,7 +696,7 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 	
 	/* Currently, we only support AES */
 	assert(crypt_alg == IPMI_CRYPT_AES_CBC_128);
-	assert(input_length <= 255);
+	assert(input_length <= IPMI_MAX_PAYLOAD_SIZE);
 
 
 	/*

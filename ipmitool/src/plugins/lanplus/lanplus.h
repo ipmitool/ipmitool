@@ -98,7 +98,7 @@
  * TODO: these are wild guesses and should be checked
  */
 #define IPMI_MAX_CONF_HEADER_SIZE   0x20
-#define IPMI_MAX_PAYLOAD_SIZE       0xFF /* Includes confidentiality header/trailer */
+#define IPMI_MAX_PAYLOAD_SIZE       0xFFFF /* Includes confidentiality header/trailer */
 #define IPMI_MAX_CONF_TRAILER_SIZE  0x20
 #define IPMI_MAX_INTEGRITY_PAD_SIZE 0x20
 #define IPMI_MAX_AUTH_CODE_SIZE     0x20
