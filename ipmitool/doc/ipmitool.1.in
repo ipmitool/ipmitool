@@ -297,6 +297,9 @@ This command will read all Field Replacable Unit inventory data and extract such
 .I sdr
 .RS
 .TP
+.I info
+This command will query the BMC for information about the SDR.
+.TP
 .I list
 This command will read the SDR and extract sensor information, then query each sensor and print its name, reading, and status.
 .RE
