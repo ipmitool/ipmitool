@@ -35,6 +35,7 @@
  */
 
 #include <assert.h>
+#include <string.h>
 #include "lanplus.h"
 #include "lanplus_crypt.h"
 #include "lanplus_crypt_impl.h"
@@ -212,7 +213,7 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 	unsigned char mac[20];
 	int           macLength;
 
-	unsigned int SIDm_lsbf, SIDc_lsbf;
+	unsigned int SIDc_lsbf;
 
 	if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
 		return 1;
