@@ -86,7 +86,7 @@ static struct lan_param {
 	int data_len;
 } ipmi_lan_params[] __attribute__((unused)) = {
 	{ IPMI_LANP_SET_IN_PROGRESS,	1,	"Set in Progress"	},
-	{ IPMI_LANP_AUTH_TYPE,		1,	"Auth Type"		},
+	{ IPMI_LANP_AUTH_TYPE,		1,	"Auth Type Support"	},
 	{ IPMI_LANP_AUTH_TYPE_ENABLE,	5,	"Auth Type Enable"	},
 	{ IPMI_LANP_IP_ADDR,		4,	"IP Address"		},
 	{ IPMI_LANP_IP_ADDR_SRC,	1,	"IP Address Source"	},

@@ -295,7 +295,7 @@ lan_set_arp_generate(struct ipmi_intf * intf,
 	else
 		data |= 0x1;
 
-	printf("BMC-generated Gratuitous ARPs %sabled\n", (ctl ? "en" : "dis"));
+	printf("%sabling BMC-generated Gratuitous ARPs\n", ctl ? "En" : "Dis");
 	return set_lan_param(intf, chan, IPMI_LANP_BMC_ARP, &data, 1);
 }
 
@@ -317,7 +317,7 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 	else
 		data |= 0x2;
 
-	printf("BMC-generated ARP response %sabled\n", ctl ? "en" : "dis");
+	printf("%sabling BMC-generated ARP responses\n", ctl ? "En" : "Dis");
 	return set_lan_param(intf, chan, IPMI_LANP_BMC_ARP, &data, 1);
 }
 
@@ -343,27 +343,99 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
-	if (p)
-		printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
+	if (p) {
+		printf("%-24s: ", p->desc);
+		p->data[0] &= 3;
+		switch (p->data[0]) {
+		case 0:
+			printf("Set Complete\n");
+			break;
+		case 1:
+			printf("Set In Progress\n");
+			break;
+		case 2:
+			printf("Commit Write\n");
+			break;
+		case 3:
+			printf("Reserved\n");
+			break;
+		default:
+			printf("Unknown\n");
+		}
+	}
 	else
 		rc = -1;
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE);
-	if (p)
-		printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
+	if (p) {
+		printf("%-24s: %s%s%s%s%s\n", p->desc,
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+	}
 	else
 		rc = -1;
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE);
-	if (p)
-		printf("%-24s: callback=0x%02x user=0x%02x operator=0x%02x admin=0x%02x oem=0x%02x\n",
-		       p->desc, p->data[0], p->data[1], p->data[2], p->data[3], p->data[4]);
+	if (p) {
+		printf("%-24s: Callback : %s%s%s%s%s\n", p->desc,
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+		printf("%-24s: User     : %s%s%s%s%s\n", "",
+		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+		printf("%-24s: Operator : %s%s%s%s%s\n", "",
+		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+		printf("%-24s: Admin    : %s%s%s%s%s\n", "",
+		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+		printf("%-24s: OEM      : %s%s%s%s%s\n", "",
+		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+	}
 	else
 		rc = -1;
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_ADDR_SRC);
-	if (p)
-		printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
+	if (p) {
+		printf("%-24s: ", p->desc);
+		p->data[0] &= 0xf;
+		switch (p->data[0]) {
+		case 0:
+			printf("Unspecified\n");
+			break;
+		case 1:
+			printf("Static Address\n");
+			break;
+		case 2:
+			printf("DHCP Address\n");
+			break;
+		case 3:
+			printf("BIOS Assigned Address\n");
+			break;
+		default:
+			printf("Other\n");
+			break;
+		}
+	}
 	else
 		rc = -1;
 
@@ -396,20 +468,22 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_HEADER);
 	if (p)
-		printf("%-24s: TTL=0x%02x flags=0x%02x precedence=0x%02x TOS=0x%02x\n",
+		printf("%-24s: TTL=0x%02x Flags=0x%02x Precedence=0x%02x TOS=0x%02x\n",
 		       p->desc, p->data[0], p->data[1] & 0xe0, p->data[2] & 0xe0, p->data[2] & 0x1e);
 	else
 		rc = -1;
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
 	if (p)
-		printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
+		printf("%-24s: ARP Responses %sabled, Gratuitous ARP %sabled\n", p->desc,
+		       (p->data[0] & 2) ? "En" : "Dis", (p->data[0] & 1) ? "En" : "Dis");
 	else
 		rc = -1;
 
 	p = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
-	if (p)
-		printf("%-24s: 0x%02x\n", p->desc, p->data[0]);
+	if (p) {
+		printf("%-24s: %.1f seconds\n", p->desc, (float)((p->data[0] + 1) / 2));
+	}
 	else
 		rc = -1;
 
