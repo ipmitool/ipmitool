@@ -271,41 +271,6 @@ query_alarm(int signo)
 }
 
 
-static const struct valstr ipmi_channel_protocol_vals[] = {
-	{ 0x00, "reserved" },
-	{ 0x01, "IPMB-1.0" },
-	{ 0x02, "ICMB-1.0" },
-	{ 0x03, "reserved" },
-	{ 0x04, "IPMI-SMBus" },
-	{ 0x05, "KCS" },
-	{ 0x06, "SMIC" },
-	{ 0x07, "BT-10" },
-	{ 0x08, "BT-15" },
-	{ 0x09, "TMode" },
-	{ 0x1c, "OEM 1" },
-	{ 0x1d, "OEM 2" },
-	{ 0x1e, "OEM 3" },
-	{ 0x1f, "OEM 4" },
-	{ 0x00, NULL },
-};
-
-static const struct valstr ipmi_channel_medium_vals[] = {
-	{ 0x00, "reserved" },
-	{ 0x01, "IPMB (I2C)" },
-	{ 0x02, "ICMB v1.0" },
-	{ 0x03, "ICMB v0.9" },
-	{ 0x04, "802.3 LAN" },
-	{ 0x05, "Serial/Modem" },
-	{ 0x06, "Other LAN" },
-	{ 0x07, "PCI SMBus" },
-	{ 0x08, "SMBus v1.0/v1.1" },
-	{ 0x09, "SMBus v2.0" },
-	{ 0x0a, "USB 1.x" },
-	{ 0x0b, "USB 2.x" },
-	{ 0x0c, "System Interface" },
-	{ 0x00, NULL },
-};
-
 static const struct valstr plus_payload_types_vals[] = {
     { IPMI_PAYLOAD_TYPE_IPMI,              "IPMI (0)" },	// IPMI Message
     { IPMI_PAYLOAD_TYPE_SOL,               "SOL  (1)" },	// SOL (Serial over LAN)
