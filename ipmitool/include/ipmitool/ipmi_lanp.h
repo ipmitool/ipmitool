@@ -48,9 +48,6 @@
 
 #define IPMI_CHANNEL_NUMBER_MAX	0xd
 
-extern const struct valstr ipmi_privlvl_vals[];
-extern const struct valstr ipmi_authtype_vals[];
-
 enum {
 	IPMI_LANP_SET_IN_PROGRESS,
 	IPMI_LANP_AUTH_TYPE,
