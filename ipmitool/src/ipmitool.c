@@ -174,7 +174,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, unsigned char channel, unsigned ch
 }
 
 static int
-ipmi_send_platform_event(struct ipmi_intf * intf)
+ipmi_send_platform_event(struct ipmi_intf * intf, int num)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -183,35 +183,61 @@ ipmi_send_platform_event(struct ipmi_intf * intf)
 	memset(&req, 0, sizeof(req));
 	memset(rqdata, 0, 8);
 
-#if 0
-	/* System Interface */
-	rqdata[0] = 0x20;	/* generator ID */
-	rqdata[1] = 0x04;	/* EvMRev */
-	rqdata[2] = 0x01;	/* Sensor Type */
-	rqdata[3] = 0x30;	/* Sensor # */
-	rqdata[4] = 0x04;	/* Event Dir / Event Type */
-	rqdata[5] = 0x00;	/* Event Data 1 */
-	rqdata[6] = 0x00;	/* Event Data 2 */
-	rqdata[7] = 0x00;	/* Event Data 3 */
-#else
+	printf("Sending ");
+
 	/* IPMB/LAN/etc */
-	rqdata[0] = 0x04;	/* EvMRev */
-	rqdata[1] = 0x01;	/* Sensor Type */
-	rqdata[2] = 0x30;	/* Sensor # */
-	rqdata[3] = 0x04;	/* Event Dir / Event Type */
-	rqdata[4] = 0x00;	/* Event Data 1 */
-	rqdata[5] = 0x00;	/* Event Data 2 */
-	rqdata[6] = 0x00;	/* Event Data 3 */
-#endif
+	switch (num) {
+	case 0:			/* temperature */
+		printf("Temperature");
+		rqdata[0] = 0x04;	/* EvMRev */
+		rqdata[1] = 0x01;	/* Sensor Type */
+		rqdata[2] = 0x30;	/* Sensor # */
+		rqdata[3] = 0x04;	/* Event Dir / Event Type */
+		rqdata[4] = 0x00;	/* Event Data 1 */
+		rqdata[5] = 0x00;	/* Event Data 2 */
+		rqdata[6] = 0x00;	/* Event Data 3 */
+		break;
+	case 1:			/* correctable ECC */
+		printf("Memory Correctable ECC");
+		rqdata[0] = 0x04;	/* EvMRev */
+		rqdata[1] = 0x0c;	/* Sensor Type */
+		rqdata[2] = 0x01;	/* Sensor # */
+		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
+		rqdata[4] = 0x00;	/* Event Data 1 */
+		rqdata[5] = 0x00;	/* Event Data 2 */
+		rqdata[6] = 0x00;	/* Event Data 3 */
+		break;
+	case 2:			/* uncorrectable ECC */
+		printf("Memory Uncorrectable ECC");
+		rqdata[0] = 0x04;	/* EvMRev */
+		rqdata[1] = 0x0c;	/* Sensor Type */
+		rqdata[2] = 0x01;	/* Sensor # */
+		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
+		rqdata[4] = 0x01;	/* Event Data 1 */
+		rqdata[5] = 0x00;	/* Event Data 2 */
+		rqdata[6] = 0x00;	/* Event Data 3 */
+		break;
+	case 3:			/* parity error */
+		printf("Memory Parity Error");
+		rqdata[0] = 0x04;	/* EvMRev */
+		rqdata[1] = 0x0c;	/* Sensor Type */
+		rqdata[2] = 0x01;	/* Sensor # */
+		rqdata[3] = 0x6f;	/* Event Dir / Event Type */
+		rqdata[4] = 0x02;	/* Event Data 1 */
+		rqdata[5] = 0x00;	/* Event Data 2 */
+		rqdata[6] = 0x00;	/* Event Data 3 */
+		break;
+	default:
+		printf("Invalid event number: %d\n", num);
+		return -1;
+	}
+
+	printf("event to BMC\n");
 
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = 0x02;
 	req.msg.data = rqdata;
-#if 0
-	req.msg.data_len = 8;
-#else
 	req.msg.data_len = 7;
-#endif
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {
@@ -295,10 +321,16 @@ int main(int argc, char ** argv)
 		goto out_free;
 	}
 	else if (!strncmp(argv[optind], "event", 5)) {
-		if (intf->open(intf, hostname, port, username, password) < 0)
+		if (argc-optind-1 > 0) {
+			unsigned char c = strtod(argv[optind+1], NULL);
+			if (intf->open(intf, hostname, port, username, password) < 0)
+				goto out_free;
+			ipmi_send_platform_event(intf, c);
+			goto out_close;
+		} else {
+			printf("event <num>\n");
 			goto out_free;
-		ipmi_send_platform_event(intf);
-		goto out_close;
+		}
 	}
 	else if (!strncmp(argv[optind], "bmc", 3)) {
 		submain = ipmi_bmc_main;
