@@ -46,6 +46,8 @@
 # define IPMI_LAN_SUSPEND_ARP_GRAT (1)
 #define IPMI_LAN_GET_STAT	0x04
 
+#define IPMI_CHANNEL_NUMBER_MAX	0xd
+
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_vals[];
 
@@ -84,6 +86,7 @@ static struct lan_param {
 	int size;
 	char desc[24];
 	unsigned char * data;
+	int data_len;
 } ipmi_lan_params[] __attribute__((unused)) = {
 	{ IPMI_LANP_SET_IN_PROGRESS,	1,	"Set in Progress"	},
 	{ IPMI_LANP_AUTH_TYPE,		1,	"Auth Type"		},
