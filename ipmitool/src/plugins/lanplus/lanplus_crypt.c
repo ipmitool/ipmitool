@@ -295,7 +295,8 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 
     if (verbose > 2)
 	{
-		printbuf(mac, macLength, ">> rakp4 mac as computed by the remote console");
+		printbuf(bmc_mac, macLength, ">> rakp4 mac as computed by the BMC");
+		printbuf(mac,     macLength, ">> rakp4 mac as computed by the remote console");
 	}
 
 
@@ -675,7 +676,6 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 
 	if (crypt_alg == IPMI_CRYPT_NONE)
 	{
-		lprintf(LOG_WARNING, "NOT ENCRYPTING");
 		/* Just copy the input to the output */
 		*bytes_written = input_length;
 		return 0;
