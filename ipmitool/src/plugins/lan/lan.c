@@ -36,6 +36,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -83,26 +84,6 @@ query_alarm(int signo)
 	siglongjmp(jmpbuf, 1);
 }
 
-#if 0
-const struct valstr ipmi_privlvl_vals[] = {
-	{ IPMI_SESSION_PRIV_CALLBACK,	"CALLBACK" },
-	{ IPMI_SESSION_PRIV_USER,	"USER" },
-	{ IPMI_SESSION_PRIV_OPERATOR,	"OPERATOR" },
-	{ IPMI_SESSION_PRIV_ADMIN,	"ADMINISTRATOR" },
-	{ IPMI_SESSION_PRIV_OEM,	"OEM" },
-	{ 0xF,				"NO ACCESS" },
-	{ 0,				NULL },
-};
-
-const struct valstr ipmi_authtype_vals[] = {
-	{ IPMI_SESSION_AUTHTYPE_NONE,	"NONE" },
-	{ IPMI_SESSION_AUTHTYPE_MD2,	"MD2" },
-	{ IPMI_SESSION_AUTHTYPE_MD5,	"MD5" },
-	{ IPMI_SESSION_AUTHTYPE_KEY,	"PASSWORD" },
-	{ IPMI_SESSION_AUTHTYPE_OEM,	"OEM" },
-	{ 0,				NULL },
-};
-#endif
 static const struct valstr ipmi_channel_protocol_vals[] = {
 	{ 0x00, "reserved" },
 	{ 0x01, "IPMB-1.0" },
@@ -298,8 +279,8 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 	struct rmcp_pong {
 		struct rmcp_hdr rmcp;
 		struct asf_hdr asf;
-		unsigned long iana;
-		unsigned long oem;
+		uint32_t iana;
+		uint32_t oem;
 		unsigned char sup_entities;
 		unsigned char sup_interact;
 		unsigned char reserved[6];
@@ -718,103 +699,6 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return rsp;
 }
 
-#if 0
-void
-ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel)
-{
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char rqdata[2];
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x42;
-	req.msg.data = &channel;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get Channel Info Command (0x%x)\n",
-		       rsp ? rsp->ccode : 0, channel);
-		return;
-	}
-
-	if (!verbose)
-		return;
-
-	printf("Channel 0x%x info:\n", rsp->data[0] & 0xf);
-
-	printf("  Channel Medium Type   : %s\n",
-	       val2str(rsp->data[1] & 0x7f, ipmi_channel_medium_vals));
-
-	printf("  Channel Protocol Type : %s\n",
-	       val2str(rsp->data[2] & 0x1f, ipmi_channel_protocol_vals));
-
-	printf("  Session Support       : ");
-	switch (rsp->data[3] & 0xc0) {
-	case 0x00:
-		printf("session-less\n");
-		break;
-	case 0x40:
-		printf("single-session\n");
-		break;
-	case 0x80:
-		printf("multi-session\n");
-		break;
-	case 0xc0:
-	default:
-		printf("session-based\n");
-		break;
-	}
-
-	printf("  Active Session Count  : %d\n",
-	       rsp->data[3] & 0x3f);
-	printf("  Protocol Vendor ID    : %d\n",
-	       rsp->data[4] | rsp->data[5] << 8 | rsp->data[6] << 16);
-
-	memset(&req, 0, sizeof(req));
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x80;	/* 0x80=active, 0x40=non-volatile */
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x41;
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		printf("Error:%x Get Channel Access Command (0x%x)\n",
-		       rsp ? rsp->ccode : 0, channel);
-		return;
-	}
-
-	printf("  Alerting              : %sabled\n",
-	       (rsp->data[0] & 0x20) ? "dis" : "en");
-	printf("  Per-message Auth      : %sabled\n",
-	       (rsp->data[0] & 0x10) ? "dis" : "en");
-	printf("  User Level Auth       : %sabled\n",
-	       (rsp->data[0] & 0x08) ? "dis" : "en");
-	printf("  Access Mode           : ");
-	switch (rsp->data[0] & 0x7) {
-	case 0:
-		printf("disabled\n");
-		break;
-	case 1:
-		printf("pre-boot only\n");
-		break;
-	case 2:
-		printf("always available\n");
-		break;
-	case 3:
-		printf("shared\n");
-		break;
-	default:
-		printf("unknown\n");
-		break;
-	}
-}
-#endif
-
 /*
  * IPMI Get Channel Authentication Capabilities Command
  */
@@ -848,7 +732,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	if (verbose) {
+	if (verbose > 1) {
 		printf("Channel %02x Authentication Capabilities:\n",
 		       rsp->data[0]);
 		printf("  Privilege Level : %s\n",
@@ -894,7 +778,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	if (verbose)
+	if (verbose > 1)
 		printf("Proceeding with AuthType %s\n",
 		       val2str(lan_session.authtype, ipmi_authtype_vals));
 
@@ -948,7 +832,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 	memcpy(&lan_session.id, rsp->data, 4);
 	memcpy(lan_session.challenge, rsp->data + 4, 16);
 
-	if (verbose) {
+	if (verbose > 1) {
 		printf("Opening Session\n");
 		printf("  Session ID      : %08lx\n",
 		       lan_session.id);
@@ -980,15 +864,13 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 
 	/* setup initial outbound sequence number */
 	get_random(msg_data+18, 4);
-//	lan_session.out_seq = 1;
-//	memcpy(msg_data + 18, &lan_session.out_seq, 4);
 
 	req.msg.data = msg_data;
 	req.msg.data_len = 22;
 
 	lan_session.active = 1;
 
-	if (verbose) {
+	if (verbose > 1) {
 		printf("  Privilege Level : %s\n",
 		       val2str(msg_data[1], ipmi_privlvl_vals));
 		printf("  Auth Type       : %s\n",
@@ -1039,7 +921,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	memcpy(&lan_session.id, rsp->data + 1, 4);
 	memcpy(&lan_session.in_seq, rsp->data + 5, 4);
 
-	if (verbose) {
+	if (verbose > 1) {
 		printf("\nSession Activated\n");
 		printf("  Auth Type       : %s\n",
 		       val2str(rsp->data[0], ipmi_authtype_vals));
@@ -1081,7 +963,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 		       val2str(lan_session.privlvl, ipmi_privlvl_vals));
 		return -1;
 	}
-	if (verbose)
+	if (verbose > 1)
 		printf("Set Session Privilege Level to %s\n\n",
 		       val2str(rsp->data[0], ipmi_privlvl_vals));
 	return 0;
@@ -1183,7 +1065,7 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 		return -1;
 
 	/* channel 0xE will query current channel */
-	ipmi_get_channel_info(intf, IPMI_LAN_CHANNEL_E);
+//	ipmi_get_channel_info(intf, IPMI_LAN_CHANNEL_E);
 
 	return 0;
 }
@@ -1242,7 +1124,7 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 		memcpy(&intf->addr.sin_addr, host->h_addr, host->h_length);
 	}
 
-	if (verbose)
+	if (verbose > 1)
 		printf("IPMI LAN host %s port %d\n",
 		       hostname, ntohs(intf->addr.sin_port));
 
@@ -1284,3 +1166,4 @@ int intf_setup(struct ipmi_intf ** intf)
 	*intf = &ipmi_lan_intf;
 	return 0;
 }
+
