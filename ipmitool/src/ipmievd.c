@@ -204,7 +204,7 @@ int main(int argc, char ** argv)
 		printf("Connecting to OpenIPMI device.\n");
 
 	/* open connection to openipmi device */
-	r = intf->open(intf, NULL, 0, NULL, NULL);
+	r = intf->open(intf);
 	if (r < 0) {
 		printf("ERROR: Unable to open OpenIPMI device\n");
 		exit(EXIT_FAILURE);
