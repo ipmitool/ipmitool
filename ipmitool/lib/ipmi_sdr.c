@@ -349,7 +349,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 				printf(" ");
 			printf(" | ");
 
-			printf("%s", ipmi_sdr_get_status(rsp->data[2]));
+			printf("%s", validread ? ipmi_sdr_get_status(rsp->data[2]) : "ns");
 			printf("\n");
 		}
 		else
@@ -539,7 +539,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		char * state;
 		char temp[18];
 
-		if (rsp->ccode == 0xcd) {
+		if ((rsp->ccode == 0xcd) || (rsp->data[1] & READING_UNAVAILABLE)) {
                     state = "Not Readable     ";
                 } else {
                     switch (sensor->sensor.type) {
@@ -571,11 +571,51 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 
 		if (!rsp->ccode) {
 			if (csv_output)
+				printf("%s,%s\n", state, (rsp->data[1] & READING_UNAVAILABLE) ? "ns" : "ok");
+			else
+				printf("%-17s | %s\n", state, (rsp->data[1] & READING_UNAVAILABLE) ? "ns" : "ok");
+		} else {
+			if (csv_output)
 				printf("%s,ok\n", state);
 			else
 				printf("%-17s | ok\n", state);
-		} else
-			printf("%s\n", state);
+		}
+	}
+}
+
+static void
+ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
+			        struct sdr_record_eventonly_sensor * sensor)
+{
+	char desc[17];
+
+	if (!sensor)
+		return;
+
+	memset(desc, 0, sizeof(desc));
+	memcpy(desc, sensor->id_string, 16);
+	
+
+	if (verbose) {
+		printf("Sensor ID              : %s (0x%x)\n",
+		       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
+		printf("Entity ID              : %d.%d (%s)\n",
+		       sensor->entity.id, sensor->entity.instance,
+		       val2str(sensor->entity.id, entity_id_vals));
+		printf("Sensor Type            : %s\n", 
+                       ipmi_sdr_get_sensor_type_desc(sensor->sensor_type));
+		if (verbose > 1) {
+			printf("Event Type Code        : 0x%02x\n", sensor->event_type);
+		}
+
+		printf("\n");
+	}
+	else {
+		char * state = "Not Readable     ";
+		if (csv_output)
+			printf("%s,%s,ns", sensor->id_code ? desc : NULL, state);
+		else
+			printf("%-16s | %-17s | ns\n", sensor->id_code ? desc : NULL, state);
 	}
 }
 
@@ -734,6 +774,10 @@ ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 			ipmi_sdr_print_sensor_compact(intf,
 				(struct sdr_record_compact_sensor *) rec);
 			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			ipmi_sdr_print_sensor_eventonly(intf,
+				(struct sdr_record_eventonly_sensor *) rec);
+			break;
 		case SDR_RECORD_TYPE_ENTITY_ASSOC:
 			break;
 		case SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC:
@@ -873,10 +917,11 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (!argc)
 		ipmi_sdr_print_sdr(intf, 0xff);
 	else if (!strncmp(argv[0], "help", 4)) {
-		printf("SDR Commands:  list [all|full|compact|mcloc]\n");
+		printf("SDR Commands:  list [all|full|compact|event|mcloc|fru]\n");
 		printf("               all        All SDR Records\n");
 		printf("               full       Full Sensor Record\n");
 		printf("               compact    Compact Sensor Record\n");
+		printf("               event      Event-Only Sensor Record\n");
 		printf("               mcloc      Management Controller Locator Record\n");
 		printf("               fru        FRU Locator Record\n");
 	}
@@ -888,12 +933,14 @@ int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_FULL_SENSOR);
 			else if (!strncmp(argv[1], "compact", 7))
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_COMPACT_SENSOR);
+			else if (!strncmp(argv[1], "event", 5))
+				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_EVENTONLY_SENSOR);
 			else if (!strncmp(argv[1], "mcloc", 5))
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_MC_DEVICE_LOCATOR);
 			else if (!strncmp(argv[1], "fru", 3))
 				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR);
 			else
-				printf("usage: sdr list [all|full|compact|mcloc|fru]\n");
+				printf("usage: sdr list [all|full|compact|event|mcloc|fru]\n");
 		} else {
 			ipmi_sdr_print_sdr(intf, 0xff);
 		}

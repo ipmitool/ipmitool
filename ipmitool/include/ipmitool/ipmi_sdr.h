@@ -99,6 +99,7 @@ struct sdr_get_rs {
 	unsigned char	version;	/* SDR version (51h) */
 #define SDR_RECORD_TYPE_FULL_SENSOR		0x01
 #define SDR_RECORD_TYPE_COMPACT_SENSOR		0x02
+#define SDR_RECORD_TYPE_EVENTONLY_SENSOR	0x03
 #define SDR_RECORD_TYPE_ENTITY_ASSOC		0x08
 #define SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC	0x09
 #define SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR	0x10
@@ -190,6 +191,39 @@ struct sdr_record_compact_sensor {
 	} threshold;
 
 	unsigned char	__reserved[3];
+	unsigned char	oem;		/* reserved for OEM use */
+	unsigned char	id_code;	/* sensor ID string type/length code */
+	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+
+} __attribute__ ((packed));
+
+struct sdr_record_eventonly_sensor {
+	struct {
+		unsigned char	owner_id;
+		unsigned char	lun         : 2,	/* sensor owner lun */
+				fru_owner   : 2,        /* fru device owner lun */
+				channel     : 4;	/* channel number */
+		unsigned char	sensor_num;		/* unique sensor number */
+	} keys;
+
+	struct {
+		unsigned char	id;			/* physical entity id */
+		unsigned char	instance    : 7,	/* instance number */
+				logical     : 1;	/* physical/logical */
+	} entity;
+	
+	unsigned char	sensor_type;			/* sensor type */
+	unsigned char	event_type;			/* event/reading type code */
+
+	struct {
+		unsigned char	count       : 4,
+				mod_type    : 2,
+				__reserved  : 2;
+		unsigned char	mod_offset  : 7,
+				entity_inst : 1;
+	} share;
+
+	unsigned char	__reserved;
 	unsigned char	oem;		/* reserved for OEM use */
 	unsigned char	id_code;	/* sensor ID string type/length code */
 	unsigned char	id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
