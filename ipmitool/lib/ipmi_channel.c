@@ -50,19 +50,11 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_constants.h>
 
 void printf_channel_usage (void);
 
-const struct valstr ipmi_authtype_vals[] = {
-			{ IPMI_1_5_AUTH_TYPE_BIT_NONE,     "NONE" },
-			{ IPMI_1_5_AUTH_TYPE_BIT_MD2,      "MD2" },
-			{ IPMI_1_5_AUTH_TYPE_BIT_MD5,      "MD5" },
-			{ IPMI_1_5_AUTH_TYPE_BIT_PASSWORD, "PASSWORD" },
-			{ IPMI_1_5_AUTH_TYPE_BIT_OEM,      "OEM" },
-			{ 0,                               NULL },
-		};
-
-
+extern const struct valstr ipmi_authtype_vals[];
 
 static const struct valstr ipmi_channel_protocol_vals[] = {
 			{ 0x00, "reserved" },

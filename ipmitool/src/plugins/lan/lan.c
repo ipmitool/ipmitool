@@ -53,6 +53,8 @@
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_constants.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -64,21 +66,12 @@
 #include "auth.h"
 
 extern const struct valstr ipmi_privlvl_vals[];
-extern const struct valstr ipmi_authtype_vals[];
+extern const struct valstr ipmi_authtype_session_vals[];
 
 struct ipmi_rq_entry * ipmi_req_entries;
 static struct ipmi_rq_entry * ipmi_req_entries_tail;
 
 extern int verbose;
-
-const struct valstr ipmi_authtype_session_vals[] = {
-	{ IPMI_SESSION_AUTHTYPE_NONE,     "NONE" },
-	{ IPMI_SESSION_AUTHTYPE_MD2,      "MD2" },
-	{ IPMI_SESSION_AUTHTYPE_MD5,      "MD5" },
-	{ IPMI_SESSION_AUTHTYPE_PASSWORD, "PASSWORD" },
-	{ IPMI_SESSION_AUTHTYPE_OEM,      "OEM" },
-	{ 0,                               NULL },
-};
 
 static sigjmp_buf jmpbuf;
 

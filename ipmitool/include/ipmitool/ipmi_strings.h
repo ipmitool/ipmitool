@@ -43,6 +43,8 @@ extern const struct valstr ipmi_channel_activity_type_vals[];
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr impi_bit_rate_vals[];
 extern const struct valstr ipmi_set_in_progress_vals[];
+extern const struct valstr ipmi_authtype_session_vals[];
+extern const struct valstr ipmi_authtype_vals[];
 
 
 #endif /*IPMI_STRINGS_H*/

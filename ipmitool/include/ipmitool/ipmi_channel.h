@@ -52,13 +52,6 @@
 #define IPMI_SET_USER_PASSWORD    0x47
 
 
-#define IPMI_1_5_AUTH_TYPE_BIT_NONE     0x01
-#define IPMI_1_5_AUTH_TYPE_BIT_MD2      0x02
-#define IPMI_1_5_AUTH_TYPE_BIT_MD5      0x04
-#define IPMI_1_5_AUTH_TYPE_BIT_PASSWORD 0x10
-#define IPMI_1_5_AUTH_TYPE_BIT_OEM      0x20
-
-
 /*
  * The Get Authentication Capabilities response structure
  * From table 22-15 of the IPMI v2.0 spec

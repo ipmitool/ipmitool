@@ -48,19 +48,6 @@
 #define IPMI_LAN_TIMEOUT	2
 #define IPMI_LAN_RETRY		4
 
-#define IPMI_SESSION_AUTHTYPE_NONE	0x0
-#define IPMI_SESSION_AUTHTYPE_MD2	0x1
-#define IPMI_SESSION_AUTHTYPE_MD5	0x2
-#define IPMI_SESSION_AUTHTYPE_PASSWORD	0x4
-#define IPMI_SESSION_AUTHTYPE_OEM	0x5
-
-#define IPMI_SESSION_PRIV_CALLBACK	0x1
-#define IPMI_SESSION_PRIV_USER		0x2
-#define IPMI_SESSION_PRIV_OPERATOR	0x3
-#define IPMI_SESSION_PRIV_ADMIN		0x4
-#define IPMI_SESSION_PRIV_OEM		0x5
-
-
 
 struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);

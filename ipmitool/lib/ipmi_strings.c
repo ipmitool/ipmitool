@@ -81,3 +81,21 @@ const struct valstr ipmi_set_in_progress_vals[] = {
 };
 
 
+const struct valstr ipmi_authtype_session_vals[] = {
+	{ IPMI_SESSION_AUTHTYPE_NONE,     "NONE" },
+	{ IPMI_SESSION_AUTHTYPE_MD2,      "MD2" },
+	{ IPMI_SESSION_AUTHTYPE_MD5,      "MD5" },
+	{ IPMI_SESSION_AUTHTYPE_PASSWORD, "PASSWORD" },
+	{ IPMI_SESSION_AUTHTYPE_OEM,      "OEM" },
+	{ 0,                               NULL },
+};
+
+
+const struct valstr ipmi_authtype_vals[] = {
+	{ IPMI_1_5_AUTH_TYPE_BIT_NONE,     "NONE" },
+	{ IPMI_1_5_AUTH_TYPE_BIT_MD2,      "MD2" },
+	{ IPMI_1_5_AUTH_TYPE_BIT_MD5,      "MD5" },
+	{ IPMI_1_5_AUTH_TYPE_BIT_PASSWORD, "PASSWORD" },
+	{ IPMI_1_5_AUTH_TYPE_BIT_OEM,      "OEM" },
+	{ 0,                               NULL },
+};
