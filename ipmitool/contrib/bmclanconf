@@ -1,0 +1,313 @@
+#!/bin/bash
+#
+# Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 
+# Redistribution of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# 
+# Redistribution in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+# 
+# Neither the name of Sun Microsystems, Inc. or the names of
+# contributors may be used to endorse or promote products derived
+# from this software without specific prior written permission.
+# 
+# This software is provided "AS IS," without a warranty of any kind.
+# ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
+# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED.
+# SUN MICROSYSTEMS, INC. ("SUN") AND ITS LICENSORS SHALL NOT BE LIABLE
+# FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+# OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL
+# SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA,
+# OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR
+# PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
+# LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
+# EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+# 
+# You acknowledge that this software is not designed or intended for use
+# in the design, construction, operation or maintenance of any nuclear
+# facility.
+#
+
+
+# This script is designed for Sun Fire LX50, V60x and V65x systems.
+# It may work with other setups as long as you use the correct channel
+# and interface settings.  It can be used on the V20z as long as you
+# specify network settings on the command line.
+#
+# If the wrong channel is used you could lose network access to the
+# box because your BMC will be sending out bad Gratuitous ARP packets
+# with the wrong MAC address.  You will need to use a console or
+# override your local ARP cache with the correct addr.
+
+usage ()
+{
+    echo "
+usage: $0 -c <chan> -i <interface> [options]
+       $0 -c <chan> [-v|w|x|y|z address] [options]
+
+    -c channel     Which BMC channel to configure [-c help for more info]
+    -i interface   Auto-configure BMC based on interface network settings
+    -v address     Use specified IP address
+    -w address     Use specified Netmask address
+    -x address     Use specified MAC address
+    -y address     Use specified Gateway IP address
+    -z address     Use specified Gateway MAC address
+    -m interface   Which IPMI interface to use [default linux=open solaris=lipmi]
+    -p password    Set BMC channel password
+    -s string      Set SNMP community string
+    -a interval    Set Gratuitous ARP interval, off=0, default=4
+    -r             Reset BMC channel, zero all network settings, disable
+    -d             Debug mode, does not make any changes
+"
+    exit 0;
+}
+
+channel_usage ()
+{
+    echo "
+ Sun Fire V60x and V65x - Linux 2.4
+   eth0 = channel 6, top
+   eth1 = channel 7, bottom
+
+ Sun Fire V60x and V65x - Linux 2.6
+   eth0 = channel 7, bottom
+   eth1 = channel 6, top
+
+ Sun Fire V60x and V65x - Solaris x86
+   e1000g0 = channel 7, bottom
+   e1000g1 = channel 6, top
+
+ Sun LX50 - Linux
+   eth0 = channel 7, bottom
+   eth1 = channel 6, top
+
+ Sun LX50 - Solaris x86
+   le0 = channel 7, bottom
+   le1 = channel 6, top
+
+ Sun Fire V20z (-i option does not apply)
+   channel 1
+"
+    exit 0
+}
+
+hex_to_ip ()
+{
+    test $# -ge 1 || return;
+    local HEX B1 B2 B3 B4;
+    HEX=`echo $1 | tr '[:lower:]' '[:upper:]'`;
+    H1=`echo $HEX | cut -c1-2`
+    H2=`echo $HEX | cut -c3-4`
+    H3=`echo $HEX | cut -c5-6`
+    H4=`echo $HEX | cut -c7-8`
+    B1=`echo 10 o 16 i $H1 p | dc`
+    B2=`echo 10 o 16 i $H2 p | dc`
+    B3=`echo 10 o 16 i $H3 p | dc`
+    B4=`echo 10 o 16 i $H4 p | dc`
+    echo "$B1.$B2.$B3.$B4"
+}
+
+ipmitool_lan_set ()
+{
+    [ $# -lt 1 ] && return
+    local PARAM=$1
+    local VALUE=
+    [ $# -ge 2 ] && VALUE=$2
+
+    if [ $DEBUG -gt 0 ]; then
+	echo "Setting LAN parameter $PARAM $VALUE"
+	echo "$IPMITOOL -I $IPMIINTF lan set $CHANNEL $PARAM $VALUE"
+	return
+    fi
+
+    $IPMITOOL -I $IPMIINTF lan set $CHANNEL $PARAM $VALUE
+}
+
+ipmitool_lan_reset ()
+{
+    ipmitool_lan_set "ipsrc" "static"
+    ipmitool_lan_set "ipaddr" "0.0.0.0"
+    ipmitool_lan_set "netmask" "0.0.0.0"
+    ipmitool_lan_set "macaddr" "00:00:00:00:00:00"
+    ipmitool_lan_set "defgw ipaddr" "0.0.0.0"
+    ipmitool_lan_set "defgw macaddr" "00:00:00:00:00:00"
+    ipmitool_lan_set "password"
+    ipmitool_lan_set "snmp" "public"
+    ipmitool_lan_set "arp generate" "off"
+    ipmitool_lan_set "access" "off"
+    exit 0
+}
+
+DEBUG=0
+LINUX=0
+SOLARIS=0
+CHANNEL=0
+IFACE=
+PASSWORD=
+SNMP=
+GRATARP=8
+PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin
+
+case `uname -s` in
+    Linux)
+	IPMIINTF=open
+	IPMITOOL=ipmitool
+	PING=ping
+	IFCONFIG=ifconfig
+	ARP=arp
+	ROUTE=route
+	;;
+    SunOS)
+	IPMIINTF=lipmi
+	IPMITOOL=ipmiadm
+	PING=ping
+	IFCONFIG=ifconfig
+	ARP=arp
+	ROUTE=route
+	;;
+    *)
+	echo "Invalid OS!"
+	exit 1
+esac
+
+while getopts "dhri:c:m:p:s:a:v:w:x:y:z:" OPTION ; do
+    case "$OPTION" in
+	i) IFACE=$OPTARG ;;
+	c) CHANNEL=$OPTARG ; test X$CHANNEL = Xhelp && channel_usage ;;
+	m) IPMIINTF=$OPTARG ;;
+	p) PASSWORD=$OPTARG ;;
+	s) SNMP=$OPTARG ;;
+	a) GRATARP=$OPTARG ;;
+	d) DEBUG=1 ;;
+	v) IP_ADDRESS=$OPTARG ;;
+	w) IP_NETMASK=$OPTARG ;;
+	x) MAC_ADDRESS=$OPTARG ;;
+	y) GATEWAY_IP=$OPTARG ;;
+	z) GATEWAY_MAC=$OPTARG ;;
+	r) ipmitool_lan_reset ;;
+	h) usage ;;
+	*) echo "Ignoring invalid option : -$OPTARG" ;;
+    esac
+done
+
+if [ ! -x `which $IPMITOOL` ]; then
+    echo "Error: unable to find $IPMITOOL"
+    exit 1
+fi
+
+if [ $CHANNEL -eq 0 ]; then
+    echo
+    echo "Error: you must specify a channel with -c"
+    echo
+    exit 1
+fi
+
+if [ "$IFACE" ]; then
+    if ! $IFCONFIG $IFACE 2>/dev/null | grep "inet " >/dev/null 2>&1 ; then
+	echo
+	echo "Error: unable to find interface $IFACE"
+	echo
+	exit 1
+    fi
+    echo "Auto-configuring $IFACE (channel $CHANNEL)"
+fi
+
+case `uname -s` in
+    SunOS)
+	if [ X$IFACE != X ]; then
+	    if [ X$IP_ADDRESS = X ]; then
+		IP_ADDRESS=`$IFCONFIG $IFACE | grep inet | awk '{print $2}'`
+	    fi
+	    if [ X$IP_NETMASK = X ]; then
+		HEX_NETMASK=`$IFCONFIG $IFACE | grep netmask | awk '{print $4}'`
+		IP_NETMASK=`hex_to_ip $HEX_NETMASK`
+	    fi
+	    if [ X$MAC_ADDRESS = X ]; then
+		MAC_ADDRESS=`$IFCONFIG $IFACE | grep ether | awk '{print $2}'`
+	    fi
+	    if [ X$GATEWAY_IP = X ]; then
+		GATEWAY_IP=`$ROUTE -n get default | grep gateway: | awk '{print $2}'`
+	    fi
+	    if [ X$GATEWAY_MAC = X ]; then
+		$PING -i $IFACE $GATEWAY_IP 1 >/dev/null 2>&1
+		GATEWAY_MAC=`$ARP $GATEWAY_IP | awk '{print $4}'`
+		if [ X$GATEWAY_MAC = Xno ]; then
+		    GATEWAY_MAC=
+		fi
+	    fi
+	fi
+	;;
+
+    Linux)
+	if [ X$IFACE != X ]; then
+	    if [ X$IP_ADDRESS = X ]; then
+		IP_ADDRESS=`$IFCONFIG $IFACE | grep inet | awk -F"[:[:space:]]+" '{print $4}'`
+	    fi
+	    if [ X$IP_NETMASK = X ]; then
+		IP_NETMASK=`$IFCONFIG $IFACE | grep Bcast | awk -F"[:[:space:]]+" '{print $8}'`
+	    fi
+	    if [ X$MAC_ADDRESS = X ]; then
+		MAC_ADDRESS=`$IFCONFIG $IFACE | grep HWaddr | awk '{print $5}'`
+	    fi
+	    if [ X$GATEWAY_IP = X ]; then
+		GATEWAY_IP=`$ROUTE -n | awk '/^0.0.0.0/ {print $2}'`
+	    fi
+	    if [ X$GATEWAY_MAC = X ]; then
+		$PING -q -c1 $GATEWAY_IP >/dev/null 2>&1
+		GATEWAY_MAC=`$ARP -an | grep "$GATEWAY_IP[^0-9]" | awk '{print $4}'`
+	    fi
+	fi
+	;;
+esac
+
+if [ X$IP_ADDRESS != X ]; then
+    ipmitool_lan_set "ipsrc" "static"
+    ipmitool_lan_set "ipaddr" "$IP_ADDRESS"
+fi
+
+if [ X$IP_NETMASK != X ]; then
+    ipmitool_lan_set "netmask" "$IP_NETMASK"
+fi
+
+if [ X$MAC_ADDRESS != X ]; then
+    ipmitool_lan_set "macaddr" "$MAC_ADDRESS"
+fi
+
+if [ X$GATEWAY_IP != X ]; then
+    ipmitool_lan_set "defgw ipaddr" "$GATEWAY_IP"
+fi
+
+if [ X$GATEWAY_MAC != X ]; then
+    ipmitool_lan_set "defgw macaddr" "$GATEWAY_MAC"
+fi
+
+if [ X$PASSWORD != X ]; then
+    ipmitool_lan_set "password" "$PASSWORD"
+fi
+
+if [ X$SNMP != X ]; then
+    ipmitool_lan_set "snmp" "$SNMP"
+fi
+
+if [ "$GRATARP" -ne 0 ]; then
+    ipmitool_lan_set "arp generate" "on"
+    ipmitool_lan_set "arp interval" "$GRATARP"
+else
+    ipmitool_lan_set "arp generate" "off"
+fi
+
+echo "Setting channel authentication capabilities"
+ipmitool_lan_set "auth callback,user,operator,admin" "md2,md5"
+
+echo "Enabling channel $CHANNEL"
+ipmitool_lan_set "access" "on"
+ipmitool_lan_set "user"
+
+exit 0
