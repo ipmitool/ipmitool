@@ -63,7 +63,7 @@ This can be used to get command-line help on ipmitool commands.  It may also be 
 .PP
 ipmitool -I open help
 .br
-Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, isol, userinfo, channel
+Commands:  bmc, chassis, event, fru, lan, raw, sdr, sel, sensor, sol, userinfo, channel
 .LP
 .PP
 ipmitool -I open chassis help
@@ -464,12 +464,6 @@ Special escape sequences are provided to control the SOL session:
 .I deactivate
 This command deactives Serial Over LAN mode on the BMC.  Exiting Serial Over LAN mode should automatically cause this command to be sent to the BMC, but in the case of an unintentional exit from SOL mode, this command may be necessary to reset the state the BMC.
 .RE
-.RE
-.I isol
-.RS
-.TP
-.I setup
-Setup Serial-over-LAN: enable, setup authentication and set baud rate to 19200.  This sub-command is specific to Intel motherboards.
 .RE
 .SH "OPEN INTERFACE"
 .LP 

@@ -176,7 +176,6 @@ Commands:
     fru          Print built-in FRU and scan SDR for FRU locators
     sel          Print System Evelnt Log
     sol          Configure IPMIv2.0 Serial-over-LAN
-    isol         Configure Intel IPMIv1.5 Serial-over-LAN
     user         Configure BMC users
     channel      Configure BMC channels
     session      Print session information
