@@ -65,6 +65,11 @@ const struct valstr spd_voltage_vals[] = {
 	{ 0x00, NULL },
 };
 
+/*
+ * JEDEC Standard Manufacturers Identification Code
+ * publication JEP106N, December 2003
+ */
+
 const struct valstr jedec_id1_vals[] = {
 	{ 0x01, "AMD" },
 	{ 0x02, "AMI" },
@@ -713,6 +718,8 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 			printf("  Timeout while reading FRU data. (Device not present?)\n");
 			return;
 		}
+		if (rsp->ccode)
+			break;
 
 		len = rsp->data[0];
 		memcpy(&spd_data[offset], rsp->data + 1, len);
@@ -721,6 +728,9 @@ void ipmi_spd_print(struct ipmi_intf * intf, unsigned char id)
 
 	if (verbose)
 		printbuf(spd_data, offset, "SPD DATA");
+
+	if (offset < 92)
+		return;		/* we need first 91 bytes to do our thing */
 
 	size = spd_data[5] * (spd_data[31] << 2);
 	printf("  Memory Size      : %d MB\n", size);
