@@ -532,6 +532,14 @@ ipmi_set_channel_access(struct ipmi_intf * intf, unsigned char channel, unsigned
 		return -1;
 	}
 
+	rqdata[1] = 0x60;	/* save to nvram */
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp || rsp->ccode) {
+		printf("Error:%x Set Channel Access Command (0x%x)\n",
+		       rsp ? rsp->ccode : 0, channel);
+		return -1;
+	}
+
 	return 0;
 }
 
