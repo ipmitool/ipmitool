@@ -120,6 +120,11 @@ struct ipmi_session {
 		uint16_t max_outbound_payload_size;
 		uint16_t port;
 		unsigned char sequence_number;
+
+		/*  This data describes the last SOL packet */
+		unsigned char last_received_sequence_number;
+		unsigned char last_received_byte_count;
+		
 	} sol_data;
 };
 
