@@ -935,7 +935,7 @@ printSolEscapeSequences()
 	%c.  - terminate connection\r\n\
 	%c^Z - suspend ipmitool\r\n\
 	%c^X - suspend ipmitool, but don't restore tty on restart\r\n\
-	%cb  - send break\r\n\
+	%cB  - send break\r\n\
 	%c?  - this message\r\n\
 	%c%c  - send the escape character by typing it twice\r\n\
 	(Note that escapes are only recognized immediately after newline.)\r\n",
@@ -1064,7 +1064,7 @@ processSolUserInput(
 				suspendSelf(0); /* Don't restore to raw mode */
 				continue;
 
-			case 'b':
+			case 'B':
 				printf("%cb [send break]\r\n", SOL_ESCAPE_CHARACTER);
 				sendBreak(intf);
 				continue;
