@@ -38,19 +38,8 @@
 #define IPMI_INTF_H
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_constants.h>
 
-#define IPMI_SESSION_AUTHTYPE_NONE      0x0
-#define IPMI_SESSION_AUTHTYPE_MD2       0x1
-#define IPMI_SESSION_AUTHTYPE_MD5   	0x2
-#define IPMI_SESSION_AUTHTYPE_KEY	    0x4
-#define IPMI_SESSION_AUTHTYPE_OEM       0x5
-#define IPMI_SESSION_AUTHTYPE_RMCP_PLUS 0x6
-
-#define IPMI_SESSION_PRIV_CALLBACK	0x1
-#define IPMI_SESSION_PRIV_USER		0x2
-#define IPMI_SESSION_PRIV_OPERATOR	0x3
-#define IPMI_SESSION_PRIV_ADMIN		0x4
-#define IPMI_SESSION_PRIV_OEM		0x5
 
 /*
  * An enumeration that describes every possible session state for
