@@ -457,8 +457,8 @@ print_user_usage()
 	lprintf(LOG_NOTICE, "		   list	   [<channel number>]");
 	lprintf(LOG_NOTICE, "		   set name	<user id> <username>");
 	lprintf(LOG_NOTICE, "		   set password <user id> [<password>]");
-	lprintf(LOG_NOTICE, "		   disable	<user id> [<channel number>]");
-	lprintf(LOG_NOTICE, "		   enable	<user id> [<channel number>]");
+	lprintf(LOG_NOTICE, "		   disable	<user id>");
+	lprintf(LOG_NOTICE, "		   enable	<user id>");
 	lprintf(LOG_NOTICE, "		   test		<user id> <16|20> [<password]>\n");
 }
 
