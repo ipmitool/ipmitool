@@ -83,16 +83,16 @@ struct fru_header {
 
 struct fru_area_chassis {
 	unsigned char area_ver;
-	unsigned char area_len;
 	unsigned char type;
+	unsigned short area_len;
 	char * part;
 	char * serial;
 };
 
 struct fru_area_board {
 	unsigned char area_ver;
-	unsigned char area_len;
 	unsigned char lang;
+	unsigned short area_len;
 	uint32_t mfg_date_time;
 	char * mfg;
 	char * prod;
@@ -103,8 +103,8 @@ struct fru_area_board {
 
 struct fru_area_product {
 	unsigned char area_ver;
-	unsigned char area_len;
 	unsigned char lang;
+	unsigned short area_len;
 	char * mfg;
 	char * name;
 	char * part;
