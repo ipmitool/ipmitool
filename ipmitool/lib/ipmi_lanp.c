@@ -48,11 +48,11 @@
 #include <netdb.h>
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_lanp.h>
 
 extern int verbose;
-extern struct ipmi_session lan_session;
 
 const struct valstr ipmi_privlvl_vals[] = {
 	{ IPMI_SESSION_PRIV_CALLBACK,	"CALLBACK" },
@@ -319,7 +319,7 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	data[1] = 0x02;		/* set password */
 
 	if (password)
-		memcpy(data+2, password, (strlen(password) > 16) ? 16 : strlen(password));
+		memcpy(data+2, password, min(strlen(password), 16));
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -338,12 +338,9 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	/* adjust our session password
 	 * or we will no longer be able to communicate with BMC
 	 */
-	lan_session.password = 1;
-	memset(lan_session.authcode, 0, 16);
-	if (password) {
-		memcpy(lan_session.authcode, password, strlen(password));
-		printf("Password for user %d set to %s\n", userid, lan_session.authcode);
-	}
+	ipmi_intf_session_set_password(intf, password);
+	if (password)
+		printf("Password for user %d set to %s\n", userid, password);
 	else
 		printf("Password cleared for user %d\n", userid);
 }
@@ -463,7 +460,8 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (argc < 2 || !strncmp(argv[0], "help", 4) || !strncmp(argv[1], "help", 4)) {
 		printf("usage: lan set <channel> <command>\n");
-		printf("LAN set commands: ipaddr, netmask, macaddr, defgw, bakgw, password, auth, ipsrc, access, user, arp\n");
+		printf("LAN set commands: ipaddr, netmask, macaddr, defgw, bakgw, "
+		       "password, auth, ipsrc, access, user, arp, snmp\n");
 		return;
 	}
 
@@ -570,6 +568,17 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[1], "password", 8)) {
 		ipmi_lan_set_password(intf, 1, argv[2]);
 	}
+	/* snmp community string */
+	else if (!strncmp(argv[1], "snmp", 4)) {
+		if (argc < 3 || !strncmp(argv[2], "help", 4)) {
+			printf("lan set <channel> snmp <community string>\n");
+			return;
+		}
+		memcpy(data, argv[2], min(strlen(argv[2]), 18));
+		printf("Setting LAN %s to %s\n",
+		       ipmi_lan_params[IPMI_LANP_SNMP_STRING].desc, data);
+		set_lan_param(intf, chan, IPMI_LANP_SNMP_STRING, data, 18);
+	}
 	/* ip address */
 	else if (!strncmp(argv[1], "ipaddr", 6) &&
 		 !get_cmdline_ipaddr(argv[2], data)) {
@@ -642,9 +651,15 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (!argc || !strncmp(argv[0], "help", 4))
+	if (!argc || !strncmp(argv[0], "help", 4)) {
 		printf("LAN Commands:  print, set\n");
-	else if (!strncmp(argv[0], "printconf", 9) ||
+		return 0;
+	}
+
+	/* all the lan parameters commands need admin level */
+	ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+
+	if (!strncmp(argv[0], "printconf", 9) ||
 		 !strncmp(argv[0], "print", 5)) {
 		unsigned char chan = 7;
 		if (argc > 1)
