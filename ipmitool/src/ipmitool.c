@@ -116,7 +116,7 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
 	}
-	if (req.msg.data_len) {
+	if (verbose && req.msg.data_len) {
 		for (i=0; i<req.msg.data_len; i++) {
 			if (((i%16) == 0) && (i != 0))
 				printf("\n");
@@ -125,8 +125,9 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("\n");
 	}
 
-	printf("RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)\n",
-	       req.msg.netfn, req.msg.cmd, req.msg.data_len);
+	if (verbose)
+		printf("RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)\n",
+		       req.msg.netfn, req.msg.cmd, req.msg.data_len);
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -136,7 +137,8 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	printf("RAW RSP (%d bytes)\n", rsp->data_len);
+	if (verbose)
+		printf("RAW RSP (%d bytes)\n", rsp->data_len);
 
 	for (i=0; i<rsp->data_len; i++) {
 		if (((i%16) == 0) && (i != 0))
