@@ -497,8 +497,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			if (verbose > 2)
 				printf("IPMI Request Match found\n");
 			if (intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
-if (verbose > 2)
-	printf("Bridged cmd resp: %s\n", buf2str(&rsp->data[x],rsp->data_len));
+				if (verbose > 2)
+					printf("Bridged cmd resp: %s\n", buf2str(&rsp->data[x],rsp->data_len));
 				/* bridged command: lose extra header */
 				x += sizeof(rsp->payload.ipmi_response);
 				if (verbose && rsp->data[x-1] != 0)
@@ -674,13 +674,18 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	if (s->active) {
+		/*
+		 * s->authcode is already copied to msg+ap but some
+		 * authtypes require portions of the ipmi message to
+		 * create the authcode so they must be done last.
+		 */
 		switch (s->authtype) {
 		case IPMI_SESSION_AUTHTYPE_MD5:
-			temp = ipmi_auth_md5(intf->session, msg+mp, msg[mp-1]);
+			temp = ipmi_auth_md5(s, msg+mp, msg[mp-1]);
 			memcpy(msg+ap, temp, 16);
 			break;
 		case IPMI_SESSION_AUTHTYPE_MD2:
-			temp = ipmi_auth_md2(intf->session, msg+mp, msg[mp-1]);
+			temp = ipmi_auth_md2(s, msg+mp, msg[mp-1]);
 			memcpy(msg+ap, temp, 16);
 			break;
 		}
@@ -748,12 +753,13 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 		.class	= RMCP_CLASS_IPMI,
 		.seq	= 0xff,
 	};
+	struct ipmi_session * s = intf->session;
 	int cs, mp, ap = 0, tmp;
 	int len;
 	unsigned char * msg;
 
 	len = rsp->data_len + 22;
-	if (intf->session->active)
+	if (s->active)
 		len += 16;
 
 	msg = malloc(len);
@@ -764,22 +770,22 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 	len = sizeof(rmcp);
 
 	/* ipmi session header */
-	msg[len++] = intf->session->active ? intf->session->authtype : 0;
+	msg[len++] = s->active ? s->authtype : 0;
 
-	if (intf->session->in_seq) {
-		intf->session->in_seq++;
-		if (!intf->session->in_seq)
-			intf->session->in_seq++;
+	if (s->in_seq) {
+		s->in_seq++;
+		if (!s->in_seq)
+			s->in_seq++;
 	}
-	memcpy(msg+len, &intf->session->in_seq, 4);
+	memcpy(msg+len, &s->in_seq, 4);
 	len += 4;
-	memcpy(msg+len, &intf->session->session_id, 4);
+	memcpy(msg+len, &s->session_id, 4);
 	len += 4;
 
 	/* session authcode, if session active and authtype is not none */
-	if (intf->session->active && intf->session->authtype) {
+	if (s->active && s->authtype) {
 		ap = len;
-		memcpy(msg+len, intf->session->authcode, 16);
+		memcpy(msg+len, s->authcode, 16);
 		len += 16;
 	}
 
@@ -810,10 +816,18 @@ unsigned char * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp
 	tmp = len - cs;
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
-	if (intf->session->active &&
-	    intf->session->authtype == IPMI_SESSION_AUTHTYPE_MD5) {
-		unsigned char * d = ipmi_auth_md5(intf->session, msg+mp, msg[mp-1]);
-		memcpy(msg+ap, d, 16);
+	if (s->active) {
+		unsigned char * d;
+		switch (s->authtype) {
+		case IPMI_SESSION_AUTHTYPE_MD5:
+			d = ipmi_auth_md5(s, msg+mp, msg[mp-1]);
+			memcpy(msg+ap, d, 16);
+			break;
+		case IPMI_SESSION_AUTHTYPE_MD2:
+			d = ipmi_auth_md2(s, msg+mp, msg[mp-1]);
+			memcpy(msg+ap, d, 16);
+			break;
+		}			
 	}
 
 	*llen = len;
@@ -951,6 +965,13 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
 	}
+	else if (s->password &&
+		 (!s->authtype_set ||
+		  s->authtype_set == IPMI_SESSION_AUTHTYPE_OEM) &&
+		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM))
+	{
+		s->authtype = IPMI_SESSION_AUTHTYPE_OEM;
+	}
 	else if ((!s->authtype_set ||
 		  s->authtype_set == IPMI_SESSION_AUTHTYPE_NONE) &&
 		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE))
@@ -1048,7 +1069,16 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 
 	msg_data[0] = s->authtype;
 	msg_data[1] = s->privlvl;
-	memcpy(msg_data + 2, s->challenge, 16);
+
+	if (s->authspecial) {
+		unsigned char * special = ipmi_auth_special(s);
+		memcpy(s->authcode, special, 16);
+		memset(msg_data + 2, 0, 16);
+		if (verbose > 2)
+			printf("  OEM Auth        : %s\n", buf2str(special, 16));
+	} else {
+		memcpy(msg_data + 2, s->challenge, 16);
+	}
 
 	/* setup initial outbound sequence number */
 	get_random(msg_data+18, 4);
@@ -1110,7 +1140,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	s->in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
 	if (!s->in_seq) ++s->in_seq;
 
-	if (s->authtype & IPMI_AUTHSTATUS_PER_MSG_DISABLED)
+	if (s->authstatus & IPMI_AUTHSTATUS_PER_MSG_DISABLED)
 		s->authtype = IPMI_SESSION_AUTHTYPE_NONE;
 	else if (s->authtype != rsp->data[0] & 0xf) {
 		printf("\nInvalid Session AuthType in response!!\n");
