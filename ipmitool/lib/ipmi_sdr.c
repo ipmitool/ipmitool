@@ -2227,12 +2227,22 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 	int rc = 0;
 
 	if (sscanf(entitystr, "%u.%u", &id, &instance) != 2) {
-		lprintf(LOG_ERR, "Invalid entity: %s", entitystr);
-		return -1;
+		/* perhaps no instance was passed
+		 * in which case we want all instances for this entity
+		 * so set entity.instance = 0x7f to indicate this
+		 */
+		if (sscanf(entitystr, "%u", &id) != 1) {
+			lprintf(LOG_ERR, "Invalid entity: %s", entitystr);
+			return -1;
+		} else {
+			entity.id = id;
+			entity.instance = 0x7f;
+		}
+	} else {
+		entity.id = id;
+		entity.instance = instance;
 	}
 
-	entity.id = (uint8_t)id;
-	entity.instance = (uint8_t)instance;
 	list = ipmi_sdr_find_sdr_byentity(intf, &entity);
 
 	for (entry = list; entry != NULL; entry = entry->next) {
@@ -2272,6 +2282,11 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "                     mcloc      Management Controller Locator Record");
 		lprintf(LOG_ERR, "                     fru        FRU Locator Record");
 		lprintf(LOG_ERR, "               info");
+		lprintf(LOG_ERR, "                     Display information about the repository itself");
+		lprintf(LOG_ERR, "               entity <id>[.instance]");
+		lprintf(LOG_ERR, "                     Display all sensors associated with an entity");
+		lprintf(LOG_ERR, "               dump <file>");
+		lprintf(LOG_ERR, "                     Dump raw SDR data to a file");
 	}
 	else if (strncmp(argv[0], "list", 4) == 0) {
 		if (argc <= 1)
