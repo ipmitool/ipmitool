@@ -587,12 +587,13 @@ ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_
 }
 
 static int
-ipmi_sel_list_entries(struct ipmi_intf * intf)
+ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint16_t next_id = 0, curr_id = 0;
 	struct sel_event_record evt;
+	int n=0;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -631,6 +632,21 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 		return -1;
 	}
 
+	if (count < 0) {
+		/** Show only the most recent 'count' records. */
+		int delta;
+
+		/* Get first record. */
+		next_id = ipmi_sel_get_std_entry(intf, 0, &evt);
+
+		delta = next_id - evt.record_id;
+
+		/* Get last record. */
+		next_id = ipmi_sel_get_std_entry(intf, 0xffff, &evt);
+
+		next_id = evt.record_id + count * delta + delta;
+	}
+
 	while (next_id != 0xffff) {
 		curr_id = next_id;
 		lprintf(LOG_DEBUG, "SEL Next ID: %04x", curr_id);
@@ -651,6 +667,10 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 			ipmi_sel_print_std_entry_verbose(&evt);
 		else
 			ipmi_sel_print_std_entry(&evt);
+
+		if (++n == count) {
+			break;
+		}
 	}
 
 	return 0;
@@ -961,6 +981,17 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 	return rc;
 }
 
+static int make_int(const char *str, int *value)
+{
+	char *tmp=NULL;
+	*value = strtol(str,&tmp,0);
+	if ( tmp-str != strlen(str) )
+	{
+		return -1;
+	}
+	return 0;
+}
+
 int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -971,8 +1002,43 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "SEL Commands:  info clear delete list time");
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
-	else if (strncmp(argv[0], "list", 4) == 0)
-		rc = ipmi_sel_list_entries(intf);
+	else if (strncmp(argv[0], "list", 4) == 0) {
+		/*
+		 * Usage:
+		 *	list           - show all SEL entries
+		 *  list first <n> - show the first (oldest) <n> SEL entries
+		 *  list last <n>  - show the last (newsest) <n> SEL entries
+		 */
+		int count = 0;
+		int sign = 1;
+		char *countstr = NULL;
+
+		if (argc == 3) {
+			countstr = argv[2];
+
+			if (strncmp(argv[1], "last", 4) == 0) {
+				sign = -1;
+			}
+			else if (strncmp(argv[1], "first", 6) != 0) {
+				lprintf(LOG_ERR, "Unknown sel list option");
+				return -1;
+			}
+		}
+		else if (argc == 2) {
+			countstr = argv[1];
+		}
+
+		if (countstr) {
+			if (make_int(countstr,&count) < 0) {
+				lprintf(LOG_ERR, "Numeric argument required; got '%s'",
+					countstr);
+				return -1;
+			}
+		}
+		count *= sign;
+
+		rc = ipmi_sel_list_entries(intf,count);
+	}
 	else if (strncmp(argv[0], "clear", 5) == 0)
 		rc = ipmi_sel_clear(intf);
 	else if (strncmp(argv[0], "delete", 6) == 0) {
