@@ -41,6 +41,7 @@
 #include <config.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/log.h>
 
 #ifdef IPMI_INTF_OPEN

@@ -506,8 +506,8 @@ static void
 fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 			unsigned char id, unsigned int offset)
 {
-	unsigned char * fru_area, * fru_data;
-	unsigned int fru_len, area_len, i;
+	unsigned char * fru_data;
+	unsigned int fru_len, i;
 	struct fru_multirec_header * h;
 	struct fru_multirec_powersupply * ps;
 	struct fru_multirec_dcoutput * dc;
@@ -895,7 +895,6 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	struct ipmi_sdr_iterator * itr;
 	struct sdr_get_rs * header;
 	struct sdr_record_fru_locator * fru;
-	char desc[17];
 	int rc;
 
 	printf("FRU Device Description : Builtin FRU Device (ID 0)\n");

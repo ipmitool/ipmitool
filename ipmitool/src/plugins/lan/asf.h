@@ -61,11 +61,11 @@ static const struct valstr asf_type_vals[] __attribute__((unused)) = {
 
 /* ASF message header */
 struct asf_hdr {
-	unsigned long iana;
-	unsigned char type;
-	unsigned char tag;
-	unsigned char __reserved;
-	unsigned char len;
+	uint32_t	iana;
+	uint8_t		type;
+	uint8_t		tag;
+	uint8_t		__reserved;
+	uint8_t		len;
 } __attribute__((packed));
 
 int handle_asf(struct ipmi_intf * intf, unsigned char * data, int data_len);

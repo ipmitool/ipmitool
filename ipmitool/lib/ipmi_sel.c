@@ -228,6 +228,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printf("Largest Free Blk : %d\n", buf2short(rsp->data + 6));
 		printf("Max Record Size  : %d\n", rsp->data[7]);
 	}
+	return 0;
 }
 
 static unsigned short
@@ -872,8 +873,6 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 	unsigned short id;
 	int i, oldv;
 	struct sel_event_record evt;

@@ -400,7 +400,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	unsigned char msg_data[3];
 
 	if (arg == NULL)
-		return;
+		return -1;
 
 	memset(msg_data, 0, 3);
 

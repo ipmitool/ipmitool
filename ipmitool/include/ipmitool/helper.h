@@ -37,6 +37,7 @@
 #ifndef IPMI_HELPER_H
 #define IPMI_HELPER_H
 
+#include <sys/types.h>
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -62,8 +63,3 @@ FILE * ipmi_open_file(const char * file, int rw);
 #endif
 
 #endif /* IPMI_HELPER_H */
-
-
-
-
-

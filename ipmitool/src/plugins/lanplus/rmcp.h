@@ -69,10 +69,10 @@ static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
 
 /* RMCP message header */
 struct rmcp_hdr {
-	unsigned char ver;
-	unsigned char __reserved;
-	unsigned char seq;
-	unsigned char class;
+	uint8_t ver;
+	uint8_t __reserved;
+	uint8_t seq;
+	uint8_t class;
 } __attribute__((packed));
 
 int handle_rmcp(struct ipmi_intf * intf, unsigned char * data, int data_len);

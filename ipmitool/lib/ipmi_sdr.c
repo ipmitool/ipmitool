@@ -662,7 +662,7 @@ void ipmi_sdr_print_discrete_state(unsigned char sensor_type,
 
 	printf(" States Asserted       : ");
 
-	for (evt; evt->type != NULL; evt++) {
+	for (; evt->type != NULL; evt++) {
 		if (evt->code == typ && ((1<<evt->offset) & state)) {
 			if (pre)
 				printf("                         ");
@@ -2156,8 +2156,7 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 {
 	struct sdr_record_list * list, * entry;
 	struct entity_id entity;
-	int count, i;
-	unsigned char id, instance;
+	unsigned int id, instance;
 	int rc = 0;
 
 	if (sscanf(entitystr, "%u.%u", &id, &instance) != 2) {
@@ -2165,8 +2164,8 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 		return -1;
 	}
 
-	entity.id = id;
-	entity.instance = instance;
+	entity.id = (uint8_t)id;
+	entity.instance = (uint8_t)instance;
 	list = ipmi_sdr_find_sdr_byentity(intf, &entity);
 
 	for (entry = list; entry != NULL; entry = entry->next) {

@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
