@@ -4,7 +4,7 @@
 @IPMITOOL_BIN@ \- utility for controlling IPMI-enabled devices
 .SH "SYNTAX"
 .LP 
-@IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
+@IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIlan\fP \fB\-H\fR \fIhostname\fP [\fB\-L\fR \fIprivlvl\fP] [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR \fIpassword\fP] <\fIexpression\fP>
 .br 
 @IPMITOOL_BIN@ [\fB\-ghcvV\fR] \fB\-I\fR \fIopen\fP <\fIexpression\fP>
 .SH "DESCRIPTION"
@@ -36,6 +36,9 @@ Remote server address, can be IP address or hostname.  This option is required f
 .TP 
 \fB\-U\fR <\fIusername\fP>
 Remote username, default is NULL user.
+.TP
+\fB\-L\fR <\fIprivlvl\fP>
+Force sessin privilege level.  Can be CALLBACK, USER, OPERATOR, ADMIN.  Default is USER.
 .TP 
 \fB\-a\fR
 Promt for the remote server password, 16 character maximum. This is optional for the LAN interface, if a password is not provided the session will not be authenticated.
@@ -122,13 +125,12 @@ Channel 0xf info:
   Protocol Vendor ID    : 7154
 .LP
 .RE
-.RE
 .TP
-\fIuserinfo\fP <\fBchannel\fR>
+\fIuser\fP <\fBchannel number\fR> [\fBuser number\fR]
 This command will display information about configured user information on a specific LAN channel.  This command will fail on system interfaces.  Try channel 6 or 7.
 .RS
 .PP
-@IPMITOOL_BIN@ -I open userinfo 6
+@IPMITOOL_BIN@ -I open channel user 6
 .br
 Maximum User IDs     : 4
 .br
@@ -142,6 +144,7 @@ Link Authentication  : disabled
 .br
 IPMI Messaging       : enabled
 .LP
+.RE
 .RE
 .TP
 .I chassis
@@ -236,6 +239,9 @@ Set the backup gateway MAC address.
 .TP
 \fIpassword\fP <\fBpass\fR>
 Set the null user password.
+.TP
+\fIsnmp\fP <\fBcommunity string\fR>
+Set the SNMP community string.
 .TP
 \fIuser\fP
 Enable user access mode.
