@@ -81,6 +81,8 @@ char * ipmi_intf_print(void)
 	struct ipmi_intf ** intf;
 	int def = 1;
 
+	printf("Interfaces:\n");
+
 	for (intf = ipmi_intf_table; intf && *intf; intf++) {
 		printf("\t%-12s %s", (*intf)->name, (*intf)->desc);
 		if (def) {
@@ -89,6 +91,7 @@ char * ipmi_intf_print(void)
 		}
 		printf("\n");
 	}
+	printf("\n");
 }
 
 /* Load an interface from the interface table above
