@@ -52,20 +52,23 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-
 
 #include "lan.h"
 #include "md5.h"
 #include "rmcp.h"
 #include "asf.h"
 
+extern const struct valstr ipmi_privlvl_vals[];
+extern const struct valstr ipmi_authtype_vals[];
+
 struct ipmi_rq_entry * ipmi_req_entries;
 static struct ipmi_rq_entry * ipmi_req_entries_tail;
 
-int verbose;
+extern int verbose;
 
 const struct valstr ipmi_authtype_session_vals[] = {
 	{ IPMI_SESSION_AUTHTYPE_NONE,     "NONE" },
@@ -77,9 +80,7 @@ const struct valstr ipmi_authtype_session_vals[] = {
 };
 
 static int recv_timeout = IPMI_LAN_TIMEOUT;
-static int curr_seq;
 static sigjmp_buf jmpbuf;
-struct ipmi_session lan_session;
 
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, unsigned char * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
@@ -227,7 +228,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		return NULL;
 	}
 
-	alarm(recv_timeout);
+	alarm(IPMI_LAN_TIMEOUT);
 	rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
 	alarm(0);
 
@@ -242,7 +243,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * response is read before the connection refused is returned)
 	 */
 	if (rc < 0) {
-		alarm(recv_timeout);
+		alarm(IPMI_LAN_TIMEOUT);
 		rc = recv(intf->fd, &rsp.data, BUF_SIZE, 0);
 		alarm(0);
 		if (rc < 0) {
@@ -301,16 +302,14 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 
 	pong = (struct rmcp_pong *)rsp->data;
 
-	if (verbose)
-		printf("Received IPMI/RMCP response packet: "
-		       "IPMI%s Supported\n",
-		       (pong->sup_entities & 0x80) ? "" : " NOT");
-
 	if (verbose > 1)
-		printf("  ASF Version %s\n"
+		printf("Received IPMI/RMCP response packet: \n"
+		       "  IPMI%s Supported\n"
+		       "  ASF Version %s\n"
 		       "  RMCP Version %s\n"
 		       "  RMCP Sequence %d\n"
 		       "  IANA Enterprise %d\n\n",
+		       (pong->sup_entities & 0x80) ? "" : " NOT",
 		       (pong->sup_entities & 0x01) ? "1.0" : "unknown",
 		       (pong->rmcp.ver == 6) ? "1.0" : "unknown",
 		       pong->rmcp.seq,
@@ -359,7 +358,7 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 	memcpy(data, &rmcp_ping, sizeof(rmcp_ping));
 	memcpy(data+sizeof(rmcp_ping), &asf_ping, sizeof(asf_ping));
 
-	if (verbose)
+	if (verbose > 1)
 		printf("Sending IPMI/RMCP presence ping packet\n");
 
 	rv = ipmi_lan_send_packet(intf, data, len);
@@ -398,7 +397,8 @@ ipmi_lan_pedantic(struct ipmi_intf * intf)
  * multi-session authcode generation for md5
  * H(password + session_id + msg + session_seq + password)
  */
-unsigned char * ipmi_auth_md5(unsigned char * data, int data_len)
+static unsigned char *
+ipmi_auth_md5(struct ipmi_session * s, unsigned char * data, int data_len)
 {
 	md5_state_t state;
 	static md5_byte_t digest[16];
@@ -409,17 +409,17 @@ unsigned char * ipmi_auth_md5(unsigned char * data, int data_len)
 
 	md5_init(&state);
 
-	md5_append(&state, (const md5_byte_t *)lan_session.authcode, 16);
-	md5_append(&state, (const md5_byte_t *)&lan_session.id, 4);
+	md5_append(&state, (const md5_byte_t *)s->authcode, 16);
+	md5_append(&state, (const md5_byte_t *)&s->session_id, 4);
 	md5_append(&state, (const md5_byte_t *)data, data_len);
 
 #if WORDS_BIGENDIAN
-	temp = BSWAP_32(lan_session.in_seq);
+	temp = BSWAP_32(s->in_seq);
 #else
-	temp = lan_session.in_seq;
+	temp = s->in_seq;
 #endif
 	md5_append(&state, (const md5_byte_t *)&temp, 4);
-	md5_append(&state, (const md5_byte_t *)lan_session.authcode, 16);
+	md5_append(&state, (const md5_byte_t *)s->authcode, 16);
 
 	md5_finish(&state, digest);
 
@@ -464,13 +464,13 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		}
 
 		x = 4;
-		rsp->session.authtype = rsp->data[x++];
-		memcpy(&rsp->session.seq, rsp->data+x, 4);
+		rsp->session_hdr.authtype = rsp->data[x++];
+		memcpy(&rsp->session_hdr.seq, rsp->data+x, 4);
 		x += 4;
-		memcpy(&rsp->session.id, rsp->data+x, 4);
+		memcpy(&rsp->session_hdr.id, rsp->data+x, 4);
 		x += 4;
 
-		if (lan_session.active && lan_session.authtype)
+		if (intf->session->active && intf->session->authtype)
 			x += 16;
 
 		rsp->msglen = rsp->data[x++];
@@ -488,9 +488,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			printbuf(rsp->data, x, "ipmi message header");
 			printf("<< IPMI Response Session Header\n");
 			printf("<<   Authtype   : %s\n",
-			       val2str(rsp->session.authtype, ipmi_authtype_session_vals));
-			printf("<<   Sequence   : 0x%08lx\n", rsp->session.seq);
-			printf("<<   Session ID : 0x%08lx\n", rsp->session.id);
+			       val2str(rsp->session_hdr.authtype, ipmi_authtype_session_vals));
+			printf("<<   Sequence   : 0x%08lx\n", rsp->session_hdr.seq);
+			printf("<<   Session ID : 0x%08lx\n", rsp->session_hdr.id);
 			
 			printf("<< IPMI Response Message Header\n");
 			printf("<<   Rq Addr    : %02x\n", rsp->header.rq_addr);
@@ -537,11 +537,11 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
  * |  rmcp.seq          |
  * |  rmcp.class        |
  * +--------------------+
- * |  session.authtype  | 9 bytes
- * |  session.seq       |
- * |  session.id        |
+ * |  session_hdr.authtype | 9 bytes
+ * |  session_hdr.seq   |
+ * |  session_hdr.id    |
  * +--------------------+
- * | [session.authcode] | 16 bytes (AUTHTYPE != none)
+ * | [session_hdr.authcode] | 16 bytes (AUTHTYPE != none)
  * +--------------------+
  * |  message length    | 1 byte
  * +--------------------+
@@ -568,6 +568,8 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	unsigned char * msg;
 	int cs, mp, ap = 0, len = 0, tmp;
 	struct ipmi_rq_entry * entry;
+	struct ipmi_session * s = intf->session;
+	static curr_seq = 0;
 
 	if (curr_seq >= 64)
 		curr_seq = 0;
@@ -577,7 +579,6 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	memcpy(&entry->req, req, sizeof(struct ipmi_rq));
 
 	entry->intf = intf;
-	entry->session = &lan_session;
 
 	if (!ipmi_req_entries) {
 		ipmi_req_entries = entry;
@@ -590,7 +591,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		       curr_seq, req->msg.cmd);
 	
 	len = req->msg.data_len + 21;
-	if (lan_session.active && lan_session.authtype)
+	if (s->active && s->authtype)
 		len += 16;
 	msg = malloc(len);
 	memset(msg, 0, len);
@@ -600,19 +601,19 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	len = sizeof(rmcp);
 
 	/* ipmi session header */
-	msg[len++] = lan_session.active ? lan_session.authtype : 0;
+	msg[len++] = s->active ? s->authtype : 0;
 
-	msg[len++] = lan_session.in_seq & 0xff;
-	msg[len++] = (lan_session.in_seq >> 8) & 0xff;
-	msg[len++] = (lan_session.in_seq >> 16) & 0xff;
-	msg[len++] = (lan_session.in_seq >> 24) & 0xff;
-	memcpy(msg+len, &lan_session.id, 4);
+	msg[len++] = s->in_seq & 0xff;
+	msg[len++] = (s->in_seq >> 8) & 0xff;
+	msg[len++] = (s->in_seq >> 16) & 0xff;
+	msg[len++] = (s->in_seq >> 24) & 0xff;
+	memcpy(msg+len, &s->session_id, 4);
 	len += 4;
 
 	/* ipmi session authcode */
-	if (lan_session.active && lan_session.authtype) {
+	if (s->active && s->authtype) {
 		ap = len;
-		memcpy(msg+len, lan_session.authcode, 16);
+		memcpy(msg+len, s->authcode, 16);
 		len += 16;
 	}
 
@@ -635,9 +636,9 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	if (verbose > 2) {
 		printf(">> IPMI Request Session Header\n");
 		printf(">>   Authtype   : %s\n",
-		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
-		printf(">>   Sequence   : 0x%08lx\n", lan_session.in_seq);
-		printf(">>   Session ID : 0x%08lx\n", lan_session.id);
+		       val2str(s->authtype, ipmi_authtype_session_vals));
+		printf(">>   Sequence   : 0x%08lx\n", s->in_seq);
+		printf(">>   Session ID : 0x%08lx\n", s->session_id);
 		
 		printf(">> IPMI Request Message Header\n");
 		printf(">>   Rs Addr    : %02x\n", IPMI_BMC_SLAVE_ADDR);
@@ -659,16 +660,16 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	tmp = len - cs;
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
-	if (lan_session.active &&
-	    lan_session.authtype == IPMI_SESSION_AUTHTYPE_MD5) {
-		unsigned char * d = ipmi_auth_md5(msg+mp, msg[mp-1]);
+	if (s->active &&
+	    s->authtype == IPMI_SESSION_AUTHTYPE_MD5) {
+		unsigned char * d = ipmi_auth_md5(intf->session, msg+mp, msg[mp-1]);
 		memcpy(msg+ap, d, 16);
 	}
 
-	if (lan_session.in_seq) {
-		lan_session.in_seq++;
-		if (!lan_session.in_seq)
-			lan_session.in_seq++;
+	if (s->in_seq) {
+		s->in_seq++;
+		if (!s->in_seq)
+			s->in_seq++;
 	}
 
 	entry->msg_len = len;
@@ -684,6 +685,14 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rs * rsp;
 	int try = 0;
 
+	if (!intf->opened) {
+		intf->opened = 1;
+		if (intf->open(intf) < 0) {
+			intf->opened = 0;
+			return NULL;
+		}
+	}
+
 	entry = ipmi_lan_build_cmd(intf, req);
 	if (!entry) {
 		printf("Aborting send command, unable to build.\n");
@@ -692,8 +701,9 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	while (try < IPMI_LAN_RETRY) {
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
-			printf("ipmi_lan_send_cmd failed\n");
-			return NULL;
+			try++;
+			usleep(5000);
+			continue;
 		}
 
 		if (intf->pedantic)
@@ -720,10 +730,11 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	struct ipmi_session * s = intf->session;
 	unsigned char msg_data[2];
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E;
-	msg_data[1] = lan_session.privlvl;
+	msg_data[1] = s->privlvl;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
@@ -775,16 +786,16 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 		printf("\n");
 	}
 
-	if (lan_session.password &&
+	if (s->password &&
 	    rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) {
-		lan_session.authtype = IPMI_SESSION_AUTHTYPE_MD5;
+		s->authtype = IPMI_SESSION_AUTHTYPE_MD5;
 	}
-	else if (lan_session.password &&
+	else if (s->password &&
 		 rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) {
-		lan_session.authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
+		s->authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
 	}
 	else if (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) {
-		lan_session.authtype = IPMI_SESSION_AUTHTYPE_NONE;
+		s->authtype = IPMI_SESSION_AUTHTYPE_NONE;
 	}
 	else {
 		printf("No supported authtypes found!\n");
@@ -793,7 +804,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 
 	if (verbose > 1)
 		printf("Proceeding with AuthType %s\n",
-		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
+		       val2str(s->authtype, ipmi_authtype_session_vals));
 
 	return 0;
 }
@@ -807,11 +818,12 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	struct ipmi_session * s = intf->session;
 	unsigned char msg_data[17];
 
 	memset(msg_data, 0, 17);
-	msg_data[0] = lan_session.authtype;
-	memcpy(msg_data+1, lan_session.username, 16);
+	msg_data[0] = s->authtype;
+	memcpy(msg_data+1, s->username, 16);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -842,15 +854,15 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	memcpy(&lan_session.id, rsp->data, 4);
-	memcpy(lan_session.challenge, rsp->data + 4, 16);
+	memcpy(&s->session_id, rsp->data, 4);
+	memcpy(s->challenge, rsp->data + 4, 16);
 
 	if (verbose > 1) {
 		printf("Opening Session\n");
 		printf("  Session ID      : %08lx\n",
-		       lan_session.id);
+		       s->session_id);
 		printf("  Challenge       : %s\n",
-		       buf2str(lan_session.challenge, 16));
+		       buf2str(s->challenge, 16));
 	}
 
 
@@ -865,15 +877,16 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	struct ipmi_session * s = intf->session;
 	unsigned char msg_data[22];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x3a;
 
-	msg_data[0] = lan_session.authtype;
-	msg_data[1] = lan_session.privlvl;
-	memcpy(msg_data + 2, lan_session.challenge, 16);
+	msg_data[0] = s->authtype;
+	msg_data[1] = s->privlvl;
+	memcpy(msg_data + 2, s->challenge, 16);
 
 	/* setup initial outbound sequence number */
 	get_random(msg_data+18, 4);
@@ -881,19 +894,19 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = 22;
 
-	lan_session.active = 1;
+	s->active = 1;
 
 	if (verbose > 1) {
 		printf("  Privilege Level : %s\n",
 		       val2str(msg_data[1], ipmi_privlvl_vals));
 		printf("  Auth Type       : %s\n",
-		       val2str(lan_session.authtype, ipmi_authtype_session_vals));
+		       val2str(s->authtype, ipmi_authtype_session_vals));
 	}
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		printf("Error in Activate Session Command\n");
-		lan_session.active = 0;
+		s->active = 0;
 		return -1;
 	}
 	if (verbose > 2)
@@ -931,8 +944,8 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	memcpy(&lan_session.id, rsp->data + 1, 4);
-	lan_session.in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
+	memcpy(&s->session_id, rsp->data + 1, 4);
+	s->in_seq = rsp->data[8] << 24 | rsp->data[7] << 16 | rsp->data[6] << 8 | rsp->data[5];
 
 	if (verbose > 1) {
 		printf("\nSession Activated\n");
@@ -940,13 +953,14 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		       val2str(rsp->data[0], ipmi_authtype_session_vals));
 		printf("  Max Priv Level  : %s\n",
 		       val2str(rsp->data[9], ipmi_privlvl_vals));
-		printf("  Session ID      : %08lx\n", lan_session.id);
-		printf("  Inbound Seq     : %08lx\n", lan_session.in_seq);
+		printf("  Session ID      : %08lx\n", s->session_id);
+		printf("  Inbound Seq     : %08lx\n", s->in_seq);
 		printf("\n");
 	}
 
 	return 0;
 }
+
 
 /*
  * IPMI Set Session Privilege Level Command
@@ -956,11 +970,12 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	unsigned char privlvl = intf->session->privlvl;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
 	req.msg.cmd		= 0x3b;
-	req.msg.data		= &lan_session.privlvl;
+	req.msg.data		= &privlvl;
 	req.msg.data_len	= 1;
 
 	rsp = intf->sendrecv(intf, &req);
@@ -973,7 +988,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		printf("Failed to set session privilege level to %s\n\n",
-		       val2str(lan_session.privlvl, ipmi_privlvl_vals));
+		       val2str(privlvl, ipmi_privlvl_vals));
 		return -1;
 	}
 	if (verbose > 1)
@@ -988,11 +1003,12 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char msg_data[4];
+	uint32_t session_id = intf->session->session_id;
 
-	if (!lan_session.active)
+	if (!intf->session->active)
 		return -1;
 
-	memcpy(&msg_data, &lan_session.id, 4);
+	memcpy(&msg_data, &session_id, 4);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -1010,7 +1026,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 
 	if (rsp->ccode == 0x87) {
 		printf("Failed to Close Session: invalid session ID %08lx\n",
-		       lan_session.id);
+		       session_id);
 		return -1;
 	}
 	if (rsp->ccode) {
@@ -1019,7 +1035,7 @@ impi_close_session_cmd(struct ipmi_intf * intf)
 	}
 
 	if (verbose > 1)
-		printf("\nClosed Session %08lx\n\n", lan_session.id);
+		printf("\nClosed Session %08lx\n\n", session_id);
 
 	return 0;
 }
@@ -1046,14 +1062,14 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 {
 	int rc;
 
-/*
+	/* don't fail on ping because its not always supported */
 	rc = ipmi_lan_ping(intf);
 	if (rc <= 0) {
-		printf("IPMI not supported!\n");
-		return -1;
+		if (verbose > 1)
+			printf("RMCP Pong : IPMI not supported!\n");
+		/* send again */
+		ipmi_lan_ping(intf);
 	}
-*/
-	lan_session.privlvl = IPMI_SESSION_PRIV_ADMIN;
 
 	if (intf->pedantic)
 		ipmi_lan_first(intf);
@@ -1091,59 +1107,57 @@ void ipmi_lan_close(struct ipmi_intf * intf)
 {
 	if (!intf->abort)
 		impi_close_session_cmd(intf);
-	close(intf->fd);
+	if (intf->fd >= 0)
+		close(intf->fd);
 	ipmi_req_clear_entries();
+	if (intf->session)
+		free(intf->session);
+	intf->session = NULL;
+	intf = NULL;
 }
 
-int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * username, char * password)
+int ipmi_lan_open(struct ipmi_intf * intf)
 {
 	int rc;
 	struct sigaction act;
+	struct sockaddr_in addr;
+	struct ipmi_session *s;
 
-	if (!intf)
+	if (!intf || !intf->session)
 		return -1;
+	s = intf->session;
 
-	if (intf->pedantic)
-		recv_timeout = 3;
+	if (!s->port)
+		s->port = IPMI_LAN_PORT;
+	if (!s->privlvl)
+		s->privlvl = IPMI_SESSION_PRIV_USER;
 
-	if (!hostname) {
+	if (!s->hostname) {
 		printf("No hostname specified!\n");
 		return -1;
-	}
-
-	memset(&lan_session, 0, sizeof(lan_session));
-	curr_seq = 0;
-
-	if (username) {
-		memcpy(lan_session.username, username, strlen(username));
-	}
-
-	if (password) {
-		lan_session.password = 1;
-		memcpy(lan_session.authcode, password, strlen(password));
 	}
 
 	intf->abort = 1;
 
 	/* open port to BMC */
-	memset(&intf->addr, 0, sizeof(struct sockaddr_in));
-	intf->addr.sin_family = AF_INET;
-	intf->addr.sin_port = htons(port);
+	memset(&addr, 0, sizeof(struct sockaddr_in));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(s->port);
 
-	rc = inet_pton(AF_INET, hostname, &intf->addr.sin_addr);
+	rc = inet_pton(AF_INET, s->hostname, &addr.sin_addr);
 	if (rc <= 0) {
-		struct hostent *host = gethostbyname(hostname);
+		struct hostent *host = gethostbyname(s->hostname);
 		if (!host) {
 			printf("address lookup failed\n");
 			return -1;
 		}
-		intf->addr.sin_family = host->h_addrtype;
-		memcpy(&intf->addr.sin_addr, host->h_addr, host->h_length);
+		addr.sin_family = host->h_addrtype;
+		memcpy(&addr.sin_addr, host->h_addr, host->h_length);
 	}
 
 	if (verbose > 1)
 		printf("IPMI LAN host %s port %d\n",
-		       hostname, ntohs(intf->addr.sin_port));
+		       s->hostname, ntohs(addr.sin_port));
 
 	intf->fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (intf->fd < 0) {
@@ -1152,7 +1166,7 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 	}
 
 	/* connect to UDP socket so we get async errors */
-	rc = connect(intf->fd, (struct sockaddr *)&intf->addr, sizeof(intf->addr));
+	rc = connect(intf->fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
 	if (rc < 0) {
 		perror("connect failed");
 		intf->close(intf);
@@ -1181,7 +1195,9 @@ int ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * use
 int lan_intf_setup(struct ipmi_intf ** intf)
 {
 	*intf = &ipmi_lan_intf;
-	return 0;
+	(*intf)->session = malloc(sizeof(struct ipmi_session));
+	memset((*intf)->session, 0, sizeof(struct ipmi_session));
+	return ((*intf)->session) ? 0 : -1;
 }
 
 int intf_setup(struct ipmi_intf ** intf) __attribute__ ((weak, alias("lan_intf_setup")));

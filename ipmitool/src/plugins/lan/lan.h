@@ -38,10 +38,12 @@
 #define IPMI_LAN_H
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 
 #define IPMI_LAN_CHANNEL_1	0x07
 #define IPMI_LAN_CHANNEL_2	0x06
 #define IPMI_LAN_CHANNEL_E	0x0e
+#define IPMI_LAN_PORT		0x26f
 
 #define IPMI_LAN_TIMEOUT	2
 #define IPMI_LAN_RETRY		4
@@ -58,15 +60,10 @@
 #define IPMI_SESSION_PRIV_ADMIN		0x4
 #define IPMI_SESSION_PRIV_OEM		0x5
 
-extern const struct valstr ipmi_privlvl_vals[];
-extern const struct valstr ipmi_authtype_vals[];
-
-extern struct ipmi_session lan_session;
-unsigned char * ipmi_auth_md5(unsigned char * data, int data_len);
 unsigned char ipmi_csum(unsigned char * d, int s);
 
 struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
-int  ipmi_lan_open(struct ipmi_intf * intf, char * hostname, int port, char * username, char * password);
+int  ipmi_lan_open(struct ipmi_intf * intf);
 void ipmi_lan_close(struct ipmi_intf * intf);
 void ipmi_get_channel_info(struct ipmi_intf * intf, unsigned char channel);
 int ipmi_lan_ping(struct ipmi_intf * intf);
