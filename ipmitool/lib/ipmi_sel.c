@@ -241,8 +241,9 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 
 
 	if (rsp->data[4] >= 0xc0) {
-		printf("Not a standard SEL Entry!\n");
-		return 0;
+		if (verbose)
+			printf("Entry %04xh not a standard SEL entry!\n", id);
+		return (rsp->data[1] << 8) | rsp->data[0];
 	}
 
 	memset(evt, 0, sizeof(*evt));
@@ -394,7 +395,7 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned short next_id = 0;
+	unsigned short next_id = 0, curr_id = 0;
 	struct sel_event_record evt;
 
 	memset(&req, 0, sizeof(req));
@@ -431,13 +432,14 @@ ipmi_sel_list_entries(struct ipmi_intf * intf)
 	}
 
 	while (next_id != 0xffff) {
+		curr_id = next_id;
 		if (verbose > 1)
-			printf("SEL Next ID: %04x\n", next_id);
+			printf("SEL Next ID: %04x\n", curr_id);
 
-		next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+		next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
 		if (!next_id) {
 			/* retry */
-			next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+			next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
 			if (!next_id)
 				break;
 		}
