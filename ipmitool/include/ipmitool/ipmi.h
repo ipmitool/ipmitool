@@ -48,19 +48,6 @@
 extern int verbose;
 extern int csv_output;
 
-struct ipmi_session {
-	unsigned char username[16];
-	unsigned char challenge[16];
-	unsigned char password;
-	unsigned char authtype;
-	unsigned char authcode[16];
-	unsigned char privlvl;
-	uint32_t in_seq;
-	uint32_t out_seq;
-	uint32_t id;
-	int active;
-};
-
 struct ipmi_rq {
 	struct {
 		unsigned char netfn;
@@ -73,7 +60,6 @@ struct ipmi_rq {
 struct ipmi_rq_entry {
 	struct ipmi_rq req;
 	struct ipmi_intf * intf;
-	struct ipmi_session * session;
 	unsigned char rq_seq;
 	unsigned char * msg_data;
 	int msg_len;
@@ -88,7 +74,7 @@ struct ipmi_rs {
 		unsigned char authtype;
 		uint32_t seq;
 		uint32_t id;
-	} session;
+	} session_hdr;
 	unsigned char msglen;
 	struct {
 		unsigned char rq_addr;
@@ -99,16 +85,6 @@ struct ipmi_rs {
 		unsigned char rs_lun;
 		unsigned char cmd;
 	} header;
-};
-
-struct ipmi_intf {
-	int fd;
-	struct sockaddr_in addr;
-	int abort;
-	int pedantic;
-	int (*open)(struct ipmi_intf *, char *, int, char *, char *);
-	void (*close)(struct ipmi_intf *);
-	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
 };
 
 #define IPMI_NETFN_CHASSIS		0x0

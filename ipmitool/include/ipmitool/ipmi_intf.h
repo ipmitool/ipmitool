@@ -39,6 +39,32 @@
 
 #include <ipmitool/ipmi.h>
 
+struct ipmi_session {
+	unsigned char hostname[64];
+	unsigned char username[16];
+	unsigned char authcode[16];
+	unsigned char challenge[16];
+	unsigned char authtype;
+	unsigned char privlvl;
+	int password;
+	int port;
+	int active;
+	uint32_t session_id;
+	uint32_t in_seq;
+	uint32_t out_seq;
+};
+
+struct ipmi_intf {
+	int fd;
+	int opened;
+	int abort;
+	int pedantic;
+	int (*open)(struct ipmi_intf *);
+	void (*close)(struct ipmi_intf *);
+	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
+	struct ipmi_session * session;
+};
+
 struct static_intf {
 	char * name;
 	int (*setup)(struct ipmi_intf ** intf);
@@ -47,5 +73,11 @@ struct static_intf {
 int ipmi_intf_init(void);
 void ipmi_intf_exit(void);
 struct ipmi_intf * ipmi_intf_load(char * name);
+
+int ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
+int ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
+int ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
+int ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, unsigned char privlvl);
+int ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 
 #endif /* IPMI_INTF_H */
