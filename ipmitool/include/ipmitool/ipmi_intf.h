@@ -80,6 +80,7 @@ struct ipmi_session {
 	unsigned char authstatus;
 	unsigned char authextra;
 	unsigned char privlvl;
+	unsigned char authspecial; /* special auth flag */
 	int password;
 	int port;
 	int active;
