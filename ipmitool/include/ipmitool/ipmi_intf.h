@@ -139,8 +139,8 @@ struct ipmi_intf {
 	void (*close)(struct ipmi_intf *);
 	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
 	struct ipmi_rs *(*recv_sol)(struct ipmi_intf *);
-	int (*send_sol)(struct ipmi_intf *,
-					struct ipmi_v2_payload * payload);
+	struct ipmi_rs *(*send_sol)(struct ipmi_intf *,
+								struct ipmi_v2_payload * payload);
 	struct ipmi_session * session;
 };
 
