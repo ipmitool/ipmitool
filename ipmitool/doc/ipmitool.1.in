@@ -72,7 +72,7 @@ Chassis Power Commands: status, on, off, cycle, reset, diag, soft
 This will allow you to execute raw IPMI commands.  For example to query the POH counter with a raw command:
 .RS
 .PP
-@IPMITOOL_BIN@ -I open raw 0x0 0xf
+@IPMITOOL_BIN@ -v -I open raw 0x0 0xf
 .br
 RAW REQ (netfn=0x0 cmd=0xf data_len=0)
 .br
