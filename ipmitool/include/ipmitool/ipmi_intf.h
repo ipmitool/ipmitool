@@ -119,6 +119,7 @@ struct ipmi_session {
 		uint16_t max_inbound_payload_size;
 		uint16_t max_outbound_payload_size;
 		uint16_t port;
+		unsigned char sequence_number;
 	} sol_data;
 };
 
@@ -132,7 +133,9 @@ struct ipmi_intf {
 	int (*open)(struct ipmi_intf *);
 	void (*close)(struct ipmi_intf *);
 	struct ipmi_rs *(*sendrecv)(struct ipmi_intf *, struct ipmi_rq *);
-	struct ipmi_rs *(*sendrecv_v2)(struct ipmi_intf *, struct ipmi_v2_payload *);
+	struct ipmi_rs *(*recv_sol)(struct ipmi_intf *);
+	
+	//struct ipmi_rs *(*sendrecv_v2)(struct ipmi_intf *, struct ipmi_v2_payload *);
 	struct ipmi_session * session;
 };
 
