@@ -247,8 +247,15 @@ static void ipmi_chassis_status(struct ipmi_intf * intf)
 	req.msg.cmd = 0x1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode)
+	if (!rsp) {
+		printf("Error sending Chassis Status command\n");
 		return;
+	}
+	if (rsp->ccode > 0) {
+		printf("Error sending Chassis Status command: %s\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return;
+	}
 
 	/* byte 1 */
 	printf("System Power         : %s\n", (rsp->data[0] & 0x1) ? "on" : "off");
