@@ -80,6 +80,33 @@ ipmi_get_event_type(unsigned char code)
         return "Reserved";
 }
 
+static char *
+ipmi_sel_timestamp(uint32_t stamp)
+{
+	static unsigned char tbuf[40];
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+	return tbuf;
+}
+
+static char *
+ipmi_sel_timestamp_date(uint32_t stamp)
+{
+	static unsigned char tbuf[11];
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
+	return tbuf;
+}
+
+static char *
+ipmi_sel_timestamp_time(uint32_t stamp)
+{
+	static unsigned char tbuf[9];
+	time_t s = (time_t)stamp;
+	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
+	return tbuf;
+}
+
 static void
 ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 {
@@ -145,25 +172,25 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
 	printf("SEL Information\n");
-	printf("  Version          : %x%x\n",
+	printf("Version          : %x%x\n",
 	       (rsp->data[0] & 0xf0) >> 4, rsp->data[0] & 0xf);
-	printf("  Entries          : %d\n",
+	printf("Entries          : %d\n",
 	       buf2short(rsp->data + 1));
-	printf("  Free Space       : %d\n",
+	printf("Free Space       : %d\n",
 	       buf2short(rsp->data + 3));
-	printf("  Last Add Time    : %08lx\n",
-	       buf2long(rsp->data + 5));
-	printf("  Last Del Time    : %08lx\n",
-	       buf2long(rsp->data + 9));
-	printf("  Overflow         : %s\n",
+	printf("Last Add Time    : %s\n",
+	       ipmi_sel_timestamp(buf2long(rsp->data + 5)));
+	printf("Last Del Time    : %s\n",
+	       ipmi_sel_timestamp(buf2long(rsp->data + 9)));
+	printf("Overflow         : %s\n",
 	       rsp->data[13] & 0x80 ? "true" : "false");
-	printf("  Delete cmd       : %ssupported\n",
+	printf("Delete cmd       : %ssupported\n",
 	       rsp->data[13] & 0x8 ? "" : "un");
-	printf("  Parial add cmd   : %ssupported\n",
+	printf("Parial add cmd   : %ssupported\n",
 	       rsp->data[13] & 0x4 ? "" : "un");
-	printf("  Reserve cmd      : %ssupported\n",
+	printf("Reserve cmd      : %ssupported\n",
 	       rsp->data[13] & 0x2 ? "" : "un");
-	printf("  Get Alloc Info   : %ssupported\n",
+	printf("Get Alloc Info   : %ssupported\n",
 	       rsp->data[13] & 0x1 ? "" : "un");
 
 	if (rsp->data[13] & 0x1) {
@@ -179,11 +206,11 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 			return;
 		}
 
-		printf("  # of Alloc Units : %d\n", buf2short(rsp->data));
-		printf("  Alloc Unit Size  : %d\n", buf2short(rsp->data + 2));
-		printf("  # Free Units     : %d\n", buf2short(rsp->data + 4));
-		printf("  Largest Free Blk : %d\n", buf2short(rsp->data + 6));
-		printf("  Max Record Size  : %d\n", rsp->data[7]);
+		printf("# of Alloc Units : %d\n", buf2short(rsp->data));
+		printf("Alloc Unit Size  : %d\n", buf2short(rsp->data + 2));
+		printf("# Free Units     : %d\n", buf2short(rsp->data + 4));
+		printf("Largest Free Blk : %d\n", buf2short(rsp->data + 6));
+		printf("Max Record Size  : %d\n", rsp->data[7]);
 	}
 }
 
@@ -239,33 +266,6 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, unsigned short id, struct sel_ev
 	evt->event_data[2] = rsp->data[17];
 
 	return (rsp->data[1] << 8) | rsp->data[0];
-}
-
-static char *
-ipmi_sel_timestamp(uint32_t stamp)
-{
-	static unsigned char tbuf[40];
-	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
-	return tbuf;
-}
-
-static char *
-ipmi_sel_timestamp_date(uint32_t stamp)
-{
-	static unsigned char tbuf[11];
-	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
-	return tbuf;
-}
-
-static char *
-ipmi_sel_timestamp_time(uint32_t stamp)
-{
-	static unsigned char tbuf[9];
-	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
-	return tbuf;
 }
 
 void
