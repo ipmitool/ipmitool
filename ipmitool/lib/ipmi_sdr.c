@@ -48,6 +48,7 @@
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_constants.h>
+#include <ipmitool/ipmi_strings.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -91,7 +92,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, unsigned char
 	case 2:
 		return (float)(((m * (signed char)val) + (b * pow(10, k1))) * pow(10, k2));
 	default:
-		/* Ops! This isn't an analog sensor. */
+		/* Oops! This isn't an analog sensor. */
 		return 0;
 	}
 }
@@ -235,15 +236,6 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr
 	itr->next = header->next;
 
 	return header;
-}
-
-static inline int get_offset(unsigned char x)
-{
-	int i;
-	for (i=0; i<8; i++)
-		if (x>>i == 1)
-			return i;
-	return 0;
 }
 
 void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
@@ -498,20 +490,78 @@ void ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
                                 printf(" Maximum sensor range  : Unspecified\n");
                             else
                                 printf(" Maximum sensor range  : %.3f\n", (float)max_reading);
+
+			    printf(" Event Message Control : ");
+			    switch (sensor->sensor.capabilities.event_msg) {
+			    case 0:
+				    printf("Per-threshold or discrete-state event\n");
+				    break;
+			    case 1:
+				    printf("Entire Sensor Only\n");
+				    break;
+			    case 2:
+				    printf("Global Disable Only\n");
+				    break;
+			    case 3:
+				    printf("No Events From Sensor\n");
+				    break;
+			    }
                         } else {  /* discrete */
                             printf(" Sensor Type (Discrete): %s\n", 
                                    ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-
                             printf(" Sensor Reading        : ");
                             if (validread)
                                     printf("%xh\n", (unsigned int)val);
                             else
                                     printf("not present\n");
-
-                            printf(" Status                : %s\n",
-                                   ipmi_sdr_get_status(rsp->data[2]));
+			    ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
                         }
 			printf("\n");
+		}
+	}
+}
+
+static inline int get_offset(unsigned char x)
+{
+	int i;
+	for (i=0; i<8; i++)
+		if (x>>i == 1)
+			return i;
+	return 0;
+}
+
+/* print out list of asserted states for a discrete sensor
+ * @sensor_type : sensor type code
+ * @event_type  : event type code
+ * @state       : mask of asserted states
+ */
+void ipmi_sdr_print_discrete_state(unsigned char sensor_type,
+				   unsigned char event_type,
+				   unsigned char state)
+{
+	unsigned char typ;
+	struct ipmi_event_sensor_types *evt;
+	int pre = 0;
+
+	if (state == 0)
+		return;
+
+	if (event_type == 0x6f) {
+		evt = sensor_specific_types;
+		typ = sensor_type;
+	} else {
+		evt = generic_event_types;
+		typ = event_type;
+	}
+
+	printf(" States Asserted       : ");
+
+	for (evt; evt->type != NULL; evt++) {
+		if (evt->code == typ && ((1<<evt->offset) & state)) {
+			if (pre)
+				printf("                         ");
+			printf("%s\n", evt->desc);
+			pre = 1;
 		}
 	}
 }
@@ -521,8 +571,6 @@ void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	char desc[17];
-	unsigned char typ, off;
-	struct ipmi_event_sensor_types *evt;
 
 	if (!sensor)
 		return;
@@ -560,28 +608,12 @@ void ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		printf(" Entity ID             : %d.%d (%s)\n",
 		       sensor->entity.id, sensor->entity.instance,
 		       val2str(sensor->entity.id, entity_id_vals));
-		printf(" Sensor Type           : %s\n", ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+		printf(" Sensor Type (Discrete): %s\n", ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 		if (verbose > 1) {
 			printf(" Event Type Code       : 0x%02x\n", sensor->event_type);
 			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR READING");
 		}
-
-
-		off = get_offset(rsp->data[2]);
-		if (off) {
-			if (sensor->event_type == 0x6f) {
-				evt = sensor_specific_types;
-				typ = sensor->sensor.type;
-			} else {
-				evt = generic_event_types;
-				typ = sensor->event_type;
-			}
-			while (evt->type) {
-				if (evt->code == typ && evt->offset == off)
-					printf(" State                 : %s\n", evt->desc);
-				evt++;
-			}
-		}
+		ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
 		printf("\n");
 	}
 	else {
