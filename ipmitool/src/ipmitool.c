@@ -94,8 +94,8 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	netfn = strtod(argv[0], NULL);
-	cmd = strtod(argv[1], NULL);
+	netfn = (unsigned char)strtol(argv[0], NULL, 0);
+	cmd = (unsigned char)strtol(argv[1], NULL, 0);
 
 	memset(data, 0, sizeof(data));
 	memset(&req, 0, sizeof(req));
@@ -104,7 +104,7 @@ int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data = data;
 
 	for (i=2; i<argc; i++) {
-		unsigned char val = strtod(argv[i], NULL);
+		unsigned char val = (unsigned char)strtol(argv[i], NULL, 0);
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
 	}
@@ -323,7 +323,7 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "event", 5)) {
 		if (argc-optind-1 > 0) {
-			unsigned char c = strtod(argv[optind+1], NULL);
+			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
 			if (intf->open(intf, hostname, port, username, password) < 0)
 				goto out_free;
 			ipmi_send_platform_event(intf, c);
@@ -362,7 +362,7 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "userinfo", 8)) {
 		if (argc-optind-1 > 0) {
-			unsigned char c = strtod(argv[optind+1], NULL);
+			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
 			rc = intf->open(intf, hostname, port, username, password);
 			if (rc < 0)
 				goto out_free;
@@ -376,7 +376,7 @@ int main(int argc, char ** argv)
 	}
 	else if (!strncmp(argv[optind], "chaninfo", 8)) {
 		if (argc-optind-1 > 0) {
-			unsigned char c = strtod(argv[optind+1], NULL);
+			unsigned char c = (unsigned char)strtol(argv[optind+1], NULL, 0);
 			rc = intf->open(intf, hostname, port, username, password);
 			if (rc < 0)
 				goto out_free;

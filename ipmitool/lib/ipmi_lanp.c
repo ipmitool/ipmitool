@@ -630,7 +630,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		return;
 	}
 
-	chan = (unsigned char) strtod(argv[0], NULL);
+	chan = (unsigned char)strtol(argv[0], NULL, 0);
 	if (chan != 0x6 && chan != 0x7) {
 		printf("valid LAN channels are 6 and 7\n");
 		return;
@@ -815,7 +815,7 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 		 !strncmp(argv[0], "print", 5)) {
 		unsigned char chan = 7;
 		if (argc > 1)
-			chan = (unsigned char) strtod(argv[1], NULL);
+			chan = (unsigned char)strtol(argv[1], NULL, 0);
 		ipmi_lan_print(intf, chan);
 	}
 	else if (!strncmp(argv[0], "set", 3))
