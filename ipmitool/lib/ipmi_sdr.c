@@ -39,6 +39,7 @@
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_entity.h>
 
 extern int verbose;
@@ -135,7 +136,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id, unsigned
 	}
 
 	if (verbose > 1)
-		printf("SDR Record ID   : 0x%04x\n", record_id);
+		printf("SDR record ID   : 0x%04x\n", record_id);
 
 	memcpy(&sdr_rs, rsp->data, sizeof(sdr_rs));
 
@@ -146,7 +147,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, unsigned short reserve_id, unsigned
 	}
 
 	if (verbose > 1) {
-		printf("SDR record type : %d\n", sdr_rs.type);
+		printf("SDR record type : 0x%02x\n", sdr_rs.type);
 		printf("SDR record next : %d\n", sdr_rs.next);
 		printf("SDR record bytes: %d\n", sdr_rs.length);
 	}
@@ -170,78 +171,13 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr
 	return header;
 }
 
-static void
-ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
-			      struct sdr_record_compact_sensor * sensor)
+static inline int get_offset(unsigned char x)
 {
-	struct ipmi_rs * rsp;
-	char desc[17];
-	char state[20];
-
-	if (!sensor)
-		return;
-
-	memset(desc, 0, sizeof(desc));
-	memcpy(desc, sensor->id_string, 16);
-	
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
-	if (!rsp || rsp->ccode) {
-		printf("Unable to get sensor %x reading\n", sensor->keys.sensor_num);
-		return;
-	}
-
-	if (verbose) {
-		printf("Sensor ID              : %s (0x%x)\n",
-		       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
-		printf("Entity ID              : %d.%d (%s)\n",
-		       sensor->entity.id, sensor->entity.instance,
-		       val2str(sensor->entity.id, entity_id_vals));
-		if (verbose > 1) {
-			printf("Sensor Type Code       : 0x%02x\n", sensor->sensor.type);
-			printf("Event Type Code        : 0x%02x\n", sensor->event_type);
-			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR READING");
-		}
-	}
-
-	if (!(rsp->data[1] & 0x80))
-		return;		/* sensor scanning disabled */
-
-	/* TODO: handle this using SEL decode functions */
-	memset(state, 0, sizeof(state));
-	if (sensor->event_type == 0x6f) {
-		if (verbose)
-			printf("State                  : ");
-		else {
-			if (csv_output)
-				printf("%s,", sensor->id_code ? desc : NULL);
-			else
-				printf("%-16s | ", sensor->id_code ? desc : NULL);
-		}
-
-		switch (sensor->sensor.type) {
-		case 0x07:	/* processor */
-			if (rsp->data[2] & 0x80)
-				printf("Present           ");
-			else
-				printf("Not Present       ");
-			break;
-		case 0x21:	/* slot/connector */
-			if (rsp->data[2] & 0x04)
-				printf("Installed         ");
-			else
-				printf("Not Installed     ");
-			break;
-		default:
-			printf("Unknown           ");
-		}
-
-		if (!verbose)
-			printf("| ok");
-		printf("\n");
-	}
-
-	if (verbose)
-		printf("\n");
+	int i;
+	for (i=0; i<8; i++)
+		if (x>>i == 1)
+			return i;
+	return 0;
 }
 
 static void
@@ -387,7 +323,161 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 }
 
 static void
-ipmi_sdr_print_sensors(struct ipmi_intf * intf)
+ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
+			      struct sdr_record_compact_sensor * sensor)
+{
+	struct ipmi_rs * rsp;
+	char desc[17];
+	unsigned char typ, off;
+	struct ipmi_event_sensor_types *evt;
+
+	if (!sensor)
+		return;
+
+	memset(desc, 0, sizeof(desc));
+	memcpy(desc, sensor->id_string, 16);
+	
+	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	if (!rsp || rsp->ccode) {
+		printf("Unable to get sensor %x reading\n", sensor->keys.sensor_num);
+		return;
+	}
+
+	if (!(rsp->data[1] & 0x80))
+		return;		/* sensor scanning disabled */
+
+	if (verbose) {
+		printf("Sensor ID              : %s (0x%x)\n",
+		       sensor->id_code ? desc : NULL, sensor->keys.sensor_num);
+		printf("Entity ID              : %d.%d (%s)\n",
+		       sensor->entity.id, sensor->entity.instance,
+		       val2str(sensor->entity.id, entity_id_vals));
+		if (verbose > 1) {
+			printf("Sensor Type Code       : 0x%02x\n", sensor->sensor.type);
+			printf("Event Type Code        : 0x%02x\n", sensor->event_type);
+			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR READING");
+		}
+
+
+		off = get_offset(rsp->data[2]);
+		if (off) {
+			if (sensor->event_type == 0x6f) {
+				evt = sensor_specific_types;
+				typ = sensor->sensor.type;
+			} else {
+				evt = generic_event_types;
+				typ = sensor->event_type;
+			}
+			while (evt->type) {
+				if (evt->code == typ && evt->offset == off)
+					printf("State                  : %s\n", evt->desc);
+				evt++;
+			}
+		}
+		printf("\n");
+	}
+	else {
+		char * state;
+
+		switch (sensor->sensor.type) {
+		case 0x07:	/* processor */
+			if (rsp->data[2] & 0x80)
+				state = strdup("Present          ");
+			else
+				state = strdup("Not Present      ");
+			break;
+		case 0x21:	/* slot/connector */
+			if (rsp->data[2] & 0x04)
+				state = strdup("Installed        ");
+			else
+				state = strdup("Not Installed    ");
+			break;
+		default:
+			return;
+		}
+
+		if (csv_output)
+			printf("%s,", sensor->id_code ? desc : NULL);
+		else
+			printf("%-16s | ", sensor->id_code ? desc : NULL);
+
+		printf("%s | ok\n", state);
+		free(state);
+	}
+}
+
+static void
+ipmi_sdr_print_mc_locator(struct ipmi_intf * intf,
+			  struct sdr_record_mc_locator * mc)
+{
+	char desc[17];
+
+	memset(desc, 0, sizeof(desc));
+	memcpy(desc, mc->id_string, 16);
+
+	if (!verbose) {
+		if (csv_output)
+			printf("%s,", mc->id_code ? desc : NULL);
+		else
+			printf("%-16s | ", mc->id_code ? desc : NULL);
+
+		printf("%s MC @ %02Xh %s | ok\n",
+		       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic",
+		       mc->dev_slave_addr,
+		       (mc->pwr_state_notif & 0x1) ? " " : "");
+		return;
+	}		
+
+	printf("Device ID              : %s\n", mc->id_string);
+	printf("Entity ID              : %d.%d (%s)\n",
+	       mc->entity.id, mc->entity.instance,
+	       val2str(mc->entity.id, entity_id_vals));
+
+	printf("Device Slave Address   : %02Xh\n", mc->dev_slave_addr);
+	printf("Channel Number         : %01Xh\n", mc->channel_num);
+
+	printf("ACPI System P/S Notif  : %sRequired\n",
+	       (mc->pwr_state_notif & 0x4) ? "" : "Not ");
+	printf("ACPI Device P/S Notif  : %sRequired\n",
+	       (mc->pwr_state_notif & 0x2) ? "" : "Not ");
+	printf("Controller Presence    : %s\n",
+	       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic");
+	printf("Logs Init Agent Errors : %s\n",
+	       (mc->global_init & 0x8) ? "Yes" : "No");
+
+	printf("Event Message Gen      : ");
+	if (!(mc->global_init & 0x3))
+		printf("Enable\n");
+	else if ((mc->global_init & 0x3) == 0x1)
+		printf("Disable\n");
+	else if ((mc->global_init & 0x3) == 0x2)
+		printf("Do Not Init Controller\n");
+	else
+		printf("Reserved\n");
+
+	printf("Device Capabilities\n");
+	printf(" Chassis Device        : %s\n",
+	       (mc->dev_support & 0x80) ? "Yes" : "No");
+	printf(" Bridge                : %s\n",
+	       (mc->dev_support & 0x40) ? "Yes" : "No");
+	printf(" IPMB Event Generator  : %s\n",
+	       (mc->dev_support & 0x20) ? "Yes" : "No");
+	printf(" IPMB Event Receiver   : %s\n",
+	       (mc->dev_support & 0x10) ? "Yes" : "No");
+	printf(" FRU Inventory Device  : %s\n",
+	       (mc->dev_support & 0x08) ? "Yes" : "No");
+	printf(" SEL Device            : %s\n",
+	       (mc->dev_support & 0x04) ? "Yes" : "No");
+	printf(" SDR Repository        : %s\n",
+	       (mc->dev_support & 0x02) ? "Yes" : "No");
+	printf(" Sensor Device         : %s\n",
+	       (mc->dev_support & 0x01) ? "Yes" : "No");
+
+	printf("\n");
+}
+
+static void
+ipmi_sdr_print_sdr(struct ipmi_intf * intf, unsigned char type)
 {
 	struct sdr_get_rs * header;
 	struct ipmi_sdr_iterator * itr;
@@ -402,9 +492,15 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf)
 	}
 
 	while (header = ipmi_sdr_get_next_header(intf, itr)) {
-		unsigned char * rec = ipmi_sdr_get_record(intf, header, itr);
+		unsigned char * rec;
+
+		if (type != header->type && type != 0xff)
+			continue;
+
+		rec = ipmi_sdr_get_record(intf, header, itr);
 		if (!rec)
 			continue;
+
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			ipmi_sdr_print_sensor_full(intf,
@@ -413,6 +509,24 @@ ipmi_sdr_print_sensors(struct ipmi_intf * intf)
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			ipmi_sdr_print_sensor_compact(intf,
 				(struct sdr_record_compact_sensor *) rec);
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			break;
+		case SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC:
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			ipmi_sdr_print_mc_locator(intf,
+				(struct sdr_record_mc_locator *) rec);
+			break;
+		case SDR_RECORD_TYPE_MC_CONFIRMATION:
+			break;
+		case SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO:
+			break;
+		case SDR_RECORD_TYPE_OEM:
 			break;
 		}
 		free(rec);
@@ -531,11 +645,30 @@ ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 int ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	if (!argc)
-		ipmi_sdr_print_sensors(intf);
-	else if (!strncmp(argv[0], "help", 4))
-		printf("SDR Commands:  list\n");
-	else if (!strncmp(argv[0], "list", 4))
-		ipmi_sdr_print_sensors(intf);
+		ipmi_sdr_print_sdr(intf, 0xff);
+	else if (!strncmp(argv[0], "help", 4)) {
+		printf("SDR Commands:  list [all|full|compact|mcloc]\n");
+		printf("               all        All SDR Records\n");
+		printf("               full       Full Sensor Record\n");
+		printf("               compact    Compact Sensor Record\n");
+		printf("               mcloc      Management Controller Locator Record\n");
+	}
+	else if (!strncmp(argv[0], "list", 4)) {
+		if (argc > 1) {
+			if (!strncmp(argv[1], "all", 3))
+				ipmi_sdr_print_sdr(intf, 0xff);
+			else if (!strncmp(argv[1], "full", 4))
+				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_FULL_SENSOR);
+			else if (!strncmp(argv[1], "compact", 7))
+				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_COMPACT_SENSOR);
+			else if (!strncmp(argv[1], "mcloc", 5))
+				ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_MC_DEVICE_LOCATOR);
+			else
+				printf("usage: sdr list [all|full|compact|mcloc]\n");
+		} else {
+			ipmi_sdr_print_sdr(intf, 0xff);
+		}
+	}
 	else
 		printf("Invalid SDR command: %s\n", argv[0]);
 	return 0;

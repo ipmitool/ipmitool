@@ -97,9 +97,16 @@ struct sdr_get_rs {
 	unsigned short	next;		/* next record id */
 	unsigned short	id;		/* record ID */
 	unsigned char	version;	/* SDR version (51h) */
-#define SDR_RECORD_TYPE_FULL_SENSOR	0x01
-#define SDR_RECORD_TYPE_COMPACT_SENSOR	0x02
-#define SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR 0x11
+#define SDR_RECORD_TYPE_FULL_SENSOR		0x01
+#define SDR_RECORD_TYPE_COMPACT_SENSOR		0x02
+#define SDR_RECORD_TYPE_ENTITY_ASSOC		0x08
+#define SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC	0x09
+#define SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR	0x10
+#define SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR	0x11
+#define SDR_RECORD_TYPE_MC_DEVICE_LOCATOR	0x12
+#define SDR_RECORD_TYPE_MC_CONFIRMATION		0x13
+#define SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO	0x14
+#define SDR_RECORD_TYPE_OEM			0xc0
 	unsigned char	type;		/* record type */
 	unsigned char	length;		/* remaining record bytes */
 } __attribute__ ((packed));
@@ -253,9 +260,7 @@ struct sdr_record_full_sensor {
 	} unit;
 
 	unsigned char	linearization;	/* 70h=non linear, 71h-7Fh=non linear, OEM */
-
 	unsigned short	mtol;		/* M, tolerance */
-
 	unsigned long	bacc;		/* accuracy, B, Bexp, Rexp */
 
 	struct {
@@ -306,6 +311,21 @@ struct sdr_record_fru_device_locator {
 	unsigned char device_type_modifier;
 	unsigned char fru_entity_id;
 	unsigned char fru_entity_instance;
+	unsigned char oem;
+	unsigned char id_code;
+	unsigned char id_string[16];
+} __attribute__ ((packed));
+
+struct sdr_record_mc_locator {
+	unsigned char __reserved1 : 1, dev_slave_addr : 7;
+	unsigned char channel_num : 4, __reserved2 : 4;
+	unsigned char global_init : 4, __reserved3 : 1, pwr_state_notif : 3;
+	unsigned char dev_support;
+	unsigned char __reserved4[3];
+	struct {
+		unsigned char id;
+		unsigned char instance;
+	} entity;
 	unsigned char oem;
 	unsigned char id_code;
 	unsigned char id_string[16];
