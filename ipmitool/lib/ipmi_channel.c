@@ -101,12 +101,12 @@ static const struct valstr ipmi_channel_medium_vals[] = {
 
 
 /**
- * impi_1_5_authtypes
+ * ipmi_1_5_authtypes
  *
  * Create a string describing the supported authentication types as 
  * specificed by the parameter n
  */
-const char * impi_1_5_authtypes(unsigned char n)
+const char * ipmi_1_5_authtypes(unsigned char n)
 {
 	unsigned int i;
 	static char supportedTypes[128];
@@ -178,7 +178,7 @@ void ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 	printf("Channel number             : %d\n",
 		   auth_cap.channel_number);
 	printf("IPMI v1.5  auth types      : %s\n",
-		   impi_1_5_authtypes(auth_cap.enabled_auth_types));
+		   ipmi_1_5_authtypes(auth_cap.enabled_auth_types));
 
 	if (auth_cap.v20_data_available)
 		printf("KG status                  : %s\n",

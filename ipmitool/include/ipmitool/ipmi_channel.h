@@ -37,6 +37,9 @@
 #ifndef IPMI_CHANNEL_H
 #define IPMI_CHANNEL_H
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <ipmitool/ipmi.h>
 
 #define IPMI_GET_CHANNEL_AUTH_CAP 0x38
