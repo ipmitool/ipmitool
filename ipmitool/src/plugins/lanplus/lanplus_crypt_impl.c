@@ -128,7 +128,7 @@ lanplus_HMAC(uint8_t        mac,
 		evp_md = EVP_sha1();
 	else
 	{
-		printf("Invalid mac type 0x%x in lanplus_HMAC\n", mac);
+		fprintf(stderr, "Invalid mac type 0x%x in lanplus_HMAC\n", mac);
 		assert(0);
 	}
 	
@@ -259,10 +259,10 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	assert((input_length % IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE) == 0);
 
 
-	if(!EVP_DecryptUpdate(&ctx, output, bytes_written, input, input_length))
+	if (!EVP_DecryptUpdate(&ctx, output, bytes_written, input, input_length))
 	{
 		/* Error */
-		printf("ERROR: decrypt update failed\n");
+		fprintf(stderr, "ERROR: decrypt update failed");
 		*bytes_written = 0;
 		return;
 	}
@@ -270,12 +270,12 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	{
 		uint32_t tmplen;
 
-		if(!EVP_DecryptFinal_ex(&ctx, output + *bytes_written, &tmplen))
+		if (!EVP_DecryptFinal_ex(&ctx, output + *bytes_written, &tmplen))
 		{
 			char buffer[1000];
 			ERR_error_string(ERR_get_error(), buffer);
-			printf("the ERR error %s\n", buffer);
-			printf("ERROR: decrypt final failed\n");
+			fprintf(stderr, "the ERR error %s", buffer);
+			fprintf(stderr, "ERROR: decrypt final failed");
 			*bytes_written = 0;
 			return; /* Error */
 		}
@@ -289,7 +289,7 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 
 	if (verbose > 1)
 	{
-		printf("Decrypted %d encrypted bytes\n", input_length);
+		fprintf(stderr, "Decrypted %d encrypted bytes", input_length);
 		printbuf(output, *bytes_written, "Decrypted this data");
 	}
 }

@@ -38,6 +38,7 @@
 #include <string.h>
 #include <config.h>
 #include <ipmitool/bswap.h>
+#include <ipmitool/log.h>
 #include "lanplus.h"
 #include "lanplus_crypt.h"
 #include "lanplus_crypt_impl.h"
@@ -98,6 +99,10 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		strlen(session->username); /* optional */
 
 	buffer = malloc(bufferLength);
+	if (buffer == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
 
 	/*
 	 * Fill the buffer.  I'm assuming that we're using the LSBF representation of the
@@ -232,6 +237,10 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 		16;    /* GUIDc */
 
 	buffer = (char*)malloc(bufferLength);
+	if (buffer == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
 
 	/*
 	 * Fill the buffer.  I'm assuming that we're using the LSBF representation of the
@@ -348,6 +357,10 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 		strlen(session->username);
 
 	input_buffer = malloc(input_buffer_length);
+	if (input_buffer == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
 
 	/*
 	 * Fill the buffer.  I'm assuming that we're using the LSBF representation of the
@@ -458,6 +471,10 @@ int lanplus_generate_sik(struct ipmi_session * session)
 		strlen(session->username);
 
 	input_buffer = malloc(input_buffer_length);
+	if (input_buffer == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
 
 	/*
 	 * Fill the buffer.  I'm assuming that we're using the LSBF representation of the
@@ -501,7 +518,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 		 * using Kg.  It specifies that Kg should not be truncated, but I
 		 * do not know what is meant by that.
 		 */
-		printf("lanplus_generate_sik: We dont yet support hashing with Kg");
+		lprintf(LOG_ERR, "lanplus_generate_sik: We dont yet support hashing with Kg");
 		assert(0);
 
 		input_key        = session->v2_data.kg;
@@ -658,7 +675,7 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 
 	if (crypt_alg == IPMI_CRYPT_NONE)
 	{
-		printf("NOT ENCRYPTING\n");
+		lprintf(LOG_WARNING, "NOT ENCRYPTING");
 		/* Just copy the input to the output */
 		*bytes_written = input_length;
 		return 0;
@@ -679,6 +696,10 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 		pad_length = IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE - mod;
 
 	padded_input = (uint8_t*)malloc(input_length + pad_length + 1);
+	if (padded_input == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
 	memcpy(padded_input, input, input_length);
 
 	/* add the pad */
@@ -691,8 +712,7 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 	/* Generate an initialization vector, IV, for the encryption process */
 	if (lanplus_rand(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE))
 	{
-		printf("lanplus_encrypt_payload: Error generating IV\n");
-		assert(0);
+		lprintf(LOG_ERR, "lanplus_encrypt_payload: Error generating IV");
 		return 1;
 	}
 
@@ -774,7 +794,7 @@ int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 
 	if (verbose > 3)
 	{
-		printf("Validating authcode\n");
+		lprintf(LOG_DEBUG+2, "Validating authcode");
 		printbuf(session->v2_data.k1, 20, "K1");
 		printbuf(rs->data + IMPI_LANPLUS_OFFSET_AUTHTYPE,
 				 rs->data_len - IMPI_LANPLUS_OFFSET_AUTHTYPE - IPMI_SHA1_AUTHCODE_SIZE,
@@ -824,6 +844,11 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 	assert(crypt_alg == IPMI_CRYPT_AES_CBC_128);
 
 	decrypted_payload = (uint8_t*)malloc(input_length);
+	if (decrypted_payload == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return 1;
+	}
+
 
 	lanplus_decrypt_aes_cbc_128(input,                                /* IV              */
 								key,                                  /* Key             */
@@ -859,14 +884,14 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 		{
 			if (decrypted_payload[*payload_size + i] == i)
 			{
-				printf("ERROR: Malformed payload padding\n");
+				lprintf(LOG_ERR, "Malformed payload padding");
 				assert(0);
 			}
 		}
 	}
 	else
 	{
-		printf("ERROR: lanplus_decrypt_aes_cbc_128 decryptd 0 bytes\n");
+		lprintf(LOG_ERR, "ERROR: lanplus_decrypt_aes_cbc_128 decryptd 0 bytes");
 		assert(0);
 	}
 
