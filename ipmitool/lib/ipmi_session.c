@@ -51,6 +51,7 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/bswap.h>
 
 
 typedef enum {
