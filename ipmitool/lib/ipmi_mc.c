@@ -41,7 +41,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
-#include <ipmitool/ipmi_bmc.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_strings.h>
 
 extern int verbose;
