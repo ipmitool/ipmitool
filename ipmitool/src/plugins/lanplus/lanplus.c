@@ -2765,9 +2765,9 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	}
 	memcpy(msg + 28, session->username, msg[27]);
 
-
 	v2_payload.payload_type                   = IPMI_PAYLOAD_TYPE_RAKP_1;
-	v2_payload.payload_length                 = IPMI_RAKP1_MESSAGE_SIZE;
+	v2_payload.payload_length                 =
+		IPMI_RAKP1_MESSAGE_SIZE - (16 - msg[27]);
 	v2_payload.payload.rakp_1_message.message = msg;
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
