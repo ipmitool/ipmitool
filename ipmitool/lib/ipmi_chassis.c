@@ -541,7 +541,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootparam");
+		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev");
 	}
 	else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = ipmi_chassis_status(intf);
