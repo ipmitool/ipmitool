@@ -305,7 +305,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 
 			if ((session_request_type == IPMI_SESSION_REQUEST_CURRENT) &&
 				(strncmp(intf->name, "intf_lan", 8)))
-				printf("It is likely that the active channel does not support sessions\n");
+				printf("It is likely that the channel in use does not support sessions\n");
 
 			retval = -1;
 		}
