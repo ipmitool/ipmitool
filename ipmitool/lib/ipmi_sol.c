@@ -706,6 +706,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		{
 			data[2] = 0x00;
 		}
+		else if (!strcmp(value, "9.6"))
+		{
+			data[2] = 0x06;
+		}
 		else if (!strcmp(value, "19.2"))
 		{
 			data[2] = 0x07;
@@ -727,7 +731,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			printf("Invalid value \"%s\" for parameter \"%s\"\n",
 				   value,
 				   param);
-			printf("Valid values are serial, 19.2, 38.4, 57.6 and 115.2\n");
+			printf("Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2\n");
 			return -1;
 		}
 	}
@@ -745,6 +749,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		{
 			data[2] = 0x00;
 		}
+		else if (!strcmp(value, "9.6"))
+		{
+			data[2] = 0x06;
+		}
 		else if (!strcmp(value, "19.2"))
 		{
 			data[2] = 0x07;
@@ -766,7 +774,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 			printf("Invalid value \"%s\" for parameter \"%s\"\n",
 				   value,
 				   param);
-			printf("Valid values are serial, 19.2, 38.4, 57.6 and 115.2\n");
+			printf("Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2\n");
 			return -1;
 		}
 	}
@@ -1392,9 +1400,9 @@ print_sol_set_usage()
 	printf("  retry-count                 N\n");
 	printf("  retry-interval              <in 10 ms increments>\n");
 	printf("  non-volatile-bit-rate       "
-		   "serial | 19.2 | 38.4 | 57.6 | 115.2\n");
+		   "serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2\n");
 	printf("  volatile-bit-rate           "
-		   "serial | 19.2 | 38.4 | 57.6 | 115.2\n");
+		   "serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2\n");
 	printf("\n");
 }
 
