@@ -103,15 +103,26 @@ static void ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	printf("Chassis identify interval: ");
 
 	if (arg) {
-		unsigned char interval = (unsigned char)atoi(arg);
+                struct {
+                    unsigned char interval;
+                    unsigned char force_on;
+                } identify_data;
+                
+                if (!strcmp(arg, "force")){
+                        identify_data.interval = 0;
+                        identify_data.force_on = 1;
+			printf("indefinite\n");
+                } else {
+                        identify_data.interval = (unsigned char)atoi(arg);
+                        identify_data.force_on = 0;
+                        if (identify_data.interval)
+			    printf("%d seconds\n", identify_data.interval);
+                        else
+			    printf("off\n");
+                }
 
-		req.msg.data = &interval;
-		req.msg.data_len = 1;
-
-		if (interval)
-			printf("%d seconds\n", interval);
-		else
-			printf("off\n");
+		req.msg.data = (unsigned char *)&identify_data;
+		req.msg.data_len = 2;
 	} else {
 		printf("default (15 seconds)\n");
 	}
@@ -187,12 +198,6 @@ static void ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 	case 9:
 		printf("power-cycle via PEF\n");
 		break;
-	case 10:
-		printf("soft reset (ctrl-alt-del)\n");
-		break;
-	case 11:
-		printf("wake-up via RTC\n");
-		break;
 	default:
 		printf("error!\n");
 	}
@@ -252,6 +257,23 @@ static void ipmi_chassis_status(struct ipmi_intf * intf)
 	printf("Front-Panel Lockout  : %s\n", (rsp->data[2] & 0x2) ? "active" : "inactive");
 	printf("Drive Fault          : %s\n", (rsp->data[2] & 0x4) ? "true" : "false");
 	printf("Cooling/Fan Fault    : %s\n", (rsp->data[2] & 0x8) ? "true" : "false");
+
+        if (rsp->data_len > 3)
+        {
+            /* optional byte 4 */
+            if (rsp->data[3] == 0) {
+	        printf("Front Panel Control  : none\n");
+            } else {
+	        printf("Sleep Button Disable : %s\n", (rsp->data[3] & 0x80) ? "allowed" : "not allowed");
+	        printf("Diag Button Disable  : %s\n", (rsp->data[3] & 0x40) ? "allowed" : "not allowed");
+	        printf("Reset Button Disable : %s\n", (rsp->data[3] & 0x20) ? "allowed" : "not allowed");
+	        printf("Power Button Disable : %s\n", (rsp->data[3] & 0x10) ? "allowed" : "not allowed");
+	        printf("Sleep Button Disabled: %s\n", (rsp->data[3] & 0x80) ? "true" : "false");
+	        printf("Diag Button Disabled : %s\n", (rsp->data[3] & 0x40) ? "true" : "false");
+	        printf("Reset Button Disabled: %s\n", (rsp->data[3] & 0x20) ? "true" : "false");
+	        printf("Power Button Disabled: %s\n", (rsp->data[3] & 0x10) ? "true" : "false");
+            }
+        }
 }
 
 static void ipmi_chassis_set_bootparam(struct ipmi_intf * intf, unsigned char param, unsigned char * data, int len)
@@ -443,6 +465,7 @@ int ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("chassis identify <interval>\n");
 			printf("                 default is 15 seconds\n");
 			printf("                 0 to turn off\n");
+			printf("                 force to turn on indefinitely\n");
 		} else {
 			ipmi_chassis_identify(intf, argv[1]);
 		}
