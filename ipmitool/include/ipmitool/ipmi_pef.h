@@ -47,6 +47,13 @@ struct pef_capabilities {		/* "get pef capabilities" response */
 	uint8_t tblsize;
 };
 
+typedef enum {
+	P_TRUE,
+	P_SUPP,
+	P_ACTV,
+	P_ABLE,
+} flg_e;
+
 struct pef_table_entry {
 #define PEF_CONFIG_ENABLED 0x80
 #define PEF_CONFIG_PRECONFIGURED 0x40
@@ -769,7 +776,7 @@ BIT_DESC_MAP_LIST,
 #define IPMI_CMD_SERIAL_GET_CONFIG 0x11
 
 const char * ipmi_pef_bit_desc(struct bit_desc_map * map, uint32_t val);
-void ipmi_pef_print_flags(struct bit_desc_map * map, uint32_t type, uint32_t val);
+void ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, uint32_t val);
 void ipmi_pef_print_dec(const char * text, uint32_t val);
 void ipmi_pef_print_hex(const char * text, uint32_t val);
 void ipmi_pef_print_1xd(const char * text, uint32_t val);

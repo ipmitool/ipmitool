@@ -76,12 +76,6 @@ static const char * pef_flag_fmts[][3] = {
 	{"active",    "in",         ""},
 	{"abled",     "dis",      "en"},
 };
-typedef enum {
-	P_TRUE,
-	P_SUPP,
-	P_ACTV,
-	P_ABLE,
-} flg_e;
 static const char * listitem[] =	{" | %s", ",%s", "%s"};
 
 const char * 
