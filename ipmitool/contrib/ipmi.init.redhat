@@ -48,6 +48,12 @@ start() {
 	# this failure.
 	grep -q ipmidev /proc/devices || RETVAL=1
 
+	# remove old device file always
+	# in case ipmi gets assigned new dynamic major number from kernel
+	if [ -c /dev/ipmi0 ]; then
+	    rm -f /dev/ipmi0
+	fi
+
 	# Check if the device file exists and create if not.
 	if [ ! -c /dev/ipmi0 ] && [ $RETVAL -eq 0 ]
 	then
