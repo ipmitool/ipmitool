@@ -109,7 +109,7 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 		return p;
 	}
 	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get LAN Parameter command failed: %s",
+		lprintf(LOG_INFO, "Get LAN Parameter command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return NULL;
 	}
@@ -1038,6 +1038,7 @@ static void ipmi_lan_set_usage(void)
 	lprintf(LOG_NOTICE, "  bakgw macaddr <x:x:x:x:x:x>    Set backup gateway MAC address");
 	lprintf(LOG_NOTICE, "  password <password>            Set session password for this channel");
 	lprintf(LOG_NOTICE, "  snmp <community string>        Set SNMP public community string");
+	lprintf(LOG_NOTICE, "  user                           Enable default user for this channel");
 	lprintf(LOG_NOTICE, "  access <on|off>                Enable or disable access to this channel");
 	lprintf(LOG_NOTICE, "  arp response <on|off>          Enable or disable BMC ARP responding");
 	lprintf(LOG_NOTICE, "  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
