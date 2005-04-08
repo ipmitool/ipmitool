@@ -1181,7 +1181,8 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
-			val2str(privlvl, ipmi_privlvl_vals));
+			val2str(privlvl, ipmi_privlvl_vals),
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
