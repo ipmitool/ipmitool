@@ -55,15 +55,6 @@
 # include <config.h>
 #endif
 
-#define READING_UNAVAILABLE	0x20
-#define SCANNING_DISABLED	0x40
-#define EVENTS_DISABLED		0x80
-
-#define GET_SENSOR_READING	0x2d
-#define GET_SENSOR_FACTORS      0x23
-#define GET_SENSOR_THRES	0x27
-#define GET_SENSOR_TYPE		0x2f
-
 extern int verbose;
 static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
 
@@ -87,6 +78,33 @@ utos(uint32_t val, int bits)
 		return -((~val & (x-1))+1);
 	}
 	return val;
+}
+
+char *
+ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier)
+{
+	static char unitstr[16];
+
+	memset(unitstr, 0, sizeof(unitstr));
+	switch (type) {
+	case 2:
+		snprintf(unitstr, sizeof(unitstr), "%s * %s",
+			 unit_desc[base],
+			 unit_desc[modifier]);
+		break;
+	case 1:
+		snprintf(unitstr, sizeof(unitstr), "%s/%s",
+			 unit_desc[base],
+			 unit_desc[modifier]);
+		break;
+	case 0:
+	default:
+		snprintf(unitstr, sizeof(unitstr), "%s",
+			 unit_desc[base]);
+		break;
+	}
+
+	return unitstr;
 }
 
 /* sdr_convert_sensor_reading  -  convert raw sensor reading
@@ -270,24 +288,23 @@ ipmi_sdr_get_status(uint8_t stat)
 /* ipmi_sdr_get_header  -  retreive SDR record header
  *
  * @intf:	ipmi interface
- * @reserve_id:	repository reservation id
- * @record_id:	sensor record id to retrieve
+ * @itr:	sdr iterator
  *
  * returns pointer to static sensor retrieval struct
  * returns NULL on error
  */
 static struct sdr_get_rs *
-ipmi_sdr_get_header(struct ipmi_intf * intf, uint16_t reserve_id,
-		    uint16_t record_id)
+ipmi_sdr_get_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
 	struct sdr_get_rq sdr_rq;
 	static struct sdr_get_rs sdr_rs;
+	int try = 0;
 
 	memset(&sdr_rq, 0, sizeof(sdr_rq));
-	sdr_rq.reserve_id = reserve_id;
-	sdr_rq.id = record_id;
+	sdr_rq.reserve_id = itr->reservation;
+	sdr_rq.id = itr->next;
 	sdr_rq.offset = 0;
 	sdr_rq.length = 5;	/* only get the header */
 
@@ -297,24 +314,42 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, uint16_t reserve_id,
 	req.msg.data = (uint8_t *)&sdr_rq;
 	req.msg.data_len = sizeof(sdr_rq);
 
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get SDR %04x command failed",	record_id);
-		return NULL;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get SDR %04x command failed: %s",
-			record_id, val2str(rsp->ccode, completion_code_vals));
-		return NULL;
+	for (try=0; try<5; try++) {
+		sdr_rq.reserve_id = itr->reservation;
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Get SDR %04x command failed",	itr->next);
+			return NULL;
+		}
+		else if (rsp->ccode == 0xc5) {
+			/* lost reservation */
+			lprintf(LOG_DEBUG, "SDR reserveration %04x cancelled. "
+				"Sleeping a bit and retrying...", itr->reservation);
+
+			sleep(rand() & 3);
+
+			if (ipmi_sdr_get_reservation(intf, &(itr->reservation)) < 0) {
+				lprintf(LOG_ERR, "Unable to renew SDR reservation");
+				return NULL;
+			}
+		}
+		else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get SDR %04x command failed: %s",
+				itr->next, val2str(rsp->ccode, completion_code_vals));
+			return NULL;
+		}
+		else {
+			break;
+		}
 	}
 
-	lprintf(LOG_DEBUG, "SDR record ID   : 0x%04x", record_id);
+	lprintf(LOG_DEBUG, "SDR record ID   : 0x%04x", itr->next);
 
 	memcpy(&sdr_rs, rsp->data, sizeof(sdr_rs));
 
 	if (sdr_rs.length == 0) {
 		lprintf(LOG_ERR, "SDR record id 0x%04x: invalid length %d",
-			record_id, sdr_rs.length);
+			itr->next, sdr_rs.length);
 		return NULL;
 	}
 
@@ -326,10 +361,10 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, uint16_t reserve_id,
 	 * completion code CBh = "Requested Sensor, data, or record
 	 * not present"
 	 */
-	if (sdr_rs.id != record_id) {
+	if (sdr_rs.id != itr->next) {
 		lprintf(LOG_DEBUG, "SDR record id mismatch: 0x%04x",
 			sdr_rs.id);
-		sdr_rs.id = record_id;
+		sdr_rs.id = itr->next;
 	}
 
 	lprintf(LOG_DEBUG, "SDR record type : 0x%02x", sdr_rs.type);
@@ -356,7 +391,7 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf,
 	if (itr->next == 0xffff)
 		return NULL;
 
-	header = ipmi_sdr_get_header(intf, itr->reservation, itr->next);
+	header = ipmi_sdr_get_header(intf, itr);
 	if (header == NULL)
 		return NULL;
 
@@ -1480,7 +1515,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			continue;
 		case 0xc5:
 			/* lost reservation */
-			lprintf(LOG_DEBUG, "SDR reserveration canceled. "
+			lprintf(LOG_DEBUG, "SDR reserveration cancelled. "
 				"Sleeping a bit and retrying...");
 
 			sleep(rand() & 3);
@@ -1976,6 +2011,76 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 	return NULL;
 }
 
+
+/* ipmi_sdr_list_cache  -  generate SDR cache for fast lookup
+ *
+ * @intf:	ipmi interface
+ *
+ * returns pointer to SDR list
+ * returns NULL on error
+ */
+int
+ipmi_sdr_list_cache(struct ipmi_intf * intf)
+{
+	struct sdr_get_rs * header;
+
+	if (sdr_list_itr == NULL) {
+		sdr_list_itr = ipmi_sdr_start(intf);
+		if (sdr_list_itr == NULL) {
+			lprintf(LOG_ERR, "Unable to open SDR for reading");
+			return -1;
+		}
+	}
+
+	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
+		uint8_t * rec;
+		struct sdr_record_list * sdrr;
+
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			break;
+		}
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+
+		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
+		if (rec == NULL)
+			continue;
+
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
+
+		/* add to global record liset */
+		if (sdr_list_head == NULL)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+
+		sdr_list_tail = sdrr;
+	}
+
+	return 0;
+}
 
 /*
  * ipmi_sdr_get_info

@@ -79,6 +79,15 @@ int32_t utos(uint32_t val, int bits);
 #define SDR_SENSOR_STAT_HI_CR	(1<<4)
 #define SDR_SENSOR_STAT_HI_NR	(1<<5)
 
+#define READING_UNAVAILABLE	0x20
+#define SCANNING_DISABLED	0x40
+#define EVENTS_DISABLED		0x80
+
+#define GET_SENSOR_READING	0x2d
+#define GET_SENSOR_FACTORS      0x23
+#define GET_SENSOR_THRES	0x27
+#define GET_SENSOR_TYPE		0x2f
+
 struct sdr_repo_info_rs {
 	uint8_t	version;	/* SDR version (51h) */
 	uint16_t	count;		/* number of records */
@@ -624,5 +633,7 @@ struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * 
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
 void ipmi_sdr_print_discrete_state(uint8_t sensor_type, uint8_t event_type, uint8_t state);
+char * ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier);
+int ipmi_sdr_list_cache(struct ipmi_intf * intf);
 
 #endif  /* IPMI_SDR_H */
