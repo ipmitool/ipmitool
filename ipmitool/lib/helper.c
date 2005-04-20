@@ -228,3 +228,66 @@ ipmi_open_file(const char * file, int rw)
 	return fp;
 }
 
+void
+ipmi_start_daemon(void)
+{
+	pid_t pid;
+	int fd;
+#ifdef SIGHUP
+	sigset_t sighup;
+#endif
+
+	/* if we are started from init no need to become daemon */
+	if (getppid() == 1)
+		return;
+
+#ifdef SIGHUP
+	sigemptyset(&sighup);
+	sigaddset(&sighup, SIGHUP);
+	if (sigprocmask(SIG_UNBLOCK, &sighup, NULL) < 0)
+		fprintf(stderr, "ERROR: could not unblock SIGHUP signal\n");
+	signal(SIGHUP, SIG_IGN);
+#endif
+#ifdef SIGTTOU
+	signal(SIGTTOU, SIG_IGN);
+#endif
+#ifdef SIGTTIN
+	signal(SIGTTIN, SIG_IGN);
+#endif
+#ifdef SIGQUIT
+	signal(SIGQUIT, SIG_IGN);
+#endif
+#ifdef SIGTSTP
+	signal(SIGTSTP, SIG_IGN);
+#endif
+
+	pid = (pid_t) fork();
+	if (pid < 0 || pid > 0)
+		exit(0);
+	
+#if defined(SIGTSTP) && defined(TIOCNOTTY)
+	if (setpgid(0, getpid()) == -1)
+		exit(1);
+	if ((fd = open(_PATH_TTY, O_RDWR)) >= 0) {
+		ioctl(fd, TIOCNOTTY, NULL);
+		close(fd);
+	}
+#else
+	if (setpgrp() == -1)
+		exit(1);
+	pid = (pid_t) fork();
+	if (pid < 0 || pid > 0)
+		exit(0);
+#endif
+
+	chdir("/");
+	umask(0);
+
+	for (fd=0; fd<64; fd++)
+		close(fd);
+
+	open("/dev/null", O_RDWR);
+	dup(0);
+	dup(0);
+}
+
