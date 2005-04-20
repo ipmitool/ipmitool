@@ -3,7 +3,7 @@ dnl autoconf for ipmitool
 dnl
 AC_INIT([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([ipmitool], [1.8.1])
+AM_INIT_AUTOMAKE([ipmitool], [1.8.2])
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_PREREQ(2.50)
@@ -69,8 +69,8 @@ solaris*)
 	fi
 	enable_intf_imb=no
 	enable_intf_open=no
-	enable_ipmievd=no
 	enable_ipmishell=no
+	enable_ipmievd=yes
 	;;
 *cygwin*)
 	# disable the linux and solaris-specific interfaces
@@ -78,8 +78,8 @@ solaris*)
 	enable_intf_open=no
 	enable_intf_lipmi=no
 	enable_intf_bmc=no
-	enable_ipmievd=no
 	enable_ipmishell=no
+	enable_ipmievd=yes
 	;;
 *darwin*)
 	# disable the linux and solaris-specific interfaces
@@ -87,8 +87,8 @@ solaris*)
 	enable_intf_open=no
 	enable_intf_lipmi=no
 	enable_intf_bmc=no
-	enable_ipmived=no
 	enable_ipmishell=no
+	enable_ipmived=yes
 	;;
 esac
 
