@@ -131,15 +131,6 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 				return;
 			}
 			sprintf(*desc, "%s", evt->desc);
-			if(rec->event_type==0x01)
-			{
-				//Append asserted/deasserted state for
-				//threshold events
-				sprintf(
-						*desc+strlen(*desc),
-						" - %s",
-						rec->event_dir?"deasserted":"asserted");
-			}
 			return;
 		}
 		evt++;
@@ -149,13 +140,21 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 const char *
 ipmi_sel_get_sensor_type(uint8_t code)
 {
-	struct ipmi_event_sensor_types *st = sensor_specific_types;
-	while (st->type) {
+	struct ipmi_event_sensor_types *st;
+	for (st = sensor_specific_types; st->type != NULL; st++)
 		if (st->code == code)
 			return st->type;
-		st++;
-	}
 	return "Unknown";
+}
+
+const char *
+ipmi_sel_get_sensor_type_offset(uint8_t code, uint8_t offset)
+{
+	struct ipmi_event_sensor_types *st;
+	for (st = sensor_specific_types; st->type != NULL; st++)
+		if (st->code == code && st->offset == (offset&0xf))
+			return st->type;
+	return ipmi_sel_get_sensor_type(code);
 }
 
 static int
@@ -242,7 +241,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	return 0;
 }
 
-static uint16_t
+uint16_t
 ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 		       struct sel_event_record * evt)
 {
@@ -362,7 +361,9 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		return;
 	}
 
-	printf("%s #0x%02x", ipmi_sel_get_sensor_type(evt->sensor_type), evt->sensor_num);
+	printf("%s #0x%02x",
+	       ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]),
+	       evt->sensor_num);
 
 	if (csv_output)
 		printf(",");
@@ -415,7 +416,7 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 	printf(" EvM Revision          : %02x\n",
 	       evt->evm_rev);
 	printf(" Sensor Type           : %s\n",
-	       ipmi_sel_get_sensor_type(evt->sensor_type));
+	       ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]));
 	printf(" Sensor Number         : %02x\n",
 	       evt->sensor_num);
 	printf(" Event Type            : %s\n",
@@ -472,7 +473,7 @@ ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_
 	printf(" EvM Revision          : %02x\n",
 	       evt->evm_rev);
 	printf(" Sensor Type           : %s\n",
-	       ipmi_sel_get_sensor_type(evt->sensor_type));
+	       ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]));
 	printf(" Sensor Number         : %02x\n",
 	       evt->sensor_num);
 	printf(" Event Type            : %s\n",
