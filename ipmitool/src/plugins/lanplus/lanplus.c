@@ -2528,7 +2528,10 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	memset(msg, 0, IPMI_OPEN_SESSION_REQUEST_SIZE);
 
 	msg[0] = 0; /* Message tag */
-	msg[1] = 0; /* Give us highest privlg level based on supported algorithms */
+	if (ipmi_oem_active(intf, "intelplus"))
+		msg[1] = session->privlvl;
+	else
+		msg[0] = 0; /* Give us highest privlg level based on supported algorithms */
 	msg[2] = 0; /* reserved */
 	msg[3] = 0; /* reserved */
 
