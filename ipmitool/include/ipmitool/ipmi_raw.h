@@ -40,5 +40,7 @@
 #include <ipmitool/ipmi.h>
 
 int ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv);
+struct ipmi_rs * ipmi_master_write_read(struct ipmi_intf * intf, uint8_t addr, uint8_t * wdata, uint8_t wsize, uint8_t rsize);
+int ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv);
 
 #endif /* IPMI_RAW_H */

@@ -44,6 +44,161 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_raw.h>
 
+#define IPMI_I2C_MASTER_MAX_SIZE	0x40
+
+/* ipmi_master_write_read  -  Perform I2C write/read transactions
+ *
+ * This function performs an I2C master write-read function through
+ * IPMI interface.  It has a maximum transfer size of 32 bytes.
+ *
+ * @intf:	ipmi interface
+ * @addr:	i2c slave address
+ * @wdata:	data to write
+ * @wsize:	length of data to write (max 64 bytes)
+ * @rsize:	length of data to read (max 64 bytes)
+ *
+ * Returns pointer to IPMI Response
+ */
+struct ipmi_rs *
+ipmi_master_write_read(struct ipmi_intf * intf, uint8_t addr, uint8_t * wdata, uint8_t wsize, uint8_t rsize)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	uint8_t rqdata[IPMI_I2C_MASTER_MAX_SIZE + 3];
+
+	if (rsize > IPMI_I2C_MASTER_MAX_SIZE) {
+		lprintf(LOG_ERR, "Master Write-Read: Too many bytes (%d) to read", rsize);
+		return NULL;
+	}
+	if (wsize > IPMI_I2C_MASTER_MAX_SIZE) {
+		lprintf(LOG_ERR, "Master Write-Read: Too many bytes (%d) to write", wsize);
+		return NULL;
+	}
+
+	memset(&req, 0, sizeof(struct ipmi_rq));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = 0x52;	/* master write-read */
+	req.msg.data = rqdata;
+	req.msg.data_len = 3;
+
+	memset(rqdata, 0, IPMI_I2C_MASTER_MAX_SIZE + 3);
+	rqdata[0] = 0x00;	/* channel number, bus id, bus type */
+	rqdata[1] = addr;	/* slave address */
+	rqdata[2] = rsize;      /* number of bytes to read */
+
+	if (wsize > 0) {
+		/* copy in data to write */
+		memcpy(rqdata+3, wdata, wsize);
+		req.msg.data_len += wsize;
+		lprintf(LOG_DEBUG, "Writing %d bytes to i2cdev %02Xh", wsize, addr);
+	}
+
+	if (rsize > 0) {
+		lprintf(LOG_DEBUG, "Reading %d bytes from i2cdev %02Xh", rsize, addr);
+	}
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "I2C Master Write-Read command failed");
+		return NULL;
+	}
+	else if (rsp->ccode > 0) {
+		switch (rsp->ccode) {
+		case 0x81:
+			lprintf(LOG_ERR, "I2C Master Write-Read command failed: Lost Arbitration");
+			break;
+		case 0x82:
+			lprintf(LOG_ERR, "I2C Master Write-Read command failed: Bus Error");
+			break;
+		case 0x83:
+			lprintf(LOG_ERR, "I2C Master Write-Read command failed: NAK on Write");
+			break;
+		case 0x84:
+			lprintf(LOG_ERR, "I2C Master Write-Read command failed: Truncated Read");
+			break;
+		default:
+			lprintf(LOG_ERR, "I2C Master Write-Read command failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			break;
+		}
+		return NULL;
+	}
+
+	return rsp;
+}
+
+static void rawi2c_usage(void)
+{
+	lprintf(LOG_NOTICE, "usage: i2c <i2caddr> <read bytes> [write data]");
+}
+
+int
+ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct ipmi_rs * rsp;
+	uint8_t wdata[IPMI_I2C_MASTER_MAX_SIZE];
+	uint8_t i2caddr = 0;
+	uint8_t rsize = 0;
+	uint8_t wsize = 0;
+	int i;
+
+	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
+		rawi2c_usage();
+		return 0;
+	}
+	else if (argc-2 > IPMI_I2C_MASTER_MAX_SIZE) {
+		lprintf(LOG_ERR, "Raw command input limit (%d bytes) exceeded",
+			IPMI_I2C_MASTER_MAX_SIZE);
+		return -1;
+	}
+
+	i2caddr = (uint8_t)strtoul(argv[0], NULL, 0);
+	rsize = (uint8_t)strtoul(argv[1], NULL, 0);
+
+	if (i2caddr == 0) {
+		lprintf(LOG_ERR, "Invalid I2C address 0");
+		rawi2c_usage();
+		return -1;
+	}
+
+	memset(wdata, 0, IPMI_I2C_MASTER_MAX_SIZE);
+	for (i=2; i<argc; i++) {
+		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
+		wdata[i-2] = val;
+		wsize++;
+	}
+
+	lprintf(LOG_INFO, "RAW I2C REQ (i2caddr=%x readbytes=%d writebytes=%d)",
+		i2caddr, rsize, wsize);
+	printbuf(wdata, wsize, "WRITE DATA");
+
+	rsp = ipmi_master_write_read(intf, i2caddr, wdata, wsize, rsize);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to perform I2C Master Write-Read");
+		return -1;
+	}
+
+	if (wsize > 0) {
+		if (verbose || rsize == 0)
+			printf("Wrote %d bytes to I2C device %02Xh\n", wsize, i2caddr);
+	}
+
+	if (rsize > 0) {
+		if (verbose || wsize == 0)
+			printf("Read %d bytes from I2C device %02Xh\n", rsp->data_len, i2caddr);
+
+		/* print the raw response buffer */
+		for (i=0; i<rsp->data_len; i++) {
+			if (((i%16) == 0) && (i != 0))
+				printf("\n");
+			printf(" %2.2x", rsp->data[i]);
+		}
+		printf("\n");
+	}
+
+	return 0;
+}
+
 int
 ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
