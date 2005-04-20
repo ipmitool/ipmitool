@@ -1,6 +1,8 @@
 i pkginfo
 d none bin ? ? ?
 f none bin/@PACKAGE@=../src/@PACKAGE@ 0755 root bin
+d none sbin ? ? ?
+f none sbin/ipmievd=../src/ipmievd 0755 root bin
 d none share ? ? ?
 d none share/man ? ? ?
 d none share/man/man1 ? ? ?
