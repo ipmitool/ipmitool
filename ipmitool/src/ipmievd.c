@@ -679,8 +679,10 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 struct ipmi_cmd ipmievd_cmd_list[] = {
-	{ ipmievd_sel_main,	"sel",    "Poll SEL for notification of events" },
+#ifdef IPMI_INTF_OPEN
 	{ ipmievd_open_main,	"open",   "Use OpenIPMI for asyncronous notification of events" },
+#endif
+	{ ipmievd_sel_main,	"sel",    "Poll SEL for notification of events" },
 	{ NULL }
 };
 
