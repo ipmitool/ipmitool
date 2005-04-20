@@ -257,8 +257,8 @@ ipmi_main(int argc, char ** argv,
 	int rc = -1;
 
 	/* save program name */
-	progname = strrchr(argv[0], '/') + 1;
-	progname = ((progname == NULL) ? argv[0] : progname);
+	progname = strrchr(argv[0], '/');
+	progname = ((progname == NULL) ? argv[0] : progname+1);
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
