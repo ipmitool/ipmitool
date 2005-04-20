@@ -46,7 +46,7 @@
 
 extern int verbose;
 
-static int
+int
 ipmi_chassis_power_status(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -68,7 +68,14 @@ ipmi_chassis_power_status(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	printf("Chassis Power is %s\n", (rsp->data[0] & 0x1) ? "on" : "off");
+	return rsp->data[0] & 1;
+}
+
+static int
+ipmi_chassis_print_power_status(struct ipmi_intf * intf)
+{
+	printf("Chassis Power is %s\n",
+	       ipmi_chassis_power_status(intf) ? "on" : "off");
 
 	return 0;
 }

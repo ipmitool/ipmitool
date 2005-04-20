@@ -2010,7 +2010,7 @@ ipmi_lanplus_send_payload(
 	}
 
 
-	while (try < IPMI_LAN_RETRY) {
+	while (try < session->retry) {
 
 
 		if (ipmi_lan_send_packet(intf, msg_data, msg_length) < 0) {
@@ -3022,6 +3022,10 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		session->port = IPMI_LANPLUS_PORT;
 	if (!session->privlvl)
 		session->privlvl = IPMI_SESSION_PRIV_USER;
+	if (!session->timeout)
+		session->timeout = IPMI_LAN_TIMEOUT;
+	if (!session->retry)
+		session->retry = IPMI_LAN_RETRY;
 
 	if (session->hostname == NULL || strlen(session->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
@@ -3042,7 +3046,6 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	//session->sol_data.last_received_byte_count      = 0;
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
 	memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
-	session->timeout = IPMI_LAN_TIMEOUT;
 
 
 	/* open port to BMC */

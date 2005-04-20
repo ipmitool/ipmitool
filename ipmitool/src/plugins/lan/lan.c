@@ -223,7 +223,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		return NULL;
 	}
 
-	alarm(IPMI_LAN_TIMEOUT);
+	alarm(intf->session->timeout);
 	rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 	alarm(0);
 
@@ -238,7 +238,7 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * response is read before the connection refused is returned)
 	 */
 	if (rc < 0) {
-		alarm(IPMI_LAN_TIMEOUT);
+		alarm(intf->session->timeout);
 		rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
 		alarm(0);
 		if (rc < 0) {
@@ -726,7 +726,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			break;
 
 		usleep(5000);
-		if (++try >= IPMI_LAN_RETRY) {
+		if (++try >= intf->session->retry) {
 			lprintf(LOG_DEBUG, "  No response from remote controller");
 			break;
 		}
@@ -1336,6 +1336,10 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 		s->port = IPMI_LAN_PORT;
 	if (s->privlvl == 0)
 		s->privlvl = IPMI_SESSION_PRIV_ADMIN;
+	if (s->timeout == 0)
+		s->timeout = IPMI_LAN_TIMEOUT;
+	if (s->retry == 0)
+		s->retry = IPMI_LAN_RETRY;
 
 	if (s->hostname == NULL || strlen(s->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");

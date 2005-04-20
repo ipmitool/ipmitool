@@ -243,6 +243,24 @@ ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype)
 }
 
 void
+ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout)
+{
+	if (intf->session == NULL)
+		return;
+
+	intf->session->timeout = timeout;
+}
+
+void
+ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry)
+{
+	if (intf->session == NULL)
+		return;
+
+	intf->session->retry = retry;
+}
+
+void
 ipmi_cleanup(struct ipmi_intf * intf)
 {
 	ipmi_sdr_list_empty(intf);

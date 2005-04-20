@@ -52,5 +52,6 @@
 #define IPMI_CHASSIS_POLICY_ALWAYS_OFF	0x0
 
 int ipmi_chassis_main(struct ipmi_intf *, int, char **);
+int ipmi_chassis_power_status(struct ipmi_intf * intf);
 
 #endif /*IPMI_CHASSIS_H*/

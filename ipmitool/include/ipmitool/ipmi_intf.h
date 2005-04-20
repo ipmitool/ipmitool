@@ -85,6 +85,7 @@ struct ipmi_session {
 	int password;
 	int port;
 	int active;
+	int retry;
 
 	uint32_t session_id;
 	uint32_t in_seq;
@@ -193,6 +194,8 @@ void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
 void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id);
 void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype);
+void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);
+void ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry);
 void ipmi_cleanup(struct ipmi_intf * intf);
 
 #endif /* IPMI_INTF_H */
