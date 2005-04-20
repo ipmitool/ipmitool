@@ -89,15 +89,30 @@ struct ipmi_intf * ipmi_intf_table[] = {
  *
  * no meaningful return code
  */
-void ipmi_intf_print(void)
+void ipmi_intf_print(struct ipmi_intf_support * intflist)
 {
 	struct ipmi_intf ** intf;
+	struct ipmi_intf_support * sup;
 	int def = 1;
+	int found;
 
 	lprintf(LOG_NOTICE, "Interfaces:");
 
 	for (intf = ipmi_intf_table; intf && *intf; intf++) {
-		lprintf(LOG_NOTICE, "\t%-12s %s %s",
+
+		if (intflist != NULL) {
+			found = 0;
+			for (sup=intflist; sup->name != NULL; sup++) {
+				if (strncmp(sup->name, (*intf)->name, strlen(sup->name)) == 0 &&
+				    strncmp(sup->name, (*intf)->name, strlen((*intf)->name)) == 0 &&
+				    sup->supported == 1)
+					found = 1;
+			}
+			if (found == 0)
+				continue;
+		}
+
+		lprintf(LOG_NOTICE, "\t%-12s  %s %s",
 			(*intf)->name, (*intf)->desc,
 			def ? "[default]" : "");
 		def = 0;
