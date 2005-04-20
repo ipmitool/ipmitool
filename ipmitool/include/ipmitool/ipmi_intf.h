@@ -148,15 +148,28 @@ struct ipmi_session {
 	} sol_data;
 };
 
+struct ipmi_cmd {
+	int (*func)(struct ipmi_intf * intf, int argc, char ** argv);
+	const char * name;
+	const char * desc;
+};
+
+struct ipmi_intf_support {
+	const char * name;
+	int supported;
+};
+
 struct ipmi_intf {
 	char name[16];
 	char desc[128];
 	int fd;
 	int opened;
 	int abort;
+	int noanswer;
 
 	struct ipmi_session * session;
 	struct ipmi_oem_handle * oem;
+	struct ipmi_cmd * cmdlist;
 	uint32_t my_addr;
 	uint32_t target_addr;
 

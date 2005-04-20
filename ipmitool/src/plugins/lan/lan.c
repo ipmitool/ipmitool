@@ -712,6 +712,10 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			continue;
 		}
 
+		/* if we are set to noanswer we do not expect response */
+		if (intf->noanswer)
+			break;
+
 		if (ipmi_oem_active(intf, "intelwv2"))
 			ipmi_lan_thump(intf);
 

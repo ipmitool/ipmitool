@@ -2018,6 +2018,10 @@ ipmi_lanplus_send_payload(
 			return NULL;
 		}
 
+		/* if we are set to noanswer we do not expect response */
+		if (intf->noanswer)
+			break;
+
 		usleep(100); 			/* Not sure what this is for */
 
 		/* Remember our connection state */
