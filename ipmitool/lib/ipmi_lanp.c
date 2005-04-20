@@ -108,6 +108,14 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 		p->data_len = 0;
 		return p;
 	}
+	if (rsp->ccode == 0xc9) {
+		/* parameter out of range
+		 * return lan_param without data
+		 */
+		p->data = NULL;
+		p->data_len = 0;
+		return p;
+	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_INFO, "Get LAN Parameter command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
@@ -642,36 +650,33 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
 	if (p == NULL)
 		return -1;
-	else
+	else if (p->data != NULL)
 	{
-		unsigned char cipher_suite_count = p->data[0];
-
 		p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHERS);
 		if (p == NULL)
 			return -1;
 
 		printf("%-24s: ", p->desc);
-		if (cipher_suite_count == 0)
-			printf("None\n");
+
+		/* Now we're dangerous.  There are only 15 fixed cipher
+		   suite IDs, but the spec allows for 16 in the return data.*/
+		if ((p->data != NULL) && (p->data_len <= 16))
+		{
+			unsigned char cipher_suite_count = p->data[0];
+			unsigned int i;
+			for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
+			{
+				printf("%s%d",
+				       (i > 0? ",": ""),
+				       p->data[i + 1]);
+			}
+			printf("\n");
+		}
 		else
 		{
-			/* Now we're dangerous.  There are only 15 fixed cipher
-			   suite IDs, but the spec allows for 16 in the return data.*/
-			if ((p->data != NULL) && (p->data_len <= 16))
-			{
-				unsigned int i;
-				for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
-				{
-					printf("%s%d",
-					       (i > 0? ",": ""),
-					       p->data[i + 1]);
-				}
-				printf("\n");
-			}
+			printf("None\n");
 		}
 	}
-	
-
 
 	
 	/* RMCP+ Messaging Cipher Suite Privilege Levels */
