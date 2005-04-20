@@ -771,12 +771,10 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 		return -1;
 	}
 
-	/* offsets need converted to bytes */
-	header.offset.internal *= 8;
-	header.offset.chassis *= 8;
-	header.offset.board *= 8;
-	header.offset.product *= 8;
-	header.offset.multi *= 8;
+	/* offsets need converted to bytes
+	 * but that conversion is not done to the structure
+	 * because we may end up with offset > 255
+	 * which would overflow our 1-byte offset field */
 
 	lprintf(LOG_DEBUG, "fru.header.version:         0x%x",
 		header.version);
@@ -797,20 +795,20 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	 */
 
 	/* chassis area */
-	if (header.offset.chassis >= sizeof(struct fru_header))
-		fru_area_print_chassis(intf, &fru, id, header.offset.chassis);
+	if ((header.offset.chassis*8) >= sizeof(struct fru_header))
+		fru_area_print_chassis(intf, &fru, id, header.offset.chassis*8);
 
 	/* board area */
-	if (header.offset.board >= sizeof(struct fru_header))
-		fru_area_print_board(intf, &fru, id, header.offset.board);
+	if ((header.offset.board*8) >= sizeof(struct fru_header))
+		fru_area_print_board(intf, &fru, id, header.offset.board*8);
 
 	/* product area */
-	if (header.offset.product >= sizeof(struct fru_header))
-		fru_area_print_product(intf, &fru, id, header.offset.product);
+	if ((header.offset.product*8) >= sizeof(struct fru_header))
+		fru_area_print_product(intf, &fru, id, header.offset.product*8);
 
 	/* multirecord area */
-	if (header.offset.multi >= sizeof(struct fru_header))
-		fru_area_print_multirec(intf, &fru, id, header.offset.multi);
+	if ((header.offset.multi*8) >= sizeof(struct fru_header))
+		fru_area_print_multirec(intf, &fru, id, header.offset.multi*8);
 
 	return 0;
 }
@@ -910,8 +908,6 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	printf("FRU Device Description : Builtin FRU Device (ID 0)\n");
 	/* TODO: Figure out if FRU device 0 may show up in SDR records. */
 	rc = ipmi_fru_print(intf, NULL);
-	if (rc < 0)
-		return rc;
 	printf("\n");
 
 	if ((itr = ipmi_sdr_start(intf)) == NULL)
