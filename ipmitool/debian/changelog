@@ -1,3 +1,14 @@
+ipmitool (1.8.2-1) unstable; urgency=low
+
+  * Fix FRU reading for large (>255 bytes) areas.
+  * Overhaul to ipmievd to support SEL polling in addition to OpenIPMI.
+  * Fix LAN parameter segfault when no Ciphers supported by BMC.
+  * Fix IPMIv2 support on Intel v2 BMCs (use -o intelplus).
+  * Separate option parsing code from main ipmitool source file.
+  * Add raw I2C support with IPMI Master Read-Write command.
+
+ -- Duncan Laurie <duncan@iceblink.org>  Wed, 20 Apr 2005 16:58:37 -0700
+
 ipmitool (1.8.1-1) unstable; urgency=low
 
   * New upstream release.

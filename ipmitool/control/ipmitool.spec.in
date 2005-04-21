@@ -60,6 +60,14 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
+* Wed Apr 20 2005 <duncan@iceblink.org>  1.8.2-1
+ - Fix FRU reading for large (>255 bytes) areas.
+ - Overhaul to ipmievd to support SEL polling in addition to OpenIPMI.
+ - Fix LAN parameter segfault when no Ciphers supported by BMC.
+ - Fix IPMIv2 support on Intel v2 BMCs (use -o intelplus).
+ - Separate option parsing code from main ipmitool source file.
+ - Add raw I2C support with IPMI Master Read-Write command.
+
 * Wed Apr 06 2005 <duncan@iceblink.org>  1.8.1-1
  - Install ipmievd into /usr/sbin
 
