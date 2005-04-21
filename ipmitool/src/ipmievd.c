@@ -59,6 +59,7 @@
 #  include <sys/poll.h>
 # else /* HAVE_OPENIPMI_H */
 #  include "plugins/open/open.h"
+#  include <sys/poll.h>
 # endif	/* HAVE_OPENIPMI_H */
 #endif /* IPMI_INTF_OPEN */
 
