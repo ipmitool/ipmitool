@@ -74,8 +74,12 @@ ipmi_chassis_power_status(struct ipmi_intf * intf)
 static int
 ipmi_chassis_print_power_status(struct ipmi_intf * intf)
 {
-	printf("Chassis Power is %s\n",
-	       ipmi_chassis_power_status(intf) ? "on" : "off");
+	int ps = ipmi_chassis_power_status(intf);
+
+	if (ps < 0)
+		return -1;
+
+	printf("Chassis Power is %s\n", ps ? "on" : "off");
 
 	return 0;
 }
