@@ -2535,7 +2535,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	if (ipmi_oem_active(intf, "intelplus"))
 		msg[1] = session->privlvl;
 	else
-		msg[0] = 0; /* Give us highest privlg level based on supported algorithms */
+		msg[1] = 0; /* Give us highest privlg level based on supported algorithms */
 	msg[2] = 0; /* reserved */
 	msg[3] = 0; /* reserved */
 
@@ -3021,7 +3021,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!session->port)
 		session->port = IPMI_LANPLUS_PORT;
 	if (!session->privlvl)
-		session->privlvl = IPMI_SESSION_PRIV_USER;
+		session->privlvl = IPMI_SESSION_PRIV_ADMIN;
 	if (!session->timeout)
 		session->timeout = IPMI_LAN_TIMEOUT;
 	if (!session->retry)
