@@ -561,7 +561,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return 0;
 		}
 		if (strncmp(argv[1], "status", 6) == 0) {
-			rc = ipmi_chassis_power_status(intf);
+			rc = ipmi_chassis_print_power_status(intf);
 			return rc;
 		}
 		if ((strncmp(argv[1], "up", 2) == 0) || (strncmp(argv[1], "on", 2) == 0))
