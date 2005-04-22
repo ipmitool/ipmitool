@@ -473,10 +473,10 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			/* sensor not found */
 			validread = 0;
 		} else {
-			lprintf(LOG_ERR, "Error reading sensor %s (#%02x): %s",
+			lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
 				desc, sensor->keys.sensor_num,
 				val2str(rsp->ccode, completion_code_vals));
-			return -1;
+			validread = 0;
 		}
 	} else {
 		if (rsp->data[1] & READING_UNAVAILABLE) {
@@ -774,6 +774,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	char desc[17];
+	int validread = 1;
 
 	if (sensor == NULL)
 		return -1;
@@ -784,23 +785,23 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
+		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
 			desc, sensor->keys.sensor_num);
-		return -1;
+		validread = 0;
 	}
 	if (rsp->ccode > 0 && rsp->ccode != 0xcd) {
 		/* completion code 0xcd is special case */
-		lprintf(LOG_ERR, "Error reading sensor %s (#%02x): %s",
+		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
 		       desc, sensor->keys.sensor_num,
 		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		validread = 0;
 	}
 
 	/* check for sensor scanning disabled bit */
 	if (!(rsp->data[1] & SCANNING_DISABLED)) {
 		lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
 			desc, sensor->keys.sensor_num);
-		return 0; /* not an error */
+		validread = 0;
 	}
 
 	if (verbose) {
@@ -816,10 +817,11 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		lprintf(LOG_DEBUG, " Event Type Code       : 0x%02x",
 			sensor->event_type);
 
-		if (verbose > 1)
+		if (validread && verbose > 1)
 			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR");
 
-		ipmi_sdr_print_discrete_state(sensor->sensor.type,
+		if (validread)
+			ipmi_sdr_print_discrete_state(sensor->sensor.type,
 				      sensor->event_type, rsp->data[2]);
 		printf("\n");
 	}
@@ -827,8 +829,12 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		char * state;
 		char temp[18];
 
-		if (rsp->ccode == 0xcd ||
-		    (rsp->data[1] & READING_UNAVAILABLE)) {
+		if (validread == 0) {
+			state = csv_output ?
+				"Not Readable" :
+				"Not Readable     ";
+		} else if (rsp->data_len > 1 &&
+			   (rsp->data[1] & READING_UNAVAILABLE)) {
 			state = csv_output ?
 				"Not Readable" :
 				"Not Readable     ";
@@ -880,7 +886,12 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		else
 			printf("%-16s | ", sensor->id_code ? desc : "");
 
-		if (rsp->ccode == 0) {
+		if (validread == 0) {
+			if (csv_output)
+				printf("%s,ns\n", state);
+			else
+				printf("%-17s | ns\n", state);
+		} else if (rsp->ccode == 0) {
 			if (csv_output)
 				printf("%s,%s\n", state,
 				       (rsp->data[1] & READING_UNAVAILABLE) ?
