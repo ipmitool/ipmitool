@@ -285,6 +285,35 @@ static const struct valstr plus_payload_types_vals[] = {
 	{ 0x00, NULL },
 };
 
+
+static struct ipmi_rq_entry *
+ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
+{
+	struct ipmi_rq_entry * e;
+
+	e = malloc(sizeof(struct ipmi_rq_entry));
+	if (e == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+
+	memset(e, 0, sizeof(struct ipmi_rq_entry));
+	memcpy(&e->req, req, sizeof(struct ipmi_rq));
+
+	e->intf = intf;
+
+	if (ipmi_req_entries == NULL)
+		ipmi_req_entries = e;
+	else
+		ipmi_req_entries_tail->next = e;
+
+	ipmi_req_entries_tail = e;
+	lprintf(LOG_DEBUG+3, "added list entry seq=0x%02x cmd=0x%02x",
+		e->rq_seq, e->req.msg.cmd);
+	return e;
+}
+
+
 static struct ipmi_rq_entry *
 ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
@@ -309,8 +338,8 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 		e = e->next;
 	}
 	if (e) {
-		if (verbose > 3)
-			printf("removed list entry seq=0x%02x cmd=0x%02x\n", seq, cmd);
+		lprintf(LOG_DEBUG+3, "removed list entry seq=0x%02x cmd=0x%02x",
+			seq, cmd);
 		p->next = (p->next == e->next) ? NULL : e->next;
 		if (ipmi_req_entries == e) {
 			if (ipmi_req_entries != p)
@@ -324,6 +353,7 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 			else
 				ipmi_req_entries_tail = NULL;
 		}
+		
 		if (e->msg_data)
 			free(e->msg_data);
 		free(e);
@@ -337,9 +367,8 @@ ipmi_req_clear_entries(void)
 
 	e = ipmi_req_entries;
 	while (e) {
-		if (verbose > 3)
-			printf("cleared list entry seq=0x%02x cmd=0x%02x\n",
-			       e->rq_seq, e->req.msg.cmd);
+		lprintf(LOG_DEBUG+3, "cleared list entry seq=0x%02x cmd=0x%02x",
+			e->rq_seq, e->req.msg.cmd);
 		p = e->next;
 		free(e);
 		e = p;
@@ -1399,7 +1428,7 @@ ipmi_lanplus_build_v2x_msg(
 		sizeof(rmcp)                +  // RMCP Header (4)
 		10                          +  // IPMI Session Header
 		2                           +  // Message length
-		IPMI_MAX_PAYLOAD_SIZE       +  // The actual payload
+		payload->payload_length     +  // The actual payload
 		IPMI_MAX_INTEGRITY_PAD_SIZE +  // Integrity Pad
 		1                           +  // Pad Length
 		1                           +  // Next Header
@@ -1515,6 +1544,7 @@ ipmi_lanplus_build_v2x_msg(
 	default:
 		lprintf(LOG_ERR, "unsupported payload type 0x%x",
 			payload->payload_type);
+		free(msg);
 		assert(0);
 		break;
 	}
@@ -1663,29 +1693,10 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
  	static uint8_t curr_seq = 0;
 	if (curr_seq >= 64)
 		curr_seq = 0;
-	
-	entry = malloc(sizeof(struct ipmi_rq_entry));
-	if (entry == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
+
+	entry = ipmi_req_add_entry(intf, req);
+	if (entry == NULL)
 		return NULL;
-	}
-	memset(entry, 0, sizeof(struct ipmi_rq_entry));
-	memcpy(&entry->req, req, sizeof(struct ipmi_rq));
-
-	entry->intf = intf;
-	entry->rq_seq = curr_seq;
-
-	// Factor out
-	if (!ipmi_req_entries)
-		ipmi_req_entries = entry;
-	else
-		ipmi_req_entries_tail->next = entry;
-	ipmi_req_entries_tail = entry;
-
-
-	lprintf(LOG_DEBUG+3, "added list entry seq=0x%02x cmd=0x%02x\n",
-		curr_seq, req->msg.cmd);
-
 
 	// Build our payload
 	v2_payload.payload_type                 = IPMI_PAYLOAD_TYPE_IPMI;
@@ -1748,23 +1759,9 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 	struct ipmi_session  * session = intf->session;
 	struct ipmi_rq_entry * entry;
 
-	entry = malloc(sizeof(struct ipmi_rq_entry));
-	if (entry == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
+	entry = ipmi_req_add_entry(intf, req);
+	if (entry == NULL)
 		return NULL;
-	}
-	memset(entry, 0, sizeof(struct ipmi_rq_entry));
-	memcpy(&entry->req, req, sizeof(struct ipmi_rq));
-
-	entry->intf = intf;
-
-	// Can be factored out
-	if (!ipmi_req_entries)
-		ipmi_req_entries = entry;
-	else
-		ipmi_req_entries_tail->next = entry;
-
-	ipmi_req_entries_tail = entry;
 
 	len = req->msg.data_len + 21;
 
@@ -2098,8 +2095,13 @@ ipmi_lanplus_send_payload(
 
 	
 	/* IPMI messages are deleted under ipmi_lan_poll_recv() */
-	if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
+	switch (payload->payload_type) {
+	case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
+	case IPMI_PAYLOAD_TYPE_RAKP_1:
+	case IPMI_PAYLOAD_TYPE_RAKP_3:
 		free(msg_data);
+		break;
+	}
 
 	return rsp;
 }
@@ -2554,6 +2556,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	{
 		lprintf(LOG_WARNING, "Unsupported cipher suite ID : %d\n",
 				session->cipher_suite_id);
+		free(msg);
 		return -1;
 	}
 
@@ -2601,6 +2604,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
+	free(msg);
 
 	if (verbose)
 		lanplus_dump_open_session_response(rsp);
@@ -2730,6 +2734,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		// ERROR;
 		lprintf(LOG_ERR, "ERROR generating random number "
 			"in ipmi_lanplus_rakp1");
+		free(msg);
 		return 1;
 	}
 	memcpy(msg + 8, session->v2_data.console_rand, 16);
@@ -2760,6 +2765,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "ERROR: user name too long.  "
 			"(Exceeds %d characters)",
 			IPMI_MAX_USER_NAME_LENGTH);
+		free(msg);
 		return 1;
 	}
 	memcpy(msg + 28, session->username, msg[27]);
@@ -2770,6 +2776,8 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	v2_payload.payload.rakp_1_message.message = msg;
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
+
+	free(msg);
 
 	if (rsp == NULL)
 	{
@@ -2890,6 +2898,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating RAKP 3 authcode");
+			free(msg);
 			return 1;
 		}
 		else
@@ -2903,24 +2912,29 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating session integrity key");
+			free(msg);
 			return 1;
 		}
 		else if (lanplus_generate_k1(session))
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
+			free(msg);
 			return 1;
 		}
 		else if (lanplus_generate_k2(session))
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
+			free(msg);
 			return 1;
 		}
 	}
 	
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
+
+	free(msg);
 
 	if (session->v2_data.rakp2_return_code != IPMI_RAKP_STATUS_NO_ERRORS)
 	{
