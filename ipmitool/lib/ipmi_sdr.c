@@ -839,45 +839,50 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 				"Not Readable" :
 				"Not Readable     ";
                 } else {
-			switch (sensor->sensor.type) {
-			case 0x07:	/* processor */
-				if (rsp->data[2] & 0x80)
-					state = csv_output ?
-						"Present" :
-						"Present          ";
-				else
-					state = csv_output ?
-						"Not Present" :
-						"Not Present      ";
-				break;
-			case 0x10:	/* event logging disabled */
-				if (rsp->data[2] & 0x10)
-					state = csv_output ?
-						"Log Full" :
-						"Log Full         ";
-				else if (rsp->data[2] & 0x04)
-					state = csv_output ?
-						"Log Clear" :
-						"Log Clear        ";
-				else {
-					sprintf(temp, "0x%02x", rsp->data[2]);
-					state = temp;
-				}
-				break;
-			case 0x21:	/* slot/connector */
-				if (rsp->data[2] & 0x04)
-					state = csv_output ?
-						"Installed" :
-						"Installed        ";
-				else
-					state = csv_output ?
-						"Not Installed" :
-						"Not Installed    ";
-				break;
-			default:
+			if (sensor->event_type != 0x6f) {
 				sprintf(temp, "0x%02x", rsp->data[2]);
 				state = temp;
-				break;
+			} else {
+				switch (sensor->sensor.type) {
+				case 0x07:	/* processor */
+					if (rsp->data[2] & 0x80)
+						state = csv_output ?
+							"Present" :
+							"Present          ";
+					else
+						state = csv_output ?
+							"Not Present" :
+							"Not Present      ";
+					break;
+				case 0x10:	/* event logging disabled */
+					if (rsp->data[2] & 0x10)
+						state = csv_output ?
+							"Log Full" :
+							"Log Full         ";
+					else if (rsp->data[2] & 0x04)
+						state = csv_output ?
+							"Log Clear" :
+							"Log Clear        ";
+					else {
+						sprintf(temp, "0x%02x", rsp->data[2]);
+						state = temp;
+					}
+					break;
+				case 0x21:	/* slot/connector */
+					if (rsp->data[2] & 0x04)
+						state = csv_output ?
+							"Installed" :
+							"Installed        ";
+					else
+						state = csv_output ?
+							"Not Installed" :
+							"Not Installed    ";
+					break;
+				default:
+					sprintf(temp, "0x%02x", rsp->data[2]);
+					state = temp;
+					break;
+				}
 			}
 		}
 
@@ -2321,6 +2326,8 @@ ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 			break;
 		}
 	}
+
+	ipmi_sdr_end(intf, itr);
 
 	fclose(fp);
 	return rc;
