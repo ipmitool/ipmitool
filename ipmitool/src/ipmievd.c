@@ -477,21 +477,27 @@ selwatch_get_count(struct ipmi_intf * intf)
 		return 0;
 	}
 
+	lprintf(LOG_DEBUG, "SEL count is %d", buf2short(rsp->data+1));
 	return buf2short(rsp->data+1);
 }
 
 static uint16_t
 selwatch_get_lastid(struct ipmi_intf * intf)
 {
-	uint16_t next_id = 0;
+	int next_id = 0;
 	uint16_t curr_id = 0;
 	struct sel_event_record evt;
+
+	if (selwatch_count == 0)
+		return 0;
 
 	while (next_id != 0xffff) {
 		curr_id = next_id;
 		lprintf(LOG_DEBUG, "SEL Next ID: %04x", curr_id);
 
 		next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
+		if (next_id < 0)
+			break;
 		if (next_id == 0) {
 			/*
 			 * usually next_id of zero means end but
@@ -499,10 +505,12 @@ selwatch_get_lastid(struct ipmi_intf * intf)
 			 * and will return 0 randomly.
 			 */
 			next_id = ipmi_sel_get_std_entry(intf, curr_id, &evt);
-			if (next_id == 0)
+			if (next_id <= 0)
 				break;
 		}
 	}
+
+	lprintf(LOG_DEBUG, "SEL lastid is %04x", curr_id);
 
 	return curr_id;
 }
@@ -531,6 +539,13 @@ selwatch_check(struct ipmi_event_intf * eintf)
 {
 	uint16_t old_count = selwatch_count;
 	selwatch_count = selwatch_get_count(eintf->intf);
+	if (selwatch_count == 0) {
+		lprintf(LOG_DEBUG, "SEL count is 0 (old=%d), resetting lastid to 0", old_count);
+		selwatch_lastid = 0;
+	} else if (selwatch_count < old_count) {
+		selwatch_lastid = selwatch_get_lastid(eintf->intf);
+		lprintf(LOG_DEBUG, "SEL count lowered, new SEL lastid is %04x", selwatch_lastid);
+	}
 	return (selwatch_count > old_count);
 }
 
@@ -538,14 +553,19 @@ static int
 selwatch_read(struct ipmi_event_intf * eintf)
 {
 	uint16_t curr_id = 0;
-	uint16_t next_id = selwatch_lastid;
+	int next_id = selwatch_lastid;
 	struct sel_event_record evt;
+
+	if (selwatch_count == 0)
+		return -1;
 
 	while (next_id != 0xffff) {
 		curr_id = next_id;
-		lprintf(LOG_DEBUG, "SEL Next ID: %04x", curr_id);
+		lprintf(LOG_DEBUG, "SEL Read ID: %04x", curr_id);
 
 		next_id = ipmi_sel_get_std_entry(eintf->intf, curr_id, &evt);
+		if (next_id < 0)
+			break;
 		if (next_id == 0) {
 			/*
 			 * usually next_id of zero means end but
@@ -553,15 +573,18 @@ selwatch_read(struct ipmi_event_intf * eintf)
 			 * and will return 0 randomly.
 			 */
 			next_id = ipmi_sel_get_std_entry(eintf->intf, curr_id, &evt);
-			if (next_id == 0)
+			if (next_id <= 0)
 				break;
 		}
 
 		if (curr_id != selwatch_lastid)
 			eintf->log(eintf, &evt);
+		else if (curr_id == 0)
+			eintf->log(eintf, &evt);
 	}
 
 	selwatch_lastid = curr_id;
+	return 0;
 }
 
 static int
