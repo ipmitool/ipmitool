@@ -10,6 +10,7 @@ ipmitool (1.8.2-1) UNRELEASED; urgency=low
     -  Add raw I2C support with IPMI Master Read-Write command.
   * Correct the upstream URL in debian/changelog to the current one.
   * Suggest package openipmi. (Closes: #305629)
+  * Add debian/watch file to detect new source versions.
 
  -- Duncan Laurie <duncan@iceblink.org>  Wed, 20 Apr 2005 16:58:37 -0700
 
