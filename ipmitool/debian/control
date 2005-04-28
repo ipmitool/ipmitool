@@ -9,6 +9,7 @@ Standards-Version: 3.6.1
 Package: ipmitool
 Architecture: i386 amd64
 Depends: ${shlibs:Depends}
+Suggest: openipmi
 Description: utility for IPMI control with kernel driver or LAN interface
  A utility for managing and configuring devices that support the
  Intelligent Platform Management Interface.  IPMI is an open standard
