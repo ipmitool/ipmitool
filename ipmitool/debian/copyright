@@ -1,7 +1,10 @@
-ipmitool
-Duncan Laurie <duncan@sun.com>
-http://www.iceblink.org/ipmitool/
+This package was debianized by Duncan Laurie before
+2003-11-18 17:55:21 +0100.
 
+It was downloaded from <URL:http://ipmitool.sourceforge.net/>
+
+Upstream Author: Duncan Laurie <duncan@sun.com>
+  
 Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,4 +38,3 @@ EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 You acknowledge that this software is not designed or intended for use
 in the design, construction, operation or maintenance of any nuclear
 facility.
-
