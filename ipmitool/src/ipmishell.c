@@ -54,9 +54,6 @@
 #define EXEC_BUF_SIZE	1024
 #define EXEC_ARG_SIZE	32
 
-extern void ipmi_cmd_print(void);
-extern int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv);
-
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
@@ -130,7 +127,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		if (strncmp(pbuf, "help", 4) == 0 ||
 		    strncmp(pbuf, "?", 1) == 0) {
-			ipmi_cmd_print();
+			ipmi_cmd_print(intf->cmdlist);
 			free(pbuf);
 			continue;
 		}
