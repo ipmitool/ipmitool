@@ -57,6 +57,7 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %{_sbindir}/*
 %{_datadir}/ipmitool/*
 %doc %{_mandir}/man1/*
+%doc %{_mandir}/man8/*
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog

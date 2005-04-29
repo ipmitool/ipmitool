@@ -1,0 +1,203 @@
+.TH "ipmievd" "8" "" "Duncan Laurie" ""
+.SH "NAME"
+ipmievd \- IPMI event daemon for sending events to syslog
+.SH "SYNOPSIS"
+ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
+\fB\-I\fR \fIopen\fP <\fIopen\fR | \fIsel\fR> [<\fIoption\fP>]
+
+ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
+\fB\-I\fR \fIlan\fP \fB\-H\fR <\fIhostname\fP>
+        [\fB\-p\fR <\fIport\fP>]
+        [\fB\-U\fR <\fIusername\fP>]
+        [\fB\-A\fR <\fIauthtype\fP>]
+        [\fB\-L\fR <\fIprivlvl\fP>]
+        [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
+        [\fB\-o\fR <\fIoemtype\fP>]
+        \fIsel\fP [<\fIoption\fP>]
+
+ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
+\fB\-I\fR \fIlanplus\fP \fB\-H\fR <\fIhostname\fP>
+        [\fB\-p\fR <\fIport\fP>]
+        [\fB\-U\fR <\fIusername\fP>]
+        [\fB\-L\fR <\fIprivlvl\fP>]
+        [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
+        [\fB\-o\fR <\fIoemtype\fP>]
+        [\fB\-C\fR <\fIciphersuite\fP>]
+        \fIsel\fR [<\fIoption\fP>]
+.SH "DESCRIPTION"
+\fBipmievd\fP is a daemon which will listen for events from the
+BMC that are being sent to the SEL and also log those messages to
+syslog.  It is able to run in one of two modes: either using the
+Event Message Buffer and asynchronous event notification from the
+OpenIPMI kernel driver or actively polling the contents of the
+SEL for new events.  Upon receipt of an event via either mechanism
+it will be logged to syslog with the \fILOG_LOCAL4\fP facility.
+
+It is based on the \fBipmitool\fR utility and shares the same IPMI
+interface support and session setup options.  Please see the
+\fBipmitool\fR manpage for more information on supported IPMI
+interfaces.
+.SH "OPTIONS"
+.TP 
+\fB\-a\fR
+Prompt for the remote server password.
+.TP 
+\fB\-A\fR <\fIauthtype\fP>
+Specify an authentication type to use during IPMIv1.5 \fIlan\fP
+session activation.  Supported types are NONE, PASSWORD, MD5, or OEM.
+.TP 
+\fB\-c\fR
+Present output in CSV (comma separated variable) format.  
+This is not available with all commands.
+.TP 
+\fB\-C\fR <\fIciphersuite\fP>
+The remote server authentication, integrity, and encryption algorithms
+to use for IPMIv2 \fIlanplus\fP connections.  See table 22\-19 in the
+IPMIv2 specification.  The default is 3 which specifies RAKP\-HMAC\-SHA1 
+authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128 encryption algorightms.
+.TP 
+\fB\-E\fR
+The remote server password is specified by the environment
+variable \fIIPMI_PASSWORD\fP.
+.TP 
+\fB\-f\fR <\fIpassword_file\fP>
+Specifies a file containing the remote server password. If this
+option is absent, or if password_file is empty, the password
+will default to NULL.
+.TP 
+\fB\-h\fR
+Get basic usage help from the command line.
+.TP 
+\fB\-H\fR <\fIaddress\fP>
+Remote server address, can be IP address or hostname.  This 
+option is required for \fIlan\fP and \fIlanplus\fP interfaces.
+.TP 
+\fB\-I\fR <\fIinterface\fP>
+Selects IPMI interface to use.  Supported interfaces that are
+compiled in are visible in the usage help output.
+.TP 
+\fB\-L\fR <\fIprivlvl\fP>
+Force session privilege level.  Can be CALLBACK, USER,
+OPERATOR, ADMIN. Default is ADMIN.
+.TP 
+\fB\-m\fR <\fIlocal_address\fP>
+Set the local IPMB address.  The default is 0x20 and there
+should be no need to change it for normal operation.
+.TP 
+\fB\-o\fR <\fIoemtype\fP>
+Select OEM type to support.  This usually involves minor hacks
+in place in the code to work around quirks in various BMCs from
+various manufacturers.  Use \fI\-o list\fP to see a list of
+current supported OEM types.
+.TP 
+\fB\-p\fR <\fIport\fP>
+Remote server UDP port to connect to.  Default is 623.
+.TP 
+\fB\-P\fR <\fIpassword\fP>
+Remote server password is specified on the command line.
+If supported it will be obscured in the process list. 
+\fBNote!\fR Specifying the password as a command line
+option is not recommended.
+.TP 
+\fB\-t\fR <\fItarget_address\fP>
+Bridge IPMI requests to the remote target address.
+.TP 
+\fB\-U\fR <\fIusername\fP>
+Remote server username, default is NULL user.
+.TP 
+\fB\-v\fR
+Increase verbose output level.  This option may be specified
+multiple times to increase the level of debug output.  If given
+three times you will get hexdumps of all incoming and
+outgoing packets.
+.TP 
+\fB\-V\fR
+Display version information.
+
+.LP 
+If no password method is specified then ipmitool will prompt the
+user for a password. If no password is entered at the prompt,
+the remote server password will default to NULL.
+.SH "COMMANDS"
+.TP 
+\fIhelp\fP
+This can be used to get command\-line help.  It may also be
+placed at the end of commands to get option usage help.
+
+ipmitool help
+.br 
+Commands:
+    open    Use OpenIPMI for asyncronous notification of events
+    sel     Poll SEL for notification of events
+
+.TP 
+\fIopen\fP
+This command starts ipmievd with the OpenIPMI event watching
+mechanism which relies on the Event Message Buffer feature of
+IPMI.  This requires a properly installed and configured
+OpenIPMI driver on Linux and is only valid to be run through
+the \fIopen\fP interface.  See the \fBipmitool\fR manpage
+and associated documentatino for more information on setting
+up the OpenIPMI driver.
+
+\fBNote\fR: Some BMC do not support the Event Message Buffer
+required for this command.  Other BMCs claim to support it but
+do not actually deliver events to it.  If this is the case please
+use the \fIsel\fP method.
+
+.RS
+.TP 
+\fIdaemon\fP
+Launch process as a daemon and reparent to init process.
+All messages will be sent to syslog.  This is the default action.
+.TP 
+\fInodaemon\fP
+Do NOT become a daemon, instead log all messages to stderr.
+.RE
+
+.TP 
+\fIsel\fP
+This command starts ipmievd with the SEL Polling event watching
+mechanism.  This will poll the SEL periodically to determine if
+new events have been logged.  This command should work with all
+BMCs and is capable of using the LAN interface as well to monitor
+a remote system and log its events to a local syslog.
+
+.RS
+.TP 
+\fIdaemon\fP
+Launch process as a daemon and reparent to init process.
+All messages will be sent to syslog.  This is the default action.
+.TP 
+\fInodaemon\fP
+Do NOT become a daemon, instead log all messages to stderr.
+.TP 
+\fItimeout\fP=<\fBseconds\fR>
+Time between checks for SEL polling method.  Default is 10 seconds.
+.RE
+.SH "EXAMPLES"
+.TP 
+\fIExample 1\fP: Daemon process watching OpenIPMI for events
+
+> ipmitool \-I open open daemon
+.TP 
+\fIExample 2\fP: Local non\-daemon process checking remote SEL every 30 seconds
+
+> ipmitool \-I lan \-H 1.2.3.4 \-f passfile sel nodaemon timeout=30
+.br 
+Reading Sensors...
+.br 
+Waiting for Events...
+.br 
+.SH "AUTHOR"
+Duncan Laurie <duncan@iceblink.org>
+.SH "SEE ALSO"
+.TP 
+IPMItool Homepage
+http://ipmitool.sourceforge.net
+.TP 
+Intelligent Platform Management Interface Specification
+http://www.intel.com/design/servers/ipmi
+.TP 
+OpenIPMI Homepage
+http://openipmi.sourceforge.net

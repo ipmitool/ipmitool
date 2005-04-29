@@ -34,7 +34,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-man_MANS		= ipmitool.1
+man_MANS		= ipmitool.1 ipmievd.8
 
 EXTRA_DIST		= $(man_MANS)
 
