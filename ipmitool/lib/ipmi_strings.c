@@ -211,7 +211,7 @@ const struct valstr ipmi_channel_protocol_vals[] = {
 
 const struct valstr ipmi_channel_medium_vals[] = {
 	{ IPMI_CHANNEL_MEDIUM_RESERVED,	"reserved" },
-	{ IPMI_CHANNEL_MEDIUM_IPMB,	"IPMB (I2C)" },
+	{ IPMI_CHANNEL_MEDIUM_IPMB_I2C,	"IPMB (I2C)" },
 	{ IPMI_CHANNEL_MEDIUM_ICMB_1,	"ICMB v1.0" },
 	{ IPMI_CHANNEL_MEDIUM_ICMB_09,	"ICMB v0.9" },
 	{ IPMI_CHANNEL_MEDIUM_LAN,	"802.3 LAN" },
