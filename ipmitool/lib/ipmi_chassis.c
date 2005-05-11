@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_chassis.h>
 
 extern int verbose;
@@ -84,17 +85,7 @@ ipmi_chassis_print_power_status(struct ipmi_intf * intf)
 	return 0;
 }
 
-static const struct valstr ipmi_chassis_power_control_vals[] = {
-	{ 0x00, "Down/Off" },
-	{ 0x01, "Up/On" },
-	{ 0x02, "Cycle" },
-	{ 0x03, "Reset" },
-	{ 0x04, "Pulse" },
-	{ 0x05, "Soft" },
-	{ 0x00, NULL },
-};
-
-static int
+int
 ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 {
 	struct ipmi_rs * rsp;
@@ -442,15 +433,10 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 }
 
 static int
-ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg)
+ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 {
 	uint8_t flags[5];
 	int rc = 0;
-
-	if (arg == NULL) {
-		lprintf(LOG_ERR, "No argument supplied");
-		return -1;
-	}
 
 	memset(flags, 0, 5);
 	flags[0] = 0x01;
@@ -460,8 +446,12 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg)
 		return -1;
 
 	memset(flags, 0, 5);
-	if (strncmp(arg, "pxe", 3) == 0 ||
-	    strncmp(arg, "force_pxe", 9) == 0)
+	if (arg == NULL)
+		flags[1] = 0x00;
+	else if (strncmp(arg, "none", 4) == 0)
+		flags[1] = 0x00;
+	else if (strncmp(arg, "pxe", 3) == 0 ||
+		 strncmp(arg, "force_pxe", 9) == 0)
 		flags[1] = 0x04;
 	else if (strncmp(arg, "disk", 4) == 0 ||
 		 strncmp(arg, "force_disk", 10) == 0)
@@ -485,6 +475,9 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg)
 		lprintf(LOG_ERR, "Invalid argument: %s", arg);
 		return -1;
 	}
+
+	if (clearcmos)
+		flags[1] |= 0x80;
 
 	/* set flag valid bit */
 	flags[0] = 0x80;
@@ -650,7 +643,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				} else {
 					if (strncmp(argv[2], "bootflag", 8) == 0)
-						rc = ipmi_chassis_set_bootdev(intf, argv[3]);
+						rc = ipmi_chassis_set_bootdev(intf, argv[3], 0);
 					else
 						lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				}
@@ -661,7 +654,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (strncmp(argv[0], "bootdev", 7) == 0) {
 		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
-			lprintf(LOG_NOTICE, "bootdev <device>");
+			lprintf(LOG_NOTICE, "bootdev <device> [clear-cmos=yes|no]");
+			lprintf(LOG_NOTICE, "  none  : Do not change boot device order");
 			lprintf(LOG_NOTICE, "  pxe   : Force PXE boot");
 			lprintf(LOG_NOTICE, "  disk  : Force boot from default Hard-drive");
 			lprintf(LOG_NOTICE, "  safe  : Force boot from default Hard-drive, request Safe Mode");
@@ -669,7 +663,16 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "  cdrom : Force boot from CD/DVD");
 			lprintf(LOG_NOTICE, "  bios  : Force boot into BIOS Setup");
 		} else {
-			rc = ipmi_chassis_set_bootdev(intf, argv[1]);
+			if (argc < 3)
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
+			else if (strncmp(argv[2], "clear-cmos=", 11) == 0) {
+				if (strncmp(argv[2]+11, "yes", 3) == 0)
+					rc = ipmi_chassis_set_bootdev(intf, argv[1], 1);
+				else 
+					rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
+			}
+			else
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
 		}
 	}
 	else {
