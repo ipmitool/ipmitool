@@ -399,8 +399,8 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 
 
 
-void
-printf_session_usage()
+static void
+printf_session_usage(void)
 {
 	lprintf(LOG_NOTICE, "Session Commands: info <active | all | id 0xnnnnnnnn | handle 0xnn>");
 }

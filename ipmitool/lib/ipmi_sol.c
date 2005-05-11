@@ -1045,8 +1045,8 @@ suspendSelf(int bRestoreTty)
  *
  * Send some useful documentation to the user
  */
-void
-printSolEscapeSequences()
+static void
+printSolEscapeSequences(void)
 {
 	printf(
 		   "%c?\r\n\
@@ -1528,8 +1528,8 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 /*
  * print_sol_usage
  */
-void
-print_sol_usage()
+static void
+print_sol_usage(void)
 {
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
@@ -1542,8 +1542,8 @@ print_sol_usage()
 /*
  * print_sol_set_usage
  */
-void
-print_sol_set_usage()
+static void
+print_sol_set_usage(void)
 {
 	lprintf(LOG_NOTICE, "\nSOL set parameters and values: \n");
   	lprintf(LOG_NOTICE, "  set-in-progress             set-complete | "

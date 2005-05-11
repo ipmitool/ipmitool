@@ -450,8 +450,8 @@ ipmi_user_test_password(
 /*
  * print_user_usage
  */
-void
-print_user_usage()
+static void
+print_user_usage(void)
 {
 	lprintf(LOG_NOTICE, "User Commands: summary [<channel number>]");
 	lprintf(LOG_NOTICE, "		   list	   [<channel number>]");
