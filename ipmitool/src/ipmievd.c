@@ -73,7 +73,6 @@
 #include <ipmitool/ipmi_main.h>
 
 /* global variables */
-extern int errno;
 int verbose = 0;
 int csv_output = 0;
 uint16_t selwatch_count = 0;	/* number of entries in the SEL */
@@ -99,7 +98,6 @@ static void log_event(struct ipmi_event_intf * eintf, struct sel_event_record * 
 static int openipmi_setup(struct ipmi_event_intf * eintf);
 static int openipmi_wait(struct ipmi_event_intf * eintf);
 static int openipmi_read(struct ipmi_event_intf * eintf);
-static int openipmi_check(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf openipmi_event_intf = {
 	name:	"open",
 	desc:	"OpenIPMI asyncronous notification of events",
@@ -136,27 +134,6 @@ struct ipmi_event_intf * ipmi_event_intf_table[] = {
 };
 
 /*************************************************************************/
-
-/* ipmi_event_intf_print  -  Print list of event interfaces
- *
- * no meaningful return code
- */
-static void
-ipmi_event_intf_print(void)
-{
-	struct ipmi_event_intf ** intf;
-	int def = 1;
-
-	lprintf(LOG_NOTICE, "Event Handlers:");
-
-	for (intf = ipmi_event_intf_table; intf && *intf; intf++) {
-		lprintf(LOG_NOTICE, "\t%-12s %s %s",
-			(*intf)->name, (*intf)->desc,
-			def ? "[default]" : "");
-		def = 0;
-	}
-	lprintf(LOG_NOTICE, "");
-}
 
 static void
 ipmievd_usage(void)
@@ -203,9 +180,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 {
 	char *desc;
 	const char *type;
-	struct sdr_record_list * sdr, * list, * entry;
-	struct entity_id entity;
-	struct ipmi_rs * readrsp;
+	struct sdr_record_list * sdr;
 	struct ipmi_intf * intf = eintf->intf;
 	float trigger_reading = 0.0;
 	float threshold_reading = 0.0;
@@ -421,6 +396,8 @@ openipmi_read(struct ipmi_event_intf * eintf)
 	    recv.msg.netfn, recv.msg.cmd, recv.msg.data[0]);
 
 	eintf->log(eintf, (struct sel_event_record *)recv.msg.data);
+
+	return 0;
 }
 
 static int
