@@ -63,4 +63,8 @@ void ipmi_start_daemon(void);
 # define __min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
+#ifndef __max
+# define __max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
+
 #endif /* IPMI_HELPER_H */
