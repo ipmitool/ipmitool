@@ -1595,13 +1595,20 @@ ipmi_lanplus_build_v2x_msg(
 		 * Determine the required integrity pad length.  We have to make the
 		 * data range covered by the authcode a multiple of 4.
 		 */
-		uint32_t length_before_authcode =
-			12                          + /* the stuff before the payload */
-			payload->payload_length     +
-			1                           + /* pad length field  */
-			1;                            /* next header field */
+		uint32_t length_before_authcode;
 
-		
+		if (ipmi_oem_active(intf, "icts")) {
+			length_before_authcode =
+				12                          + /* the stuff before the payload */
+				payload->payload_length;
+		} else {
+			length_before_authcode =
+				12                          + /* the stuff before the payload */
+				payload->payload_length     +
+				1                           + /* pad length field  */
+				1;                            /* next header field */
+		}
+
 		if (length_before_authcode % 4)
 			integrity_pad_size = 4 - (length_before_authcode % 4);
 							  
@@ -2534,7 +2541,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	memset(msg, 0, IPMI_OPEN_SESSION_REQUEST_SIZE);
 
 	msg[0] = 0; /* Message tag */
-	if (ipmi_oem_active(intf, "intelplus"))
+	if (ipmi_oem_active(intf, "intelplus") || session->privlvl != IPMI_SESSION_PRIV_ADMIN)
 		msg[1] = session->privlvl;
 	else
 		msg[1] = 0; /* Give us highest privlg level based on supported algorithms */
@@ -2805,7 +2812,8 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		memcpy(session->v2_data.bmc_rand, rsp->payload.rakp2_message.bmc_rand, 16);
 		memcpy(session->v2_data.bmc_guid, rsp->payload.rakp2_message.bmc_guid, 16);
 
-		printbuf(session->v2_data.bmc_rand, 16, "bmc_rand");
+		if (verbose > 2)
+			printbuf(session->v2_data.bmc_rand, 16, "bmc_rand");
 
 		/*
 		 * It is at this point that we have to decode the random number and determine
