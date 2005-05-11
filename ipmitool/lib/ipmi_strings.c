@@ -254,6 +254,16 @@ const struct valstr completion_code_vals[] = {
 	{ 0x00, NULL }
 };
 
+const struct valstr ipmi_chassis_power_control_vals[] = {
+	{ IPMI_CHASSIS_CTL_POWER_DOWN,   "Down/Off" },
+	{ IPMI_CHASSIS_CTL_POWER_UP,     "Up/On" },
+	{ IPMI_CHASSIS_CTL_POWER_CYCLE,  "Cycle" },
+	{ IPMI_CHASSIS_CTL_HARD_RESET,   "Reset" },
+	{ IPMI_CHASSIS_CTL_PULSE_DIAG,   "Diag" },
+	{ IPMI_CHASSIS_CTL_ACPI_SOFT,    "Soft" },
+	{ 0x00, NULL },
+};
+
 const struct valstr ipmi_auth_algorithms[] = {
 	{ IPMI_AUTH_RAKP_NONE,      "none"      },
 	{ IPMI_AUTH_RAKP_HMAC_SHA1, "hmac_sha1" },

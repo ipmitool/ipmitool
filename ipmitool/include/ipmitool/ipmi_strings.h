@@ -51,6 +51,7 @@ extern const struct valstr ipmi_authtype_session_vals[];
 extern const struct valstr ipmi_authtype_vals[];
 extern const struct valstr ipmi_channel_protocol_vals[];
 extern const struct valstr ipmi_channel_medium_vals[];
+extern const struct valstr ipmi_chassis_power_control_vals[];
 extern const struct valstr ipmi_auth_algorithms[];
 extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
