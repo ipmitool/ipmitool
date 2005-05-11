@@ -691,7 +691,7 @@ struct ipmi_rs *
 ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct ipmi_rq_entry * entry;
-	struct ipmi_rs * rsp;
+	struct ipmi_rs * rsp = NULL;
 	int try = 0;
 
 	if (intf->opened == 0 && intf->open != NULL) {
