@@ -56,7 +56,10 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		name:	"intelplus",
 		desc:	"Intel IPMI 2.0 BMC with RMCP+ communication support",
 	},
-
+	{
+		name:   "icts",
+		desc:   "IPMI 2.0 ICTS compliance support",
+	},
 	{ 0 },
 };
 
