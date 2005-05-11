@@ -771,6 +771,15 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 		return;
 	}
 	ipmi_pef_print_flags(&pef_b2s_control, P_ABLE, rsp->data[1]);
+
+	psel.id = PEF_CFGPARM_ID_PEF_ACTION;
+	rsp = ipmi_pef_msg_exchange(intf, &req, "PEF action");
+	if (!rsp) {
+		lprintf(LOG_ERR, " **Error retrieving %s",
+			"PEF action");
+		return;
+	}
+	ipmi_pef_print_flags(&pef_b2s_actions, P_ACTV, rsp->data[1]);
 }
 
 static void
