@@ -40,7 +40,7 @@
 #include <ipmitool/ipmi_intf.h>
 
 int ipmi_main(int argc, char ** argv, struct ipmi_cmd * cmdlist, struct ipmi_intf_support * intflist);
-void ipmi_cmd_print(struct ipmi_intf * intf);
+void ipmi_cmd_print(struct ipmi_cmd * cmdlist);
 int ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv);
 
 #endif /* IPMI_MAIN_H */
