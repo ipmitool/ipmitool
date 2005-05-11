@@ -46,6 +46,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_session.h>
+#include <ipmitool/ipmi_main.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
