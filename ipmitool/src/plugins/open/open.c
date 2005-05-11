@@ -172,6 +172,9 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	 * wait for and retrieve response
 	 */
 
+	if (intf->noanswer)
+		return NULL;
+
 	FD_ZERO(&rset);
 	FD_SET(intf->fd, &rset);
 
