@@ -37,9 +37,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
+#include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
@@ -63,21 +65,22 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
+	intf->open(intf);
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = cmd;
 	req.msg.data_len = 0;
 
+	intf->noanswer = 1;
+
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Reset command failed");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Reset command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
+
+	intf->abort = 1;
+	/* no meaningful return in many cases */
+
+	printf("Sent %s reset command to MC\n",
+	       (cmd == BMC_WARM_RESET) ? "warm" : "cold");
 
 	return 0;
 }
@@ -150,7 +153,7 @@ struct bitfield_data mc_enables_bf[] = {
 };
 
 static void
-printf_mc_usage()
+printf_mc_usage(void)
 {
 	struct bitfield_data * bf;
 	printf("MC Commands:\n");
@@ -368,6 +371,15 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
+struct ipmi_guid {
+	uint32_t  time_low;	/* timestamp low field */
+	uint16_t  time_mid;	/* timestamp middle field */
+	uint16_t  time_hi_and_version; /* timestamp high field and version number */
+	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
+	uint8_t   clock_seq_low; /* clock sequence low field */
+	uint8_t   node[6];	/* node */
+} __attribute__((packed));
+
 /* ipmi_mc_get_guid  -  print this MC GUID
  *
  * @intf:	ipmi interface
@@ -380,6 +392,7 @@ ipmi_mc_get_guid(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	struct ipmi_guid guid;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -396,7 +409,26 @@ ipmi_mc_get_guid(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	printf("System GUID: %s\n", buf2str(rsp->data, rsp->data_len));
+	if (rsp->data_len == sizeof(struct ipmi_guid)) {
+		uint8_t tbuf[40];
+		time_t s;
+		memset(tbuf, 0, 40);
+		memset(&guid, 0, sizeof(struct ipmi_guid));
+		memcpy(&guid, rsp->data, rsp->data_len);
+
+		printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
+		       guid.time_low, guid.time_mid, guid.time_hi_and_version,
+		       guid.clock_seq_hi_variant << 8 | guid.clock_seq_low,
+		       guid.node[5], guid.node[4], guid.node[3],
+		       guid.node[2], guid.node[1], guid.node[0]);
+
+		s = (time_t)BSWAP_32(guid.time_low);
+		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+		printf("Timestamp    : %s\n", tbuf);
+	}
+	else {
+		lprintf(LOG_ERR, "Invalid GUID length %d", rsp->data_len);
+	}
 
 	return 0;
 }
