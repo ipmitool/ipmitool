@@ -111,17 +111,17 @@ struct ipmi_event_sensor_types {
 
 static struct ipmi_event_sensor_types generic_event_types[] __attribute__((unused)) = {
 	/* Threshold Based States */
-	{ 0x01, 0x00, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-critical - going low" },
+	{ 0x01, 0x00, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-critical - going low " },
 	{ 0x01, 0x01, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-critical - going high" },
-	{ 0x01, 0x02, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Critical - going low" },
-	{ 0x01, 0x03, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Critical - going high" },
-	{ 0x01, 0x04, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-recoverable - going low" },
+	{ 0x01, 0x02, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Critical going - low " },
+	{ 0x01, 0x03, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Critical going - high" },
+	{ 0x01, 0x04, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-recoverable - going low " },
 	{ 0x01, 0x05, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-recoverable - going high" },
-	{ 0x01, 0x06, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-critical - going low" },
+	{ 0x01, 0x06, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-critical - going low " },
 	{ 0x01, 0x07, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-critical - going high" },
-	{ 0x01, 0x08, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Critical - going low" },
+	{ 0x01, 0x08, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Critical - going low " },
 	{ 0x01, 0x09, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Critical - going high" },
-	{ 0x01, 0x0a, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-recoverable - going low" },
+	{ 0x01, 0x0a, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-recoverable - going low " },
 	{ 0x01, 0x0b, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Upper Non-recoverable - going high" },
 	/* DMI-based "usage state" States */
 	{ 0x02, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Usage State", "Transition to Idle" },
@@ -147,8 +147,8 @@ static struct ipmi_event_sensor_types generic_event_types[] __attribute__((unuse
 	{ 0x07, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Monitor" },
 	{ 0x07, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Severity State", "Informational" },
 	/* Availability Status States */
-	{ 0x08, 0x00, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Removed/Absent" },
-	{ 0x08, 0x01, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Inserted/Present" },
+	{ 0x08, 0x00, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Absent" },
+	{ 0x08, 0x01, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Present" },
 	{ 0x09, 0x00, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Disabled" },
 	{ 0x09, 0x01, 0xff, IPMI_EVENT_CLASS_DIGITAL, "Availability State",  "Device Enabled" },
 	{ 0x0a, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Availability State", "Transition to Running" },
@@ -323,7 +323,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x11, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS Shut Down" },
 	{ 0x11, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS Power Down" },
 	{ 0x11, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS Power Cycle" },
-	{ 0x11, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS NMI/diag Interrupt" },
+	{ 0x11, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS NMI/Diag Interrupt" },
 	{ 0x11, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS Expired" },
 	{ 0x11, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS pre-timeout Interrupt" },
 
@@ -334,7 +334,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x12, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "PEF Action" },
 	{ 0x12, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Timestamp Clock Sync." },
 
-	{ 0x13, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Front Panel NMI" },
+	{ 0x13, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "NMI/Diag Interrupt" },
 	{ 0x13, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Timeout" },
 	{ 0x13, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "I/O Channel check NMI" },
 	{ 0x13, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Software NMI" },
@@ -444,8 +444,8 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 };
 
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
-void ipmi_sel_print_std_entry(struct sel_event_record * evt);
-void ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt);
+void ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt);
+void ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_get_event_desc(struct sel_event_record * rec, char ** desc);
 const char * ipmi_sel_get_sensor_type(uint8_t code);
 const char * ipmi_sel_get_sensor_type_offset(uint8_t code, uint8_t offset);
