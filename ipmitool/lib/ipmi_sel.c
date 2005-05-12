@@ -50,9 +50,12 @@
 
 extern int verbose;
 
+static int sel_extended = 0;
+
 static const struct valstr event_dir_vals[] = {
 	{ 0, "Assertion Event" },
 	{ 1, "Deassertion Event" },
+	{ 0, NULL },
 };
 
 static const char *
@@ -278,8 +281,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 	/* save next entry id */
 	next = (rsp->data[1] << 8) | rsp->data[0];
 
-	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "SEL Entry");
+	lprintf(LOG_DEBUG, "SEL Entry: %s", buf2str(rsp->data+2, rsp->data_len-2));
 
 	if (rsp->data[4] >= 0xc0) {
 		lprintf(LOG_INFO, "Entry %x not a standard SEL entry", id);
@@ -305,10 +307,41 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 	return next;
 }
 
-void
-ipmi_sel_print_std_entry(struct sel_event_record * evt)
+static void
+ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt, FILE * fp)
 {
         char * description;
+
+	if (fp == NULL)
+		return;
+
+        ipmi_get_event_desc(evt, &description);
+
+	fprintf(fp, "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x # %s #0x%02x %s\n",
+		evt->evm_rev,
+		evt->sensor_type,
+		evt->sensor_num,
+		evt->event_type | (evt->event_dir << 7),
+		evt->event_data[0],
+		evt->event_data[1],
+		evt->event_data[2],
+		ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]),
+		evt->sensor_num,
+		(description != NULL) ? description : "Unknown");
+
+	if (description != NULL)
+		free(description);
+}
+
+void
+ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
+{
+        char * description;
+	struct sdr_record_list * sdr = NULL;
+
+	if (sel_extended)
+		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sensor_num, evt->sensor_type);
+
 	if (!evt)
 		return;
 
@@ -361,9 +394,37 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		return;
 	}
 
-	printf("%s #0x%02x",
-	       ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]),
-	       evt->sensor_num);
+	/* lookup SDR entry based on sensor number and type */
+	if (sdr != NULL) {
+		printf("%s ", ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]));
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			printf("%s", sdr->record.full->id_string);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			printf("%s", sdr->record.compact->id_string);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			printf("%s", sdr->record.eventonly->id_string);
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			printf("%s", sdr->record.fruloc->id_string);
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			printf("%s", sdr->record.mcloc->id_string);
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			printf("%s", sdr->record.genloc->id_string);
+			break;
+		default:
+			printf("#%02x", evt->sensor_num);
+			break;
+		}
+	} else {
+		printf("%s", ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]));
+		if (evt->sensor_num != 0)
+			printf(" #0x%02x", evt->sensor_num);
+	}
 
 	if (csv_output)
 		printf(",");
@@ -375,11 +436,42 @@ ipmi_sel_print_std_entry(struct sel_event_record * evt)
 		printf("%s", description);
 		free(description);
 	}
+
+	if (sdr != NULL && evt->event_type == 1) {
+		/*
+		 * Threshold Event
+		 */
+		float trigger_reading = 0.0;
+		float threshold_reading = 0.0;
+
+		/* trigger reading in event data byte 2 */
+		if (((evt->event_data[0] >> 6) & 3) == 1) {
+			trigger_reading = sdr_convert_sensor_reading(
+				sdr->record.full, evt->event_data[1]);
+		}
+
+		/* trigger threshold in event data byte 3 */
+		if (((evt->event_data[0] >> 4) & 3) == 1) {
+			threshold_reading = sdr_convert_sensor_reading(
+				sdr->record.full, evt->event_data[2]);
+		}
+
+		printf(" | Reading %.*f %s Threshold %.*f %s",
+		       (trigger_reading==(int)trigger_reading) ? 0 : 2,
+		       trigger_reading,
+		       ((evt->event_data[0] & 0xf) % 2) ? ">" : "<",
+		       (threshold_reading==(int)threshold_reading) ? 0 : 2,
+		       threshold_reading,
+		       ipmi_sdr_get_unit_string(sdr->record.full->unit.modifier,
+						sdr->record.full->unit.type.base,
+						sdr->record.full->unit.type.modifier));
+	}
+
 	printf("\n");
 }
 
 void
-ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
+ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt)
 {
         char * description;
 	if (!evt)
@@ -434,7 +526,7 @@ ipmi_sel_print_std_entry_verbose(struct sel_event_record * evt)
 }
 
 static void
-ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_record_list * sdr)
+ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt, struct sdr_record_list * sdr)
 {
         char * description;
 	if (!evt || !sdr)
@@ -588,13 +680,14 @@ ipmi_sel_print_extended_entry_verbose(struct sel_event_record * evt, struct sdr_
 }
 
 static int
-ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
+__ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * savefile)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint16_t next_id = 0, curr_id = 0;
 	struct sel_event_record evt;
 	int n=0;
+	FILE * fp = NULL;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -636,6 +729,22 @@ ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
 	if (count < 0) {
 		/** Show only the most recent 'count' records. */
 		int delta;
+		uint16_t entries;
+
+		req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Get SEL Info command failed");
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Get SEL Info command failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+		entries = buf2short(rsp->data + 1);
+		if (-count > entries)
+			count = -entries;
 
 		/* Get first record. */
 		next_id = ipmi_sel_get_std_entry(intf, 0, &evt);
@@ -647,6 +756,10 @@ ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
 
 		next_id = evt.record_id + count * delta + delta;
 	}
+
+	if (savefile != NULL) {
+		fp = ipmi_open_file_write(savefile);
+	}			
 
 	while (next_id != 0xffff) {
 		curr_id = next_id;
@@ -665,17 +778,37 @@ ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
 		}
 
 		if (verbose)
-			ipmi_sel_print_std_entry_verbose(&evt);
+			ipmi_sel_print_std_entry_verbose(intf, &evt);
 		else
-			ipmi_sel_print_std_entry(&evt);
+			ipmi_sel_print_std_entry(intf, &evt);
+
+		if (fp != NULL) {
+			ipmi_sel_print_event_file(intf, &evt, fp);
+		}
 
 		if (++n == count) {
 			break;
 		}
 	}
 
+	if (fp != NULL)
+		fclose(fp);
+
 	return 0;
 }
+
+static int
+ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
+{
+	return __ipmi_sel_savelist_entries(intf, count, NULL);
+}
+
+static int
+ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
+{
+	return __ipmi_sel_savelist_entries(intf, count, savefile);
+}
+
 
 static uint16_t
 ipmi_sel_reserve(struct ipmi_intf * intf)
@@ -918,8 +1051,10 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	if (ipmi_sel_reserve(intf) == 0)
+	if (ipmi_sel_reserve(intf) == 0) {
+		lprintf(LOG_ERR, "Unable to reserve SEL");
 		return -1;
+	}
 
 	for (i=0; i<argc; i++) {
 		id = (uint16_t)strtol(argv[i], NULL, 0);
@@ -933,14 +1068,17 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = -1;
 			continue;
 		}
-		
+
 		/* lookup SDR entry based on sensor number and type */
 		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sensor_num, evt.sensor_type);
-		if (sdr == NULL)
+		if (sdr == NULL) {
+			ipmi_sel_print_std_entry_verbose(intf, &evt);
 			continue;
-
-		/* print SEL extended entry */
-		ipmi_sel_print_extended_entry_verbose(&evt, sdr);
+		}
+		else {
+			/* print SEL extended entry */
+			ipmi_sel_print_extended_entry_verbose(intf, &evt, sdr);
+		}
 
 		/* print SDR entry */
 		oldv = verbose;
@@ -1000,10 +1138,18 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc == 0)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "help", 4) == 0)
-		lprintf(LOG_ERR, "SEL Commands:  info clear delete list time");
+		lprintf(LOG_ERR, "SEL Commands:  info clear delete list elist get time save");
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
-	else if (strncmp(argv[0], "list", 4) == 0) {
+	else if (strncmp(argv[0], "save", 4) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: sel save <filename>");
+			return 0;
+		}
+		rc = ipmi_sel_save_entries(intf, 0, argv[1]);
+	}
+	else if (strncmp(argv[0], "list", 4) == 0 ||
+		 strncmp(argv[0], "elist", 5) == 0) {
 		/*
 		 * Usage:
 		 *	list           - show all SEL entries
@@ -1014,7 +1160,15 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		int sign = 1;
 		char *countstr = NULL;
 
-		if (argc == 3) {
+		if (strncmp(argv[0], "elist", 5) == 0)
+			sel_extended = 1;
+		else
+			sel_extended = 0;
+
+		if (argc == 2) {
+			countstr = argv[1];
+		}
+		else if (argc == 3) {
 			countstr = argv[2];
 
 			if (strncmp(argv[1], "last", 4) == 0) {
@@ -1024,9 +1178,6 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR, "Unknown sel list option");
 				return -1;
 			}
-		}
-		else if (argc == 2) {
-			countstr = argv[1];
 		}
 
 		if (countstr) {
