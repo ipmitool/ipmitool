@@ -924,6 +924,14 @@ If \fIcount\fR is zero, all entries are displayed.
 .br 
 
 Delete a single event.
+.TP 
+\fIsave\fP <\fBfile\fR>
+
+Save SEL records to text file that can be fed back into the
+\fIevent file\fP ipmitool command.  This can be useful for
+testing Event generation by building an appropriate Platform
+Event Message file based on existing events.  Please see the
+help for that command to view the format of this file.
 .TP          
 \fItime\fP
 .RS
