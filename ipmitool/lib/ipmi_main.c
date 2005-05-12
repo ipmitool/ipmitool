@@ -73,10 +73,10 @@
 # include <config.h>
 #endif
 
-#ifdef __sun_hide_options
-# define OPTION_STRING	"I:hVvcH:f:U:p:"
+#ifdef ENABLE_ALL_OPTIONS
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:"
 #else
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:"
+# define OPTION_STRING	"I:hVvcH:f:U:p:"
 #endif
 
 extern int verbose;
@@ -202,7 +202,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -p port        Remote RMCP port [default=623]");
 	lprintf(LOG_NOTICE, "       -U username    Remote session username");
 	lprintf(LOG_NOTICE, "       -f file        Read remote session password from file");
-#ifndef __sun_hide_options
+#ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=USER]");
@@ -212,6 +212,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
+	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
 #endif
 	lprintf(LOG_NOTICE, "");
 
@@ -239,7 +240,6 @@ ipmi_main(int argc, char ** argv,
 {
 	struct ipmi_intf * intf = NULL;
 	struct ipmi_intf_support * sup;
-	struct ipmi_cmd * cmd;
 	int privlvl = 0;
 	uint8_t target_addr = 0;
 	uint8_t my_addr = 0;
@@ -251,6 +251,7 @@ ipmi_main(int argc, char ** argv,
 	char * intfname = NULL;
 	char * progname = NULL;
 	char * oemtype  = NULL;
+	char * sdrcache = NULL;
 	int port = 0;
 	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
@@ -343,7 +344,14 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
-#ifndef __sun_hide_options
+#ifdef ENABLE_ALL_OPTIONS
+		case 'S':
+			sdrcache = strdup(optarg);
+			if (sdrcache == NULL) {
+				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
+			}
+			break;
 		case 'o':
 			oemtype = strdup(optarg);
 			if (oemtype == NULL) {
@@ -517,6 +525,11 @@ ipmi_main(int argc, char ** argv,
 		intf->target_addr = target_addr;
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+	}
+
+	/* parse local SDR cache if given */
+	if (sdrcache != NULL) {
+		ipmi_sdr_list_cache_fromfile(intf, sdrcache);
 	}
 
 	intf->cmdlist = cmdlist;
