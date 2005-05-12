@@ -120,7 +120,9 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
 	/*
 	 * Get current reading
 	 */
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+					  sensor->keys.sensor_num,
+					  sensor->keys.owner_id);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -166,9 +168,11 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf * intf,
 			       sensor->entity.id, sensor->entity.instance);
 			printf(" Sensor Type (Discrete): %s\n", 
 			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-			ipmi_sdr_print_discrete_state(sensor->sensor.type,
+			ipmi_sdr_print_discrete_state("States Asserted",
+						      sensor->sensor.type,
 						      sensor->event_type,
-						      rsp->data[2]);
+						      rsp->data[2],
+						      rsp->data[3]);
 			printf("\n");
 		}
 	}
@@ -201,7 +205,9 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 	/*
 	 * Get current reading
 	 */
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+					       sensor->keys.sensor_num,
+					       sensor->keys.owner_id);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -213,7 +219,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 		val = (rsp->data[0] > 0)
 			? sdr_convert_sensor_reading(sensor, rsp->data[0])
 			: 0;
-		status = (char*)ipmi_sdr_get_status(rsp->data[2]);
+		status = (char*)ipmi_sdr_get_status(sensor, rsp->data[2]);
 	}
 
 	/*
@@ -361,6 +367,18 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 			{
 				printf("Not Present\n");
 			}
+
+			ipmi_sdr_print_sensor_event_status(intf,
+							   sensor->keys.sensor_num,
+							   sensor->sensor.type,
+							   sensor->event_type,
+							   ANALOG_SENSOR);
+			ipmi_sdr_print_sensor_event_enable(intf,
+							   sensor->keys.sensor_num,
+							   sensor->sensor.type,
+							   sensor->event_type,
+							   ANALOG_SENSOR);
+
 			printf("\n");
 		}
 	}
@@ -397,7 +415,9 @@ ipmi_sensor_print_compact(struct ipmi_intf * intf,
 	/*
 	 * Get current reading
 	 */
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+					       sensor->keys.sensor_num,
+					       sensor->keys.owner_id);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -443,7 +463,8 @@ ipmi_sensor_print_compact(struct ipmi_intf * intf,
 			       sensor->entity.id, sensor->entity.instance);
 			printf(" Sensor Type (Discrete): %s\n", 
 			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
-			ipmi_sdr_print_discrete_state(sensor->sensor.type, sensor->event_type, rsp->data[2]);
+			ipmi_sdr_print_discrete_state("States Asserted", sensor->sensor.type,
+						      sensor->event_type, rsp->data[2], rsp->data[3]);
 			printf("\n");
 		}
 	}
@@ -507,14 +528,39 @@ static const struct valstr threshold_vals[] = {
 	{ 0x00,				NULL },
 };
 
+
+static int
+__ipmi_sensor_set_threshold(struct ipmi_intf * intf,
+			    uint8_t num, uint8_t mask, uint8_t setting)
+{
+	struct ipmi_rs * rsp;
+
+	rsp = ipmi_sensor_set_sensor_thresholds(intf, num, mask, setting);
+
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error setting threshold");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error setting threshold: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int
 ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	char * id, * thresh;
-	uint8_t settingMask;
-	double setting;
+	uint8_t settingMask = 0;
+	double setting1 = 0.0, setting2 = 0.0, setting3 = 0.0;
+	int allUpper = 0, allLower = 0;
+	int ret = 0;
+	
 	struct sdr_record_list * sdr;
-	struct ipmi_rs * rsp;
 
 	if (argc < 3 || strncmp(argv[0], "help", 4) == 0)
 	{
@@ -528,30 +574,60 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_NOTICE, "                 lcr = lower critical");
 		lprintf(LOG_NOTICE, "                 lnr = lower non-recoverable");
 		lprintf(LOG_NOTICE, "   setting   : the value to set the threshold to");
+		lprintf(LOG_NOTICE, "");
+		lprintf(LOG_NOTICE, "sensor thresh <id> lower <lnr> <lcr> <lnc>");
+		lprintf(LOG_NOTICE, "   Set all lower thresholds at the same time");
+		lprintf(LOG_NOTICE, "");
+		lprintf(LOG_NOTICE, "sensor thresh <id> upper <unc> <ucr> <unr>");
+		lprintf(LOG_NOTICE, "   Set all upper thresholds at the same time");
+		lprintf(LOG_NOTICE, "");
 		return 0;
 	}
 
 	id = argv[0];
 	thresh = argv[1];
-	setting = (double)atof(argv[2]);
-	if (strncmp(thresh, "unr", 3) == 0)
-		settingMask = UPPER_NON_RECOV_SPECIFIED;
-	else if (strncmp(thresh, "ucr", 3) == 0)
-		settingMask = UPPER_CRIT_SPECIFIED;
-	else if (strncmp(thresh, "unc", 3) == 0)
-		settingMask = UPPER_NON_CRIT_SPECIFIED;
-	else if (strncmp(thresh, "lnc", 3) == 0)
-		settingMask = LOWER_NON_CRIT_SPECIFIED;
-	else if (strncmp(thresh, "lcr", 3) == 0)
-		settingMask = LOWER_CRIT_SPECIFIED;
-	else if (strncmp(thresh, "lnr", 3) == 0)
-		settingMask = LOWER_NON_RECOV_SPECIFIED;
+
+	if (strncmp(thresh, "upper", 5) == 0) {
+		if (argc < 5) {
+			lprintf(LOG_ERR, "usage: sensor thresh <id> upper <unc> <ucr> <unr>");
+			return -1;
+		}
+		allUpper = 1;
+		setting1 = (double)strtod(argv[2], NULL);
+		setting2 = (double)strtod(argv[3], NULL);
+		setting3 = (double)strtod(argv[4], NULL);
+	}
+	else if (strncmp(thresh, "lower", 5) == 0) {
+		if (argc < 5) {
+			lprintf(LOG_ERR, "usage: sensor thresh <id> lower <unc> <ucr> <unr>");
+			return -1;
+		}
+		allLower = 1;
+		setting1 = (double)strtod(argv[2], NULL);
+		setting2 = (double)strtod(argv[3], NULL);
+		setting3 = (double)strtod(argv[4], NULL);
+	}
 	else {
-		lprintf(LOG_ERR, "Valid threshold not specified!");
-		return -1;
+		setting1 = (double)atof(argv[2]);
+		if (strncmp(thresh, "unr", 3) == 0)
+			settingMask = UPPER_NON_RECOV_SPECIFIED;
+		else if (strncmp(thresh, "ucr", 3) == 0)
+			settingMask = UPPER_CRIT_SPECIFIED;
+		else if (strncmp(thresh, "unc", 3) == 0)
+			settingMask = UPPER_NON_CRIT_SPECIFIED;
+		else if (strncmp(thresh, "lnc", 3) == 0)
+			settingMask = LOWER_NON_CRIT_SPECIFIED;
+		else if (strncmp(thresh, "lcr", 3) == 0)
+			settingMask = LOWER_CRIT_SPECIFIED;
+		else if (strncmp(thresh, "lnr", 3) == 0)
+			settingMask = LOWER_NON_RECOV_SPECIFIED;
+		else {
+			lprintf(LOG_ERR, "Valid threshold '%s' for sensor '%s' not specified!", thresh, id);
+			return -1;
+		}
 	}
 
-	printf("Locating sensor record...\n");
+	printf("Locating sensor record '%s'...\n", id);
 
 	/* lookup by sensor name */
 	sdr = ipmi_sdr_find_sdr_byid(intf, id);
@@ -565,25 +641,67 @@ ipmi_sensor_set_threshold(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	printf("Setting sensor \"%s\" %s threshold to %.3f\n",
-	       sdr->record.full->id_string,
-	       val2str(settingMask, threshold_vals), setting);
+	if (allUpper) {
+		settingMask = UPPER_NON_CRIT_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting1);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting1));
 
-	rsp = ipmi_sensor_set_sensor_thresholds(intf, 
-		sdr->record.full->keys.sensor_num, settingMask,
-		sdr_convert_sensor_value_to_raw(sdr->record.full, setting));
+		settingMask = UPPER_CRIT_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting2);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting2));
 
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Error setting threshold");
-		return -1;
+		settingMask = UPPER_NON_RECOV_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting3);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting3));
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Error setting threshold: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	else if (allLower) {
+		settingMask = LOWER_NON_RECOV_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting1);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting1));
+
+		settingMask = LOWER_CRIT_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting2);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting2));
+
+		settingMask = LOWER_NON_CRIT_SPECIFIED;
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting3);
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting3));
+	}
+	else {
+		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
+		       sdr->record.full->id_string,
+		       val2str(settingMask, threshold_vals), setting1);
+
+		ret = __ipmi_sensor_set_threshold(intf,
+			sdr->record.full->keys.sensor_num, settingMask,
+			sdr_convert_sensor_value_to_raw(sdr->record.full, setting1));
 	}
 
-	return 0;
+	return ret;
 }
 
 static int

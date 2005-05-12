@@ -222,7 +222,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		sel_event.event_data[1] = rqdata[j++];
 		sel_event.event_data[2] = rqdata[j++];
 
-		ipmi_sel_print_std_entry(&sel_event);
+		ipmi_sel_print_std_entry(intf, &sel_event);
 		
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {

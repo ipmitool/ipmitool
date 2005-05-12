@@ -69,6 +69,19 @@ int32_t utos(uint32_t val, int bits);
 # define __TO_B_EXP(bacc)   (int32_t)(utos((BSWAP_32(bacc) & 0xf), 4))
 #endif
 
+enum {
+	ANALOG_SENSOR,
+	DISCRETE_SENSOR,
+};
+
+#define READING_UNAVAILABLE	0x20
+#define SCANNING_DISABLED	0x40
+#define EVENT_MSG_DISABLED	0x80
+
+#define IS_READING_UNAVAILABLE(val)	((val) & READING_UNAVAILABLE)
+#define IS_SCANNING_DISABLED(val)	(!((val) & SCANNING_DISABLED))
+#define IS_EVENT_MSG_DISABLED(val)	(!((val) & EVENT_MSG_DISABLED))
+
 #define GET_SDR_REPO_INFO	0x20
 #define GET_SDR_ALLOC_INFO	0x21
 
@@ -79,13 +92,12 @@ int32_t utos(uint32_t val, int bits);
 #define SDR_SENSOR_STAT_HI_CR	(1<<4)
 #define SDR_SENSOR_STAT_HI_NR	(1<<5)
 
-#define READING_UNAVAILABLE	0x20
-#define SCANNING_DISABLED	0x40
-#define EVENTS_DISABLED		0x80
-
-#define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_FACTORS      0x23
 #define GET_SENSOR_THRES	0x27
+#define SET_SENSOR_EVENT_ENABLE	0x28
+#define GET_SENSOR_EVENT_ENABLE 0x29
+#define GET_SENSOR_EVENT_STATUS	0x2b
+#define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_TYPE		0x2f
 
 struct sdr_repo_info_rs {
@@ -129,6 +141,128 @@ struct sdr_get_rs {
 	uint8_t	type;		/* record type */
 	uint8_t	length;		/* remaining record bytes */
 } __attribute__ ((packed));
+
+
+struct sdr_record_mask {
+	union {
+		struct {
+			uint16_t	assert_event;	/* assertion event mask */
+			uint16_t	deassert_event;	/* de-assertion event mask */
+			uint16_t	read;		/* discrete reaading mask */
+		} discrete;
+		struct {
+#if WORDS_BIGENDIAN
+			uint16_t reserved		: 1;
+			uint16_t status_lnr		: 1;
+			uint16_t status_lcr 		: 1;
+			uint16_t status_lnc		: 1;
+			uint16_t assert_unr_high	: 1;
+			uint16_t assert_unr_low		: 1;
+			uint16_t assert_ucr_high	: 1;
+			uint16_t assert_ucr_low		: 1;
+			uint16_t assert_unc_high	: 1;
+			uint16_t assert_unc_low		: 1;
+			uint16_t assert_lnr_high	: 1;
+			uint16_t assert_lnr_low		: 1;
+			uint16_t assert_lcr_high	: 1;
+			uint16_t assert_lcr_low		: 1;
+			uint16_t assert_lnc_high	: 1;
+			uint16_t assert_lnc_low		: 1;
+#else
+			uint16_t assert_lnc_low		: 1;
+			uint16_t assert_lnc_high	: 1;
+			uint16_t assert_lcr_low		: 1;
+			uint16_t assert_lcr_high	: 1;
+			uint16_t assert_lnr_low		: 1;
+			uint16_t assert_lnr_high	: 1;
+			uint16_t assert_unc_low		: 1;
+			uint16_t assert_unc_high	: 1;
+			uint16_t assert_ucr_low		: 1;
+			uint16_t assert_ucr_high	: 1;
+			uint16_t assert_unr_low		: 1;
+			uint16_t assert_unr_high	: 1;
+			uint16_t status_lnc		: 1;
+			uint16_t status_lcr 		: 1;
+			uint16_t status_lnr		: 1;
+			uint16_t reserved		: 1;
+#endif
+#if WORDS_BIGENDIAN
+			uint16_t reserved_2		: 1;
+			uint16_t status_unr		: 1;
+			uint16_t status_ucr 		: 1;
+			uint16_t status_unc		: 1;
+			uint16_t deassert_unr_high	: 1;
+			uint16_t deassert_unr_low	: 1;
+			uint16_t deassert_ucr_high	: 1;
+			uint16_t deassert_ucr_low	: 1;
+			uint16_t deassert_unc_high	: 1;
+			uint16_t deassert_unc_low	: 1;
+			uint16_t deassert_lnr_high	: 1;
+			uint16_t deassert_lnr_low	: 1;
+			uint16_t deassert_lcr_high	: 1;
+			uint16_t deassert_lcr_low	: 1;
+			uint16_t deassert_lnc_high	: 1;
+			uint16_t deassert_lnc_low	: 1;
+#else
+			uint16_t deassert_lnc_low	: 1;
+			uint16_t deassert_lnc_high	: 1;
+			uint16_t deassert_lcr_low	: 1;
+			uint16_t deassert_lcr_high	: 1;
+			uint16_t deassert_lnr_low	: 1;
+			uint16_t deassert_lnr_high	: 1;
+			uint16_t deassert_unc_low	: 1;
+			uint16_t deassert_unc_high	: 1;
+			uint16_t deassert_ucr_low	: 1;
+			uint16_t deassert_ucr_high	: 1;
+			uint16_t deassert_unr_low	: 1;
+			uint16_t deassert_unr_high	: 1;
+			uint16_t status_unc		: 1;
+			uint16_t status_ucr 		: 1;
+			uint16_t status_unr		: 1;
+			uint16_t reserved_2		: 1;
+#endif
+			struct {
+#if WORDS_BIGENDIAN					/* settable threshold mask */
+				uint8_t reserved	: 2;
+				uint8_t unr		: 1;
+				uint8_t ucr		: 1;
+				uint8_t unc		: 1;
+				uint8_t lnr		: 1;
+				uint8_t lcr		: 1;
+				uint8_t lnc		: 1;
+#else
+				uint8_t lnc		: 1;
+				uint8_t lcr		: 1;
+				uint8_t lnr		: 1;
+				uint8_t unc		: 1;
+				uint8_t ucr		: 1;
+				uint8_t unr		: 1;
+				uint8_t reserved	: 2;
+#endif
+			} set;
+			struct {
+#if WORDS_BIGENDIAN					/* readable threshold mask */
+				uint8_t reserved	: 2;
+				uint8_t unr		: 1;
+				uint8_t ucr		: 1;
+				uint8_t unc		: 1;
+				uint8_t lnr		: 1;
+				uint8_t lcr		: 1;
+				uint8_t lnc		: 1;
+#else
+				uint8_t lnc		: 1;
+				uint8_t lcr		: 1;
+				uint8_t lnr		: 1;
+				uint8_t unc		: 1;
+				uint8_t ucr		: 1;
+				uint8_t unr		: 1;
+				uint8_t reserved	: 2;
+#endif
+			} read;
+		} threshold;
+	} type;
+} __attribute__ ((packed));
+
 
 struct sdr_record_compact_sensor {
 	struct {
@@ -189,19 +323,7 @@ struct sdr_record_compact_sensor {
 
 	uint8_t	event_type; /* event/reading type code */
 
-	union {
-		struct {
-			uint16_t	assert_event;	/* assertion event mask */
-			uint16_t	deassert_event;	/* de-assertion event mask */
-			uint16_t	read;		/* discrete reaading mask */
-		} discrete;
-		struct {
-			uint16_t	lower;		/* lower threshold reading mask */
-			uint16_t	upper;		/* upper threshold reading mask */
-			uint8_t	set;		/* settable threshold mask */
-			uint8_t	read;		/* readable threshold mask */
-		} threshold;
-	} mask;
+	struct sdr_record_mask mask;
 
 	struct {
 #if WORDS_BIGENDIAN
@@ -358,19 +480,7 @@ struct sdr_record_full_sensor {
 
 	uint8_t	event_type;			/* event/reading type code */
 
-	union {
-		struct {
-			uint16_t	assert_event;	/* assertion event mask */
-			uint16_t	deassert_event;	/* de-assertion event mask */
-			uint16_t	read;		/* discrete reaading mask */
-		} discrete;
-		struct {
-			uint16_t	lower;		/* lower threshold reading mask */
-			uint16_t	upper;		/* upper threshold reading mask */
-			uint8_t	set;		/* settable threshold mask */
-			uint8_t	read;		/* readable threshold mask */
-		} threshold;
-	} mask;
+	struct sdr_record_mask mask;
 
 	struct {
 #if WORDS_BIGENDIAN
@@ -506,10 +616,64 @@ struct sdr_record_fru_locator {
 	uint8_t id_string[16];
 } __attribute__ ((packed));
 
+struct sdr_record_generic_locator {
+	uint8_t dev_access_addr;
+	uint8_t dev_slave_addr;
+#if WORDS_BIGENDIAN
+	uint8_t channel_num	: 3;
+	uint8_t lun		: 2;
+	uint8_t bus		: 3;
+#else
+	uint8_t bus		: 3;
+	uint8_t lun		: 2;
+	uint8_t channel_num	: 3;
+#endif
+#if WORDS_BIGENDIAN
+	uint8_t addr_span	: 3;
+	uint8_t __reserved1	: 5;
+#else
+	uint8_t __reserved1	: 5;
+	uint8_t addr_span	: 3;
+#endif
+	uint8_t __reserved2;
+	uint8_t dev_type;
+	uint8_t dev_type_modifier;
+	struct entity_id entity;
+	uint8_t oem;
+	uint8_t id_code;
+	uint8_t id_string[16];
+} __attribute__ ((packed));	
+
+struct sdr_record_entity_assoc {
+	struct entity_id entity; /* container entity ID and instance */
+	struct {
+#if WORDS_BIGENDIAN
+		uint8_t isrange		: 1;
+		uint8_t islinked	: 1;
+		uint8_t isaccessable	: 1;
+		uint8_t __reserved      : 5;
+#else
+		uint8_t __reserved      : 5;
+		uint8_t isaccessable	: 1;
+		uint8_t islinked	: 1;
+		uint8_t isrange		: 1;
+#endif
+	} flags;
+	uint8_t entity_id_1;	/* entity ID 1    |  range 1 entity */
+	uint8_t entity_inst_1;	/* entity inst 1  |  range 1 first instance */
+	uint8_t entity_id_2;	/* entity ID 2    |  range 1 entity */
+	uint8_t entity_inst_2;	/* entity inst 2  |  range 1 last instance */
+	uint8_t entity_id_3;	/* entity ID 3    |  range 2 entity */
+	uint8_t entity_inst_3;	/* entity inst 3  |  range 2 first instance */
+	uint8_t entity_id_4;	/* entity ID 4    |  range 2 entity */
+	uint8_t entity_inst_4;	/* entity inst 4  |  range 2 last instance */
+} __attribute__ ((packed));
+
 struct sdr_record_oem {
 	uint8_t * data;
 	int data_len;
 };
+
 
 /*
  * The Get SDR Repository Info response structure
@@ -559,8 +723,10 @@ struct sdr_record_list {
 		struct sdr_record_full_sensor * full;
 		struct sdr_record_compact_sensor * compact;
 		struct sdr_record_eventonly_sensor * eventonly;
+		struct sdr_record_generic_locator * genloc;
 		struct sdr_record_fru_locator * fruloc;
 		struct sdr_record_mc_locator * mcloc;
+		struct sdr_record_entity_assoc * entassoc;
 		struct sdr_record_oem * oem;
 	} record;
 };
@@ -599,13 +765,13 @@ static const char * unit_desc[] __attribute__((unused)) = {
 #define SENSOR_TYPE_MAX 0x29
 static const char * sensor_type_desc[] __attribute__((unused)) = {
 	"reserved",
-	"Temperature", "Voltage", "Current", "Fan", "Physical Security", "Platform Security Violation Attempt",
+	"Temperature", "Voltage", "Current", "Fan", "Physical Security", "Platform Security",
 	"Processor", "Power Supply", "Power Unit", "Cooling Device", "Other", "Memory", "Drive Slot / Bay",
-	"POST Memory Resize", "System Firmware Progress", "Event Logging Disabled", "Watchdog", "System Event",
-	"Critical Interrupt", "Button", "Module / Board", "Microcontroller / Coprocessor", "Add-in Card",
+	"POST Memory Resize", "System Firmwares", "Event Logging Disabled", "Watchdog", "System Event",
+	"Critical Interrupt", "Button", "Module / Board", "Microcontroller", "Add-in Card",
 	"Chassis", "Chip Set", "Other FRU", "Cable / Interconnect", "Terminator", "System Boot Initiated",
 	"Boot Error", "OS Boot", "OS Critical Stop", "Slot / Connector", "System ACPI Power State", "Watchdog",
-	"Platform Alert", "Entity Presence", "Monitor ASIC / IC", "LAN", "Management Subsystem Health", "Battery"
+	"Platform Alert", "Entity Presence", "Monitor ASIC", "LAN", "Management Subsystem Health", "Battery"
 };
 
 struct ipmi_sdr_iterator * ipmi_sdr_start(struct ipmi_intf * intf);
@@ -615,25 +781,35 @@ void ipmi_sdr_end(struct ipmi_intf * intf, struct ipmi_sdr_iterator * i);
 int ipmi_sdr_print_sdr(struct ipmi_intf * intf, uint8_t type);
 int ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type, uint8_t * raw, int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf * intf, struct sdr_record_list * entry);
-const char * ipmi_sdr_get_status(uint8_t stat);
+char * ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier);
+const char * ipmi_sdr_get_status(struct sdr_record_full_sensor * sensor, uint8_t stat);
 double sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, uint8_t val);
 uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, double val);
 struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor);
+struct ipmi_rs * ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf * intf, uint8_t sensor, uint8_t target);
 const char * ipmi_sdr_get_sensor_type_desc(const uint8_t type);
+int ipmi_sdr_get_reservation(struct ipmi_intf * intf, uint16_t *reserve_id);
+
 
 int ipmi_sdr_print_sensor_full(struct ipmi_intf * intf, struct sdr_record_full_sensor * sensor);
 int ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf, struct sdr_record_compact_sensor * sensor);
 int ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf, struct sdr_record_eventonly_sensor * sensor);
+int ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf * intf, struct sdr_record_generic_locator * fru);
 int ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
 int ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf * intf, struct sdr_record_mc_locator * mc);
+int ipmi_sdr_print_sensor_entity_assoc(struct ipmi_intf * intf, struct sdr_record_entity_assoc * assoc);
 
 struct sdr_record_list * ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity);
 struct sdr_record_list * ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num, uint8_t type);
+struct sdr_record_list * ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf * intf, uint8_t type);
 struct sdr_record_list * ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id);
+struct sdr_record_list * ipmi_sdr_find_sdr_bytype(struct ipmi_intf * intf, uint8_t type);
+int ipmi_sdr_list_cache(struct ipmi_intf * intf);
+int ipmi_sdr_list_cache_fromfile(struct ipmi_intf * intf, const char * ifile);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
-void ipmi_sdr_print_discrete_state(uint8_t sensor_type, uint8_t event_type, uint8_t state);
-char * ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier);
-int ipmi_sdr_list_cache(struct ipmi_intf * intf);
+void ipmi_sdr_print_discrete_state(const char * desc, uint8_t sensor_type, uint8_t event_type, uint8_t state1, uint8_t state2);
+int ipmi_sdr_print_sensor_event_status(struct ipmi_intf * intf, uint8_t sensor_num, uint8_t sensor_type, uint8_t event_type, int numeric_fmt);
+int ipmi_sdr_print_sensor_event_enable(struct ipmi_intf * intf, uint8_t sensor_num, uint8_t sensor_type, uint8_t event_type, int numeric_fmt);
 
 #endif  /* IPMI_SDR_H */

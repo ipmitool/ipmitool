@@ -57,6 +57,7 @@
 
 extern int verbose;
 static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
+static int sdr_extended = 0;
 
 static struct sdr_record_list * sdr_list_head = NULL;
 static struct sdr_record_list * sdr_list_tail = NULL;
@@ -242,6 +243,77 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor)
 	return intf->sendrecv(intf, &req);
 }
 
+/* ipmi_sdr_get_sensor_reading_ipmb  -  retrieve a raw sensor reading from ipmb
+ *
+ * @intf:	ipmi interface
+ * @sensor:	sensor id
+ * @target:	IPMB target address
+ *
+ * returns ipmi response structure
+ */
+struct ipmi_rs *
+ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf * intf, uint8_t sensor, uint8_t target)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	uint8_t save_addr;
+
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_READING;
+	req.msg.data = &sensor;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
+}
+
+/* ipmi_sdr_get_sensor_event_status  -  retrieve sensor event status
+ *
+ * @intf:	ipmi interface
+ * @sensor:	sensor id
+ *
+ * returns ipmi response structure
+ */
+struct ipmi_rs *
+ipmi_sdr_get_sensor_event_status(struct ipmi_intf * intf, uint8_t sensor)
+{
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_EVENT_STATUS;
+	req.msg.data = &sensor;
+	req.msg.data_len = 1;
+
+	return intf->sendrecv(intf, &req);
+}
+
+/* ipmi_sdr_get_sensor_event_enable  -  retrieve sensor event enables
+ *
+ * @intf:	ipmi interface
+ * @sensor:	sensor id
+ *
+ * returns ipmi response structure
+ */
+struct ipmi_rs *
+ipmi_sdr_get_sensor_event_enable(struct ipmi_intf * intf, uint8_t sensor)
+{
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_EVENT_ENABLE;
+	req.msg.data = &sensor;
+	req.msg.data_len = 1;
+
+	return intf->sendrecv(intf, &req);
+}
+
 /* ipmi_sdr_get_sensor_type_desc  -  Get sensor type descriptor
  *
  * @type:	ipmi sensor type
@@ -254,11 +326,15 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor)
 const char *
 ipmi_sdr_get_sensor_type_desc(const uint8_t type)
 {
+	static char desc[32];
+	memset(desc, 0, 32);
 	if (type <= SENSOR_TYPE_MAX)
 		return sensor_type_desc[type];
 	if (type < 0xc0)
-		return "reserved";
-	return "OEM reserved";
+		snprintf(desc, 32, "reserved #%02x", type);
+	else
+		snprintf(desc, 32, "OEM reserved #%02x", type);
+	return desc;
 }
 
 /* ipmi_sdr_get_status  -  Return 2-character status indicator
@@ -273,16 +349,58 @@ ipmi_sdr_get_sensor_type_desc(const uint8_t type)
  *   us = unspecified (not used)
  */
 const char *
-ipmi_sdr_get_status(uint8_t stat)
+ipmi_sdr_get_status(struct sdr_record_full_sensor * sensor,
+		    uint8_t stat)
 {
-	if (stat & (SDR_SENSOR_STAT_LO_NR | SDR_SENSOR_STAT_HI_NR))
-		return "nr";
-	else if (stat & (SDR_SENSOR_STAT_LO_CR | SDR_SENSOR_STAT_HI_CR))
-		return "cr";	
-	else if (stat & (SDR_SENSOR_STAT_LO_NC | SDR_SENSOR_STAT_HI_NC))
-		return "nc";
-	else
-		return "ok";
+	if (stat & SDR_SENSOR_STAT_LO_NR) {
+		if (verbose)
+			return "Lower Non-Recoverable";
+		else if (sdr_extended)
+			return "lnr";
+		else
+			return "nr";
+	}
+	else if (stat & SDR_SENSOR_STAT_HI_NR) {
+		if (verbose)
+			return "Upper Non-Recoverable";
+		else if (sdr_extended)
+			return "unr";
+		else
+			return "nr";
+	}
+	else if (stat & SDR_SENSOR_STAT_LO_CR) {
+		if (verbose)
+			return "Lower Critical";
+		else if (sdr_extended)
+			return "lcr";
+		else
+			return "cr";
+	}
+	else if (stat & SDR_SENSOR_STAT_HI_CR) {
+		if (verbose)
+			return "Upper Critical";
+		else if (sdr_extended)
+			return "ucr";
+		else
+			return "cr";
+	}
+	else if (stat & SDR_SENSOR_STAT_LO_NC) {
+		if (verbose)
+			return "Lower Non-Critical";
+		else if (sdr_extended)
+			return "lnc";
+		else
+			return "nc";
+	}
+	else if (stat & SDR_SENSOR_STAT_HI_NC) {
+		if (verbose)
+			return "Upper Non-Critical";
+		else if (sdr_extended)
+			return "unc";
+		else
+			return "nc";
+	}
+	return "ok";
 }
 
 /* ipmi_sdr_get_header  -  retreive SDR record header
@@ -411,24 +529,328 @@ ipmi_sdr_get_next_header(struct ipmi_intf * intf,
 
 /* helper macro for priting analog values */
 #define SENSOR_PRINT_NORMAL(NAME, READ)				\
-	printf(" %-21s : ", NAME);				\
-	if (sensor->analog_flag.READ != 0)			\
-		printf("%.3f", sdr_convert_sensor_reading(	\
+	if (sensor->analog_flag.READ != 0) {			\
+		printf(" %-21s : ", NAME);			\
+		printf("%.3f\n", sdr_convert_sensor_reading(	\
 			         sensor, sensor->READ));	\
-	else							\
-		printf("Unspecified");				\
-	printf("\n");
+	}
 
 /* helper macro for printing sensor thresholds */
-#define SENSOR_PRINT_THRESH(NAME, READ, MASK)			\
-	printf(" %-21s : ", NAME);				\
+#define SENSOR_PRINT_THRESH(NAME, READ, FLAG)			\
 	if (sensor->sensor.init.thresholds &&			\
-	    (sensor->mask.threshold.set & MASK))		\
-		printf("%.3f", sdr_convert_sensor_reading(	\
+	    sensor->mask.type.threshold.read.FLAG != 0) {	\
+		printf(" %-21s : ", NAME);			\
+		printf("%.3f\n", sdr_convert_sensor_reading(	\
 			     sensor, sensor->threshold.READ));	\
-	else							\
-		printf("Unspecified");				\
-	printf("\n");
+	}
+
+
+int
+ipmi_sdr_print_sensor_event_status(struct ipmi_intf * intf,
+				   uint8_t sensor_num,
+				   uint8_t sensor_type,
+				   uint8_t event_type,
+				   int numeric_fmt)
+{
+	struct ipmi_rs * rsp;
+	int i;
+	const struct valstr assert_cond_1[] = {
+		{ 0x80, "unc+" },
+		{ 0x40, "unc-" },
+		{ 0x20, "lnr+" },
+		{ 0x10, "lnr-" },
+		{ 0x08, "lcr+" },
+		{ 0x04, "lcr-" },
+		{ 0x02, "lnc+" },
+		{ 0x01, "lnc-" },
+		{ 0x00, NULL },
+	};
+	const struct valstr assert_cond_2[] = {
+		{ 0x08, "unr+" },
+		{ 0x04, "unr-" },
+		{ 0x02, "ucr+" },
+		{ 0x01, "ucr-" },
+		{ 0x00, NULL },
+	};
+
+	rsp = ipmi_sdr_get_sensor_event_status(intf, sensor_num);
+
+	if (rsp == NULL) {
+		lprintf(LOG_DEBUG, "Error reading event status for sensor #%02x",
+			sensor_num);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_DEBUG, "Error reading event status for sensor #%02x: %s",
+			sensor_num, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	if (IS_READING_UNAVAILABLE(rsp->data[0])) {
+		printf(" Event Status          : Unavailable\n");
+		return 0;
+	}
+	if (IS_SCANNING_DISABLED(rsp->data[0])) {
+		//printf(" Event Status          : Scanning Disabled\n");
+		//return 0;
+	}
+	if (IS_EVENT_MSG_DISABLED(rsp->data[0])) {
+		printf(" Event Status          : Event Messages Disabled\n");
+		//return 0;
+	}
+
+	switch (numeric_fmt) {
+	case DISCRETE_SENSOR:
+		if (rsp->data_len == 2) {
+			ipmi_sdr_print_discrete_state("Assertion Events", sensor_type,
+						      event_type, rsp->data[1], 0);
+		}
+		else if (rsp->data_len > 2) {
+			ipmi_sdr_print_discrete_state("Assertion Events", sensor_type,
+						      event_type, rsp->data[1], rsp->data[2]);
+		}
+		if (rsp->data_len == 4) {
+			ipmi_sdr_print_discrete_state("Deassertion Events", sensor_type,
+						      event_type, rsp->data[3], 0);
+		}
+		else if (rsp->data_len > 4) {
+			ipmi_sdr_print_discrete_state("Deassertion Events", sensor_type,
+						      event_type, rsp->data[3], rsp->data[4]);
+		}
+		break;
+
+	case ANALOG_SENSOR:
+		printf(" Assertion Events      : ");
+		for (i = 0; i < 8; i++) {
+			if (rsp->data[1] & (1<<i))
+				printf("%s ", val2str(1<<i, assert_cond_1));
+		}
+		if (rsp->data_len > 2) {
+			for (i = 0; i < 4; i++) {
+				if (rsp->data[2] & (1<<i))
+					printf("%s ", val2str(1<<i, assert_cond_2));
+			}
+			printf("\n");
+			if ((rsp->data_len == 4 && rsp->data[3] != 0) ||
+			    (rsp->data_len > 4 && (rsp->data[3] != 0 && rsp->data[4] != 0))) {
+				printf(" Deassertion Events    : ");
+				for (i = 0; i < 8; i++) {
+					if (rsp->data[3] & (1<<i))
+						printf("%s ", val2str(1<<i, assert_cond_1));
+				}
+				if (rsp->data_len > 4) {
+					for (i = 0; i < 4; i++) {
+						if (rsp->data[4] & (1<<i))
+							printf("%s ", val2str(1<<i, assert_cond_2));
+					}
+				}
+				printf("\n");
+			}
+		} else {
+			printf("\n");
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int
+ipmi_sdr_print_sensor_mask(struct sdr_record_mask * mask,
+			   uint8_t sensor_type,
+			   uint8_t event_type,
+			   int numeric_fmt)
+{
+	switch (numeric_fmt)
+	{
+	case DISCRETE_SENSOR:
+		ipmi_sdr_print_discrete_state("Assert Event Mask", sensor_type,
+					      event_type,
+					      mask->type.discrete.assert_event & 0xff,
+					      (mask->type.discrete.assert_event & 0xff00) >> 8);
+		ipmi_sdr_print_discrete_state("Deassert Event Mask", sensor_type,
+					      event_type,
+					      mask->type.discrete.deassert_event & 0xff,
+					      (mask->type.discrete.deassert_event & 0xff00) >> 8);
+		break;
+
+	case ANALOG_SENSOR:
+		printf(" Assert Event Mask     : ");
+		if (mask->type.threshold.assert_lnr_high)
+			printf("lnr+ ");
+		if (mask->type.threshold.assert_lnr_low)
+			printf("lnr- ");
+		if (mask->type.threshold.assert_lcr_high)
+			printf("lcr+ ");
+		if (mask->type.threshold.assert_lcr_low)
+			printf("lcr- ");
+		if (mask->type.threshold.assert_lnc_high)
+			printf("lnc+ ");
+		if (mask->type.threshold.assert_lnc_low)
+			printf("lnc- ");
+		if (mask->type.threshold.assert_unc_high)
+			printf("unc+ ");
+		if (mask->type.threshold.assert_unc_low)
+			printf("unc- ");
+		if (mask->type.threshold.assert_ucr_high)
+			printf("ucr+ ");
+		if (mask->type.threshold.assert_ucr_low)
+			printf("ucr- ");
+		if (mask->type.threshold.assert_unr_high)
+			printf("unr+ ");
+		if (mask->type.threshold.assert_unr_low)
+			printf("unr- ");
+		printf("\n");
+
+		printf(" Deassert Event Mask   : ");
+		if (mask->type.threshold.deassert_lnr_high)
+			printf("lnr+ ");
+		if (mask->type.threshold.deassert_lnr_low)
+			printf("lnr- ");
+		if (mask->type.threshold.deassert_lcr_high)
+			printf("lcr+ ");
+		if (mask->type.threshold.deassert_lcr_low)
+			printf("lcr- ");
+		if (mask->type.threshold.deassert_lnc_high)
+			printf("lnc+ ");
+		if (mask->type.threshold.deassert_lnc_low)
+			printf("lnc- ");
+		if (mask->type.threshold.deassert_unc_high)
+			printf("unc+ ");
+		if (mask->type.threshold.deassert_unc_low)
+			printf("unc- ");
+		if (mask->type.threshold.deassert_ucr_high)
+			printf("ucr+ ");
+		if (mask->type.threshold.deassert_ucr_low)
+			printf("ucr- ");
+		if (mask->type.threshold.deassert_unr_high)
+			printf("unr+ ");
+		if (mask->type.threshold.deassert_unr_low)
+			printf("unr- ");
+		printf("\n");
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+int
+ipmi_sdr_print_sensor_event_enable(struct ipmi_intf * intf,
+				   uint8_t sensor_num,
+				   uint8_t sensor_type,
+				   uint8_t event_type,
+				   int numeric_fmt)
+{
+	struct ipmi_rs * rsp;
+	int i;
+	const struct valstr assert_cond_1[] = {
+		{ 0x80, "unc+" },
+		{ 0x40, "unc-" },
+		{ 0x20, "lnr+" },
+		{ 0x10, "lnr-" },
+		{ 0x08, "lcr+" },
+		{ 0x04, "lcr-" },
+		{ 0x02, "lnc+" },
+		{ 0x01, "lnc-" },
+		{ 0x00, NULL },
+	};
+	const struct valstr assert_cond_2[] = {
+		{ 0x08, "unr+" },
+		{ 0x04, "unr-" },
+		{ 0x02, "ucr+" },
+		{ 0x01, "ucr-" },
+		{ 0x00, NULL },
+	};
+
+	rsp = ipmi_sdr_get_sensor_event_enable(intf, sensor_num);
+
+	if (rsp == NULL) {
+		lprintf(LOG_DEBUG, "Error reading event enable for sensor #%02x",
+			sensor_num);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_DEBUG, "Error reading event enable for sensor #%02x: %s",
+			sensor_num, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	if (IS_SCANNING_DISABLED(rsp->data[0])) {
+		//printf(" Event Enable          : Scanning Disabled\n");
+		//return 0;
+	}
+	if (IS_EVENT_MSG_DISABLED(rsp->data[0])) {
+		printf(" Event Enable          : Event Messages Disabled\n");
+		//return 0;
+	}
+
+	switch (numeric_fmt)
+	{
+	case DISCRETE_SENSOR:
+		/* discrete */
+		if (rsp->data_len == 2) {
+			ipmi_sdr_print_discrete_state("Assertions Enabled", sensor_type,
+						      event_type, rsp->data[1], 0);
+		}
+		else if (rsp->data_len > 2) {
+			ipmi_sdr_print_discrete_state("Assertions Enabled", sensor_type,
+						      event_type, rsp->data[1], rsp->data[2]);
+		}
+		if (rsp->data_len == 4) {
+			ipmi_sdr_print_discrete_state("Deassertions Enabled", sensor_type,
+						      event_type, rsp->data[3], 0);
+		}
+		else if (rsp->data_len > 4) {
+			ipmi_sdr_print_discrete_state("Deassertions Enabled", sensor_type,
+						      event_type, rsp->data[3], rsp->data[4]);
+		}
+		break;
+
+	case ANALOG_SENSOR:
+		/* analog */
+		printf(" Assertions Enabled    : ");
+		for (i = 0; i < 8; i++) {
+			if (rsp->data[1] & (1<<i))
+				printf("%s ", val2str(1<<i, assert_cond_1));
+		}
+		if (rsp->data_len > 2) {
+			for (i = 0; i < 4; i++) {
+				if (rsp->data[2] & (1<<i))
+					printf("%s ", val2str(1<<i, assert_cond_2));
+			}
+			printf("\n");
+			if ((rsp->data_len == 4 && rsp->data[3] != 0) ||
+			    (rsp->data_len > 4 && (rsp->data[3] != 0 && rsp->data[4] != 0))) {
+				printf(" Deassertions Enabled  : ");
+				for (i = 0; i < 8; i++) {
+					if (rsp->data[3] & (1<<i))
+						printf("%s ", val2str(1<<i, assert_cond_1));
+				}
+				if (rsp->data_len > 4) {
+					for (i = 0; i < 4; i++) {
+						if (rsp->data[4] & (1<<i))
+							printf("%s ", val2str(1<<i, assert_cond_2));
+					}
+				}
+				printf("\n");
+			}
+		} else {
+			printf("\n");
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
 
 /* ipmi_sdr_print_sensor_full  -  print full SDR record
  *
@@ -452,7 +874,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		return -1;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, sensor->id_string, 16);
+	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
         /* only handle linear sensors and linearized sensors (for now) */
         if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR) {
@@ -464,12 +886,12 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
 
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
+		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
 			desc, sensor->keys.sensor_num);
-		return -1;
+		validread = 0;
 	}
 	if (rsp->ccode > 0) {
-		if (rsp && rsp->ccode == 0xcb) {
+		if (rsp->ccode == 0xcb) {
 			/* sensor not found */
 			validread = 0;
 		} else {
@@ -479,13 +901,12 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			validread = 0;
 		}
 	} else {
-		if (rsp->data[1] & READING_UNAVAILABLE) {
+		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
 			/* sensor reading unavailable */
 			validread = 0;
 		}
-		else if (!(rsp->data[1] & SCANNING_DISABLED)) {
-			/* Sensor Scanning Disabled
-			 * not an error condition so return 0 */
+		else if (IS_SCANNING_DISABLED(rsp->data[1])) {
+			/* Sensor Scanning Disabled */
 			validread = 0;
 			if (rsp->data[0] != 0) {
 				/* we might still get a valid reading */
@@ -535,10 +956,10 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		if (validread) {
 			printf("%.*f,", (val==(int)val) ? 0 : 3, val);
 			printf("%s,%s", do_unit ? unitstr : "",
-			       ipmi_sdr_get_status(rsp->data[2]));
-		} else
-			printf(",,%s", ipmi_sdr_get_status(rsp->data[2]));
-
+			       ipmi_sdr_get_status(sensor, rsp->data[2]));
+		} else {
+			printf(",,ns");
+		}
 
 		if (verbose)
 		{
@@ -553,17 +974,17 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 					 sensor->normal_min);
 			SENSOR_PRINT_CSV(sensor->analog_flag.normal_max,
 					 sensor->normal_max);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x20,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.unr,
 					 sensor->threshold.upper.non_recover);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x10,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.ucr,
 					 sensor->threshold.upper.critical);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x08,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.unc,
 					 sensor->threshold.upper.non_critical);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x04,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.lnr,
 					 sensor->threshold.lower.non_recover);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x02,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.lcr,
 					 sensor->threshold.lower.critical);
-			SENSOR_PRINT_CSV(sensor->mask.threshold.set & 0x01,
+			SENSOR_PRINT_CSV(sensor->mask.type.threshold.read.lnc,
 					 sensor->threshold.lower.non_critical);
 
 			printf ("%.3f,%.3f",
@@ -581,7 +1002,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	 * NORMAL OUTPUT
 	 */
 
-	if (verbose == 0) {
+	if (verbose == 0 && sdr_extended == 0) {
 		/*
 		 * print sensor name, reading, state
 		 */
@@ -594,7 +1015,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			i += snprintf(sval, sizeof(sval), "%.*f %s",
 				      (val==(int)val) ? 0 : 2, val,
 				      do_unit ? unitstr : "");
-		else if (!(rsp->data[1] & SCANNING_DISABLED))
+		else if (IS_SCANNING_DISABLED(rsp->data[1]))
 			i += snprintf(sval, sizeof(sval), "disabled ");
 		else
 			i += snprintf(sval, sizeof(sval), "no reading ");
@@ -607,9 +1028,34 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		printf(" | ");
 
 		printf("%s", validread ?
-		       ipmi_sdr_get_status(rsp->data[2]) : "ns");
+		       ipmi_sdr_get_status(sensor, rsp->data[2]) : "ns");
 		printf("\n");
 
+		return 0;	/* done */
+	}
+	else if (verbose == 0 && sdr_extended == 1) {
+		/*
+		 * print sensor name, number, state, entity, reading
+		 */
+		printf("%-16s | %02Xh | %-3s | %2d.%1d | ",
+		       sensor->id_code ? desc : "", sensor->keys.sensor_num,
+		       validread ? ipmi_sdr_get_status(sensor, rsp->data[2]) : "ns",
+		       sensor->entity.id, sensor->entity.instance);
+
+		i = 0;
+		memset(sval, 0, sizeof(sval));
+
+		if (validread)
+			i += snprintf(sval, sizeof(sval), "%.*f %s",
+				      (val==(int)val) ? 0 : 2, val,
+				      do_unit ? unitstr : "");
+		else if (IS_SCANNING_DISABLED(rsp->data[1]))
+			i += snprintf(sval, sizeof(sval), "disabled ");
+		else
+			i += snprintf(sval, sizeof(sval),
+				      "No Reading ");
+
+		printf("%s\n", sval);
 		return 0;	/* done */
 	}
 
@@ -633,10 +1079,41 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 			printf("%xh\n", (uint32_t)val);
 		else
 			printf("Not Present\n");
-		ipmi_sdr_print_discrete_state(sensor->sensor.type,
-					      sensor->event_type,
-					      rsp->data[2]);
+
+		printf(" Event Message Control : ");
+		switch (sensor->sensor.capabilities.event_msg) {
+		case 0:
+			printf("Per-threshold\n");
+			break;
+		case 1:
+			printf("Entire Sensor Only\n");
+			break;
+		case 2:
+			printf("Global Disable Only\n");
+			break;
+		case 3:
+			printf("No Events From Sensor\n");
+		break;
+		}
+
+		ipmi_sdr_print_discrete_state("States Asserted", sensor->sensor.type,
+					      sensor->event_type, rsp->data[2], rsp->data[3]);
+		ipmi_sdr_print_sensor_mask(&sensor->mask,
+					   sensor->sensor.type,
+					   sensor->event_type,
+					   DISCRETE_SENSOR);
+		ipmi_sdr_print_sensor_event_status(intf,
+						   sensor->keys.sensor_num,
+						   sensor->sensor.type,
+						   sensor->event_type,
+						   DISCRETE_SENSOR);
+		ipmi_sdr_print_sensor_event_enable(intf,
+						   sensor->keys.sensor_num,
+						   sensor->sensor.type,
+						   sensor->event_type,
+						   DISCRETE_SENSOR);
 		printf("\n");
+
 		return 0;	/* done */
 	}
 
@@ -654,24 +1131,24 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		       (tol==(int)tol) ? 0 : 3, 
 		       tol, 
 		       unitstr);
-	} else if (!(rsp->data[1] & SCANNING_DISABLED))
+	} else if (IS_SCANNING_DISABLED(rsp->data[1]))
 		printf("Disabled\n");
 	else
 		printf("Not Present\n");
 
 	printf(" Status                : %s\n",
-	       ipmi_sdr_get_status(rsp->data[2]));
+	       validread ? ipmi_sdr_get_status(sensor, rsp->data[2]) : "Disabled");
 
 	SENSOR_PRINT_NORMAL("Nominal Reading", nominal_read);
 	SENSOR_PRINT_NORMAL("Normal Minimum", normal_min);
 	SENSOR_PRINT_NORMAL("Normal Maximum", normal_max);
 	    
-	SENSOR_PRINT_THRESH("Upper non-recoverable", upper.non_recover, 0x20);
-	SENSOR_PRINT_THRESH("Upper critical", upper.critical, 0x10);
-	SENSOR_PRINT_THRESH("Upper non-critical", upper.non_critical, 0x08);
-	SENSOR_PRINT_THRESH("Lower non-recoverable", lower.non_recover, 0x04);
-	SENSOR_PRINT_THRESH("Lower critical", lower.critical, 0x02);
-	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, 0x01);
+	SENSOR_PRINT_THRESH("Upper non-recoverable", upper.non_recover, unr);
+	SENSOR_PRINT_THRESH("Upper critical", upper.critical, ucr);
+	SENSOR_PRINT_THRESH("Upper non-critical", upper.non_critical, unc);
+	SENSOR_PRINT_THRESH("Lower non-recoverable", lower.non_recover, lnr);
+	SENSOR_PRINT_THRESH("Lower critical", lower.critical, lcr);
+	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, lnc);
 
 	min_reading = (uint8_t)sdr_convert_sensor_reading(
 		sensor, sensor->sensor_min);
@@ -694,7 +1171,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	printf(" Event Message Control : ");
 	switch (sensor->sensor.capabilities.event_msg) {
 	case 0:
-		printf("Per-threshold or discrete-state event\n");
+		printf("Per-threshold\n");
 		break;
 	case 1:
 		printf("Entire Sensor Only\n");
@@ -706,9 +1183,102 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		printf("No Events From Sensor\n");
 		break;
 	}
+
+	printf(" Readable Thresholds   : ");
+	switch (sensor->sensor.capabilities.threshold) {
+	case 0:
+		printf("No Thresholds\n");
+		break;
+	case 1: /* readable according to mask */
+	case 2: /* readable and settable according to mask */
+		if (sensor->mask.type.threshold.read.lnr)
+			printf("lnr ");
+		if (sensor->mask.type.threshold.read.lcr)
+			printf("lcr ");
+		if (sensor->mask.type.threshold.read.lnc)
+			printf("lnc ");
+		if (sensor->mask.type.threshold.read.unc)
+			printf("unc ");
+		if (sensor->mask.type.threshold.read.ucr)
+			printf("ucr ");
+		if (sensor->mask.type.threshold.read.unr)
+			printf("unr ");
+		printf("\n");
+		break;
+	case 3:
+		printf("Thresholds Fixed\n");
+		break;
+	}
+
+	printf(" Settable Thresholds   : ");
+	switch (sensor->sensor.capabilities.threshold) {
+	case 0:
+		printf("No Thresholds\n");
+		break;
+	case 1: /* readable according to mask */
+	case 2: /* readable and settable according to mask */
+		if (sensor->mask.type.threshold.set.lnr)
+			printf("lnr ");
+		if (sensor->mask.type.threshold.set.lcr)
+			printf("lcr ");
+		if (sensor->mask.type.threshold.set.lnc)
+			printf("lnc ");
+		if (sensor->mask.type.threshold.set.unc)
+			printf("unc ");
+		if (sensor->mask.type.threshold.set.ucr)
+			printf("ucr ");
+		if (sensor->mask.type.threshold.set.unr)
+			printf("unr ");
+		printf("\n");
+		break;
+	case 3:
+		printf("Thresholds Fixed\n");
+		break;
+	}
+
+	if (sensor->mask.type.threshold.status_lnr ||
+	    sensor->mask.type.threshold.status_lcr ||
+	    sensor->mask.type.threshold.status_lnc ||
+	    sensor->mask.type.threshold.status_unc ||
+	    sensor->mask.type.threshold.status_ucr ||
+	    sensor->mask.type.threshold.status_unr) {
+		printf(" Threshold Read Mask   : ");
+		if (sensor->mask.type.threshold.status_lnr)
+			printf("lnr ");
+		if (sensor->mask.type.threshold.status_lcr)
+			printf("lcr ");
+		if (sensor->mask.type.threshold.status_lnc)
+			printf("lnc ");
+		if (sensor->mask.type.threshold.status_unc)
+			printf("unc ");
+		if (sensor->mask.type.threshold.status_ucr)
+			printf("ucr ");
+		if (sensor->mask.type.threshold.status_unr)
+			printf("unr ");
+		printf("\n");
+	}
+
+	ipmi_sdr_print_sensor_mask(&sensor->mask,
+				   sensor->sensor.type,
+				   sensor->event_type,
+				   ANALOG_SENSOR);
+
+	ipmi_sdr_print_sensor_event_status(intf,
+					   sensor->keys.sensor_num,
+					   sensor->sensor.type,
+					   sensor->event_type,
+					   ANALOG_SENSOR);
+
+	ipmi_sdr_print_sensor_event_enable(intf,
+					   sensor->keys.sensor_num,
+					   sensor->sensor.type,
+					   sensor->event_type,
+					   ANALOG_SENSOR);
+
 	printf("\n");
 	return 0;
 }
+
 
 static inline int
 get_offset(uint8_t x)
@@ -720,8 +1290,8 @@ get_offset(uint8_t x)
 	return 0;
 }
 
-/* ipmi_sdr_print_discrete_state  -  print list of asserted states
- *                                   for a discrete sensor
+/* ipmi_sdr_print_discrete_state_mini  -  print list of asserted states
+ *                                        for a discrete sensor
  *
  * @sensor_type	: sensor type code
  * @event_type	: event type code
@@ -729,15 +1299,15 @@ get_offset(uint8_t x)
  *
  * no meaningful return value
  */
-void ipmi_sdr_print_discrete_state(uint8_t sensor_type,
-				   uint8_t event_type,
-				   uint8_t state)
+static void ipmi_sdr_print_discrete_state_mini(
+				   uint8_t sensor_type, uint8_t event_type,
+				   uint8_t state1, uint8_t state2)
 {
 	uint8_t typ;
 	struct ipmi_event_sensor_types *evt;
-	int pre = 0;
+	int pre = 0, c = 0;
 
-	if (state == 0)
+	if (state1 == 0)
 		return;
 
 	if (event_type == 0x6f) {
@@ -748,15 +1318,73 @@ void ipmi_sdr_print_discrete_state(uint8_t sensor_type,
 		typ = event_type;
 	}
 
-	printf(" States Asserted       : ");
+	for (; evt->type != NULL; evt++) {
+		if (evt->code != typ)
+			continue;
+
+		if (evt->offset > 7) {
+			if ((1<<(evt->offset-8)) & state2) {
+				if (pre++ != 0)
+					printf(", ");
+				printf("%s ", evt->desc);
+			}
+		} else {
+			if ((1<<evt->offset) & state1) {
+				if (pre++ != 0)
+					printf(", ");
+				printf("%s ", evt->desc);
+			}
+		}
+		c++;
+	}
+}
+
+/* ipmi_sdr_print_discrete_state  -  print list of asserted states
+ *                                   for a discrete sensor
+ *
+ * @desc        : description for this line
+ * @sensor_type	: sensor type code
+ * @event_type	: event type code
+ * @state	: mask of asserted states
+ *
+ * no meaningful return value
+ */
+void ipmi_sdr_print_discrete_state(const char * desc,
+				   uint8_t sensor_type, uint8_t event_type,
+				   uint8_t state1, uint8_t state2)
+{
+	uint8_t typ;
+	struct ipmi_event_sensor_types *evt;
+	int pre = 0, c = 0;
+
+	if (state1 == 0)
+		return;
+
+	if (event_type == 0x6f) {
+		evt = sensor_specific_types;
+		typ = sensor_type;
+	} else {
+		evt = generic_event_types;
+		typ = event_type;
+	}
 
 	for (; evt->type != NULL; evt++) {
-		if (evt->code == typ && ((1<<evt->offset) & state)) {
-			if (pre)
-				printf("                         ");
-			printf("%s\n", evt->desc);
+		if (evt->code != typ)
+			continue;
+		
+		if (pre == 0) {
+			printf(" %-21s : %s\n", desc, evt->type);
 			pre = 1;
 		}
+
+		if (evt->offset > 7) {
+			if ((1<<(evt->offset-8)) & state2)
+				printf("                         [%s]\n", evt->desc);
+		} else {
+			if ((1<<evt->offset) & state1)
+				printf("                         [%s]\n", evt->desc);
+		}
+		c++;
 	}
 }
 
@@ -780,7 +1408,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		return -1;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, sensor->id_string, 16);
+	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
@@ -798,7 +1426,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 	}
 
 	/* check for sensor scanning disabled bit */
-	if (!(rsp->data[1] & SCANNING_DISABLED)) {
+	if (IS_SCANNING_DISABLED(rsp->data[1])) {
 		lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
 			desc, sensor->keys.sensor_num);
 		validread = 0;
@@ -821,96 +1449,113 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR");
 
 		if (validread)
-			ipmi_sdr_print_discrete_state(sensor->sensor.type,
-				      sensor->event_type, rsp->data[2]);
+			ipmi_sdr_print_discrete_state("States Asserted",
+						      sensor->sensor.type,
+						      sensor->event_type,
+						      rsp->data[2],
+						      rsp->data[3]);
+		ipmi_sdr_print_sensor_mask(&sensor->mask,
+					   sensor->sensor.type,
+					   sensor->event_type,
+					   DISCRETE_SENSOR);
+		ipmi_sdr_print_sensor_event_status(intf,
+						   sensor->keys.sensor_num, 
+						   sensor->sensor.type,
+						   sensor->event_type,
+						   DISCRETE_SENSOR);
+		ipmi_sdr_print_sensor_event_enable(intf,
+						   sensor->keys.sensor_num,
+						   sensor->sensor.type,
+						   sensor->event_type,
+						   DISCRETE_SENSOR);
 		printf("\n");
 	}
 	else {
-		char * state;
-		char temp[18];
+		int dostate = 1;
 
-		if (validread == 0) {
-			state = csv_output ?
-				"Not Readable" :
-				"Not Readable     ";
-		} else if (rsp->data_len > 1 &&
-			   (rsp->data[1] & READING_UNAVAILABLE)) {
-			state = csv_output ?
-				"Not Readable" :
-				"Not Readable     ";
-                } else {
-			if (sensor->event_type != 0x6f) {
-				sprintf(temp, "0x%02x", rsp->data[2]);
-				state = temp;
-			} else {
-				switch (sensor->sensor.type) {
-				case 0x07:	/* processor */
-					if (rsp->data[2] & 0x80)
-						state = csv_output ?
-							"Present" :
-							"Present          ";
-					else
-						state = csv_output ?
-							"Not Present" :
-							"Not Present      ";
-					break;
-				case 0x10:	/* event logging disabled */
-					if (rsp->data[2] & 0x10)
-						state = csv_output ?
-							"Log Full" :
-							"Log Full         ";
-					else if (rsp->data[2] & 0x04)
-						state = csv_output ?
-							"Log Clear" :
-							"Log Clear        ";
-					else {
-						sprintf(temp, "0x%02x", rsp->data[2]);
-						state = temp;
-					}
-					break;
-				case 0x21:	/* slot/connector */
-					if (rsp->data[2] & 0x04)
-						state = csv_output ?
-							"Installed" :
-							"Installed        ";
-					else
-						state = csv_output ?
-							"Not Installed" :
-							"Not Installed    ";
-					break;
-				default:
-					sprintf(temp, "0x%02x", rsp->data[2]);
-					state = temp;
-					break;
+		if (csv_output) {
+			printf("%s,%02Xh,",
+			       sensor->id_code ? desc : "",
+			       sensor->keys.sensor_num);
+			if (validread == 0 || rsp->ccode != 0) {
+				printf("ns,%d.%d,No Reading",
+				       sensor->entity.id,
+				       sensor->entity.instance);
+				dostate = 0;
+			}
+			else if (rsp->ccode == 0) {
+				if (IS_READING_UNAVAILABLE(rsp->data[1])) {
+					printf("ns,%d.%d,No Reading",
+					       sensor->entity.id,
+					       sensor->entity.instance);
+					dostate = 0;
 				}
+				else
+					printf("ok,%d.%d,",
+					       sensor->entity.id,
+					       sensor->entity.instance);
 			}
 		}
+		else if (sdr_extended) {
 
-		if (csv_output)
-			printf("%s,", sensor->id_code ? desc : "");
-		else
-			printf("%-16s | ", sensor->id_code ? desc : "");
-
-		if (validread == 0) {
-			if (csv_output)
-				printf("%s,ns\n", state);
-			else
-				printf("%-17s | ns\n", state);
-		} else if (rsp->ccode == 0) {
-			if (csv_output)
-				printf("%s,%s\n", state,
-				       (rsp->data[1] & READING_UNAVAILABLE) ?
-				       "ns" : "ok");
-			else
-				printf("%-17s | %s\n", state,
-				       (rsp->data[1] & READING_UNAVAILABLE) ?
-				       "ns" : "ok");
-		} else {
-			if (csv_output)
-				printf("%s,ok\n", state);
-			else
-				printf("%-17s | ok\n", state);
+			printf("%-16s | %02Xh | ",
+			       sensor->id_code ? desc : "",
+			       sensor->keys.sensor_num);
+			if (validread == 0 || rsp->ccode != 0) {
+				printf("ns  | %2d.%1d | No Reading",
+				       sensor->entity.id, sensor->entity.instance);
+				dostate = 0;
+			}
+			else {
+				if (IS_READING_UNAVAILABLE(rsp->data[1])) {
+					printf("ns  | %2d.%1d | No Reading",
+					       sensor->entity.id, sensor->entity.instance);
+					dostate = 0;
+				}
+				else
+					printf("ok  | %2d.%1d | ",
+					       sensor->entity.id, sensor->entity.instance);
+			}
 		}
+		else {
+			char * state;
+			char temp[18];
+
+			if (validread == 0) {
+				state = csv_output ?
+					"Not Readable" :
+					"Not Readable     ";
+			} else if (rsp->data_len > 1 &&
+				   IS_READING_UNAVAILABLE(rsp->data[1])) {
+				state = csv_output ?
+					"Not Readable" :
+					"Not Readable     ";
+			} else {
+				sprintf(temp, "0x%02x", rsp->data[2]);
+				state = temp;
+			}
+
+			printf("%-16s | ", sensor->id_code ? desc : "");
+			if (validread == 0) {
+				printf("%-17s | ns", state);
+			} else if (rsp->ccode == 0) {
+				printf("%-17s | %s", state,
+				       IS_READING_UNAVAILABLE(rsp->data[1]) ?
+				       "ns" : "ok");
+			} else {
+				printf("%-17s | ok", state);
+			}
+
+			dostate = 0;
+		}
+
+		if (dostate) 
+			ipmi_sdr_print_discrete_state_mini(sensor->sensor.type,
+							   sensor->event_type,
+							   rsp->data[2],
+							   rsp->data[3]);
+
+		printf("\n");
 	}
 
 	return 0;
@@ -934,7 +1579,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
 		return -1;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, sensor->id_string, 16);
+	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
@@ -951,8 +1596,15 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf * intf,
 	}
 	else {
 		if (csv_output)
-			printf("%s,Event-Only,ns\n",
-			       sensor->id_code ? desc : "");
+			printf("%s,%02Xh,ns,%d.%d,Event-Only\n",
+			       sensor->id_code ? desc : "",
+			       sensor->keys.sensor_num,
+			       sensor->entity.id, sensor->entity.instance);
+		else if (sdr_extended)
+			printf("%-16s | %02Xh | ns  | %2d.%1d | Event-Only\n",
+			       sensor->id_code ? desc : "",
+			       sensor->keys.sensor_num,
+			       sensor->entity.id, sensor->entity.instance);
 		else
 			printf("%-16s | Event-Only        | ns\n",
 			       sensor->id_code ? desc : "");
@@ -979,23 +1631,29 @@ ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf * intf,
 		return -1;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, mc->id_string, 16);
+	snprintf(desc, (mc->id_code & 0x1f) + 1, "%s", mc->id_string);
 
 	if (verbose == 0) {
 		if (csv_output)
-			printf("%s,", mc->id_code ? desc : "");
-		else
-			printf("%-16s | ", mc->id_code ? desc : "");
+			printf("%s,00h,ok,%d.%d",
+			       mc->id_code ? desc : "",
+			       mc->entity.id, mc->entity.instance);
+		else if (sdr_extended) {
+			printf("%-16s | 00h | ok  | %2d.%1d | ",
+			       mc->id_code ? desc : "",
+			       mc->entity.id, mc->entity.instance);
 
-		printf("%s MC @ %02Xh",
-		       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic",
-		       mc->dev_slave_addr);
-
-		if (csv_output)
-			printf(",ok\n");
-		else
-			printf(" %s | ok\n",
+			printf("%s MC @ %02Xh\n",
+			       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic",
+			       mc->dev_slave_addr);
+		}
+		else {
+			printf("%-16s | %s MC @ %02Xh %s | ok\n",
+			       mc->id_code ? desc : "",
+			       (mc->pwr_state_notif & 0x1) ? "Static" : "Dynamic",
+			       mc->dev_slave_addr,
 			       (mc->pwr_state_notif & 0x1) ? " " : "");
+		}
 
 		return 0;	/* done */
 	}		
@@ -1050,6 +1708,65 @@ ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf * intf,
 	return 0;
 }
 
+/* ipmi_sdr_print_sensor_generic_locator  -  print generic device locator record
+ *
+ * @intf:	ipmi interface
+ * @gen:	generic device locator sdr record
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+int
+ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf * intf,
+				      struct sdr_record_generic_locator * dev)
+{
+	char desc[17];
+
+	memset(desc, 0, sizeof(desc));
+	snprintf(desc, (dev->id_code & 0x1f) + 1, "%s", dev->id_string);
+
+	if (!verbose) {
+		if (csv_output)
+			printf("%s,00h,ns,%d.%d,",
+			       dev->id_code ? desc : "",
+			       dev->entity.id, dev->entity.instance);
+		else if (sdr_extended)
+			printf("%-16s | 00h | ns  | %2d.%1d | Generic Device @%02Xh:%02Xh.%1d\n",
+			       dev->id_code ? desc : "",
+			       dev->entity.id, dev->entity.instance,
+			       dev->dev_access_addr,
+			       dev->dev_slave_addr,
+			       dev->oem);
+		else
+			printf("%-16s | Generic @%02X:%02X.%1d  | ok\n",
+			       dev->id_code ? desc : "",
+			       dev->dev_access_addr,
+			       dev->dev_slave_addr,
+			       dev->oem);
+
+		return 0;
+	}
+
+	printf("Device ID              : %s\n", dev->id_string);
+	printf("Entity ID              : %d.%d (%s)\n",
+	       dev->entity.id, dev->entity.instance,
+	       val2str(dev->entity.id, entity_id_vals));
+
+	printf("Device Access Address  : %02Xh\n", dev->dev_access_addr);
+	printf("Device Slave Address   : %02Xh\n", dev->dev_slave_addr);
+	printf("Address Span           : %02Xh\n", dev->addr_span);
+	printf("Channel Number         : %01Xh\n", dev->channel_num);
+	printf("LUN.Bus                : %01Xh.%01Xh\n", dev->lun, dev->bus);
+	printf("Device Type.Modifier   : %01Xh.%01Xh (%s)\n",
+	       dev->dev_type, dev->dev_type_modifier, 
+	       val2str(dev->dev_type << 8 | dev->dev_type_modifier,
+		       entity_device_type_vals));
+	printf("OEM                    : %02Xh\n", dev->oem);
+	printf("\n");
+
+	return 0;
+}
+
 /* ipmi_sdr_print_sensor_fru_locator  -  print FRU locator record
  *
  * @intf:	ipmi interface
@@ -1065,22 +1782,25 @@ ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf * intf,
 	char desc[17];
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, fru->id_string, 16);
+	snprintf(desc, (fru->id_code & 0x1f) + 1, "%s", fru->id_string);
 
 	if (!verbose) {
 		if (csv_output)
-			printf("%s,", fru->id_code ? desc : "");
+			printf("%s,00h,ns,%d.%d,",
+			       fru->id_code ? desc : "",
+			       fru->entity.id, fru->entity.instance);
+		else if (sdr_extended)
+			printf("%-16s | 00h | ns  | %2d.%1d | %s FRU @%02Xh\n",
+			       fru->id_code ? desc : "",
+			       fru->entity.id, fru->entity.instance,
+			       (fru->logical) ? "Logical" : "Physical",
+			       fru->device_id);
 		else
-			printf("%-16s | ", fru->id_code ? desc : "");
-
-		printf("%s FRU @%02Xh %02x.%x",
-		       (fru->logical) ? "Log" : "Phy",
-		       fru->device_id,
-		       fru->entity.id, fru->entity.instance);
-		if (csv_output)
-			printf(",ok\n");
-		else
-			printf(" | ok\n");
+			printf("%-16s | %s FRU @%02Xh %02x.%x | ok\n",
+			       fru->id_code ? desc : "",
+			       (fru->logical) ? "Log" : "Phy",
+			       fru->device_id,
+			       fru->entity.id, fru->entity.instance);
 
 		return 0;
 	}
@@ -1090,20 +1810,35 @@ ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf * intf,
 	       fru->entity.id, fru->entity.instance,
 	       val2str(fru->entity.id, entity_id_vals));
 
-	printf("Device Slave Address   : %02Xh\n", fru->dev_slave_addr);
-        if (fru->logical)
-		printf("%s: %02Xh\n", 
-                     fru->logical ? "Logical FRU Device     " : 
-                                    "Slave Address          ", 
-                     fru->device_id);
-	printf("LUN.Bus                : %01Xh.%01Xh\n", fru->lun, fru->bus);
+	printf("Device Access Address  : %02Xh\n", fru->dev_slave_addr);
+	printf("%s: %02Xh\n", 
+	       fru->logical ? "Logical FRU Device     " : 
+	       "Slave Address          ", 
+	       fru->device_id);
 	printf("Channel Number         : %01Xh\n", fru->channel_num);
+	printf("LUN.Bus                : %01Xh.%01Xh\n", fru->lun, fru->bus);
 	printf("Device Type.Modifier   : %01Xh.%01Xh (%s)\n",
-                fru->dev_type, fru->dev_type_modifier, 
-                val2str(fru->dev_type << 8 | fru->dev_type_modifier,
-			entity_device_type_vals));
+	       fru->dev_type, fru->dev_type_modifier, 
+	       val2str(fru->dev_type << 8 | fru->dev_type_modifier,
+		       entity_device_type_vals));
+	printf("OEM                    : %02Xh\n", fru->oem);
 	printf("\n");
 
+	return 0;
+}
+
+/* ipmi_sdr_print_sensor_entity_assoc  -  print SDR entity association record
+ *
+ * @intf:	ipmi interface
+ * @mc:		entity association sdr record
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+int
+ipmi_sdr_print_sensor_entity_assoc(struct ipmi_intf * intf,
+				   struct sdr_record_entity_assoc * assoc)
+{
 	return 0;
 }
 
@@ -1247,6 +1982,10 @@ ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type,
 		rc = ipmi_sdr_print_sensor_eventonly(intf,
 				(struct sdr_record_eventonly_sensor *) raw);
 		break;
+	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+		rc = ipmi_sdr_print_sensor_generic_locator(intf,
+				(struct sdr_record_generic_locator *) raw);
+		break;
 	case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 		rc = ipmi_sdr_print_sensor_fru_locator(intf,
 				(struct sdr_record_fru_locator *) raw);
@@ -1255,6 +1994,10 @@ ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type,
 		rc = ipmi_sdr_print_sensor_mc_locator(intf,
 				(struct sdr_record_mc_locator *) raw);
 		break;
+	case SDR_RECORD_TYPE_ENTITY_ASSOC:
+		rc = ipmi_sdr_print_sensor_entity_assoc(intf,
+				(struct sdr_record_entity_assoc *) raw);
+		break;
 	case SDR_RECORD_TYPE_OEM: {
 		struct sdr_record_oem oem;
 		oem.data = raw;
@@ -1262,9 +2005,7 @@ ipmi_sdr_print_rawentry(struct ipmi_intf * intf, uint8_t type,
 		rc = ipmi_sdr_print_sensor_oem(intf, (struct sdr_record_oem *)&oem);
 		break;
 	}
-	case SDR_RECORD_TYPE_ENTITY_ASSOC:
 	case SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC:
-	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
 	case SDR_RECORD_TYPE_MC_CONFIRMATION:
 	case SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO:
 		/* not implemented */
@@ -1298,18 +2039,22 @@ ipmi_sdr_print_listentry(struct ipmi_intf * intf,
 	case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 		rc = ipmi_sdr_print_sensor_eventonly(intf, entry->record.eventonly);
 		break;
+	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+		rc = ipmi_sdr_print_sensor_generic_locator(intf, entry->record.genloc);
+		break;
 	case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 		rc = ipmi_sdr_print_sensor_fru_locator(intf, entry->record.fruloc);
 		break;
 	case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 		rc = ipmi_sdr_print_sensor_mc_locator(intf, entry->record.mcloc);
 		break;
+	case SDR_RECORD_TYPE_ENTITY_ASSOC:
+		rc = ipmi_sdr_print_sensor_entity_assoc(intf, entry->record.entassoc);
+		break;
 	case SDR_RECORD_TYPE_OEM:
 		rc = ipmi_sdr_print_sensor_oem(intf, entry->record.oem);
 		break;
-	case SDR_RECORD_TYPE_ENTITY_ASSOC:
 	case SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC:
-	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
 	case SDR_RECORD_TYPE_MC_CONFIRMATION:
 	case SDR_RECORD_TYPE_BMC_MSG_CHANNEL_INFO:
 		/* not implemented yet */
@@ -1331,37 +2076,93 @@ int
 ipmi_sdr_print_sdr(struct ipmi_intf * intf, uint8_t type)
 {
 	struct sdr_get_rs * header;
-	struct ipmi_sdr_iterator * itr;
+	struct sdr_record_list * e;
 	int rc = 0;
 
 	lprintf(LOG_DEBUG, "Querying SDR for sensor list");
 
-	itr = ipmi_sdr_start(intf);
-	if (itr == NULL) {
-		lprintf(LOG_ERR, "Unable to open SDR for reading");
-		return -1;
+	if (sdr_list_itr == NULL) {
+		sdr_list_itr = ipmi_sdr_start(intf);
+		if (sdr_list_itr == NULL) {
+			lprintf(LOG_ERR, "Unable to open SDR for reading");
+			return -1;
+		}
 	}
 
-	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
-		uint8_t * rec;
-
-		if (type != header->type && type != 0xff)
+	for (e = sdr_list_head; e != NULL; e = e->next) {
+		if (type != e->type && type != 0xff && type != 0xfe)
 			continue;
+		if (type == 0xfe &&
+		    e->type != SDR_RECORD_TYPE_FULL_SENSOR &&
+		    e->type != SDR_RECORD_TYPE_COMPACT_SENSOR)
+			continue;
+		if (ipmi_sdr_print_listentry(intf, e) < 0)
+			rc = -1;
+	}
+		
+	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
+		uint8_t * rec;
+		struct sdr_record_list * sdrr;
 
-		rec = ipmi_sdr_get_record(intf, header, itr);
+		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (rec == NULL) {
 			rc = -1;
 			continue;
 		}
 
-		if (ipmi_sdr_print_rawentry(intf, header->type,
-					    rec, header->length) < 0)
-			rc = -1;
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			break;
+		}
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+		
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
 
-		free(rec);
+		if (type == header->type || type == 0xff ||
+		    (type == 0xfe &&
+		     (header->type == SDR_RECORD_TYPE_FULL_SENSOR ||
+		      header->type == SDR_RECORD_TYPE_COMPACT_SENSOR))) {
+			if (ipmi_sdr_print_rawentry(intf, header->type,
+						    rec, header->length) < 0)
+				rc = -1;
+		}
+
+		/* add to global record liset */
+		if (sdr_list_head == NULL)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+
+		sdr_list_tail = sdrr;
 	}
-
-	ipmi_sdr_end(intf, itr);
 
 	return rc;
 }
@@ -1649,6 +2450,10 @@ ipmi_sdr_list_empty(struct ipmi_intf * intf)
 			if (list->record.eventonly)
 				free(list->record.eventonly);
 			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			if (list->record.genloc)
+				free(list->record.genloc);
+			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			if (list->record.fruloc)
 				free(list->record.fruloc);
@@ -1656,6 +2461,10 @@ ipmi_sdr_list_empty(struct ipmi_intf * intf)
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			if (list->record.mcloc)
 				free(list->record.mcloc);
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			if (list->record.entassoc)
+				free(list->record.entassoc);
 			break;
 		}
 		next = list->next;
@@ -1690,13 +2499,6 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num,
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
 		}
-	}
-
-	switch (type) {
-		/* these are not valid to search by number/type */
-		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			return NULL;
 	}
 
 	/* check what we've already read */
@@ -1757,6 +2559,18 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num,
 			    sdrr->record.eventonly->sensor_type == type)
 				found = 1;
 			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			break;
 		default:
 			free(rec);
 			continue;
@@ -1775,6 +2589,117 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf * intf, uint8_t num,
 	}
 
 	return NULL;
+}
+
+/* ipmi_sdr_find_sdr_bysensortype  -  lookup SDR entry by sensor type
+ *
+ * @intf:	ipmi interface
+ * @type:	sensor type to search for
+ *
+ * returns pointer to SDR list
+ * returns NULL on error
+ */
+struct sdr_record_list *
+ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf * intf, uint8_t type)
+{
+	struct sdr_record_list * head;
+	struct sdr_get_rs * header;
+	struct sdr_record_list * e;
+
+	head = malloc(sizeof(struct sdr_record_list));
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(head, 0, sizeof(struct sdr_record_list));
+
+	if (sdr_list_itr == NULL) {
+		sdr_list_itr = ipmi_sdr_start(intf);
+		if (sdr_list_itr == NULL) {
+			lprintf(LOG_ERR, "Unable to open SDR for reading");
+			return NULL;
+		}
+	}
+
+	/* check what we've already read */
+	for (e = sdr_list_head; e != NULL; e = e->next) {
+		switch (e->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			if (e->record.full->sensor.type == type)
+				__sdr_list_add(head, e);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			if (e->record.compact->sensor.type == type)
+				__sdr_list_add(head, e);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			if (e->record.eventonly->sensor_type == type)
+				__sdr_list_add(head, e);
+			break;
+		}
+	}
+
+	/* now keep looking */
+	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
+		uint8_t * rec;
+		struct sdr_record_list * sdrr;
+
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			break;
+		}
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+
+		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
+		if (rec == NULL)
+			continue;
+
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			if (sdrr->record.full->sensor.type == type)
+				__sdr_list_add(head, sdrr);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			if (sdrr->record.compact->sensor.type == type)
+				__sdr_list_add(head, sdrr);
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			if (sdrr->record.eventonly->sensor_type == type)
+				__sdr_list_add(head, sdrr);
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
+
+		/* put in the global record list */
+		if (sdr_list_head == NULL)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+
+		sdr_list_tail = sdrr;
+	}
+
+	return head;
 }
 
 /* ipmi_sdr_find_sdr_byentity  -  lookup SDR entry by entity association
@@ -1812,27 +2737,44 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity)
 		switch (e->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			if (e->record.full->entity.id == entity->id &&
-			    e->record.full->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     e->record.full->entity.instance == entity->instance))
 				__sdr_list_add(head, e);
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			if (e->record.compact->entity.id == entity->id &&
-			    e->record.compact->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     e->record.compact->entity.instance == entity->instance))
 				__sdr_list_add(head, e);
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			if (e->record.eventonly->entity.id == entity->id &&
-			    e->record.eventonly->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     e->record.eventonly->entity.instance == entity->instance))
+				__sdr_list_add(head, e);
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			if (e->record.genloc->entity.id == entity->id &&
+			    (entity->instance == 0x7f ||
+			     e->record.genloc->entity.instance == entity->instance))
 				__sdr_list_add(head, e);
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			if (e->record.fruloc->entity.id == entity->id &&
-			    e->record.fruloc->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     e->record.fruloc->entity.instance == entity->instance))
 				__sdr_list_add(head, e);
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			if (e->record.mcloc->entity.id == entity->id &&
-			    e->record.mcloc->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     e->record.mcloc->entity.instance == entity->instance))
+				__sdr_list_add(head, e);
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			if (e->record.entassoc->entity.id == entity->id &&
+			    (entity->instance == 0x7f ||
+			     e->record.entassoc->entity.instance == entity->instance))
 				__sdr_list_add(head, e);
 			break;
 		}
@@ -1860,37 +2802,151 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf * intf, struct entity_id * entity)
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
 			if (sdrr->record.full->entity.id == entity->id &&
-			    sdrr->record.full->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     sdrr->record.full->entity.instance == entity->instance))
 				__sdr_list_add(head, sdrr);
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
 			if (sdrr->record.compact->entity.id == entity->id &&
-			    sdrr->record.compact->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     sdrr->record.compact->entity.instance == entity->instance))
 				__sdr_list_add(head, sdrr);
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
 			if (sdrr->record.eventonly->entity.id == entity->id &&
-			    sdrr->record.eventonly->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     sdrr->record.eventonly->entity.instance == entity->instance))
+				__sdr_list_add(head, sdrr);
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			if (sdrr->record.genloc->entity.id == entity->id &&
+			    (entity->instance == 0x7f ||
+			     sdrr->record.genloc->entity.instance == entity->instance))
 				__sdr_list_add(head, sdrr);
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
 			if (sdrr->record.fruloc->entity.id == entity->id &&
-			    sdrr->record.fruloc->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     sdrr->record.fruloc->entity.instance == entity->instance))
 				__sdr_list_add(head, sdrr);
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
 			if (sdrr->record.mcloc->entity.id == entity->id &&
-			    sdrr->record.mcloc->entity.instance == entity->instance)
+			    (entity->instance == 0x7f ||
+			     sdrr->record.mcloc->entity.instance == entity->instance))
+				__sdr_list_add(head, sdrr);
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			if (sdrr->record.entassoc->entity.id == entity->id &&
+			    (entity->instance == 0x7f ||
+			     sdrr->record.entassoc->entity.instance == entity->instance))
 				__sdr_list_add(head, sdrr);
 			break;
 		default:
 			free(rec);
 			continue;
 		}
+
+		/* add to global record list */
+		if (sdr_list_head == NULL)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+
+		sdr_list_tail = sdrr;
+	}
+
+	return head;
+}
+
+/* ipmi_sdr_find_sdr_bytype  -  lookup SDR entries by type
+ *
+ * @intf:	ipmi interface
+ * @type:	type of sensor record to search for
+ *
+ * returns pointer to SDR list with all matching entities
+ * returns NULL on error
+ */
+struct sdr_record_list *
+ipmi_sdr_find_sdr_bytype(struct ipmi_intf * intf, uint8_t type)
+{
+	struct sdr_get_rs * header;
+	struct sdr_record_list * e;
+	struct sdr_record_list * head;
+
+	head = malloc(sizeof(struct sdr_record_list));
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(head, 0, sizeof(struct sdr_record_list));
+
+	if (sdr_list_itr == NULL) {
+		sdr_list_itr = ipmi_sdr_start(intf);
+		if (sdr_list_itr == NULL) {
+			lprintf(LOG_ERR, "Unable to open SDR for reading");
+			return NULL;
+		}
+	}
+
+	/* check what we've already read */
+	for (e = sdr_list_head; e != NULL; e = e->next)
+		if (e->type == type)
+			__sdr_list_add(head, e);
+			
+	/* now keep looking */
+	while ((header = ipmi_sdr_get_next_header(intf, sdr_list_itr)) != NULL) {
+		uint8_t * rec;
+		struct sdr_record_list * sdrr;
+
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			break;
+		}
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+		sdrr->id = header->id;
+		sdrr->type = header->type;
+
+		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
+		if (rec == NULL)
+			continue;
+
+		switch (header->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
+
+		if (header->type == type)
+			__sdr_list_add(head, sdrr);
 
 		/* add to global record list */
 		if (sdr_list_head == NULL)
@@ -1918,6 +2974,12 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 	struct sdr_get_rs * header;
 	struct sdr_record_list * e;
 	int found = 0;
+	int idlen;
+
+	if (id == NULL)
+		return NULL;
+
+	idlen = strlen(id);
 
 	if (sdr_list_itr == NULL) {
 		sdr_list_itr = ipmi_sdr_start(intf);
@@ -1932,27 +2994,32 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 		switch (e->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			if (!strncmp(e->record.full->id_string, id,
-				     e->record.full->id_code & 0x1f))
+				     __max(e->record.full->id_code & 0x1f, idlen)))
 				return e;
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			if (!strncmp(e->record.compact->id_string, id,
-				     e->record.compact->id_code & 0x1f))
+				     __max(e->record.compact->id_code & 0x1f, idlen)))
 				return e;
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			if (!strncmp(e->record.eventonly->id_string, id,
-				     e->record.eventonly->id_code & 0x1f))
+				     __max(e->record.eventonly->id_code & 0x1f, idlen)))
+				return e;
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			if (!strncmp(e->record.genloc->id_string, id,
+				     __max(e->record.genloc->id_code & 0x1f, idlen)))
 				return e;
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			if (!strncmp(e->record.fruloc->id_string, id,
-				     e->record.fruloc->id_code & 0x1f))
+				     __max(e->record.fruloc->id_code & 0x1f, idlen)))
 				return e;
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			if (!strncmp(e->record.mcloc->id_string, id,
-				     e->record.mcloc->id_code & 0x1f))
+				     __max(e->record.mcloc->id_code & 0x1f, idlen)))
 				return e;
 			break;
 		}
@@ -1980,32 +3047,41 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
 			if (!strncmp(sdrr->record.full->id_string, id,
-				     sdrr->record.full->id_code & 0x1f))
+				     __max(sdrr->record.full->id_code & 0x1f, idlen)))
 				found = 1;
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
 			if (!strncmp(sdrr->record.compact->id_string, id,
-				     sdrr->record.compact->id_code & 0x1f))
+				     __max(sdrr->record.compact->id_code & 0x1f, idlen)))
 				found = 1;
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
 			if (!strncmp(sdrr->record.eventonly->id_string, id,
-				     sdrr->record.eventonly->id_code & 0x1f))
+				     __max(sdrr->record.eventonly->id_code & 0x1f, idlen)))
+				found = 1;
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			if (!strncmp(sdrr->record.genloc->id_string, id,
+				     __max(sdrr->record.genloc->id_code & 0x1f, idlen)))
 				found = 1;
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
 			if (!strncmp(sdrr->record.fruloc->id_string, id,
-				     sdrr->record.fruloc->id_code & 0x1f))
+				     __max(sdrr->record.fruloc->id_code & 0x1f, idlen)))
 				found = 1;
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
 			if (!strncmp(sdrr->record.mcloc->id_string, id,
-				     sdrr->record.mcloc->id_code & 0x1f))
+				     __max(sdrr->record.mcloc->id_code & 0x1f, idlen)))
 				found = 1;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
 			break;
 		default:
 			free(rec);
@@ -2027,6 +3103,138 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf * intf, char * id)
 	return NULL;
 }
 
+/* ipmi_sdr_list_cache_fromfile  -  generate SDR cache for fast lookup from local file
+ *
+ * @intf:	ipmi interface
+ * @ifile:	input filename
+ *
+ * returns pointer to SDR list
+ * returns NULL on error
+ */
+int
+ipmi_sdr_list_cache_fromfile(struct ipmi_intf * intf, const char * ifile)
+{
+	FILE * fp;
+	struct __sdr_header {
+		uint16_t id;
+		uint8_t version;
+		uint8_t type;
+		uint8_t length;
+	} header;
+	struct sdr_record_list * sdrr;
+	uint8_t * rec;
+	int ret = 0, count = 0, bc = 0;
+
+	if (ifile == NULL) {
+		lprintf(LOG_ERR, "No SDR cache filename given");
+		return -1;
+	}
+
+	fp = ipmi_open_file_read(ifile);
+	if (fp == NULL) {
+		lprintf(LOG_ERR, "Unable to open SDR cache %s for reading", ifile);
+		return -1;
+	}
+
+	while (feof(fp) == 0) {
+		memset(&header, 0, 5);
+		bc = fread(&header, 1, 5, fp);
+		if (bc <= 0)
+			break;
+
+		if (bc != 5) {
+			lprintf(LOG_ERR, "header read %d bytes, expected 5", bc);
+			ret = -1;
+			break;
+		}
+
+		if (header.length == 0)
+			continue;
+
+		if (header.version != 0x51) {
+			lprintf(LOG_WARN, "invalid sdr header version %02x", header.version);
+			continue;
+		}
+
+		sdrr = malloc(sizeof(struct sdr_record_list));
+		if (sdrr == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			ret = -1;
+			break;
+		}
+		memset(sdrr, 0, sizeof(struct sdr_record_list));
+
+		sdrr->id = header.id;
+		sdrr->type = header.type;
+
+		rec = malloc(header.length);
+		if (rec == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			ret = -1;
+			break;
+		}
+		memset(rec, 0, header.length);
+
+		bc = fread(rec, 1, header.length, fp);
+		if (bc != header.length) {
+			lprintf(LOG_ERR, "record %04x read %d bytes, expected %d",
+				header.id, bc, header.length);
+			ret = -1;
+			break;
+		}
+
+		switch (header.type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			sdrr->record.full = (struct sdr_record_full_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sdrr->record.compact = (struct sdr_record_compact_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
+			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
+			break;
+		default:
+			free(rec);
+			continue;
+		}
+		
+		/* add to global record liset */
+		if (sdr_list_head == NULL)
+			sdr_list_head = sdrr;
+		else
+			sdr_list_tail->next = sdrr;
+
+		sdr_list_tail = sdrr;
+
+		count++;
+
+		lprintf(LOG_DEBUG, "Read record %04x from file into cache", sdrr->id);
+	}
+
+	if (sdr_list_itr == NULL) {
+		sdr_list_itr = malloc(sizeof(struct ipmi_sdr_iterator));
+		if (sdr_list_itr != NULL) {
+			sdr_list_itr->reservation = 0;
+			sdr_list_itr->total = count;
+			sdr_list_itr->next = 0xffff;
+		}
+	}
+
+	fclose(fp);
+	return ret;
+}
 
 /* ipmi_sdr_list_cache  -  generate SDR cache for fast lookup
  *
@@ -2075,11 +3283,17 @@ ipmi_sdr_list_cache(struct ipmi_intf * intf)
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			sdrr->record.eventonly = (struct sdr_record_eventonly_sensor *)rec;
 			break;
+		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+			sdrr->record.genloc = (struct sdr_record_generic_locator *)rec;
+			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
 			sdrr->record.fruloc = (struct sdr_record_fru_locator *)rec;
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
 			sdrr->record.mcloc = (struct sdr_record_mc_locator *)rec;
+			break;
+		case SDR_RECORD_TYPE_ENTITY_ASSOC:
+			sdrr->record.entassoc = (struct sdr_record_entity_assoc *)rec;
 			break;
 		default:
 			free(rec);
@@ -2333,6 +3547,70 @@ ipmi_sdr_dump_bin(struct ipmi_intf * intf, const char * ofile)
 	return rc;
 }
 
+
+
+/* ipmi_sdr_print_type  -  print all sensors of specified type
+ *
+ * @intf:	ipmi interface
+ * @type:	sensor type
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+int
+ipmi_sdr_print_type(struct ipmi_intf * intf, char * type)
+{
+	struct sdr_record_list * list, * entry;
+	int rc = 0;
+	int x;
+	uint8_t sensor_type = 0;
+
+	if (type == NULL ||
+	    strncasecmp(type, "help", 4) == 0 ||
+	    strncasecmp(type, "list", 4) == 0) {
+		printf("Sensor Types:\n");
+		for (x = 1; x < SENSOR_TYPE_MAX; x+=2) {
+			printf("\t%-25s   %-25s\n",
+			       sensor_type_desc[x], sensor_type_desc[x+1]);
+		}
+		return 0;
+	}
+
+	if (strncmp(type, "0x", 2) == 0) {
+		/* begins with 0x so let it be entered as raw hex value */
+		sensor_type = (uint8_t)strtol(type, NULL, 0);
+	}
+	else {
+		for (x = 1; x < SENSOR_TYPE_MAX; x++) {
+			if (strncasecmp(sensor_type_desc[x], type,
+					__max(strlen(type), strlen(sensor_type_desc[x]))) == 0) {
+				sensor_type = x;
+				break;
+			}
+		}
+		if (sensor_type != x) {
+			printf("Sensor Types:\n");
+			for (x = 1; x < SENSOR_TYPE_MAX; x+=2) {
+				printf("\t%-25s   %-25s\n",
+				       sensor_type_desc[x], sensor_type_desc[x+1]);
+			}
+			return 0;
+		}
+	}
+
+	list = ipmi_sdr_find_sdr_bysensortype(intf, sensor_type);
+
+	for (entry = list; entry != NULL; entry = entry->next) {
+		rc = ipmi_sdr_print_listentry(intf, entry);
+	}
+
+	__sdr_list_empty(list);
+
+	return rc;
+}
+
+
+
 /* ipmi_sdr_print_entity  -  print entity's for an id/instance
  *
  * @intf:	ipmi interface
@@ -2346,7 +3624,8 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 {
 	struct sdr_record_list * list, * entry;
 	struct entity_id entity;
-	uint32_t id, instance;
+	unsigned id = 0;
+	unsigned instance = 0;
 	int rc = 0;
 
 	if (entitystr == NULL) {
@@ -2400,15 +3679,18 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 	srand(time(NULL));
 
 	if (argc == 0)
-		return ipmi_sdr_print_sdr(intf, 0xff);
+		return ipmi_sdr_print_sdr(intf, 0xfe);
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR, "SDR Commands:  list [all|full|compact|event|mcloc|fru]");
+		lprintf(LOG_ERR, "SDR Commands:  list | elist [all|full|compact|event|mcloc|fru|generic]");
 		lprintf(LOG_ERR, "                     all        All SDR Records");
 		lprintf(LOG_ERR, "                     full       Full Sensor Record");
 		lprintf(LOG_ERR, "                     compact    Compact Sensor Record");
 		lprintf(LOG_ERR, "                     event      Event-Only Sensor Record");
 		lprintf(LOG_ERR, "                     mcloc      Management Controller Locator Record");
 		lprintf(LOG_ERR, "                     fru        FRU Locator Record");
+		lprintf(LOG_ERR, "                     generic    Generic Device Locator Record");
+		lprintf(LOG_ERR, "               type [sensor type]");
+		lprintf(LOG_ERR, "                     list       Get a list of available sensor types");
 		lprintf(LOG_ERR, "               info");
 		lprintf(LOG_ERR, "                     Display information about the repository itself");
 		lprintf(LOG_ERR, "               entity <id>[.<instance>]");
@@ -2416,9 +3698,16 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "               dump <file>");
 		lprintf(LOG_ERR, "                     Dump raw SDR data to a file");
 	}
-	else if (strncmp(argv[0], "list", 4) == 0) {
+	else if (strncmp(argv[0], "list", 4) == 0 ||
+		 strncmp(argv[0], "elist", 5) == 0) {
+
+		if (strncmp(argv[0], "elist", 5) == 0)
+			sdr_extended = 1;
+		else
+			sdr_extended = 0;
+
 		if (argc <= 1)
-			rc = ipmi_sdr_print_sdr(intf, 0xff);
+			rc = ipmi_sdr_print_sdr(intf, 0xfe);
 		else if (strncmp(argv[1], "all", 3) == 0)
 			rc = ipmi_sdr_print_sdr(intf, 0xff);
 		else if (strncmp(argv[1], "full", 4) == 0)
@@ -2431,10 +3720,17 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_MC_DEVICE_LOCATOR);
 		else if (strncmp(argv[1], "fru", 3) == 0)
 			rc = ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR);
+		else if (strncmp(argv[1], "generic", 7) == 0)
+			rc = ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
 		else
-			lprintf(LOG_ERR, "usage: sdr list [all|full|compact|event|mcloc|fru]");
+			lprintf(LOG_ERR, "usage: sdr list [all|full|compact|event|mcloc|fru|generic]");
+	}
+	else if (strncmp(argv[0], "type", 4) == 0) {
+		sdr_extended = 1;
+		rc = ipmi_sdr_print_type(intf, argv[1]);
 	}
 	else if (strncmp(argv[0], "entity", 6) == 0) {
+		sdr_extended = 1;
 		rc = ipmi_sdr_print_entity(intf, argv[1]);
 	}
 	else if (strncmp(argv[0], "info", 4) == 0) {
@@ -2445,7 +3741,8 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "usage: sdr dump <filename>");
 		else
 			rc = ipmi_sdr_dump_bin(intf, argv[1]);
-	} else {
+	}
+	else {
 		lprintf(LOG_ERR, "Invalid SDR command: %s", argv[0]);
 		rc = -1;
 	}
