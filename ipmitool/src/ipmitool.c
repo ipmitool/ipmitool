@@ -57,6 +57,7 @@
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_oem.h>
+#include <ipmitool/ipmi_sunoem.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -90,6 +91,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },
+	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
 #ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
 #endif
