@@ -72,12 +72,13 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	req.msg.cmd = cmd;
 	req.msg.data_len = 0;
 
-	intf->noanswer = 1;
+	if (cmd == BMC_COLD_RESET)
+		intf->noanswer = 1;
 
 	rsp = intf->sendrecv(intf, &req);
 
-	intf->abort = 1;
-	/* no meaningful return in many cases */
+	if (cmd == BMC_COLD_RESET)
+		intf->abort = 1;
 
 	printf("Sent %s reset command to MC\n",
 	       (cmd == BMC_WARM_RESET) ? "warm" : "cold");
