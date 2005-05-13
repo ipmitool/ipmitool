@@ -1738,7 +1738,7 @@ ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf * intf,
 			       dev->dev_slave_addr,
 			       dev->oem);
 		else
-			printf("%-16s | Generic @%02X:%02X.%1d  | ok\n",
+			printf("%-16s | Generic @%02X:%02X.%-2d | ok\n",
 			       dev->id_code ? desc : "",
 			       dev->dev_access_addr,
 			       dev->dev_slave_addr,
