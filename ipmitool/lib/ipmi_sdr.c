@@ -1050,10 +1050,9 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 				      (val==(int)val) ? 0 : 2, val,
 				      do_unit ? unitstr : "");
 		else if (IS_SCANNING_DISABLED(rsp->data[1]))
-			i += snprintf(sval, sizeof(sval), "disabled ");
+			i += snprintf(sval, sizeof(sval), "Disabled");
 		else
-			i += snprintf(sval, sizeof(sval),
-				      "No Reading ");
+			i += snprintf(sval, sizeof(sval), "No Reading");
 
 		printf("%s\n", sval);
 		return 0;	/* done */
@@ -1077,8 +1076,10 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 		printf(" Sensor Reading        : ");
 		if (validread)
 			printf("%xh\n", (uint32_t)val);
+		else if (IS_SCANNING_DISABLED(rsp->data[1]))
+			printf("Disabled\n");
 		else
-			printf("Not Present\n");
+			printf("Not Reading\n");
 
 		printf(" Event Message Control : ");
 		switch (sensor->sensor.capabilities.event_msg) {
@@ -1134,7 +1135,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	} else if (IS_SCANNING_DISABLED(rsp->data[1]))
 		printf("Disabled\n");
 	else
-		printf("Not Present\n");
+		printf("No Reading\n");
 
 	printf(" Status                : %s\n",
 	       validread ? ipmi_sdr_get_status(sensor, rsp->data[2]) : "Disabled");
@@ -1502,8 +1503,12 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 			       sensor->id_code ? desc : "",
 			       sensor->keys.sensor_num);
 			if (validread == 0 || rsp->ccode != 0) {
-				printf("ns  | %2d.%1d | No Reading",
+				printf("ns  | %2d.%1d | ",
 				       sensor->entity.id, sensor->entity.instance);
+				if (IS_SCANNING_DISABLED(rsp->data[1]))
+					printf("Disabled");
+				else
+					printf("No Reading");
 				dostate = 0;
 			}
 			else {
