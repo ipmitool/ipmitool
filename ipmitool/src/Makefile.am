@@ -40,13 +40,8 @@ MAINTAINERCLEANFILES	= Makefile.in
 ipmitool_SOURCES	= ipmitool.c ipmishell.c
 ipmitool_LDADD		= $(top_builddir)/lib/libipmitool.la plugins/libintf.la
 
-if IPMIEVD
 ipmievd_SOURCES		= ipmievd.c
 ipmievd_LDADD		= $(top_builddir)/lib/libipmitool.la plugins/libintf.la
-endif
-
-EXTRA_DIST		= ipmievd.c
 
 bin_PROGRAMS		= ipmitool
-sbin_PROGRAMS		= @IPMIEVD_BIN@
-EXTRA_PROGRAMS		= ipmitool ipmievd
+sbin_PROGRAMS		= ipmievd
