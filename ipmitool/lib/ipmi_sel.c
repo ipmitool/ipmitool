@@ -334,6 +334,14 @@ ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt
 }
 
 void
+ipmi_sel_print_extended_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
+{
+	sel_extended++;
+	ipmi_sel_print_std_entry(intf, evt);
+	sel_extended--;
+}
+
+void
 ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 {
         char * description;
@@ -525,12 +533,20 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	printf("\n");
 }
 
-static void
-ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt, struct sdr_record_list * sdr)
+void
+ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt)
 {
-        char * description;
-	if (!evt || !sdr)
+	struct sdr_record_list * sdr;
+	char * description;
+
+	if (!evt)
 		return;
+	
+	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sensor_num, evt->sensor_type);
+	if (sdr == NULL) {
+		ipmi_sel_print_std_entry_verbose(intf, evt);
+		return;
+	}
 
 	printf("SEL Record ID          : %04x\n", evt->record_id);
 
@@ -1070,39 +1086,17 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		/* lookup SDR entry based on sensor number and type */
+		ipmi_sel_print_extended_entry_verbose(intf, &evt);
+
 		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sensor_num, evt.sensor_type);
 		if (sdr == NULL) {
-			ipmi_sel_print_std_entry_verbose(intf, &evt);
 			continue;
-		}
-		else {
-			/* print SEL extended entry */
-			ipmi_sel_print_extended_entry_verbose(intf, &evt, sdr);
 		}
 
 		/* print SDR entry */
 		oldv = verbose;
 		verbose = verbose ? : 1;
-		switch (sdr->type) {
-		case SDR_RECORD_TYPE_FULL_SENSOR:
-			ipmi_sensor_print_full(intf, sdr->record.full);
-			entity.id = sdr->record.full->entity.id;
-			entity.instance = sdr->record.full->entity.instance;
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			ipmi_sensor_print_compact(intf, sdr->record.compact);
-			entity.id = sdr->record.compact->entity.id;
-			entity.instance = sdr->record.compact->entity.instance;
-			break;
-		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
-			entity.id = sdr->record.eventonly->entity.id;
-			entity.instance = sdr->record.eventonly->entity.instance;
-			break;
-		default:
-			verbose = oldv;
-			continue;
-		}
+		ipmi_sdr_print_listentry(intf, sdr);
 		verbose = oldv;
 
 		/* lookup SDR entry based on entity id */

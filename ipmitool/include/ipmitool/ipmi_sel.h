@@ -39,6 +39,7 @@
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sdr.h>
 
 #define IPMI_CMD_GET_SEL_INFO		0x40
 #define IPMI_CMD_GET_SEL_ALLOC_INFO	0x41
@@ -75,8 +76,13 @@ struct sel_event_record {
 	uint8_t	evm_rev;
 	uint8_t	sensor_type;
 	uint8_t	sensor_num;
+#if WORDS_BIGENDIAN
+	uint8_t	event_dir  : 1;
+	uint8_t	event_type : 7;
+#else
 	uint8_t	event_type : 7;
 	uint8_t	event_dir  : 1;
+#endif
 #define DATA_BYTE2_SPECIFIED_MASK 0xc0    /* event_data[0] bit mask */
 #define DATA_BYTE3_SPECIFIED_MASK 0x30    /* event_data[0] bit mask */
 #define EVENT_OFFSET_MASK         0x0f    /* event_data[0] bit mask */
@@ -446,6 +452,8 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
 void ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt);
+void ipmi_sel_print_extended_entry(struct ipmi_intf * intf, struct sel_event_record * evt);
+void ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_get_event_desc(struct sel_event_record * rec, char ** desc);
 const char * ipmi_sel_get_sensor_type(uint8_t code);
 const char * ipmi_sel_get_sensor_type_offset(uint8_t code, uint8_t offset);
