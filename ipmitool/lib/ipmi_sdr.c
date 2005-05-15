@@ -3765,10 +3765,10 @@ ipmi_sdr_print_entry_byid(struct ipmi_intf * intf, int argc, char ** argv)
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
 		if (sdr == NULL) {
 			lprintf(LOG_ERR, "Unable to find sensor id '%s'", argv[i]);
-			return -1;
+		} else {
+			if (ipmi_sdr_print_listentry(intf, sdr) < 0)
+				rc = -1;
 		}
-		if (ipmi_sdr_print_listentry(intf, sdr) < 0)
-			rc = -1;
 	}
 
 	verbose = v;
