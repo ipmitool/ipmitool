@@ -1096,7 +1096,26 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		/* print SDR entry */
 		oldv = verbose;
 		verbose = verbose ? : 1;
-		ipmi_sdr_print_listentry(intf, sdr);
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			ipmi_sensor_print_full(intf, sdr->record.full);
+			entity.id = sdr->record.full->entity.id;
+			entity.instance = sdr->record.full->entity.instance;
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			ipmi_sensor_print_compact(intf, sdr->record.compact);
+			entity.id = sdr->record.compact->entity.id;
+			entity.instance = sdr->record.compact->entity.instance;
+			break;
+		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);
+			entity.id = sdr->record.eventonly->entity.id;
+			entity.instance = sdr->record.eventonly->entity.instance;
+			break;
+		default:
+			verbose = oldv;
+			continue;
+		}
 		verbose = oldv;
 
 		/* lookup SDR entry based on entity id */
