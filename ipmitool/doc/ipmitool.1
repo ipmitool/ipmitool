@@ -161,33 +161,24 @@ to get option usage help.
 ipmitool help
 .br 
 Commands:
-        raw          Send a RAW IPMI request and print
-                     response
+        raw          Send a RAW IPMI request and print response
         lan          Configure LAN Channels
-        chassis      Get chassis status and set power
-                     state
-        event        Send pre\-defined events to MC
-        mc           Management Controller status and
-                     global enables
-        sdr          Print Sensor Data Repository
-                     entries and readings
+        chassis      Get chassis status and set power state
+        event        Send events to MC
+        mc           Management Controller status and global enables
+        sdr          Print Sensor Data Repository entries and readings
         sensor       Print detailed sensor information
-        fru          Print built\-in FRU and scan SDR
-                     for FRU locators
+        fru          Print built\-in FRU and scan for FRU locators
         sel          Print System Event Log (SEL)
-        pef          Configure Platform Event Filtering
-                     (PEF)
+        pef          Configure Platform Event Filtering (PEF)
         sol          Configure IPMIv2.0 Serial\-over\-LAN
         isol         Configure IPMIv1.5 Serial\-over\-LAN
-        user         Configure Management Controller
-                     users
-        channel      Configure Management Controller
-                     channels
+        user         Configure Management Controller users
+        channel      Configure Management Controller channels
         session      Print session information
         sunoem       Manage Sun OEM Extensions
         exec         Run list of commands from file
-        set          Set runtime variable for shell and
-                     exec
+        set          Set runtime variable for shell and exec
 
 ipmitool chassis help
 .br 
@@ -526,6 +517,65 @@ e.g.:
 .br 
 0x4 0x2 0x60 0x1 0x52 0x0 0x0 # Voltage threshold: Lower Critical: Going Low
 
+.TP 
+<\fBsensorid\fR> <\fBstate\fR> [<\fBeventdir\fR>]
+
+Generate a custom event based on existing sensor information.
+The optional event direction can be either \fIassert\fP or
+\fIdeassert\fP and defaults to assert.  To get a list of
+possible states for a sensor supply a state of \fBlist\fR
+on the command line.  Each sensor may be different but some
+states will have pre\-defined shortcuts.  For example:
+.RS
+.PP 
+> ipmitool \-I open event p0.t_core
+.br 
+Finding sensor p0.t_core... ok
+.br 
+Sensor States:
+.br 
+  lnr : Lower Non\-Recoverable
+.br 
+  lcr : Lower Critical
+.br 
+  lnc : Lower Non\-Critical
+.br 
+  unc : Upper Non\-Critical
+.br 
+  ucr : Upper Critical
+.br 
+  unr : Upper Non\-Recoverable
+.RE
+.RS
+.PP 
+> ipmitool \-I open event ps0.prsnt
+.br 
+Finding sensor ps0.prsnt... ok
+.br 
+Sensor States:
+.br 
+  Device Absent
+.br 
+  Device Present
+.br 
+State State Shortcuts:
+.br 
+  present    absent
+.br 
+  assert     deassert
+.br 
+  limit      nolimit
+.br 
+  fail       nofail
+.br 
+  yes        no
+.br 
+  on         off
+.br 
+  up         down
+.br 
+.RE
+
 .RE
 .TP 
 \fIexec\fP <\fBfilename\fR>
@@ -783,6 +833,11 @@ RAW RSP (5 bytes)
 .TP 
 \fIsdr\fP
 .RS
+.TP 
+\fIget\fP <\fBid\fR> ... [<\fBid\fR>]
+.br 
+
+Prints information for sensor data records specified by sensor id.
 .TP 
 \fIinfo\fP
 .br 
@@ -1133,29 +1188,6 @@ list of devices that are controllable LEDs.  The \fIledtype\fP
 parameter is optional and not necessary to provide on the command
 line unless it is required by hardware.
 .TP 
-Supported LED Modes are:
-.br 
-\fIOFF\fP             Off
-.br 
-\fION\fP              Steady On
-.br 
-\fISTANDBY_BLINK\fP   100ms on 2900ms off blink rate
-.br 
-\fISLOW_BLINK\fP      1HZ blink rate
-.br 
-\fIFAST_BLINK\fP      4HZ blink rate
-.TP 
-Supported (optional) LED Types are:
-.br 
-\fIOK2RM\fP           Ok to Remove
-.br 
-\fISERVICE\fP         Service Required
-.br 
-\fIACT\fP             Activity
-.br 
-\fILOCATE\fP          Locate
-
-.TP 
 \fIget\fP <\fBsensorid\fR> [<\fBledtype\fR>]
 
 Get status of a particular LED described by a Generic Device Locator
@@ -1167,6 +1199,29 @@ of all available LEDS.
 Set status of a particular LED described by a Generic Device Locator
 record in the SDR.  A sensorid of \fIall\fP will set the status
 of all available LEDS to the specified \fIledmode\fP and \fIledtype\fP.
+.TP 
+LED Mode is required for set operations:
+.br 
+\fIOFF\fP         Off
+.br 
+\fION\fP          Steady On
+.br 
+\fISTANDBY\fP     100ms on 2900ms off blink rate
+.br 
+\fISLOW\fP        1HZ blink rate
+.br 
+\fIFAST\fP        4HZ blink rate
+.TP 
+LED Type is optional:
+.br 
+\fIOK2RM\fP       Ok to Remove
+.br 
+\fISERVICE\fP     Service Required
+.br 
+\fIACT\fP         Activity
+.br 
+\fILOCATE\fP      Locate
+
 .RE
 .TP 
 \fIsshkey\fP
