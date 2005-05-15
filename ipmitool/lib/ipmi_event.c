@@ -310,7 +310,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		off = 1;
 
 		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
-			printf("Sensor Thresholds:\n");
+			printf("Sensor States:\n");
 			printf("  lnr : Lower Non-Recoverable \n");
 			printf("  lcr : Lower Critical\n");
 			printf("  lnc : Lower Non-Critical\n");
@@ -400,7 +400,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		 */
 		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
 			print_sensor_states(emsg.sensor_type, emsg.event_type);
-			printf("State Shortcuts:\n");
+			printf("Sensor State Shortcuts:\n");
 			for (x = 0; x < sizeof(digi_on)/sizeof(*digi_on); x++) {
 				printf("  %-9s  %-9s\n", digi_on[x], digi_off[x]);
 			}
