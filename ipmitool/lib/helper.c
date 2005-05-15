@@ -120,12 +120,13 @@ uint16_t str2val(const char *str, const struct valstr *vs)
 	int i = 0;
 
 	while (vs[i].str != NULL) {
-		if (!strncasecmp(vs[i].str, str, strlen(str)))
+		if (!strncasecmp(vs[i].str, str,
+				 __max(strlen(str), strlen(vs[i].str))))
 			return vs[i].val;
 		i++;
 	}
 
-	return 0;
+	return vs[i].val;
 }
 
 /* ipmi_csum  -  calculate an ipmi checksum
