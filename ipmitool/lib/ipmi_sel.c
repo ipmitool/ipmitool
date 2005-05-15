@@ -464,7 +464,12 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 				sdr->record.full, evt->event_data[2]);
 		}
 
-		printf(" | Reading %.*f %s Threshold %.*f %s",
+		if (csv_output)
+			printf(",");
+		else
+			printf(" | ");
+		
+		printf("Reading %.*f %s Threshold %.*f %s",
 		       (trigger_reading==(int)trigger_reading) ? 0 : 2,
 		       trigger_reading,
 		       ((evt->event_data[0] & 0xf) % 2) ? ">" : "<",
