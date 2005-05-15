@@ -96,7 +96,7 @@ static int rl_event_keepalive(void)
 
 int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	char *pbuf, **ap, *__argv[20];
+	char *ptr, *pbuf, **ap, *__argv[20];
 	int __argc, rc=0;
 
 	rl_readline_name = "ipmitool";
@@ -136,6 +136,28 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* for the all-important up arrow :) */
 		add_history(pbuf);
 		
+		/* change "" and '' with spaces in the middle to ~ */
+		ptr = pbuf;
+		while (*ptr != '\0') {
+			if (*ptr == '"') {
+				ptr++;
+				while (*ptr != '"') {
+					if (isspace(*ptr))
+						*ptr = '~';
+					ptr++;
+				}
+			}
+			if (*ptr == '\'') {
+				ptr++;
+				while (*ptr != '\'') {
+					if (isspace(*ptr))
+						*ptr = '~';
+					ptr++;
+				}
+			}
+			ptr++;
+		}
+
 		__argc = 0;
 		ap = __argv;
 
@@ -143,6 +165,27 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		     *ap != NULL;
 		     *ap = strtok(NULL, " \t")) {
 			__argc++;
+
+			ptr = *ap;
+			if (*ptr == '\'') {
+				memmove(ptr, ptr+1, strlen(ptr));
+				while (*ptr != '\'') {
+					if (*ptr == '~')
+						*ptr = ' ';
+					ptr++;
+				}
+				*ptr = '\0';
+			}
+			if (*ptr == '"') {
+				memmove(ptr, ptr+1, strlen(ptr));
+				while (*ptr != '"') {
+					if (*ptr == '~')
+						*ptr = ' ';
+					ptr++;
+				}
+				*ptr = '\0';
+			}
+
 			if (**ap != '\0') {
 				if (++ap >= &__argv[20])
 					break;
@@ -230,7 +273,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "authtype", 8) == 0) {
 		int authtype;
 		authtype = str2val(argv[1], ipmi_authtype_session_vals);
-		if (authtype < 0) {
+		if (authtype == 0xFF) {
 			lprintf(LOG_ERR, "Invalid authtype: %s", argv[1]);
 		} else {
 			ipmi_intf_session_set_authtype(intf, authtype);
@@ -241,7 +284,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "privlvl", 7) == 0) {
 		int privlvl;
 		privlvl = str2val(argv[1], ipmi_privlvl_vals);
-		if (privlvl < 0) {
+		if (privlvl == 0xFF) {
 			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[1]);
 		} else {
 			ipmi_intf_session_set_privlvl(intf, privlvl);
@@ -299,8 +342,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else
 			ptr = buf + strlen(buf);
 
-		/* change "" and '' with spaces in the middle to ~
-		 * this is really ugly but I'm in a hurry */
+		/* change "" and '' with spaces in the middle to ~ */
 		ptr = buf;
 		while (*ptr != '\0') {
 			if (*ptr == '"') {
