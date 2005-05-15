@@ -177,7 +177,10 @@ __sdr_list_empty(struct sdr_record_list * head)
 static void
 led_print(const char * name, uint8_t state)
 {
-	printf("%-16s | %s\n", name, val2str(state, sunoem_led_mode_vals));
+	if (csv_output)
+		printf("%s,%s\n", name, val2str(state, sunoem_led_mode_vals));
+	else
+		printf("%-16s | %s\n", name, val2str(state, sunoem_led_mode_vals));
 }
 
 static struct ipmi_rs *
@@ -399,7 +402,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 	 * handle logical entity for LED grouping
 	 */
 
-	lprintf(LOG_NOTICE, "LED %s is logical device", argv[0]);
+	lprintf(LOG_INFO, "LED %s is logical device", argv[0]);
 
 	/* get entity assoc records */
 	alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_ENTITY_ASSOC);
@@ -553,7 +556,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 	 * handle logical entity for LED grouping
 	 */
 
-	lprintf(LOG_NOTICE, "LED %s is logical device", argv[0]);
+	lprintf(LOG_INFO, "LED %s is logical device", argv[0]);
 
 	/* get entity assoc records */
 	alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_ENTITY_ASSOC);
