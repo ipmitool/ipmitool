@@ -42,6 +42,23 @@
 #endif
 #include <ipmitool/ipmi.h>
 
+#define EVENT_DIR_ASSERT	0
+#define EVENT_DIR_DEASSERT	1
+
+struct platform_event_msg {
+	uint8_t evm_rev;
+	uint8_t sensor_type;
+	uint8_t sensor_num;
+#if WORDS_BIGENDIAN
+	uint8_t event_dir  : 1;
+	uint8_t event_type : 7;
+#else
+	uint8_t event_type : 7;
+	uint8_t event_dir  : 1;
+#endif
+	uint8_t event_data[3];
+} __attribute__((packed));
+
 int  ipmi_event_main(struct ipmi_intf *, int, char **);
 
 #endif /*IPMI_EVENT_H*/
