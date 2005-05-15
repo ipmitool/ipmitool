@@ -68,10 +68,18 @@ static const struct valstr sunoem_led_type_vals[] = {
 static const struct valstr sunoem_led_mode_vals[] = {
 	{ 0, "OFF" },
 	{ 1, "ON" },
+	{ 2, "STANDBY" },
+	{ 3, "SLOW" },
+	{ 4, "FAST" },
+	{ 0xFF, NULL },
+};
+static const struct valstr sunoem_led_mode_optvals[] = {
+	{ 0, "STEADY_OFF" },
+	{ 1, "STEADY_ON" },
 	{ 2, "STANDBY_BLINK" },
 	{ 3, "SLOW_BLINK" },
 	{ 4, "FAST_BLINK" },
-	{ 0, NULL },
+	{ 0xFF, NULL },
 };
 
 static void
@@ -99,18 +107,18 @@ ipmi_sunoem_usage(void)
 	lprintf(LOG_NOTICE, "      Use 'sdr list generic' command to get list of Generic");
 	lprintf(LOG_NOTICE, "      Devices that are controllable LEDs.");
 	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "      Optional SIS LED Type:");
-	lprintf(LOG_NOTICE, "         OK2RM            OK to Remove");
-	lprintf(LOG_NOTICE, "         SERVICE          Service Required");
-	lprintf(LOG_NOTICE, "         ACT              Activity");
-	lprintf(LOG_NOTICE, "         LOCATE           Locate");
-	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "      Required SIS LED Mode:");
-	lprintf(LOG_NOTICE, "         OFF              Off");
-	lprintf(LOG_NOTICE, "         ON               Steady On");
-	lprintf(LOG_NOTICE, "         STANDBY_BLINK    100ms on 2900ms off blink rate");
-	lprintf(LOG_NOTICE, "         SLOW_BLINK       1HZ blink rate");
-	lprintf(LOG_NOTICE, "         FAST_BLINK       4HZ blink rate");
+	lprintf(LOG_NOTICE, "         OFF          Off");
+	lprintf(LOG_NOTICE, "         ON           Steady On");
+	lprintf(LOG_NOTICE, "         STANDBY      100ms on 2900ms off blink rate");
+	lprintf(LOG_NOTICE, "         SLOW         1HZ blink rate");
+	lprintf(LOG_NOTICE, "         FAST         4HZ blink rate");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "      Optional SIS LED Type:");
+	lprintf(LOG_NOTICE, "         OK2RM        OK to Remove");
+	lprintf(LOG_NOTICE, "         SERVICE      Service Required");
+	lprintf(LOG_NOTICE, "         ACT          Activity");
+	lprintf(LOG_NOTICE, "         LOCATE       Locate");
 	lprintf(LOG_NOTICE, "");
 }
 
@@ -164,6 +172,12 @@ __sdr_list_empty(struct sdr_record_list * head)
 		free(e);
 	}
 	head = NULL;
+}
+
+static void
+led_print(const char * name, uint8_t state)
+{
+	printf("%-16s | %s\n", name, val2str(state, sunoem_led_mode_vals));
 }
 
 static struct ipmi_rs *
@@ -266,9 +280,7 @@ sunoem_led_get_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 			continue;
 		rsp = sunoem_led_get(intf, e->record.genloc, ledtype);
 		if (rsp && rsp->data_len == 1) {
-			printf("LED %s is %s\n",
-			       e->record.genloc->id_string,
-			       val2str(rsp->data[0], sunoem_led_mode_vals));
+			led_print(e->record.genloc->id_string, rsp->data[0]);
 		}
 	}
 
@@ -299,9 +311,7 @@ sunoem_led_set_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 			continue;
 		rsp = sunoem_led_set(intf, e->record.genloc, ledtype, ledmode);
 		if (rsp && rsp->data_len == 0) {
-			printf("Set LED %s to %s\n",
-			       e->record.genloc->id_string,
-			       val2str(ledmode, sunoem_led_mode_vals));
+			led_print(e->record.genloc->id_string, ledmode);
 		}
 	}
 
@@ -354,9 +364,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 				continue;
 			rsp = sunoem_led_get(intf, a->record.genloc, ledtype);
 			if (rsp && rsp->data_len == 1) {
-				printf("LED %s is %s\n",
-				       a->record.genloc->id_string,
-				       val2str(rsp->data[0], sunoem_led_mode_vals));
+				led_print(a->record.genloc->id_string, rsp->data[0]);
 			}
 		}
 		__sdr_list_empty(alist);
@@ -382,9 +390,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 		 */
 		rsp = sunoem_led_get(intf, sdr->record.genloc, ledtype);
 		if (rsp && rsp->data_len == 1) {
-			printf("LED %s is %s\n",
-			       sdr->record.genloc->id_string,
-			       val2str(rsp->data[0], sunoem_led_mode_vals));
+			led_print(sdr->record.genloc->id_string, rsp->data[0]);
 		}
 		return 0;
 	}
@@ -456,7 +462,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
  * [byte 2]  ctrlrAddr   Controller address; value from the "Device
  *                       Access Address" field, 0x20 if the LED is local
  * [byte 3]  hwInfo      The OEM field from the SDR record
- * [byte 4]  mode        LED Mode: OFF, ON, STANDBY_BLINK, SLOW_BLINK, FAST_BLINK
+ * [byte 4]  mode        LED Mode: OFF, ON, STANDBY, SLOW, FAST
  * [byte 5]  force       TRUE - directly access the device
  *                       FALSE - go thru its controller
  *                       Ignored if LED is local
@@ -465,7 +471,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
  *
  * IPMI Response Data: 1 byte
  * 
- * [byte 0]  mode     LED Mode: OFF, ON, STANDBY_BLINK, SLOW_BLINK, FAST_BLINK
+ * [byte 0]  mode     LED Mode: OFF, ON, STANDBY, SLOW, FAST
  */
 
 static int
@@ -489,15 +495,16 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 	}
 
 	ledmode = str2val(argv[1], sunoem_led_mode_vals);
-	if (ledmode < 0) {
-		lprintf(LOG_NOTICE, "Invalid LED Mode: %s", argv[1]);
-		return -1;
+	if (ledmode == 0xFF) {
+		ledmode = str2val(argv[1], sunoem_led_mode_optvals);
+		if (ledmode == 0xFF) {
+			lprintf(LOG_NOTICE, "Invalid LED Mode: %s", argv[1]);
+			return -1;
+		}
 	}
 
 	if (argc > 3) {
 		ledtype = str2val(argv[2], sunoem_led_type_vals);
-		if (ledtype < 0)
-			ledtype = 0;
 	}
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
@@ -510,9 +517,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 				continue;
 			rsp = sunoem_led_set(intf, a->record.genloc, ledtype, ledmode);
 			if (rsp && rsp->ccode == 0) {
-				printf("Set LED %s to %s\n",
-				       a->record.genloc->id_string,
-				       val2str(ledmode, sunoem_led_mode_vals));
+				led_print(a->record.genloc->id_string, ledmode);
 			}
 		}
 		__sdr_list_empty(alist);
@@ -539,8 +544,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 		 */
 		rsp = sunoem_led_set(intf, sdr->record.genloc, ledtype, ledmode);
 		if (rsp && rsp->ccode == 0) {
-			printf("Set LED %s to %s\n", argv[0],
-			       val2str(ledmode, sunoem_led_mode_vals));
+			led_print(argv[0], ledmode);
 		}
 		return 0;
 	}
@@ -739,10 +743,11 @@ ipmi_sunoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		if (strncmp(argv[1], "get", 3) == 0) {
 			if (argc < 3) {
-				ipmi_sunoem_usage();
-				return -1;
+				char * arg[] = { "all" };
+				rc = ipmi_sunoem_led_get(intf, 1, arg);
+			} else {
+				rc = ipmi_sunoem_led_get(intf, argc-2, &(argv[2]));
 			}
-			rc = ipmi_sunoem_led_get(intf, argc-2, &(argv[2]));
 		}
 		else if (strncmp(argv[1], "set", 3) == 0) {
 			if (argc < 4) {
