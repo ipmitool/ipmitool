@@ -412,7 +412,7 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'L':
 			privlvl = str2val(optarg, ipmi_privlvl_vals);
-			if (privlvl < 0)
+			if (privlvl == 0xFF)
 				lprintf(LOG_WARN, "Invalid privilege level %s", optarg);
 			break;
 		case 'A':
