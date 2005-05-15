@@ -269,7 +269,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 	printf("Finding sensor %s... ", id);
 	sdr = ipmi_sdr_find_sdr_byid(intf, id);
 	if (sdr == NULL) {
-		printf("not found!\n", id);
+		printf("not found!\n");
 		return -1;
 	}
 	printf("ok\n");
@@ -611,7 +611,6 @@ ipmi_event_usage(void)
 int
 ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	uint8_t c;
 	int rc = 0;
 
 	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
