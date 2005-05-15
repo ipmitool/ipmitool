@@ -42,13 +42,6 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
 
-/* ipmi sensor commands */
-#define GET_SENSOR_READING      0x2d
-#define GET_SENSOR_FACTORS      0x23
-#define SET_SENSOR_THRESHOLDS   0x26
-#define GET_SENSOR_THRESHOLDS   0x27
-#define GET_SENSOR_TYPE         0x2f
-
 /* threshold specification bits for analog sensors for get sensor threshold command 
  * and set sensor threshold command 
  */

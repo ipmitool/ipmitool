@@ -81,6 +81,14 @@ utos(uint32_t val, int bits)
 	return val;
 }
 
+/* ipmi_sdr_get_unit_string  -  return units for base/modifier
+ *
+ * @type:	unit type
+ * @base:	base
+ * @modifier:	modifier
+ *
+ * returns pointer to static string
+ */
 char *
 ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier)
 {
@@ -220,6 +228,53 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
 		return (uint8_t)ceil(result);
         else
 		return (uint8_t)result;
+}
+
+
+/* ipmi_sdr_get_sensor_thresholds  -  return thresholds for sensor
+ *
+ * @intf:	ipmi interface
+ * @sensor:	sensor number
+ *
+ * returns pointer to ipmi response
+ */
+struct ipmi_rs *
+ipmi_sdr_get_sensor_thresholds(struct ipmi_intf * intf, uint8_t sensor)
+{
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_THRESHOLDS;
+	req.msg.data = &sensor;
+	req.msg.data_len = sizeof(sensor);
+
+	return intf->sendrecv(intf, &req);
+}
+
+/* ipmi_sdr_get_sensor_hysteresis  -  return hysteresis for sensor
+ *
+ * @intf:	ipmi interface
+ * @sensor:	sensor number
+ *
+ * returns pointer to ipmi response
+ */
+struct ipmi_rs *
+ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf * intf, uint8_t sensor)
+{
+	struct ipmi_rq req;
+	uint8_t rqdata[2];
+
+	rqdata[0] = sensor;
+	rqdata[1] = 0xff;	/* reserved */
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = GET_SENSOR_HYSTERESIS;
+	req.msg.data = rqdata;
+	req.msg.data_len = 2;
+
+	return intf->sendrecv(intf, &req);
 }
 
 /* ipmi_sdr_get_sensor_reading  -  retrieve a raw sensor reading
@@ -1152,6 +1207,20 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, lnc);
 
 	min_reading = (uint8_t)sdr_convert_sensor_reading(
+		sensor, sensor->threshold.hysteresis.positive);
+	if (min_reading == 0 || min_reading == 0xff)
+		printf(" Positive Hysteresis   : Unspecified\n");
+	else
+		printf(" Positive Hysteresis   : %.3f\n", (double)min_reading);
+
+	min_reading = (uint8_t)sdr_convert_sensor_reading(
+		sensor, sensor->threshold.hysteresis.negative);
+	if (min_reading == 0 || min_reading == 0xff)
+		printf(" Negative Hysteresis   : Unspecified\n");
+	else
+		printf(" Negative Hysteresis   : %.3f\n", (double)min_reading);
+
+	min_reading = (uint8_t)sdr_convert_sensor_reading(
 		sensor, sensor->sensor_min);
 	if ((sensor->unit.analog == 0 && sensor->sensor_min == 0x00) ||
 	    (sensor->unit.analog == 1 && sensor->sensor_min == 0xff) ||
@@ -1300,9 +1369,10 @@ get_offset(uint8_t x)
  *
  * no meaningful return value
  */
-static void ipmi_sdr_print_discrete_state_mini(
-				   uint8_t sensor_type, uint8_t event_type,
-				   uint8_t state1, uint8_t state2)
+void ipmi_sdr_print_discrete_state_mini(
+	const char * separator,
+	uint8_t sensor_type, uint8_t event_type,
+	uint8_t state1, uint8_t state2)
 {
 	uint8_t typ;
 	struct ipmi_event_sensor_types *evt;
@@ -1326,14 +1396,14 @@ static void ipmi_sdr_print_discrete_state_mini(
 		if (evt->offset > 7) {
 			if ((1<<(evt->offset-8)) & state2) {
 				if (pre++ != 0)
-					printf(", ");
-				printf("%s ", evt->desc);
+					printf("%s", separator);
+				printf("%s", evt->desc);
 			}
 		} else {
 			if ((1<<evt->offset) & state1) {
 				if (pre++ != 0)
-					printf(", ");
-				printf("%s ", evt->desc);
+					printf("%s", separator);
+				printf("%s", evt->desc);
 			}
 		}
 		c++;
@@ -1555,7 +1625,8 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf * intf,
 		}
 
 		if (dostate) 
-			ipmi_sdr_print_discrete_state_mini(sensor->sensor.type,
+			ipmi_sdr_print_discrete_state_mini(", ",
+							   sensor->sensor.type,
 							   sensor->event_type,
 							   rsp->data[2],
 							   rsp->data[3]);
@@ -3615,7 +3686,6 @@ ipmi_sdr_print_type(struct ipmi_intf * intf, char * type)
 }
 
 
-
 /* ipmi_sdr_print_entity  -  print entity's for an id/instance
  *
  * @intf:	ipmi interface
@@ -3662,6 +3732,46 @@ ipmi_sdr_print_entity(struct ipmi_intf * intf, char * entitystr)
 	}
 
 	__sdr_list_empty(list);
+
+	return rc;
+}
+
+
+/* ipmi_sdr_print_entry_byid  -  print sdr entries identified by sensor id
+ *
+ * @intf:	ipmi interface
+ * @argc:	number of entries to print
+ * @argv:	list of sensor ids
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+static int
+ipmi_sdr_print_entry_byid(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct sdr_record_list * sdr;
+	int rc = 0;
+	int v, i;
+
+	if (argc < 1) {
+		lprintf(LOG_ERR, "No Sensor ID supplied");
+		return -1;
+	}
+
+	v = verbose;
+	verbose = 1;
+
+	for (i=0; i<argc; i++) {
+		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
+		if (sdr == NULL) {
+			lprintf(LOG_ERR, "Unable to find sensor id '%s'", argv[i]);
+			return -1;
+		}
+		if (ipmi_sdr_print_listentry(intf, sdr) < 0)
+			rc = -1;
+	}
+
+	verbose = v;
 
 	return rc;
 }
@@ -3740,6 +3850,9 @@ ipmi_sdr_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (strncmp(argv[0], "info", 4) == 0) {
 		rc = ipmi_sdr_print_info(intf);
+	}
+	else if (strncmp(argv[0], "get", 4) == 0) {
+		rc = ipmi_sdr_print_entry_byid(intf, argc-1, &argv[1]);
 	}
 	else if (strncmp(argv[0], "dump", 4) == 0) {
 		if (argc < 2)

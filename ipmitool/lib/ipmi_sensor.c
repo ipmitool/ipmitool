@@ -51,21 +51,6 @@ extern int verbose;
 
 static
 struct ipmi_rs *
-ipmi_sensor_get_sensor_thresholds(struct ipmi_intf * intf, uint8_t sensor)
-{
-	struct ipmi_rq req;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = GET_SENSOR_THRESHOLDS;
-	req.msg.data = &sensor;
-	req.msg.data_len = sizeof(sensor);
-
-	return intf->sendrecv(intf, &req);
-}
-
-static
-struct ipmi_rs *
 ipmi_sensor_set_sensor_thresholds(struct ipmi_intf * intf, 
                                   uint8_t sensor,
                                   uint8_t threshold,
@@ -248,7 +233,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf * intf,
 	/*
 	 * Get sensor thresholds
 	 */
-	rsp = ipmi_sensor_get_sensor_thresholds(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num);
 	if (rsp == NULL)
 		thresh_available = 0;
 

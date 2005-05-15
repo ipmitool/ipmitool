@@ -93,12 +93,18 @@ enum {
 #define SDR_SENSOR_STAT_HI_NR	(1<<5)
 
 #define GET_SENSOR_FACTORS      0x23
-#define GET_SENSOR_THRES	0x27
+#define GET_SENSOR_FACTORS      0x23
+#define SET_SENSOR_HYSTERESIS	0x24
+#define GET_SENSOR_HYSTERESIS	0x25
+#define SET_SENSOR_THRESHOLDS   0x26
+#define GET_SENSOR_THRESHOLDS   0x27
 #define SET_SENSOR_EVENT_ENABLE	0x28
 #define GET_SENSOR_EVENT_ENABLE 0x29
 #define GET_SENSOR_EVENT_STATUS	0x2b
 #define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_TYPE		0x2f
+#define GET_SENSOR_READING      0x2d
+#define GET_SENSOR_TYPE         0x2f
 
 struct sdr_repo_info_rs {
 	uint8_t	version;	/* SDR version (51h) */
@@ -787,6 +793,8 @@ double sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor, uint8_
 uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor, double val);
 struct ipmi_rs * ipmi_sdr_get_sensor_reading(struct ipmi_intf * intf, uint8_t sensor);
 struct ipmi_rs * ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf * intf, uint8_t sensor, uint8_t target);
+struct ipmi_rs * ipmi_sdr_get_sensor_thresholds(struct ipmi_intf * intf, uint8_t sensor);
+struct ipmi_rs * ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf * intf, uint8_t sensor);
 const char * ipmi_sdr_get_sensor_type_desc(const uint8_t type);
 int ipmi_sdr_get_reservation(struct ipmi_intf * intf, uint16_t *reserve_id);
 
@@ -809,6 +817,7 @@ int ipmi_sdr_list_cache_fromfile(struct ipmi_intf * intf, const char * ifile);
 void ipmi_sdr_list_empty(struct ipmi_intf * intf);
 int ipmi_sdr_print_info(struct ipmi_intf * intf);
 void ipmi_sdr_print_discrete_state(const char * desc, uint8_t sensor_type, uint8_t event_type, uint8_t state1, uint8_t state2);
+void ipmi_sdr_print_discrete_state_mini(const char * separator, uint8_t sensor_type, uint8_t event_type, uint8_t state1, uint8_t state2);
 int ipmi_sdr_print_sensor_event_status(struct ipmi_intf * intf, uint8_t sensor_num, uint8_t sensor_type, uint8_t event_type, int numeric_fmt);
 int ipmi_sdr_print_sensor_event_enable(struct ipmi_intf * intf, uint8_t sensor_num, uint8_t sensor_type, uint8_t event_type, int numeric_fmt);
 
