@@ -41,6 +41,7 @@
 # include <config.h>
 #endif
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sdr.h>
 
 #define IPMI_NETFN_SUNOEM		0x2e
 
@@ -52,6 +53,9 @@
 #define IPMI_SUNOEM_LED_SET		0x22
 
 int ipmi_sunoem_main(struct ipmi_intf *, int, char **);
+
+struct ipmi_rs * sunoem_led_get(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev, int ledtype);
+struct ipmi_rs * sunoem_led_set(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev, int ledtype, int ledmode);
 
 #endif /*IPMI_SUNOEM_H*/
 

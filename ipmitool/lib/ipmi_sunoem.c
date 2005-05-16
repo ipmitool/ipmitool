@@ -183,7 +183,7 @@ led_print(const char * name, uint8_t state)
 		printf("%-16s | %s\n", name, val2str(state, sunoem_led_mode_vals));
 }
 
-static struct ipmi_rs *
+struct ipmi_rs *
 sunoem_led_get(struct ipmi_intf * intf,
 		 struct sdr_record_generic_locator * dev,
 		 int ledtype)
@@ -220,7 +220,7 @@ sunoem_led_get(struct ipmi_intf * intf,
 	return rsp;
 }
 
-static struct ipmi_rs *
+struct ipmi_rs *
 sunoem_led_set(struct ipmi_intf * intf,
 		 struct sdr_record_generic_locator * dev,
 		 int ledtype, int ledmode)
