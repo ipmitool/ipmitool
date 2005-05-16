@@ -492,7 +492,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
 			lprintf(LOG_ERR, "Get SDR %04x command failed",	itr->next);
-			return NULL;
+			continue;
 		}
 		else if (rsp->ccode == 0xc5) {
 			/* lost reservation */
@@ -509,7 +509,7 @@ ipmi_sdr_get_header(struct ipmi_intf * intf, struct ipmi_sdr_iterator * itr)
 		else if (rsp->ccode > 0) {
 			lprintf(LOG_ERR, "Get SDR %04x command failed: %s",
 				itr->next, val2str(rsp->ccode, completion_code_vals));
-			return NULL;
+			continue;
 		}
 		else {
 			break;
@@ -719,6 +719,8 @@ ipmi_sdr_print_sensor_mask(struct sdr_record_mask * mask,
 			   uint8_t event_type,
 			   int numeric_fmt)
 {
+	return 0;
+
 	switch (numeric_fmt)
 	{
 	case DISCRETE_SENSOR:
@@ -1332,7 +1334,6 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 				   sensor->sensor.type,
 				   sensor->event_type,
 				   ANALOG_SENSOR);
-
 	ipmi_sdr_print_sensor_event_status(intf,
 					   sensor->keys.sensor_num,
 					   sensor->sensor.type,
