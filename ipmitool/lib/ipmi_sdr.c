@@ -3244,13 +3244,13 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf * intf, const char * ifile)
 		sdrr->id = header.id;
 		sdrr->type = header.type;
 
-		rec = malloc(header.length);
+		rec = malloc(header.length + 1);
 		if (rec == NULL) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			ret = -1;
 			break;
 		}
-		memset(rec, 0, header.length);
+		memset(rec, 0, header.length + 1);
 
 		bc = fread(rec, 1, header.length, fp);
 		if (bc != header.length) {
