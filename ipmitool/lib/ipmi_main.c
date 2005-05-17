@@ -147,12 +147,17 @@ void
 ipmi_cmd_print(struct ipmi_cmd * cmdlist)
 {
 	struct ipmi_cmd * cmd;
+	int hdr = 0;
+
 	if (cmdlist == NULL)
 		return;
-	lprintf(LOG_NOTICE, "Commands:");
 	for (cmd=cmdlist; cmd->func != NULL; cmd++) {
 		if (cmd->desc == NULL)
 			continue;
+		if (hdr == 0) {
+			lprintf(LOG_NOTICE, "Commands:");
+			hdr = 1;
+		}
 		lprintf(LOG_NOTICE, "\t%-12s  %s", cmd->name, cmd->desc);
 	}
 	lprintf(LOG_NOTICE, "");
@@ -175,7 +180,20 @@ ipmi_cmd_print(struct ipmi_cmd * cmdlist)
 int
 ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 {
-	struct ipmi_cmd * cmd;
+	struct ipmi_cmd * cmd = intf->cmdlist;
+
+	/* hook to run a default command if nothing specified */
+	if (name == NULL) {
+		if (cmd->func == NULL || cmd->name == NULL)
+			return -1;
+		else if (strncmp(cmd->name, "default", 7) == 0)
+			return cmd->func(intf, 0, NULL);
+		else {
+			lprintf(LOG_ERR, "No command provided!");
+			ipmi_cmd_print(intf->cmdlist);
+			return -1;
+		}
+	}
 
 	for (cmd=intf->cmdlist; cmd->func != NULL; cmd++) {
 		if (strncmp(name, cmd->name, strlen(cmd->name)) == 0)
@@ -183,6 +201,7 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	}
 	if (cmd->func == NULL) {
 		lprintf(LOG_ERR, "Invalid command: %s", name);
+		ipmi_cmd_print(intf->cmdlist);
 		return -1;
 	}
 	return cmd->func(intf, argc, argv);
@@ -432,12 +451,8 @@ ipmi_main(int argc, char ** argv,
 	}
 
 	/* check for command before doing anything */
-	if (argc-optind <= 0) {
-		lprintf(LOG_ERR, "No command provided!");
-		ipmi_option_usage(progname, cmdlist, intflist);
-		goto out_free;
-	}
-	if (strncmp(argv[optind], "help", 4) == 0) {
+	if (argc-optind > 0 &&
+	    strncmp(argv[optind], "help", 4) == 0) {
 		ipmi_cmd_print(cmdlist);
 		rc = 0;
 		goto out_free;
@@ -535,10 +550,10 @@ ipmi_main(int argc, char ** argv,
 	intf->cmdlist = cmdlist;
 
 	/* now we finally run the command */
-	rc = ipmi_cmd_run(intf,
-			  argv[optind],
-			  argc-optind-1,
-			  &(argv[optind+1]));
+	if (argc-optind > 0)
+		rc = ipmi_cmd_run(intf, argv[optind], argc-optind-1, &(argv[optind+1]));
+	else
+		rc = ipmi_cmd_run(intf, NULL, 0, NULL);
 
 	/* clean repository caches */
 	ipmi_cleanup(intf);
