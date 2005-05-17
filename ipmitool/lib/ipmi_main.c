@@ -196,10 +196,13 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	}
 
 	for (cmd=intf->cmdlist; cmd->func != NULL; cmd++) {
-		if (strncmp(name, cmd->name, strlen(cmd->name)) == 0)
+		if (strncmp(name, cmd->name, __maxlen(cmd->name, name)) == 0)
 			break;
 	}
 	if (cmd->func == NULL) {
+		cmd = intf->cmdlist;
+		if (strncmp(cmd->name, "default", 7) == 0)
+			return cmd->func(intf, argc+1, argv-1);
 		lprintf(LOG_ERR, "Invalid command: %s", name);
 		ipmi_cmd_print(intf->cmdlist);
 		return -1;

@@ -120,8 +120,7 @@ uint16_t str2val(const char *str, const struct valstr *vs)
 	int i = 0;
 
 	while (vs[i].str != NULL) {
-		if (!strncasecmp(vs[i].str, str,
-				 __max(strlen(str), strlen(vs[i].str))))
+		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
 			return vs[i].val;
 		i++;
 	}

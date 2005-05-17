@@ -219,8 +219,7 @@ ipmi_event_find_offset(uint8_t code,
 
 	while (evt->type) {
 		if (evt->code == code && evt->desc != NULL &&
-		    strncasecmp(desc, evt->desc,
-				__max(strlen(desc), strlen(evt->desc))) == 0)
+		    strncasecmp(desc, evt->desc, __maxlen(desc, evt->desc)) == 0)
 			return evt->offset;
 		evt++;
 	}

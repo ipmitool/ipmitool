@@ -3660,7 +3660,7 @@ ipmi_sdr_print_type(struct ipmi_intf * intf, char * type)
 	else {
 		for (x = 1; x < SENSOR_TYPE_MAX; x++) {
 			if (strncasecmp(sensor_type_desc[x], type,
-					__max(strlen(type), strlen(sensor_type_desc[x]))) == 0) {
+					__maxlen(type, sensor_type_desc[x])) == 0) {
 				sensor_type = x;
 				break;
 			}

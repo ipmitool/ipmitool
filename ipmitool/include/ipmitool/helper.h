@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 struct valstr {
 	uint16_t val;
@@ -65,6 +66,14 @@ void ipmi_start_daemon(void);
 
 #ifndef __max
 # define __max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef __minlen
+# define __minlen(a, b) ({ int x=strlen(a); int y=strlen(b); (x < y) ? x : y;})
+#endif
+
+#ifndef __maxlen
+# define __maxlen(a, b) ({ int x=strlen(a); int y=strlen(b); (x > y) ? x : y;})
 #endif
 
 #endif /* IPMI_HELPER_H */
