@@ -103,6 +103,7 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 	str = malloc(size+1);
 	if (str == NULL)
 		return NULL;
+	memset(str, 0, size+1);
 
 	if (len == 0) {
 		str[0] = '\0';
@@ -112,7 +113,7 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 
 	switch (typecode) {
 	case 0:			/* Binary */
-		strncpy(str, buf2str(&data[off], len), len);
+		strncpy(str, buf2str(&data[off], len), len*2);
 		break;
 
 	case 1:			/* BCD plus */
