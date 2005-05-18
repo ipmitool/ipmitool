@@ -61,13 +61,21 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
-* Wed Apr 20 2005 <duncan@iceblink.org>  1.8.2-1
+* Wed May 18 2005 <duncan@iceblink.org>  1.8.2-1
  - Fix FRU reading for large (>255 bytes) areas.
  - Overhaul to ipmievd to support SEL polling in addition to OpenIPMI.
  - Fix LAN parameter segfault when no Ciphers supported by BMC.
  - Fix IPMIv2 support on Intel v2 BMCs (use -o intelplus).
  - Separate option parsing code from main ipmitool source file.
  - Add raw I2C support with IPMI Master Read-Write command.
+ - Add support for new 'sdr elist' extended output format.
+ - Add support for listing sensors by type with 'sdr type' command.
+ - Add support for new 'sel elist' extended output format that
+   cross-references events with sensors.
+ - Add support for sending dynamically generated platform events
+   based on existing sensor information.
+ - New '-S' argument to read local SDR cache created with 'sdr dump'.
+ - Updated manpage for ipmitool and ipmievd.
 
 * Wed Apr 06 2005 <duncan@iceblink.org>  1.8.1-1
  - Install ipmievd into /usr/sbin
