@@ -120,7 +120,7 @@ outgoing packets.
 Display version information.
 
 .LP 
-If no password method is specified then ipmitool will prompt the
+If no password method is specified then ipmievd will prompt the
 user for a password. If no password is entered at the prompt,
 the remote server password will default to NULL.
 .SH "COMMANDS"
@@ -129,7 +129,7 @@ the remote server password will default to NULL.
 This can be used to get command\-line help.  It may also be
 placed at the end of commands to get option usage help.
 
-ipmitool help
+> ipmievd help
 .br 
 Commands:
     open    Use OpenIPMI for asyncronous notification of events
@@ -142,7 +142,7 @@ mechanism which relies on the Event Message Buffer feature of
 IPMI.  This requires a properly installed and configured
 OpenIPMI driver on Linux and is only valid to be run through
 the \fIopen\fP interface.  See the \fBipmitool\fR manpage
-and associated documentatino for more information on setting
+and associated documentation for more information on setting
 up the OpenIPMI driver.
 
 \fBNote\fR: Some BMC do not support the Event Message Buffer
@@ -184,11 +184,11 @@ Time between checks for SEL polling method.  Default is 10 seconds.
 .TP 
 \fIExample 1\fP: Daemon process watching OpenIPMI for events
 
-> ipmitool \-I open open daemon
+> ipmievd \-I open open daemon
 .TP 
 \fIExample 2\fP: Local non\-daemon process checking remote SEL every 30 seconds
 
-> ipmitool \-I lan \-H 1.2.3.4 \-f passfile sel nodaemon timeout=30
+> ipmievd \-I lan \-H 1.2.3.4 \-f passfile sel nodaemon timeout=30
 .br 
 Reading Sensors...
 .br 
