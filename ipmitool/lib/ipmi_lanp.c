@@ -264,6 +264,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
  *  IPMI_LANP_WRITE_UNLOCK
  *  IPMI_LANP_WRITE_LOCK
  *  IPMI_LANP_WRITE_COMMIT
+ *  -1 on error/if not supported
  *
  * @intf:    ipmi interface handle
  * @chan:    ipmi channel
@@ -273,6 +274,8 @@ ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
+	if (p == NULL)
+		return -1;
 	return (p->data[0] & 3);
 }
 
@@ -293,7 +296,12 @@ ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
 	uint8_t val = IPMI_LANP_WRITE_LOCK;
 	int retry = 3;
 
-	while (ipmi_lanp_lock_state(intf, chan) != val) {
+	for (;;) {
+		int state = ipmi_lanp_lock_state(intf, chan);
+		if (state == -1)
+			break;
+		if (state == val)
+			break;
 		if (retry-- == 0)
 			break;
 		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS,
