@@ -987,6 +987,16 @@ Save SEL records to text file that can be fed back into the
 testing Event generation by building an appropriate Platform
 Event Message file based on existing events.  Please see the
 help for that command to view the format of this file.
+.TP 
+\fIwriteraw\fP <\fBfile\fR>
+
+Save SEL records to a file in raw, binary format.  This file can
+be fed back to the \fIsel readraw\fP ipmitool command for viewing.
+.TP 
+\fIreadraw\fP <\fBfile\fR>
+
+Read and display SEL records from a binary file.  Such a file can
+be created using the \fIsel writeraw\fP ipmitool command.
 .TP          
 \fItime\fP
 .RS
