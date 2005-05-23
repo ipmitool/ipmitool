@@ -168,6 +168,9 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	uint16_t e, f;
 	int pctfull = 0;
+	uint32_t fs    = 0xffffffff;
+	uint32_t zeros = 0;
+
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -202,10 +205,22 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	}
 	printf("Percent Used     : %d%%\n", pctfull);
 
-	printf("Last Add Time    : %s\n",
-	       ipmi_sel_timestamp(buf2long(rsp->data + 5)));
-	printf("Last Del Time    : %s\n",
-	       ipmi_sel_timestamp(buf2long(rsp->data + 9)));
+
+	if ((!memcmp(rsp->data + 5, &fs,    4)) ||
+		(!memcmp(rsp->data + 5, &zeros, 4)))
+		printf("Last Add Time    : Not Available\n");
+	else
+		printf("Last Add Time    : %s\n",
+			   ipmi_sel_timestamp(buf2long(rsp->data + 5)));
+
+	if ((!memcmp(rsp->data + 9, &fs,    4)) ||
+		(!memcmp(rsp->data + 9, &zeros, 4)))
+		printf("Last Add Time    : Not Available\n");
+	else
+		printf("Last Del Time    : %s\n",
+			   ipmi_sel_timestamp(buf2long(rsp->data + 9)));
+
+
 	printf("Overflow         : %s\n",
 	       rsp->data[13] & 0x80 ? "true" : "false");
 	printf("Delete cmd       : %ssupported\n",
