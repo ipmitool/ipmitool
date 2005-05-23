@@ -1,4 +1,4 @@
-/*
+/* -*-mode: C; indent-tabs-mode: t; -*-
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -702,7 +702,8 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 }
 
 static int
-__ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * savefile)
+__ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * savefile,
+							int binary)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -805,7 +806,10 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 			ipmi_sel_print_std_entry(intf, &evt);
 
 		if (fp != NULL) {
-			ipmi_sel_print_event_file(intf, &evt, fp);
+			if (binary)
+				fwrite(&evt, 1, 16, fp);
+			else
+				ipmi_sel_print_event_file(intf, &evt, fp);
 		}
 
 		if (++n == count) {
@@ -822,14 +826,67 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 static int
 ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
 {
-	return __ipmi_sel_savelist_entries(intf, count, NULL);
+	return __ipmi_sel_savelist_entries(intf, count, NULL, 0);
 }
 
 static int
 ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
 {
-	return __ipmi_sel_savelist_entries(intf, count, savefile);
+	return __ipmi_sel_savelist_entries(intf, count, savefile, 0);
 }
+
+
+static int
+ipmi_sel_writeraw(struct ipmi_intf * intf, const char * savefile)
+{
+    return __ipmi_sel_savelist_entries(intf, 0, savefile, 1);
+}
+
+
+static int
+ipmi_sel_readraw(struct ipmi_intf * intf, const char * inputfile)
+{
+	struct sel_event_record evt;
+	int ret = 0;
+	FILE* fp = 0;
+
+	printf("inside ipmi_sel_readraw\n");
+
+	fp = ipmi_open_file(inputfile, 0);
+	if (fp)
+	{
+		size_t bytesRead;
+
+		do {
+			if ((bytesRead = fread(&evt, 1, 16, fp)) == 16)
+			{
+				if (verbose)
+					ipmi_sel_print_std_entry_verbose(intf, &evt);
+				else
+					ipmi_sel_print_std_entry(intf, &evt);
+			}
+			else
+			{
+				if (bytesRead != 0)
+				{
+					lprintf(LOG_ERR, "ipmitool: incomplete record found in file.");
+					ret = -1;
+				}
+				
+				break;
+			}
+
+		} while (1);
+		fclose(fp);
+	}
+	else
+	{
+		lprintf(LOG_ERR, "ipmitool: could not open input file.");
+		ret = -1;
+	}
+	return ret;
+}
+
 
 
 static uint16_t
@@ -1157,7 +1214,8 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc == 0)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "help", 4) == 0)
-		lprintf(LOG_ERR, "SEL Commands:  info clear delete list elist get time save");
+		lprintf(LOG_ERR, "SEL Commands:  "
+				"info clear delete list elist get time save readraw writeraw");
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "save", 4) == 0) {
@@ -1166,6 +1224,20 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return 0;
 		}
 		rc = ipmi_sel_save_entries(intf, 0, argv[1]);
+	}
+	else if (strncmp(argv[0], "writeraw", 8) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: sel writeraw <filename>");
+			return 0;
+		}
+		rc = ipmi_sel_writeraw(intf, argv[1]);
+	}
+    else if (strncmp(argv[0], "readraw", 7) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: sel readraw <filename>");
+			return 0;
+		}
+		rc = ipmi_sel_readraw(intf, argv[1]);
 	}
 	else if (strncmp(argv[0], "list", 4) == 0 ||
 		 strncmp(argv[0], "elist", 5) == 0) {
