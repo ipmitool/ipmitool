@@ -355,6 +355,65 @@ ipmi_chassis_status(struct ipmi_intf * intf)
 		}
         }
 
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = 0x4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error sending Get Self Test command");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error sending Get Self Test command: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	printf("Self Test Results    : ");
+	switch (rsp->data[0]) {
+	case 0x55:
+		printf("passed\n");
+		break;
+
+	case 0x56:
+		printf("not implemented\n");
+		break;
+
+	case 0x57:
+	{
+		int i;
+		const struct valstr broken_dev_vals[] = {
+			{ 0, "firmware corrupted" },
+			{ 1, "boot block corrupted" },
+			{ 2, "FRU Internal Use Area corrupted" },
+			{ 3, "SDR Repository empty" },
+			{ 4, "IPMB not responding" },
+			{ 5, "cannot access BMC FRU" },
+			{ 6, "cannot access SDR Repository" },
+			{ 7, "cannot access SEL Device" },
+			{ 0xff, NULL },
+		};
+		printf("device error\n");
+		for (i=0; i<8; i++) {
+			if (rsp->data[1] & (1<<i)) {
+				printf("                       [%s]\n",
+				       val2str(i, broken_dev_vals));
+			}
+		}
+	}
+	break;
+
+	case 0x58:
+		printf("Fatal hardware error: %02xh\n", rsp->data[1]);
+		break;
+
+	default:
+		printf("Device-specific failure %02xh:%02xh\n",
+		       rsp->data[0], rsp->data[1]);
+		break;
+	}
+
 	return 0;
 }
 
