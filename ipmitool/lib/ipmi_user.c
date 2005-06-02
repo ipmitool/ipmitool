@@ -142,6 +142,8 @@ ipmi_get_user_name(
 	struct ipmi_rq	       req;
 	uint8_t	       msg_data[1];
 
+	memset(user_name, 0, 17);
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	   /* 0x06 */
 	req.msg.cmd	     = IPMI_GET_USER_NAME; /* 0x45 */
@@ -158,6 +160,8 @@ ipmi_get_user_name(
 		return -1;
 	}
 	if (rsp->ccode > 0) {
+		if (rsp->ccode == 0xcc)
+			return 0;
 		lprintf(LOG_ERR, "Get User Name command failed (user %d): %s",
 			user_id, val2str(rsp->ccode, completion_code_vals));
 		return -1;
