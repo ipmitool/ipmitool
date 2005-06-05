@@ -15,12 +15,12 @@ ipmitool (1.8.2-1) unstable; urgency=low
     -  Add support for sending dynamically generated platform events
        based on existing sensor information.
     -  New '-S' argument to read local SDR cache created with 'sdr dump'.
-    -  Updated manpage for ipmitool and ipmievd.
+    -  Updated manpage for ipmitool and ipmievd. (Closes: #306894)
   * Correct the upstream URL in debian/changelog to the current one.
   * Suggest package openipmi. (Closes: #305629)
   * Add debian/watch file to detect new source versions.
 
- -- Duncan Laurie <duncan@iceblink.org>  Wed, 18 May 2005 16:48:37 -0700
+ -- Petter Reinholdtsen <pere@debian.org>  Sun,  5 Jun 2005 10:29:18 +0200
 
 ipmitool (1.8.1-1) unstable; urgency=low
 
