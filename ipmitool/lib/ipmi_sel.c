@@ -495,6 +495,24 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 						sdr->record.full->unit.type.base,
 						sdr->record.full->unit.type.modifier));
 	}
+	else if (evt->event_type == 0x6f) {
+		/*
+		 * Sensor-Specific Discrete
+		 */
+		if (evt->sensor_type == 0xC &&
+		    evt->sensor_num == 0 &&
+		    evt->event_data[0] == 0x20) {
+			/* break down memory ECC reporting if we can */
+			if (csv_output)
+				printf(",");
+			else
+				printf(" | ");
+
+			printf("CPU %d DIMM %d",
+			       evt->event_data[2] & 0x0f,
+			       (evt->event_data[2] & 0xf0) >> 4);
+		}
+	}
 
 	printf("\n");
 }
@@ -564,10 +582,6 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 		return;
 	
 	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sensor_num, evt->sensor_type);
-	if (sdr == NULL) {
-		ipmi_sel_print_std_entry_verbose(intf, evt);
-		return;
-	}
 
 	printf("SEL Record ID          : %04x\n", evt->record_id);
 
@@ -614,7 +628,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 
 	/* break down event data field
 	 * as per IPMI Spec 2.0 Table 29-6 */
-	if (evt->event_type == 1 && sdr->type == SDR_RECORD_TYPE_FULL_SENSOR) {
+	if (evt->event_type == 1 && sdr != NULL && sdr->type == SDR_RECORD_TYPE_FULL_SENSOR) {
 		/* Threshold */
 		switch ((evt->event_data[0] >> 6) & 3) {  /* EV1[7:6] */
 		case 0:
@@ -698,9 +712,19 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       evt->event_data[2]);
 			break;
 		}
-	} else if ((evt->event_type >= 0x2 && evt->event_type <= 0xc) ||
-		   (evt->event_type == 0x6f)) {
-		/* Discrete */
+	} else if (evt->event_type >= 0x2 && evt->event_type <= 0xc) {
+		/* Generic Discrete */
+	} else if (evt->event_type == 0x6f) {
+		/* Sensor-Specific Discrete */
+		if (evt->sensor_type == 0xC &&
+		    evt->sensor_num  == 0 &&
+		    evt->event_data[0] == 0x20)
+		{
+			/* break down memory ECC reporting if we can */
+			printf(" Event Data            : CPU %d DIMM %d\n",
+			       evt->event_data[2] & 0x0f,
+			       (evt->event_data[2] & 0xf0) >> 4);
+		}
 	} else if (evt->event_type >= 0x70 && evt->event_type <= 0x7f) {
 		/* OEM */
 	} else {
