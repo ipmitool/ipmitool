@@ -43,6 +43,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_raw.h>
+#include <ipmitool/ipmi_strings.h>
 
 #define IPMI_I2C_MASTER_MAX_SIZE	0x40
 
@@ -206,11 +207,14 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_rq req;
 	uint8_t netfn, cmd;
 	int i;
+	unsigned long ufn;
 
 	uint8_t data[256];
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
 		lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
+		print_valstr(ipmi_netfn_vals, "Network Function Codes", LOG_NOTICE);
+		lprintf(LOG_NOTICE, "(can also use raw hex values)");
 		return -1;
 	}
 	else if (argc > sizeof(data))
@@ -219,7 +223,11 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	netfn = (uint8_t)strtol(argv[0], NULL, 0);
+	netfn = str2val(argv[0], ipmi_netfn_vals);
+	if (netfn == 0xff) {
+		netfn = (uint8_t)strtol(argv[0], NULL, 0);
+	}
+
 	cmd = (uint8_t)strtol(argv[1], NULL, 0);
 
 	memset(data, 0, sizeof(data));

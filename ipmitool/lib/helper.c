@@ -101,12 +101,11 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 const char * val2str(uint16_t val, const struct valstr *vs)
 {
 	static char un_str[16];
-	int i = 0;
+	int i;
 
-	while (vs[i].str != NULL) {
+	for (i = 0; vs[i].str != NULL; i++) {
 		if (vs[i].val == val)
 			return vs[i].str;
-		i++;
 	}
 
 	memset(un_str, 0, 16);
@@ -117,15 +116,63 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 
 uint16_t str2val(const char *str, const struct valstr *vs)
 {
-	int i = 0;
+	int i;
 
-	while (vs[i].str != NULL) {
+	for (i = 0; vs[i].str != NULL; i++) {
 		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
 			return vs[i].val;
-		i++;
 	}
 
 	return vs[i].val;
+}
+
+/* print_valstr  -  print value string list to log or stdout
+ *
+ * @vs:		value string list to print
+ * @title:	name of this value string list
+ * @loglevel:	what log level to print, -1 for stdout
+ */
+void
+print_valstr(const struct valstr * vs, const char * title, int loglevel)
+{
+	int i;
+
+	if (vs == NULL)
+		return;
+
+	if (title != NULL) {
+		if (loglevel < 0)
+			printf("\n%s:\n\n");
+		else
+			lprintf(loglevel, "\n%s:\n", title);
+	}
+
+	if (loglevel < 0) {
+		printf("  VALUE\tHEX\tSTRING\n");
+		printf("==============================================\n");
+	} else {
+		lprintf(loglevel, "  VAL\tHEX\tSTRING");
+		lprintf(loglevel, "==============================================");
+	}
+
+	for (i = 0; vs[i].str != NULL; i++) {
+		if (loglevel < 0) {
+			if (vs[i].val < 256)
+				printf("  %d\t0x%02x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
+			else
+				printf("  %d\t0x%04x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
+		} else {
+			if (vs[i].val < 256)
+				lprintf(loglevel, "  %d\t0x%02x\t%s", vs[i].val, vs[i].val, vs[i].str);
+			else
+				lprintf(loglevel, "  %d\t0x%04x\t%s", vs[i].val, vs[i].val, vs[i].str);
+		}
+	}
+
+	if (loglevel < 0)
+		printf("\n");
+	else
+		lprintf(loglevel, "");
 }
 
 /* ipmi_csum  -  calculate an ipmi checksum

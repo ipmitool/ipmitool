@@ -48,6 +48,8 @@ struct valstr {
 };
 const char * val2str(uint16_t val, const struct valstr * vs);
 uint16_t str2val(const char * str, const struct valstr * vs);
+void print_valstr(const struct valstr * vs, const char * title, int loglevel);
+
 
 uint16_t buf2short(uint8_t * buf);
 uint32_t buf2long(uint8_t * buf);

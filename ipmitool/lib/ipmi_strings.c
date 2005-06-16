@@ -39,6 +39,16 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_sensor.h>
 
+const struct valstr ipmi_netfn_vals[] = {
+	{ IPMI_NETFN_CHASSIS,	"Chassis" },
+	{ IPMI_NETFN_BRIDGE,	"Bridge" },
+	{ IPMI_NETFN_SE,	"Sensor/Event" },
+	{ IPMI_NETFN_APP,	"Application" },
+	{ IPMI_NETFN_FIRMWARE,	"Firmware" },
+	{ IPMI_NETFN_STORAGE,	"Storage" },
+	{ IPMI_NETFN_TRANSPORT,	"Transport" },
+	{ 0xff,			NULL },
+};
 
 /*
  * From table 26-4 of the IPMI v2 specification
