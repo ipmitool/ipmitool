@@ -154,9 +154,6 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 	}
 
 	switch (sensor->linearization & 0x7f) {
-	default:
-	case SDR_SENSOR_L_LINEAR:
-		break;
 	case SDR_SENSOR_L_LN:
 		result = log(result);
 		break;
@@ -189,6 +186,9 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor * sensor,
 		break;
 	case SDR_SENSOR_L_CUBERT:
 		result = cbrt(result);
+		break;
+	case SDR_SENSOR_L_LINEAR:
+	default:
 		break;
         }
 
@@ -883,7 +883,7 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf * intf,
 			}
 			printf("\n");
 			if ((rsp->data_len == 4 && rsp->data[3] != 0) ||
-			    (rsp->data_len > 4 && (rsp->data[3] != 0 && rsp->data[4] != 0))) {
+			    (rsp->data_len > 4 && (rsp->data[3] != 0 || rsp->data[4] != 0))) {
 				printf(" Deassertions Enabled  : ");
 				for (i = 0; i < 8; i++) {
 					if (rsp->data[3] & (1<<i))
@@ -923,7 +923,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 {
 	char sval[16], unitstr[16], desc[17];
 	int i=0, validread=1, do_unit=1;
-	double val = 0.0;
+	double val = 0.0, creading = 0.0;
 	struct ipmi_rs * rsp;
         uint8_t min_reading, max_reading;
 
@@ -1208,37 +1208,39 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf * intf,
 	SENSOR_PRINT_THRESH("Lower critical", lower.critical, lcr);
 	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, lnc);
 
-	min_reading = (uint8_t)sdr_convert_sensor_reading(
-		sensor, sensor->threshold.hysteresis.positive);
-	if (min_reading == 0 || min_reading == 0xff)
+	creading = sdr_convert_sensor_reading(sensor, sensor->threshold.hysteresis.positive);
+	if (sensor->threshold.hysteresis.positive == 0x00 ||
+	    sensor->threshold.hysteresis.positive == 0xff ||
+	    creading == 0)
 		printf(" Positive Hysteresis   : Unspecified\n");
 	else
-		printf(" Positive Hysteresis   : %.3f\n", (double)min_reading);
+		printf(" Positive Hysteresis   : %.3f\n", creading);
 
-	min_reading = (uint8_t)sdr_convert_sensor_reading(
-		sensor, sensor->threshold.hysteresis.negative);
-	if (min_reading == 0 || min_reading == 0xff)
+	creading = sdr_convert_sensor_reading(sensor, sensor->threshold.hysteresis.negative);
+	if (sensor->threshold.hysteresis.negative == 0x00 ||
+	    sensor->threshold.hysteresis.negative == 0xff ||
+	    creading == 0.0)
 		printf(" Negative Hysteresis   : Unspecified\n");
 	else
-		printf(" Negative Hysteresis   : %.3f\n", (double)min_reading);
+		printf(" Negative Hysteresis   : %.3f\n", creading);
 
-	min_reading = (uint8_t)sdr_convert_sensor_reading(
-		sensor, sensor->sensor_min);
+	creading = sdr_convert_sensor_reading(sensor, sensor->sensor_min);
 	if ((sensor->unit.analog == 0 && sensor->sensor_min == 0x00) ||
 	    (sensor->unit.analog == 1 && sensor->sensor_min == 0xff) ||
-	    (sensor->unit.analog == 2 && sensor->sensor_min == 0x80))
+	    (sensor->unit.analog == 2 && sensor->sensor_min == 0x80) ||
+	    creading == 0.0)
 		printf(" Minimum sensor range  : Unspecified\n");
 	else
-		printf(" Minimum sensor range  : %.3f\n", (double)min_reading);
+		printf(" Minimum sensor range  : %.3f\n", creading);
 
-	max_reading = (uint8_t)sdr_convert_sensor_reading(
-		sensor, sensor->sensor_max);
+	creading = sdr_convert_sensor_reading(sensor, sensor->sensor_max);
 	if ((sensor->unit.analog == 0 && sensor->sensor_max == 0xff) ||
 	    (sensor->unit.analog == 1 && sensor->sensor_max == 0x00) ||
-	    (sensor->unit.analog == 2 && sensor->sensor_max == 0x7f))
+	    (sensor->unit.analog == 2 && sensor->sensor_max == 0x7f) ||
+	    creading == 0.0)
 		printf(" Maximum sensor range  : Unspecified\n");
 	else
-		printf(" Maximum sensor range  : %.3f\n", (double)max_reading);
+		printf(" Maximum sensor range  : %.3f\n", creading);
 
 	printf(" Event Message Control : ");
 	switch (sensor->sensor.capabilities.event_msg) {
