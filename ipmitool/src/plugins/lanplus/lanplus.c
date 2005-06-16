@@ -2094,8 +2094,9 @@ ipmi_lanplus_send_payload(
 			if (rsp)
 				break;
 
-			usleep(5000);
 		}
+
+		usleep(5000);
 
 		try++;
 	}
@@ -3023,6 +3024,44 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 
 
 
+static int
+ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t privlvl = intf->session->privlvl;
+
+	if (privlvl <= IPMI_SESSION_PRIV_USER)
+		return 0;	/* no need to set higher */
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn		= IPMI_NETFN_APP;
+	req.msg.cmd		= 0x3b;
+	req.msg.data		= &privlvl;
+	req.msg.data_len	= 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
+			val2str(privlvl, ipmi_privlvl_vals));
+		return -1;
+	}
+	if (verbose > 2)
+		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
+
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
+			val2str(privlvl, ipmi_privlvl_vals),
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	lprintf(LOG_DEBUG, "Set Session Privilege Level to %s\n",
+		val2str(rsp->data[0], ipmi_privlvl_vals));
+
+	return 0;
+}
+
 /**
  * ipmi_lanplus_open
  */
@@ -3173,6 +3212,10 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 
 	lprintf(LOG_DEBUG, "IPMIv2 / RMCP+ SESSION OPENED SUCCESSFULLY\n");
+
+	rc = ipmi_set_session_privlvl_cmd(intf);
+	if (rc < 0)
+		goto fail;
 
 	return intf->fd;
 
