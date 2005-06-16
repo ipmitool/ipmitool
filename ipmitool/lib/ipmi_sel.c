@@ -501,7 +501,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		 */
 		if (evt->sensor_type == 0xC &&
 		    evt->sensor_num == 0 &&
-		    evt->event_data[0] == 0x20) {
+		    (evt->event_data[0] & 0x30) == 0x20) {
 			/* break down memory ECC reporting if we can */
 			if (csv_output)
 				printf(",");
@@ -718,7 +718,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 		/* Sensor-Specific Discrete */
 		if (evt->sensor_type == 0xC &&
 		    evt->sensor_num  == 0 &&
-		    evt->event_data[0] == 0x20)
+		    (evt->event_data[0] & 0x30) == 0x20)
 		{
 			/* break down memory ECC reporting if we can */
 			printf(" Event Data            : CPU %d DIMM %d\n",
