@@ -97,28 +97,31 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-		lprintf(LOG_INFO, "Get LAN Parameter command failed");
+		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed", p->desc);
 		return NULL;
 	}
-	if (rsp->ccode == 0x80) {
-		/* parameter not supported
-		 * return lan_param without data
-		 */
+
+	switch (rsp->ccode)
+	{
+	case 0x00: /* successful */
+		break;
+
+	case 0x80: /* parameter not supported */
+	case 0xc9: /* parameter out of range */
+	case 0xcc: /* invalid data field in request */
+
+		/* these completion codes usually mean parameter not supported */
+		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
+			p->desc, val2str(rsp->ccode, completion_code_vals));
 		p->data = NULL;
 		p->data_len = 0;
 		return p;
-	}
-	if (rsp->ccode == 0xc9) {
-		/* parameter out of range
-		 * return lan_param without data
-		 */
-		p->data = NULL;
-		p->data_len = 0;
-		return p;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_INFO, "Get LAN Parameter command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+
+	default:
+
+		/* other completion codes are treated as error */
+		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
+			p->desc, val2str(rsp->ccode, completion_code_vals));
 		return NULL;
 	}
 
