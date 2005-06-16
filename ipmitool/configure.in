@@ -3,7 +3,7 @@ dnl autoconf for ipmitool
 dnl
 AC_INIT([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([ipmitool], [1.8.2])
+AM_INIT_AUTOMAKE([ipmitool], [1.8.3])
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_PREREQ(2.50)
@@ -194,6 +194,12 @@ AC_CHECK_HEADER([linux/ipmi.h],
 	[Define to 1 if you have the <linux/ipmi.h> header file.])],
 	[echo "** Unable to find OpenIPMI header files.  Using internal version."])
 
+dnl set RPM distro tag for use in RPM name
+AC_ARG_WITH([rpm-distro],
+	[AC_HELP_STRING([--with-rpm-distro=DISTRO],
+			[set Linux distribution tag for use in RPM version string])],
+	[AC_SUBST(DISTRO, $with_rpm_distro)])
+
 dnl enable Linux OpenIPMI interface
 AC_ARG_ENABLE([intf-open],
 	[AC_HELP_STRING([--enable-intf-open],
@@ -291,6 +297,7 @@ AC_CONFIG_FILES([Makefile
 		control/Makefile
 		control/pkginfo
 		control/prototype
+		control/rpmmacros
 		control/ipmitool.spec
 		lib/Makefile
 		include/Makefile

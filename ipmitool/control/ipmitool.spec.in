@@ -32,6 +32,7 @@ fi
 
 %build
 ./configure --with-kerneldir \
+	--with-rpm-distro=@DISTRO@ \
 	--prefix=%{_prefix} \
 	--bindir=%{_bindir} \
 	--sbindir=%{_sbindir} \

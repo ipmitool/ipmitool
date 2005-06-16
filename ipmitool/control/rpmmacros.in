@@ -6,6 +6,7 @@
 %_buildroot	%{_topdir}/%{_tmppath}/%{name}-%{version}-root
 %_rpmdir	%{_topdir}/RPMS
 %_srcrpmdir	%{_topdir}/SRPMS
+%_distro	@DISTRO@
 %_rpmfilename	%%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
 %packager	duncan@iceblink.org
 %distribution	Sourceforge Build
