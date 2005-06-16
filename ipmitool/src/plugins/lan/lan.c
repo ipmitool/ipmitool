@@ -134,7 +134,7 @@ ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * e = ipmi_req_entries;
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
-		if (e == e->next)
+		if (e->next == NULL || e == e->next)
 			return NULL;
 		e = e->next;
 	}
@@ -183,10 +183,16 @@ ipmi_req_clear_entries(void)
 	while (e) {
 		lprintf(LOG_DEBUG+3, "cleared list entry seq=0x%02x cmd=0x%02x",
 			e->rq_seq, e->req.msg.cmd);
-		p = e->next;
-		free(e);
-		e = p;
+		if (e->next != NULL) {
+			p = e->next;
+			free(e);
+			e = p;
+		} else {
+			free(e);
+			break;
+		}
 	}
+	ipmi_req_entries = NULL;
 }
 
 static int
