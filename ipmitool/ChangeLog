@@ -1,4 +1,14 @@
-version 1.8.2
+version 1.8.3
+	* Add support for 'sel readraw' and 'sel writeraw' commands.
+	* Add support for entering NetFn as a string for RAW commands.
+	* Add support for appending distro tag to integrated RPM builds.
+	* Fix LAN parameter printing to handle Invalid Data Field response
+	without errors.
+	* Add 5ms delay to IPMIv2 SOL retry packets
+	* IPMIv2 interface will now correctly set session privilege level
+	to requested level after session is opened.
+
+version 1.8.2 (released May 18 2005)
 	* Fix FRU reading for large (>255 bytes) areas.
 	* Overhaul to ipmievd to support SEL polling in addition to OpenIPMI.
 	* Fix LAN parameter segfault when no Ciphers supported by BMC.
