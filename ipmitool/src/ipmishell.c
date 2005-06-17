@@ -111,8 +111,9 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		shell_intf = intf;
 		rl_event_hook = rl_event_keepalive;
 #if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
-		/* set to 1 second */
-		rl_set_keyboard_input_timeout(1000*1000);
+		/* There is a bug in readline 4.2 and later (at least on FreeBSD):
+		 * timeout equal or greater than 1 second causes an infinite loop. */
+		rl_set_keyboard_input_timeout(1000 * 1000 - 1);
 #endif
 	}
 
