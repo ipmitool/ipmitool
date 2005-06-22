@@ -1,4 +1,4 @@
-/*
+/* -*-mode: C; indent-tabs-mode: t; -*-
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -544,7 +544,6 @@ iana_string(uint32_t iana)
 
 static int
 ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
-			       const char * which,
 			       const char * payload_type,
 			       uint8_t channel)
 {
@@ -571,7 +570,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 
 	rqdata[0] = channel;
 	rqdata[1] = ((strncmp(payload_type, "ipmi", 4) == 0)? 0: 1);
-	rqdata[2] = ((strncmp(which, "all", 3) == 0)? 0x80: 0);
+	rqdata[2] = 0x80; // Always ask for cipher suite format
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
@@ -771,7 +770,7 @@ printf_channel_usage()
 	lprintf(LOG_NOTICE, "                  setaccess <channel number> "
 		"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
 	lprintf(LOG_NOTICE, "                  info      [channel number]");
-	lprintf(LOG_NOTICE, "                  getciphers <all | supported> <ipmi | sol> [channel]\n");
+	lprintf(LOG_NOTICE, "                  getciphers <ipmi | sol> [channel]\n");
 	lprintf(LOG_NOTICE, "Possible privilege levels are:");
 	lprintf(LOG_NOTICE, "   1   Callback level");
 	lprintf(LOG_NOTICE, "   2   User level");
@@ -828,21 +827,19 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 
-	// it channel getciphers <all | supported> <ipmi | sol> [channel] 
+	// it channel getciphers <ipmi | sol> [channel] 
 	else if (strncmp(argv[0], "getciphers", 10) == 0)
 	{
-		if ((argc < 3) || (argc > 4)                                         ||
-		    (strncmp(argv[1], "all", 3) && strncmp(argv[1], "supported", 9)) ||
-		    (strncmp(argv[2], "ipmi", 4) && strncmp(argv[2], "sol",  3)))
+		if ((argc < 2) || (argc > 3)  ||
+		    (strncmp(argv[1], "ipmi", 4) && strncmp(argv[1], "sol",  3)))
 			printf_channel_usage();
 		else
 		{
 			uint8_t ch = 0xe;
 			if (argc == 4)
-				ch = (uint8_t)strtol(argv[3], NULL, 0);
+				ch = (uint8_t)strtol(argv[2], NULL, 0);
 			retval = ipmi_get_channel_cipher_suites(intf,
-								argv[1], // all | supported
-								argv[2], // ipmi | sol
+								argv[1], // ipmi | sol
 								ch);
 		}
 	}
