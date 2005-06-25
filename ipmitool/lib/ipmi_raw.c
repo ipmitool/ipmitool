@@ -195,6 +195,18 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf(" %2.2x", rsp->data[i]);
 		}
 		printf("\n");
+
+		if (rsp->data_len <= 4) {
+			uint32_t bit;
+			int j;
+			for (i = 0; i < rsp->data_len; i++) {
+				for (j = 1, bit = 0x80; bit > 0; bit /= 2, j++) {
+					printf("%s", (rsp->data[i] & bit) ? "1" : "0");
+				}
+				printf(" ");
+			}
+			printf("\n");
+		}
 	}
 
 	return 0;
