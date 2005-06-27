@@ -42,7 +42,7 @@
 const struct valstr ipmi_netfn_vals[] = {
 	{ IPMI_NETFN_CHASSIS,	"Chassis" },
 	{ IPMI_NETFN_BRIDGE,	"Bridge" },
-	{ IPMI_NETFN_SE,	"Sensor/Event" },
+	{ IPMI_NETFN_SE,	"SensorEvent" },
 	{ IPMI_NETFN_APP,	"Application" },
 	{ IPMI_NETFN_FIRMWARE,	"Firmware" },
 	{ IPMI_NETFN_STORAGE,	"Storage" },
