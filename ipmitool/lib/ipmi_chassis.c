@@ -355,6 +355,16 @@ ipmi_chassis_status(struct ipmi_intf * intf)
 		}
         }
 
+	return 0;
+}
+
+
+static int
+ipmi_chassis_selftest(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x4;
@@ -604,10 +614,13 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev");
+		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, selftest");
 	}
 	else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = ipmi_chassis_status(intf);
+	}
+	else if (strncmp(argv[0], "selftest", 8) == 0) {
+		rc = ipmi_chassis_selftest(intf);
 	}
 	else if (strncmp(argv[0], "power", 5) == 0) {
 		uint8_t ctl = 0;
