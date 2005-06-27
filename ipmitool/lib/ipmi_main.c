@@ -228,7 +228,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
-	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=USER]");
+	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=ADMINISTRATOR]");
 	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
