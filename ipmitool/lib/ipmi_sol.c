@@ -1497,10 +1497,20 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	intf->session->timeout = 3;
 
 
+	/* NOTE: the spec does allow for SOL traffic to be sent on
+	 * a different port.  we do not yet support that feature. */
 	if (intf->session->sol_data.port != intf->session->port)
 	{
-		lprintf(LOG_ERR, "Error: BMC requests SOL session on different port");
-		return -1;
+		/* try byteswapping port in case BMC sent it incorrectly */
+		uint16_t portswap = BSWAP_16(intf->session->sol_data.port);
+
+		if (portswap == intf->session->port) {
+			intf->session->sol_data.port = portswap;
+		}
+		else {
+			lprintf(LOG_ERR, "Error: BMC requests SOL session on different port");
+			return -1;
+		}
 	}
 	
 
