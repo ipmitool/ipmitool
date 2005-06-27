@@ -232,6 +232,13 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		tmp = fru->access ? rsp->data[0] << 1 : rsp->data[0];
 		memcpy((frubuf + off), rsp->data + 1, tmp);
 		off += tmp;
+
+		/* sometimes the size returned in the Info command
+		 * is too large.  return 0 so higher level function
+		 * still attempts to parse what was returned */
+		if (tmp == 0 && off < finish)
+			return 0;
+
 	} while (off < finish);
 
 	if (off < finish)
