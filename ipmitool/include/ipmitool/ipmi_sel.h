@@ -449,14 +449,26 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x00, 0x00, 0x00, 0x00, NULL, NULL },
 };
 
+
+/* These values are IANA numbers */
+typedef enum IPMI_OEM {
+    IPMI_OEM_UNKNOWN = 0,
+    IPMI_OEM_NEWISYS = 9237,
+    IPMI_OEM_INTEL,
+} IPMI_OEM;
+
+
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
 void ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_sel_print_extended_entry(struct ipmi_intf * intf, struct sel_event_record * evt);
 void ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt);
-void ipmi_get_event_desc(struct sel_event_record * rec, char ** desc);
+void ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char ** desc);
 const char * ipmi_sel_get_sensor_type(uint8_t code);
 const char * ipmi_sel_get_sensor_type_offset(uint8_t code, uint8_t offset);
 uint16_t ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id, struct sel_event_record * evt);
+char * get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
+IPMI_OEM ipmi_get_oem(struct ipmi_intf * intf);
+char * ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
 
 #endif /* IPMI_SEL_H */

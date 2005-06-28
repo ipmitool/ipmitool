@@ -198,7 +198,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	}
 
 	type = ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]);
-	ipmi_get_event_desc(evt, &desc);
+	ipmi_get_event_desc(intf, evt, &desc);
 
 	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sensor_num, evt->sensor_type);
 	if (sdr == NULL) {

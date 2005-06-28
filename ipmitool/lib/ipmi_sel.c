@@ -42,6 +42,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_sdr.h>
@@ -93,6 +94,9 @@ ipmi_sel_timestamp_date(uint32_t stamp)
 	return tbuf;
 }
 
+
+
+
 static char *
 ipmi_sel_timestamp_time(uint32_t stamp)
 {
@@ -102,17 +106,136 @@ ipmi_sel_timestamp_time(uint32_t stamp)
 	return tbuf;
 }
 
+
+IPMI_OEM
+ipmi_get_oem(struct ipmi_intf * intf)
+{
+	/* Execute a Get Device ID command to determine the OEM */
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct ipm_devid_rsp *devid;
+	uint32_t manufacturer_id;
+	int i;
+
+	if (intf->fd == 0)
+		return IPMI_OEM_UNKNOWN;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd   = BMC_GET_DEVICE_ID;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get Device ID command failed");
+		return IPMI_OEM_UNKNOWN;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Device ID command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return IPMI_OEM_UNKNOWN;
+	}
+
+	devid = (struct ipm_devid_rsp *) rsp->data;
+	return  IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);
+}
+
+
+
+char *
+get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
+{
+	/*
+	 * Newisys OEM event descriptions can be retrieved through an
+	 * OEM IPMI command.
+	 */
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[6];
+	char * description = NULL;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = 0x2E;
+	req.msg.cmd   = 0x01;
+	req.msg.data_len = sizeof(msg_data);
+	
+	msg_data[0] = 0x15;	/* IANA LSB */ 
+	msg_data[1] = 0x24; /* IANA     */
+	msg_data[2] = 0x00; /* IANA MSB */
+	msg_data[3] = 0x01; /* Subcommand */
+	msg_data[4] = rec->record_id & 0x00FF;        /* SEL Record ID LSB */
+	msg_data[5] = (rec->record_id & 0xFF00) >> 8; /* SEL Record ID MSB */
+
+	req.msg.data = msg_data;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		if (verbose)
+			lprintf(LOG_ERR, "Error issuing OEM command");
+		return NULL;
+	}
+	if (rsp->ccode > 0) {
+		if (verbose)
+			lprintf(LOG_ERR, "OEM command returned error code: %s",
+					val2str(rsp->ccode, completion_code_vals));
+		return NULL;
+	}
+	
+	/* Verify our response before we use it */
+	if (rsp->data_len < 5)
+	{
+		lprintf(LOG_ERR, "Newisys OEM response too short");
+		return NULL;
+	}
+	else if (rsp->data_len != (4 + rsp->data[3]))
+	{
+		lprintf(LOG_ERR, "Newisys OEM response has unexpected length");
+		return NULL;
+	}
+	else if (IPM_DEV_MANUFACTURER_ID(rsp->data) != IPMI_OEM_NEWISYS)
+	{
+		lprintf(LOG_ERR, "Newisys OEM response has unexpected length");
+		return NULL;
+	}
+
+	description = (char*)malloc(rsp->data[3] + 1);
+	memcpy(description, rsp->data + 4, rsp->data[3]);
+	description[rsp->data[3]] = 0;;
+
+	return description;
+}
+
+
+char *
+ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
+{
+	char * desc = NULL;
+
+	switch (ipmi_get_oem(intf))
+	{
+	case IPMI_OEM_NEWISYS:
+		desc = get_newisys_evt_desc(intf, rec);
+		break;
+	}
+
+	return desc;
+}
+
+
 void
-ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
+ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char ** desc)
 {
 	uint8_t code, offset;
 	struct ipmi_event_sensor_types *evt;
 
-        if (desc == NULL)
-	        return;
+	if (desc == NULL)
+		return;
 	*desc = NULL;
 
-	if (rec->event_type == 0x6f) {
+	if ((rec->event_type >= 0x70) && (rec->event_type <= 0x7F)) {
+		*desc = ipmi_get_oem_desc(intf, rec);
+		return;
+	} else if (rec->event_type == 0x6f) {
 		evt = sensor_specific_types;
 		code = rec->sensor_type;
 	} else {
@@ -124,9 +247,9 @@ ipmi_get_event_desc(struct sel_event_record * rec, char ** desc)
 
 	while (evt->type) {
 		if ((evt->code == code && evt->offset == offset)    &&
-                    ((evt->data == ALL_OFFSETS_SPECIFIED) ||
-                     ((rec->event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
-                      (evt->data == rec->event_data[1]))))
+			((evt->data == ALL_OFFSETS_SPECIFIED) ||
+			 ((rec->event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
+			  (evt->data == rec->event_data[1]))))
 		{
 			*desc = (char *)malloc(strlen(evt->desc) + 48);
 			if (*desc == NULL) {
@@ -326,12 +449,12 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 static void
 ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt, FILE * fp)
 {
-        char * description;
+	char * description;
 
 	if (fp == NULL)
 		return;
 
-        ipmi_get_event_desc(evt, &description);
+	ipmi_get_event_desc(intf, evt, &description);
 
 	fprintf(fp, "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x # %s #0x%02x %s\n",
 		evt->evm_rev,
@@ -360,7 +483,7 @@ ipmi_sel_print_extended_entry(struct ipmi_intf * intf, struct sel_event_record *
 void
 ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 {
-        char * description;
+	char * description;
 	struct sdr_record_list * sdr = NULL;
 
 	if (sel_extended)
@@ -455,7 +578,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	else
 		printf(" | ");
 
-        ipmi_get_event_desc(evt, &description);
+	ipmi_get_event_desc(intf, evt, &description);
 	if (description) {
 		printf("%s", description);
 		free(description);
@@ -564,13 +687,14 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	       val2str(evt->event_dir, event_dir_vals));
 	printf(" Event Data            : %02x%02x%02x\n",
 	       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
-        ipmi_get_event_desc(evt, &description);
+        ipmi_get_event_desc(intf, evt, &description);
 	printf(" Description           : %s\n",
                description ? description : "");
         free(description);
 
 	printf("\n");
 }
+
 
 void
 ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_record * evt)
@@ -732,7 +856,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 		       evt->event_data[0], evt->event_data[1], evt->event_data[2]);
 	}
 
-        ipmi_get_event_desc(evt, &description);
+        ipmi_get_event_desc(intf, evt, &description);
 	printf(" Description           : %s\n",
                description ? description : "");
         free(description);
@@ -888,8 +1012,6 @@ ipmi_sel_readraw(struct ipmi_intf * intf, const char * inputfile)
 	struct sel_event_record evt;
 	int ret = 0;
 	FILE* fp = 0;
-
-	printf("inside ipmi_sel_readraw\n");
 
 	fp = ipmi_open_file(inputfile, 0);
 	if (fp)
