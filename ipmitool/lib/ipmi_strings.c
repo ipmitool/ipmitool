@@ -152,6 +152,18 @@ const struct valstr entity_id_vals[] = {
 	{ 0x26, "Remote Management Device" },
 	{ 0x27, "External Environment" },
 	{ 0x28, "Battery" },
+    { 0x29, "Processing Blade" },
+    { 0x2A, "Connectivity Switch" },
+    { 0x2B, "Processor/Memory Module" },
+    { 0x2C, "I/O Module" },
+    { 0x2D, "Processor/IO Module" },
+    { 0x2E, "Management Controller Firmware" },
+    { 0x2F, "IPMI Channel" },
+    { 0x30, "PCI Bus" },
+    { 0x31, "PCI Express Bus" },
+    { 0x32, "SCSI Bus (parallel)" },
+    { 0x33, "SATA/SAS Bus" },
+    { 0x34, "Processor/Front-Side Bus" },
 	{ 0x00, NULL },
 };
 
