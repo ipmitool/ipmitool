@@ -39,13 +39,13 @@
 
 #include <ipmitool/ipmi.h>
 
-#define BMC_GET_DEVICE_ID		0x01
-#define BMC_COLD_RESET			0x02
-#define BMC_WARM_RESET			0x03
-#define BMC_GET_SELF_TEST		0x04
-#define BMC_SET_GLOBAL_ENABLES		0x2e
-#define BMC_GET_GLOBAL_ENABLES		0x2f
-#define BMC_GET_GUID			0x37
+#define BMC_GET_DEVICE_ID	0x01
+#define BMC_COLD_RESET		0x02
+#define BMC_WARM_RESET		0x03
+#define BMC_GET_SELF_TEST	0x04
+#define BMC_SET_GLOBAL_ENABLES	0x2e
+#define BMC_GET_GLOBAL_ENABLES	0x2f
+#define BMC_GET_GUID		0x37
 
 int ipmi_mc_main(struct ipmi_intf *, int, char **);
 
@@ -65,15 +65,15 @@ struct ipm_devid_rsp {
 	uint8_t aux_fw_rev[4];
 } __attribute__ ((packed));
 
-#define IPM_DEV_DEVICE_ID_SDR_MASK     (0x80) /* 1 = provides SDRs      */
-#define IPM_DEV_DEVICE_ID_REV_MASK     (0x07) /* BCD-enoded             */
+#define IPM_DEV_DEVICE_ID_SDR_MASK     (0x80)	/* 1 = provides SDRs      */
+#define IPM_DEV_DEVICE_ID_REV_MASK     (0x07)	/* BCD-enoded             */
 
-#define IPM_DEV_FWREV1_AVAIL_MASK      (0x80) /* 0 = normal operation   */
-#define IPM_DEV_FWREV1_MAJOR_MASK      (0x3f) /* Major rev, BCD-encoded */
+#define IPM_DEV_FWREV1_AVAIL_MASK      (0x80)	/* 0 = normal operation   */
+#define IPM_DEV_FWREV1_MAJOR_MASK      (0x3f)	/* Major rev, BCD-encoded */
 
-#define IPM_DEV_IPMI_VER_MAJOR_MASK    (0x0F) /* Major rev, BCD-encoded */
-#define IPM_DEV_IPMI_VER_MINOR_MASK    (0xF0) /* Minor rev, BCD-encoded */
-#define IPM_DEV_IPMI_VER_MINOR_SHIFT   (4)    /* Minor rev shift        */
+#define IPM_DEV_IPMI_VER_MAJOR_MASK    (0x0F)	/* Major rev, BCD-encoded */
+#define IPM_DEV_IPMI_VER_MINOR_MASK    (0xF0)	/* Minor rev, BCD-encoded */
+#define IPM_DEV_IPMI_VER_MINOR_SHIFT   (4)	/* Minor rev shift        */
 #define IPM_DEV_IPMI_VERSION_MAJOR(x) \
 	(x & IPM_DEV_IPMI_VER_MAJOR_MASK)
 #define IPM_DEV_IPMI_VERSION_MINOR(x) \
@@ -82,6 +82,26 @@ struct ipm_devid_rsp {
 #define IPM_DEV_MANUFACTURER_ID(x) \
 	((uint32_t) ((x[2] & 0x0F) << 16 | x[1] << 8 | x[0]))
 
-#define IPM_DEV_ADTL_SUPPORT_BITS      (8) 
+#define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 
-#endif /*IPMI_MC_H*/
+struct ipm_selftest_rsp {
+	unsigned char code;
+	unsigned char test;
+} __attribute__ ((packed));
+
+#define IPM_SFT_CODE_OK			0x55
+#define IPM_SFT_CODE_NOT_IMPLEMENTED	0x56
+#define IPM_SFT_CODE_DEV_CORRUPTED	0x57
+#define IPM_SFT_CODE_FATAL_ERROR	0x58
+#define IPM_SFT_CODE_RESERVED		0xff
+
+#define IPM_SELFTEST_SEL_ERROR		0x80
+#define IPM_SELFTEST_SDR_ERROR		0x40
+#define IPM_SELFTEST_FRU_ERROR		0x20
+#define IPM_SELFTEST_IPMB_ERROR		0x10
+#define IPM_SELFTEST_SDRR_EMPTY		0x08
+#define IPM_SELFTEST_INTERNAL_USE	0x04
+#define IPM_SELFTEST_FW_BOOTBLOCK	0x02
+#define IPM_SELFTEST_FW_CORRUPTED	0x01
+
+#endif				/*IPMI_MC_H */
