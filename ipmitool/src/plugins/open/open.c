@@ -60,8 +60,9 @@
 
 extern int verbose;
 
-#define IPMI_OPENIPMI_DEV	"/dev/ipmi0"
+#define IPMI_OPENIPMI_DEV		"/dev/ipmi0"
 #define IPMI_OPENIPMI_DEVFS	"/dev/ipmi/0"
+#define IPMI_OPENIPMI_DEVFS2	"/dev/ipmidev/0"
 
 static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
@@ -72,9 +73,14 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 
 	if (intf->fd < 0) {
 		intf->fd = open(IPMI_OPENIPMI_DEVFS, O_RDWR);
-		lperror(LOG_ERR, "Could not open device at %s or %s",
-			IPMI_OPENIPMI_DEV, IPMI_OPENIPMI_DEVFS);
-		return -1;
+		if (intf->fd < 0) {
+			intf->fd = open(IPMI_OPENIPMI_DEVFS2, O_RDWR);
+		}
+		if (intf->fd < 0) {
+			lperror(LOG_ERR, "Could not open device at %s or %s or %s",
+			IPMI_OPENIPMI_DEV, IPMI_OPENIPMI_DEVFS , IPMI_OPENIPMI_DEVFS2);
+			return -1;
+		}
 	}
 
 	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i) < 0) {
