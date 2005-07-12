@@ -109,7 +109,7 @@ struct ipmi_event_sensor_types {
 	uint8_t	code;
 	uint8_t	offset;
 #define ALL_OFFSETS_SPECIFIED  0xff
-        uint8_t   data;
+	uint8_t   data;
 	uint8_t	class;
 	const char	* type;
 	const char	* desc;
@@ -444,7 +444,23 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x29, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Low" },
 	{ 0x29, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Failed" },
 	{ 0x29, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Presence Detected" },
-
+ 	{ 0xF0, 0x00, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M0" },
+ 	{ 0xF0, 0x01, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M1" },
+ 	{ 0xF0, 0x02, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M2" },
+ 	{ 0xF0, 0x03, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M3" },
+ 	{ 0xF0, 0x04, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M4" },
+ 	{ 0xF0, 0x05, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M5" },
+ 	{ 0xF0, 0x06, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M6" },
+ 	{ 0xF0, 0x06, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M7" },
+ 
+ 	{ 0xF1, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A disabled, IPMB-B disabled" },
+ 	{ 0xF1, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A enabled, IPMB-B disabled" },
+ 	{ 0xF1, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A disabled, IPMB-B enabled" },
+ 	{ 0xF1, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A enabled, IPMP-B enabled" },
+ 
+ 	{ 0xF2, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Module Handle Closed" },
+ 	{ 0xF2, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Module Handle Opened" },
+ 	{ 0xF2, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Quiesced" },
 	{ 0xC0, 0x00, 0xff, 0x00, "OEM", NULL },
 	{ 0x00, 0x00, 0x00, 0x00, NULL, NULL },
 };
