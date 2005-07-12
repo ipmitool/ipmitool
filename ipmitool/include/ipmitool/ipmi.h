@@ -63,7 +63,8 @@ extern int csv_output;
 
 struct ipmi_rq {
 	struct {
-		uint8_t netfn;
+		uint8_t netfn :6;
+		uint8_t lun :2;
 		uint8_t cmd;
 		uint8_t target_cmd;
 		uint16_t data_len;

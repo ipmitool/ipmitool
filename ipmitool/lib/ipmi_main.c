@@ -74,7 +74,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:"
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:S:"
 #endif
@@ -233,6 +233,9 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
+	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
+	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
+
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
 #endif
@@ -264,6 +267,8 @@ ipmi_main(int argc, char ** argv,
 	struct ipmi_intf_support * sup;
 	int privlvl = 0;
 	uint8_t target_addr = 0;
+	uint8_t target_channel = 0;
+	uint8_t target_lun     = 0;
 	uint8_t my_addr = 0;
 	int authtype = -1;
 	char * tmp = NULL;
@@ -443,6 +448,12 @@ ipmi_main(int argc, char ** argv,
 		case 't':
 			target_addr = (uint8_t)strtol(optarg, NULL, 0);
 			break;
+		case 'b':
+			target_channel = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+		case 'l':
+			target_lun = (uint8_t)strtol(optarg, NULL, 0);
+			break;
 		case 'm':
 			my_addr = (uint8_t)strtol(optarg, NULL, 0);
 			break;
@@ -533,6 +544,12 @@ ipmi_main(int argc, char ** argv,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
 
 	ipmi_intf_session_set_cipher_suite_id(intf, cipher_suite_id);
+
+   /* setup destination lun if given */
+   intf->target_lun = target_lun ;
+
+   /* setup destination channel if given */
+   intf->target_channel = target_channel ;
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;

@@ -119,6 +119,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	};
 	struct ipmi_ipmb_addr ipmb_addr = {
 		addr_type:	IPMI_IPMB_ADDR_TYPE,
+		channel:	intf->target_channel & 0x0f,
 	};
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
@@ -153,6 +154,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		/* otherwise use system interface */
 		lprintf(LOG_DEBUG+2, "Sending request to "
 			"System Interface");
+      bmc_addr.lun = req->msg.lun;
 		_req.addr = (char *) &bmc_addr;
 		_req.addr_len = sizeof(bmc_addr);
 	}

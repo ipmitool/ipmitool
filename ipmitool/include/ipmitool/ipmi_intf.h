@@ -173,6 +173,8 @@ struct ipmi_intf {
 	struct ipmi_cmd * cmdlist;
 	uint32_t my_addr;
 	uint32_t target_addr;
+	uint8_t target_lun;
+	uint8_t target_channel;
 
 	int (*setup)(struct ipmi_intf * intf);
 	int (*open)(struct ipmi_intf * intf);

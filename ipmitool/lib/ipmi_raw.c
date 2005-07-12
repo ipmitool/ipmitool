@@ -217,7 +217,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t netfn, cmd;
+	uint8_t netfn, cmd, lun;
 	int i;
 	unsigned long ufn;
 
@@ -235,6 +235,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
+   lun = intf->target_lun;
 	netfn = str2val(argv[0], ipmi_netfn_vals);
 	if (netfn == 0xff) {
 		netfn = (uint8_t)strtol(argv[0], NULL, 0);
@@ -245,6 +246,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(data, 0, sizeof(data));
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = netfn;
+	req.msg.lun = lun;	
 	req.msg.cmd = cmd;
 	req.msg.data = data;
 
@@ -254,8 +256,10 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data_len++;
 	}
 
-	lprintf(LOG_INFO, "RAW REQ (netfn=0x%x cmd=0x%x data_len=%d)",
-		req.msg.netfn, req.msg.cmd, req.msg.data_len);
+	lprintf(LOG_INFO, 
+           "RAW REQ (channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x data_len=%d)",
+           intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun , 
+           req.msg.cmd, req.msg.data_len);
 
 	printbuf(req.msg.data, req.msg.data_len, "RAW REQUEST");
 
@@ -263,14 +267,14 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
-			"(netfn=0x%x cmd=0x%x)",
-			req.msg.netfn, req.msg.cmd);
+			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x)",
+			intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun, req.msg.cmd);
 		return -1;
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
-			"(netfn=0x%x cmd=0x%x rsp=0x%x): %s",
-			req.msg.netfn, req.msg.cmd, rsp->ccode,
+			"(channel=0x%x netfn=0x%x  lun=0x%x cmd=0x%x rsp=0x%x): %s",
+			intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun, rsp->ccode,
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
