@@ -122,6 +122,7 @@ struct fru_multirec_header {
 #define FRU_RECORD_TYPE_MANAGEMENT_ACCESS 0x03
 #define FRU_RECORD_TYPE_BASE_COMPATIBILITY 0x04
 #define FRU_RECORD_TYPE_EXTENDED_COMPATIBILITY 0x05
+#define FRU_RECORD_TYPE_PICMG_EXTENSION	0xc0
 	uint8_t type;
 	uint8_t format;
 	uint8_t len;
@@ -210,6 +211,103 @@ struct fru_multirec_dcload {
 	uint16_t min_current;
 	uint16_t max_current;
 } __attribute__ ((packed));
+
+struct fru_multirec_picmgext_header {
+	unsigned char mfg_id[3];
+	#define FRU_PICMG_BACKPLANE_P2P			0x04
+	#define FRU_PICMG_ADDRESS_TABLE			0x10
+	#define FRU_PICMG_SHELF_POWER_DIST		0x11
+	#define FRU_PICMG_SHELF_ACTIVATION		0x12
+	#define FRU_PICMG_SHMC_IP_CONN			0x13
+	#define FRU_PICMG_BOARD_P2P				0x14
+	#define FRU_AMC_CURRENT					0x16
+	#define FRU_AMC_ACTIVATION				0x17
+	#define FRU_AMC_CARRIER_P2P				0x18
+	#define FRU_AMC_P2P						0x19
+	#define FRU_AMC_CARRIER_INFO			0x1a
+	unsigned char record_id;
+	unsigned char record_version;
+} __attribute__ ((packed));
+
+struct fru_picmgext_guid {
+	unsigned char guid[16];
+} __attribute__ ((packed));
+
+struct fru_picmgext_link_desc {
+#ifndef WORDS_BIGENDIAN
+	unsigned int designator : 12;
+	#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
+	#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
+	unsigned int type		:  8;
+	unsigned int ext		:  4;
+	unsigned int grouping	:  8;
+#else
+	unsigned int grouping	:  8;
+	unsigned int ext		:  4;
+	#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
+	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
+	#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
+	unsigned int type		:  8;
+	unsigned int designator : 12;
+#endif
+} __attribute__ ((packed));
+
+struct fru_picmgext_chn_desc {
+#ifndef WORDS_BIGENDIAN
+	unsigned char remote_slot	: 8;
+	unsigned char remote_chn	: 5;
+	unsigned char local_chn		: 5;
+	unsigned char 				: 6; 
+#else
+	unsigned char				: 6;
+	unsigned char local_chn		: 5;
+	unsigned char remote_chn	: 5;
+	unsigned char remote_slot	: 8;
+#endif
+} __attribute__ ((packed));
+
+struct fru_picmgext_slot_desc {
+	unsigned char chan_type;
+	unsigned char slot_addr;
+	unsigned char chn_count;
+} __attribute__ ((packed));
+
+
+#define FRU_PICMGEXT_DESIGN_IF_BASE				0x00
+#define FRU_PICMGEXT_DESIGN_IF_FABRIC			0x01
+#define FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL	0x02
+#define FRU_PICMGEXT_DESIGN_IF_RESERVED			0x03
+
+struct fru_picmgext_activation_record {
+	unsigned char ibmb_addr;
+	unsigned char max_module_curr;
+	unsigned char reserved;
+} __attribute__ ((packed));
+
+struct fru_picmgext_carrier_p2p_record {
+	unsigned char resource_id;
+	unsigned char p2p_count;
+} __attribute__ ((packed));
+
+struct fru_picmgext_carrier_p2p_descriptor {
+#ifndef WORDS_BIGENDIAN
+	unsigned char remote_resource_id;
+	unsigned short remote_port		    : 5;
+	unsigned short local_port     		: 5;
+	unsigned short reserved           : 6;
+#else
+	unsigned short reserved           : 6;
+	unsigned short local_port     	  : 5;
+	unsigned short remote_port		    : 5;
+	unsigned char remote_resource_id;
+#endif
+} __attribute__ ((packed));
+
 
 static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Unspecified", "Other", "Unknown",
