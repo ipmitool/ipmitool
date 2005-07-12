@@ -55,6 +55,7 @@ extern const struct valstr ipmi_chassis_power_control_vals[];
 extern const struct valstr ipmi_auth_algorithms[];
 extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
+extern const struct valstr ipmi_oem_info[];
 
 
 #endif /*IPMI_STRINGS_H*/

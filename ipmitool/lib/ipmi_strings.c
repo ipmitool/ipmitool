@@ -38,6 +38,16 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_sel.h>  /* for IPMI_OEM */
+
+const struct valstr ipmi_oem_info[] = {
+
+   { IPMI_OEM_UNKNOWN , "Unknown/Unspecifier OEM" },
+   { IPMI_OEM_INTEL  , "Intel Corporation" },
+   { IPMI_OEM_NEWISYS, "Newisys" },
+   { IPMI_OEM_KONTRON, "Kontron" },
+   { 0xffff , NULL },
+};
 
 const struct valstr ipmi_netfn_vals[] = {
 	{ IPMI_NETFN_CHASSIS,	"Chassis" },

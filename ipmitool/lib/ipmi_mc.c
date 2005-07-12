@@ -347,7 +347,11 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 		IPM_DEV_IPMI_VERSION_MAJOR(devid->ipmi_version),
 		IPM_DEV_IPMI_VERSION_MINOR(devid->ipmi_version));
 	printf("Manufacturer ID           : %lu\n",
-		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+           (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+   printf("Manufacturer Name         : %s\n",
+            val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id), 
+            ipmi_oem_info) );
+
 	printf("Product ID                : %u (0x%02x%02x)\n",
 		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
