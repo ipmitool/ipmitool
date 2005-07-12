@@ -68,6 +68,11 @@ static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
 {
 	int i = 0;
+#ifdef INCLUDE_PICMG_GET_DEVICE_LOCATOR
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	char msg_data;
+#endif
 
 	intf->fd = open(IPMI_OPENIPMI_DEV, O_RDWR);
 
@@ -97,8 +102,35 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 		lprintf(LOG_DEBUG, "Set IPMB address to 0x%x",
 			intf->my_addr);
 	}
-
 	intf->opened = 1;
+
+#ifdef INCLUDE_PICMG_GET_DEVICE_LOCATOR
+	/* PICMG hack to set right IPMB address, 
+      we might want to do GetPICMGProperties first.
+
+      In any case, on a server board or a non-picmg IpmC blade , this code 
+      will not have any adverse side effect
+   */
+	if ( (intf->my_addr == IPMI_BMC_SLAVE_ADDR) ) {
+		lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_PICMG;
+		req.msg.cmd = 0x01;
+      msg_data    = 0x00;
+		req.msg.data = &msg_data; 
+		req.msg.data_len = 1;
+		msg_data = 0;
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp) {
+         if ( !rsp->ccode ) {
+            intf->my_addr = rsp->data[2];
+            intf->target_addr = intf->my_addr;
+				lprintf(LOG_DEBUG, "Discovered IPMB address = 0x%x", intf->my_addr);
+			}
+		}
+	}
+#endif
 
 	return intf->fd;
 }
