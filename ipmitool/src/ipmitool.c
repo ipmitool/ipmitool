@@ -58,6 +58,7 @@
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_sunoem.h>
+#include <ipmitool/ipmi_fwum.h>
 #include <ipmitool/ipmi_picmg.h>
 
 #ifdef HAVE_CONFIG_H
@@ -94,6 +95,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_session_main, "session", "Print session information" },
 	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
    { ipmi_picmg_main,  "picmg",    "Run a PICMG/ATCA extended cmd"},
+   { ipmi_fwum_main,  "fwum",	  "Update IPMC using Kontron OEM Firmware Update Manager" },
 #ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
 #endif
