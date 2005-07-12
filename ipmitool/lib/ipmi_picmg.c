@@ -17,7 +17,7 @@ ipmi_picmg_help (void)
 	printf(" activate       - activate a FRU\n");
 	printf(" deactivate     - deactivate a FRU\n");
 	printf(" policy get     - get the FRU activation policy\n");
-	printf(" policy set     - get the FRU activation policy\n");
+	printf(" policy set     - set the FRU activation policy\n");
 	printf(" portstate get  - get port state \n");
 	printf(" portstate set  - set port state \n");
 	printf(" led prop       - get led properties\n");
