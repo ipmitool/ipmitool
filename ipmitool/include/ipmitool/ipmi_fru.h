@@ -66,7 +66,7 @@ enum {
 
 struct fru_info {
 	uint16_t size;
-	uint8_t access : 1;
+	uint8_t access:1;
 } __attribute__ ((packed));
 
 struct fru_header {
@@ -86,8 +86,8 @@ struct fru_area_chassis {
 	uint8_t area_ver;
 	uint8_t type;
 	uint16_t area_len;
-	char * part;
-	char * serial;
+	char *part;
+	char *serial;
 };
 
 struct fru_area_board {
@@ -95,24 +95,24 @@ struct fru_area_board {
 	uint8_t lang;
 	uint16_t area_len;
 	uint32_t mfg_date_time;
-	char * mfg;
-	char * prod;
-	char * serial;
-	char * part;
-	char * fru;
+	char *mfg;
+	char *prod;
+	char *serial;
+	char *part;
+	char *fru;
 };
 
 struct fru_area_product {
 	uint8_t area_ver;
 	uint8_t lang;
 	uint16_t area_len;
-	char * mfg;
-	char * name;
-	char * part;
-	char * version;
-	char * serial;
-	char * asset;
-	char * fru;
+	char *mfg;
+	char *name;
+	char *part;
+	char *version;
+	char *serial;
+	char *asset;
+	char *fru;
 };
 
 struct fru_multirec_header {
@@ -134,59 +134,58 @@ struct fru_multirec_powersupply {
 #if WORDS_BIGENDIAN
 	uint16_t capacity;
 #else
-	uint16_t capacity		: 12;
-	uint16_t __reserved1	: 4;
+	uint16_t capacity:12;
+	uint16_t __reserved1:4;
 #endif
 	uint16_t peak_va;
-	uint8_t  inrush_current;
-	uint8_t  inrush_interval;
+	uint8_t inrush_current;
+	uint8_t inrush_interval;
 	uint16_t lowend_input1;
 	uint16_t highend_input1;
 	uint16_t lowend_input2;
 	uint16_t highend_input2;
-	uint8_t  lowend_freq;
-	uint8_t  highend_freq;
-	uint8_t  dropout_tolerance;
+	uint8_t lowend_freq;
+	uint8_t highend_freq;
+	uint8_t dropout_tolerance;
 #if WORDS_BIGENDIAN
-	uint8_t  __reserved2	: 3;
-	uint8_t  tach		: 1;
-	uint8_t  hotswap		: 1;
-	uint8_t  autoswitch	: 1;
-	uint8_t  pfc		: 1;
-	uint8_t  predictive_fail	: 1;
+	uint8_t __reserved2:3;
+	uint8_t tach:1;
+	uint8_t hotswap:1;
+	uint8_t autoswitch:1;
+	uint8_t pfc:1;
+	uint8_t predictive_fail:1;
 #else
-	uint8_t  predictive_fail	: 1;
-	uint8_t  pfc		: 1;
-	uint8_t  autoswitch	: 1;
-	uint8_t  hotswap		: 1;
-	uint8_t  tach		: 1;
-	uint8_t  __reserved2	: 3;
+	uint8_t predictive_fail:1;
+	uint8_t pfc:1;
+	uint8_t autoswitch:1;
+	uint8_t hotswap:1;
+	uint8_t tach:1;
+	uint8_t __reserved2:3;
 #endif
 	uint16_t peak_cap_ht;
 #if WORDS_BIGENDIAN
-	uint8_t  combined_voltage1 : 4;
-	uint8_t  combined_voltage2 : 4;
+	uint8_t combined_voltage1:4;
+	uint8_t combined_voltage2:4;
 #else
-	uint8_t  combined_voltage2 : 4;
-	uint8_t  combined_voltage1 : 4;
+	uint8_t combined_voltage2:4;
+	uint8_t combined_voltage1:4;
 #endif
 	uint16_t combined_capacity;
-	uint8_t  rps_threshold;
+	uint8_t rps_threshold;
 } __attribute__ ((packed));
 
-static const char * combined_voltage_desc[] __attribute__((unused)) = {
-	"12 V", "-12 V", "5 V", "3.3 V"
-};
+static const char *combined_voltage_desc[] __attribute__ ((unused)) = {
+"12 V", "-12 V", "5 V", "3.3 V"};
 
 struct fru_multirec_dcoutput {
 #if WORDS_BIGENDIAN
-	uint8_t  standby		: 1;
-	uint8_t  __reserved	: 3;
-	uint8_t  output_number	: 4;
+	uint8_t standby:1;
+	uint8_t __reserved:3;
+	uint8_t output_number:4;
 #else
-	uint8_t  output_number	: 4;
-	uint8_t  __reserved	: 3;
-	uint8_t  standby		: 1;
+	uint8_t output_number:4;
+	uint8_t __reserved:3;
+	uint8_t standby:1;
 #endif
 	short nominal_voltage;
 	short max_neg_dev;
@@ -198,11 +197,11 @@ struct fru_multirec_dcoutput {
 
 struct fru_multirec_dcload {
 #if WORDS_BIGENDIAN
-	uint8_t  __reserved	: 4;
-	uint8_t  output_number	: 4;
+	uint8_t __reserved:4;
+	uint8_t output_number:4;
 #else
-	uint8_t  output_number	: 4;
-	uint8_t  __reserved	: 4;
+	uint8_t output_number:4;
+	uint8_t __reserved:4;
 #endif
 	short nominal_voltage;
 	short min_voltage;
@@ -214,17 +213,17 @@ struct fru_multirec_dcload {
 
 struct fru_multirec_picmgext_header {
 	unsigned char mfg_id[3];
-	#define FRU_PICMG_BACKPLANE_P2P			0x04
-	#define FRU_PICMG_ADDRESS_TABLE			0x10
-	#define FRU_PICMG_SHELF_POWER_DIST		0x11
-	#define FRU_PICMG_SHELF_ACTIVATION		0x12
-	#define FRU_PICMG_SHMC_IP_CONN			0x13
-	#define FRU_PICMG_BOARD_P2P				0x14
-	#define FRU_AMC_CURRENT					0x16
-	#define FRU_AMC_ACTIVATION				0x17
-	#define FRU_AMC_CARRIER_P2P				0x18
-	#define FRU_AMC_P2P						0x19
-	#define FRU_AMC_CARRIER_INFO			0x1a
+#define FRU_PICMG_BACKPLANE_P2P			0x04
+#define FRU_PICMG_ADDRESS_TABLE			0x10
+#define FRU_PICMG_SHELF_POWER_DIST		0x11
+#define FRU_PICMG_SHELF_ACTIVATION		0x12
+#define FRU_PICMG_SHMC_IP_CONN			0x13
+#define FRU_PICMG_BOARD_P2P				0x14
+#define FRU_AMC_CURRENT					0x16
+#define FRU_AMC_ACTIVATION				0x17
+#define FRU_AMC_CARRIER_P2P				0x18
+#define FRU_AMC_P2P						0x19
+#define FRU_AMC_CARRIER_INFO			0x1a
 	unsigned char record_id;
 	unsigned char record_version;
 } __attribute__ ((packed));
@@ -235,39 +234,39 @@ struct fru_picmgext_guid {
 
 struct fru_picmgext_link_desc {
 #ifndef WORDS_BIGENDIAN
-	unsigned int designator : 12;
-	#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
-	#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
-	unsigned int type		:  8;
-	unsigned int ext		:  4;
-	unsigned int grouping	:  8;
+	unsigned int designator:12;
+#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
+#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
+	unsigned int type:8;
+	unsigned int ext:4;
+	unsigned int grouping:8;
 #else
-	unsigned int grouping	:  8;
-	unsigned int ext		:  4;
-	#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
-	#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
-	#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
-	unsigned int type		:  8;
-	unsigned int designator : 12;
+	unsigned int grouping:8;
+	unsigned int ext:4;
+#define FRU_PICMGEXT_LINK_TYPE_BASE					0x01
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET		0x02
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND	0x03
+#define FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR			0x04
+#define FRU_PICMGEXT_LINK_TYPE_PCIE					0x05
+	unsigned int type:8;
+	unsigned int designator:12;
 #endif
 } __attribute__ ((packed));
 
 struct fru_picmgext_chn_desc {
 #ifndef WORDS_BIGENDIAN
-	unsigned char remote_slot	: 8;
-	unsigned char remote_chn	: 5;
-	unsigned char local_chn		: 5;
-	unsigned char 				: 6; 
+	unsigned char remote_slot:8;
+	unsigned char remote_chn:5;
+	unsigned char local_chn:5;
+	unsigned char:6;
 #else
-	unsigned char				: 6;
-	unsigned char local_chn		: 5;
-	unsigned char remote_chn	: 5;
-	unsigned char remote_slot	: 8;
+	unsigned char:6;
+	unsigned char local_chn:5;
+	unsigned char remote_chn:5;
+	unsigned char remote_slot:8;
 #endif
 } __attribute__ ((packed));
 
@@ -276,7 +275,6 @@ struct fru_picmgext_slot_desc {
 	unsigned char slot_addr;
 	unsigned char chn_count;
 } __attribute__ ((packed));
-
 
 #define FRU_PICMGEXT_DESIGN_IF_BASE				0x00
 #define FRU_PICMGEXT_DESIGN_IF_FABRIC			0x01
@@ -297,30 +295,28 @@ struct fru_picmgext_carrier_p2p_record {
 struct fru_picmgext_carrier_p2p_descriptor {
 #ifndef WORDS_BIGENDIAN
 	unsigned char remote_resource_id;
-	unsigned short remote_port		    : 5;
-	unsigned short local_port     		: 5;
-	unsigned short reserved           : 6;
+	unsigned short remote_port:5;
+	unsigned short local_port:5;
+	unsigned short reserved:6;
 #else
-	unsigned short reserved           : 6;
-	unsigned short local_port     	  : 5;
-	unsigned short remote_port		    : 5;
+	unsigned short reserved:6;
+	unsigned short local_port:5;
+	unsigned short remote_port:5;
 	unsigned char remote_resource_id;
 #endif
 } __attribute__ ((packed));
 
+static const char *chassis_type_desc[] __attribute__ ((unused)) = {
+"Unspecified", "Other", "Unknown",
+	    "Desktop", "Low Profile Desktop", "Pizza Box",
+	    "Mini Tower", "Tower",
+	    "Portable", "LapTop", "Notebook", "Hand Held",
+	    "Docking Station", "All in One", "Sub Notebook",
+	    "Space-saving", "Lunch Box", "Main Server Chassis",
+	    "Expansion Chassis", "SubChassis", "Bus Expansion Chassis",
+	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis"};
 
-static const char * chassis_type_desc[] __attribute__((unused)) = {
-	"Unspecified", "Other", "Unknown",
-	"Desktop", "Low Profile Desktop", "Pizza Box",
-	"Mini Tower", "Tower",
-	"Portable", "LapTop", "Notebook", "Hand Held", "Docking Station",
-	"All in One", "Sub Notebook", "Space-saving", "Lunch Box",
-	"Main Server Chassis", "Expansion Chassis", "SubChassis",
-	"Bus Expansion Chassis", "Peripheral Chassis", "RAID Chassis",
-	"Rack Mount Chassis"
-};
+int ipmi_fru_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_fru_print(struct ipmi_intf *intf, struct sdr_record_fru_locator *fru);
 
-int ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv);
-int ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru);
-
-#endif /* IPMI_FRU_H */
+#endif				/* IPMI_FRU_H */
