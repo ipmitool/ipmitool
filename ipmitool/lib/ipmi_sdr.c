@@ -75,12 +75,12 @@ static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 int32_t
 utos(uint32_t val, int bits)
 {
-	int x = pow(10, bits - 1);
-	if (val & x) {
-		x = pow(2, bits - 1);
-		return -((~val & (x - 1)) + 1);
-	}
-	return val;
+	int x = 1<<(bits-1);
+
+	if (val & x)
+		return -((~val & ((1<<(bits-1)) - 1)) + 1);
+	else
+		return val;
 }
 
 /* ipmi_sdr_get_unit_string  -  return units for base/modifier
