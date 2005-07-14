@@ -196,7 +196,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x05, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "I/O Card area intrusion" },
 	{ 0x05, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "Processor area intrusion" },
 	{ 0x05, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "System unplugged from LAN" },
-	{ 0x05, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "Unauthorized dock/undock" },
+	{ 0x05, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "Unauthorized dock" },
 	{ 0x05, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Physical Security", "FAN area intrusion" },
 
 	{ 0x06, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Platform Security", "Front Panel Lockout violation attempted" },
@@ -216,6 +216,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x07, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Presence detected" },
 	{ 0x07, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Disabled" },
 	{ 0x07, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Terminator presence detected" },
+	{ 0x07, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Throttled" },
 
 	{ 0x08, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Presence detected" },
 	{ 0x08, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Failure detected" },
@@ -223,6 +224,10 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x08, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Power Supply AC lost" },
 	{ 0x08, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "AC lost or out-of-range" },
 	{ 0x08, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "AC out-of-range, but present" },
+	{ 0x08, 0x06, 0x00, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Vendor Mismatch" },
+	{ 0x08, 0x06, 0x01, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Revision Mismatch" },
+	{ 0x08, 0x06, 0x02, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Processor Missing" },
+	{ 0x08, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error" },
 
 	{ 0x09, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Unit", "Power off/down" },
 	{ 0x09, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Unit", "Power cycle" },
@@ -242,8 +247,21 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x0c, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Memory Scrub Failed" },
 	{ 0x0c, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Memory Device Disabled" },
 	{ 0x0c, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Correctable ECC logging limit reached" },
+	{ 0x0c, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Presence Detected" },
+	{ 0x0c, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Configuration Error" },
+	{ 0x0c, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Spare" },
+	{ 0x0c, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Throttled" },
 
-	{ 0x0d, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", NULL },
+	{ 0x0d, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Drive Present" },
+	{ 0x0d, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Drive Fault" },
+	{ 0x0d, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Predictive Failure" },
+	{ 0x0d, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Hot Spare" },
+	{ 0x0d, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Parity Check In Progress" },
+	{ 0x0d, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "In Critical Array" },
+	{ 0x0d, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "In Failed Array" },
+	{ 0x0d, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Rebuild In Progress" },
+	{ 0x0d, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Rebuild Aborted" },
+
 	{ 0x0e, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "POST Memory Resize", NULL },
 
 	{ 0x0f, 0x00, 0x00, IPMI_EVENT_CLASS_DISCRETE, "System Firmware Error", "Unspecified" },
@@ -323,6 +341,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x10, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Event Logging Disabled", "Log area reset/cleared" },
 	{ 0x10, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Event Logging Disabled", "All event logging disabled" },
 	{ 0x10, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Event Logging Disabled", "Log full" },
+	{ 0x10, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Event Logging Disabled", "Log almost full" },
 
 	{ 0x11, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "BIOS Reset" },
 	{ 0x11, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Watchdog 1", "OS Reset" },
@@ -338,7 +357,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x12, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Undetermined system hardware failure" },
 	{ 0x12, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Entry added to auxiliary log" },
 	{ 0x12, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "PEF Action" },
-	{ 0x12, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Timestamp Clock Sync." },
+	{ 0x12, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Event", "Timestamp Clock Sync" },
 
 	{ 0x13, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "NMI/Diag Interrupt" },
 	{ 0x13, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Timeout" },
@@ -350,10 +369,13 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x13, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Correctable error" },
 	{ 0x13, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Uncorrectable error" },
 	{ 0x13, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Fatal NMI" },
+	{ 0x13, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Fatal Error" },
 
 	{ 0x14, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "Power Button pressed" },
 	{ 0x14, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "Sleep Button pressed" },
 	{ 0x14, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "Reset Button pressed" },
+	{ 0x14, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "FRU Latch" },
+	{ 0x14, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "FRU Service" },
 
 	{ 0x15, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module/Board", NULL },
 	{ 0x16, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Microcontroller/Coprocessor", NULL },
@@ -361,7 +383,10 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x18, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Chassis", NULL },
 	{ 0x19, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Chip Set", NULL },
 	{ 0x1a, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Other FRU", NULL },
-	{ 0x1b, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Cable/Interconnect", NULL },
+
+	{ 0x1b, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Cable/Interconnect", "Connected" },
+	{ 0x1b, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Cable/Interconnect", "Config Error" },
+
 	{ 0x1c, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Terminator", NULL },
 
 	{ 0x1d, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "Initiated by power up" },
@@ -369,6 +394,9 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x1d, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "Initiated by warm reset" },
 	{ 0x1d, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "User requested PXE boot" },
 	{ 0x1d, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "Automatic boot to diagnostic" },
+	{ 0x1d, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "OS initiated hard reset" },
+	{ 0x1d, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "OS initiated warm reset" },
+	{ 0x1d, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System Boot Initiated", "System Restart" },
 
 	{ 0x1e, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Boot Error", "No bootable media" },
 	{ 0x1e, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Boot Error", "Non-bootable disk in drive" },
@@ -384,8 +412,12 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x1f, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "ROM boot completed" },
 	{ 0x1f, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "boot completed - device not specified" },
 
-	{ 0x20, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Critical Stop", "Stop during OS load/init" },
-	{ 0x20, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Critical Stop", "Run-time stop" },
+	{ 0x20, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Error during system startup" },
+	{ 0x20, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Run-time critical stop" },
+	{ 0x20, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "OS graceful stop" },
+	{ 0x20, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "OS graceful shutdown" },
+	{ 0x20, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "PEF initiated soft shutdown" },
+	{ 0x20, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Agent not responding" },
 
 	{ 0x21, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Fault Status asserted" },
 	{ 0x21, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Identify Status asserted" },
@@ -396,6 +428,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x21, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Device removal request" },
 	{ 0x21, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Interlock asserted" },
 	{ 0x21, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot is disabled" },
+	{ 0x21, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot holds spare device" },
 
 	{ 0x22, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System ACPI Power State", "S0/G0: working" },
 	{ 0x22, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "System ACPI Power State", "S1: sleeping with system hw & processor context maintained" },
@@ -440,10 +473,31 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x28, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Management Subsystem Health", "Controller access degraded or unavailable" },
 	{ 0x28, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Management Subsystem Health", "Management controller off-line" },
 	{ 0x28, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Management Subsystem Health", "Management controller unavailable" },
+	{ 0x28, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Management Subsystem Health", "Sensor failure" },
+	{ 0x28, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Management Subsystem Health", "FRU failure" },
 
 	{ 0x29, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Low" },
 	{ 0x29, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Failed" },
 	{ 0x29, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Battery", "Presence Detected" },
+
+	{ 0x2b, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Hardware change detected" },
+	{ 0x2b, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Firmware or software change detected" },
+	{ 0x2b, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Hardware incompatibility detected" },
+	{ 0x2b, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Firmware or software incompatibility detected" },
+	{ 0x2b, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Invalid or unsupported hardware version" },
+	{ 0x2b, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Invalid or unsupported firmware or software version" },
+	{ 0x2b, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Hardware change success" },
+	{ 0x2b, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Version Change", "Firmware or software change success" },
+
+	{ 0x2c, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Not Installed" },
+	{ 0x2c, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Inactive" },
+	{ 0x2c, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Activation Requested" },
+	{ 0x2c, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Activation in Progress" },
+	{ 0x2c, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Active" },
+	{ 0x2c, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Deactivation Requested" },
+	{ 0x2c, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Deactivation in Progress" },
+	{ 0x2c, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "FRU State", "Communication lost" },
+
  	{ 0xF0, 0x00, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M0" },
  	{ 0xF0, 0x01, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M1" },
  	{ 0xF0, 0x02, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M2" },
@@ -461,7 +515,9 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
  	{ 0xF2, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Module Handle Closed" },
  	{ 0xF2, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Module Handle Opened" },
  	{ 0xF2, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Quiesced" },
+
 	{ 0xC0, 0x00, 0xff, 0x00, "OEM", NULL },
+
 	{ 0x00, 0x00, 0x00, 0x00, NULL, NULL },
 };
 
@@ -469,6 +525,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 /* These values are IANA numbers */
 typedef enum IPMI_OEM {
     IPMI_OEM_UNKNOWN = 0,
+    IPMI_OEM_SUN     = 42,
     IPMI_OEM_INTEL   = 343,
     IPMI_OEM_NEWISYS = 9237,
     IPMI_OEM_KONTRON = 15000
