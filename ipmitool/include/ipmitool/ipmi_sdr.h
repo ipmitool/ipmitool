@@ -49,25 +49,25 @@
 
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
 
-#define utos(val, bits)	((val & ((1<<(bits)-1))) ? (-((~(val) & ((1<<(bits)-1) - 1)) + 1)) : (val))
+#define tos32(val, bits)    ((val & ((1<<(bits)-1))) ? (-((~(val) & ((1<<(bits)-1) - 1)) + 1)) : (val))
 
 #if WORDS_BIGENDIAN
 # define __TO_TOL(mtol)     (uint16_t)(mtol & 0x3f)
-# define __TO_M(mtol)       (int16_t)(utos((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (int32_t)(utos((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
+# define __TO_M(mtol)       (int16_t)(tos32((((mtol & 0xff00) >> 8) | ((mtol & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (int32_t)(tos32((((bacc & 0xff000000) >> 24) | ((bacc & 0xc00000) >> 14)), 10))
 # define __TO_ACC(bacc)     (uint32_t)(((bacc & 0x3f0000) >> 16) | ((bacc & 0xf000) >> 6))
 # define __TO_ACC_EXP(bacc) (uint32_t)((bacc & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (int32_t)(utos(((bacc & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (int32_t)(utos((bacc & 0xf), 4))
+# define __TO_R_EXP(bacc)   (int32_t)(tos32(((bacc & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (int32_t)(tos32((bacc & 0xf), 4))
 #else
 # define __TO_TOL(mtol)     (uint16_t)(BSWAP_16(mtol) & 0x3f)
-# define __TO_M(mtol)       (int16_t)(utos((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
-# define __TO_B(bacc)       (int32_t)(utos((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
+# define __TO_M(mtol)       (int16_t)(tos32((((BSWAP_16(mtol) & 0xff00) >> 8) | ((BSWAP_16(mtol) & 0xc0) << 2)), 10))
+# define __TO_B(bacc)       (int32_t)(tos32((((BSWAP_32(bacc) & 0xff000000) >> 24) | \
                             ((BSWAP_32(bacc) & 0xc00000) >> 14)), 10))
 # define __TO_ACC(bacc)     (uint32_t)(((BSWAP_32(bacc) & 0x3f0000) >> 16) | ((BSWAP_32(bacc) & 0xf000) >> 6))
 # define __TO_ACC_EXP(bacc) (uint32_t)((BSWAP_32(bacc) & 0xc00) >> 10)
-# define __TO_R_EXP(bacc)   (int32_t)(utos(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
-# define __TO_B_EXP(bacc)   (int32_t)(utos((BSWAP_32(bacc) & 0xf), 4))
+# define __TO_R_EXP(bacc)   (int32_t)(tos32(((BSWAP_32(bacc) & 0xf0) >> 4), 4))
+# define __TO_B_EXP(bacc)   (int32_t)(tos32((BSWAP_32(bacc) & 0xf), 4))
 #endif
 
 enum {
