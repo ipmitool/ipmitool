@@ -42,7 +42,7 @@
 
 const struct valstr ipmi_oem_info[] = {
 
-   { IPMI_OEM_UNKNOWN, "Unknown/Unspecifier OEM" },
+   { IPMI_OEM_UNKNOWN, "Unknown" },
    { IPMI_OEM_SUN    , "Sun Microsystems" },
    { IPMI_OEM_INTEL  , "Intel Corporation" },
    { IPMI_OEM_NEWISYS, "Newisys" },
