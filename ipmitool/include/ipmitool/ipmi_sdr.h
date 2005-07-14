@@ -48,7 +48,8 @@
 #include <ipmitool/ipmi_entity.h>
 
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
-int32_t utos(uint32_t val, int bits);
+
+#define utos(val, bits)	((val & ((1<<(bits)-1))) ? (-((~(val) & ((1<<(bits)-1) - 1)) + 1)) : (val))
 
 #if WORDS_BIGENDIAN
 # define __TO_TOL(mtol)     (uint16_t)(mtol & 0x3f)

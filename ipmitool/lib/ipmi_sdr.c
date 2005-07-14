@@ -65,24 +65,6 @@ static struct sdr_record_list *sdr_list_head = NULL;
 static struct sdr_record_list *sdr_list_tail = NULL;
 static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
-/* utos  -  convert unsigned 32bit value to 2's complement signed
- *
- * @val:	unsigned value to convert
- * @bits:	number of bits in value
- *
- * returns 2s complement signed integer
- */
-int32_t
-utos(uint32_t val, int bits)
-{
-	int x = 1<<(bits-1);
-
-	if (val & x)
-		return -((~val & ((1<<(bits-1)) - 1)) + 1);
-	else
-		return val;
-}
-
 /* ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
  * @type:	unit type
