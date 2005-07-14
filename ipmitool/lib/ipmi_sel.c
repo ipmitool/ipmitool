@@ -246,7 +246,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 	offset = rec->event_data[0] & 0xf;
 
 	while (evt->type) {
-		if ((evt->code == code && evt->offset == offset)    &&
+		if ((evt->code == code && evt->offset == offset && evt->desc != NULL) &&
 			((evt->data == ALL_OFFSETS_SPECIFIED) ||
 			 ((rec->event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
 			  (evt->data == rec->event_data[1]))))
