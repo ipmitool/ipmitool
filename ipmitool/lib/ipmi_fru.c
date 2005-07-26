@@ -178,21 +178,35 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 	return str;
 }
 
+/* write_fru_area  -  write fru data
+ *
+ * @intf:	  ipmi interface
+ * @fru_info: information about FRU device
+ * @id      : Fru id
+ * @soffset : Source offset      (from buffer)
+ * @doffset : Destination offset (in device)
+ * @length  : Size of data to write (in bytes)
+ * @pFrubuf : Pointer on data to write
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
 static int
 write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
-               unsigned int offset, unsigned int length, unsigned char *pFrubuf)
+               unsigned int soffset,  unsigned int doffset,
+               unsigned int length, unsigned char *pFrubuf)
 {  /*
    // fill in frubuf[offset:length] from the FRU[offset:length]
    // rc=1 on success
    */
-   static unsigned int fru_data_rqst_size = 20;
-   unsigned int off = offset, tmp, finish;
+   static unsigned int fru_data_rqst_size = 32;
+   unsigned int off=0,  tmp, finish;
    struct ipmi_rs * rsp;
    struct ipmi_rq req;
    unsigned char msg_data[25];
    unsigned char writeLength;
 
-   finish = offset + length;
+   finish = doffset + length;        /* destination offset */
    if (finish > fru->size)
    {
       printf("Return error\n");
@@ -203,26 +217,26 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
    req.msg.cmd = SET_FRU_DATA;
    req.msg.data = msg_data;
    
-
    if (fru->access && fru_data_rqst_size > 16)
       fru_data_rqst_size = 16;
    do 
    {
-      tmp = fru->access ? off >> 1 : off;
+      /* real destination offset */
+      tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
       msg_data[0] = id;
       msg_data[1] = (unsigned char)tmp;
       msg_data[2] = (unsigned char)(tmp >> 8);
-      tmp = finish - off;
+      tmp = finish - (doffset+off);                 /* bytes remaining */
       if (tmp > 16)
       {
-         printf("Writting 16 bytes\n");
-         memcpy(&msg_data[3],(pFrubuf+(off-offset)), 16); 
+         lprintf(LOG_INFO,"Writting 16 bytes");
+         memcpy(&msg_data[3],(pFrubuf+soffset+off), 16); 
          req.msg.data_len = 16 + 3;
       }
       else
       {
-         printf("Writting %d bytes\n", tmp);
-         memcpy(&msg_data[3],(pFrubuf+(off-offset)), (unsigned char) tmp); 
+         lprintf(LOG_INFO,"Writting %d bytes", tmp);
+         memcpy(&msg_data[3],(pFrubuf+soffset+off), (unsigned char) tmp); 
          req.msg.data_len = tmp + 3;
       }
 
@@ -233,18 +247,17 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
          break;
       if ((rsp->ccode==0xc7 || rsp->ccode==0xc8 || rsp->ccode==0xca ) && --fru_data_rqst_size > 8)
       {
-         printf("Bad CC -> %x\n", rsp->ccode);
+         lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
          break; /*continue;*/
       }
       if (rsp->ccode)
          break;
 
       off += writeLength;
-   } while (off < finish);
+   } while ((doffset+off) < finish);
 
-   return (off >= finish);
+   return ((doffset+off) >= finish);
 }
-
 
 /* read_fru_area  -  fill in frubuf[offset:length] from the FRU[offset:length]
  *
@@ -1464,131 +1477,127 @@ static void ipmi_fru_read_to_bin(struct ipmi_intf * intf,unsigned char * pFileNa
 static void ipmi_fru_write_from_bin(struct ipmi_intf * intf,
                                  unsigned char * pFileName, unsigned char fruId)
 {
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   unsigned char * fru_data;
-   struct fru_info fru;
-   unsigned char msg_data[4];
-   
-   unsigned char * pFruBuf;
-   unsigned int len = 0;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	unsigned char *fru_data;
+	struct fru_info fru;
+	unsigned char msg_data[4];
 
-   msg_data[0] = fruId;
+	unsigned char *pFruBuf;
+	unsigned int len = 0;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_STORAGE;
-   req.msg.cmd = GET_FRU_INFO;
-   req.msg.data = msg_data;
-   req.msg.data_len = 1;
+	msg_data[0] = fruId;
 
-   rsp = intf->sendrecv(intf, &req);
-   if (!rsp)
-      return;
+	memset(&req, 0, sizeof (req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
 
-   if(rsp->ccode)
-   {
-      if (rsp->ccode == 0xc3)
-         printf ("  Timeout accessing FRU info. (Device not present?)\n");
-      return;
-   }
-   fru.size = (rsp->data[1] << 8) | rsp->data[0];
-   fru.access = rsp->data[2] & 0x1;
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp)
+		return;
 
-   if (verbose)
-   {
-      printf("Fru Size   = %d bytes\n",fru.size);
-      printf("Fru Access = %xh\n", fru.access);
-   }
-   
-   pFruBuf = malloc(fru.size);
-   
-   if(pFruBuf != NULL)
-   {
-      FILE * pFile;
-      pFile = fopen(pFileName,"rb");
-      if(pFile!=NULL)
-      {
-         len = fread(pFruBuf, 1, fru.size, pFile);
-         printf("Fru Size         : %d bytes\n",fru.size);
-         printf("Size to Write    : %d bytes\n",len);
-         fclose(pFile);
-      }
-      else
-      {
-         fprintf(stderr, "Error opening file %s\n", pFileName);
-      }
-      
-      if(len != 0)
-      {
-         write_fru_area(intf, &fru, fruId, 0, len, pFruBuf);
-         printf("Done\n\r");
-      }
-   }
-   else
-   {
-      fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
-   }
-   free(pFruBuf);
+	if (rsp->ccode) {
+		if (rsp->ccode == 0xc3)
+			printf
+			    ("  Timeout accessing FRU info. (Device not present?)\n");
+		return;
+	}
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+
+	if (verbose) {
+		printf("Fru Size   = %d bytes\n", fru.size);
+		printf("Fru Access = %xh\n", fru.access);
+	}
+
+	pFruBuf = malloc(fru.size);
+
+	if (pFruBuf != NULL) {
+		FILE *pFile;
+		pFile = fopen(pFileName, "rb");
+		if (pFile != NULL) {
+			len = fread(pFruBuf, 1, fru.size, pFile);
+			printf("Fru Size         : %d bytes\n", fru.size);
+			printf("Size to Write    : %d bytes\n", len);
+			fclose(pFile);
+		} else {
+			fprintf(stderr, "Error opening file %s\n", pFileName);
+		}
+
+		if (len != 0) {
+			write_fru_area(intf, &fru, fruId,0, 0, len, pFruBuf);
+         lprintf(LOG_INFO,"Done");
+		}
+	} else {
+		fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
+	}
+	free(pFruBuf);
 }
 
 static int
 ipmi_fru_upg_ekeying(struct ipmi_intf * intf,unsigned char * pFileName, 
                                                             unsigned char fruId)
 {
-   unsigned int retStatus = 0;
-   unsigned long offFruMultiRec;
-   unsigned long fruMultiRecSize = 0;
-   unsigned long offFileMultiRec;
-   unsigned long fileMultiRecSize = 0;
-   struct fru_info fruInfo;
-   unsigned char * buf = NULL;
-   retStatus = 
-          ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-                                             &offFruMultiRec, &fruMultiRecSize);
+	unsigned int retStatus = 0;
+	unsigned long offFruMultiRec;
+	unsigned long fruMultiRecSize = 0;
+	unsigned long offFileMultiRec;
+	unsigned long fileMultiRecSize = 0;
+	struct fru_info fruInfo;
+	unsigned char *buf = NULL;
+	retStatus =
+	    ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
+						    &offFruMultiRec,
+						    &fruMultiRecSize);
 
-   if(verbose)
-   {
-      printf("FRU Size        : %u\n\r", fruMultiRecSize);
-      printf("Multi Rec offset: %u\n\r", offFruMultiRec);
-   }        
-   
+	if (verbose) {
+		printf("FRU Size        : %u\n\r", fruMultiRecSize);
+		printf("Multi Rec offset: %u\n\r", offFruMultiRec);
+	}
+
+	if (retStatus == 0) {
+		retStatus =
+		    ipmi_fru_get_multirec_size_from_file(pFileName,
+							 &fileMultiRecSize,
+							 &offFileMultiRec);
+	}
+
+	if (retStatus == 0) {
+		buf = malloc(fileMultiRecSize);
+		if (buf) {
+			retStatus =
+			    ipmi_fru_get_multirec_from_file(pFileName, buf,
+							    fileMultiRecSize,
+							    offFileMultiRec);
+
+		} else {
+			printf("Error allocating memory for multirec buffer\n");
+			retStatus = -1;
+		}
+	}
+
    if(retStatus == 0)
    {
-      retStatus = 
-         ipmi_fru_get_multirec_size_from_file(pFileName,&fileMultiRecSize,
-                                                           &offFileMultiRec);  
+      ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
    }
-   
-  
-   
-   if(retStatus == 0)
-   {
-      buf = malloc(fileMultiRecSize);
-      if(buf)
-      {
-         retStatus = 
-                ipmi_fru_get_multirec_from_file(pFileName,buf,fileMultiRecSize,
-                                                               offFileMultiRec);
-      
-      }
-      else
-      {
-         printf("Error allocating memory for multirec buffer\n");
-         retStatus = -1;
-      }
-   }       
-   
-   ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);                                     
 
-   if((retStatus == 0) && (buf))
-   {
-      write_fru_area(intf, &fruInfo, fruId, offFruMultiRec, fileMultiRecSize,
-                                                                     buf);
+	if ((retStatus == 0) && (buf)) {
+		write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
+			       fileMultiRecSize, buf);
 
+	}
+	if (buf) {
+		free(buf);
+	}
+   if(retStatus == 0 )
+   {
+      lprintf(LOG_INFO, "Done");
    }
-   if(buf)
+   else
    {
-      free(buf);
+      lprintf(LOG_ERR, "Failed");
    }
 }
 
