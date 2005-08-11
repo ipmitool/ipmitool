@@ -113,8 +113,10 @@ ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 	printf("Chassis Power Control: %s\n",
 	       val2str(ctl, ipmi_chassis_power_control_vals));
 
+#if 0	/* this can cause sessions to hang around after power commands */
 	/* sessions often get lost when changing chassis power */
 	intf->abort = 1;
+#endif
 
 	return 0;
 }
