@@ -232,7 +232,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		return;
 	*desc = NULL;
 
-	if ((rec->event_type >= 0x70) && (rec->event_type <= 0x7F)) {
+	if ((rec->event_type >= 0x70) && (rec->event_type < 0x7F)) {
 		*desc = ipmi_get_oem_desc(intf, rec);
 		return;
 	} else if (rec->event_type == 0x6f) {
@@ -1393,11 +1393,19 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		rc = ipmi_sel_writeraw(intf, argv[1]);
 	}
-    else if (strncmp(argv[0], "readraw", 7) == 0) {
+	else if (strncmp(argv[0], "readraw", 7) == 0) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel readraw <filename>");
 			return 0;
 		}
+		rc = ipmi_sel_readraw(intf, argv[1]);
+	}
+	else if (strncmp(argv[0], "ereadraw", 8) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: sel ereadraw <filename>");
+			return 0;
+		}
+		sel_extended = 1;
 		rc = ipmi_sel_readraw(intf, argv[1]);
 	}
 	else if (strncmp(argv[0], "list", 4) == 0 ||
