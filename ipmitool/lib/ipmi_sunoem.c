@@ -283,7 +283,7 @@ sunoem_led_get_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 			continue;
 		rsp = sunoem_led_get(intf, e->record.genloc, ledtype);
 		if (rsp && rsp->data_len == 1) {
-			led_print(e->record.genloc->id_string, rsp->data[0]);
+			led_print((const char *)e->record.genloc->id_string, rsp->data[0]);
 		}
 	}
 
@@ -314,7 +314,7 @@ sunoem_led_set_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 			continue;
 		rsp = sunoem_led_set(intf, e->record.genloc, ledtype, ledmode);
 		if (rsp && rsp->data_len == 0) {
-			led_print(e->record.genloc->id_string, ledmode);
+			led_print((const char *)e->record.genloc->id_string, ledmode);
 		}
 	}
 
@@ -367,7 +367,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 				continue;
 			rsp = sunoem_led_get(intf, a->record.genloc, ledtype);
 			if (rsp && rsp->data_len == 1) {
-				led_print(a->record.genloc->id_string, rsp->data[0]);
+				led_print((const char *)a->record.genloc->id_string, rsp->data[0]);
 			}
 		}
 		__sdr_list_empty(alist);
@@ -393,7 +393,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 		 */
 		rsp = sunoem_led_get(intf, sdr->record.genloc, ledtype);
 		if (rsp && rsp->data_len == 1) {
-			led_print(sdr->record.genloc->id_string, rsp->data[0]);
+			led_print((const char *)sdr->record.genloc->id_string, rsp->data[0]);
 		}
 		return 0;
 	}
@@ -520,7 +520,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 				continue;
 			rsp = sunoem_led_set(intf, a->record.genloc, ledtype, ledmode);
 			if (rsp && rsp->ccode == 0) {
-				led_print(a->record.genloc->id_string, ledmode);
+				led_print((const char *)a->record.genloc->id_string, ledmode);
 			}
 		}
 		__sdr_list_empty(alist);
