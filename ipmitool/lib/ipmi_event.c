@@ -65,17 +65,17 @@ ipmi_event_msg_print(struct ipmi_intf * intf, struct platform_event_msg * pmsg)
 	memset(&sel_event, 0, sizeof(struct sel_event_record));
 
 	sel_event.record_id = 0;
-	sel_event.gen_id = 2;
+	sel_event.sel_type.standard_type.gen_id = 2;
 
-	sel_event.evm_rev        = pmsg->evm_rev;
-	sel_event.sensor_type    = pmsg->sensor_type;
-	sel_event.sensor_num     = pmsg->sensor_num;
-	sel_event.event_type     = pmsg->event_type;
-	sel_event.event_dir      = pmsg->event_dir;
-	sel_event.event_data[0]  = pmsg->event_data[0];
-	sel_event.event_data[1]  = pmsg->event_data[1];
-	sel_event.event_data[2]  = pmsg->event_data[2];
-
+	sel_event.sel_type.standard_type.evm_rev        = pmsg->evm_rev;
+	sel_event.sel_type.standard_type.sensor_type    = pmsg->sensor_type;
+	sel_event.sel_type.standard_type.sensor_num     = pmsg->sensor_num;
+	sel_event.sel_type.standard_type.event_type     = pmsg->event_type;
+	sel_event.sel_type.standard_type.event_dir      = pmsg->event_dir;
+	sel_event.sel_type.standard_type.event_data[0]  = pmsg->event_data[0];
+	sel_event.sel_type.standard_type.event_data[1]  = pmsg->event_data[1];
+	sel_event.sel_type.standard_type.event_data[2]  = pmsg->event_data[2];
+	
 	if (verbose)
 		ipmi_sel_print_extended_entry_verbose(intf, &sel_event);
 	else
@@ -556,17 +556,17 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 
 		memset(&sel_event, 0, sizeof(struct sel_event_record));
 		sel_event.record_id = 0;
-		sel_event.gen_id = 2;
+		sel_event.sel_type.standard_type.gen_id = 2;
 
 		j = (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) ? 1 : 0;
-		sel_event.evm_rev = rqdata[j++];
-		sel_event.sensor_type = rqdata[j++];
-		sel_event.sensor_num = rqdata[j++];
-		sel_event.event_type = rqdata[j] & 0x7f;
-		sel_event.event_dir = (rqdata[j++] & 0x80) >> 7;
-		sel_event.event_data[0] = rqdata[j++];
-		sel_event.event_data[1] = rqdata[j++];
-		sel_event.event_data[2] = rqdata[j++];
+		sel_event.sel_type.standard_type.evm_rev = rqdata[j++];
+		sel_event.sel_type.standard_type.sensor_type = rqdata[j++];
+		sel_event.sel_type.standard_type.sensor_num = rqdata[j++];
+		sel_event.sel_type.standard_type.event_type = rqdata[j] & 0x7f;
+		sel_event.sel_type.standard_type.event_dir = (rqdata[j++] & 0x80) >> 7;
+		sel_event.sel_type.standard_type.event_data[0] = rqdata[j++];
+		sel_event.sel_type.standard_type.event_data[1] = rqdata[j++];
+		sel_event.sel_type.standard_type.event_data[2] = rqdata[j++];
 
 		ipmi_sel_print_std_entry(intf, &sel_event);
 		

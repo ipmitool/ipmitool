@@ -68,9 +68,7 @@ struct sel_get_rq {
 	uint8_t	length;
 } __attribute__ ((packed));
 
-struct sel_event_record {
-	uint16_t	record_id;
-	uint8_t	record_type;
+struct standard_spec_sel_rec{
 	uint32_t	timestamp;
 	uint16_t	gen_id;
 	uint8_t	evm_rev;
@@ -87,22 +85,28 @@ struct sel_event_record {
 #define DATA_BYTE3_SPECIFIED_MASK 0x30    /* event_data[0] bit mask */
 #define EVENT_OFFSET_MASK         0x0f    /* event_data[0] bit mask */
 	uint8_t	event_data[3];
-} __attribute__ ((packed));
+};
 
-struct sel_oem_record_ts {
-	uint16_t	next_id;
+#define SEL_OEM_TS_DATA_LEN		6
+#define SEL_OEM_NOTS_DATA_LEN		13
+struct oem_ts_spec_sel_rec{
+	uint32_t timestamp;
+	uint8_t manf_id[3];
+	uint8_t	oem_defined[SEL_OEM_TS_DATA_LEN];
+};
+
+struct oem_nots_spec_sel_rec{
+	uint8_t oem_defined[SEL_OEM_NOTS_DATA_LEN];
+};
+
+struct sel_event_record {
 	uint16_t	record_id;
 	uint8_t	record_type;
-	uint32_t	timestamp;
-	uint8_t	mfg_id[3];
-	uint8_t	oem_defined[6];
-} __attribute__ ((packed));
-
-struct sel_oem_record_nots {
-	uint16_t	next_id;
-	uint16_t	record_id;
-	uint8_t	record_type;
-	uint8_t	oem_defined[13];
+	union{
+		struct standard_spec_sel_rec standard_type;
+		struct oem_ts_spec_sel_rec oem_ts_type;
+		struct oem_nots_spec_sel_rec oem_nots_type;
+	} sel_type;
 } __attribute__ ((packed));
 
 struct ipmi_event_sensor_types {

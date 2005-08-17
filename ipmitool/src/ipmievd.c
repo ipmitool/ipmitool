@@ -197,10 +197,10 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		return;
 	}
 
-	type = ipmi_sel_get_sensor_type_offset(evt->sensor_type, evt->event_data[0]);
+	type = ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]);
 	ipmi_get_event_desc(intf, evt, &desc);
 
-	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sensor_num, evt->sensor_type);
+	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
 	if (sdr == NULL) {
 		/* could not find matching SDR record */
 		if (desc) {
@@ -209,28 +209,28 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			free(desc);
 		} else {
 			lprintf(LOG_NOTICE, "%s sensor %02x",
-				type, evt->sensor_num);
+				type, evt->sel_type.standard_type.sensor_num);
 		}
 		return;
 	}
 
 	switch (sdr->type) {
 	case SDR_RECORD_TYPE_FULL_SENSOR:
-		if (evt->event_type == 1) {
+		if (evt->sel_type.standard_type.event_type == 1) {
 			/*
 			 * Threshold Event
 			 */
 
 			/* trigger reading in event data byte 2 */
-			if (((evt->event_data[0] >> 6) & 3) == 1) {
+			if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
 				trigger_reading = sdr_convert_sensor_reading(
-					sdr->record.full, evt->event_data[1]);
+					sdr->record.full, evt->sel_type.standard_type.event_data[1]);
 			}
 
 			/* trigger threshold in event data byte 3 */
-			if (((evt->event_data[0] >> 4) & 3) == 1) {
+			if (((evt->sel_type.standard_type.event_data[0] >> 4) & 3) == 1) {
 				threshold_reading = sdr_convert_sensor_reading(
-					sdr->record.full, evt->event_data[2]);
+					sdr->record.full, evt->sel_type.standard_type.event_data[2]);
 			}
 
 			lprintf(LOG_NOTICE, "%s sensor %s %s (Reading %.*f %s Threshold %.*f %s)",
@@ -239,25 +239,25 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 				desc ? : "",
 				(trigger_reading==(int)trigger_reading) ? 0 : 2,
 				trigger_reading,
-				((evt->event_data[0] & 0xf) % 2) ? ">" : "<",
+				((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
 				(threshold_reading==(int)threshold_reading) ? 0 : 2,
 				threshold_reading,
 				ipmi_sdr_get_unit_string(sdr->record.full->unit.modifier,
 							 sdr->record.full->unit.type.base,
 							 sdr->record.full->unit.type.modifier));
 		}
-		else if ((evt->event_type >= 0x2 && evt->event_type <= 0xc) ||
-			 (evt->event_type == 0x6f)) {
+		else if ((evt->sel_type.standard_type.event_type >= 0x2 && evt->sel_type.standard_type.event_type <= 0xc) ||
+			 (evt->sel_type.standard_type.event_type == 0x6f)) {
 			/*
 			 * Discrete Event
 			 */
 			lprintf(LOG_NOTICE, "%s sensor %s %s",
 				type, sdr->record.full->id_string, desc ? : "");
-			if (((evt->event_data[0] >> 6) & 3) == 1) {
+			if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
 				/* previous state and/or severity in event data byte 2 */
 			}
 		}
-		else if (evt->event_type >= 0x70 && evt->event_type <= 0x7f) {
+		else if (evt->sel_type.standard_type.event_type >= 0x70 && evt->sel_type.standard_type.event_type <= 0x7f) {
 			/*
 			 * OEM Event
 			 */
@@ -273,7 +273,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 
 	default:
 		lprintf(LOG_NOTICE, "%s sensor - %s",
-			type, evt->sensor_num, desc ? : "");
+			type, evt->sel_type.standard_type.sensor_num, desc ? : "");
 		break;
 	}
 
