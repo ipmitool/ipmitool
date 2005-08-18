@@ -268,13 +268,13 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
 			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x)",
-			intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun, req.msg.cmd);
+			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd);
 		return -1;
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
-			"(channel=0x%x netfn=0x%x  lun=0x%x cmd=0x%x rsp=0x%x): %s",
-			intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun, rsp->ccode,
+			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x rsp=0x%x): %s",
+			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd, rsp->ccode,
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
