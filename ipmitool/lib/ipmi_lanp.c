@@ -479,7 +479,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
 	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
 		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
-			chan, val2str(medium, ipmi_channel_medium_vals), medium);
+			chan, val2str(medium, ipmi_channel_medium_vals));
 		return -1;
 	}
 
