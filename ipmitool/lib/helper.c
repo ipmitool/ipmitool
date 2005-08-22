@@ -178,6 +178,54 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 		lprintf(loglevel, "");
 }
 
+/* print_valstr_2col  -  print value string list in two columns to log or stdout
+ *
+ * @vs:		value string list to print
+ * @title:	name of this value string list
+ * @loglevel:	what log level to print, -1 for stdout
+ */
+void
+print_valstr_2col(const struct valstr * vs, const char * title, int loglevel)
+{
+	int i;
+
+	if (vs == NULL)
+		return;
+
+	if (title != NULL) {
+		if (loglevel < 0)
+			printf("\n%s:\n\n");
+		else
+			lprintf(loglevel, "\n%s:\n", title);
+	}
+
+	for (i = 0; vs[i].str != NULL; i++) {
+		if (vs[i+1].str == NULL) {
+			/* last one */
+			if (loglevel < 0) {
+				printf("  %4d  %-32s\n", vs[i].val, vs[i].str);
+			} else {
+				lprintf(loglevel, "  %4d  %-32s\n", vs[i].val, vs[i].str);
+			}
+		}
+		else {
+			if (loglevel < 0) {
+				printf("  %4d  %-32s    %4d  %-32s\n",
+				       vs[i].val, vs[i].str, vs[i+1].val, vs[i+1].str);
+			} else {
+				lprintf(loglevel, "  %4d  %-32s    %4d  %-32s\n",
+					vs[i].val, vs[i].str, vs[i+1].val, vs[i+1].str);
+			}
+			i++;
+		}
+	}
+
+	if (loglevel < 0)
+		printf("\n");
+	else
+		lprintf(loglevel, "");
+}
+
 /* ipmi_csum  -  calculate an ipmi checksum
  *
  * @d:		buffer to check

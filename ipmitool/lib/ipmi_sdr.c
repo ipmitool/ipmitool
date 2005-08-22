@@ -3868,9 +3868,11 @@ ipmi_sdr_print_entity(struct ipmi_intf *intf, char *entitystr)
 	unsigned instance = 0;
 	int rc = 0;
 
-	if (entitystr == NULL) {
-		lprintf(LOG_ERR, "No Entity ID supplied");
-		return -1;
+	if (entitystr == NULL ||
+	    strncasecmp(entitystr, "help", 4) == 0 ||
+	    strncasecmp(entitystr, "list", 4) == 0) {
+		print_valstr_2col(entity_id_vals, "Entity IDs", -1);
+		return 0;
 	}
 
 	if (sscanf(entitystr, "%u.%u", &id, &instance) != 2) {
@@ -3879,8 +3881,21 @@ ipmi_sdr_print_entity(struct ipmi_intf *intf, char *entitystr)
 		 * so set entity.instance = 0x7f to indicate this
 		 */
 		if (sscanf(entitystr, "%u", &id) != 1) {
-			lprintf(LOG_ERR, "Invalid entity: %s", entitystr);
-			return -1;
+			int i, j=0;
+
+			/* now try string input */
+			for (i = 0; entity_id_vals[i].str != NULL; i++) {
+				if (strncasecmp(entitystr, entity_id_vals[i].str,
+						__maxlen(entitystr, entity_id_vals[i].str)) == 0) {
+					entity.id = entity_id_vals[i].val;
+					entity.instance = 0x7f;
+					j=1;
+				}
+			}
+			if (j == 0) {
+				lprintf(LOG_ERR, "Invalid entity: %s", entitystr);
+				return -1;
+			}
 		} else {
 			entity.id = id;
 			entity.instance = 0x7f;
