@@ -235,7 +235,10 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-   lun = intf->target_lun;
+	ipmi_intf_session_set_timeout(intf, 15);
+	ipmi_intf_session_set_retry(intf, 1);
+
+	lun = intf->target_lun;
 	netfn = str2val(argv[0], ipmi_netfn_vals);
 	if (netfn == 0xff) {
 		netfn = (uint8_t)strtol(argv[0], NULL, 0);
