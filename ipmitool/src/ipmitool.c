@@ -46,6 +46,7 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_isol.h>
+#include <ipmitool/ipmi_tsol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_mc.h>
@@ -88,7 +89,8 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_fru_main,     "fru",     "Print built-in FRU and scan SDR for FRU locators" },
 	{ ipmi_sel_main,     "sel",     "Print System Event Log (SEL)" },
 	{ ipmi_pef_main,     "pef",     "Configure Platform Event Filtering (PEF)" },
-	{ ipmi_sol_main,     "sol",     "Configure IPMIv2.0 Serial-over-LAN" },
+	{ ipmi_sol_main,     "sol",     "Configure and connect IPMIv2.0 Serial-over-LAN" },
+	{ ipmi_tsol_main,    "tsol",    "Configure and connect with Tyan IPMIv1.5 Serial-over-LAN" },
 	{ ipmi_isol_main,    "isol",    "Configure IPMIv1.5 Serial-over-LAN" },
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
