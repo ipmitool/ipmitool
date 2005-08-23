@@ -690,7 +690,7 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 
 			if (ptmp->entry.alert_string_key & PEF_POLICY_EVENT_SPECIFIC) {
 				ipmi_pef_print_str("Event-specific", "true");
-				continue;
+//				continue;
 			}			
 			wrk = ptmp->entry.chan_dest;
 
