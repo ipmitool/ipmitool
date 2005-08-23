@@ -343,6 +343,8 @@ ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
 	if (p == NULL)
 		return -1;
+	if (p->data == NULL)
+		return -1;
 	return (p->data[0] & 3);
 }
 
@@ -1752,7 +1754,7 @@ static int
 ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	uint8_t alert;
-	uint8_t channel = find_lan_channel(intf, 1);
+	uint8_t channel = 1;
 	struct lan_param * p;
 
 	if (argc < 1 ||
@@ -1765,6 +1767,7 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 	/* alert print [channel] [alert] */
 	if (strncasecmp(argv[0], "print", 5) == 0) {
 		if (argc < 2) {
+			channel = find_lan_channel(intf, 1);
 			if (is_lan_channel(intf, channel) == 0) {
 				lprintf(LOG_ERR, "Channel %d is not a LAN channel", channel);
 				return -1;
