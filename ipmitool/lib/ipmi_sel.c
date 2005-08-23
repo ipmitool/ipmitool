@@ -492,9 +492,9 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
   	{
     		evt->sel_type.oem_ts_type.timestamp= (rsp->data[8] << 24) |	(rsp->data[7] << 16) |
     			(rsp->data[6] << 8) | rsp->data[5];
-		evt->sel_type.oem_ts_type.manf_id[0]= rsp->data[9];
+		evt->sel_type.oem_ts_type.manf_id[0]= rsp->data[11];
 		evt->sel_type.oem_ts_type.manf_id[1]= rsp->data[10];
-		evt->sel_type.oem_ts_type.manf_id[2]= rsp->data[11];
+		evt->sel_type.oem_ts_type.manf_id[2]= rsp->data[9];
   		for(data_count=0; data_count < SEL_OEM_TS_DATA_LEN ; data_count++)
       			evt->sel_type.oem_ts_type.oem_defined[data_count] = rsp->data[(data_count+12)];
   	}
