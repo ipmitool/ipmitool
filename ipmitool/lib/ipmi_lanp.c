@@ -59,8 +59,53 @@
 
 extern int verbose;
 
+/* is_lan_channel - Check if channel is LAN medium
+ *
+ * return 1 if channel is LAN
+ * return 0 if channel is not LAN
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    channel number to check
+ */
+static int
+is_lan_channel(struct ipmi_intf * intf, uint8_t chan)
+{
+	uint8_t medium;
 
-/* get_lan_param - Query BMC for LAN parameter data
+	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
+		return 0;
+
+	medium = ipmi_get_channel_medium(intf, chan);
+
+	if (medium == IPMI_CHANNEL_MEDIUM_LAN ||
+	    medium == IPMI_CHANNEL_MEDIUM_LAN_OTHER)
+		return 1;
+
+	return 0;
+}
+
+/* find_lan_channel - Find first channel that is LAN
+ *
+ * return channel number if successful
+ * return -1 if no lan channel found
+ *
+ * @intf:    ipmi interface handle
+ * @start:   channel number to start searching from
+ */
+static int
+find_lan_channel(struct ipmi_intf * intf, int start)
+{
+	uint8_t chan;
+
+	for (chan = start; chan < IPMI_CHANNEL_NUMBER_MAX; chan++) {
+		if (is_lan_channel(intf, chan)) {
+			return chan;
+		}
+	}
+	return -1;
+}
+
+/* get_lan_param_select - Query BMC for LAN parameter data
  *
  * return pointer to lan_param if successful
  * if parameter not supported then
@@ -71,9 +116,10 @@ extern int verbose;
  * @intf:    ipmi interface handle
  * @chan:    ipmi channel
  * @param:   lan parameter id
+ * @select:  lan parameter set selector
  */
 static struct lan_param *
-get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
+get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int select)
 {
 	struct lan_param * p;
 	struct ipmi_rs * rsp;
@@ -86,7 +132,7 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 
 	msg_data[0] = chan;
 	msg_data[1] = p->cmd;
-	msg_data[2] = 0;
+	msg_data[2] = select;
 	msg_data[3] = 0;
 
 	memset(&req, 0, sizeof(req));
@@ -129,6 +175,24 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
 	p->data_len = rsp->data_len - 1;
 
 	return p;
+}
+
+/* get_lan_param - Query BMC for LAN parameter data
+ *
+ * return pointer to lan_param if successful
+ * if parameter not supported then
+ *   return pointer to lan_param with
+ *   lan_param->data == NULL and lan_param->data_len == 0
+ * return NULL on error
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ * @param:   lan parameter id
+ */
+static struct lan_param *
+get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
+{
+	return get_lan_param_select(intf, chan, param, 0);
 }
 
 /* set_lan_param_wait - Wait for Set LAN Parameter command to complete
@@ -358,6 +422,26 @@ set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	return rc;
 }
 
+/* set_lan_param_nowait - Wrap LAN parameter write without set-in-progress lock
+ *
+ * Returns value from __set_lan_param()
+ *
+ * @intf:    ipmi interface handle
+ * @chan:    ipmi channel
+ * @param:   lan parameter id
+ * @data:    lan parameter data
+ * @len:     length of lan parameter data
+ */
+static int
+set_lan_param_nowait(struct ipmi_intf * intf, uint8_t chan,
+		     int param, uint8_t * data, int len)
+{
+	int rc;
+	ipmi_lanp_lock(intf, chan);
+	rc = __set_lan_param(intf, chan, param, data, len, 0);
+	ipmi_lanp_unlock(intf, chan);
+	return rc;
+}
 
 static int
 lan_set_arp_interval(struct ipmi_intf * intf,
@@ -466,7 +550,6 @@ static int
 ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
-	uint8_t medium;
 	int rc = 0;
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
@@ -475,11 +558,8 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	/* find type of channel and only accept 802.3 LAN */
-	medium = ipmi_get_channel_medium(intf, chan);
-	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
-	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
-		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
-			chan, val2str(medium, ipmi_channel_medium_vals));
+	if (is_lan_channel(intf, chan) == 0) {
+		lprintf(LOG_ERR, "Channel %d is not a LAN channel", chan);
 		return -1;
 	}
 
@@ -654,8 +734,6 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	if (p->data != NULL)
 		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
-
-
 
 	/* Determine supported Cipher Suites -- Requires two calls */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
@@ -1080,7 +1158,7 @@ static int
 ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	uint8_t data[32];
-	uint8_t chan, medium;
+	uint8_t chan;
 	int rc = 0;
 
 	if (argc < 2) {
@@ -1096,17 +1174,10 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 
 	chan = (uint8_t)strtol(argv[0], NULL, 0);
 
-	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
-		lprintf(LOG_ERR, "Invalid Channel %d", chan);
-		ipmi_lan_set_usage();
-		return -1;
-	}
-
 	/* find type of channel and only accept 802.3 LAN */
-	medium = ipmi_get_channel_medium(intf, chan);
-	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
-	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+	if (is_lan_channel(intf, chan) == 0) {
 		lprintf(LOG_ERR, "Channel %d is not a LAN channel!", chan);
+		ipmi_lan_set_usage();
 		return -1;
 	}
 
@@ -1317,20 +1388,358 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 
+static int
+is_alert_destination(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
+{
+	struct lan_param * p;
+
+	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
+	if (p == NULL)
+		return 0;
+	if (p->data == NULL)
+		return 0;
+
+	if (alert <= (p->data[0] & 0xf))
+		return 1;
+	else
+		return 0;
+}
+
+static int
+ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
+{
+	struct lan_param * ptype, * paddr;
+	int isack = 0;
+
+	ptype = get_lan_param_select(intf, channel, IPMI_LANP_DEST_TYPE, alert);
+	paddr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_ADDR, alert);
+	if (ptype == NULL || paddr == NULL)
+		return -1;
+	if (ptype->data == NULL || paddr->data == NULL)
+		return -1;
+
+	printf("%-24s: %d\n", "Alert Destination",
+	       ptype->data[0]);
+
+	if (ptype->data[1] & 0x80)
+		isack = 1;
+	printf("%-24s: %s\n", "Alert Acknowledge",
+	       isack ? "Acknowledged" : "Unacknowledged");
+
+	printf("%-24s: ", "Destination Type");
+	switch (ptype->data[1] & 0x7) {
+	case 0:
+		printf("PET Trap\n");
+		break;
+	case 6:
+		printf("OEM 1\n");
+		break;
+	case 7:
+		printf("OEM 2\n");
+		break;
+	default:
+		printf("Unknown\n");
+		break;
+	}
+
+	printf("%-24s: %d\n",
+	       isack ? "Acknowledge Timeout" : "Retry Interval",
+	       ptype->data[2]);
+
+	printf("%-24s: %d\n", "Number of Retries",
+	       ptype->data[3] & 0x7);
+
+	if ((paddr->data[1] & 0xf0) != 0) {
+		/* unknown address format */
+		printf("\n");
+		return 0;
+	}
+
+	printf("%-24s: %s\n", "Alert Gateway",
+	       (paddr->data[2] & 1) ? "Backup" : "Default");
+
+	printf("%-24s: %d.%d.%d.%d\n", "Alert IP Address",
+	       paddr->data[3], paddr->data[4], paddr->data[5], paddr->data[6]);
+
+	printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", "Alert MAC Address",
+	       paddr->data[7], paddr->data[8], paddr->data[9],
+	       paddr->data[10], paddr->data[11], paddr->data[12]);
+
+	printf("\n");
+}
+
+static int
+ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
+{
+	int j, ndest;
+	struct lan_param * p;
+
+	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
+	if (p == NULL)
+		return -1;
+	if (p->data == NULL)
+		return -1;
+	ndest = p->data[0] & 0xf;
+
+	for (j=0; j<=ndest; j++) {
+		ipmi_lan_alert_print(intf, channel, j);
+	}
+
+	return 0;
+}
+
+static void
+ipmi_lan_alert_print_usage(void)
+{
+	lprintf(LOG_NOTICE, "\nusage: lan alert print [channel] [alert]\n");
+	lprintf(LOG_NOTICE, "Default will print all alerts for the first found LAN channel");
+}
+
+static void
+ipmi_lan_alert_set_usage(void)
+{
+	lprintf(LOG_NOTICE, "\nusage: lan alert set <channel> <alert> <command> <option>\n");
+	lprintf(LOG_NOTICE, "  ipaddr <x.x.x.x>               Set alert IP address");
+	lprintf(LOG_NOTICE, "  macaddr <x:x:x:x:x:x>          Set alert MAC address");
+	lprintf(LOG_NOTICE, "  gateway <default|backup>       Set channel gateway to use for alerts");
+	lprintf(LOG_NOTICE, "  ack <on|off>                   Set Alert Acknowledge on or off");
+	lprintf(LOG_NOTICE, "  type <pet|oem1|oem2>           Set destination type as PET or OEM");
+	lprintf(LOG_NOTICE, "  time <seconds>                 Set ack timeout or unack retry interval");
+	lprintf(LOG_NOTICE, "  retry <number>                 Set number of alert retries");
+	lprintf(LOG_NOTICE, "");
+}
+
+static int
+ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
+		   int argc, char ** argv)
+{
+	struct lan_param * p;
+	uint8_t data[32], temp[32];
+	int rc = 0;
+
+	if (argc < 2) {
+		ipmi_lan_alert_set_usage();
+		return 0;
+	}
+
+	if (strncmp(argv[0], "help", 4) == 0 ||
+	    strncmp(argv[1], "help", 4) == 0) {
+		ipmi_lan_alert_set_usage();
+		return 0;
+	}
+
+	memset(data, 0, sizeof(data));
+	memset(temp, 0, sizeof(temp));
+
+	/* alert destination ip address */
+	if (strncasecmp(argv[0], "ipaddr", 6) == 0 &&
+	    (get_cmdline_ipaddr(argv[1], temp) == 0)) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		memcpy(data, p->data, p->data_len);
+		/* set new ipaddr */
+		memcpy(data+3, temp, 4);
+		printf("Setting LAN Alert %d IP Address to %d.%d.%d.%d\n", alert,
+		       data[3], data[4], data[5], data[6]);
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_ADDR, data, p->data_len);
+	}
+	/* alert destination mac address */
+	else if (strncasecmp(argv[0], "macaddr", 7) == 0 &&
+		 (get_cmdline_macaddr(argv[1], temp) == 0)) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		memcpy(data, p->data, p->data_len);
+		/* set new macaddr */
+		memcpy(data+7, temp, 6);
+		printf("Setting LAN Alert %d MAC Address to "
+		       "%02x:%02x:%02x:%02x:%02x:%02x\n", alert,
+		       data[7], data[8], data[9], data[10], data[11], data[12]);
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_ADDR, data, p->data_len);
+	}
+	/* alert destination gateway selector */
+	else if (strncasecmp(argv[0], "gateway", 7) == 0) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		memcpy(data, p->data, p->data_len);
+
+		if (strncasecmp(argv[1], "def", 3) == 0 ||
+		    strncasecmp(argv[1], "default", 7) == 0) {
+			printf("Setting LAN Alert %d to use Default Gateway\n", alert);
+			data[2] = 0;
+		}
+		else if (strncasecmp(argv[1], "bak", 3) == 0 ||
+			 strncasecmp(argv[1], "backup", 6) == 0) {
+			printf("Setting LAN Alert %d to use Backup Gateway\n", alert);
+			data[2] = 1;
+		}
+		else {
+			ipmi_lan_alert_set_usage();
+			return -1;
+		}
+
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_ADDR, data, p->data_len);
+	}
+	/* alert acknowledgement */
+	else if (strncasecmp(argv[0], "ack", 3) == 0) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		memcpy(data, p->data, p->data_len);
+
+		if (strncasecmp(argv[1], "on", 2) == 0 ||
+		    strncasecmp(argv[1], "yes", 3) == 0) {
+			printf("Setting LAN Alert %d to Acknowledged\n", alert);
+			data[1] |= 0x80;
+		}
+		else if (strncasecmp(argv[1], "off", 3) == 0 ||
+			 strncasecmp(argv[1], "no", 2) == 0) {
+			printf("Setting LAN Alert %d to Unacknowledged\n", alert);
+			data[1] &= ~0x80;
+		}
+		else {
+			ipmi_lan_alert_set_usage();
+			return -1;
+		}
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
+	}
+	/* alert destination type */
+	else if (strncasecmp(argv[0], "type", 4) == 0) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		memcpy(data, p->data, p->data_len);
+
+		if (strncasecmp(argv[1], "pet", 3) == 0) {
+			printf("Setting LAN Alert %d destination to PET Trap\n", alert);
+			data[1] &= ~0x07;
+		}
+		else if (strncasecmp(argv[1], "oem1", 4) == 0) {
+			printf("Setting LAN Alert %d destination to OEM 1\n", alert);
+			data[1] &= ~0x07;
+			data[1] |= 0x06;
+		}
+		else if (strncasecmp(argv[1], "oem2", 4) == 0) {
+			printf("Setting LAN Alert %d destination to OEM 2\n", alert);
+			data[1] |= 0x07;
+		}
+		else {
+			ipmi_lan_alert_set_usage();
+			return -1;
+		}
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
+	}
+	/* alert acknowledge timeout or retry interval */
+	else if (strncasecmp(argv[0], "time", 4) == 0) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		memcpy(data, p->data, p->data_len);
+
+		data[2] = (uint8_t)strtol(argv[1], NULL, 0);
+		printf("Setting LAN Alert %d timeout/retry to %d seconds\n", alert, data[2]);
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
+	}
+	/* number of retries */
+	else if (strncasecmp(argv[0], "retry", 5) == 0) {
+		/* get current parameter */
+		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		memcpy(data, p->data, p->data_len);
+
+		data[3] = ((uint8_t)strtol(argv[1], NULL, 0)) & 0x7;
+		printf("Setting LAN Alert %d number of retries to %d\n", alert, data[3]);
+		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
+	}
+	else {
+		ipmi_lan_alert_set_usage();
+		return -1;
+	}
+
+	return rc;
+}
+
+static int
+ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	uint8_t alert;
+	uint8_t channel = find_lan_channel(intf, 1);
+	struct lan_param * p;
+
+	if (argc < 1 ||
+	    strncasecmp(argv[0], "help", 4) == 0) {
+		ipmi_lan_alert_print_usage();
+		ipmi_lan_alert_set_usage();
+		return 0;
+	}
+
+	/* alert print [channel] [alert] */
+	if (strncasecmp(argv[0], "print", 5) == 0) {
+		if (argc < 2) {
+			if (is_lan_channel(intf, channel) == 0) {
+				lprintf(LOG_ERR, "Channel %d is not a LAN channel", channel);
+				return -1;
+			}
+			return ipmi_lan_alert_print_all(intf, channel);
+		}
+
+		if (strncasecmp(argv[1], "help", 4) == 0) {
+			ipmi_lan_alert_print_usage();
+			return 0;
+		}
+
+		channel = (uint8_t)strtol(argv[1], NULL, 0);
+		if (is_lan_channel(intf, channel) == 0) {
+			lprintf(LOG_ERR, "Channel %d is not a LAN channel", channel);
+			return -1;
+		}
+
+		if (argc < 3)
+			return ipmi_lan_alert_print_all(intf, channel);
+
+		alert = (uint8_t)strtol(argv[2], NULL, 0);
+		if (is_alert_destination(intf, channel, alert) == 0) {
+			lprintf(LOG_ERR, "Alert %d is not a valid destination", alert);
+			return -1;
+		}
+		return ipmi_lan_alert_print(intf, channel, alert);
+	}
+
+	/* alert set <channel> <alert> [option] */
+	if (strncasecmp(argv[0], "set", 3) == 0) {
+		if (argc < 5 || strncasecmp(argv[1], "help", 4) == 0) {
+			ipmi_lan_alert_set_usage();
+			return 0;
+		}
+
+		channel = (uint8_t)strtol(argv[1], NULL, 0);
+		if (is_lan_channel(intf, channel) == 0) {
+			lprintf(LOG_ERR, "Channel %d is not a LAN channel", channel);
+			return -1;
+		}
+
+		alert = (uint8_t)strtol(argv[2], NULL, 0);
+		if (is_alert_destination(intf, channel, alert) == 0) {
+			lprintf(LOG_ERR, "Alert %d is not a valid destination", alert);
+			return -1;
+		}
+
+		return ipmi_lan_alert_set(intf, channel, alert, argc-3, &(argv[3]));
+	}
+
+	return 0;
+}
+
+
 int
 ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 
 	if (argc == 0 || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "LAN Commands:  print, set");
+		lprintf(LOG_NOTICE, "LAN Commands:  print, set, alert");
 		return -1;
 	}
 
 
 	if ((strncmp(argv[0], "printconf", 9) == 0) ||
 	    (strncmp(argv[0], "print", 5) == 0)) {
-		uint8_t chan = 7;
+		uint8_t chan = find_lan_channel(intf, 1);
 		if (argc > 1)
 			chan = (uint8_t)strtol(argv[1], NULL, 0);
 		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
@@ -1340,6 +1749,8 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (strncmp(argv[0], "set", 3) == 0)
 		rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
+	else if (strncmp(argv[0], "alert", 5) == 0)
+		rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
 	else
 		lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
 
