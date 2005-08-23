@@ -1254,7 +1254,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	struct ipmi_rs     * rsp;
 	struct ipmi_rq       req;
 	struct tm            tm;
-	time_t               time;
+	time_t               t;
 	uint32_t	     timei;
 	const char *         time_format = "%m/%d/%Y %H:%M:%S";
 
@@ -1262,24 +1262,29 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	req.msg.netfn    = IPMI_NETFN_STORAGE;
 	req.msg.cmd      = IPMI_SET_SEL_TIME;
 
-	/* Now how do we get our time_t from our ascii version? */
-	if (strptime(time_string, time_format, &tm) == 0) {
-		lprintf(LOG_ERR, "Specified time could not be parsed");
-		return -1;
+	/* See if user requested set to current client system time */
+	if (strncasecmp(time_string, "now", 3) == 0) {
+		t = time(NULL);
+	}
+	else {
+		/* Now how do we get our time_t from our ascii version? */
+		if (strptime(time_string, time_format, &tm) == 0) {
+			lprintf(LOG_ERR, "Specified time could not be parsed");
+			return -1;
+		}
+		t = mktime(&tm);
+		if (t < 0) {
+			lprintf(LOG_ERR, "Specified time could not be parsed");
+			return -1;
+		}
 	}
 
-	time = mktime(&tm);
-	if (time < 0) {
-		lprintf(LOG_ERR, "Specified time could not be parsed");
-		return -1;
-	}
-
-	timei = (uint32_t)time;
+	timei = (uint32_t)t;
 	req.msg.data = (uint8_t *)&timei;	
 	req.msg.data_len = 4;
 
 #if WORDS_BIGENDIAN
-	time = BSWAP_32(time);
+	timei = BSWAP_32(timei);
 #endif
 
 	rsp = intf->sendrecv(intf, &req);
@@ -1292,6 +1297,8 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
+
+	ipmi_sel_get_time(intf);
 
 	return 0;
 }
