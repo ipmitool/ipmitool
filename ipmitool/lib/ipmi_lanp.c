@@ -916,6 +916,78 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 }
 
 static int
+ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t rqdata[3];
+
+	memset(&req, 0, sizeof(req));
+
+	/* update non-volatile access */
+	rqdata[0] = channel;
+	rqdata[1] = 0x40;
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = 0x41;
+	req.msg.data = rqdata;
+	req.msg.data_len = 2;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Get Channel Access for channel %d", channel);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Channel Access for channel %d failed: %s",
+			channel, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	/* SAVE TO NVRAM */
+	memset(rqdata, 0, 3);
+	rqdata[0] = channel & 0xf;
+	rqdata[1] = rsp->data[0];
+	if (enable != 0)
+		rqdata[1] &= ~0x20;
+	else
+		rqdata[1] |= 0x20;
+	rqdata[1] |= 0x40;
+	rqdata[2] = 0;
+
+	req.msg.cmd = 0x40;
+	req.msg.data_len = 3;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
+			channel, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	/* SAVE TO CURRENT */
+	rqdata[1] &= 0xc0;
+	rqdata[1] |= 0x80;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
+			channel, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int
 ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 {
 	struct ipmi_rs * rsp;
@@ -932,7 +1004,7 @@ ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable
 	/* SAVE TO NVRAM */
 	memset(rqdata, 0, 3);
 	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x60;	/* set pef disabled, per-msg auth enabled */
+	rqdata[1] = 0x40;	/* set pef enabled, per-msg auth enabled */
 	if (enable != 0)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
 	rqdata[2] = 0x44; 	/* set channel privilege limit to ADMIN */
@@ -951,7 +1023,7 @@ ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable
 	/* SAVE TO CURRENT */
 	memset(rqdata, 0, 3);
 	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0xa0;	/* set pef disabled, per-msg auth enabled */
+	rqdata[1] = 0x80;	/* set pef enabled, per-msg auth enabled */
 	if (enable != 0)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
 	rqdata[2] = 0x84; 	/* set channel privilege limit to ADMIN */
@@ -1134,6 +1206,7 @@ static void ipmi_lan_set_usage(void)
 	lprintf(LOG_NOTICE, "  snmp <community string>        Set SNMP public community string");
 	lprintf(LOG_NOTICE, "  user                           Enable default user for this channel");
 	lprintf(LOG_NOTICE, "  access <on|off>                Enable or disable access to this channel");
+	lprintf(LOG_NOTICE, "  alert <on|off>                 Enable or disable PEF alerting for this channel");
 	lprintf(LOG_NOTICE, "  arp response <on|off>          Enable or disable BMC ARP responding");
 	lprintf(LOG_NOTICE, "  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
 	lprintf(LOG_NOTICE, "  arp interval <seconds>         Set gratuitous ARP generation interval");
@@ -1362,7 +1435,25 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
 		}
 	}
-
+	/* set PEF alerting on or off */
+	else if (strncasecmp(argv[1], "alert", 5) == 0) {
+		if (argc < 3) {
+			lprintf(LOG_NOTICE, "LAN set alert must be 'on' or 'off'");
+		}
+		else if (strncasecmp(argv[2], "on", 2) == 0 ||
+			 strncasecmp(argv[2], "enable", 6) == 0) {
+			printf("Enabling PEF alerts for LAN channel %d\n", chan);
+			rc = ipmi_set_alert_enable(intf, chan, 1);
+		}
+		else if (strncasecmp(argv[2], "off", 3) == 0 ||
+			 strncasecmp(argv[2], "disable", 7) == 0) {
+			printf("Disabling PEF alerts for LAN channel %d\n", chan);
+			rc = ipmi_set_alert_enable(intf, chan, 0);
+		}
+		else {
+			lprintf(LOG_NOTICE, "LAN set alert must be 'on' or 'off'");
+		}
+	}
 	/* RMCP+ cipher suite privilege levels */
 	else if (strncmp(argv[1], "cipher_privs", 12) == 0)
 	{
@@ -1382,6 +1473,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			rc = set_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS, data, 9);
 		}
+	}
+	else {
+		ipmi_lan_set_usage();
 	}
 		
 	return rc;
