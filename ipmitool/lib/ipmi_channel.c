@@ -743,9 +743,11 @@ ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 		return -1;
 	}
 	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Channel Info command failed: %s",
+		if (rsp->ccode == 0xcc)
+			return IPMI_CHANNEL_MEDIUM_RESERVED;
+		lprintf(LOG_INFO, "Get Channel Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		return IPMI_CHANNEL_MEDIUM_RESERVED;
 	}
 
 	memcpy(&info, rsp->data, sizeof(struct get_channel_info_rsp));
