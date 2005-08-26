@@ -591,11 +591,12 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 				printf("%s", ipmi_sel_timestamp_time(evt->sel_type.standard_type.timestamp));
 			else
         			printf("%s", ipmi_sel_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
+
+			if (csv_output)
+				printf(",");
+			else
+				printf(" | ");
 		}
-		if (csv_output)
-			printf(",");
-		else
-			printf(" | ");
 
 	}
 	else
@@ -842,7 +843,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 		return;
 	}
 
-	printf(" Record Type           : ");
+	printf(" Record Type           : %02x\n", evt->record_type);
 	if (evt->record_type < 0xe0)
 	{
 		printf(" Timestamp             : ");
