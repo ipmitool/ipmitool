@@ -49,7 +49,7 @@
 
 int ipmi_sdr_main(struct ipmi_intf *, int, char **);
 
-#define tos32(val, bits)    ((val & ((1<<(bits)-1))) ? (-((~(val) & ((1<<(bits)-1) - 1)) + 1)) : (val))
+#define tos32(val, bits)    ((val & ((1<<((bits)-1)))) ? (-((val) & (1<<((bits)-1))) | (val)) : (val))
 
 #if WORDS_BIGENDIAN
 # define __TO_TOL(mtol)     (uint16_t)(mtol & 0x3f)
