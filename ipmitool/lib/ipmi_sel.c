@@ -305,7 +305,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint16_t e, f;
+	uint16_t e, f, version;
 	int pctfull = 0;
 	uint32_t fs    = 0xffffffff;
 	uint32_t zeros = 0;
@@ -329,14 +329,15 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
 	printf("SEL Information\n");
-	printf("Version          : %x%x\n",
-	       (rsp->data[0] & 0xf0) >> 4, rsp->data[0] & 0xf);
+        version = buf2short(rsp->data);
+	printf("Version          : %x (%s)\n",
+	       version, (version == 0x51) ? "v1.5, v2 compliant" : "Unknown");
 
 	/* save the entry count and free space to determine percent full */
 	e = buf2short(rsp->data + 1);
 	f = buf2short(rsp->data + 3);
 	printf("Entries          : %d\n", e);
-	printf("Free Space       : %d\n", f);
+	printf("Free Space       : %d bytes\n", f);
 	if (e) {
 		e *= 16;
 		f += e;
@@ -354,7 +355,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 
 	if ((!memcmp(rsp->data + 9, &fs,    4)) ||
 		(!memcmp(rsp->data + 9, &zeros, 4)))
-		printf("Last Add Time    : Not Available\n");
+		printf("Last Del Time    : Not Available\n");
 	else
 		printf("Last Del Time    : %s\n",
 			   ipmi_sel_timestamp(buf2long(rsp->data + 9)));
@@ -362,14 +363,21 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 
 	printf("Overflow         : %s\n",
 	       rsp->data[13] & 0x80 ? "true" : "false");
-	printf("Delete cmd       : %ssupported\n",
-	       rsp->data[13] & 0x8 ? "" : "un");
-	printf("Partial add cmd  : %ssupported\n",
-	       rsp->data[13] & 0x4 ? "" : "un");
-	printf("Reserve cmd      : %ssupported\n",
-	       rsp->data[13] & 0x2 ? "" : "un");
-	printf("Get Alloc Info   : %ssupported\n",
-	       rsp->data[13] & 0x1 ? "" : "un");
+	printf("Supported Cmds   : ");
+        if (rsp->data[13] & 0x0f)
+        {
+	        if (rsp->data[13] & 0x08)
+                        printf("'Delete' ");
+	        if (rsp->data[13] & 0x04)
+                        printf("'Partial Add' ");
+	        if (rsp->data[13] & 0x02)
+                        printf("'Reserve' ");
+	        if (rsp->data[13] & 0x01)
+                        printf("'Get Alloc Info' ");
+        }
+        else
+                printf("None");
+        printf("\n");
 
 	/* get sel allocation info if supported */
 	if (rsp->data[13] & 1) {
