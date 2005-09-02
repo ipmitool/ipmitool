@@ -193,6 +193,7 @@ ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
+	uint8_t medium;
 	struct get_channel_info_rsp   channel_info;
 	struct get_channel_access_rsp channel_access;
 
@@ -249,6 +250,12 @@ ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 		   channel_info.vendor_id[2] << 16);
 
 
+	/* only proceed if this is LAN channel */
+	medium = ipmi_get_channel_medium(intf, channel);
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
+	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		return 0;
+	}
 
 	memset(&req, 0, sizeof(req));
 	rqdata[0] = channel & 0xf;
