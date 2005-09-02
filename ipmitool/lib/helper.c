@@ -48,6 +48,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #ifdef HAVE_PATHS_H
 # include <paths.h>  /* For _PATH_TTY */
 #endif
