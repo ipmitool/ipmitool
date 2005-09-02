@@ -39,8 +39,6 @@
 #include <sys/poll.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <termios.h>
-#include <linux/termios.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -53,6 +51,12 @@
 #include <sys/select.h>
 #include <sys/time.h>
         
+#ifdef __linux__
+# include <linux/termios.h>
+#else
+# include <sys/termios.h>
+#endif
+
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>

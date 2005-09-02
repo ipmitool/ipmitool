@@ -47,7 +47,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <paths.h>  /* For _PATH_TTY */
+
+#ifdef HAVE_PATHS_H
+# include <paths.h>  /* For _PATH_TTY */
+#endif
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
