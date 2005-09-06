@@ -329,9 +329,10 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
 	printf("SEL Information\n");
-        version = buf2short(rsp->data);
-	printf("Version          : %x (%s)\n",
-	       version, (version == 0x51) ? "v1.5, v2 compliant" : "Unknown");
+        version = rsp->data[0];
+	printf("Version          : %d.%d (%s)\n",
+	       version & 0xf, (version>>4) & 0xf,
+	       (version == 0x51 || version == 0x02) ? "v1.5, v2 compliant" : "Unknown");
 
 	/* save the entry count and free space to determine percent full */
 	e = buf2short(rsp->data + 1);
