@@ -285,8 +285,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 		return;
 	}
 	tbl_size = (rsp->data[1] & PEF_LAN_DEST_TABLE_SIZE_MASK);
-	if (!dest || tbl_size == 0)	/* LAN alerting not supported */
-		return;
+	//if (tbl_size == 0 || dest == 0)	/* LAN alerting not supported */
+	//	return;
 
 	lsel.id = PEF_LAN_CFGPARM_ID_DESTTYPE;
 	lsel.set = dest;
