@@ -215,6 +215,16 @@ ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 #endif /* HAVE_READLINE */
 
+int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	int i;
+
+	for (i=0; i<argc; i++) {
+		printf("%s ", argv[i]);
+	}
+	printf("\n");
+}
+
 static void
 ipmi_set_usage(void)
 {

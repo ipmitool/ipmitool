@@ -69,6 +69,7 @@
 #ifdef HAVE_READLINE
 extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
 #endif
+extern int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 
@@ -96,13 +97,14 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },
 	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
-   { ipmi_picmg_main,  "picmg",    "Run a PICMG/ATCA extended cmd"},
-   { ipmi_fwum_main,  "fwum",	  "Update IPMC using Kontron OEM Firmware Update Manager" },
+	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},
+	{ ipmi_fwum_main,    "fwum",	"Update IPMC using Kontron OEM Firmware Update Manager" },
 #ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
 #endif
 	{ ipmi_exec_main,    "exec",    "Run list of commands from file" },
 	{ ipmi_set_main,     "set",     "Set runtime variable for shell and exec" },
+	{ ipmi_echo_main,    "echo",    NULL }, /* for echoing lines to stdout in scripts */
 	{ NULL },
 };
 
