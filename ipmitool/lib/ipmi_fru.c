@@ -1232,6 +1232,10 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 	     fru->dev_type < 0x08 || fru->dev_type > 0x0f))
 		return -1;
 
+	if (fru->dev_slave_addr == IPMI_BMC_SLAVE_ADDR &&
+	    fru->device_id == 0)
+		return 0;
+
 	memset(desc, 0, sizeof(desc));
 	memcpy(desc, fru->id_string, fru->id_code & 0x01f);
 	desc[fru->id_code & 0x01f] = 0;
@@ -1244,13 +1248,8 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		save_addr = intf->target_addr;
 		/* set new target address for bridged commands */
 		intf->target_addr = fru->dev_slave_addr;
-
-		if (intf->target_addr == IPMI_BMC_SLAVE_ADDR &&
-		    fru->device_id == 0)
-			printf(" (Builtin FRU device)\n");
-		else
-			rc = __ipmi_fru_print(intf, fru->device_id);
-
+		/* print FRU */
+		rc = __ipmi_fru_print(intf, fru->device_id);
 		/* restore previous target */
 		intf->target_addr = save_addr;
 		break;
