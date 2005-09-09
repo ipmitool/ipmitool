@@ -82,6 +82,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_rawi2c_main,  "i2c",     "Send an I2C Master Write-Read command and print response" },
 	{ ipmi_lanp_main,    "lan",     "Configure LAN Channels" },
 	{ ipmi_chassis_main, "chassis", "Get chassis status and set power state" },
+	{ ipmi_power_main,   "power",   "Shortcut to chassis power commands" },
 	{ ipmi_event_main,   "event",   "Send pre-defined events to MC" },
 	{ ipmi_mc_main,      "mc",      "Management Controller status and global enables" },
 	{ ipmi_mc_main,      "bmc",     NULL },	/* for backwards compatibility */

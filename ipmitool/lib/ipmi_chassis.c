@@ -611,6 +611,41 @@ ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 }
 
 int
+ipmi_power_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	int rc = 0;
+	uint8_t ctl = 0;
+
+	if ((argc < 1) || (strncmp(argv[0], "help", 4) == 0)) {
+		lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
+		return 0;
+	}
+	if (strncmp(argv[0], "status", 6) == 0) {
+		rc = ipmi_chassis_print_power_status(intf);
+		return rc;
+	}
+	if ((strncmp(argv[0], "up", 2) == 0) || (strncmp(argv[0], "on", 2) == 0))
+		ctl = IPMI_CHASSIS_CTL_POWER_UP;
+	else if ((strncmp(argv[0], "down", 4) == 0) || (strncmp(argv[0], "off", 3) == 0))
+		ctl = IPMI_CHASSIS_CTL_POWER_DOWN;
+	else if (strncmp(argv[0], "cycle", 5) == 0)
+		ctl = IPMI_CHASSIS_CTL_POWER_CYCLE;
+	else if (strncmp(argv[0], "reset", 5) == 0)
+		ctl = IPMI_CHASSIS_CTL_HARD_RESET;
+	else if (strncmp(argv[0], "diag", 4) == 0)
+		ctl = IPMI_CHASSIS_CTL_PULSE_DIAG;
+	else if ((strncmp(argv[0], "acpi", 4) == 0) || (strncmp(argv[0], "soft", 4) == 0))
+		ctl = IPMI_CHASSIS_CTL_ACPI_SOFT;
+	else {
+		lprintf(LOG_ERR, "Invalid chassis power command: %s", argv[0]);
+		return -1;
+	}
+
+	rc = ipmi_chassis_power_control(intf, ctl);
+	return rc;
+}
+
+int
 ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
