@@ -769,7 +769,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_SOL_RETRY;
-		data[2] = (uint8_t)strtol(value, NULL, 0) & 0x03;
+		data[2] = (uint8_t)strtol(value, NULL, 0) & 0x07;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
