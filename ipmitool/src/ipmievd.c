@@ -267,8 +267,15 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		break;
 
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
-		lprintf(LOG_NOTICE, "%s sensor %s - %s",
-			type, sdr->record.compact->id_string, desc ? : "");
+		if (evt->sel_type.standard_type.event_type == 0x6f) {
+			lprintf(LOG_NOTICE, "%s sensor %s - %s %s",
+				type, sdr->record.compact->id_string,
+				desc ? : "",
+				evt->sel_type.standard_type.event_dir ? "Deasserted" : "Asserted");
+		} else {
+			lprintf(LOG_NOTICE, "%s sensor %s - %s",
+				type, sdr->record.compact->id_string, desc ? : "");
+		}
 		break;
 
 	default:
