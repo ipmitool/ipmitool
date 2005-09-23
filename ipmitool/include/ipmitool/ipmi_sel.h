@@ -423,14 +423,14 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x20, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "PEF initiated soft shutdown" },
 	{ 0x20, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Agent not responding" },
 
-	{ 0x21, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Fault Status Asserted" },
-	{ 0x21, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Identify Status Asserted" },
+	{ 0x21, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Fault Status" },
+	{ 0x21, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Identify Status" },
 	{ 0x21, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Device Installed" },
 	{ 0x21, 0x03, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Ready for Device Installation" },
 	{ 0x21, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Ready for Device Removal" },
 	{ 0x21, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot Power is Off" },
 	{ 0x21, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Device Removal Request" },
-	{ 0x21, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Interlock Asserted" },
+	{ 0x21, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Interlock" },
 	{ 0x21, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Slot is Disabled" },
 	{ 0x21, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Slot/Connector", "Spare Device" },
 

@@ -157,6 +157,113 @@ ipmi_get_oem(struct ipmi_intf * intf)
 }
 
 
+static int
+ipmi_sel_add_entry(struct ipmi_intf * intf, struct sel_event_record * rec)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = IPMI_CMD_ADD_SEL_ENTRY;
+	req.msg.data = (unsigned char *)rec;
+	req.msg.data_len = 16;
+
+	ipmi_sel_print_std_entry(intf, rec);
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Add SEL Entry failed");
+		return -1;
+	}
+	else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Add SEL Entry failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int
+ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
+{
+	FILE * fp;
+	char buf[1024];
+	char * ptr, * tok;
+	int i, j;
+	int rc = 0;
+	uint8_t rqdata[8];
+	struct sel_event_record sel_event;
+	
+	if (filename == NULL)
+		return -1;
+
+	fp = ipmi_open_file_read(filename);
+	if (fp == NULL)
+		return -1;
+
+	while (feof(fp) == 0) {
+		if (fgets(buf, 1024, fp) == NULL)
+			continue;
+
+		/* clip off optional comment tail indicated by # */
+		ptr = strchr(buf, '#');
+		if (ptr)
+			*ptr = '\0';
+		else
+			ptr = buf + strlen(buf);
+
+		/* clip off trailing and leading whitespace */
+		ptr--;
+		while (isspace(*ptr) && ptr >= buf)
+			*ptr-- = '\0';
+		ptr = buf;
+		while (isspace(*ptr))
+			ptr++;
+		if (strlen(ptr) == 0)
+			continue;
+
+		/* parse the event, 7 bytes with optional comment */
+		/* 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event */
+		i = 0;
+		tok = strtok(ptr, " ");
+		while (tok) {
+			if (i == 7)
+				break;
+			j = i++;
+			rqdata[j] = (uint8_t)strtol(tok, NULL, 0);
+			tok = strtok(NULL, " ");
+		}
+		if (i < 7) {
+			lprintf(LOG_ERR, "Invalid Event: %s",
+			       buf2str(rqdata, sizeof(rqdata)));
+			continue;
+		}
+
+		memset(&sel_event, 0, sizeof(struct sel_event_record));
+		sel_event.record_id = 0x0000;
+		sel_event.record_type = 0x02;
+		sel_event.sel_type.standard_type.gen_id = 0x00;
+		sel_event.sel_type.standard_type.evm_rev = rqdata[0];
+		sel_event.sel_type.standard_type.sensor_type = rqdata[1];
+		sel_event.sel_type.standard_type.sensor_num = rqdata[2];
+		sel_event.sel_type.standard_type.event_type = rqdata[3] & 0x7f;
+		sel_event.sel_type.standard_type.event_dir = (rqdata[3] & 0x80) >> 7;
+		sel_event.sel_type.standard_type.event_data[0] = rqdata[4];
+		sel_event.sel_type.standard_type.event_data[1] = rqdata[5];
+		sel_event.sel_type.standard_type.event_data[2] = rqdata[6];
+
+		rc = ipmi_sel_add_entry(intf, &sel_event);
+		if (rc < 0)
+			break;
+	}
+
+	fclose(fp);
+	return rc;
+}
+
+
 
 char *
 get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
@@ -682,6 +789,18 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	if (description) {
 		printf("%s", description);
 		free(description);
+	}
+
+	if (evt->sel_type.standard_type.event_type == 0x6f) {
+		if (csv_output)
+			printf(",");
+		else
+			printf(" | ");
+
+		if (evt->sel_type.standard_type.event_dir)
+			printf("Deasserted");
+		else
+			printf("Asserted");
 	}
 
 	if (sdr != NULL && evt->sel_type.standard_type.event_type == 1) {
@@ -1509,7 +1628,7 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "help", 4) == 0)
 		lprintf(LOG_ERR, "SEL Commands:  "
-				"info clear delete list elist get time save readraw writeraw");
+				"info clear delete list elist get add time save readraw writeraw");
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "save", 4) == 0) {
@@ -1518,6 +1637,13 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return 0;
 		}
 		rc = ipmi_sel_save_entries(intf, 0, argv[1]);
+	}
+	else if (strncmp(argv[0], "add", 3) == 0) {
+		if (argc < 2) {
+			lprintf(LOG_NOTICE, "usage: sel add <filename>");
+			return 0;
+		}
+		rc = ipmi_sel_add_entries_fromfile(intf, argv[1]);
 	}
 	else if (strncmp(argv[0], "writeraw", 8) == 0) {
 		if (argc < 2) {
