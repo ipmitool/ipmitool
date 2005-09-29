@@ -109,7 +109,7 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 		break;
 	case 2:				/* 10b: 6-bit ASCII */
 		/* 4 chars per group of 1-3 bytes */
-		size = (len * 8) / 6;
+		size = ((((len+2)*4)/3) & ~3);
 		break;
 	case 3:				/* 11b: 8-bit ASCII */
 	case 1:				/* 01b: BCD plus */
