@@ -102,6 +102,7 @@ ipmi_get_sol_info(
 	struct ipmi_rq req;
 	uint8_t data[4];	
 
+   memset(&req, 0, sizeof(req)); 
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd      = IMPI_GET_SOL_CONFIG_PARAMETERS;
 	req.msg.data_len = 4;
@@ -547,6 +548,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	uint8_t    data[4];	 
 	int              bGuarded = 1; /* Use set-in-progress indicator? */
 
+   memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;           /* 0x0c */ 
 	req.msg.cmd      = IMPI_SET_SOL_CONFIG_PARAMETERS; /* 0x21 */
 	req.msg.data     = data;
@@ -1100,6 +1102,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 	struct ipmi_rq   req;
 	uint8_t    data[6];	 
 
+   memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
 	req.msg.data_len = 6;
@@ -1410,6 +1413,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	intf->session->sol_data.sol_input_handler = output;
 
 
+   memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_ACTIVATE_PAYLOAD;
 	req.msg.data_len = 6;
