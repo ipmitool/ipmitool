@@ -287,7 +287,7 @@ static const struct valstr plus_payload_types_vals[] = {
 
 
 static struct ipmi_rq_entry *
-ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
+ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_seq)
 {
 	struct ipmi_rq_entry * e;
 
@@ -301,6 +301,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
 	memcpy(&e->req, req, sizeof(struct ipmi_rq));
 
 	e->intf = intf;
+   e->rq_seq = req_seq;
 
 	if (ipmi_req_entries == NULL)
 		ipmi_req_entries = e;
@@ -1698,10 +1699,13 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	 * representation far below.
 	 */
  	static uint8_t curr_seq = 0;
+   
+   curr_seq += 1;
+   
 	if (curr_seq >= 64)
 		curr_seq = 0;
 
-	entry = ipmi_req_add_entry(intf, req);
+	entry = ipmi_req_add_entry(intf, req, curr_seq);
 	if (entry == NULL)
 		return NULL;
 
@@ -1766,7 +1770,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 	struct ipmi_session  * session = intf->session;
 	struct ipmi_rq_entry * entry;
 
-	entry = ipmi_req_add_entry(intf, req);
+	entry = ipmi_req_add_entry(intf, req, 0);
 	if (entry == NULL)
 		return NULL;
 
