@@ -349,6 +349,47 @@ ipmi_user_set_username(
 }
 	
 
+static int
+ipmi_user_set_userpriv(
+		       struct ipmi_intf * intf,
+             uint8_t	  channel,
+		       uint8_t	  user_id,
+		       const unsigned char	privLevel)
+{
+	struct ipmi_rs	     * rsp;
+	struct ipmi_rq	       req;
+	uint8_t	       msg_data[17];
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
+	req.msg.cmd	     = IPMI_SET_USER_ACCESS;   /* 0x43 */
+	req.msg.data     = msg_data;
+	req.msg.data_len = 3;
+
+
+	/* The channel number will remain constant throughout this function */
+	msg_data[0] = (channel   & 0x0f); /* Do not change any bytes */
+	msg_data[1] = (user_id   & 0x3f);
+	msg_data[2] = (privLevel & 0x0f);
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (rsp == NULL) 
+   {
+		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
+			user_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) 
+   {
+		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
+			user_id);
+		return -1;
+	}
+
+	return 0;
+}
+
 
 /*
  * ipmi_user_set_password
@@ -463,6 +504,7 @@ print_user_usage(void)
 	lprintf(LOG_NOTICE, "		   set password <user id> [<password>]");
 	lprintf(LOG_NOTICE, "		   disable	<user id>");
 	lprintf(LOG_NOTICE, "		   enable	<user id>");
+	lprintf(LOG_NOTICE, "		   priv  	<user id> <privile level> [<channel number>]");
 	lprintf(LOG_NOTICE, "		   test		<user id> <16|20> [<password]>\n");
 }
 
@@ -704,8 +746,40 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_user_usage();
 			return -1;
 		}
+
 	}
 
+	else if (strncmp(argv[0], "priv", 4) == 0)
+	{
+   	uint8_t user_id;
+   	uint8_t priv_level;
+   	uint8_t channel = 0x0e; /* Use channel running on */
+
+		if (
+            (argc != 3) &&
+            (argc != 4)
+         )
+		
+
+      if (argc == 4)
+      {
+         channel = (uint8_t)strtol(argv[3], NULL, 0);
+         channel = (channel & 0x0f);
+		}
+      
+      user_id = (uint8_t)strtol(argv[1], NULL, 0);
+
+		priv_level = (uint8_t)strtol(argv[2], NULL, 0);
+      priv_level = (priv_level & 0x0f);
+
+		if (user_id == 0)
+		{
+			lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
+			return -1;
+		}
+
+		retval = ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
+   }
 
 	/*
 	 * Disable / Enable
