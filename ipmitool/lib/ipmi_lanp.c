@@ -1823,34 +1823,234 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 
+static int
+ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
+{
+	struct lan_param * p;
+	uint8_t medium;
+	int rc = 0;
+
+	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
+		lprintf(LOG_ERR, "Invalid Channel %d", chan);
+		return -1;
+	}
+
+	/* find type of channel and only accept 802.3 LAN */
+	medium = ipmi_get_channel_medium(intf, chan);
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
+	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
+			chan, val2str(medium, ipmi_channel_medium_vals), medium);
+		return -1;
+	}
+
+   {
+      /* From here, we are ready to get the stats */
+	   struct ipmi_rs * rsp;
+	   struct ipmi_rq req;
+	   uint8_t msg_data[2];
+      uint16_t statsTemp;
+      uint16_t * pStatsTemp;
+      
+
+	   msg_data[0] = chan;
+	   msg_data[1] = 0;   /* Don't clear */
+
+	   memset(&req, 0, sizeof(req));
+	   req.msg.netfn    = IPMI_NETFN_TRANSPORT;
+	   req.msg.cmd      = IPMI_LAN_GET_STAT;
+	   req.msg.data     = msg_data;
+	   req.msg.data_len = 2;
+
+	   rsp = intf->sendrecv(intf, &req);
+	   if (rsp == NULL) {
+		   lprintf(LOG_INFO, "Get LAN Stats command failed");
+		   return 0;
+	   }
+
+	   if (rsp->ccode > 0) {
+		   lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
+			   val2str(rsp->ccode, completion_code_vals));
+		   return 0;
+	   }
+      
+      if (verbose > 1)
+      {
+         uint8_t counter;
+         printf("--- Rx Stats ---\n"); 
+         for(counter=0;counter<18;counter+=2)
+         {
+            printf("%02X", *(rsp->data + counter)); 
+            printf(" %02X - ", *(rsp->data + counter+1)); 
+         } 
+         printf("\n"); 
+      }       
+
+      statsTemp = ((*(rsp->data + 0)) << 8) | (*(rsp->data + 1));
+      printf("IP Rx Packet              : %d\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 2)) << 8) | (*(rsp->data + 3));
+      printf("IP Rx Header Errors       : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 4)) << 8) | (*(rsp->data + 5));
+      printf("IP Rx Address Errors      : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 6)) << 8) | (*(rsp->data + 7));
+      printf("IP Rx Fragmented          : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 8)) << 8) | (*(rsp->data + 9));
+      printf("IP Tx Packet              : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data +10)) << 8) | (*(rsp->data +11));
+      printf("UDP Rx Packet             : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 12)) << 8) | (*(rsp->data + 13));
+      printf("RMCP Rx Valid             : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 14)) << 8) | (*(rsp->data + 15));
+      printf("UDP Proxy Packet Received : %u\n", statsTemp);
+
+      statsTemp = ((*(rsp->data + 16)) << 8) | (*(rsp->data + 17));
+      printf("UDP Proxy Packet Dropped  : %u\n", statsTemp);
+
+   }      
+
+	return rc;
+}
+
+
+static int
+ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
+{
+	struct lan_param * p;
+	uint8_t medium;
+	int rc = 0;
+
+	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
+		lprintf(LOG_ERR, "Invalid Channel %d", chan);
+		return -1;
+	}
+
+	/* find type of channel and only accept 802.3 LAN */
+	medium = ipmi_get_channel_medium(intf, chan);
+	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
+	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
+			chan, val2str(medium, ipmi_channel_medium_vals), medium);
+		return -1;
+	}
+
+   {
+      /* From here, we are ready to get the stats */
+	   struct ipmi_rs * rsp;
+	   struct ipmi_rq req;
+	   uint8_t msg_data[2];
+      uint16_t statsTemp;
+      uint16_t * pStatsTemp;
+      
+
+	   msg_data[0] = chan;
+	   msg_data[1] = 1;   /* Clear */
+
+	   memset(&req, 0, sizeof(req));
+	   req.msg.netfn    = IPMI_NETFN_TRANSPORT;
+	   req.msg.cmd      = IPMI_LAN_GET_STAT;
+	   req.msg.data     = msg_data;
+	   req.msg.data_len = 2;
+
+	   rsp = intf->sendrecv(intf, &req);
+	   if (rsp == NULL) {
+		   lprintf(LOG_INFO, "Get LAN Stats command failed");
+		   return 0;
+	   }
+
+	   if (rsp->ccode > 0) {
+		   lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
+			   val2str(rsp->ccode, completion_code_vals));
+		   return 0;
+	   }
+   }      
+
+	return rc;
+}
+
+
+/*
+ * print_lan_usage
+ */
+static void
+print_lan_usage(void)
+{
+	lprintf(LOG_NOTICE, "LAN Commands:");
+	lprintf(LOG_NOTICE, "		   print [<channel number>]");
+	lprintf(LOG_NOTICE, "		   set [<channel number>]");
+	lprintf(LOG_NOTICE, "		   alert [<channel number>]");
+	lprintf(LOG_NOTICE, "		   stats get [<channel number>]");
+	lprintf(LOG_NOTICE, "		   stats clear [<channel number>]");
+}
+
+
 int
 ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
+   uint8_t chan = 0x0e;
 
 	if (argc == 0 || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "LAN Commands:  print, set, alert");
-		return -1;
+		print_lan_usage();
+      return -1;
 	}
 
-
-	if ((strncmp(argv[0], "printconf", 9) == 0) ||
-	    (strncmp(argv[0], "print", 5) == 0)) {
-		uint8_t chan = find_lan_channel(intf, 1);
+	if (
+         (strncmp(argv[0], "printconf", 9) == 0) 
+         ||
+	      (strncmp(argv[0], "print", 5) == 0) 
+      )
+   {
 		if (argc > 1)
 			chan = (uint8_t)strtol(argv[1], NULL, 0);
 		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
-			lprintf(LOG_NOTICE, "usage: lan print <channel>");
+      {
+         lprintf(LOG_ERR, "Invalid channel: %d", chan);
+			return -1;
+       }
 		else
 			rc = ipmi_lan_print(intf, chan);
 	}
 	else if (strncmp(argv[0], "set", 3) == 0)
-		rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
+	{
+   	rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
+	}
 	else if (strncmp(argv[0], "alert", 5) == 0)
-		rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
-	else
-		lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
-
+	{
+   	rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
+   }
+   else if (strncmp(argv[0], "stats", 5) == 0)
+   {
+      if(argc == 1)
+      {
+   		print_lan_usage();
+			return -1;
+      }
+      else if (argc > 2)
+	   	chan = (uint8_t)strtol(argv[2], NULL, 0);
+         
+   	if (chan < 2 || chan > IPMI_CHANNEL_NUMBER_MAX)
+      {
+         lprintf(LOG_ERR, "Invalid channel: %d", chan);
+			return -1;
+      }
+      else if (strncmp(argv[1], "get", 3) == 0)
+	   	rc = ipmi_lan_stats_get(intf, chan);
+      else if (strncmp(argv[1], "clear", 5) == 0)
+	   	rc = ipmi_lan_stats_clear(intf, chan);
+      else
+   		print_lan_usage();
+	}
+   else
+	{
+   	lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
+   }
 	return rc;
 }
 
