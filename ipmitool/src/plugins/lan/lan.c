@@ -75,6 +75,8 @@ static struct ipmi_rq_entry * ipmi_req_entries_tail;
 
 extern int verbose;
 
+static uint8_t bridgePossible = 0; 
+
 static sigjmp_buf jmpbuf;
 
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len);
@@ -398,6 +400,14 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq_entry * entry;
 	int x=0, rv;
+   uint8_t ourAddress = intf->my_addr;
+   
+   if(ourAddress == 0)
+   {
+      ourAddress = IPMI_BMC_SLAVE_ADDR;
+   }
+   
+
 
 	rsp = ipmi_lan_recv_packet(intf);
 
@@ -476,16 +486,29 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 					      rsp->payload.ipmi_response.cmd);
 		if (entry) {
 			lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-			if (intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
-				if (rsp->data_len)
-					lprintf(LOG_DEBUG+1, "Bridged cmd %02x resp: %s",
-						rsp->payload.ipmi_response.cmd,
-						buf2str(&rsp->data[x],rsp->data_len));
+         if (
+               (intf->target_addr != ourAddress) &&
+               (bridgePossible)
+            )
+         {
+				if(
+               (rsp->data_len) &&
+               (rsp->payload.ipmi_response.cmd != 0x34)
+              )
+				{
+      			printbuf(
+                        &rsp->data[x], 
+                        (rsp->data_len-x),
+                        "bridge command response");
+				}
 				/* bridged command: lose extra header */
 				if (rsp->payload.ipmi_response.cmd == 0x34) {
+               if( rsp->data_len == 38 )
+               {
 					entry->req.msg.cmd = entry->req.msg.target_cmd;
 					rsp = ipmi_lan_recv_packet(intf);
 					continue;
+               }
 				} else {
 					//x += sizeof(rsp->payload.ipmi_response);
 					if (rsp->data[x-1] != 0)
@@ -559,6 +582,13 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rq_entry * entry;
 	struct ipmi_session * s = intf->session;
 	static int curr_seq = 0;
+   uint8_t ourAddress = intf->my_addr;
+   uint8_t bridgedRequest = 0;
+   
+   if(ourAddress == 0)
+   {
+      ourAddress = IPMI_BMC_SLAVE_ADDR;
+   }
 
 	if (curr_seq >= 64)
 		curr_seq = 0;
@@ -599,15 +629,22 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	/* message length */
-	if (intf->target_addr == IPMI_BMC_SLAVE_ADDR) {
+	if (
+         (intf->target_addr == ourAddress) ||
+         (!bridgePossible)
+      )
+   {
 		msg[len++] = req->msg.data_len + 7;
 		cs = mp = len;
 	}
-	else {
+	else 
+   {
 		/* bridged request: encapsulate w/in Send Message */
+      bridgedRequest = 1;
 		msg[len++] = req->msg.data_len + 15;
 		cs = mp = len;
 		msg[len++] = IPMI_BMC_SLAVE_ADDR;
+
 		msg[len++] = IPMI_NETFN_APP << 2;
 		tmp = len - cs;
 		msg[len++] = ipmi_csum(msg+cs, tmp);
@@ -617,7 +654,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		msg[len++] = 0x34;			/* Send Message rqst */
 		entry->req.msg.target_cmd = entry->req.msg.cmd;	/* Save target command */
 		entry->req.msg.cmd = 0x34;		/* (fixup request entry) */
-		msg[len++] = 0x40;			/* Track request, Channel=IPMB */
+		msg[len++] = (0x40|intf->target_channel); /* Track request*/
 		cs = len;
 	}
 
@@ -627,8 +664,11 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	tmp = len - cs;
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 	cs = len;
+   if (!bridgedRequest)
 	msg[len++] = IPMI_REMOTE_SWID;
 
+   else  /* Bridged message */
+   	msg[len++] = intf->my_addr;
 	entry->rq_seq = curr_seq++;
 	msg[len++] = entry->rq_seq << 2;
 	msg[len++] = req->msg.cmd;
@@ -658,10 +698,12 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
 	/* bridged request: 2nd checksum */
-	if (intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
+	if (bridgedRequest) 
+   {
 		tmp = len - cs2;
 		msg[len++] = ipmi_csum(msg+cs2, tmp);
 	}
+
 
 	if (s->active) {
 		/*
@@ -1149,6 +1191,8 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
+   bridgePossible = 1;
+   
 	lprintf(LOG_DEBUG, "\nSession Activated");
 	lprintf(LOG_DEBUG, "  Auth Type       : %s",
 		val2str(rsp->data[0], ipmi_authtype_session_vals));
@@ -1170,6 +1214,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t privlvl = intf->session->privlvl;
+   uint8_t backupBridgePossible = bridgePossible;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
 		return 0;	/* no need to set higher */
@@ -1180,7 +1225,12 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	req.msg.data		= &privlvl;
 	req.msg.data_len	= 1;
 
+   bridgePossible = 0;
+
 	rsp = intf->sendrecv(intf, &req);
+   
+   bridgePossible = backupBridgePossible;
+
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
 			val2str(privlvl, ipmi_privlvl_vals));
@@ -1214,6 +1264,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 		return -1;
 
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
+   bridgePossible = 0;  /* Not a bridge message */
 
 	memcpy(&msg_data, &session_id, 4);
 
