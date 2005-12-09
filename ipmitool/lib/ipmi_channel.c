@@ -482,6 +482,7 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 
 	memcpy(&user_access, rsp->data, sizeof(struct get_user_access_rsp));
 
+	memset(&set_access, 0, sizeof(set_access));
 	set_access.change_bits = 1;
 	set_access.callin_callback = user_access.callin_callback;
 	set_access.link_auth = user_access.link_auth;
