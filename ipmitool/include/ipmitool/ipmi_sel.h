@@ -528,11 +528,12 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 
 /* These values are IANA numbers */
 typedef enum IPMI_OEM {
-    IPMI_OEM_UNKNOWN = 0,
-    IPMI_OEM_SUN     = 42,
-    IPMI_OEM_INTEL   = 343,
-    IPMI_OEM_NEWISYS = 9237,
-    IPMI_OEM_KONTRON = 15000
+    IPMI_OEM_UNKNOWN    = 0,
+    IPMI_OEM_SUN        = 42,
+    IPMI_OEM_INTEL      = 343,
+    IPMI_OEM_SUPERMICRO = 2168,
+    IPMI_OEM_NEWISYS    = 9237,
+    IPMI_OEM_KONTRON    = 15000
 } IPMI_OEM;
 
 int ipmi_sel_main(struct ipmi_intf *, int, char **);
