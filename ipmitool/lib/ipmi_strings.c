@@ -45,8 +45,9 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_UNKNOWN,    "Unknown" },
    { IPMI_OEM_SUN,        "Sun Microsystems" },
    { IPMI_OEM_INTEL,      "Intel Corporation" },
-   { IPMI_OEM_SUPERMICRO, "Supermicro" },
+   { IPMI_OEM_TYAN,       "Tyan Computer Corporation" },
    { IPMI_OEM_NEWISYS,    "Newisys" },
+   { IPMI_OEM_SUPERMICRO, "Supermicro" },
    { IPMI_OEM_KONTRON,    "Kontron" },
    { 0xffff , NULL },
 };
