@@ -62,7 +62,7 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
-* Sat Jan 14, 2006 <duncan@iceblink.org>  1.8.5-1
+* Sat Jan 14 2006 <duncan@iceblink.org>  1.8.5-1
  - Raise privilege level after creating IPMIv2 session
  - Add support for settable SOL escape character with -e option
  - Add support for Kg BMC key for IPMIv2 authentication with -k option
