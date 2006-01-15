@@ -39,6 +39,12 @@
 
 #include <ipmitool/ipmi.h>
 
+#define IPMI_TSOL_CMD_SENDKEY	0x03
+#define IPMI_TSOL_CMD_START	0x06
+#define IPMI_TSOL_CMD_STOP	0x02
+
+#define IPMI_TSOL_DEF_PORT	6230
+
 int ipmi_tsol_main(struct ipmi_intf *, int, char **);
 
 #endif /* IPMI_TSOL_H */
