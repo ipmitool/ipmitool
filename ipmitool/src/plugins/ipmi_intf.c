@@ -180,7 +180,7 @@ ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 	if (intf->session == NULL)
 		return;
 
-	memset(intf->session->username, 0, 16);
+	memset(intf->session->username, 0, 17);
 
 	if (username == NULL)
 		return;
@@ -222,6 +222,30 @@ ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_su
 		return;
 
 	intf->session->cipher_suite_id = cipher_suite_id;
+}
+
+void
+ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char)
+{
+	if (intf->session == NULL)
+		return;
+
+	intf->session->sol_escape_char = sol_escape_char;
+}
+
+void
+ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey)
+{
+	if (intf->session == NULL)
+		return;
+
+	memset(intf->session->v2_data.kg, 0, IPMI_KG_BUFFER_SIZE);
+
+	if (kgkey == NULL)
+		return;
+
+	memcpy(intf->session->v2_data.kg, kgkey, 
+	       __min(strlen(kgkey), IPMI_KG_BUFFER_SIZE));
 }
 
 void

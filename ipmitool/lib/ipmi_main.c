@@ -74,7 +74,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:"
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:e:k:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:S:"
 #endif
@@ -227,7 +227,9 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
+	lprintf(LOG_NOTICE, "       -e char        Set SOL escape character");
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
+	lprintf(LOG_NOTICE, "       -k key         Use Kg key for IPMIv2 authentication");
 	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=ADMINISTRATOR]");
 	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
@@ -235,7 +237,6 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
 	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
-
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
 #endif
@@ -279,10 +280,12 @@ ipmi_main(int argc, char ** argv,
 	char * progname = NULL;
 	char * oemtype  = NULL;
 	char * sdrcache = NULL;
+	char * kgkey    = NULL;
 	int port = 0;
 	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
 	int rc = -1;
+	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
@@ -362,6 +365,13 @@ ipmi_main(int argc, char ** argv,
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
+			}
+			break;
+		case 'k':
+			kgkey = strdup(optarg);
+			if (kgkey == NULL) {
+				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
 			}
 			break;
 		case 'U':
@@ -457,6 +467,9 @@ ipmi_main(int argc, char ** argv,
 		case 'm':
 			my_addr = (uint8_t)strtol(optarg, NULL, 0);
 			break;
+		case 'e':
+			sol_escape_char = optarg[0];
+			break;
 #endif
 		default:
 			ipmi_option_usage(progname, cmdlist, intflist);
@@ -533,6 +546,8 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_username(intf, username);
 	if (password != NULL)
 		ipmi_intf_session_set_password(intf, password);
+	if (kgkey != NULL)
+		ipmi_intf_session_set_kgkey(intf, kgkey);
 	if (port > 0)
 		ipmi_intf_session_set_port(intf, port);
 	if (authtype >= 0)
@@ -543,13 +558,14 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_privlvl(intf,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
 
+	ipmi_intf_session_set_sol_escape_char(intf, sol_escape_char);
 	ipmi_intf_session_set_cipher_suite_id(intf, cipher_suite_id);
 
-   /* setup destination lun if given */
-   intf->target_lun = target_lun ;
+	/* setup destination lun if given */
+	intf->target_lun = target_lun ;
 
-   /* setup destination channel if given */
-   intf->target_channel = target_channel ;
+	/* setup destination channel if given */
+	intf->target_channel = target_channel ;
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;

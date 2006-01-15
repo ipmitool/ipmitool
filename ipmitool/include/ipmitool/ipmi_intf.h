@@ -68,7 +68,7 @@ enum LANPLUS_SESSION_STATE {
 
 struct ipmi_session {
 	uint8_t hostname[64];
-	uint8_t username[16];
+	uint8_t username[17];
 	uint8_t authcode[IPMI_AUTHCODE_BUFFER_SIZE + 1];
 	uint8_t challenge[16];
 	uint8_t authtype;
@@ -82,6 +82,7 @@ struct ipmi_session {
 	uint8_t authextra;
 	uint8_t privlvl;
 	uint8_t cipher_suite_id;
+	char sol_escape_char;
 	int password;
 	int port;
 	int active;
@@ -194,6 +195,8 @@ void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
 void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
 void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id);
+void ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char);
+void ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey);
 void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype);
 void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);

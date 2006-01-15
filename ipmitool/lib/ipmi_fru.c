@@ -48,6 +48,17 @@
 # include <config.h>
 #endif
 
+/*
+ * Apparently some systems have problems with FRU access greater than 16 bytes
+ * at a time, even when using byte (not word) access.  In order to ensure we
+ * work with the widest variety of hardware request size is capped at 16 bytes.
+ * Since this may result in slowdowns on some systems with lots of FRU data you
+ * can undefine this to enable larger (up to 32 bytes at a time) access.
+ *
+ * TODO: make this a command line option
+ */
+#define LIMIT_ALL_REQUEST_SIZE 1
+
 extern int verbose;
 extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
 static void ipmi_fru_read_to_bin(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId);
@@ -216,9 +227,13 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
    req.msg.netfn = IPMI_NETFN_STORAGE;
    req.msg.cmd = SET_FRU_DATA;
    req.msg.data = msg_data;
-   
+
+#ifdef LIMIT_ALL_REQUEST_SIZE
+   if (fru_data_rqst_size > 16)
+#else
    if (fru->access && fru_data_rqst_size > 16)
-      fru_data_rqst_size = 16;
+#endif
+     fru_data_rqst_size = 16;
    do 
    {
       /* real destination offset */
@@ -301,7 +316,11 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	req.msg.data = msg_data;
 	req.msg.data_len = 4;
 
+#ifdef LIMIT_ALL_REQUEST_SIZE
+	if (fru_data_rqst_size > 16)
+#else
 	if (fru->access && fru_data_rqst_size > 16)
+#endif
 		fru_data_rqst_size = 16;
 	do {
 		tmp = fru->access ? off >> 1 : off;
@@ -320,8 +339,6 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			break;
 		}
 		if (rsp->ccode > 0) {
-			lprintf(LOG_NOTICE, "FRU Read failed: %s",
-				val2str(rsp->ccode, completion_code_vals));
 			/* if we get C7 or C8  or CA return code then we requested too
 			 * many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
@@ -330,6 +347,8 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 					fru_data_rqst_size);
 				continue;
 			}
+			lprintf(LOG_NOTICE, "FRU Read failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
 			break;
 		}
 
@@ -1159,15 +1178,15 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	lprintf(LOG_DEBUG, "fru.header.version:         0x%x",
 		header.version);
 	lprintf(LOG_DEBUG, "fru.header.offset.internal: 0x%x",
-		header.offset.internal);
+		header.offset.internal * 8);
 	lprintf(LOG_DEBUG, "fru.header.offset.chassis:  0x%x",
-		header.offset.chassis);
+		header.offset.chassis * 8);
 	lprintf(LOG_DEBUG, "fru.header.offset.board:    0x%x",
-		header.offset.board);
+		header.offset.board * 8);
 	lprintf(LOG_DEBUG, "fru.header.offset.product:  0x%x",
-		header.offset.product);
+		header.offset.product * 8);
 	lprintf(LOG_DEBUG, "fru.header.offset.multi:    0x%x",
-		header.offset.multi);
+		header.offset.multi * 8);
 
 	/*
 	 * rather than reading the entire part

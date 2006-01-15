@@ -39,6 +39,7 @@
 
 #include <ipmitool/ipmi.h>
 
+#define SOL_ESCAPE_CHARACTER_DEFAULT        '~'
 
 #define IPMI_SOL_SERIAL_ALERT_MASK_SUCCEED  0x08
 #define IPMI_SOL_SERIAL_ALERT_MASK_DEFERRED 0x04

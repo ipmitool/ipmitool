@@ -67,8 +67,6 @@
 #define SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
 #define SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
 
-#define SOL_ESCAPE_CHARACTER                    '~'
-
 const struct valstr sol_parameter_vals[] = {
 	{ SOL_PARAMETER_SET_IN_PROGRESS,           "Set In Progress (0)" },
 	{ SOL_PARAMETER_SOL_ENABLE,                "Enable (1)" },
@@ -1048,7 +1046,7 @@ suspendSelf(int bRestoreTty)
  * Send some useful documentation to the user
  */
 static void
-printSolEscapeSequences(void)
+printSolEscapeSequences(struct ipmi_intf * intf)
 {
 	printf(
 		   "%c?\r\n\
@@ -1060,14 +1058,14 @@ printSolEscapeSequences(void)
 	%c?  - this message\r\n\
 	%c%c  - send the escape character by typing it twice\r\n\
 	(Note that escapes are only recognized immediately after newline.)\r\n",
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER,
-		   SOL_ESCAPE_CHARACTER);
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char,
+		   intf->session->sol_escape_char);
 }
 
 
@@ -1158,7 +1156,7 @@ static int
 processSolUserInput(
 					struct ipmi_intf * intf,
 					uint8_t    * input,
-					uint16_t     buffer_length)
+					uint16_t   buffer_length)
 {
 	static int escape_pending = 0;
 	static int last_was_cr    = 1;
@@ -1186,38 +1184,44 @@ processSolUserInput(
 			 */
 			switch (ch) {
 			case '.':
-				printf("%c. [terminated ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				printf("%c. [terminated ipmitool]\r\n",
+				       intf->session->sol_escape_char);
 				retval = 1;
 				break;
+
 			case 'Z' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				printf("%c^Z [suspend ipmitool]\r\n",
+				       intf->session->sol_escape_char);
 				suspendSelf(1); /* Restore tty back to raw */
 				continue;
 
 			case 'X' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n", SOL_ESCAPE_CHARACTER);
+				printf("%c^Z [suspend ipmitool]\r\n",
+				       intf->session->sol_escape_char);
 				suspendSelf(0); /* Don't restore to raw mode */
 				continue;
 
 			case 'B':
-				printf("%cb [send break]\r\n", SOL_ESCAPE_CHARACTER);
+				printf("%cb [send break]\r\n",
+				       intf->session->sol_escape_char);
 				sendBreak(intf);
 				continue;
 
 			case '?':
-				printSolEscapeSequences();
+				printSolEscapeSequences(intf);
 				continue;
+
 			default:
-				if (ch != SOL_ESCAPE_CHARACTER)
+				if (ch != intf->session->sol_escape_char)
 					v2_payload.payload.sol_packet.data[length++] =
-						SOL_ESCAPE_CHARACTER;
+						intf->session->sol_escape_char;
 				v2_payload.payload.sol_packet.data[length++] = ch;
 			}
 		}
 
 		else
 		{
-			if (last_was_cr && (ch == SOL_ESCAPE_CHARACTER)) {
+			if (last_was_cr && (ch == intf->session->sol_escape_char)) {
 				escape_pending = 1;
 				continue;
 			}
@@ -1413,7 +1417,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	intf->session->sol_data.sol_input_handler = output;
 
 
-   memset(&req, 0, sizeof(req));
+	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_ACTIVATE_PAYLOAD;
 	req.msg.data_len = 6;
@@ -1519,7 +1523,7 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	
 
 	printf("[SOL Session operational.  Use %c? for help]\r\n",
-		   SOL_ESCAPE_CHARACTER);
+	       intf->session->sol_escape_char);
 
 
 	/*

@@ -528,13 +528,10 @@ int lanplus_generate_sik(struct ipmi_session * session)
 	{
 		/* We will be hashing with Kg */
 		/*
-		 * TODO: Section 13.31 of the IPMI v2 spec describes the SIK creation
-		 * using Kg.  It specifies that Kg should not be truncated, but I
-		 * do not know what is meant by that.
+		 * Section 13.31 of the IPMI v2 spec describes the SIK creation
+		 * using Kg.  It specifies that Kg should not be truncated.
+		 * Kg is set in ipmi_intf.
 		 */
-		lprintf(LOG_ERR, "lanplus_generate_sik: We dont yet support hashing with Kg");
-		assert(0);
-
 		input_key        = session->v2_data.kg;
 	}
 	else

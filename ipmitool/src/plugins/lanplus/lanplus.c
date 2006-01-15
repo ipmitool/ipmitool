@@ -3238,7 +3238,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	//session->sol_data.last_received_sequence_number = 0;
 	//session->sol_data.last_received_byte_count      = 0;
 	memset(session->v2_data.sik, 0, IPMI_SIK_BUFFER_SIZE);
-	memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
+
+	/* Kg is set in ipmi_intf */
+	//memset(session->v2_data.kg,  0, IPMI_KG_BUFFER_SIZE);
 
 
 	/* open port to BMC */
