@@ -13,6 +13,7 @@ ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
          [\fB\-L\fR <\fIprivlvl\fP>]
          [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
          [\fB\-o\fR <\fIoemtype\fP>]
+         [\fB\-e\fR <\fIesc_char\fP>]
          <\fIcommand\fP>
 
 ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
@@ -23,6 +24,8 @@ ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
          [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
          [\fB\-o\fR <\fIoemtype\fP>]
          [\fB\-C\fR <\fIciphersuite\fP>]
+         [\fB\-k\fR <\fIkg_key\fP>]
+         [\fB\-e\fR <\fIesc_char\fP>]
          <\fIcommand\fP>
 .SH "DESCRIPTION"
 This program lets you manage Intelligent Platform Management Interface 
@@ -51,6 +54,14 @@ session activation.  Supported types are NONE, PASSWORD, MD5, or OEM.
 \fB\-c\fR
 Present output in CSV (comma separated variable) format.  
 This is not available with all commands.
+.TP
+\fB\-e\fR <\fIsol_escape_char\fP>
+Use supplied character for SOL session escape character.  The default
+is to use \fI~\fP but this can conflict with ssh sessions.
+.TP
+\fB\-k\fR <\fIkey\fP>
+Use supplied Kg key for IPMIv2 authentication.  The default is not to
+use any Kg key.
 .TP 
 \fB\-C\fR <\fIciphersuite\fP>
 The remote server authentication, integrity, and encryption algorithms
@@ -171,8 +182,9 @@ Commands:
         fru          Print built\-in FRU and scan for FRU locators
         sel          Print System Event Log (SEL)
         pef          Configure Platform Event Filtering (PEF)
-        sol          Configure IPMIv2.0 Serial\-over\-LAN
-        isol         Configure IPMIv1.5 Serial\-over\-LAN
+        sol          Configure and connect IPMIv2.0 Serial\-over\-LAN
+        tsol         Configure and connect Tyan IPMIv1.5 Serial\-over\-LAN
+        isol         Configure Intel IPMIv1.5 Serial\-over\-LAN
         user         Configure Management Controller users
         channel      Configure Management Controller channels
         session      Print session information
@@ -617,7 +629,7 @@ Write\-Read IPMI command.
 \fIsetup\fP <\fBbaud rate\fR>
 .br 
 
-Setup baud rate for IPMI v1.5 Serial\-over\-LAN.
+Setup baud rate for Intel IPMI v1.5 Serial\-over\-LAN.
 .RE
 .TP 
 \fIlan\fP
@@ -1249,6 +1261,40 @@ with the 'user list' command.
 This command will delete the SSH key for a specified userid.
 .RE
 .RE
+
+
+.TP
+\fItsol\fP
+.RS
+
+This command allows Serial-over-LAN sessions to be established with Tyan
+IPMIv1.5 SMDC such as the M3289 or M3290.  The default command run with
+no arguments will establish default SOL session back to local IP address.
+Optional arguments may be supplied in any order.
+
+.TP
+\fI<ipaddr>\fP
+.br
+
+Send receiver IP address to SMDC which it will use to send serial
+traffic to.  By default this detects the local IP address and establishes
+two-way session.
+
+.TP
+\fIport=NUM\fP
+.br
+
+Configure UDP port to receive serial traffic on.  By default this is 6230.
+
+.TP
+\fIro|rw\fP
+.br
+
+Confiure SOL session as read-only or read-write.  Sessions are read-write
+by default.
+
+.RE
+
 .TP 
 \fIuser\fP
 .RS
