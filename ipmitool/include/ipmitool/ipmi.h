@@ -228,13 +228,14 @@ struct ipmi_rs {
 #define IPMI_NETFN_BRIDGE		0x2
 #define IPMI_NETFN_SE			0x4
 #define IPMI_NETFN_APP			0x6
-#define IPMI_NETFN_FIRMWARE	0x8
+#define IPMI_NETFN_FIRMWARE		0x8
 #define IPMI_NETFN_STORAGE		0xa
-#define IPMI_NETFN_TRANSPORT	0xc
+#define IPMI_NETFN_TRANSPORT		0xc
 #define IPMI_NETFN_PICMG		0x2C
 #define IPMI_NETFN_ISOL			0x34
+#define IPMI_NETFN_TSOL			0x30
 
-#define IPMI_BMC_SLAVE_ADDR	0x20
+#define IPMI_BMC_SLAVE_ADDR		0x20
 #define IPMI_REMOTE_SWID		0x81
 
 extern const struct valstr completion_code_vals[];
