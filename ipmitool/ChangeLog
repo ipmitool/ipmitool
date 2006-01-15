@@ -1,3 +1,13 @@
+version 1.8.5
+	* Add support for settable SOL escape character with -e option
+	* Add support for Kg BMC key for IPMIv2 authentication with -k option
+	* Add support for Tyan IPMIv1.5 SOL with tsol command
+	* Add support for PICMG devices
+	* Add support for OEM SEL event parsing
+	* Add support for command bridging over lan and lanplus interfaces
+	* New 'chassis selftest' command
+	* Many bufxies and patches from contributors
+
 version 1.8.3
 	* Add support for 'sel readraw' and 'sel writeraw' commands.
 	* Add support for entering NetFn as a string for RAW commands.
