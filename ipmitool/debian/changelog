@@ -120,7 +120,7 @@ ipmitool (1.5.9) unstable; urgency=low
   * Add configure option for changing binary to ipmiadm for Solaris
   * Fix compile problem on Solaris 8
 
- -- Duncan Laurie <duncan@sun.com>  Sat, 27 Mar 2004 00:11:37 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Sat, 27 Mar 2004 00:11:37 -0700
 
 ipmitool (1.5.8) unstable; urgency=low
 
@@ -134,7 +134,7 @@ ipmitool (1.5.8) unstable; urgency=low
   * Add support for Linux kernel panic messages in SEL output
   * Add support for type 3 SDR records
 
- -- Duncan Laurie <duncan@sun.com>  Tue, 27 Jan 2004 16:23:25 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Tue, 27 Jan 2004 16:23:25 -0700
 
 ipmitool (1.5.7) unstable; urgency=low
 
@@ -143,7 +143,7 @@ ipmitool (1.5.7) unstable; urgency=low
   * better handling of SDR printing
   * contrib scripts for creating rrdtool graphs
 
- -- Duncan Laurie <duncan@sun.com>  Mon,  5 Jan 2004 17:29:50 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Mon,  5 Jan 2004 17:29:50 -0700
 
 ipmitool (1.5.6) unstable; urgency=low
 
@@ -152,40 +152,40 @@ ipmitool (1.5.6) unstable; urgency=low
   * Fix sdr handling of sensors that do not return a reading
   * Fix for CSV display of sensor readings/units from Fredrik Öhrn
 
- -- Duncan Laurie <duncan@sun.com>  Thu,  4 Dec 2003 14:47:19 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Thu,  4 Dec 2003 14:47:19 -0700
 
 ipmitool (1.5.5) unstable; urgency=low
 
   * Add -U option for setting LAN username
   * Fix -v usage for plugin interfaces
 
- -- Duncan Laurie <duncan@sun.com>  Tue, 25 Nov 2003 15:10:48 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Tue, 25 Nov 2003 15:10:48 -0700
 
 ipmitool (1.5.4) unstable; urgency=low
 
   * Put interface plugin API into library
   * Fix ipmievd
 
- -- Duncan Laurie <duncan@sun.com>  Fri, 14 Nov 2003 15:16:34 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Fri, 14 Nov 2003 15:16:34 -0700
 
 ipmitool (1.5.3) unstable; urgency=low
 
   * Add -g option to work with grizzly bmc
 
- -- Duncan Laurie <duncan@sun.com>  Mon,  3 Nov 2003 18:04:07 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Mon,  3 Nov 2003 18:04:07 -0700
 
 ipmitool (1.5.2) unstable; urgency=low
 
   * add support for setting gratuitous arp interval 
 
- -- Duncan Laurie <duncan@sun.com>  Fri, 24 Oct 2003 11:00:00 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Fri, 24 Oct 2003 11:00:00 -0700
 
 ipmitool (1.5.1) unstable; urgency=low
 
   * better SEL support
   * fix display bug in SDR list
 
- -- Duncan Laurie <duncan@sun.com>  Wed,  8 Oct 2003 17:28:51 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Wed,  8 Oct 2003 17:28:51 -0700
 
 ipmitool (1.5.0) unstable; urgency=low
 
@@ -193,24 +193,24 @@ ipmitool (1.5.0) unstable; urgency=low
   * add Intel IMB driver support
   * use autoconf/automake/libtool
 
- -- Duncan Laurie <duncan@sun.com>  Fri,  5 Sep 2003 11:57:32 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Fri,  5 Sep 2003 11:57:32 -0700
 
 ipmitool (1.2-1) unstable; urgency=low
 
   * New command line option parsing
   * More chassis commands supported
 
- -- Duncan Laurie <duncan@sun.com>  Wed,  2 Apr 2003 17:44:17 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Wed,  2 Apr 2003 17:44:17 -0700
 
 ipmitool (1.1-1) unstable; urgency=low
 
   * Minor fixes.
 
- -- Duncan Laurie <duncan@sun.com>  Tue,  1 Apr 2003 14:31:10 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Tue,  1 Apr 2003 14:31:10 -0700
 
 ipmitool (1.0-1) unstable; urgency=low
 
   * Initial Release.
 
- -- Duncan Laurie <duncan@sun.com>  Sun, 30 Mar 2003 21:30:46 -0700
+ -- Duncan Laurie <duncan@iceblink.org>  Sun, 30 Mar 2003 21:30:46 -0700
 
