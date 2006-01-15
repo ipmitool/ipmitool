@@ -3248,11 +3248,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(session->port);
 
-#ifdef __CYGWIN__
-	rc = inet_aton(session->hostname, &addr.sin_addr);
-#else
 	rc = inet_pton(AF_INET, session->hostname, &addr.sin_addr);
-#endif
 	if (rc <= 0) {
 		struct hostent *host = gethostbyname(session->hostname);
 		if (host == NULL) {

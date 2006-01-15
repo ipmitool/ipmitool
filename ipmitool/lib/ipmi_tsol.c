@@ -430,13 +430,8 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
 
-#ifdef __CYGWIN__
-	result = inet_aton((const char *)intf->session->hostname,
-			   &intf->session->addr.sin_addr);
-#else
 	result = inet_pton(AF_INET, (const char *)intf->session->hostname,
 			   &intf->session->addr.sin_addr);
-#endif
 
 	if (result <= 0) {
 		struct hostent *host = gethostbyname((const char *)intf->session->hostname);

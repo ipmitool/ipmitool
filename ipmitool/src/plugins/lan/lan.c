@@ -1410,11 +1410,7 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	s->addr.sin_family = AF_INET;
 	s->addr.sin_port = htons(s->port);
 
-#ifdef __CYGWIN__
-	rc = inet_aton(s->hostname, &s->addr.sin_addr);
-#else
 	rc = inet_pton(AF_INET, s->hostname, &s->addr.sin_addr);
-#endif
 	if (rc <= 0) {
 		struct hostent *host = gethostbyname(s->hostname);
 		if (host == NULL) {
