@@ -1247,19 +1247,26 @@ processSolUserInput(
 	if (length)
 	{
 		struct ipmi_rs * rsp;
+		int try = 0;
+
+		while (try < intf->session->retry) {
 		
-		v2_payload.payload.sol_packet.character_count = length;
-		rsp = intf->send_sol(intf, &v2_payload);
+			v2_payload.payload.sol_packet.character_count = length;
+			rsp = intf->send_sol(intf, &v2_payload);
+
+			if (rsp)
+			{
+				break;
+			}
+
+			usleep(5000);
+			try++;
+		}
 
 		if (! rsp)
 		{
-			rsp = intf->send_sol(intf, &v2_payload);
-			lprintf(LOG_ERR, "Error sending SOL data: RETRY");
-			if (! rsp)
-			{
-				lprintf(LOG_ERR, "Error sending SOL data: FAIL");
-				retval = -1;
-			}
+			lprintf(LOG_ERR, "Error sending SOL data: FAIL");
+			retval = -1;
 		}
 
 		/* If the sequence number is set we know we have new data */
