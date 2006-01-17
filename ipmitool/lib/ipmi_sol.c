@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -81,6 +82,7 @@ const struct valstr sol_parameter_vals[] = {
 };
 
 
+static struct timeval _start_keepalive;
 static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
 
@@ -1251,20 +1253,39 @@ processSolUserInput(
 
 		if (! rsp)
 		{
-			lprintf(LOG_ERR, "Error sending SOL data");
-			retval = -1;
+			rsp = intf->send_sol(intf, &v2_payload);
+			lprintf(LOG_ERR, "Error sending SOL data: RETRY");
+			if (! rsp)
+			{
+				lprintf(LOG_ERR, "Error sending SOL data: FAIL");
+				retval = -1;
+			}
 		}
 
 		/* If the sequence number is set we know we have new data */
-		else if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
-				 (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
-		 		 (rsp->payload.sol_packet.packet_sequence_number))
-			output(rsp);
+		if (retval == 0)
+			if ((rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+			    (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)        &&
+			    (rsp->payload.sol_packet.packet_sequence_number))
+				output(rsp);
 	}
 
 	return retval;
 }
 
+
+static void
+ipmi_sol_keepalive(struct ipmi_intf * intf)
+{
+	struct timeval end;
+
+	gettimeofday(&end, 0);
+
+	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
+		intf->keepalive(intf);
+		gettimeofday(&_start_keepalive, 0);
+	}
+}
 
 
 /*
@@ -1289,6 +1310,9 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		return -1;
 	}
 
+	/* Initialize keepalive start time */
+	gettimeofday(&_start_keepalive, 0);	
+
 	enter_raw_mode();
 
 	while (! bShouldExit)
@@ -1296,6 +1320,9 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		FD_ZERO(&read_fds);
 		FD_SET(0, &read_fds);
 		FD_SET(intf->fd, &read_fds);
+
+		/* Send periodic keepalive packet */
+		ipmi_sol_keepalive(intf);
 
 		/* Wait up to half a second */
 		tv.tv_sec =  0;
