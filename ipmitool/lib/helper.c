@@ -110,7 +110,7 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 
 const char * val2str(uint16_t val, const struct valstr *vs)
 {
-	static char un_str[16];
+	static char un_str[32];
 	int i;
 
 	for (i = 0; vs[i].str != NULL; i++) {
@@ -118,8 +118,8 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 			return vs[i].str;
 	}
 
-	memset(un_str, 0, 16);
-	snprintf(un_str, 16, "Unknown (0x%02x)", val);
+	memset(un_str, 0, 32);
+	snprintf(un_str, 32, "Unknown (0x%x)", val);
 
 	return un_str;
 }
