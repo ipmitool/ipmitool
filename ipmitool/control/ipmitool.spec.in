@@ -62,6 +62,10 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
+* Mon Jan 17 2006 <duncan@iceblink.org>  1.8.6-1
+ - Fix memory corruption when sending encrypted SOL traffic
+ - Add keepalive timer to IPMIv2 SOL sessions
+
 * Sat Jan 14 2006 <duncan@iceblink.org>  1.8.5-1
  - Raise privilege level after creating IPMIv2 session
  - Add support for settable SOL escape character with -e option

@@ -1,3 +1,7 @@
+version 1.8.6
+	* Fix memory corruption when sending encrypted SOL traffic
+	* Add keepalive timer to IPMIv2 SOL sessions
+
 version 1.8.5
 	* Add support for settable SOL escape character with -e option
 	* Add support for Kg BMC key for IPMIv2 authentication with -k option
