@@ -2307,6 +2307,8 @@ ipmi_lanplus_send_sol(
 	 * Payload length is just the length of the character
 	 * data here.
 	 */
+	v2_payload->payload_length = v2_payload->payload.sol_packet.character_count;
+
 	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
 
 	set_sol_packet_sequence_number(intf, v2_payload);
@@ -2337,6 +2339,8 @@ ipmi_lanplus_send_sol(
 				chars_to_resend);
 
 		v2_payload->payload.sol_packet.character_count = chars_to_resend;
+
+		v2_payload->payload_length = v2_payload->payload.sol_packet.character_count;
 
 		rs = ipmi_lanplus_send_payload(intf, v2_payload);
 
