@@ -732,6 +732,72 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 }
 
 static int
+ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
+{
+	struct sdr_record_list *sdr;
+	struct ipmi_rs *rsp;
+	int i, v, rc=0;
+	double val = 0.0;
+
+	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+		lprintf(LOG_NOTICE, "sensor reading <id> ... [id]");
+		lprintf(LOG_NOTICE, "   id        : name of desired sensor");
+		return -1;
+	}
+
+	for (i = 0; i < argc; i++) {
+		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
+		if (sdr == NULL) {
+			lprintf(LOG_ERR, "Sensor \"%s\" not found!",
+				argv[i]);
+			rc = -1;
+			continue;
+		}
+
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+			if (sdr->record.full->linearization >= SDR_SENSOR_L_NONLINEAR) {
+				lprintf(LOG_ERR, "Sensor \"%s\" non-linear!", argv[i]);
+				continue;
+			}
+			rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+							       sdr->record.full->keys.sensor_num,
+							       sdr->record.full->keys.owner_id);
+			if (rsp == NULL) {
+				lprintf(LOG_ERR, "Error reading sensor \"%s\"", argv[i]);
+				rc = -1;
+				continue;
+			} else if (rsp->ccode > 0) {
+				continue;
+			} else if (rsp->data[1] & READING_UNAVAILABLE) {
+				continue;
+			} else if (rsp->data[0] > 0) {
+				/* convert RAW reading into units */
+				val = sdr_convert_sensor_reading(sdr->record.full, rsp->data[0]);
+			} else {
+				val = 0.0;
+			}
+
+			if (csv_output)
+				printf("%s,%.*f\n", argv[i],
+				       (val == (int)val) ? 0 : 3, val);
+			else
+				printf("%-16s | %.*f\n", argv[i],
+				       (val == (int)val) ? 0 : 3, val);
+
+			break;
+
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			break;
+		default:
+			continue;
+		}
+	}
+
+	return rc;
+}
+
+static int
 ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct sdr_record_list *sdr;
@@ -800,13 +866,15 @@ ipmi_sensor_main(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc == 0) {
 		rc = ipmi_sensor_list(intf);
 	} else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_NOTICE, "Sensor Commands:  list thresh get");
+		lprintf(LOG_NOTICE, "Sensor Commands:  list thresh get reading");
 	} else if (strncmp(argv[0], "list", 4) == 0) {
 		rc = ipmi_sensor_list(intf);
 	} else if (strncmp(argv[0], "thresh", 5) == 0) {
 		rc = ipmi_sensor_set_threshold(intf, argc - 1, &argv[1]);
 	} else if (strncmp(argv[0], "get", 3) == 0) {
 		rc = ipmi_sensor_get(intf, argc - 1, &argv[1]);
+	} else if (strncmp(argv[0], "reading", 7) == 0) {
+		rc = ipmi_sensor_get_reading(intf, argc - 1, &argv[1]);
 	} else {
 		lprintf(LOG_ERR, "Invalid sensor command: %s", argv[0]);
 		rc = -1;
