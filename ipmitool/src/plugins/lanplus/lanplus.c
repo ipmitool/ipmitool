@@ -1334,37 +1334,24 @@ void getIpmiPayloadWireRep(
 						   uint8_t    rq_seq,
 						   uint8_t curr_seq)
 {
-	int cs, /*mp,*/ tmp, len;
-
+	int cs, tmp, len;
 	int cs2 = 0;
+	uint8_t ourAddress = intf->my_addr;
+	uint8_t bridgedRequest = 0;
 
-   uint8_t ourAddress = intf->my_addr;
-   uint8_t bridgedRequest = 0;
-
-   if(ourAddress == 0)
-   {
-      ourAddress = IPMI_BMC_SLAVE_ADDR;
-   }
+	if (ourAddress == 0)
+		ourAddress = IPMI_BMC_SLAVE_ADDR;
 
 	len = 0;
 
 	/* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec */
-   if (
-         (intf->target_addr == ourAddress) ||
-         (!bridgePossible)
-      )
-   {
+	if ((intf->target_addr == ourAddress) || (!bridgePossible))
 		cs = len;
-	}
-   else 
-   {
+	else {
 		/* bridged request: encapsulate w/in Send Message */
-      bridgedRequest = 1;
-
+		bridgedRequest = 1;
 		cs = len;
-
  		msg[len++] = IPMI_BMC_SLAVE_ADDR;
-
 		msg[len++] = IPMI_NETFN_APP << 2;
 		tmp = len - cs;
 		msg[len++] = ipmi_csum(msg+cs, tmp);
@@ -1378,7 +1365,7 @@ void getIpmiPayloadWireRep(
 #endif
 		msg[len++] = (0x40|intf->target_channel); /* Track request*/
 
-   	payload->payload_length += 7;
+		payload->payload_length += 7;
 
 		cs = len;
 	}
@@ -1387,7 +1374,7 @@ void getIpmiPayloadWireRep(
 	msg[len++] = intf->target_addr; /* IPMI_BMC_SLAVE_ADDR; */
 
 	/* net Fn */
-	msg[len++] = req->msg.netfn << 2;
+	msg[len++] = req->msg.netfn << 2 | (req->msg.lun & 3);
 	tmp = len - cs;
 
 	/* checkSum */
@@ -1395,10 +1382,10 @@ void getIpmiPayloadWireRep(
 	cs = len;
 
 	/* rqAddr */
-   if (!bridgedRequest)
-      msg[len++] = IPMI_REMOTE_SWID;
-   else  /* Bridged message */
-      msg[len++] = intf->my_addr;
+	if (!bridgedRequest)
+		msg[len++] = IPMI_REMOTE_SWID;
+	else  /* Bridged message */
+		msg[len++] = intf->my_addr;
 
 	/* rqSeq / rqLUN */
 	msg[len++] = rq_seq << 2;
@@ -1408,23 +1395,20 @@ void getIpmiPayloadWireRep(
 
 	/* message data */
 	if (req->msg.data_len) {
-		memcpy(msg + len,
-			   req->msg.data,
-			   req->msg.data_len);
+		memcpy(msg + len, req->msg.data, req->msg.data_len);
 		len += req->msg.data_len;
 	}
 
 	/* second checksum */
 	tmp = len - cs;
 	msg[len++] = ipmi_csum(msg+cs, tmp);
-   
+
    	/* bridged request: 2nd checksum */
-	if (bridgedRequest) 
-   {
+	if (bridgedRequest) {
 		tmp = len - cs2;
 		msg[len++] = ipmi_csum(msg+cs2, tmp);
-   	payload->payload_length += 1;
-   }
+		payload->payload_length += 1;
+	}
 }
 
 
