@@ -718,9 +718,17 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rs * rsp = NULL;
 	int try = 0;
 
+	lprintf(LOG_DEBUG, "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
+		intf->opened, intf->open);
+
 	if (intf->opened == 0 && intf->open != NULL) {
-		if (intf->open(intf) < 0)
+		if (intf->open(intf) < 0) {
+			lprintf(LOG_ERR,
+				"ipmi_lan_send_cmd failed to open intf");
 			return NULL;
+		}
+		lprintf(LOG_DEBUG, "\topened=[%d], open=[%d]",
+			intf->opened, intf->open);
 	}
 
 	entry = ipmi_lan_build_cmd(intf, req);
