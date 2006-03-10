@@ -62,7 +62,7 @@ static const struct valstr sunoem_led_type_vals[] = {
 	{ 1, "SERVICE" },
 	{ 2, "ACT" },
 	{ 3, "LOCATE" },
-	{ 0, NULL },
+	{ 0xFF, NULL },
 };
 
 static const struct valstr sunoem_led_mode_vals[] = {
@@ -81,6 +81,8 @@ static const struct valstr sunoem_led_mode_optvals[] = {
 	{ 4, "FAST_BLINK" },
 	{ 0xFF, NULL },
 };
+
+int is_sbcmd = 0;
 
 static void
 ipmi_sunoem_usage(void)
@@ -103,6 +105,14 @@ ipmi_sunoem_usage(void)
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "   led set <sensorid> <ledmode> [ledtype]");
 	lprintf(LOG_NOTICE, "      Set mode of LED found in Generic Device Locator.");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sbled get <sensorid> [ledtype]");
+	lprintf(LOG_NOTICE, "      Read status of LED found in Generic Device Locator");
+	lprintf(LOG_NOTICE, "      for Sun Blade Modular Systems.");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sbled set <sensorid> <ledmode> [ledtype]");
+	lprintf(LOG_NOTICE, "      Set mode of LED found in Generic Device Locator");
+	lprintf(LOG_NOTICE, "      for Sun Blade Modular Systems.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "      Use 'sdr list generic' command to get list of Generic");
 	lprintf(LOG_NOTICE, "      Devices that are controllable LEDs.");
@@ -190,21 +200,33 @@ sunoem_led_get(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t rqdata[5];
+	uint8_t rqdata[7];
+	int rqdata_len = 5;
 
 	if (dev == NULL)
 		return NULL;
 
 	rqdata[0] = dev->dev_slave_addr;
-	rqdata[1] = ledtype;
+	if (ledtype == 0xFF)
+		rqdata[1] = dev->oem;
+	else
+		rqdata[1] = ledtype;
 	rqdata[2] = dev->dev_access_addr;
 	rqdata[3] = dev->oem;
-	rqdata[4] = 0;
+	if (is_sbcmd) {
+		rqdata[4] = dev->entity.id;
+		rqdata[5] = dev->entity.instance;
+		rqdata[6] = 0;
+		rqdata_len = 7;
+	}
+	else {
+		rqdata[4] = 0;
+	}
 
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_GET;
 	req.msg.data = rqdata;
-	req.msg.data_len = 5;
+	req.msg.data_len = rqdata_len;
 		
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
@@ -227,23 +249,36 @@ sunoem_led_set(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t rqdata[7];
+	uint8_t rqdata[9];
+	int rqdata_len = 7;
 
 	if (dev == NULL)
 		return NULL;
 
 	rqdata[0] = dev->dev_slave_addr;
-	rqdata[1] = ledtype;
+	if (ledtype == 0xFF)
+		rqdata[1] = dev->oem;
+	else
+		rqdata[1] = ledtype;
 	rqdata[2] = dev->dev_access_addr;
 	rqdata[3] = dev->oem;
 	rqdata[4] = ledmode;
-	rqdata[5] = 0;
-	rqdata[6] = 0;
+	if (is_sbcmd) {
+		rqdata[5] = dev->entity.id;
+		rqdata[6] = dev->entity.instance;
+		rqdata[7] = 0;
+		rqdata[8] = 0;
+		rqdata_len = 9;
+	}
+	else {
+		rqdata[5] = 0;
+		rqdata[6] = 0;
+	}
 
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_SET;
 	req.msg.data = rqdata;
-	req.msg.data_len = 7;
+	req.msg.data_len = rqdata_len;
 		
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
@@ -333,6 +368,13 @@ sunoem_led_set_byentity(struct ipmi_intf * intf, uint8_t entity_id,
  * [byte 4]  force       1 = directly access the device
  *                       0 = go thru its controller
  *                       Ignored if LED is local
+ * 
+ * The format below is for Sun Blade Modular systems only
+ * [byte 4]  entityID    The entityID field from the SDR record
+ * [byte 5]  entityIns   The entityIns field from the SDR record
+ * [byte 6]  force       1 = directly access the device
+ *                       0 = go thru its controller
+ *                       Ignored if LED is local
  */
 static int
 ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
@@ -341,20 +383,22 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 	struct sdr_record_list *sdr;
 	struct sdr_record_list *alist, *a;
 	struct sdr_record_entity_assoc *assoc;
-	int ledtype = 0;
+	int ledtype = 0xFF;
 	int i;
 
 	/* 
-	 * sunoem led get <id> [type]
+	 * sunoem led/sbled get <id> [type]
 	 */
 
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_NOTICE, "usage: sunoem led get <id> [type]");
+		ipmi_sunoem_usage();
 		return 0;
 	}
 
 	if (argc > 1) {
 		ledtype = str2val(argv[1], sunoem_led_type_vals);
+		if (ledtype == 0xFF) 
+			lprintf(LOG_ERR, "Unknow ledtype, will use data from the SDR oem field");
 	}
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
@@ -471,6 +515,14 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
  *                       Ignored if LED is local
  * [byte 6]  role        Used by BMC for authorization purposes
  *
+ * The format below is for Sun Blade Modular systems only
+ * [byte 5]  entityID    The entityID field from the SDR record
+ * [byte 6]  entityIns   The entityIns field from the SDR record
+ * [byte 7]  force       TRUE - directly access the device
+ *                       FALSE - go thru its controller
+ *                       Ignored if LED is local
+ * [byte 8]  role        Used by BMC for authorization purposes
+ *
  *
  * IPMI Response Data: 1 byte
  * 
@@ -485,11 +537,11 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 	struct sdr_record_list *alist, *a;
 	struct sdr_record_entity_assoc *assoc;
 	int ledmode;
-	int ledtype = 0;
+	int ledtype = 0xFF;
 	int i;
 
 	/* 
-	 * sunoem led set <id> <mode> [type]
+	 * sunoem led/sbled set <id> <mode> [type]
 	 */
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
@@ -508,6 +560,8 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 
 	if (argc > 3) {
 		ledtype = str2val(argv[2], sunoem_led_type_vals);
+		if (ledtype == 0xFF) 
+			lprintf(LOG_ERR, "Unknow ledtype, will use data from the SDR oem field");
 	}
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
@@ -739,10 +793,13 @@ ipmi_sunoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 
-	if (strncmp(argv[0], "led", 3) == 0) {
+	if ((strncmp(argv[0], "led", 3) == 0) || (strncmp(argv[0], "sbled", 5) == 0)) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
 			return -1;
+		}
+		if (strncmp(argv[0], "sbled", 5) == 0) {
+			is_sbcmd = 1;
 		}
 		if (strncmp(argv[1], "get", 3) == 0) {
 			if (argc < 3) {
