@@ -13,6 +13,7 @@ ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
         [\fB\-L\fR <\fIprivlvl\fP>]
         [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
         [\fB\-o\fR <\fIoemtype\fP>]
+        [\fB\-O\fR <\fIsel oem\fP>]
         \fIsel\fP [<\fIoption\fP>]
 
 ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
@@ -22,6 +23,7 @@ ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
         [\fB\-L\fR <\fIprivlvl\fP>]
         [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
         [\fB\-o\fR <\fIoemtype\fP>]
+        [\fB\-O\fR <\fIsel oem\fP>]
         [\fB\-C\fR <\fIciphersuite\fP>]
         \fIsel\fR [<\fIoption\fP>]
 .SH "DESCRIPTION"
@@ -90,6 +92,10 @@ in place in the code to work around quirks in various BMCs from
 various manufacturers.  Use \fI\-o list\fP to see a list of
 current supported OEM types.
 .TP 
+\fB\-O\fR <\fIsel oem\fP>
+Open selected file and read OEM SEL event descriptions to be used
+during SEL listings.  See examples in contrib dir for file format.
+.TP
 \fB\-p\fR <\fIport\fP>
 Remote server UDP port to connect to.  Default is 623.
 .TP 
