@@ -1,0 +1,92 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          ipmievd
+# Required-Start:    $local_fs $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      S 0 1 6
+# Short-Description: IPMI event daemon
+# Description:       ipmievd  is a daemon which will listen for events
+#                    from the BMC that are being sent to the SEL and
+#                    also log those messages to syslog.
+### END INIT INFO
+#
+# Author:	Elmar Hoffmann <elho@elho.net>
+# Licence:      This script is public domain using the same
+#               licence as ipmitool itself.
+# Modified by:  Petter Reinholdtsen
+
+set -e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DESC="IPMI event daemon"
+NAME=ipmievd
+DAEMON=/usr/sbin/$NAME
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+. /etc/default/rcS
+
+# Options used by ipmievd.
+#
+# "open" uses the asynchronous event notification from the OpenIPMI
+# kernel driver, "sel" uses active polling of the contents of the SEL
+# for new events.
+#
+# Need to force 'daemon' mode, to make sure messages are sent to
+# syslog and the program forks into the background.
+#
+# Se ipmievd(8) for more info.
+IPMIEVD_OPTIONS="open daemon"
+
+# Read config file if it is present.
+[ -f /etc/default/$NAME ] && . /etc/default/$NAME
+
+#
+#	Function that starts the daemon/service.
+#
+d_start() {
+	start-stop-daemon --start --quiet --exec $DAEMON -- $IPMIEVD_OPTIONS
+}
+
+#
+#	Function that stops the daemon/service.
+#
+d_stop() {
+	start-stop-daemon --stop --quiet --name $NAME --exec $DAEMON
+}
+
+CODE=0
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_begin_msg "Starting $DESC" "$NAME"
+	d_start || CODE=$?
+	[ "$VERBOSE" != no ] && log_end_msg $CODE
+	exit $CODE
+	;;
+  stop)
+	log_begin_msg "Stopping $DESC" "$NAME"
+	d_stop || CODE=$?
+	log_end_msg $CODE
+	exit $CODE
+	;;
+  restart|force-reload)
+	log_begin_msg "Restarting $DESC" "$NAME"
+	d_stop || true
+	sleep 1
+	d_start || CODE=$?
+	log_end_msg $CODE
+	exit $CODE
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

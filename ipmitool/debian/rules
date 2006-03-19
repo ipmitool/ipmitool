@@ -91,6 +91,7 @@ binary-common:
 	dh_testroot
 	dh_installdocs
 	dh_installchangelogs 
+	dh_installinit --name ipmievd
 	dh_link
 	dh_strip
 	dh_compress 

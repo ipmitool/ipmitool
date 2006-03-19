@@ -1,3 +1,33 @@
+ipmitool (1.8.6-2) unstable; urgency=low
+
+  * Add ia64 as an supported arch. (Closes: #355930)
+
+ -- Petter Reinholdtsen <pere@debian.org>  Fri, 10 Mar 2006 23:34:50 +0100
+
+ipmitool (1.8.6-1) unstable; urgency=low
+
+  * New upstream version.
+    - Avoid crashing when setting lan IP address. (Closes: #351205)
+  * Avoid changing history by reverding upstream change
+    to email addresses in debian/changelog.
+  * Correct typo in control file: Suggest -> Suggests.  Thanks
+    to Philipp Matthias Hahn for the report.
+  * Add init.d/ipmievd script.  Based on script from Elmar Hoffmann,
+    slightly modified to use lsb-base functions. Added dependency on
+    lsb-base.  (Closes: #345994)
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sun, 26 Feb 2006 10:31:14 +0100
+
+ipmitool (1.8.2-2) unstable; urgency=low
+
+  * Add build-dependency on 'libreadline5-dev | libreadline-dev' to make
+    sure all archs get readline support. (Closes: #326341)
+  * Add build-dependency on libssl-dev to enable SSL support on
+    all archs.
+  * Updated Standards-Version to 3.6.2.1. (No updates required)
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sat,  3 Sep 2005 19:18:51 +0200
+
 ipmitool (1.8.2-1) unstable; urgency=low
 
   * New upstream release.

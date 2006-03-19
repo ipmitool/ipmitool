@@ -3,13 +3,13 @@ Section: utils
 Priority: optional
 Maintainer: Petter Reinholdtsen <pere@debian.org>
 Uploaders: Duncan Laurie <duncan@iceblink.org>
-Build-Depends: debhelper (>> 4.0.0),
-Standards-Version: 3.6.1
+Build-Depends: debhelper (>> 4.0.0), libreadline5-dev | libreadline-dev, libssl-dev
+Standards-Version: 3.6.2.1
 
 Package: ipmitool
-Architecture: i386 amd64
-Depends: ${shlibs:Depends}
-Suggest: openipmi
+Architecture: i386 amd64 ia64
+Depends: ${shlibs:Depends}, lsb-base
+Suggests: openipmi
 Description: utility for IPMI control with kernel driver or LAN interface
  A utility for managing and configuring devices that support the
  Intelligent Platform Management Interface.  IPMI is an open standard
