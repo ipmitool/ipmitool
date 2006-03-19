@@ -62,6 +62,22 @@ rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 %doc %{_datadir}/doc/ipmitool/*
 
 %changelog
+* Sun Mar 19 2006 <duncan@iceblink.org>  1.8.7-1
+ - Add Sun OEM command for blades
+ - Increase argument size for raw commands in shell/exec
+ - Fix handling of LUNs for LAN interfaces
+ - Add IPMIv2 SOL loopback test
+ - Add support for IBM OEM SEL messages
+ - Disable file paranoia checks on read files by default
+ - Support IPMIv2 SOL on older Intel boxes
+ - Display message and exit if keepalive fails during SOL
+ - Add support for setting VLAN id and priority
+ - Add support for FreeBSD OpenIPMI-compatible driver
+ - Add support for IPMIv2 Firmware Firewall
+ - Fix gcc4 compile warnings
+ - Make ipmievd generate pidfile
+ - Add initscripts for ipmievd
+
 * Mon Jan 17 2006 <duncan@iceblink.org>  1.8.6-1
  - Fix memory corruption when sending encrypted SOL traffic
  - Add keepalive timer to IPMIv2 SOL sessions
