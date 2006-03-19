@@ -56,6 +56,7 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_mc.h>
+#include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_session.h>

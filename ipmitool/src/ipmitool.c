@@ -49,6 +49,7 @@
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_session.h>
+#include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/ipmi_raw.h>
@@ -93,6 +94,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },
+	{ ipmi_firewall_main,"firewall","Configure firmware firewall (IPMIv2.0)"},
 	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
 	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},
 	{ ipmi_fwum_main,    "fwum",	"Update IPMC using Kontron OEM Firmware Update Manager" },
