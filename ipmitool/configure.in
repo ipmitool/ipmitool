@@ -3,7 +3,7 @@ dnl autoconf for ipmitool
 dnl
 AC_INIT([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([ipmitool], [1.8.6])
+AM_INIT_AUTOMAKE([ipmitool], [1.8.7])
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_PREREQ(2.50)
@@ -290,6 +290,14 @@ AC_ARG_ENABLE([buildcheck],
 	fi], [])
 
 AC_SUBST(CFLAGS)
+
+dnl Enable extra file security paranoia
+AC_ARG_ENABLE([file-security],
+	[AC_HELP_STRING([--enable-file-security],
+			[enable extra security checks on files opened for read [default=no]])],
+	[if test "x$enable_file_security" != "xno"; then
+	    AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
+	fi], [])
 
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile

@@ -275,6 +275,18 @@ ipmi_open_file(const char * file, int rw)
 		}
 	}
 
+#ifndef ENABLE_FILE_SECURITY
+	if (!rw) {
+		/* on read skip the extra checks */
+		fp = fopen(file, "r");
+		if (fp == NULL) {
+			lperror(LOG_ERR, "Unable to open file %s", file);
+			return NULL;
+		}
+		return fp;
+	}
+#endif
+
 	/* it exists - only regular files, not links */
 	if (S_ISREG(st1.st_mode) == 0) {
 		lprintf(LOG_ERR, "File %s has invalid mode: %d",
