@@ -40,23 +40,21 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#ifdef __FreeBSD__
-# include <signal.h>
-# include <paths.h>
-#endif
+#include <signal.h>
+#include <paths.h>
 
 #include <config.h>
 
 #ifdef IPMI_INTF_OPEN
-# ifdef HAVE_OPENIPMI_H
+# if defined(HAVE_OPENIPMI_H)
 #  include <linux/compiler.h>
 #  include <linux/ipmi.h>
-#  include <sys/poll.h>
-# else /* HAVE_OPENIPMI_H */
+# elif defined(HAVE_FREEBSD_IPMI_H)
+#  include <sys/ipmi.h>
+# else
 #  include "plugins/open/open.h"
+# endif
 #  include <sys/poll.h>
-# endif	/* HAVE_OPENIPMI_H */
 #endif /* IPMI_INTF_OPEN */
 
 #include <ipmitool/helper.h>
@@ -67,6 +65,9 @@
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_main.h>
+
+#define DEFAULT_PIDFILE		"/var/run/ipmievd.pid"
+char pidfile[64];
 
 /* global variables */
 int verbose = 0;
@@ -580,11 +581,28 @@ selwatch_wait(struct ipmi_event_intf * eintf)
 }
 /*************************************************************************/
 
+static void
+ipmievd_cleanup(int signal)
+{
+	struct stat st1;
+
+	if (lstat(pidfile, &st1) == 0) {
+		/* cleanup daemon pidfile */
+		(void)unlink(pidfile);
+	}
+
+	exit(EXIT_SUCCESS);
+}
+
 int
 ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 {
 	int i, rc;
 	int daemon = 1;
+	struct sigaction act;
+
+	memset(pidfile, 0, 64);
+	strncpy(pidfile, DEFAULT_PIDFILE, strlen(DEFAULT_PIDFILE));
 
 	for (i = 0; i < argc; i++) {
 		if (strncasecmp(argv[i], "help", 4) == 0) {
@@ -608,10 +626,40 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 		else if (strncasecmp(argv[i], "timeout=", 8) == 0) {
 			selwatch_timeout = strtoul(argv[i]+8, NULL, 0);
 		}
+		else if (strncasecmp(argv[i], "pidfile=", 8) == 0) {
+			memset(pidfile, 0, 64);
+			strncpy(pidfile, argv[i]+8,
+				__min(strlen((const char *)(argv[i]+8)), 63));
+		}
 	}
 
-	if (daemon)
+	if (daemon) {
+		FILE *fp;
+		struct stat st1;
+
 		ipmi_start_daemon();
+
+		if (lstat(pidfile, &st1) == 0) {
+			/* already exists, erase first */
+			if (unlink(pidfile) != 0) {
+				lprintf(LOG_WARN, "Unable to erase pidfile");
+			}
+		}
+
+		fp = ipmi_open_file_write(pidfile);
+		if (fp != NULL) {
+			fprintf(fp, "%d\n", (int)getpid());
+			fclose(fp);
+		}
+	}
+
+	/* register signal handler for cleanup */
+	act.sa_handler = ipmievd_cleanup;
+	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
+	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGQUIT, &act, NULL);
+	sigaction(SIGTERM, &act, NULL);
 
 	log_halt();
 	log_init("ipmievd", daemon, verbose);
@@ -622,6 +670,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	lprintf(LOG_DEBUG, "Sensors cached");
 
 	/* call event handler setup routine */
+
 	if (eintf->setup != NULL) {
 		rc = eintf->setup(eintf);
 		if (rc < 0) {

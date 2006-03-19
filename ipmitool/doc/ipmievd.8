@@ -158,6 +158,10 @@ All messages will be sent to syslog.  This is the default action.
 .TP 
 \fInodaemon\fP
 Do NOT become a daemon, instead log all messages to stderr.
+.TP
+\fIpidfile\fP=<\fBfilename\fR>
+Save process ID to this file when in daemon mode.  Defaults to
+/var/run/ipmievd.pid.
 .RE
 
 .TP 
@@ -176,6 +180,10 @@ All messages will be sent to syslog.  This is the default action.
 .TP 
 \fInodaemon\fP
 Do NOT become a daemon, instead log all messages to stderr.
+.TP
+\fIpidfile\fP=<\fBfilename\fR>
+Save process ID to this file when in daemon mode.  Defaults to
+/var/run/ipmievd.pid.
 .TP 
 \fItimeout\fP=<\fBseconds\fR>
 Time between checks for SEL polling method.  Default is 10 seconds.

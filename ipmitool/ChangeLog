@@ -12,6 +12,7 @@ version 1.8.7
 	* Add support for FreeBSD OpenIPMI-compatible driver
 	* Add support for IPMIv2 Firmware Firewall
 	* Fix gcc4 compile warnings
+	* Make ipmievd generate pidfile
 
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic
