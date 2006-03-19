@@ -84,6 +84,7 @@ static int            _in_raw_mode = 0;
 
 extern int verbose;
 
+static uint8_t G_u8ActiveSOL = 0;
 
 /*
  * ipmi_get_sol_info
@@ -1418,7 +1419,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
  * impi_sol_activate
  */
 static int
-ipmi_sol_activate(struct ipmi_intf * intf)
+ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
@@ -1465,7 +1466,8 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	data[3] = 0x00; /* reserved */
 	data[4] = 0x00; /* reserved */
 	data[5] = 0x00; /* reserved */
-	
+
+	 G_u8ActiveSOL = 1; 
 	rsp = intf->sendrecv(intf, &req);
 
 	if (NULL != rsp) {
@@ -1555,6 +1557,12 @@ ipmi_sol_activate(struct ipmi_intf * intf)
 	printf("[SOL Session operational.  Use %c? for help]\r\n",
 	       intf->session->sol_escape_char);
 
+	if(looptest == 1)
+	{
+		ipmi_sol_deactivate(intf);
+		usleep(interval*1000);
+		return 0;
+	}	
 
 	/*
 	 * At this point we are good to go with our SOL session.  We
@@ -1583,6 +1591,7 @@ print_sol_usage(void)
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
 	lprintf(LOG_NOTICE, "              activate");
 	lprintf(LOG_NOTICE, "              deactivate");
+	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
 }
 
 
@@ -1674,7 +1683,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * Activate
 	 */
  	else if (!strncmp(argv[0], "activate", 8))
-		retval = ipmi_sol_activate(intf);
+		retval = ipmi_sol_activate(intf, 0, 0);
 
 	/*
 	 * Dectivate
@@ -1682,6 +1691,43 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "deactivate", 10))
 		retval = ipmi_sol_deactivate(intf);
 	
+
+	/*
+	 * SOL loop test: Activate and then Dectivate
+	 */
+	else if (!strncmp(argv[0], "looptest", 8))
+	{
+		int cnt = 200;
+		int interval = 100; /* Unit is: ms */
+
+		if(argc > 3)
+		{
+			print_sol_usage();	
+			return -1;
+		}
+		if (argc != 1) /* at least 2 */
+		{
+			cnt = strtol(argv[1], NULL, 10);
+			if(cnt <= 0) cnt = 200;
+		}
+		if (argc == 3)
+		{
+			interval = strtol(argv[2], NULL, 10);
+			if(interval < 0) interval = 0;
+		}
+		
+		while(cnt > 0)
+		{
+			printf("remain loop test counter: %d\n", cnt);
+			retval = ipmi_sol_activate(intf, 1, interval);
+			if(retval)
+			{
+				printf("SOL looptest failed: %d\n", retval);
+				break;
+			}
+			cnt -= 1;
+		}
+	}
 
 	else
 	{
