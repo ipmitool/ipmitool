@@ -215,8 +215,6 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_rq req;
 	uint8_t netfn, cmd, lun;
 	int i;
-	unsigned long ufn;
-
 	uint8_t data[256];
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {

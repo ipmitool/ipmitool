@@ -104,7 +104,7 @@ static inline int bit_test(const unsigned char * bf, int n) {
 	return !!(bf[n>>3]&(1<<(n%8)));
 }
 static inline void bit_set(unsigned char * bf, int n, int v) {
-	bf[n>>3] = bf[n>>3] & ~(1<<(n%8)) | (v?1:0)<<(n%8);
+	bf[n>>3] = (bf[n>>3] & ~(1<<(n%8))) | ((v?1:0)<<(n%8));
 }
 
 #endif				/*IPMI_FIREWALL_H */

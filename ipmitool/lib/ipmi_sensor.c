@@ -732,7 +732,7 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct sdr_record_list *sdr;
 	struct ipmi_rs *rsp;
-	int i, v, rc=0;
+	int i, rc=0;
 	double val = 0.0;
 
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {

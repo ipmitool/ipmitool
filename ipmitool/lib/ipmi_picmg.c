@@ -9,7 +9,7 @@
 #include <ipmitool/ipmi_fru.h>		/* for access to link descriptor defines */
 
 
-int 
+void
 ipmi_picmg_help (void)
 {
 	printf(" properties     - get PICMG properties\n");
@@ -120,6 +120,8 @@ ipmi_picmg_properties(struct ipmi_intf * intf)
 	printf("PICMG Ext. Version : %i.%i\n",  rsp->data[1]&0x0f, (rsp->data[1]&0xf0) >> 4);
 	printf("Max FRU Device ID  : 0x%02x\n", rsp->data[2]);
 	printf("FRU Device ID      : 0x%02x\n", rsp->data[3]);
+
+	return 0;
 }
 
 
@@ -190,7 +192,7 @@ ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, int argc, char ** 
 	}
 
 	printf("Activation Policy for FRU %x: ", atoi(argv[0]) );
-	printf(" %s\n",(*(rsp->data+3)&0x01 == 0x01)?"is locked":"is not locked");
+	printf(" %s\n",(((*(rsp->data+3))&0x01) == 0x01)?"is locked":"is not locked");
 
 	return 0;
 }
@@ -410,7 +412,7 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 	
-	printf("LED Color Capabilities: ", rsp->data[1] );	
+	printf("LED Color Capabilities: ");	
 	for ( i=0 ; i<8 ; i++ ) {
 		if ( rsp->data[1] & (0x01 << i) ) {
 			printf("%s, ", led_color_str[ i ]);
@@ -428,7 +430,6 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_get_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int i;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	
@@ -482,7 +483,6 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_set_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int i;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	
@@ -566,7 +566,7 @@ ipmi_picmg_get_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 {
-   int rc;
+	int rc = 0;
 
 	if (argc == 0 || (!strncmp(argv[0], "help", 4))) {
 		ipmi_picmg_help();

@@ -148,7 +148,7 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 
 	if (title != NULL) {
 		if (loglevel < 0)
-			printf("\n%s:\n\n");
+			printf("\n%s:\n\n", title);
 		else
 			lprintf(loglevel, "\n%s:\n", title);
 	}
@@ -197,7 +197,7 @@ print_valstr_2col(const struct valstr * vs, const char * title, int loglevel)
 
 	if (title != NULL) {
 		if (loglevel < 0)
-			printf("\n%s:\n\n");
+			printf("\n%s:\n\n", title);
 		else
 			lprintf(loglevel, "\n%s:\n", title);
 	}

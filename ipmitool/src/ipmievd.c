@@ -367,7 +367,7 @@ openipmi_read(struct ipmi_event_intf * eintf)
 	uint8_t data[80];
 	int rv;
 
-	recv.addr = (char *) &addr;
+	recv.addr = (unsigned char *) &addr;
 	recv.addr_len = sizeof(addr);
 	recv.msg.data = data;
 	recv.msg.data_len = sizeof(data);

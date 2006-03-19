@@ -211,7 +211,7 @@ ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 #endif /* HAVE_READLINE */
 
-int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
+void ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int i;
 

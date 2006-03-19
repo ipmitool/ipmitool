@@ -50,6 +50,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
@@ -111,8 +112,6 @@ typedef struct sKFWUM_InFirmwareInfo {
 extern int verbose;
 static char fileName[512];
 static unsigned char firmBuf[1024 * 512];
-static unsigned char firmMaj;
-static unsigned char firmMinSub;
 
 static void KfwumOutputHelp(void);
 static void KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
@@ -264,8 +263,8 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	tKFWUM_BoardInfo boardInfo;
-	tKFWUM_InFirmwareInfo firmInfo;
-	unsigned long fileSize;
+	tKFWUM_InFirmwareInfo firmInfo = { 0 };
+	unsigned long fileSize = 0;
 	static unsigned short padding;
 
 	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_INFO)) {
@@ -444,7 +443,7 @@ KfwumShowProgress(const char *task, unsigned long current,
 		spaces[(PROG_LENGTH - hash)] = '\0';
 		printf("%s", spaces);
 
-		printf(" %3d %%\r", progress);	/* total 7 bytes */
+		printf(" %3ld %%\r", progress);	/* total 7 bytes */
 
 		if (progress == 100) {
 			printf("\n");
@@ -557,8 +556,6 @@ KfwumGetDeviceInfo(struct ipmi_intf *intf,
 	}
 
 	if (status == KFWUM_STATUS_OK) {
-		unsigned long manufId;
-		unsigned short boardId;
 		pGetDevId = (struct ipm_devid_rsp *) rsp->data;
 		pBoardInfo->iana =
 		    IPM_DEV_MANUFACTURER_ID(pGetDevId->manufacturer_id);
@@ -654,7 +651,7 @@ KfwumGetStatus(struct ipmi_intf *intf)
 				firmLength |= pGetStatus->firmLengthLSB;
 
 				printf
-				    ("Firmware Length            : %d bytes\n",
+				    ("Firmware Length            : %ld bytes\n",
 				     firmLength);
 				printf
 				    ("Firmware Revision          : %u.%u%u SDR %u\n",
@@ -741,7 +738,6 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf,
 	struct KfwumSaveFirmwareDownloadReq thisReq;
 	unsigned char out = 0;
 	unsigned char retry = 0;
-	unsigned char counter;
 
 	do {
 		thisReq.addressLSB = address & 0x000000ff;
@@ -849,9 +845,6 @@ KfwumUploadFirmware(struct ipmi_intf *intf,
 	unsigned char retry = 0;
 
 	do {
-		unsigned char bytes;
-		unsigned char chksum = 0;
-
 		writeSize = KFWUM_BUFFER - KFWUM_CMD_OVERHEAD;	/* Max */
 
 		/* Reach the end */
@@ -1128,8 +1121,10 @@ KfwumOutputInfo(tKFWUM_BoardInfo boardInfo, tKFWUM_InFirmwareInfo firmInfo)
 
 	printf("Target Board Id            : %u\n", boardInfo.boardId);
 	printf("Target IANA number         : %u\n", boardInfo.iana);
-	printf("File Size                  : %u bytes\n", firmInfo.fileSize);
+	printf("File Size                  : %lu bytes\n", firmInfo.fileSize);
 	printf("Firmware Version           : %d.%d%d SDR %d\n",
 	       firmInfo.versMajor, firmInfo.versMinor, firmInfo.versSubMinor,
 	       firmInfo.sdrRev);
+
+	return KFWUM_STATUS_OK;
 }

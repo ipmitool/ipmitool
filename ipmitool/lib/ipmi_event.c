@@ -53,7 +53,7 @@
 #include <ipmitool/ipmi_sdr.h>
 
 
-static int
+static void
 ipmi_event_msg_print(struct ipmi_intf * intf, struct platform_event_msg * pmsg)
 {
 	struct sel_event_record sel_event;

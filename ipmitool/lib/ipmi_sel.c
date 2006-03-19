@@ -34,6 +34,7 @@
 #include <math.h>
 #define __USE_XOPEN /* glibc2 needs this for strptime */
 #include <time.h>
+#include <ctype.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -46,11 +47,9 @@
 #include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
-
 static int sel_extended = 0;
-
-static FILE * fp;
 static int sel_oem_nrecs = 0;
+
 struct ipmi_sel_oem_msg_rec {
 	int	value[14];
 	char	*string[14];
@@ -112,14 +111,16 @@ int ipmi_sel_oem_init(const char * filename)
 	fp = ipmi_open_file_read(filename);
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Could not open %s file", filename);
-		return;
+		return -1;
 	}
 
 	/* count number of records (lines) in input file */
 	sel_oem_nrecs = 0;
-	while (fscanf(fp, "%*[^\n]\n", buf[0]) == 0) {
+	while (fscanf(fp, "%*[^\n]\n") == 0) {
 		sel_oem_nrecs++;
 	}
+
+	printf("nrecs=%d\n", sel_oem_nrecs);
 
 	rewind(fp);
 	sel_oem_msg = (struct ipmi_sel_oem_msg_rec *)calloc(sel_oem_nrecs,
@@ -149,7 +150,7 @@ int ipmi_sel_oem_init(const char * filename)
 				}
 			}
 			free (sel_oem_msg);
-			return;
+			return -1;
 		}
 
 		for (byte = 3; byte < 17; byte++) {
@@ -164,8 +165,10 @@ int ipmi_sel_oem_init(const char * filename)
 		sel_oem_msg[i].text = (char *)malloc(strlen(buf[SEL_BYTE(17)]) + 1);
 		strcpy(sel_oem_msg[i].text, buf[SEL_BYTE(17)]);
 	}
+
 	fclose(fp);
 	fp = NULL;
+	return 0;
 }
 
 static void ipmi_sel_oem_message(struct sel_event_record * evt, int verbose)
@@ -267,8 +270,6 @@ ipmi_get_oem(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipm_devid_rsp *devid;
-	uint32_t manufacturer_id;
-	int i;
 
 	if (intf->fd == 0)
 		return IPMI_OEM_UNKNOWN;
@@ -474,6 +475,8 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	{
 	case IPMI_OEM_NEWISYS:
 		desc = get_newisys_evt_desc(intf, rec);
+		break;
+	default:
 		break;
 	}
 
@@ -1086,12 +1089,13 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 {
 	struct sdr_record_list * sdr;
 	char * description;
-	int data_count;
 
 	if (!evt)
 		return;
 	
-	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
+	sdr = ipmi_sdr_find_sdr_bynumtype(intf,
+					  evt->sel_type.standard_type.sensor_num,
+					  evt->sel_type.standard_type.sensor_type);
 	if (sdr == NULL) {
 		ipmi_sel_print_std_entry_verbose(intf, evt);
 		return;
@@ -1635,7 +1639,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 	msg_data[0] = id & 0xff;
 	msg_data[1] = id >> 8;
 
-	for (argc; argc != 0; argc--)
+	for (; argc != 0; argc--)
 	{
 		id = atoi(argv[argc-1]);
 		msg_data[2] = id & 0xff;

@@ -47,9 +47,11 @@
 
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
         
 #ifdef __linux__
-# include <linux/termios.h>
+# include <termios.h>
+//# include <linux/termios.h>
 #else
 # include <sys/termios.h>
 #endif
@@ -381,7 +383,6 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct pollfd fds_wait[3], fds_data_wait[3], *fds;
 	struct sockaddr_in sin, myaddr;
 	socklen_t mylen;
-	char recvip_c[] = "0.0.0.0";
 	char *recvip = NULL;
 	char out_buff[IPMI_BUF_SIZE * 8], in_buff[IPMI_BUF_SIZE];
 	char buff[IPMI_BUF_SIZE + 4];

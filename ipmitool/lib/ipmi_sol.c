@@ -1243,7 +1243,7 @@ processSolUserInput(
 	 */
 	if (length)
 	{
-		struct ipmi_rs * rsp;
+		struct ipmi_rs * rsp = NULL;
 		int try = 0;
 
 		while (try < intf->session->retry) {

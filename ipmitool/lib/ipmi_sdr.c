@@ -922,7 +922,6 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	int i = 0, validread = 1, do_unit = 1;
 	double val = 0.0, creading = 0.0;
 	struct ipmi_rs *rsp;
-	uint8_t min_reading, max_reading;
 
 	if (sensor == NULL)
 		return -1;

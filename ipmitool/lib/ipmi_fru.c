@@ -834,7 +834,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
 
 	case FRU_PICMG_BACKPLANE_P2P:
 	{
-		unsigned char index, index2;
+		unsigned char index;
 		struct fru_picmgext_slot_desc * slot_d
 			= (struct fru_picmgext_slot_desc*) &fru_data[offset];
 
@@ -1026,7 +1026,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
 		{
 			unsigned int index;  
                         
-			for(offset; offset < off + length; )
+			for(; offset < off + length; )
 			{
 				struct fru_picmgext_carrier_p2p_record * h = 
 					(struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
@@ -1427,13 +1427,9 @@ static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, unsi
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char * fru_data;
 	struct fru_info fru;
 	unsigned char msg_data[4];
-   
 	unsigned char * pFruBuf;
-	unsigned int counter;
-	unsigned int len;
 
 	msg_data[0] = fruId;
 
@@ -1496,7 +1492,6 @@ static void ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	unsigned char *fru_data;
 	struct fru_info fru;
 	unsigned char msg_data[4];
 
@@ -1560,34 +1555,34 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName,
 	unsigned int retStatus = 0;
 	unsigned long offFruMultiRec;
 	unsigned long fruMultiRecSize = 0;
-	unsigned long offFileMultiRec;
+	unsigned long offFileMultiRec = 0;
 	unsigned long fileMultiRecSize = 0;
 	struct fru_info fruInfo;
 	unsigned char *buf = NULL;
 	retStatus =
-	    ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-						    &offFruMultiRec,
-						    &fruMultiRecSize);
+		ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
+							&offFruMultiRec,
+							&fruMultiRecSize);
 
 	if (verbose) {
-		printf("FRU Size        : %u\n\r", fruMultiRecSize);
-		printf("Multi Rec offset: %u\n\r", offFruMultiRec);
+		printf("FRU Size        : %lu\n\r", fruMultiRecSize);
+		printf("Multi Rec offset: %lu\n\r", offFruMultiRec);
 	}
 
 	if (retStatus == 0) {
 		retStatus =
-		    ipmi_fru_get_multirec_size_from_file(pFileName,
-							 &fileMultiRecSize,
-							 &offFileMultiRec);
+			ipmi_fru_get_multirec_size_from_file(pFileName,
+							     &fileMultiRecSize,
+							     &offFileMultiRec);
 	}
 
 	if (retStatus == 0) {
 		buf = malloc(fileMultiRecSize);
 		if (buf) {
 			retStatus =
-			    ipmi_fru_get_multirec_from_file(pFileName, buf,
-							    fileMultiRecSize,
-							    offFileMultiRec);
+				ipmi_fru_get_multirec_from_file(pFileName, buf,
+								fileMultiRecSize,
+								offFileMultiRec);
 
 		} else {
 			printf("Error allocating memory for multirec buffer\n");
@@ -1595,10 +1590,10 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName,
 		}
 	}
 
-   if(retStatus == 0)
-   {
-      ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
-   }
+	if(retStatus == 0)
+	{
+		ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
+	}
 
 	if ((retStatus == 0) && (buf)) {
 		write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
@@ -1608,14 +1603,16 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName,
 	if (buf) {
 		free(buf);
 	}
-   if(retStatus == 0 )
-   {
-      lprintf(LOG_INFO, "Done");
-   }
-   else
-   {
-      lprintf(LOG_ERR, "Failed");
-   }
+	if(retStatus == 0 )
+	{
+		lprintf(LOG_INFO, "Done");
+	}
+	else
+	{
+		lprintf(LOG_ERR, "Failed");
+	}
+
+	return 0;
 }
 
 static int ipmi_fru_get_multirec_size_from_file(char * pFileName,
@@ -1625,7 +1622,7 @@ static int ipmi_fru_get_multirec_size_from_file(char * pFileName,
 	struct fru_header header;
 	FILE * pFile;
 	unsigned char len = 0;
-	unsigned long end;
+	unsigned long end = 0;
    
 	*pSize = 0;
 
@@ -1642,7 +1639,7 @@ static int ipmi_fru_get_multirec_size_from_file(char * pFileName,
 	if(verbose)
 	{
 		printf("File Size = %lu\n", end);
-		printf("Len = %lu\n", len);
+		printf("Len = %d\n", len);
 	}
    
 
@@ -1698,7 +1695,6 @@ static void ipmi_fru_get_adjust_size_from_buffer(unsigned char * fru_data,
                                                           unsigned long *pSize)
 {
 	struct fru_multirec_header * head;
-	unsigned int last_off;
 #define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
 	unsigned int count = 0;
 	unsigned int status = 0;
@@ -1766,7 +1762,7 @@ static void ipmi_fru_get_adjust_size_from_buffer(unsigned char * fru_data,
 
 	if (verbose > 1)   
 	{
-		printf("Size of multirec: %u\n\r", *pSize);
+		printf("Size of multirec: %lu\n\r", *pSize);
 	}
 }
 
@@ -1776,10 +1772,8 @@ static int ipmi_fru_get_multirec_from_file(char * pFileName,
                                            unsigned long size,
                                            unsigned long offset)
 {
-	struct fru_header header;
 	FILE * pFile;
 	unsigned long len = 0;
-   
 
 	pFile = fopen(pFileName,"rb");
 	if(pFile!=NULL)
@@ -1812,12 +1806,8 @@ static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char * fru_data;
 	unsigned char msg_data[4];
-	int i, len;
 	unsigned long end;
-
-
 	struct fru_header header;
 
 	*pRetLocation = 0;

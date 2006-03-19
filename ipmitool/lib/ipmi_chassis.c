@@ -497,6 +497,8 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	printf("Boot parameter %d is %s\n", rsp->data[1] & 0x7f,
 	       (rsp->data[1] & 0x80) ? "invalid/locked" : "valid/unlocked");
 	printf("Boot parameter data: %s\n", buf2str(rsp->data+2, rsp->data_len - 2));
+
+	return 0;
 }
 
 static int

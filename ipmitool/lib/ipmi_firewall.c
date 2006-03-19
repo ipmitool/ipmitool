@@ -555,7 +555,6 @@ _get_subfn_support(struct ipmi_intf * intf,
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char rqdata[4];
-	unsigned int c;
 
 	if (!p || !cmd) {
 		lprintf(LOG_ERR, "_get_subfn_support: p or cmd is NULL");
@@ -603,7 +602,6 @@ _get_subfn_configurable(struct ipmi_intf * intf,
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char rqdata[4];
-	unsigned int c;
 
 	if (!p || !cmd) {
 		lprintf(LOG_ERR, "_get_subfn_configurable: p or cmd is NULL");
@@ -651,7 +649,6 @@ _get_subfn_enables(struct ipmi_intf * intf,
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char rqdata[4];
-	unsigned int c;
 
 	if (!p || !cmd) {
 		lprintf(LOG_ERR, "_get_subfn_enables: p or cmd is NULL");
@@ -700,7 +697,7 @@ _set_subfn_enables(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char * d, rqdata[8];
+	unsigned char rqdata[8];
 	unsigned int c;
 
 	if (!p || !cmd) {
@@ -762,76 +759,78 @@ _set_subfn_enables(struct ipmi_intf * intf,
  */
 static int _gather_info(struct ipmi_intf * intf, struct ipmi_function_params * p, struct bmc_fn_support * bmc)
 {
-    int ret, i, l, n;
-    unsigned char lun[MAX_LUN], netfn[16];
+	int ret, l, n;
+	unsigned char lun[MAX_LUN], netfn[16];
 
-    ret = _get_netfn_support(intf, p->channel, lun, netfn);
-    if (!ret) {
-        for (l=0; l<MAX_LUN; l++) {
-            if (p->lun >= 0 && p->lun != l)
-                continue;
-            bmc->lun[l].support = lun[l];
-            if (lun[l]) {
-                for (n=0; n<MAX_NETFN_PAIR; n++) {
-                    int offset = l*MAX_NETFN_PAIR+n;
-                    bmc->lun[l].netfn[n].support = 
-                        !!(netfn[offset>>3] & (1<<(offset%8)));
-                }
-            }
-        }
-    }
-    if (p->netfn >= 0) {
-        if (!((p->lun < 0 || bmc->lun[p->lun].support) &&
-            (p->netfn < 0 || bmc->lun[p->lun].netfn[p->netfn>>1].support))) {
-            lprintf(LOG_ERR, "LUN or LUN/NetFn pair %d,%d not supported", p->lun, p->netfn);
-            return 0;
-        }
-        ret = _get_command_support(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
-        ret |= _get_command_configurable(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
-        ret |= _get_command_enables(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
-        if (!ret && p->command >= 0) {
-            ret = _get_subfn_support(intf, p,
-                      &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
-            ret |= _get_subfn_configurable(intf, p,
-                      &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
-            ret |= _get_subfn_enables(intf, p,
-                      &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
-        }
-    }
-    else if (p->lun >= 0) {
-        l = p->lun;
-        if (bmc->lun[l].support) {
-                for (n=0; n<MAX_NETFN_PAIR; n++) {
-                    p->netfn = n*2;
-                    if (bmc->lun[l].netfn[n].support) {
-                        ret = _get_command_support(intf, p, &(bmc->lun[l].netfn[n]));
-                        ret |= _get_command_configurable(intf, p, &(bmc->lun[l].netfn[n]));
-                        ret |= _get_command_enables(intf, p, &(bmc->lun[l].netfn[n]));
-                    }
-                    if (ret)
-                        bmc->lun[l].netfn[n].support = 0;
-                }
-        }
-        p->netfn = -1;
-    } else {
-        for (l=0; l<4; l++) {
-            p->lun = l;
-            if (bmc->lun[l].support) {
-                for (n=0; n<MAX_NETFN_PAIR; n++) {
-                    p->netfn = n*2;
-                    if (bmc->lun[l].netfn[n].support) {
-                        ret = _get_command_support(intf, p, &(bmc->lun[l].netfn[n]));
-                        ret |= _get_command_configurable(intf, p, &(bmc->lun[l].netfn[n]));
-                        ret |= _get_command_enables(intf, p, &(bmc->lun[l].netfn[n]));
-                    }
-                    if (ret)
-                        bmc->lun[l].netfn[n].support = 0;
-                }
-            }
-        }
-        p->lun = -1;
-        p->netfn = -1;
-    }
+	ret = _get_netfn_support(intf, p->channel, lun, netfn);
+	if (!ret) {
+		for (l=0; l<MAX_LUN; l++) {
+			if (p->lun >= 0 && p->lun != l)
+				continue;
+			bmc->lun[l].support = lun[l];
+			if (lun[l]) {
+				for (n=0; n<MAX_NETFN_PAIR; n++) {
+					int offset = l*MAX_NETFN_PAIR+n;
+					bmc->lun[l].netfn[n].support = 
+						!!(netfn[offset>>3] & (1<<(offset%8)));
+				}
+			}
+		}
+	}
+	if (p->netfn >= 0) {
+		if (!((p->lun < 0 || bmc->lun[p->lun].support) &&
+		      (p->netfn < 0 || bmc->lun[p->lun].netfn[p->netfn>>1].support))) {
+			lprintf(LOG_ERR, "LUN or LUN/NetFn pair %d,%d not supported", p->lun, p->netfn);
+			return 0;
+		}
+		ret = _get_command_support(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
+		ret |= _get_command_configurable(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
+		ret |= _get_command_enables(intf, p, &(bmc->lun[p->lun].netfn[p->netfn>>1]));
+		if (!ret && p->command >= 0) {
+			ret = _get_subfn_support(intf, p,
+						 &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
+			ret |= _get_subfn_configurable(intf, p,
+						       &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
+			ret |= _get_subfn_enables(intf, p,
+						  &(bmc->lun[p->lun].netfn[p->netfn>>1].command[p->command]));
+		}
+	}
+	else if (p->lun >= 0) {
+		l = p->lun;
+		if (bmc->lun[l].support) {
+			for (n=0; n<MAX_NETFN_PAIR; n++) {
+				p->netfn = n*2;
+				if (bmc->lun[l].netfn[n].support) {
+					ret = _get_command_support(intf, p, &(bmc->lun[l].netfn[n]));
+					ret |= _get_command_configurable(intf, p, &(bmc->lun[l].netfn[n]));
+					ret |= _get_command_enables(intf, p, &(bmc->lun[l].netfn[n]));
+				}
+				if (ret)
+					bmc->lun[l].netfn[n].support = 0;
+			}
+		}
+		p->netfn = -1;
+	} else {
+		for (l=0; l<4; l++) {
+			p->lun = l;
+			if (bmc->lun[l].support) {
+				for (n=0; n<MAX_NETFN_PAIR; n++) {
+					p->netfn = n*2;
+					if (bmc->lun[l].netfn[n].support) {
+						ret = _get_command_support(intf, p, &(bmc->lun[l].netfn[n]));
+						ret |= _get_command_configurable(intf, p, &(bmc->lun[l].netfn[n]));
+						ret |= _get_command_enables(intf, p, &(bmc->lun[l].netfn[n]));
+					}
+					if (ret)
+						bmc->lun[l].netfn[n].support = 0;
+				}
+			}
+		}
+		p->lun = -1;
+		p->netfn = -1;
+	}
+
+	return 0;
 }
 
 /* ipmi_firewall_info - print out info for firewall functions
@@ -846,7 +845,7 @@ static int _gather_info(struct ipmi_intf * intf, struct ipmi_function_params * p
 static int
 ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int ret, i;
+	int ret = 0;
 	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
 	struct bmc_fn_support * bmc_fn_support;
 	unsigned int l, n, c;
@@ -968,8 +967,6 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char ** argv)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
 	struct bmc_fn_support * bmc_fn_support;
 	unsigned int l, n, c, ret;
@@ -1058,8 +1055,6 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 static int
 ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
 	struct bmc_fn_support * bmc_fn_support;
 	unsigned int l, n, c, ret;
