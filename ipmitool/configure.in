@@ -91,6 +91,17 @@ solaris*)
 	enable_intf_bmc=no
 	enable_ipmishell=no
 	;;
+*freebsd*)
+	enable_intf_imb=no
+	enable_intf_lipmi=no
+	enable_intf_bmc=no
+	;;
+*netbsd*)
+	enable_intf_imb=no
+	enable_intf_lipmi=no
+	enable_intf_bmc=no
+	enable_intf_open=no
+	;;
 esac
 
 AC_SUBST(ARCH, $host_cpu)
