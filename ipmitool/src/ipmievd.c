@@ -41,9 +41,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <paths.h>
 
 #include <config.h>
+
+#ifdef HAVE_PATHS_H
+# include <paths.h>
+#else
+# define _PATH_VARRUN "/var/run/"
+#endif
 
 #ifdef IPMI_INTF_OPEN
 # if defined(HAVE_OPENIPMI_H)
@@ -66,7 +71,7 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_main.h>
 
-#define DEFAULT_PIDFILE		"/var/run/ipmievd.pid"
+#define DEFAULT_PIDFILE		_PATH_VARRUN "ipmievd.pid"
 char pidfile[64];
 
 /* global variables */
