@@ -13,6 +13,7 @@ version 1.8.7
 	* Add support for IPMIv2 Firmware Firewall
 	* Fix gcc4 compile warnings
 	* Make ipmievd generate pidfile
+	* Add initscripts for ipmievd
 
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic

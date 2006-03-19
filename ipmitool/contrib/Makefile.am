@@ -33,5 +33,6 @@ MAINTAINERCLEANFILES	= Makefile.in
 dist_pkgdata_DATA	= README oem_ibm_sel_map
 
 dist_pkgdata_SCRIPTS	= bmclanconf ipmi.init.basic ipmi.init.redhat \
+	ipmievd.init.redhat ipmievd.init.suse ipmievd.init.debian \
 	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
 

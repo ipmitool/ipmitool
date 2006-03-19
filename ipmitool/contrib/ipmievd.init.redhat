@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+#	/etc/rc.d/init.d/ipmievd
+#
+#       Based on example sysvinitfiles script
+#       Copyright (c) 2000 Red Hat Software, Inc.
+#
+# chkconfig: 345 99 00
+# description: ipmievd daemon to send events to syslog
+# processname: ipmievd
+# config:      /etc/sysconfig/ipmievd
+#
+### BEGIN INIT INFO
+# Provides:          ipmievd
+# Required-Start:    $syslog ipmi
+# Should-Start: $time
+# Required-Stop:     $syslog ipmi
+# Should-Stop: $time
+# Default-Start:     3 4 5
+# Default-Stop:      0 1 2 6
+# Short-Description: ipmievd daemon to send events to syslog
+# Description:       Start ipmievd to read events from BMC and
+#	             log them to syslog.  Events correspond to hardware faults,
+#	             state transitions such as power on and off, and sensor
+#	             readings such as temperature, voltage and fan speed that
+#	             are abnormal.
+### END INIT INFO
+
+IPMIEVD_BIN=/usr/sbin/ipmievd
+test -x $IPMIEVD_BIN || { echo "$IPMIEVD_BIN not installed";
+        if [ "$1" = "stop" ]; then exit 0;
+        else exit 5; fi; }
+
+# Check for existence of needed config file
+IPMIEVD_CONFIG=/etc/sysconfig/ipmievd
+test -r $IPMIEVD_CONFIG || { echo "$IPMIEVD_CONFIG does not exist";
+        if [ "$1" = "stop" ]; then exit 0;
+        else exit 6; fi; }
+
+# Read config file
+. $IPMIEVD_CONFIG
+
+# Source function library.
+. /etc/init.d/functions
+
+start() {
+	echo "Starting ipmievd:"
+	if [ -f /var/lock/subsys/ipmievd ]; then
+		return 0
+	fi
+	daemon $IPMIEVD_BIN $IPMIEVD_OPTIONS
+	ret=$?
+	[ $ret -eq 0 ] && touch /var/lock/subsys/ipmievd
+	return $ret
+}	
+
+stop() {
+	echo "Shutting down ipmievd:"
+	killproc $IPMIEVD_BIN
+	ret=$?
+	[ $ret -eq 0 ] && rm -f /var/lock/subsys/ipmievd
+	return $ret
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    status)
+	status $IPMIEVD_BIN
+	;;
+    restart|reload)
+    	stop
+	start
+	;;
+    condrestart)
+	[ -f /var/lock/subsys/ipmievd ] && restart || :
+	;;
+    *)
+	echo "Usage: ipmievd {start|stop|status|reload|restart|condrestart}"
+	exit 1
+	;;
+esac
+exit $?
