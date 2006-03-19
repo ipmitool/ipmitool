@@ -8,6 +8,7 @@ version 1.8.7
 	* Disable file paranoia checks on read files by default
 	* Support IPMIv2 SOL on older Intel boxes
 	* Display message and exit if keepalive fails during SOL
+	* Add support for setting VLAN id and priority
 
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic

@@ -733,6 +733,19 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
 
+	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
+	if (p != NULL && p->data != NULL) {
+		int id = ((p->data[1] & 0x0f) << 8) + p->data[0];
+		if (p->data[1] & 0x80)
+			printf("%-24s: %d\n", p->desc, id);
+		else
+			printf("%-24s: Disabled\n", p->desc);
+	}
+
+	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_PRIORITY);
+	if (p != NULL && p->data != NULL)
+		printf("%-24s: %d\n", p->desc, p->data[0] & 0x07);
+
 	/* Determine supported Cipher Suites -- Requires two calls */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
 	if (p == NULL)
@@ -1205,9 +1218,11 @@ static void ipmi_lan_set_usage(void)
 	lprintf(LOG_NOTICE, "  user                           Enable default user for this channel");
 	lprintf(LOG_NOTICE, "  access <on|off>                Enable or disable access to this channel");
 	lprintf(LOG_NOTICE, "  alert <on|off>                 Enable or disable PEF alerting for this channel");
-	lprintf(LOG_NOTICE, "  arp response <on|off>          Enable or disable BMC ARP responding");
+	lprintf(LOG_NOTICE, "  arp respond <on|off>           Enable or disable BMC ARP responding");
 	lprintf(LOG_NOTICE, "  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
 	lprintf(LOG_NOTICE, "  arp interval <seconds>         Set gratuitous ARP generation interval");
+	lprintf(LOG_NOTICE, "  vlan id <off|<id>>             Disable or enable VLAN and set ID (1-4094)");
+	lprintf(LOG_NOTICE, "  vlan priority <priority>       Set vlan priority (0-7)");
 	lprintf(LOG_NOTICE, "  auth <level> <type,..>         Set channel authentication types");
 	lprintf(LOG_NOTICE, "    level  = CALLBACK, USER, OPERATOR, ADMIN");
 	lprintf(LOG_NOTICE, "    type   = NONE, MD2, MD5, PASSWORD, OEM");
@@ -1223,6 +1238,57 @@ static void ipmi_lan_set_usage(void)
 	lprintf(LOG_NOTICE, "    o = OPERATOR");
 	lprintf(LOG_NOTICE, "    a = ADMIN");
 	lprintf(LOG_NOTICE, "    O = OEM\n");
+}
+
+static void
+ipmi_lan_set_vlan_usage(void)
+{
+	lprintf(LOG_NOTICE,
+		"lan set <channel> vlan id <id>\n"
+		"lan set <channel> vlan id off\n"
+		"lan set <channel> vlan priority <priority>\n");
+}
+
+static int
+ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
+{
+	uint8_t data[2];
+	int rc;
+
+	if (string == NULL) {
+		data[0] = 0;
+		data[1] = 0;
+	}
+	else {
+		int id = atoi(string);
+
+		if (id < 1 || id > 4094) {
+			lprintf(LOG_NOTICE, "vlan id must be between 1 and 4094.");
+			return -1;
+		}
+		else {
+			data[0] = (uint8_t)id;
+			data[1] = (uint8_t)(id >> 8) | 0x80;
+		}
+	}
+	rc = set_lan_param(intf, chan, IPMI_LANP_VLAN_ID, data, 2);
+	return rc;
+}
+
+static int
+ipmi_lan_set_vlan_priority(struct ipmi_intf * intf,  uint8_t chan, char *string)
+{
+	uint8_t data;
+	int rc;
+	int priority = atoi(string);
+
+	if (priority < 0 || priority > 7) {
+		lprintf(LOG_NOTICE, "vlan priority must be between 0 and 7.");
+		return -1;
+	}
+	data = (uint8_t)priority;
+	rc = set_lan_param(intf, chan, IPMI_LANP_VLAN_PRIORITY, &data, 1);
+	return rc;
 }
 
 static int
@@ -1333,6 +1399,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 				"  static = static address (manually configured)\n"
 				"  dhcp   = address obtained by BMC running DHCP\n"
 				"  bios   = address loaded by BIOS or system software\n");
+			return 0;
 		}
 		else if (strncmp(argv[2], "none", 4) == 0)
 			data[0] = 0;
@@ -1431,6 +1498,25 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			       ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_MAC].desc,
 			       data[0], data[1], data[2], data[3], data[4], data[5]);
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
+		}
+	}
+	else if (strncasecmp(argv[1], "vlan", 4) == 0) {
+		if (argc < 4 || strncmp(argv[2], "help", 4) == 0) {
+			ipmi_lan_set_vlan_usage();
+		}
+		else if (strncasecmp(argv[2], "id", 2) == 0) {
+			if (strncasecmp(argv[3], "off", 3) == 0) {
+				ipmi_lan_set_vlan_id(intf, chan, NULL);
+			}
+			else {
+				ipmi_lan_set_vlan_id(intf, chan, argv[3]);
+			}
+		}
+		else if (strncasecmp(argv[2], "priority", 8) == 0) {
+			ipmi_lan_set_vlan_priority(intf, chan, argv[3]);
+		}
+		else {
+			ipmi_lan_set_vlan_usage();
 		}
 	}
 	/* set PEF alerting on or off */
