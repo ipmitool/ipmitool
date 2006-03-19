@@ -105,28 +105,25 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 
 #ifdef INCLUDE_PICMG_GET_DEVICE_LOCATOR
 	/* PICMG hack to set right IPMB address, 
-      we might want to do GetPICMGProperties first.
-
-      In any case, on a server board or a non-picmg IpmC blade , this code 
-      will not have any adverse side effect
-   */
-	if ( (intf->my_addr == IPMI_BMC_SLAVE_ADDR) ) {
+	 * we might want to do GetPICMGProperties first.
+	 * In any case, on a server board or a non-picmg IpmC blade , this code 
+	 * will not have any adverse side effect
+	 */
+	if (intf->my_addr == IPMI_BMC_SLAVE_ADDR) {
 		lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_PICMG;
 		req.msg.cmd = 0x01;
-      msg_data    = 0x00;
+		msg_data    = 0x00;
 		req.msg.data = &msg_data; 
 		req.msg.data_len = 1;
 		msg_data = 0;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp) {
-         if ( !rsp->ccode ) {
-            intf->my_addr = rsp->data[2];
-            intf->target_addr = intf->my_addr;
-				lprintf(LOG_DEBUG, "Discovered IPMB address = 0x%x", intf->my_addr);
-			}
+		if (rsp && !rsp->ccode) {
+			intf->my_addr = rsp->data[2];
+			intf->target_addr = intf->my_addr;
+			lprintf(LOG_DEBUG, "Discovered IPMB address = 0x%x", intf->my_addr);
 		}
 	}
 #endif
@@ -183,7 +180,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	    intf->target_addr != intf->my_addr) {
 		/* use IPMB address if needed */
 		ipmb_addr.slave_addr = intf->target_addr;
-		_req.addr = (char *) &ipmb_addr;
+		_req.addr = (unsigned char *) &ipmb_addr;
 		_req.addr_len = sizeof(ipmb_addr);
 		lprintf(LOG_DEBUG, "Sending request to "
 			"IPMB target @ 0x%x", intf->target_addr);
@@ -191,8 +188,8 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		/* otherwise use system interface */
 		lprintf(LOG_DEBUG+2, "Sending request to "
 			"System Interface");
-      bmc_addr.lun = req->msg.lun;
-		_req.addr = (char *) &bmc_addr;
+		bmc_addr.lun = req->msg.lun;
+		_req.addr = (unsigned char *) &bmc_addr;
 		_req.addr_len = sizeof(bmc_addr);
 	}
 
@@ -226,7 +223,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		return NULL;
 	}
 
-	recv.addr = (char *) &addr;
+	recv.addr = (unsigned char *) &addr;
 	recv.addr_len = sizeof(addr);
 	recv.msg.data = rsp.data;
 	recv.msg.data_len = sizeof(rsp.data);

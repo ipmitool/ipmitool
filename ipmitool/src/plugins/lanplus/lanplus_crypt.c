@@ -70,7 +70,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 							   const uint8_t    * bmc_mac,
 							   struct ipmi_intf * intf)
 {
-	char         * buffer;
+	uint8_t       * buffer;
 	int           bufferLength, i;
 	uint8_t       mac[20];
 	uint32_t      macLength;
@@ -93,7 +93,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		16 +                       /* GUIDc    */
 		1  +                       /* ROLEm    */
 		1  +                       /* ULENGTHm */
-		strlen(session->username); /* optional */
+		strlen((const char *)session->username); /* optional */
 
 	buffer = malloc(bufferLength);
 	if (buffer == NULL) {
@@ -152,7 +152,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 	buffer[56] = session->v2_data.requested_role;
 
 	/* ULENGTHm */
-	buffer[57] = strlen(session->username);
+	buffer[57] = strlen((const char *)session->username);
 
 	/* UserName [optional] */
 	for (i = 0; i < buffer[57]; ++i)
@@ -160,8 +160,8 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 
 	if (verbose > 2)
 	{
-		printbuf(buffer, bufferLength, ">> rakp2 mac input buffer");
-		printbuf((char*)(session->authcode), IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp2 mac key");
+		printbuf((const uint8_t *)buffer, bufferLength, ">> rakp2 mac input buffer");
+		printbuf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp2 mac key");
 	}
 
 	/*
@@ -214,12 +214,11 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 							   const uint8_t    * bmc_mac,
 							   struct ipmi_intf * intf)
 {
-	char         * buffer;
+	uint8_t       * buffer;
 	int           bufferLength, i;
 	uint8_t       mac[20];
 	uint32_t      macLength;
-
-	uint32_t SIDc_lsbf;
+	uint32_t      SIDc_lsbf;
 
 	if (ipmi_oem_active(intf, "intelplus")){
 		/* Intel BMC responds with the integrity Algorithm in RAKP4 */
@@ -242,7 +241,7 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 		4  +   /* SIDc  */
 		16;    /* GUIDc */
 
-	buffer = (char*)malloc(bufferLength);
+	buffer = (uint8_t *)malloc(bufferLength);
 	if (buffer == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
@@ -281,11 +280,11 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 	#endif
 
 
-    if (verbose > 2)
-    {
-        printbuf(buffer, bufferLength, ">> rakp4 mac input buffer");
-        printbuf(session->v2_data.sik, 20l, ">> rakp4 mac key (sik)");
-    }
+	if (verbose > 2)
+	{
+		printbuf((const uint8_t *)buffer, bufferLength, ">> rakp4 mac input buffer");
+		printbuf(session->v2_data.sik, 20l, ">> rakp4 mac key (sik)");
+	}
 
 
 	/*
@@ -301,7 +300,7 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 				 mac,
 				 &macLength);
 
-    if (verbose > 2)
+	if (verbose > 2)
 	{
 		printbuf(bmc_mac, macLength, ">> rakp4 mac as computed by the BMC");
 		printbuf(mac,     macLength, ">> rakp4 mac as computed by the remote console");
@@ -339,14 +338,14 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_generate_rakp3_authcode(char                      * output_buffer,
+int lanplus_generate_rakp3_authcode(uint8_t                      * output_buffer,
 									const struct ipmi_session * session,
 									uint32_t                  * mac_length,
 									struct ipmi_intf          * intf)
 {
 	int ret = 0;
 	int input_buffer_length, i;
-	char * input_buffer;
+	uint8_t * input_buffer;
 	uint32_t SIDm_lsbf;
 	
 
@@ -364,7 +363,7 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 		4  + /* SIDm     */
 		1  + /* ROLEm    */
 		1  + /* ULENGTHm */
-		strlen(session->username);
+		strlen((const char *)session->username);
 
 	input_buffer = malloc(input_buffer_length);
 	if (input_buffer == NULL) {
@@ -400,17 +399,17 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 		input_buffer[20] = session->v2_data.requested_role;
 
 	/* ULENGTHm */
-	input_buffer[21] = strlen(session->username);
+	input_buffer[21] = strlen((const char *)session->username);
 
 	/* USERNAME */
 	for (i = 0; i < input_buffer[21]; ++i)
 		input_buffer[22 + i] = session->username[i];
 
-    if (verbose > 2)
-    {
-        printbuf(input_buffer, input_buffer_length, ">> rakp3 mac input buffer");
-        printbuf((char*)(session->authcode), IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
-    }
+	if (verbose > 2)
+	{
+		printbuf((const uint8_t *)input_buffer, input_buffer_length, ">> rakp3 mac input buffer");
+		printbuf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
+	}
     
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 session->authcode,
@@ -420,8 +419,8 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
 				 output_buffer,
 				 mac_length);
 
-    if (verbose > 2)
-        printbuf(output_buffer, *mac_length, "generated rakp3 mac");
+	if (verbose > 2)
+		printbuf((const uint8_t *)output_buffer, *mac_length, "generated rakp3 mac");
 
 	
 	free(input_buffer);
@@ -459,9 +458,9 @@ int lanplus_generate_rakp3_authcode(char                      * output_buffer,
  */
 int lanplus_generate_sik(struct ipmi_session * session)
 {
-	char * input_buffer;
+	uint8_t * input_buffer;
 	int input_buffer_length, i;
-	char * input_key;
+	uint8_t * input_key;
 	uint32_t mac_length;
 	
 
@@ -478,7 +477,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 		16 +  /* Rc       */
 		1  +  /* ROLEm     */
 		1  +  /* ULENGTHm  */
-		strlen(session->username);
+		strlen((const char *)session->username);
 
 	input_buffer = malloc(input_buffer_length);
 	if (input_buffer == NULL) {
@@ -514,7 +513,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 	input_buffer[32] = session->v2_data.requested_role;
 
 	/* ULENGTHm */
-	input_buffer[33] = strlen(session->username);
+	input_buffer[33] = strlen((const char *)session->username);
 
 	/* USERNAME */
 	for (i = 0; i < input_buffer[33]; ++i)
@@ -538,7 +537,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 
 	
 	if (verbose >= 2)
-		printbuf(input_buffer, input_buffer_length, "session integrity key input");
+		printbuf((const uint8_t *)input_buffer, input_buffer_length, "session integrity key input");
 
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 input_key,

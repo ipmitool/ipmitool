@@ -326,7 +326,7 @@ ipmi_user_set_username(
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = user_id;
 	memset(msg_data + 1, 0, 16);
-	strcpy(msg_data + 1, name);
+	strcpy((char *)(msg_data + 1), name);
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -404,11 +404,11 @@ ipmi_user_set_password(
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	char	             * msg_data;
+	uint8_t	             * msg_data;
 
 	int password_length = (is_twenty_byte_password? 20 : 16);
 
-	msg_data = (char*)malloc(password_length + 2);
+	msg_data = (uint8_t*)malloc(password_length + 2);
 
 
 	memset(&req, 0, sizeof(req));
@@ -429,7 +429,7 @@ ipmi_user_set_password(
 	memset(msg_data + 2, 0, password_length);
 
 	if (password != NULL)
-		strncpy(msg_data + 2, password, password_length);
+		strncpy((char *)(msg_data + 2), password, password_length);
 
 	rsp = intf->sendrecv(intf, &req);
 

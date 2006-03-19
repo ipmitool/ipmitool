@@ -307,7 +307,7 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 				"PET community");
 		else {
 			rsp->data[19] = '\0';
-			ipmi_pef_print_str("PET Community", &rsp->data[1]);
+			ipmi_pef_print_str("PET Community", (const char *)&rsp->data[1]);
 		}
 	}
 	ipmi_pef_print_dec("ACK timeout/retry (secs)", timeout);

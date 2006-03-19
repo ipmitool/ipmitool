@@ -176,7 +176,7 @@ uint8_t * ipmi_auth_special(struct ipmi_session * s)
 	memset(&ctx, 0, sizeof(MD5_CTX));
 
 	MD5_Init(&ctx);
-	MD5_Update(&ctx, (const uint8_t *)s->authcode, strlen(s->authcode));
+	MD5_Update(&ctx, (const uint8_t *)s->authcode, strlen((const char *)s->authcode));
 	MD5_Final(md, &ctx);
 
 	for (i=0; i<16; i++)

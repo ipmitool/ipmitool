@@ -412,7 +412,7 @@ ipmi_mc_get_guid(struct ipmi_intf * intf)
 	}
 
 	if (rsp->data_len == sizeof(struct ipmi_guid)) {
-		uint8_t tbuf[40];
+		char tbuf[40];
 		time_t s;
 		memset(tbuf, 0, 40);
 		memset(&guid, 0, sizeof(struct ipmi_guid));

@@ -222,16 +222,16 @@ ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 
 	printf("  Session Support       : ");
 	switch (channel_info.session_support) {
-		case 0x00:
+		case 0x0:
 			printf("session-less\n");
 			break;
-		case 0x40:
+		case 0x1:
 			printf("single-session\n");
 			break;
-		case 0x80:
+		case 0x2:
 			printf("multi-session\n");
 			break;
-		case 0xc0:
+		case 0x3:
 		default:
 			printf("session-based\n");
 			break;

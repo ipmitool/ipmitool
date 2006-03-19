@@ -98,7 +98,7 @@ static int ipmi_sel_oem_match(uint8_t *evt, struct ipmi_sel_oem_msg_rec rec)
 	}
 }
 
-void ipmi_sel_oem_init(const char * filename)
+int ipmi_sel_oem_init(const char * filename)
 {
 	FILE * fp;
 	int i, j, k, n, byte;
@@ -215,7 +215,7 @@ ipmi_get_event_type(uint8_t code)
 static char *
 ipmi_sel_timestamp(uint32_t stamp)
 {
-	static uint8_t tbuf[40];
+	static char tbuf[40];
 	time_t s = (time_t)stamp;
 	memset(tbuf, 0, 40);
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
@@ -225,7 +225,7 @@ ipmi_sel_timestamp(uint32_t stamp)
 static char *
 ipmi_sel_timestamp_date(uint32_t stamp)
 {
-	static uint8_t tbuf[11];
+	static char tbuf[11];
 	time_t s = (time_t)stamp;
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
 	return tbuf;
@@ -234,7 +234,7 @@ ipmi_sel_timestamp_date(uint32_t stamp)
 static char *
 ipmi_sel_timestamp_time(uint32_t stamp)
 {
-	static uint8_t tbuf[9];
+	static char tbuf[9];
 	time_t s = (time_t)stamp;
 	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
 	return tbuf;
@@ -244,7 +244,7 @@ static char *
 hex2ascii (uint8_t * hexChars, uint8_t numBytes)
 {
 	int count;
-	static uint8_t hexString[SEL_OEM_NOTS_DATA_LEN+1];       /*Max Size*/
+	static char hexString[SEL_OEM_NOTS_DATA_LEN+1];       /*Max Size*/
 
 	if(numBytes > SEL_OEM_NOTS_DATA_LEN)
 		numBytes = SEL_OEM_NOTS_DATA_LEN;
@@ -1470,7 +1470,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	static uint8_t tbuf[40];
+	static char tbuf[40];
 	uint32_t timei;
 	time_t time;
 

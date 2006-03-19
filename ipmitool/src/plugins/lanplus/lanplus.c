@@ -2876,7 +2876,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 
 
 	/* Username specification */
-	msg[27] = strlen(session->username);
+	msg[27] = strlen((const char *)session->username);
 	if (msg[27] > IPMI_MAX_USER_NAME_LENGTH)
 	{
 		lprintf(LOG_ERR, "ERROR: user name too long.  "
@@ -3204,7 +3204,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!session->retry)
 		session->retry = IPMI_LAN_RETRY;
 
-	if (session->hostname == NULL || strlen(session->hostname) == 0) {
+	if (session->hostname == NULL || strlen((const char *)session->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -3232,9 +3232,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(session->port);
 
-	rc = inet_pton(AF_INET, session->hostname, &addr.sin_addr);
+	rc = inet_pton(AF_INET, (const char *)session->hostname, &addr.sin_addr);
 	if (rc <= 0) {
-		struct hostent *host = gethostbyname(session->hostname);
+		struct hostent *host = gethostbyname((const char *)session->hostname);
 		if (host == NULL) {
 			lprintf(LOG_ERR, "Address lookup for %s failed",
 				session->hostname);
@@ -3400,22 +3400,22 @@ void test_crypt2(void)
 	uint8_t iv[]  =
         {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
          0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14};
-	uint8_t * data = "12345678";
+	uint8_t data[8] = "12345678";
 
-	char encrypt_buffer[1000];
-	char decrypt_buffer[1000];
+	uint8_t encrypt_buffer[1000];
+	uint8_t decrypt_buffer[1000];
 	uint32_t bytes_encrypted;
 	uint32_t bytes_decrypted;
 
-	printbuf(data, strlen(data), "input data");
+	printbuf((const uint8_t *)data, strlen((const char *)data), "input data");
 
 	lanplus_encrypt_aes_cbc_128(iv,
 								key,
 								data,
-								strlen(data),
+								strlen((const char *)data),
 								encrypt_buffer,
 								&bytes_encrypted);
-	printbuf(encrypt_buffer, bytes_encrypted, "encrypt_buffer");
+	printbuf((const uint8_t *)encrypt_buffer, bytes_encrypted, "encrypt_buffer");
 
 	lanplus_decrypt_aes_cbc_128(iv,
 								key,
@@ -3423,7 +3423,7 @@ void test_crypt2(void)
 								bytes_encrypted,
 								decrypt_buffer,
 								&bytes_decrypted);
-	printbuf(decrypt_buffer, bytes_decrypted, "decrypt_buffer");
+	printbuf((const uint8_t *)decrypt_buffer, bytes_decrypted, "decrypt_buffer");
 
 	lprintf(LOG_INFO, "\nDone testing the encrypt/decyrpt methods!\n");
 	exit(0);

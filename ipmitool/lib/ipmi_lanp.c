@@ -456,7 +456,7 @@ lan_set_arp_interval(struct ipmi_intf * intf,
 		return -1;
 
 	if (ival != 0) {
-		interval = ((uint8_t)atoi(ival) * 2) - 1;
+		interval = ((uint8_t)atoi((const char *)ival) * 2) - 1;
 		rc = set_lan_param(intf, chan, IPMI_LANP_GRAT_ARP, &interval, 1);
 	} else {
 		interval = lp->data[0];
@@ -897,7 +897,7 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	data[1] = 0x02;		/* set password */
 
 	if (password != NULL)
-		memcpy(data+2, password, __min(strlen(password), 16));
+		memcpy(data+2, password, __min(strlen((const char *)password), 16));
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -919,7 +919,7 @@ ipmi_lan_set_password(struct ipmi_intf * intf,
 	/* adjust our session password
 	 * or we will no longer be able to communicate with BMC
 	 */
-	ipmi_intf_session_set_password(intf, password);
+	ipmi_intf_session_set_password(intf, (char *)password);
 	printf("Password %s for user %d\n",
 	       (password == NULL) ? "cleared" : "set", userid);
 
@@ -1349,7 +1349,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 				"example: lan set 7 arp gratuitous off\n");
 		}
 		else if (strncmp(argv[2], "interval", 8) == 0) {
-			rc = lan_set_arp_interval(intf, chan, argv[3]);
+			rc = lan_set_arp_interval(intf, chan, (uint8_t *)argv[3]);
 		}
 		else if (strncmp(argv[2], "generate", 8) == 0) {
 			if (argc < 4)
@@ -1423,7 +1423,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* session password
 	 * not strictly a lan setting, but its used for lan connections */
 	else if (strncmp(argv[1], "password", 8) == 0) {
-		rc = ipmi_lan_set_password(intf, 1, argv[2]);
+		rc = ipmi_lan_set_password(intf, 1, (uint8_t *)argv[2]);
 	}
 	/* snmp community string */
 	else if (strncmp(argv[1], "snmp", 4) == 0) {

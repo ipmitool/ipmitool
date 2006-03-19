@@ -47,7 +47,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 							   const uint8_t             * hmac,
 							   struct ipmi_intf          * intf);
-int lanplus_generate_rakp3_authcode(char                      * buffer,
+int lanplus_generate_rakp3_authcode(uint8_t                      * buffer,
 									const struct ipmi_session * session,
 									uint32_t                  * auth_length,
 									struct ipmi_intf          * intf);

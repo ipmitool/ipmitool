@@ -109,18 +109,18 @@ typedef struct sKFWUM_InFirmwareInfo {
 #define KFWUM_PAGE_SIZE     256
 
 extern int verbose;
-static unsigned char fileName[512];
+static char fileName[512];
 static unsigned char firmBuf[1024 * 512];
 static unsigned char firmMaj;
 static unsigned char firmMinSub;
 
 static void KfwumOutputHelp(void);
 static void KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
-static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
+static tKFWUM_Status KfwumGetFileSize(char *pFileName,
 				      unsigned long *pFileSize);
-static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
+static tKFWUM_Status KfwumSetupBuffersFromFile(char *pFileName,
 					       unsigned long fileSize);
-static void KfwumShowProgress(const unsigned char *task,
+static void KfwumShowProgress(const char *task,
 			      unsigned long current, unsigned long total);
 static unsigned short KfwumCalculateChecksumPadding(unsigned char *pBuffer,
 						    unsigned long totalSize);
@@ -353,7 +353,7 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 }
 
 static tKFWUM_Status
-KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
+KfwumGetFileSize(char *pFileName, unsigned long *pFileSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_ERROR;
 	FILE *pFileHandle;
@@ -376,7 +376,7 @@ KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
 
 #define MAX_BUFFER_SIZE          1024*16
 static tKFWUM_Status
-KfwumSetupBuffersFromFile(unsigned char *pFileName, unsigned long fileSize)
+KfwumSetupBuffersFromFile(char *pFileName, unsigned long fileSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	FILE *pFileHandle;
@@ -391,8 +391,9 @@ KfwumSetupBuffersFromFile(unsigned char *pFileName, unsigned long fileSize)
 		rewind(pFileHandle);
 
 		for (qty = 0; qty < count; qty++) {
-			KfwumShowProgress("Reading Firmware from File", qty,
-					  count);
+			KfwumShowProgress("Reading Firmware from File",
+					  (unsigned long)qty,
+					  (unsigned long)count);
 			if (fread
 			    (&firmBuf[qty * MAX_BUFFER_SIZE], 1,
 			     MAX_BUFFER_SIZE, pFileHandle)
@@ -417,7 +418,7 @@ KfwumSetupBuffersFromFile(unsigned char *pFileName, unsigned long fileSize)
 
 #define PROG_LENGTH 42
 void
-KfwumShowProgress(const unsigned char *task, unsigned long current,
+KfwumShowProgress(const char *task, unsigned long current,
 		  unsigned long total)
 {
 	static unsigned long staticProgress = 0xffffffff;

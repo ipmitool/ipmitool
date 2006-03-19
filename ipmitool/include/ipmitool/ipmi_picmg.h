@@ -57,7 +57,7 @@ struct picmg_set_fru_activation_cmd {
 
 
 /* the LED color capabilities */
-static unsigned char* led_color_str[] = {
+static const char* led_color_str[] = {
 	"reserved",
 	"BLUE",
 	"RED",

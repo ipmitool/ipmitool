@@ -1378,7 +1378,7 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	if (s->retry == 0)
 		s->retry = IPMI_LAN_RETRY;
 
-	if (s->hostname == NULL || strlen(s->hostname) == 0) {
+	if (s->hostname == NULL || strlen((const char *)s->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -1390,9 +1390,9 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	s->addr.sin_family = AF_INET;
 	s->addr.sin_port = htons(s->port);
 
-	rc = inet_pton(AF_INET, s->hostname, &s->addr.sin_addr);
+	rc = inet_pton(AF_INET, (const char *)s->hostname, &s->addr.sin_addr);
 	if (rc <= 0) {
-		struct hostent *host = gethostbyname(s->hostname);
+		struct hostent *host = gethostbyname((const char *)s->hostname);
 		if (host == NULL) {
 			lprintf(LOG_ERR, "Address lookup for %s failed",
 				s->hostname);
