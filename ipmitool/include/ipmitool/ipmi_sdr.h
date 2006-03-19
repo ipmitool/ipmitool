@@ -722,7 +722,10 @@ struct ipmi_sdr_iterator {
 
 struct sdr_record_list {
 	uint16_t id;
+	uint8_t version;
 	uint8_t type;
+	uint8_t length;
+	uint8_t *raw;
 	struct sdr_record_list *next;
 	union {
 		struct sdr_record_full_sensor *full;
