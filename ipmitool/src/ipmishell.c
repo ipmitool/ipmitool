@@ -52,8 +52,8 @@
 # include <config.h>
 #endif
 
-#define EXEC_BUF_SIZE	1024
-#define EXEC_ARG_SIZE	32
+#define EXEC_BUF_SIZE	2048
+#define EXEC_ARG_SIZE	64
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
@@ -96,7 +96,7 @@ static int rl_event_keepalive(void)
 
 int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	char *ptr, *pbuf, **ap, *__argv[20];
+	char *ptr, *pbuf, **ap, *__argv[EXEC_ARG_SIZE];
 	int __argc, rc=0;
 
 	rl_readline_name = "ipmitool";
@@ -188,7 +188,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 
 			if (**ap != '\0') {
-				if (++ap >= &__argv[20])
+				if (++ap >= &__argv[EXEC_ARG_SIZE])
 					break;
 			}
 		}
