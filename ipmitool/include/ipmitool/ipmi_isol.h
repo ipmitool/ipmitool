@@ -28,10 +28,6 @@
  * PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- * 
- * You acknowledge that this software is not designed or intended for use
- * in the design, construction, operation or maintenance of any nuclear
- * facility.
  */
 
 #ifndef IPMI_ISOL_H

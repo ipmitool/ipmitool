@@ -1,3 +1,9 @@
+version 1.8.7
+	* Remove nuclear clause from license
+	* Add Sun OEM command for blades
+	* Increase argument size for raw commands in shell/exec
+	* Fix handling of LUNs for LAN interfaces
+
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic
 	* Add keepalive timer to IPMIv2 SOL sessions
