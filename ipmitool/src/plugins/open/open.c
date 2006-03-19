@@ -47,9 +47,12 @@
 
 #include <config.h>
 
-#ifdef HAVE_OPENIPMI_H
+#if defined(HAVE_OPENIPMI_H)
 # include <linux/compiler.h>
 # include <linux/ipmi.h>
+#elif defined(HAVE_FREEBSD_IPMI_H)
+/* FreeBSD OpenIPMI-compatible header */
+# include <sys/ipmi.h>
 #else
 # include "open.h"
 #endif
