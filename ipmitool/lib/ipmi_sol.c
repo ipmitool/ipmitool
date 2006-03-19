@@ -42,8 +42,13 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <config.h>
 
-#include <termios.h>
+#if defined(HAVE_TERMIOS_H)
+# include <termios.h>
+#elif defined (HAVE_SYS_TERMIOS_H)
+# include <sys/termios.h>
+#endif        
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -99,7 +104,7 @@ ipmi_get_sol_info(
 	struct ipmi_rq req;
 	uint8_t data[4];	
 
-   memset(&req, 0, sizeof(req)); 
+	memset(&req, 0, sizeof(req)); 
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;
 	req.msg.cmd      = IMPI_GET_SOL_CONFIG_PARAMETERS;
 	req.msg.data_len = 4;

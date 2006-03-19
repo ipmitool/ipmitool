@@ -48,13 +48,14 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
-        
-#ifdef __linux__
+
+#include <config.h>
+
+#if defined(HAVE_TERMIOS_H)
 # include <termios.h>
-//# include <linux/termios.h>
-#else
+#elif defined (HAVE_SYS_TERMIOS_H)
 # include <sys/termios.h>
-#endif
+#endif        
 
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
@@ -63,8 +64,6 @@
 #include <ipmitool/ipmi_tsol.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/bswap.h>
-
-#include <config.h>
 
 static struct timeval _start_keepalive;
 static struct termios _saved_tio;
