@@ -71,7 +71,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:e:k:"
+# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:e:k:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:S:"
 #endif
@@ -236,6 +236,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
+	lprintf(LOG_NOTICE, "       -O seloem      Use file for OEM SEL event descriptions");
 #endif
 	lprintf(LOG_NOTICE, "");
 
@@ -278,6 +279,7 @@ ipmi_main(int argc, char ** argv,
 	char * oemtype  = NULL;
 	char * sdrcache = NULL;
 	char * kgkey    = NULL;
+	char * seloem   = NULL;
 	int port = 0;
 	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
@@ -467,6 +469,13 @@ ipmi_main(int argc, char ** argv,
 		case 'e':
 			sol_escape_char = optarg[0];
 			break;
+		case 'O':
+			seloem = strdup(optarg);
+			if (seloem == NULL) {
+				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
+			}
+			break;
 #endif
 		default:
 			ipmi_option_usage(progname, cmdlist, intflist);
@@ -580,6 +589,11 @@ ipmi_main(int argc, char ** argv,
 		ipmi_sdr_list_cache_fromfile(intf, sdrcache);
 	}
 
+	/* Parse SEL OEM file if given */
+	if (seloem != NULL) {
+		ipmi_sel_oem_init(seloem);
+	}
+
 	intf->cmdlist = cmdlist;
 
 	/* now we finally run the command */
@@ -608,6 +622,8 @@ ipmi_main(int argc, char ** argv,
 		free(password);
 	if (oemtype != NULL)
 		free(oemtype);
+	if (seloem != NULL)
+		free(seloem);
 
 	return rc;
 }

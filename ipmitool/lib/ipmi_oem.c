@@ -35,6 +35,7 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_sel.h>
 
 static int ipmi_oem_supermicro(struct ipmi_intf * intf);
 static int ipmi_oem_ibm(struct ipmi_intf * intf);
@@ -76,8 +77,12 @@ ipmi_oem_supermicro(struct ipmi_intf * intf)
 static int
 ipmi_oem_ibm(struct ipmi_intf * intf)
 {
-	ipmi_oem_ibm_init();
-	return 0;
+	char * filename;
+	if ((filename = getenv("IPMI_OEM_IBM_DATAFILE")) == NULL) {
+		lprintf(LOG_ERR, "Unable to read IPMI_OEM_IBM_DATAFILE from environment");
+		return -1;
+	}
+	return ipmi_sel_oem_init((const char *)filename);
 }
 
 /* ipmi_oem_print  -  print list of OEM handles

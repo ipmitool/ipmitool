@@ -545,5 +545,6 @@ uint16_t ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id, struct sel
 char * get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
 IPMI_OEM ipmi_get_oem(struct ipmi_intf * intf);
 char * ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
+int ipmi_sel_oem_init(char * filename);
 
 #endif /* IPMI_SEL_H */
