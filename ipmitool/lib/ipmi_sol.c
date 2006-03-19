@@ -1278,17 +1278,20 @@ processSolUserInput(
 }
 
 
-static void
+static int
 ipmi_sol_keepalive(struct ipmi_intf * intf)
 {
 	struct timeval end;
+	int ret = 0;
 
 	gettimeofday(&end, 0);
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
-		intf->keepalive(intf);
+		ret = intf->keepalive(intf);
 		gettimeofday(&_start_keepalive, 0);
 	}
+
+	return ret;
 }
 
 
@@ -1307,6 +1310,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	struct timeval tv;
 	int    retval;
 	int    buffer_size = intf->session->sol_data.max_inbound_payload_size;
+	int    keepAliveRet = 0;
 
 	buffer = (char*)malloc(buffer_size);
 	if (buffer == NULL) {
@@ -1326,7 +1330,13 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		FD_SET(intf->fd, &read_fds);
 
 		/* Send periodic keepalive packet */
-		ipmi_sol_keepalive(intf);
+		keepAliveRet = ipmi_sol_keepalive(intf);
+		if (keepAliveRet != 0)
+		{
+			/* no response to keepalive message */
+			bShouldExit = 1;
+			continue;
+		}
 
 		/* Wait up to half a second */
 		tv.tv_sec =  0;
@@ -1400,6 +1410,14 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	}		
 
 	leave_raw_mode();
+
+	if (keepAliveRet != 0)
+	{
+		lprintf(LOG_ERR, "Error: No response to keepalive - Terminating session");
+		/* attempt to clean up anyway */
+		ipmi_sol_deactivate(intf);
+		exit(1);
+	}
 
 	if (bBmcClosedSession)
 	{

@@ -7,6 +7,7 @@ version 1.8.7
 	* Add support for IBM OEM SEL messages
 	* Disable file paranoia checks on read files by default
 	* Support IPMIv2 SOL on older Intel boxes
+	* Display message and exit if keepalive fails during SOL
 
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic
