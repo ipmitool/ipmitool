@@ -1461,7 +1461,12 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 	data[2]  = bSolEncryption?     0x80 : 0;
 	data[2] |= bSolAuthentication? 0x40 : 0;
 	data[2] |= IPMI_SOL_SERIAL_ALERT_MASK_DEFERRED;
-	data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_FALSE;
+
+	if (ipmi_oem_active(intf, "intelplus")) {
+		data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_TRUE;
+	} else {
+		data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_FALSE;
+	}
 
 	data[3] = 0x00; /* reserved */
 	data[4] = 0x00; /* reserved */
