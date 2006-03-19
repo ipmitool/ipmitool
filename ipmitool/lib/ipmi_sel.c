@@ -49,6 +49,148 @@ extern int verbose;
 
 static int sel_extended = 0;
 
+static FILE * fp;
+static int oem_ibm_nrecs = 0;
+struct ipmi_oem_ibm_msg_rec {
+	int	value[14];
+	char	*string[14];
+	char	*text;
+} *oem_ibm_msg;
+
+#define SEL_BYTE(n) (n-3) /* So we can refer to byte positions in log entries (byte 3 is at index 0, etc) */
+
+/*
+ * Reads values found in message translation file.  XX is a wildcard, R means reserved.
+ * Returns -1 for XX, -2 for R, -3 for non-hex (string), or positive integer from a hex value.
+ */
+static int ipmi_oem_ibm_readval(char *str)
+{
+	int ret;
+	if (!strcmp(str, "XX")) {
+		return -1;
+	}
+	if (!strcmp(str, "R")) {
+		return -2;
+	}
+	if (sscanf(str, "0x%x", &ret) != 1) {
+		return -3;
+	}
+	return ret;
+}
+
+/*
+ * This is where the magic happens.  SEL_BYTE is a bit ugly, but it allows
+ * reference to byte positions instead of array indexes which (hopefully)
+ * helps make the code easier to read.
+ */
+static int ipmi_oem_ibm_match(uint8_t *evt, struct ipmi_oem_ibm_msg_rec rec)
+{
+	if (evt[2] == rec.value[SEL_BYTE(3)] &&
+	    ((rec.value[SEL_BYTE(4)]  < 0) || (evt[3]  == rec.value[SEL_BYTE(4)])) &&
+	    ((rec.value[SEL_BYTE(5)]  < 0) || (evt[4]  == rec.value[SEL_BYTE(5)])) &&
+	    ((rec.value[SEL_BYTE(6)]  < 0) || (evt[5]  == rec.value[SEL_BYTE(6)])) &&
+	    ((rec.value[SEL_BYTE(7)]  < 0) || (evt[6]  == rec.value[SEL_BYTE(7)])) &&
+	    ((rec.value[SEL_BYTE(11)] < 0) || (evt[10] == rec.value[SEL_BYTE(11)])) &&
+	    ((rec.value[SEL_BYTE(12)] < 0) || (evt[11] == rec.value[SEL_BYTE(12)]))) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+void ipmi_oem_ibm_init(void)
+{
+	FILE * fp;
+	int i, j, k, n, byte;
+	char *filename;
+	char buf[15][150];
+
+	if ((filename = getenv("IPMI_OEM_IBM_DATAFILE")) == NULL) {
+		printf ("Unable to read IPMI_OEM_IBM_DATAFILE from environment\n");
+		return;
+	}
+
+	fp = fopen(filename, "r");
+	if (fp == NULL) {
+		printf ("could not open %s file\n", filename);
+		return;
+	}
+
+	/* count number of records (lines) in input file */
+	oem_ibm_nrecs = 0;
+	while (fscanf(fp, "%*[^\n]\n", buf[0]) == 0) {
+		oem_ibm_nrecs++;
+	}
+
+	rewind(fp);
+	oem_ibm_msg = (struct ipmi_oem_ibm_msg_rec *)calloc(oem_ibm_nrecs,
+				 sizeof(struct ipmi_oem_ibm_msg_rec));
+
+	for (i=0; i < oem_ibm_nrecs; i++) {
+		n=fscanf(fp, "\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\""
+			       "%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\""
+			       "%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\""
+			       "%[^\"]\",\"%[^\"]\",\"%[^\"]\"\n",
+			 buf[0], buf[1], buf[2], buf[3], buf[4], buf[5],
+			 buf[6], buf[7], buf[8], buf[9], buf[10], buf[11],
+			 buf[12], buf[13], buf[14]);
+
+		if (n != 15) {
+			printf ("Encountered problems reading line %d of %s\n",
+				 i+1, filename);
+			fclose(fp);
+			fp = NULL;
+			oem_ibm_nrecs = 0;
+			/* free all the memory allocated so far */
+			for (j=0; j<i ; j++) {
+				for (k=3; k<17; k++) {
+					if (oem_ibm_msg[j].value[SEL_BYTE(k)] == -3) {
+						free(oem_ibm_msg[j].string[SEL_BYTE(k)]);
+					}
+				}
+			}
+			free (oem_ibm_msg);
+			return;
+		}
+
+		for (byte = 3; byte < 17; byte++) {
+			if ((oem_ibm_msg[i].value[SEL_BYTE(byte)] =
+			     ipmi_oem_ibm_readval(buf[SEL_BYTE(byte)])) == -3) {
+				oem_ibm_msg[i].string[SEL_BYTE(byte)] =
+					(char *)malloc(strlen(buf[SEL_BYTE(byte)]) + 1);
+				strcpy(oem_ibm_msg[i].string[SEL_BYTE(byte)],
+				       buf[SEL_BYTE(byte)]);
+			}
+		}
+		oem_ibm_msg[i].text = (char *)malloc(strlen(buf[SEL_BYTE(17)]) + 1);
+		strcpy(oem_ibm_msg[i].text, buf[SEL_BYTE(17)]);
+	}
+	fclose(fp);
+	fp = NULL;
+}
+
+static void ipmi_oem_ibm_message(struct sel_event_record * evt, int verbose)
+{
+	/*
+	 * Note: although we have a verbose argument, currently the output
+	 * isn't affected by it.
+	 */
+	int i, j;
+
+	for (i=0; i < oem_ibm_nrecs; i++) {
+		if (ipmi_oem_ibm_match((uint8_t *)evt, oem_ibm_msg[i])) {
+			printf (csv_output ? ",\"%s\"" : " | %s", oem_ibm_msg[i].text);
+			for (j=4; j<17; j++) {
+				if (oem_ibm_msg[i].value[SEL_BYTE(j)] == -3) {
+					printf (csv_output ? ",%s=0x%x" : " %s = 0x%x",
+						oem_ibm_msg[i].string[SEL_BYTE(j)],
+						((uint8_t *)evt)[SEL_BYTE(j)]);
+				}
+			}
+		}
+	}
+}
+
 static const struct valstr event_dir_vals[] = {
 	{ 0, "Assertion Event" },
 	{ 1, "Deassertion Event" },
@@ -323,7 +465,6 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 
 	return description;
 }
-
 
 char *
 ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
@@ -740,6 +881,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			for(data_count=0;data_count < SEL_OEM_NOTS_DATA_LEN;data_count++)
 				printf("%02x", evt->sel_type.oem_nots_type.oem_defined[data_count]);
 		}
+		ipmi_oem_ibm_message(evt, 0);
 		printf ("\n");
 		return;
 	}
@@ -912,6 +1054,7 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 			for(data_count=0;data_count < SEL_OEM_NOTS_DATA_LEN;data_count++)
 				printf("%02x", evt->sel_type.oem_nots_type.oem_defined[data_count]);
 			printf(" [%s]\n\n",hex2ascii (evt->sel_type.oem_nots_type.oem_defined, SEL_OEM_NOTS_DATA_LEN));
+			ipmi_oem_ibm_message(evt, 1);
 		}
 		return;
 	}

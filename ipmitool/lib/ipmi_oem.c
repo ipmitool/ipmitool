@@ -37,6 +37,7 @@
 #include <ipmitool/helper.h>
 
 static int ipmi_oem_supermicro(struct ipmi_intf * intf);
+static int ipmi_oem_ibm(struct ipmi_intf * intf);
 
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
@@ -56,6 +57,11 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		name:   "icts",
 		desc:   "IPMI 2.0 ICTS compliance support",
 	},
+	{
+		name:   "ibm",
+		desc:   "IBM OEM support",
+		setup:	ipmi_oem_ibm,
+	},
 	{ 0 },
 };
 
@@ -64,6 +70,13 @@ static int
 ipmi_oem_supermicro(struct ipmi_intf * intf)
 {
 	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	return 0;
+}
+
+static int
+ipmi_oem_ibm(struct ipmi_intf * intf)
+{
+	ipmi_oem_ibm_init();
 	return 0;
 }
 

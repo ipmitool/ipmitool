@@ -4,6 +4,7 @@ version 1.8.7
 	* Increase argument size for raw commands in shell/exec
 	* Fix handling of LUNs for LAN interfaces
 	* Add IPMIv2 SOL loopback test
+	* Add support for IBM OEM SEL messages
 
 version 1.8.6
 	* Fix memory corruption when sending encrypted SOL traffic
