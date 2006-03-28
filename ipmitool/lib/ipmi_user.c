@@ -354,7 +354,7 @@ ipmi_user_set_userpriv(
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	uint8_t	       msg_data[17];
+	uint8_t	       msg_data[3];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
