@@ -32,7 +32,9 @@
 
 #include <assert.h>
 #include <string.h>
-#include <config.h>
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
 #include <ipmitool/bswap.h>
 #include <ipmitool/log.h>
 #include "lanplus.h"

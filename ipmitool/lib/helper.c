@@ -49,7 +49,9 @@
 #endif
 
 #ifdef HAVE_PATHS_H
-# include <paths.h>  /* For _PATH_TTY */
+# include <paths.h>
+#else
+# define _PATH_VARRUN "/var/run/"
 #endif
 
 #include <ipmitool/helper.h>

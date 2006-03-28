@@ -49,7 +49,9 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 
-#include <config.h>
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
 
 #if defined(HAVE_TERMIOS_H)
 # include <termios.h>

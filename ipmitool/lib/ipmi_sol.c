@@ -42,7 +42,9 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <config.h>
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
 
 #if defined(HAVE_TERMIOS_H)
 # include <termios.h>

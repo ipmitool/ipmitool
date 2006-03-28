@@ -42,7 +42,9 @@
 #include <sys/stat.h>
 #include <signal.h>
 
-#include <config.h>
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
 
 #ifdef HAVE_PATHS_H
 # include <paths.h>

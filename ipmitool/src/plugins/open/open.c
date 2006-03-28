@@ -45,7 +45,9 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 
-#include <config.h>
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
 
 #if defined(HAVE_OPENIPMI_H)
 # include <linux/compiler.h>
