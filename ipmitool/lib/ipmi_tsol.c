@@ -73,6 +73,8 @@ static struct winsize _saved_winsize;
 static int _in_raw_mode = 0;
 static int _altterm = 0;
 
+extern int verbose;
+
 static int
 ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char cmd)
 {
@@ -93,6 +95,7 @@ ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char
                 return -1;
         }
 
+	memset(&req, 0, sizeof(struct ipmi_rq));
         req.msg.netfn    = IPMI_NETFN_TSOL;
         req.msg.cmd      = cmd;
         req.msg.data_len = 6;
@@ -139,7 +142,8 @@ ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
         struct ipmi_rq   req;
         unsigned char    data[16];
 	static unsigned char keyseq = 0;
-                        
+
+	memset(&req, 0, sizeof(struct ipmi_rq));
         req.msg.netfn    = IPMI_NETFN_TSOL;
         req.msg.cmd      = IPMI_TSOL_CMD_SENDKEY;
         req.msg.data_len = length + 2;
@@ -151,15 +155,17 @@ ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
 	data[length + 1] = keyseq++;
                 
         rsp = intf->sendrecv(intf, &req);
-        if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to send keystroke");
-                return -1;
+	if (verbose) {
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, "Unable to send keystroke");
+			return -1;
+		}
+		if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, "Unable to send keystroke: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Unable to send keystroke: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-        }
 
         return length;
 } 
