@@ -2063,63 +2063,60 @@ int
 ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
-   uint8_t chan = 0x0e;
+	uint8_t chan = find_lan_channel(intf, 1);
 
 	if (argc == 0 || (strncmp(argv[0], "help", 4) == 0)) {
 		print_lan_usage();
-      return -1;
+		return -1;
 	}
 
-	if (
-         (strncmp(argv[0], "printconf", 9) == 0) 
-         ||
-	      (strncmp(argv[0], "print", 5) == 0) 
-      )
-   {
+	if (strncmp(argv[0], "printconf", 9) == 0 ||
+	    strncmp(argv[0], "print", 5) == 0)
+	{
 		if (argc > 1)
 			chan = (uint8_t)strtol(argv[1], NULL, 0);
 		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
-      {
-         lprintf(LOG_ERR, "Invalid channel: %d", chan);
+		{
+			lprintf(LOG_ERR, "Invalid channel: %d", chan);
 			return -1;
-       }
+		}
 		else
 			rc = ipmi_lan_print(intf, chan);
 	}
 	else if (strncmp(argv[0], "set", 3) == 0)
 	{
-   	rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
+		rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
 	}
 	else if (strncmp(argv[0], "alert", 5) == 0)
 	{
-   	rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
-   }
-   else if (strncmp(argv[0], "stats", 5) == 0)
-   {
-      if(argc == 1)
-      {
-   		print_lan_usage();
-			return -1;
-      }
-      else if (argc > 2)
-	   	chan = (uint8_t)strtol(argv[2], NULL, 0);
-         
-   	if (chan < 2 || chan > IPMI_CHANNEL_NUMBER_MAX)
-      {
-         lprintf(LOG_ERR, "Invalid channel: %d", chan);
-			return -1;
-      }
-      else if (strncmp(argv[1], "get", 3) == 0)
-	   	rc = ipmi_lan_stats_get(intf, chan);
-      else if (strncmp(argv[1], "clear", 5) == 0)
-	   	rc = ipmi_lan_stats_clear(intf, chan);
-      else
-   		print_lan_usage();
+		rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
 	}
-   else
+	else if (strncmp(argv[0], "stats", 5) == 0)
 	{
-   	lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
-   }
+		if(argc == 1)
+		{
+			print_lan_usage();
+			return -1;
+		}
+		else if (argc > 2)
+			chan = (uint8_t)strtol(argv[2], NULL, 0);
+         
+		if (chan < 2 || chan > IPMI_CHANNEL_NUMBER_MAX)
+		{
+			lprintf(LOG_ERR, "Invalid channel: %d", chan);
+			return -1;
+		}
+		else if (strncmp(argv[1], "get", 3) == 0)
+			rc = ipmi_lan_stats_get(intf, chan);
+		else if (strncmp(argv[1], "clear", 5) == 0)
+			rc = ipmi_lan_stats_clear(intf, chan);
+		else
+			print_lan_usage();
+	}
+	else
+	{
+		lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
+	}
 	return rc;
 }
 
