@@ -493,6 +493,9 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 		}
 	}
 
+	if (!rsp)
+		return NULL;
+
 	lprintf(LOG_DEBUG, "SDR record ID   : 0x%04x", itr->next);
 
 	memcpy(&sdr_rs, rsp->data, sizeof (sdr_rs));
@@ -943,7 +946,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			desc, sensor->keys.sensor_num);
 		validread = 0;
 	}
-	if (rsp->ccode > 0) {
+	else if (rsp->ccode > 0) {
 		if (rsp->ccode == 0xcb) {
 			/* sensor not found */
 			validread = 0;
@@ -1069,7 +1072,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			i += snprintf(sval, sizeof (sval), "%.*f %s",
 				      (val == (int) val) ? 0 : 2, val,
 				      do_unit ? unitstr : "");
-		else if (IS_SCANNING_DISABLED(rsp->data[1]))
+		else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 			i += snprintf(sval, sizeof (sval), "disabled ");
 		else
 			i += snprintf(sval, sizeof (sval), "no reading ");
@@ -1103,7 +1106,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			i += snprintf(sval, sizeof (sval), "%.*f %s",
 				      (val == (int) val) ? 0 : 2, val,
 				      do_unit ? unitstr : "");
-		else if (IS_SCANNING_DISABLED(rsp->data[1]))
+		else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 			i += snprintf(sval, sizeof (sval), "Disabled");
 		else
 			i += snprintf(sval, sizeof (sval), "No Reading");
@@ -1129,7 +1132,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		printf(" Sensor Reading        : ");
 		if (validread)
 			printf("%xh\n", (uint32_t) val);
-		else if (IS_SCANNING_DISABLED(rsp->data[1]))
+		else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 			printf("Disabled\n");
 		else
 			printf("Not Reading\n");
@@ -1152,8 +1155,9 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 		ipmi_sdr_print_discrete_state("States Asserted",
 					      sensor->sensor.type,
-					      sensor->event_type, rsp->data[2],
-					      rsp->data[3]);
+					      sensor->event_type,
+					      rsp ? rsp->data[2] : 0,
+					      rsp ? rsp->data[3] : 0);
 		ipmi_sdr_print_sensor_mask(&sensor->mask, sensor->sensor.type,
 					   sensor->event_type, DISCRETE_SENSOR);
 		ipmi_sdr_print_sensor_event_status(intf,
@@ -1182,7 +1186,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		printf("%.*f (+/- %.*f) %s\n",
 		       (val == (int) val) ? 0 : 3,
 		       val, (tol == (int) tol) ? 0 : 3, tol, unitstr);
-	} else if (IS_SCANNING_DISABLED(rsp->data[1]))
+	} else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 		printf("Disabled\n");
 	else
 		printf("No Reading\n");
@@ -1486,7 +1490,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 			desc, sensor->keys.sensor_num);
 		validread = 0;
 	}
-	if (rsp->ccode > 0 && rsp->ccode != 0xcd) {
+	else if (rsp->ccode > 0 && rsp->ccode != 0xcd) {
 		/* completion code 0xcd is special case */
 		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
 			desc, sensor->keys.sensor_num,
@@ -1495,7 +1499,7 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 	}
 
 	/* check for sensor scanning disabled bit */
-	if (IS_SCANNING_DISABLED(rsp->data[1])) {
+	if (rsp && IS_SCANNING_DISABLED(rsp->data[1])) {
 		lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
 			desc, sensor->keys.sensor_num);
 		validread = 0;
@@ -2379,7 +2383,8 @@ ipmi_sdr_start(struct ipmi_intf *intf)
 		   * IPMIv2.0 == 0x02
 		 */
 		if ((sdr_info.version != 0x51) &&
-		    (sdr_info.version != 0x01) && (sdr_info.version != 0x02)) {
+		    (sdr_info.version != 0x01) &&
+		    (sdr_info.version != 0x02)) {
 			lprintf(LOG_WARN, "WARNING: Unknown SDR repository "
 				"version 0x%02x", sdr_info.version);
 		}
@@ -3377,10 +3382,13 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 		if (header.length == 0)
 			continue;
 
-		if (header.version != 0x51) {
+		if (header.version != 0x51 &&
+		    header.version != 0x01 &&
+		    header.version != 0x02) {
 			lprintf(LOG_WARN, "invalid sdr header version %02x",
 				header.version);
-			continue;
+			ret = -1;
+			break;
 		}
 
 		sdrr = malloc(sizeof (struct sdr_record_list));
