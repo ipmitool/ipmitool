@@ -28,6 +28,10 @@
  * PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ * 
+ * You acknowledge that this software is not designed or intended for use
+ * in the design, construction, operation or maintenance of any nuclear
+ * facility.
  */
 
 #include <ipmitool/ipmi.h>
@@ -57,26 +61,26 @@
 
 extern int verbose;
 extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
-static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, unsigned char fruId);
-static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, unsigned char fruId);
-static int  ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, unsigned char fruId);
+static void ipmi_fru_read_to_bin(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId);
+static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, unsigned char * pFileName, unsigned char fruId);
+static int  ipmi_fru_upg_ekeying(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId);
 static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
                                     unsigned char fruId, 
                                     struct fru_info *pFruInfo,
                                     unsigned long * pRetLocation,
                                     unsigned long * pRetSize);
 
-static int ipmi_fru_get_multirec_from_file(char * pFileName,
+static int ipmi_fru_get_multirec_from_file(unsigned char * pFileName,
                                            unsigned char * pBufArea, 
                                            unsigned long size,
                                            unsigned long offset);
-static int ipmi_fru_get_multirec_size_from_file(char * pFileName,
+static int ipmi_fru_get_multirec_size_from_file(unsigned char * pFileName,
                                                          unsigned long * pSize,
                                                        unsigned long * pOffset);
 static void ipmi_fru_get_adjust_size_from_buffer(unsigned char * pBufArea, 
                                                           unsigned long *pSize);
 
-static char fileName[512];
+static unsigned char fileName[512];
 
 
 static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int length);
@@ -88,7 +92,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
  *
  * returns pointer to FRU area string
  */
-static char *
+char *
 get_fru_area_str(uint8_t * data, uint32_t * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
@@ -198,7 +202,7 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
  * returns 0 on success
  * returns -1 on error
  */
-static int
+int
 write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
                unsigned int soffset,  unsigned int doffset,
                unsigned int length, unsigned char *pFrubuf)
@@ -206,68 +210,68 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
    // fill in frubuf[offset:length] from the FRU[offset:length]
    // rc=1 on success
    */
-	static unsigned int fru_data_rqst_size = 32;
-	unsigned int off=0,  tmp, finish;
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char msg_data[25];
-	unsigned char writeLength;
+   static unsigned int fru_data_rqst_size = 32;
+   unsigned int off=0,  tmp, finish;
+   struct ipmi_rs * rsp;
+   struct ipmi_rq req;
+   unsigned char msg_data[25];
+   unsigned char writeLength;
 
-	finish = doffset + length;        /* destination offset */
-	if (finish > fru->size)
-	{
-		printf("Return error\n");
-		return -1;
-	}
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = SET_FRU_DATA;
-	req.msg.data = msg_data;
+   finish = doffset + length;        /* destination offset */
+   if (finish > fru->size)
+   {
+      printf("Return error\n");
+      return -1;
+   }
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = IPMI_NETFN_STORAGE;
+   req.msg.cmd = SET_FRU_DATA;
+   req.msg.data = msg_data;
 
 #ifdef LIMIT_ALL_REQUEST_SIZE
-	if (fru_data_rqst_size > 16)
+   if (fru_data_rqst_size > 16)
 #else
-		if (fru->access && fru_data_rqst_size > 16)
+   if (fru->access && fru_data_rqst_size > 16)
 #endif
-			fru_data_rqst_size = 16;
-	do 
-	{
-		/* real destination offset */
-		tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
-		msg_data[0] = id;
-		msg_data[1] = (unsigned char)tmp;
-		msg_data[2] = (unsigned char)(tmp >> 8);
-		tmp = finish - (doffset+off);                 /* bytes remaining */
-		if (tmp > 16)
-		{
-			lprintf(LOG_INFO,"Writting 16 bytes");
-			memcpy(&msg_data[3],(pFrubuf+soffset+off), 16); 
-			req.msg.data_len = 16 + 3;
-		}
-		else
-		{
-			lprintf(LOG_INFO,"Writting %d bytes", tmp);
-			memcpy(&msg_data[3],(pFrubuf+soffset+off), (unsigned char) tmp); 
-			req.msg.data_len = tmp + 3;
-		}
+     fru_data_rqst_size = 16;
+   do 
+   {
+      /* real destination offset */
+      tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
+      msg_data[0] = id;
+      msg_data[1] = (unsigned char)tmp;
+      msg_data[2] = (unsigned char)(tmp >> 8);
+      tmp = finish - (doffset+off);                 /* bytes remaining */
+      if (tmp > 16)
+      {
+         lprintf(LOG_INFO,"Writting 16 bytes");
+         memcpy(&msg_data[3],(pFrubuf+soffset+off), 16); 
+         req.msg.data_len = 16 + 3;
+      }
+      else
+      {
+         lprintf(LOG_INFO,"Writting %d bytes", tmp);
+         memcpy(&msg_data[3],(pFrubuf+soffset+off), (unsigned char) tmp); 
+         req.msg.data_len = tmp + 3;
+      }
 
-		writeLength = req.msg.data_len-3;
+      writeLength = req.msg.data_len-3;
 
-		rsp = intf->sendrecv(intf, &req);
-		if (!rsp)
-			break;
-		if ((rsp->ccode==0xc7 || rsp->ccode==0xc8 || rsp->ccode==0xca ) && --fru_data_rqst_size > 8)
-		{
-			lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
-			break; /*continue;*/
-		}
-		if (rsp->ccode)
-			break;
+      rsp = intf->sendrecv(intf, &req);
+      if (!rsp)
+         break;
+      if ((rsp->ccode==0xc7 || rsp->ccode==0xc8 || rsp->ccode==0xca ) && --fru_data_rqst_size > 8)
+      {
+         lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
+         break; /*continue;*/
+      }
+      if (rsp->ccode)
+         break;
 
-		off += writeLength;
-	} while ((doffset+off) < finish);
+      off += writeLength;
+   } while ((doffset+off) < finish);
 
-	return ((doffset+off) >= finish);
+   return ((doffset+off) >= finish);
 }
 
 /* read_fru_area  -  fill in frubuf[offset:length] from the FRU[offset:length]
@@ -282,7 +286,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
  * returns -1 on error
  * returns 0 if successful
  */
-static int
+int
 read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	      uint32_t offset, uint32_t length, uint8_t *frubuf)
 {
@@ -377,8 +381,7 @@ static void
 fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		    uint8_t id, uint32_t offset)
 {
-	char * fru_area;
-	uint8_t * fru_data;
+	uint8_t * fru_area, * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -450,8 +453,7 @@ static void
 fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		     uint8_t id, uint32_t offset)
 {
-	char * fru_area;
-	uint8_t * fru_data;
+	uint8_t * fru_area, * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -542,8 +544,7 @@ static void
 fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		       uint8_t id, uint32_t offset)
 {
-	char * fru_area;
-	uint8_t * fru_data;
+	uint8_t * fru_area, * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -820,261 +821,261 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 
 static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int length)
 {
-	struct fru_multirec_picmgext_header *h;
-	int   guid_count; 
-	int offset = off;
-	int start_offset = off;
-	int i;
+   struct fru_multirec_picmgext_header *h;
+   int   guid_count; 
+   int offset = off;
+   int start_offset = off;
+   int i;
 
-	h = (struct fru_multirec_picmgext_header *) &fru_data[offset];
-	offset += sizeof(struct fru_multirec_picmgext_header);
+   h = (struct fru_multirec_picmgext_header *) &fru_data[offset];
+   offset += sizeof(struct fru_multirec_picmgext_header);
    
-	switch (h->record_id)
-	{
+   switch (h->record_id)
+   {
 
-	case FRU_PICMG_BACKPLANE_P2P:
-	{
-		unsigned char index;
-		struct fru_picmgext_slot_desc * slot_d
-			= (struct fru_picmgext_slot_desc*) &fru_data[offset];
+      case FRU_PICMG_BACKPLANE_P2P:
+      {
+            unsigned char index, index2;
+          struct fru_picmgext_slot_desc * slot_d
+                  = (struct fru_picmgext_slot_desc*) &fru_data[offset];
 
-		offset += sizeof(struct fru_picmgext_slot_desc);
-		printf("    FRU_PICMG_BACKPLANE_P2P\n");
+          offset += sizeof(struct fru_picmgext_slot_desc);
+         printf("    FRU_PICMG_BACKPLANE_P2P\n");
 
-		for ( ; offset <= (start_offset+length) ; )
-		{
-			printf("\n");
-			printf("    Channel Type:  ");
-			switch ( slot_d -> chan_type )
-			{
-			case 0x00:
-			case 0x07:
-				printf("PICMG 2.9\n");
-				break;
-			case 0x08:
-				printf("Single Port Fabric IF\n");
-				break;
-			case 0x09:
-				printf("Double Port Fabric IF\n");
-				break;
-			case 0x0a:
-				printf("Full Channel Fabric IF\n");
-				break;
-			case 0x0b:
-				printf("Base IF\n");
-				break;
-			case 0x0c:
-				printf("Update Channel IF\n");
-				break;
-			default:
-				printf("Unknown IF\n");
-				break;
-			}
-			printf("    Slot Addr.   : %02x\n", slot_d -> slot_addr );
-			printf("    Channel Count: %i\n", slot_d -> chn_count);
+         for ( ; offset <= (start_offset+length) ; )
+         {
+            printf("\n");
+            printf("    Channel Type:  ");
+            switch ( slot_d -> chan_type )
+            {
+                    case 0x00:
+                    case 0x07:
+                            printf("PICMG 2.9\n");
+                            break;
+                    case 0x08:
+                            printf("Single Port Fabric IF\n");
+                            break;
+                    case 0x09:
+                            printf("Double Port Fabric IF\n");
+                            break;
+                    case 0x0a:
+                            printf("Full Channel Fabric IF\n");
+                            break;
+                    case 0x0b:
+                            printf("Base IF\n");
+                            break;
+                    case 0x0c:
+                            printf("Update Channel IF\n");
+                         break;
+                    default:
+                            printf("Unknown IF\n");
+                            break;
+            }
+            printf("    Slot Addr.   : %02x\n", slot_d -> slot_addr );
+            printf("    Channel Count: %i\n", slot_d -> chn_count);
 
-			for ( index = 0 ; index < (slot_d -> chn_count) ; index++  )
-			{
-				struct fru_picmgext_chn_desc * d
-					= (struct fru_picmgext_chn_desc *) &fru_data[offset];
+            for ( index = 0 ; index < (slot_d -> chn_count) ; index++  )
+            {
+                struct fru_picmgext_chn_desc * d
+                     = (struct fru_picmgext_chn_desc *) &fru_data[offset];
 
-				if (verbose)
-					printf(  "       "
-						 "Chn: %02x  ->  "
-						 "Chn: %02x in "
-						 "Slot: %02x\n",
-						 d->local_chn, d->remote_chn, d->remote_slot);
+               if (verbose)
+                  printf(  "       "
+                        "Chn: %02x  ->  "
+                          "Chn: %02x in "
+                          "Slot: %02x\n",
+                        d->local_chn, d->remote_chn, d->remote_slot);
 
-				offset += sizeof(struct fru_picmgext_chn_desc);
-			}
+                offset += sizeof(struct fru_picmgext_chn_desc);
+            }
 
-			slot_d = (struct fru_picmgext_slot_desc*) &fru_data[offset];
-			offset += sizeof(struct fru_picmgext_slot_desc);
-		}
-	}
-	break;
+            slot_d = (struct fru_picmgext_slot_desc*) &fru_data[offset];
+            offset += sizeof(struct fru_picmgext_slot_desc);
+         }
+      }
+         break;
 
-	case FRU_PICMG_ADDRESS_TABLE:
-		printf("    FRU_PICMG_ADDRESS_TABLE\n");
-		break;
+      case FRU_PICMG_ADDRESS_TABLE:
+         printf("    FRU_PICMG_ADDRESS_TABLE\n");
+         break;
 
-	case FRU_PICMG_SHELF_POWER_DIST:
-		printf("    FRU_PICMG_SHELF_POWER_DIST\n");
-		break;
+      case FRU_PICMG_SHELF_POWER_DIST:
+         printf("    FRU_PICMG_SHELF_POWER_DIST\n");
+         break;
 
-	case FRU_PICMG_SHELF_ACTIVATION:
-		printf("    FRU_PICMG_SHELF_ACTIVATION\n");
-		break;
+      case FRU_PICMG_SHELF_ACTIVATION:
+         printf("    FRU_PICMG_SHELF_ACTIVATION\n");
+         break;
 
-	case FRU_PICMG_SHMC_IP_CONN:
-		printf("    FRU_PICMG_SHMC_IP_CONN\n");
-		break;
+      case FRU_PICMG_SHMC_IP_CONN:
+         printf("    FRU_PICMG_SHMC_IP_CONN\n");
+         break;
 
-	case FRU_PICMG_BOARD_P2P:
-		printf("    FRU_PICMG_BOARD_P2P\n");
+      case FRU_PICMG_BOARD_P2P:
+         printf("    FRU_PICMG_BOARD_P2P\n");
          
-		guid_count = fru_data[offset];
-		printf("      GUID count: %2d\n", guid_count);  
-		for (i = 0 ; i < guid_count; i++ )
-		{
-			printf("        GUID %2d:\n", i);   
-			offset += sizeof(struct fru_picmgext_guid);
-		}
+         guid_count = fru_data[offset];
+         printf("      GUID count: %2d\n", guid_count);  
+         for (i = 0 ; i < guid_count; i++ )
+         {
+            printf("        GUID %2d:\n", i);   
+            offset += sizeof(struct fru_picmgext_guid);
+         }
 
-		for (
-			++offset; 
-			offset < off + length; 
-			offset += sizeof(struct fru_picmgext_link_desc)
-			) 
-		{
-			struct fru_picmgext_link_desc * d =    
-				(struct fru_picmgext_link_desc *) &fru_data[offset];
+         for (
+               ++offset; 
+               offset < off + length; 
+               offset += sizeof(struct fru_picmgext_link_desc)
+             ) 
+         {
+            struct fru_picmgext_link_desc * d =    
+                           (struct fru_picmgext_link_desc *) &fru_data[offset];
 
-			printf("      Link Grouping ID:     0x%02x\n", d->grouping);
-			printf("      Link Type Extension:  0x%02x\n", d->ext);
-			printf("      Link Type:            ");
-			if (d->type == 0 || d->type == 0xff)
-			{
-				printf("Reserved\n");
-			}
-			else if (d->type >= 0x06 && d->type <= 0xef)  
-			{
-				printf("Reserved\n");
-			} 
-			else if (d->type >= 0xf0 && d->type <= 0xfe)
-			{
-				printf("OEM GUID Definition\n");
-			}
-			else
-			{
-				switch (d->type) 
-				{
-				case FRU_PICMGEXT_LINK_TYPE_BASE:
-					printf("PICMG 3.0 Base Interface 10/100/1000\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET:
-					printf("PICMG 3.1 Ethernet Fabric Interface\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND:
-					printf("PICMG 3.2 Infiniband Fabric Interface\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR:
-					printf("PICMG 3.3 Star Fabric Interface\n");
-					break;
-				case  FRU_PICMGEXT_LINK_TYPE_PCIE:
-					printf("PCI Express Fabric Interface\n");
-				default:
-					printf("Invalid\n");
-				}
-			}
-			printf("      Link Designator:      0x%03x\n", d->designator);
-			printf("        Port Flag:            0x%02x\n", d->designator >> 8);
-			printf("        Interface:            ");
-			switch ((d->designator & 0xff) >> 6)
-			{
-			case FRU_PICMGEXT_DESIGN_IF_BASE:
-				printf("Base Interface\n");
-				break;
-			case FRU_PICMGEXT_DESIGN_IF_FABRIC:
-				printf("Fabric Interface\n");
-				break;   
-			case FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL:
-				printf("Update Channel\n");
-				break;
-			case FRU_PICMGEXT_DESIGN_IF_RESERVED:
-				printf("Reserved\n");
-			default:
-				printf("Invalid");
-			}
-			printf("        Channel Number:       0x%02x\n", d->designator & 0x1f);
-			printf("\n");
-		}
+            printf("      Link Grouping ID:     0x%02x\n", d->grouping);
+            printf("      Link Type Extension:  0x%02x\n", d->ext);
+            printf("      Link Type:            ");
+            if (d->type == 0 || d->type == 0xff)
+            {
+               printf("Reserved\n");
+            }
+            else if (d->type >= 0x06 && d->type <= 0xef)  
+            {
+               printf("Reserved\n");
+            } 
+            else if (d->type >= 0xf0 && d->type <= 0xfe)
+            {
+               printf("OEM GUID Definition\n");
+            }
+            else
+            {
+               switch (d->type) 
+               {
+                  case FRU_PICMGEXT_LINK_TYPE_BASE:
+                     printf("PICMG 3.0 Base Interface 10/100/1000\n");
+                     break;
+                  case FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET:
+                     printf("PICMG 3.1 Ethernet Fabric Interface\n");
+                     break;
+                  case FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND:
+                     printf("PICMG 3.2 Infiniband Fabric Interface\n");
+                     break;
+                  case FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR:
+                     printf("PICMG 3.3 Star Fabric Interface\n");
+                     break;
+                  case  FRU_PICMGEXT_LINK_TYPE_PCIE:
+                     printf("PCI Express Fabric Interface\n");
+                  default:
+                     printf("Invalid\n");
+               }
+            }
+            printf("      Link Designator:      0x%03x\n", d->designator);
+            printf("        Port Flag:            0x%02x\n", d->designator >> 8);
+            printf("        Interface:            ");
+            switch ((d->designator & 0xff) >> 6)
+            {
+               case FRU_PICMGEXT_DESIGN_IF_BASE:
+                  printf("Base Interface\n");
+                  break;
+               case FRU_PICMGEXT_DESIGN_IF_FABRIC:
+                  printf("Fabric Interface\n");
+                  break;   
+               case FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL:
+                  printf("Update Channel\n");
+                  break;
+               case FRU_PICMGEXT_DESIGN_IF_RESERVED:
+                  printf("Reserved\n");
+               default:
+                  printf("Invalid");
+            }
+            printf("        Channel Number:       0x%02x\n", d->designator & 0x1f);
+            printf("\n");
+         }
          
-		break;
+         break;
 
-	case FRU_AMC_CURRENT:
-		printf("    FRU_AMC_CURRENT\n");
-		break;
+      case FRU_AMC_CURRENT:
+         printf("    FRU_AMC_CURRENT\n");
+         break;
    
-	case FRU_AMC_ACTIVATION:
-		printf("    FRU_AMC_ACTIVATION\n");
-		{
-			unsigned short max_current;
+      case FRU_AMC_ACTIVATION:
+         printf("    FRU_AMC_ACTIVATION\n");
+         {
+            unsigned short max_current;
             
-			max_current = fru_data[offset];
-			max_current |= fru_data[++offset]<<8;
-			printf("      Maximum Internal Current(@12V): %i A\n", max_current / 10);
-			printf("      Module Activation Rediness:     %i sec.\n", fru_data[++offset]);
+            max_current = fru_data[offset];
+            max_current |= fru_data[++offset]<<8;
+            printf("      Maximum Internal Current(@12V): %i A\n", max_current / 10);
+            printf("      Module Activation Rediness:     %i sec.\n", fru_data[++offset]);
 
-			printf("      Descriptor Count: %i\n", fru_data[++offset]);
-			printf("\n");
+            printf("      Descriptor Count: %i\n", fru_data[++offset]);
+            printf("\n");
             
-			for(++offset; offset < off + length; offset += sizeof(struct fru_picmgext_activation_record))
-			{
-				struct fru_picmgext_activation_record * a = 
-					(struct fru_picmgext_activation_record *) &fru_data[offset];
+            for(++offset; offset < off + length; offset += sizeof(struct fru_picmgext_activation_record))
+            {
+               struct fru_picmgext_activation_record * a = 
+                                 (struct fru_picmgext_activation_record *) &fru_data[offset];
                                  
-				printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
-				printf("        Max. Module Current:  %i A\n", a->max_module_curr/10);
-				printf("\n");
-			}
-		}
-		break;
+               printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
+               printf("        Max. Module Current:  %i A\n", a->max_module_curr/10);
+               printf("\n");
+            }
+         }
+         break;
 
-	case FRU_AMC_CARRIER_P2P:
-		printf("    FRU_CARRIER_P2P\n");
-		{
-			unsigned int index;  
+      case FRU_AMC_CARRIER_P2P:
+         printf("    FRU_CARRIER_P2P\n");
+         {
+            unsigned int index;  
                         
-			for(; offset < off + length; )
-			{
-				struct fru_picmgext_carrier_p2p_record * h = 
-					(struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
+            for(offset; offset < off + length; )
+            {
+               struct fru_picmgext_carrier_p2p_record * h = 
+                        (struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
                
-				printf("\n");
-				printf("      Resource ID:      %i", h->resource_id & 0x07);
-				printf("  Type: ");
-				if ((h->resource_id>>7) == 1) {
-					printf("AMC\n");
-				} else {
-					printf("Local\n");
-				}
-				printf("      Descriptor Count: %i\n", h->p2p_count);
+               printf("\n");
+               printf("      Resource ID:      %i", h->resource_id & 0x07);
+               printf("  Type: ");
+               if ((h->resource_id>>7) == 1) {
+                  printf("AMC\n");
+               } else {
+                  printf("Local\n");
+               }
+               printf("      Descriptor Count: %i\n", h->p2p_count);
 
-				offset += sizeof(struct fru_picmgext_carrier_p2p_record);
+               offset += sizeof(struct fru_picmgext_carrier_p2p_record);
                
-				for (index = 0; index < h->p2p_count; index++) 
-				{
-					struct fru_picmgext_carrier_p2p_descriptor * d =
-						(struct fru_picmgext_carrier_p2p_descriptor*)&fru_data[offset];
+               for (index = 0; index < h->p2p_count; index++) 
+               {
+                  struct fru_picmgext_carrier_p2p_descriptor * d =
+                           (struct fru_picmgext_carrier_p2p_descriptor*)&fru_data[offset];
                   
-						printf("        Port: %02d\t->  Remote Port: %02d\t",
-						       d->local_port, d->remote_port);
-						if((d->remote_resource_id >> 7) == 1)
-							printf("[ AMC   ID: %02d ]\n", d->remote_resource_id & 0x07);
-						else
-							printf("[ local ID: %02d ]\n", d->remote_resource_id & 0x07);
+                  printf("        Port: %02d\t->  Remote Port: %02d\t",
+                      d->local_port, d->remote_port);
+                  if((d->remote_resource_id >> 7) == 1)
+                     printf("[ AMC   ID: %02d ]\n", d->remote_resource_id & 0x07);
+                  else
+                     printf("[ local ID: %02d ]\n", d->remote_resource_id & 0x07);
 
-						offset += sizeof(struct fru_picmgext_carrier_p2p_descriptor);
+                  offset += sizeof(struct fru_picmgext_carrier_p2p_descriptor);
                
-				}
-			}
-		}
-		break;
+               }
+            }
+         }
+         break;
 
-	case FRU_AMC_P2P:
-		printf("    FRU_AMC_P2P\n");
-		break;
+      case FRU_AMC_P2P:
+         printf("    FRU_AMC_P2P\n");
+         break;
 
-	case FRU_AMC_CARRIER_INFO:
-		printf("    FRU_CARRIER_INFO\n");
-		break;
+      case FRU_AMC_CARRIER_INFO:
+         printf("    FRU_CARRIER_INFO\n");
+         break;
 
-	default:
-		printf("    Unknown PICMG Extension Record ID: %x\n", h->record_id);
-		break;
+      default:
+         printf("    Unknown PICMG Extension Record ID: %x\n", h->record_id);
+         break;
 
-	}
+   }
 }
 
 
@@ -1338,82 +1339,82 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "help", 4) == 0)
 		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey");
 	else if (strncmp(argv[0], "print", 5) == 0 ||
-		 strncmp(argv[0], "list", 4) == 0)
-	{
-		if (argc > 1) {
-			rc = __ipmi_fru_print(intf, strtol(argv[1], NULL, 0));
-		} else {
-			rc = ipmi_fru_print_all(intf);
-		}
-	}
-	else if (!strncmp(argv[0], "read", 5))
-	{
-		unsigned char fruId=0;
-		if((argc >= 3) && (strlen(argv[2]) > 0))
-		{
-			/* There is a file name in the parameters */
-			if(strlen(argv[2]) < 512)
-			{
-				fruId = atoi(argv[1]);
-				strcpy(fileName, argv[2]);
-				if (verbose)
-				{
-					printf("Fru Id           : %d\n", fruId);
-					printf("Fru File         : %s\n", fileName);
-				}
-				ipmi_fru_read_to_bin(intf,fileName,fruId);
-			}
-			else
-			{
-				fprintf(stderr,"File name must be smaller than 512 bytes\n");
-			}        
-		}
-		else
-		{
-			printf("fru read <fru id> <fru file>\n");
-		}
-	}
-	else if (!strncmp(argv[0], "write", 5))
-	{
-		unsigned char fruId=0;
-		if((argc >= 3) && (strlen(argv[2]) > 0))
-		{
-			/* There is a file name in the parameters */
-			if(strlen(argv[2]) < 512)
-			{
-				fruId = atoi(argv[1]);
-				strcpy(fileName, argv[2]);
-				if (verbose)
-				{
-					printf("Fru Id           : %d\n", fruId);
-					printf("Fru File         : %s\n", fileName);
-				}
-				ipmi_fru_write_from_bin(intf,fileName,fruId);
-			}
-			else
-			{
-				fprintf(stderr,"File name must be smaller than 512 bytes\n");
-			}        
-		}
-		else
-		{
-			fprintf(stderr,"A Fru Id and a path/file name must be specified\n");
-			fprintf(stderr,"Ex.: ipmitool fru write 0 /root/fru.bin\n");
-		}
-	}
-	else if(!strncmp(argv[0], "upgEkey", 7))
-	{
-		if((argc >= 3) && (strlen(argv[2]) > 0))
-		{
-			strcpy(fileName, argv[2]);
-			ipmi_fru_upg_ekeying(intf,fileName,atoi(argv[1]));
+		strncmp(argv[0], "list", 4) == 0)
+   {
+      if (argc > 1) {
+         rc = __ipmi_fru_print(intf, strtol(argv[1], NULL, 0));
+      } else {
+		rc = ipmi_fru_print_all(intf);
+      }
+   }
+  else if (!strncmp(argv[0], "read", 5))
+   {
+      unsigned char fruId=0;
+      if((argc >= 3) && (strlen(argv[2]) > 0))
+      {
+         /* There is a file name in the parameters */
+         if(strlen(argv[2]) < 512)
+         {
+            fruId = atoi(argv[1]);
+            strcpy(fileName, argv[2]);
+            if (verbose)
+            {
+               printf("Fru Id           : %d\n", fruId);
+               printf("Fru File         : %s\n", fileName);
+            }
+            ipmi_fru_read_to_bin(intf,fileName,fruId);
+         }
+         else
+         {
+            fprintf(stderr,"File name must be smaller than 512 bytes\n");
+         }        
+      }
+      else
+      {
+         printf("fru read <fru id> <fru file>\n");
+      }
+   }
+   else if (!strncmp(argv[0], "write", 5))
+   {
+      unsigned char fruId=0;
+      if((argc >= 3) && (strlen(argv[2]) > 0))
+      {
+         /* There is a file name in the parameters */
+         if(strlen(argv[2]) < 512)
+         {
+            fruId = atoi(argv[1]);
+            strcpy(fileName, argv[2]);
+            if (verbose)
+            {
+               printf("Fru Id           : %d\n", fruId);
+               printf("Fru File         : %s\n", fileName);
+            }
+            ipmi_fru_write_from_bin(intf,fileName,fruId);
+         }
+         else
+         {
+            fprintf(stderr,"File name must be smaller than 512 bytes\n");
+         }        
+      }
+      else
+      {
+         fprintf(stderr,"A Fru Id and a path/file name must be specified\n");
+         fprintf(stderr,"Ex.: ipmitool fru write 0 /root/fru.bin\n");
+      }
+   }
+   else if(!strncmp(argv[0], "upgEkey", 7))
+   {
+      if((argc >= 3) && (strlen(argv[2]) > 0))
+      {
+         strcpy(fileName, argv[2]);
+         ipmi_fru_upg_ekeying(intf,fileName,atoi(argv[1]));
          
-		}
-		else
-		{
-			printf("fru upgEkey <fru id> <fru file>\n");
-		}
-	}
+      }
+      else
+      {
+         printf("fru upgEkey <fru id> <fru file>\n");
+      }
+   }
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
 		lprintf(LOG_ERR, "FRU Commands:  print");
@@ -1423,75 +1424,80 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return rc;
 }
 
-static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, unsigned char fruId)
+static void ipmi_fru_read_to_bin(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	struct fru_info fru;
-	unsigned char msg_data[4];
-	unsigned char * pFruBuf;
-
-	msg_data[0] = fruId;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_INFO;
-	req.msg.data = msg_data;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp)
-		return;
-
-	if(rsp->ccode)
-	{
-		if (rsp->ccode == 0xc3)
-			printf ("  Timeout accessing FRU info. (Device not present?)\n");
-		return;
-	}
-	fru.size = (rsp->data[1] << 8) | rsp->data[0];
-	fru.access = rsp->data[2] & 0x1;
-
-	if (verbose)
-	{
-		printf("Fru Size   = %d bytes\n",fru.size);
-		printf("Fru Access = %xh\n", fru.access);
-	}
+   struct ipmi_rs * rsp;
+   struct ipmi_rq req;
+   unsigned char * fru_data;
+   struct fru_info fru;
+   unsigned char msg_data[4];
    
-	pFruBuf = malloc(fru.size);
-	if(pFruBuf != NULL)
-	{
-		printf("Fru Size         : %d bytes\n",fru.size);
-		read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
-	}
-	else
-	{
-		fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
-	}
+   unsigned char * pFruBuf;
+   unsigned int counter;
+   unsigned int len;
+
+   msg_data[0] = fruId;
+
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = IPMI_NETFN_STORAGE;
+   req.msg.cmd = GET_FRU_INFO;
+   req.msg.data = msg_data;
+   req.msg.data_len = 1;
+
+   rsp = intf->sendrecv(intf, &req);
+   if (!rsp)
+      return;
+
+   if(rsp->ccode)
+   {
+      if (rsp->ccode == 0xc3)
+         printf ("  Timeout accessing FRU info. (Device not present?)\n");
+      return;
+   }
+   fru.size = (rsp->data[1] << 8) | rsp->data[0];
+   fru.access = rsp->data[2] & 0x1;
+
+   if (verbose)
+   {
+      printf("Fru Size   = %d bytes\n",fru.size);
+      printf("Fru Access = %xh\n", fru.access);
+   }
    
-	if(pFruBuf != NULL)
-	{
-		FILE * pFile;
-		pFile = fopen(pFileName, "wb");
-		if(pFile!=NULL)
-		{
-			fwrite(pFruBuf, fru.size, 1, pFile);
-			printf("Done\n\r");
-		}
-		else
-		{
-			fprintf(stderr, "Error opening file %s\n", pFileName);
-		}
-		fclose(pFile);
-	}
-	free(pFruBuf);
+   pFruBuf = malloc(fru.size);
+   if(pFruBuf != NULL)
+   {
+      printf("Fru Size         : %d bytes\n",fru.size);
+      read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
+   }
+   else
+   {
+      fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
+   }
+   
+   if(pFruBuf != NULL)
+   {
+      FILE * pFile;
+      pFile = fopen(pFileName,"wb");
+      if(pFile!=NULL)
+      {
+         fwrite(pFruBuf, fru.size, 1, pFile);
+         printf("Done\n\r");
+      }
+      else
+      {
+         fprintf(stderr, "Error opening file %s\n", pFileName);
+      }
+      fclose(pFile);
+   }
+   free(pFruBuf);
 }
 
 static void ipmi_fru_write_from_bin(struct ipmi_intf * intf,
-                                    char * pFileName, unsigned char fruId)
+                                 unsigned char * pFileName, unsigned char fruId)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
+	unsigned char *fru_data;
 	struct fru_info fru;
 	unsigned char msg_data[4];
 
@@ -1549,40 +1555,40 @@ static void ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 }
 
 static int
-ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, 
-		     unsigned char fruId)
+ipmi_fru_upg_ekeying(struct ipmi_intf * intf,unsigned char * pFileName, 
+                                                            unsigned char fruId)
 {
 	unsigned int retStatus = 0;
 	unsigned long offFruMultiRec;
 	unsigned long fruMultiRecSize = 0;
-	unsigned long offFileMultiRec = 0;
+	unsigned long offFileMultiRec;
 	unsigned long fileMultiRecSize = 0;
 	struct fru_info fruInfo;
 	unsigned char *buf = NULL;
 	retStatus =
-		ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-							&offFruMultiRec,
-							&fruMultiRecSize);
+	    ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
+						    &offFruMultiRec,
+						    &fruMultiRecSize);
 
 	if (verbose) {
-		printf("FRU Size        : %lu\n\r", fruMultiRecSize);
-		printf("Multi Rec offset: %lu\n\r", offFruMultiRec);
+		printf("FRU Size        : %u\n\r", fruMultiRecSize);
+		printf("Multi Rec offset: %u\n\r", offFruMultiRec);
 	}
 
 	if (retStatus == 0) {
 		retStatus =
-			ipmi_fru_get_multirec_size_from_file(pFileName,
-							     &fileMultiRecSize,
-							     &offFileMultiRec);
+		    ipmi_fru_get_multirec_size_from_file(pFileName,
+							 &fileMultiRecSize,
+							 &offFileMultiRec);
 	}
 
 	if (retStatus == 0) {
 		buf = malloc(fileMultiRecSize);
 		if (buf) {
 			retStatus =
-				ipmi_fru_get_multirec_from_file(pFileName, buf,
-								fileMultiRecSize,
-								offFileMultiRec);
+			    ipmi_fru_get_multirec_from_file(pFileName, buf,
+							    fileMultiRecSize,
+							    offFileMultiRec);
 
 		} else {
 			printf("Error allocating memory for multirec buffer\n");
@@ -1590,10 +1596,10 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName,
 		}
 	}
 
-	if(retStatus == 0)
-	{
-		ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
-	}
+   if(retStatus == 0)
+   {
+      ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
+   }
 
 	if ((retStatus == 0) && (buf)) {
 		write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
@@ -1603,197 +1609,198 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName,
 	if (buf) {
 		free(buf);
 	}
-	if(retStatus == 0 )
-	{
-		lprintf(LOG_INFO, "Done");
-	}
-	else
-	{
-		lprintf(LOG_ERR, "Failed");
-	}
-
-	return 0;
+   if(retStatus == 0 )
+   {
+      lprintf(LOG_INFO, "Done");
+   }
+   else
+   {
+      lprintf(LOG_ERR, "Failed");
+   }
 }
 
-static int ipmi_fru_get_multirec_size_from_file(char * pFileName,
-						unsigned long * pSize,
-						unsigned long * pOffset)
+static int ipmi_fru_get_multirec_size_from_file(unsigned char * pFileName,
+                                                         unsigned long * pSize,
+                                                        unsigned long * pOffset)
 {
-	struct fru_header header;
-	FILE * pFile;
-	unsigned char len = 0;
-	unsigned long end = 0;
+   struct fru_header header;
+   FILE * pFile;
+   unsigned char len = 0;
+   unsigned long end;
    
-	*pSize = 0;
+   *pSize = 0;
 
-	pFile = fopen(pFileName,"rb");
-	if(pFile!=NULL)
-	{
-		rewind(pFile);
-		len = fread(&header, 1, 8, pFile);
-		fseek(pFile, 0, SEEK_END);      
-		end = ftell(pFile);
-		fclose(pFile);                         
-	}
+   pFile = fopen(pFileName,"rb");
+   if(pFile!=NULL)
+   {
+      rewind(pFile);
+      len = fread(&header, 1, 8, pFile);
+      fseek(pFile, 0, SEEK_END);      
+      end = ftell(pFile);
+      fclose(pFile);                         
+   }
 
-	if(verbose)
-	{
-		printf("File Size = %lu\n", end);
-		printf("Len = %d\n", len);
-	}
+   if(verbose)
+   {
+      printf("File Size = %lu\n", end);
+      printf("Len = %lu\n", len);
+   }
    
 
-	if(len != 8)
-	{
-		printf("Error with file %s in getting size\n", pFileName);
-		return -1;
-	}
+   if(len != 8)
+   {
+      printf("Error with file %s in getting size\n", pFileName);
+      return -1;
+   }
    
-	if (header.version != 0x01)
-	{
-		printf ("Unknown FRU header version %02x.\n", header.version);
-		return -1;
-	}
+   if (header.version != 0x01)
+   {
+      printf ("Unknown FRU header version %02x.\n", header.version);
+      return -1;
+   }
 
-	/* Retreive length */
-	if(
-		((header.offset.internal * 8) > (header.offset.internal * 8)) &&
-		((header.offset.internal * 8) < end)
-		)
-	{
-		end = (header.offset.internal * 8);
-	}
-	if(
-		((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
-		((header.offset.chassis * 8) < end)
-		)
-	{
-		end = (header.offset.chassis * 8);
-	}
-	if(
-		((header.offset.board * 8) > (header.offset.board * 8)) &&
-		((header.offset.board * 8) < end)
-		)
-	{
-		end = (header.offset.board * 8);
-	}
-	if(
-		((header.offset.product * 8) > (header.offset.product * 8)) &&
-		((header.offset.product * 8) < end)
-		)
-	{
-		end = (header.offset.product * 8);
-	}
+   /* Retreive length */
+   if(
+      ((header.offset.internal * 8) > (header.offset.internal * 8)) &&
+      ((header.offset.internal * 8) < end)
+     )
+   {
+      end = (header.offset.internal * 8);
+   }
+   if(
+      ((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
+      ((header.offset.chassis * 8) < end)
+     )
+   {
+      end = (header.offset.chassis * 8);
+   }
+   if(
+      ((header.offset.board * 8) > (header.offset.board * 8)) &&
+      ((header.offset.board * 8) < end)
+     )
+   {
+      end = (header.offset.board * 8);
+   }
+   if(
+      ((header.offset.product * 8) > (header.offset.product * 8)) &&
+      ((header.offset.product * 8) < end)
+     )
+   {
+      end = (header.offset.product * 8);
+   }
    
-	*pSize = end - (header.offset.multi * 8);
-	*pOffset = (header.offset.multi * 8);
+   *pSize = end - (header.offset.multi * 8);
+   *pOffset = (header.offset.multi * 8);
 
-	return 0;
+   return 0;
 }
 
 static void ipmi_fru_get_adjust_size_from_buffer(unsigned char * fru_data, 
                                                           unsigned long *pSize)
 {
-	struct fru_multirec_header * head;
-#define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
-	unsigned int count = 0;
-	unsigned int status = 0;
-	unsigned char counter;
-	unsigned char checksum = 0;
+   struct fru_multirec_header * head;
+   unsigned int last_off;
+   #define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
+   unsigned int count = 0;
+   unsigned int status = 0;
+   unsigned char counter;
+   unsigned char checksum = 0;
    
-	do
-	{
-		checksum = 0;
-		head = (struct fru_multirec_header *) (fru_data + count);
+   do
+   {
+      checksum = 0;
+      head = (struct fru_multirec_header *) (fru_data + count);
       
-		if(verbose )
-		{
-			printf("Adding (");
-		}
+      if(verbose )
+      {
+         printf("Adding (");
+      }
       
-		for(
-			counter = 0 ; 
-			counter < sizeof (struct fru_multirec_header);
-			counter ++
-			)
-		{
-			if(verbose )
-			{
-				printf(" %02X", *(fru_data + count + counter));
-			}
-			checksum += *(fru_data + count + counter);
+      for(
+         counter = 0 ; 
+         counter < sizeof (struct fru_multirec_header);
+         counter ++
+         )
+      {
+         if(verbose )
+         {
+            printf(" %02X", *(fru_data + count + counter));
+         }
+         checksum += *(fru_data + count + counter);
          
-		}
-		if( verbose )
-		{
-			printf(")");
-		}
+      }
+      if( verbose )
+      {
+         printf(")");
+      }
       
-		if( checksum != 0)
-		{
-			printf("Bad checksum in Multi Records\n");
-			status = -1;
-		}
-		else if ( verbose )
-		{
-			printf("--> OK");
-		}
+      if( checksum != 0)
+      {
+         printf("Bad checksum in Multi Records\n");
+         status = -1;
+      }
+      else if ( verbose )
+      {
+         printf("--> OK");
+      }
       
-		if((verbose > 1 ) && (checksum == 0))
-		{
-			for(
-				counter = 0 ; 
-				counter < head->len;
-				counter ++
-				)
-			{
-				printf(" %02X", *(fru_data + count + counter + 
-						  sizeof(struct fru_multirec_header)));
-			}
-		}
-		if(verbose )
-		{
-			printf("\n");
-		}   
-		count += head->len + sizeof (struct fru_multirec_header);
-	} while( (!(head->format & 0x80)) && (status == 0));
+      if((verbose > 1 ) && (checksum == 0))
+      {
+         for(
+            counter = 0 ; 
+            counter < head->len;
+            counter ++
+            )
+         {
+            printf(" %02X", *(fru_data + count + counter + 
+                                        sizeof(struct fru_multirec_header)));
+         }
+      }
+      if(verbose )
+      {
+         printf("\n");
+      }   
+      count += head->len + sizeof (struct fru_multirec_header);
+   } while( (!(head->format & 0x80)) && (status == 0));
    
-	*pSize = count;
+   *pSize = count;
 
-	if (verbose > 1)   
-	{
-		printf("Size of multirec: %lu\n\r", *pSize);
-	}
+   if (verbose > 1)   
+   {
+      printf("Size of multirec: %u\n\r", *pSize);
+   }
 }
 
 
-static int ipmi_fru_get_multirec_from_file(char * pFileName,
+static int ipmi_fru_get_multirec_from_file(unsigned char * pFileName,
                                            unsigned char * pBufArea, 
                                            unsigned long size,
                                            unsigned long offset)
 {
-	FILE * pFile;
-	unsigned long len = 0;
+   struct fru_header header;
+   FILE * pFile;
+   unsigned long len = 0;
+   
 
-	pFile = fopen(pFileName,"rb");
-	if(pFile!=NULL)
-	{
-		fseek(pFile, offset,SEEK_SET);
-		len = fread(pBufArea, size, 1, pFile);
-		fclose(pFile);
-	}
-	else
-	{
-		printf("Error opening file\n");
-	}
+   pFile = fopen(pFileName,"rb");
+   if(pFile!=NULL)
+   {
+      fseek(pFile, offset,SEEK_SET);
+      len = fread(pBufArea, size, 1, pFile);
+      fclose(pFile);
+   }
+   else
+   {
+      printf("Error opening file\n");
+   }
    
-	if(len != 1)
-	{
-		printf("Error with file %s\n", pFileName);
-		return -1;
-	}
+   if(len != 1)
+   {
+      printf("Error with file %s\n", pFileName);
+      return -1;
+   }
    
-	return 0;
+   return 0;
 }
 
 
@@ -1804,117 +1811,121 @@ static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
                                     unsigned long * pRetLocation,
                                     unsigned long * pRetSize)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	unsigned char msg_data[4];
-	unsigned long end;
-	struct fru_header header;
+   struct ipmi_rs * rsp;
+   struct ipmi_rq req;
+   unsigned char * fru_data;
+   unsigned char msg_data[4];
+   int i, len;
+   unsigned long end;
 
-	*pRetLocation = 0;
 
-	msg_data[0] = fruId;
+   struct fru_header header;
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_INFO;
-	req.msg.data = msg_data;
-	req.msg.data_len = 1;
+   *pRetLocation = 0;
 
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		if (verbose > 1) {
-			printf("no response\n");
-		}
-		return -1;
-	}
+   msg_data[0] = fruId;
 
-	if(rsp->ccode)
-	{
-		if (rsp->ccode == 0xc3) {
-			printf ("  Timeout accessing FRU info. (Device not present?)\n");
-		} else {
-			printf ("   CCODE = 0x%02x\n", rsp->ccode);
-		}
-		return -1;
-	}
-	pFruInfo->size = (rsp->data[1] << 8) | rsp->data[0];
-	pFruInfo->access = rsp->data[2] & 0x1;
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = IPMI_NETFN_STORAGE;
+   req.msg.cmd = GET_FRU_INFO;
+   req.msg.data = msg_data;
+   req.msg.data_len = 1;
 
-	if (verbose > 1)
-		printf("pFruInfo->size = %d bytes (accessed by %s)\n",
-		       pFruInfo->size, pFruInfo->access ? "words" : "bytes");
-	if (!pFruInfo->size) {
-		return -1;
-	}
+   rsp = intf->sendrecv(intf, &req);
+   if (!rsp) {
+      if (verbose > 1) {
+         printf("no response\n");
+      }
+      return -1;
+   }
 
-	msg_data[0] = fruId;
-	msg_data[1] = 0;
-	msg_data[2] = 0;
-	msg_data[3] = 8;
+   if(rsp->ccode)
+   {
+      if (rsp->ccode == 0xc3) {
+         printf ("  Timeout accessing FRU info. (Device not present?)\n");
+      } else {
+         printf ("   CCODE = 0x%02x\n", rsp->ccode);
+      }
+      return -1;
+   }
+   pFruInfo->size = (rsp->data[1] << 8) | rsp->data[0];
+   pFruInfo->access = rsp->data[2] & 0x1;
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_DATA;
-	req.msg.data = msg_data;
-	req.msg.data_len = 4;
+   if (verbose > 1)
+      printf("pFruInfo->size = %d bytes (accessed by %s)\n",
+             pFruInfo->size, pFruInfo->access ? "words" : "bytes");
+   if (!pFruInfo->size) {
+      return -1;
+   }
 
-	rsp = intf->sendrecv(intf, &req);
+   msg_data[0] = fruId;
+   msg_data[1] = 0;
+   msg_data[2] = 0;
+   msg_data[3] = 8;
 
-	if (!rsp)
-		return -1;
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = IPMI_NETFN_STORAGE;
+   req.msg.cmd = GET_FRU_DATA;
+   req.msg.data = msg_data;
+   req.msg.data_len = 4;
 
-	if(rsp->ccode)
-	{
-		if (rsp->ccode == 0xc3) {
-			printf ("  Timeout while reading FRU data. (Device not present?)\n");
-		}
-		return -1;
-	}
+   rsp = intf->sendrecv(intf, &req);
 
-	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+   if (!rsp)
+      return -1;
 
-	memcpy(&header, rsp->data + 1, 8);
+   if(rsp->ccode)
+   {
+      if (rsp->ccode == 0xc3) {
+         printf ("  Timeout while reading FRU data. (Device not present?)\n");
+      }
+      return -1;
+   }
 
-	if (header.version != 0x01)
-	{
-		printf ("  Unknown FRU header version %02x.\n", header.version);
-		return -1;
-	}
+   if (verbose > 1)
+      printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+   memcpy(&header, rsp->data + 1, 8);
+
+   if (header.version != 0x01)
+   {
+      printf ("  Unknown FRU header version %02x.\n", header.version);
+      return -1;
+   }
    
-	end = pFruInfo->size;
+   end = pFruInfo->size;
    
-	/* Retreive length */
-	if(
-		((header.offset.internal * 8) > (header.offset.internal * 8)) &&
-		((header.offset.internal * 8) < end)
-		)
-	{
-		end = (header.offset.internal * 8);
-	}
-	if(
-		((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
-		((header.offset.chassis * 8) < end)
-		)
-	{
-		end = (header.offset.chassis * 8);
-	}
-	if(
-		((header.offset.board * 8) > (header.offset.board * 8)) &&
-		((header.offset.board * 8) < end)
-		)
-	{
-		end = (header.offset.board * 8);
-	}
-	if(
-		((header.offset.product * 8) > (header.offset.product * 8)) &&
-		((header.offset.product * 8) < end)
-		)
-	{
-		end = (header.offset.product * 8);
-	}
+   /* Retreive length */
+   if(
+      ((header.offset.internal * 8) > (header.offset.internal * 8)) &&
+      ((header.offset.internal * 8) < end)
+     )
+   {
+      end = (header.offset.internal * 8);
+   }
+   if(
+      ((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
+      ((header.offset.chassis * 8) < end)
+     )
+   {
+      end = (header.offset.chassis * 8);
+   }
+   if(
+      ((header.offset.board * 8) > (header.offset.board * 8)) &&
+      ((header.offset.board * 8) < end)
+     )
+   {
+      end = (header.offset.board * 8);
+   }
+   if(
+      ((header.offset.product * 8) > (header.offset.product * 8)) &&
+      ((header.offset.product * 8) < end)
+     )
+   {
+      end = (header.offset.product * 8);
+   }
 
-	*pRetSize     = end;
-	*pRetLocation = 8 * header.offset.multi;
-	return 0;
+   *pRetSize     = end;
+   *pRetLocation = 8 * header.offset.multi;
+   return 0;
 }
