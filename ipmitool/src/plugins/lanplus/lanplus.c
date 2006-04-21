@@ -2456,14 +2456,16 @@ ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
 	
-	ack_sol_packet(intf, rsp);	              
+   if(rsp->session.authtype != 0)
+   {
+   	ack_sol_packet(intf, rsp);	              
 
-	/*
-	 * Remembers the data sent, and alters the data to just
-	 * include the new stuff.
-	 */
-	check_sol_packet_for_new_data(intf, rsp);
-
+	   /*
+	    * Remembers the data sent, and alters the data to just
+	    * include the new stuff.
+	    */
+	   check_sol_packet_for_new_data(intf, rsp);
+   }
 	return rsp;
 }
 

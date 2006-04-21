@@ -877,6 +877,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 	ret = _gather_info(intf, &p, bmc_fn_support);
 
 	if (p.command >= 0) {
+      struct command_support * cmd;
 		if (!((p.lun < 0 || bmc_fn_support->lun[p.lun].support) &&
 			(p.netfn < 0 || bmc_fn_support->lun[p.lun].netfn[p.netfn>>1].support) &&
 			bmc_fn_support->lun[p.lun].netfn[p.netfn>>1].command[p.command].support))
@@ -886,7 +887,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 			free(bmc_fn_support);
 			return 0;
 		}
-		struct command_support * cmd =
+		cmd =
 			&bmc_fn_support->lun[p.lun].netfn[p.netfn>>1].command[p.command];
 		c = cmd->support;
 		printf("(A)vailable, (C)onfigurable, (E)nabled: | A | C | E |\n");
