@@ -182,6 +182,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	    intf->target_addr != intf->my_addr) {
 		/* use IPMB address if needed */
 		ipmb_addr.slave_addr = intf->target_addr;
+      ipmb_addr.lun = req->msg.lun;
 		_req.addr = (unsigned char *) &ipmb_addr;
 		_req.addr_len = sizeof(ipmb_addr);
 		lprintf(LOG_DEBUG, "Sending request to "
