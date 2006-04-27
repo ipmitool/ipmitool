@@ -57,7 +57,7 @@
 # include <termios.h>
 #elif defined (HAVE_SYS_TERMIOS_H)
 # include <sys/termios.h>
-#endif        
+#endif
 
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
@@ -102,8 +102,8 @@ ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char
         req.msg.data     = data;
 
 	memset(data, 0, sizeof(data));
-        data[0] = ip1;  
-        data[1] = ip2;                    
+        data[0] = ip1;
+        data[1] = ip2;
         data[2] = ip3;
         data[3] = ip4;
         data[4] = (portin & 0xff00) >> 8;
@@ -135,9 +135,9 @@ ipmi_tsol_stop(struct ipmi_intf * intf, char *recvip, int port)
         return ipmi_tsol_command(intf, recvip, port, IPMI_TSOL_CMD_STOP);
 }
 
-static int                      
+static int
 ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
-{                               
+{
         struct ipmi_rs * rsp;
         struct ipmi_rq   req;
         unsigned char    data[16];
@@ -153,7 +153,7 @@ ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
         data[0] = length + 1;
 	memcpy(data + 1, buff, length);
 	data[length + 1] = keyseq++;
-                
+
         rsp = intf->sendrecv(intf, &req);
 	if (verbose) {
 		if (rsp == NULL) {
@@ -168,13 +168,13 @@ ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
 	}
 
         return length;
-} 
+}
 
 static int
 tsol_keepalive(struct ipmi_intf * intf)
 {
         struct timeval end;
-        
+
         gettimeofday(&end, 0);
 
         if (end.tv_sec - _start_keepalive.tv_sec <= 30)
@@ -368,7 +368,7 @@ static void
 print_tsol_usage(void)
 {
 	struct winsize winsize;
-	
+
 	lprintf(LOG_NOTICE, "Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]");
 	lprintf(LOG_NOTICE, "       recvip       Receiver IP Address             [default=local]");
 	lprintf(LOG_NOTICE, "       port=NUM     Receiver UDP Port               [default=%d]",
@@ -429,7 +429,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 
-	/* create udp socket to receive the packet */	
+	/* create udp socket to receive the packet */
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
@@ -483,7 +483,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	enter_raw_mode();
 
 	/*
-	 * talk to smdc to start Console redirect - IP address and port as parameter 
+	 * talk to smdc to start Console redirect - IP address and port as parameter
 	 * ipmitool -I lan -H 192.168.168.227 -U Administrator raw 0x30 0x06 0xC0 0xA8 0xA8 0x78 0x1A 0x0A
 	 */
 	result = ipmi_tsol_start(intf, recvip, port);
@@ -495,7 +495,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printf("[SOL Session operational.  Use %c? for help]\r\n",
 	       intf->session->sol_escape_char);
 
-	gettimeofday(&_start_keepalive, 0);	
+	gettimeofday(&_start_keepalive, 0);
 
 	fds_wait[0].fd = fd_socket;
 	fds_wait[0].events = POLLIN;
@@ -506,7 +506,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	fds_wait[2].fd = -1;
 	fds_wait[2].events = 0;
 	fds_wait[2].revents = 0;
-	
+
 	fds_data_wait[0].fd = fd_socket;
 	fds_data_wait[0].events = POLLIN | POLLOUT;
 	fds_data_wait[0].revents = 0;
@@ -516,11 +516,11 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	fds_data_wait[2].fd = fileno(stdout);
 	fds_data_wait[2].events = POLLOUT;
 	fds_data_wait[2].revents = 0;
-	
+
 	out_buff_fill = 0;
 	in_buff_fill = 0;
 	fds = fds_wait;
-	
+
 	for (;;) {
 		result = poll(fds, 3, 15*1000);
 		if (result < 0)
@@ -559,7 +559,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 					do_terminal_cleanup();
 					return result;
 				}
-				if (read_only) 
+				if (read_only)
 					bytes = 0;
 				in_buff_fill += bytes;
 			}
@@ -575,7 +575,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		if ((fds[0].revents & POLLOUT) && in_buff_fill) {
 			/*
-			 * translate key and send that to SMDC using IPMI 
+			 * translate key and send that to SMDC using IPMI
 			 * ipmitool -I lan -H 192.168.168.227 -U Administrator raw 0x30 0x03 0x04 0x1B 0x5B 0x43
 			 */
 			result = ipmi_tsol_send_keystroke(intf, in_buff, __min(in_buff_fill,14));
@@ -587,9 +587,9 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 			}
 		}
-		fds = (in_buff_fill || out_buff_fill )? 
+		fds = (in_buff_fill || out_buff_fill )?
 			fds_data_wait : fds_wait;
 	}
-	
+
 	return 0;
 }

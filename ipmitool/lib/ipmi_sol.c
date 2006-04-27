@@ -50,7 +50,7 @@
 # include <termios.h>
 #elif defined (HAVE_SYS_TERMIOS_H)
 # include <sys/termios.h>
-#endif        
+#endif
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -1208,7 +1208,7 @@ processSolUserInput(
 				continue;
 
 			case 'B':
-				printf("%cb [send break]\r\n",
+				printf("%cB [send break]\r\n",
 				       intf->session->sol_escape_char);
 				sendBreak(intf);
 				continue;
