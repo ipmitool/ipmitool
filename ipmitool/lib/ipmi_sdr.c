@@ -278,12 +278,13 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf *intf, uint8_t sensor)
  * @intf:	ipmi interface
  * @sensor:	sensor id
  * @target:	IPMB target address
+ * @lun:        sensor lun
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
-				 uint8_t target)
+				 uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
@@ -1449,13 +1450,27 @@ ipmi_sdr_print_discrete_state(const char *desc,
 		}
 
 		if (evt->offset > 7) {
-			if ((1 << (evt->offset - 8)) & state2)
-				printf("                         [%s]\n",
-				       evt->desc);
+			if ((1 << (evt->offset - 8)) & state2) {
+				if (evt->desc) {
+					printf("                         "
+					       "[%s]\n",
+					       evt->desc);
+				} else {
+					printf("                         "
+					       "[no description]\n");
+				}
+			}
 		} else {
-			if ((1 << evt->offset) & state1)
-				printf("                         [%s]\n",
-				       evt->desc);
+			if ((1 << evt->offset) & state1) {
+				if (evt->desc) {
+					printf("                         "
+					       "[%s]\n",
+					       evt->desc);
+				} else {
+					printf("                         "
+					       "[no description]\n");
+				}
+			}
 		}
 		c++;
 	}
@@ -1490,21 +1505,30 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 			desc, sensor->keys.sensor_num);
 		validread = 0;
 	}
-	else if (rsp->ccode > 0 && rsp->ccode != 0xcd) {
-		/* completion code 0xcd is special case */
-		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
-			desc, sensor->keys.sensor_num,
-			val2str(rsp->ccode, completion_code_vals));
-		validread = 0;
+ 	
+ 	else if (rsp->ccode > 0) {
+  		/* completion code 0xcd is special case */
+ 		if (rsp->ccode == 0xcd) {
+ 			/* sensor not found */
+ 			validread = 0;
+ 		} else {
+ 			lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
+				desc, sensor->keys.sensor_num,
+				val2str(rsp->ccode, completion_code_vals));
+ 			validread = 0;
+ 		} 
+ 	} else {
+ 		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
+ 			/* sensor reading unavailable */
+ 			validread = 0;
+ 		} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
+ 			validread = 0;
+ 			/* check for sensor scanning disabled bit */
+ 			lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
+				desc, sensor->keys.sensor_num);
+ 		}
 	}
-
-	/* check for sensor scanning disabled bit */
-	if (rsp && IS_SCANNING_DISABLED(rsp->data[1])) {
-		lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
-			desc, sensor->keys.sensor_num);
-		validread = 0;
-	}
-
+		
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
 		       (sensor->id_code) ? desc : "", sensor->keys.sensor_num);

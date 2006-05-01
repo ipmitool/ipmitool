@@ -221,6 +221,7 @@ sunoem_led_get(struct ipmi_intf * intf,
 
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_GET;
+	req.msg.lun = dev->lun;
 	req.msg.data = rqdata;
 	req.msg.data_len = rqdata_len;
 		
@@ -273,6 +274,7 @@ sunoem_led_set(struct ipmi_intf * intf,
 
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_SET;
+	req.msg.lun = dev->lun;
 	req.msg.data = rqdata;
 	req.msg.data_len = rqdata_len;
 		

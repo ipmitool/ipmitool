@@ -516,7 +516,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
  	{ 0xF2, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Module Handle Opened" },
  	{ 0xF2, 0x02, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Module Hot Swap", "Quiesced" },
 
-	{ 0xC0, 0x00, 0xff, 0x00, "OEM", NULL },
+	{ 0xC0, 0x00, 0xff, 0x00, "OEM", "OEM Specific" },
 
 	{ 0x00, 0x00, 0x00, 0x00, NULL, NULL },
 };

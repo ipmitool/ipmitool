@@ -803,7 +803,8 @@ struct ipmi_rs *ipmi_sdr_get_sensor_reading(struct ipmi_intf *intf,
 					    uint8_t sensor);
 struct ipmi_rs *ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf,
 						 uint8_t sensor,
-						 uint8_t target);
+						 uint8_t target,
+						 uint8_t lun);
 struct ipmi_rs *ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf,
 					       uint8_t sensor);
 struct ipmi_rs *ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf,

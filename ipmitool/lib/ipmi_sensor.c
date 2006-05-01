@@ -102,7 +102,8 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 	 */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
-					       sensor->keys.owner_id);
+					       sensor->keys.owner_id,
+					       sensor->keys.lun);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -181,7 +182,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	 */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
-					       sensor->keys.owner_id);
+					       sensor->keys.owner_id,
+					       sensor->keys.lun);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -417,7 +419,8 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 	 */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
-					       sensor->keys.owner_id);
+					       sensor->keys.owner_id,
+					       sensor->keys.lun);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -758,7 +761,8 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 			}
 			rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 							       sdr->record.full->keys.sensor_num,
-							       sdr->record.full->keys.owner_id);
+							       sdr->record.full->keys.owner_id,
+							       sdr->record.full->keys.lun);
 			if (rsp == NULL) {
 				lprintf(LOG_ERR, "Error reading sensor \"%s\"", argv[i]);
 				rc = -1;
