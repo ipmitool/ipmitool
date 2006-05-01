@@ -1,3 +1,14 @@
+version 1.8.8
+	* Fix segfaults in sensor data repository list
+	* Fix ipmievd to open interface before daemonizing
+	* Fix IPMIv1.5 authtype NONE to ignore supplied password
+	* Fix cipher suite display bug in lan print
+	* Fix typo in IPMIv2 SOL output when sending break
+	* Fix improper LUN handling with Tyan SOL
+	* Add LUN support to OpenIPMI interface
+	* Add support for Kontron OEM commands
+	* Update to Kontron Firmware Update command
+
 version 1.8.7
 	* Remove nuclear clause from license
 	* Add Sun OEM command for blades

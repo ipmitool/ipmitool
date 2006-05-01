@@ -1,3 +1,23 @@
+ipmitool (1.8.7-2) unstable; urgency=low
+
+  * Fix typo in init.d/ipmievd. (Closes: #361309)
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sat,  8 Apr 2006 06:44:31 +0200
+
+ipmitool (1.8.7-1) unstable; urgency=low
+
+  * New upstream version.
+    - Dropped nuclear clause from the copyright.  Updated debian/copyright
+      to reflect this.
+    - ipmievd now store pid in /var/run/ipmievd.pid.  Adjust init.d
+      script to use it.
+  * Rename /etc/default/ipmievd variable IPMIEVD_OPTS is renamed to
+    IPMIEVD_OPTIONS to stay compatible with upstream and other
+    distributions.  Add backwards compatibility code with a warning to
+    the users of the old variable.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sun, 26 Mar 2006 21:11:08 +0200
+
 ipmitool (1.8.6-2) unstable; urgency=low
 
   * Add ia64 as an supported arch. (Closes: #355930)

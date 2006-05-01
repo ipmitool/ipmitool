@@ -46,6 +46,13 @@ IPMIEVD_OPTIONS="open daemon"
 # Read config file if it is present.
 [ -f /etc/default/$NAME ] && . /etc/default/$NAME
 
+# Backwards compatibility with version 1.8.6-2 and 1.8.6-1.  The
+# variable was renamed to be compatible with upstream, SuSe and RedHat.
+if [ -n "$IPMIEVD_OPTS" ]; then
+    echo "warning: /etc/default/$NAME variable IPMIEVD_OPTS should be renamed to IPMIEVD_OPTIONS"
+    IPMIEVD_OPTIONS="$IPMIEVD_OPTS"
+fi
+
 #
 #	Function that starts the daemon/service.
 #
