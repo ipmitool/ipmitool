@@ -260,6 +260,12 @@ ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype)
 	if (intf->session == NULL)
 		return;
 
+	/* clear password field if authtype NONE specified */
+	if (authtype == IPMI_SESSION_AUTHTYPE_NONE) {
+		memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
+		intf->session->password = 0;
+	}
+
 	intf->session->authtype_set = authtype;
 }
 
