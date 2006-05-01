@@ -640,6 +640,16 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 		}
 	}
 
+	/*
+	 * We need to open interface before forking daemon
+	 * so error messages are not lost to syslog and
+	 * return code is successfully returned to initscript
+	 */
+	if (intf->open(intf) < 0) {
+		lprintf(LOG_ERR, "Unable to open interface");
+		return -1;
+	}
+
 	if (daemon) {
 		FILE *fp;
 		struct stat st1;
