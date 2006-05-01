@@ -645,7 +645,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	 * so error messages are not lost to syslog and
 	 * return code is successfully returned to initscript
 	 */
-	if (eintf->open(eintf) < 0) {
+	if (eintf->intf->open(eintf->intf) < 0) {
 		lprintf(LOG_ERR, "Unable to open interface");
 		return -1;
 	}
