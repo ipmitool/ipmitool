@@ -752,6 +752,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 		return -1;
 	else if (p->data != NULL)
 	{
+		unsigned char cipher_suite_count = p->data[0];
 		p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHERS);
 		if (p == NULL)
 			return -1;
@@ -760,9 +761,8 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 
 		/* Now we're dangerous.  There are only 15 fixed cipher
 		   suite IDs, but the spec allows for 16 in the return data.*/
-		if ((p->data != NULL) && (p->data_len <= 16))
+		if ((p->data != NULL) && (p->data_len <= 17))
 		{
-			unsigned char cipher_suite_count = p->data[0];
 			unsigned int i;
 			for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
 			{
@@ -778,7 +778,6 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 		}
 	}
 
-	
 	/* RMCP+ Messaging Cipher Suite Privilege Levels */
 	/* These are the privilege levels for the 15 fixed cipher suites */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS);
@@ -2119,4 +2118,3 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	return rc;
 }
-
