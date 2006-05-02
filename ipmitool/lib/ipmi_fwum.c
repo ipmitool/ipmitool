@@ -952,7 +952,6 @@ struct KfwumSaveFirmwareAddressReq
 struct KfwumSaveFirmwareSequenceReq
 {
  	unsigned char sequenceNumber;
-   unsigned char numBytes;
    unsigned char txBuf[KFWUM_BIG_BUFFER-KFWUM_NEW_CMD_OVERHEAD];
 }__attribute__ ((packed));
 
@@ -988,10 +987,9 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
       else
       {
       	sequenceReq.sequenceNumber = sequenceNumber;
-         sequenceReq.numBytes       = inBufLength;
          memcpy(sequenceReq.txBuf, pFirmBuf, inBufLength);
          req.msg.data = (unsigned char *) &sequenceReq;
-         req.msg.data_len = inBufLength+2;
+         req.msg.data_len = inBufLength+sizeof(unsigned char); /* + 1 => sequenceNumber*/
       }
       							      
       rsp = intf->sendrecv(intf, &req);
