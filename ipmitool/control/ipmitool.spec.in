@@ -1,7 +1,7 @@
 Name:         ipmitool
 Summary:      ipmitool - Utility for IPMI control
 Version:      @VERSION@
-Release:      1%{?_distro:.%{_distro}}
+Release:      @RPM_RELEASE@%{?_distro:.%{_distro}}
 License:      BSD
 Group:        Utilities
 Packager:     Duncan Laurie <duncan@iceblink.org>

@@ -221,6 +221,13 @@ AC_ARG_WITH([rpm-distro],
 			[set Linux distribution tag for use in RPM version string])],
 	[AC_SUBST(DISTRO, $with_rpm_distro)])
 
+dnl set RPM release tag
+AC_ARG_WITH([rpm-release],
+	[AC_HELP_STRING([--with-rpm-release=RELEASE],
+			[set release number for RPM release field])],
+	[], [with_rpm_release=1])
+AC_SUBST(RPM_RELEASE, $with_rpm_release)
+
 dnl enable Linux OpenIPMI interface
 AC_ARG_ENABLE([intf-open],
 	[AC_HELP_STRING([--enable-intf-open],
