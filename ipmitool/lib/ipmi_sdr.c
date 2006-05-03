@@ -3770,7 +3770,6 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 	itr = ipmi_sdr_start(intf);
 	if (itr == NULL) {
 		lprintf(LOG_ERR, "Unable to open SDR for reading");
-		fclose(fp);
 		return -1;
 	}
 
