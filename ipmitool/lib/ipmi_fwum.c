@@ -880,7 +880,7 @@ struct KfwumStartFirmwareDownloadReq{
    unsigned char lengthMSB;
    unsigned char paddingLSB;
    unsigned char paddingMSB;
-	unsigned char bufferingMagic;
+	unsigned char useSequence;
 } __attribute__ ((packed));
 struct KfwumStartFirmwareDownloadResp {
    unsigned char bank;
@@ -900,7 +900,7 @@ static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
    thisReq.lengthMSB  = (length >> 16) & 0x000000ff;
    thisReq.paddingLSB = padding        & 0x00ff;
    thisReq.paddingMSB = (padding>>  8) & 0x00ff;
-	thisReq.bufferingMagic = 0xA5;
+	thisReq.useSequence = 0x01;
 
    memset(&req, 0, sizeof(req));
    req.msg.netfn = IPMI_NETFN_FIRMWARE;
