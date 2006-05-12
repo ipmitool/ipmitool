@@ -82,13 +82,6 @@ ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char
         struct ipmi_rq	req;
         unsigned char	data[6];
 	unsigned	ip1, ip2, ip3, ip4;
-	uint16_t	portin;
-
-#if WORDS_BIGENDIAN
-	portin = BSWAP_16(port);
-#else
-	portin = port;
-#endif
 
         if (sscanf(recvip, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
                 lprintf(LOG_ERR, "Invalid IP address: %s", recvip);
@@ -106,8 +99,8 @@ ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char
         data[1] = ip2;
         data[2] = ip3;
         data[3] = ip4;
-        data[4] = (portin & 0xff00) >> 8;
-        data[5] = (portin & 0xff);
+        data[4] = (port & 0xff00) >> 8;
+        data[5] = (port & 0xff);
 
         rsp = intf->sendrecv(intf, &req);
         if (rsp == NULL) {
