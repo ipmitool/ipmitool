@@ -167,7 +167,80 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor, uint8_t val)
 	default:
 		break;
 	}
+	return result;
+}
 
+/* sdr_convert_sensor_tolerance  -  convert raw sensor reading
+ *
+ * @sensor:	sensor record
+ * @val:	raw sensor reading
+ *
+ * returns floating-point sensor tolerance(interpreted)
+ */
+double
+sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor, uint8_t val)
+{
+	int m,   k2;
+	double result;
+
+	m = __TO_M(sensor->mtol);
+	k2 = __TO_R_EXP(sensor->bacc);
+
+	switch (sensor->unit.analog) {
+	case 0:
+                /* as suggested in section 30.4.1 of IPMI 1.5 spec */
+		result = (double) ((((m * (double)val/2)) ) * pow(10, k2));
+		break;
+	case 1:
+		if (val & 0x80)
+			val++;
+		/* Deliberately fall through to case 2. */
+	case 2:
+		result = (double) (((m * ((double)((int8_t) val)/2))) * pow(10, k2));
+		break;
+	default:
+		/* Oops! This isn't an analog sensor. */
+		return 0.0;
+	}
+
+	switch (sensor->linearization & 0x7f) {
+	case SDR_SENSOR_L_LN:
+		result = log(result);
+		break;
+	case SDR_SENSOR_L_LOG10:
+		result = log10(result);
+		break;
+	case SDR_SENSOR_L_LOG2:
+		result = (double) (log(result) / log(2.0));
+		break;
+	case SDR_SENSOR_L_E:
+		result = exp(result);
+		break;
+	case SDR_SENSOR_L_EXP10:
+		result = pow(10.0, result);
+		break;
+	case SDR_SENSOR_L_EXP2:
+		result = pow(2.0, result);
+		break;
+	case SDR_SENSOR_L_1_X:
+		result = pow(result, -1.0);	/*1/x w/o exception */
+		break;
+	case SDR_SENSOR_L_SQR:
+		result = pow(result, 2.0);
+		break;
+	case SDR_SENSOR_L_CUBE:
+		result = pow(result, 3.0);
+		break;
+	case SDR_SENSOR_L_SQRT:
+		result = sqrt(result);
+		break;
+	case SDR_SENSOR_L_CUBERT:
+		result = cbrt(result);
+		break;
+	case SDR_SENSOR_L_LINEAR:
+	default:
+		break;
+	}
 	return result;
 }
 
@@ -1183,7 +1256,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	printf(" Sensor Reading        : ");
 	if (validread) {
 		uint16_t raw_tol = __TO_TOL(sensor->mtol);
-		double tol = sdr_convert_sensor_reading(sensor, raw_tol * 2);
+		double tol = sdr_convert_sensor_tolerance(sensor, raw_tol);
 		printf("%.*f (+/- %.*f) %s\n",
 		       (val == (int) val) ? 0 : 3,
 		       val, (tol == (int) tol) ? 0 : 3, tol, unitstr);
@@ -3770,6 +3843,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 	itr = ipmi_sdr_start(intf);
 	if (itr == NULL) {
 		lprintf(LOG_ERR, "Unable to open SDR for reading");
+		fclose(fp);
 		return -1;
 	}
 

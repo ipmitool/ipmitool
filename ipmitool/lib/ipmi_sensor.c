@@ -301,8 +301,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 			if (validread) {
 				uint16_t raw_tol = __TO_TOL(sensor->mtol);
 				double tol =
-				    sdr_convert_sensor_reading(sensor,
-							       raw_tol * 2);
+				    sdr_convert_sensor_tolerance(sensor,
+							       raw_tol);
 				printf("%.*f (+/- %.*f) %s\n",
 				       (val == (int) val) ? 0 : 3, val,
 				       (tol == (int) tol) ? 0 : 3, tol,
