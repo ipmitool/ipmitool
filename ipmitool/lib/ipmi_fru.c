@@ -55,22 +55,22 @@
  */
 #define LIMIT_ALL_REQUEST_SIZE 1
 
-static unsigned char fileName[512];
+static char fileName[512];
 
 extern int verbose;
 extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
 
-static void ipmi_fru_read_to_bin(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId);
-static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, unsigned char * pFileName, unsigned char fruId);
-static void ipmi_fru_upg_ekeying(struct ipmi_intf * intf,unsigned char * pFileName, unsigned char fruId);
-static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, unsigned char fruId,
-						   struct fru_info *pFruInfo, unsigned long * pRetLocation,
-						   unsigned long * pRetSize);
-static int ipmi_fru_get_multirec_from_file(unsigned char * pFileName, unsigned char * pBufArea,
-					   unsigned long size, unsigned long offset);
-static int ipmi_fru_get_multirec_size_from_file(unsigned char * pFileName, unsigned long * pSize, unsigned long * pOffset);
-static void ipmi_fru_get_adjust_size_from_buffer(unsigned char * pBufArea, unsigned long *pSize);
-static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int length);
+static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
+static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
+static void ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
+static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, uint8_t fruId,
+						   struct fru_info *pFruInfo, uint32_t * pRetLocation,
+						   uint32_t * pRetSize);
+static int ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
+					   uint32_t size, uint32_t offset);
+static int ipmi_fru_get_multirec_size_from_file(char * pFileName, uint32_t * pSize, uint32_t * pOffset);
+static void ipmi_fru_get_adjust_size_from_buffer(uint8_t * pBufArea, uint32_t *pSize);
+static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
 
 /* get_fru_area_str  -  Parse FRU area string from raw data
  *
@@ -189,19 +189,19 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
  * returns -1 on error
  */
 int
-write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
-               unsigned int soffset,  unsigned int doffset,
-               unsigned int length, unsigned char *pFrubuf)
+write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+               uint16_t soffset,  uint16_t doffset,
+               uint16_t length, uint8_t *pFrubuf)
 {  /*
    // fill in frubuf[offset:length] from the FRU[offset:length]
    // rc=1 on success
    */
-	static unsigned int fru_data_rqst_size = 32;
-	unsigned int off=0,  tmp, finish;
+	static uint16_t fru_data_rqst_size = 32;
+	uint16_t off=0,  tmp, finish;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[25];
-	unsigned char writeLength;
+	uint8_t msg_data[25];
+	uint8_t writeLength;
 
 	finish = doffset + length;        /* destination offset */
 	if (finish > fru->size)
@@ -225,8 +225,8 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
 		/* real destination offset */
 		tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
 		msg_data[0] = id;
-		msg_data[1] = (unsigned char)tmp;
-		msg_data[2] = (unsigned char)(tmp >> 8);
+		msg_data[1] = (uint8_t)tmp;
+		msg_data[2] = (uint8_t)(tmp >> 8);
 		tmp = finish - (doffset+off);                 /* bytes remaining */
 		if (tmp > 16) {
 			lprintf(LOG_INFO,"Writting 16 bytes");
@@ -235,7 +235,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, unsigned char id,
 		}
 		else {
 			lprintf(LOG_INFO,"Writting %d bytes", tmp);
-			memcpy(&msg_data[3], pFrubuf + soffset + off, (unsigned char)tmp);
+			memcpy(&msg_data[3], pFrubuf + soffset + off, (uint8_t)tmp);
 			req.msg.data_len = tmp + 3;
 		}
 
@@ -368,7 +368,8 @@ static void
 fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		    uint8_t id, uint32_t offset)
 {
-	uint8_t * fru_area, * fru_data;
+	char * fru_area;
+	uint8_t * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -440,7 +441,8 @@ static void
 fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		     uint8_t id, uint32_t offset)
 {
-	uint8_t * fru_area, * fru_data;
+	char * fru_area;
+	uint8_t * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -531,7 +533,8 @@ static void
 fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		       uint8_t id, uint32_t offset)
 {
-	uint8_t * fru_area, * fru_data;
+	char * fru_area;
+	uint8_t * fru_data;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -805,7 +808,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 }
 
 
-static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int length)
+static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 {
 	struct fru_multirec_picmgext_header *h;
 	int guid_count;
@@ -821,7 +824,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
 
 	case FRU_PICMG_BACKPLANE_P2P:
 	{
-		unsigned char index;
+		uint8_t index;
 		struct fru_picmgext_slot_desc * slot_d
 			= (struct fru_picmgext_slot_desc*) &fru_data[offset];
 
@@ -975,7 +978,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
 	case FRU_AMC_ACTIVATION:
 		printf("    FRU_AMC_ACTIVATION\n");
 		{
-			unsigned short max_current;
+			uint16_t max_current;
 
 			max_current = fru_data[offset];
 			max_current |= fru_data[++offset]<<8;
@@ -1001,7 +1004,7 @@ static void ipmi_fru_picmg_ext_print(unsigned char * fru_data, int off, int leng
 	case FRU_AMC_CARRIER_P2P:
 		printf("    FRU_CARRIER_P2P\n");
 		{
-			unsigned int index;
+			uint16_t index;
 
 			while (offset < (off + length))
 			{
@@ -1307,14 +1310,14 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 
 static void
 ipmi_fru_read_to_bin(struct ipmi_intf * intf,
-		     unsigned char * pFileName,
-		     unsigned char fruId)
+		     char * pFileName,
+		     uint8_t fruId)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
-	unsigned char msg_data[4];
-	unsigned char * pFruBuf;
+	uint8_t msg_data[4];
+	uint8_t * pFruBuf;
 
 	msg_data[0] = fruId;
 
@@ -1346,18 +1349,21 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 		printf("Fru Size         : %d bytes\n",fru.size);
 		read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
 	} else {
-		fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
+		lprintf(LOG_ERR, "Cannot allocate %d bytes\n", fru.size);
+		return;
 	}
 
 	if (pFruBuf != NULL)
 	{
 		FILE * pFile;
-		pFile = fopen(pFileName,"wb");
+		pFile = fopen(pFileName, "wb");
 		if (pFile) {
 			fwrite(pFruBuf, fru.size, 1, pFile);
 			printf("Done\n");
 		} else {
-			fprintf(stderr, "Error opening file %s\n", pFileName);
+			lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
+			free(pFruBuf);
+			return;
 		}
 		fclose(pFile);
 	}
@@ -1366,15 +1372,16 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 
 static void
 ipmi_fru_write_from_bin(struct ipmi_intf * intf,
-			unsigned char * pFileName,
-			unsigned char fruId)
+			char * pFileName,
+			uint8_t fruId)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
-	unsigned char msg_data[4];
-	unsigned char *pFruBuf;
-	unsigned int len = 0;
+	uint8_t msg_data[4];
+	uint8_t *pFruBuf;
+	uint16_t len = 0;
+	FILE *pFile;
 
 	msg_data[0] = fruId;
 
@@ -1402,41 +1409,41 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 	}
 
 	pFruBuf = malloc(fru.size);
-
-	if (pFruBuf != NULL) {
-		FILE *pFile;
-		pFile = fopen(pFileName, "rb");
-		if (pFile != NULL) {
-			len = fread(pFruBuf, 1, fru.size, pFile);
-			printf("Fru Size         : %d bytes\n", fru.size);
-			printf("Size to Write    : %d bytes\n", len);
-			fclose(pFile);
-		} else {
-			fprintf(stderr, "Error opening file %s\n", pFileName);
-		}
-
-		if (len != 0) {
-			write_fru_area(intf, &fru, fruId,0, 0, len, pFruBuf);
-			lprintf(LOG_INFO,"Done");
-		}
-	} else {
-		fprintf(stderr, "Cannot allocate %d bytes\n", fru.size);
+	if (pFruBuf == NULL) {
+		lprintf(LOG_ERR, "Cannot allocate %d bytes\n", fru.size);
+		return;
 	}
+
+	pFile = fopen(pFileName, "rb");
+	if (pFile != NULL) {
+		len = fread(pFruBuf, 1, fru.size, pFile);
+		printf("Fru Size         : %d bytes\n", fru.size);
+		printf("Size to Write    : %d bytes\n", len);
+		fclose(pFile);
+	} else {
+		lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
+	}
+
+	if (len != 0) {
+		write_fru_area(intf, &fru, fruId,0, 0, len, pFruBuf);
+		lprintf(LOG_INFO,"Done");
+	}
+
 	free(pFruBuf);
 }
 
 static void
 ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
-		     unsigned char * pFileName,
-		     unsigned char fruId)
+		     char * pFileName,
+		     uint8_t fruId)
 {
-	unsigned int retStatus = 0;
-	unsigned long offFruMultiRec;
-	unsigned long fruMultiRecSize = 0;
-	unsigned long offFileMultiRec;
-	unsigned long fileMultiRecSize = 0;
+	uint16_t retStatus = 0;
+	uint32_t offFruMultiRec;
+	uint32_t fruMultiRecSize = 0;
+	uint32_t offFileMultiRec = 0;
+	uint32_t fileMultiRecSize = 0;
 	struct fru_info fruInfo;
-	unsigned char *buf = NULL;
+	uint8_t *buf = NULL;
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
 							    &offFruMultiRec,
 							    &fruMultiRecSize);
@@ -1483,17 +1490,17 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 }
 
 static int
-ipmi_fru_get_multirec_size_from_file(unsigned char * pFileName,
-				     unsigned long * pSize,
-				     unsigned long * pOffset)
+ipmi_fru_get_multirec_size_from_file(char * pFileName,
+				     uint32_t * pSize,
+				     uint32_t * pOffset)
 {
 	struct fru_header header;
 	FILE * pFile;
-	unsigned char len = 0;
-	unsigned long end = 0;
+	uint8_t len = 0;
+	uint32_t end = 0;
 	*pSize = 0;
 
-	pFile = fopen(pFileName,"rb");
+	pFile = fopen(pFileName, "rb");
 	if (pFile) {
 		rewind(pFile);
 		len = fread(&header, 1, 8, pFile);
@@ -1539,15 +1546,15 @@ ipmi_fru_get_multirec_size_from_file(unsigned char * pFileName,
 }
 
 static void
-ipmi_fru_get_adjust_size_from_buffer(unsigned char * fru_data,
-				     unsigned long *pSize)
+ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data,
+				     uint32_t *pSize)
 {
 	struct fru_multirec_header * head;
 #define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
-	unsigned int count = 0;
-	unsigned int status = 0;
-	unsigned char counter;
-	unsigned char checksum = 0;
+	uint16_t count = 0;
+	uint16_t status = 0;
+	uint8_t counter;
+	uint8_t checksum = 0;
 
 	do {
 		checksum = 0;
@@ -1592,15 +1599,15 @@ ipmi_fru_get_adjust_size_from_buffer(unsigned char * fru_data,
 }
 
 static int
-ipmi_fru_get_multirec_from_file(unsigned char * pFileName,
-				unsigned char * pBufArea,
-				unsigned long size,
-				unsigned long offset)
+ipmi_fru_get_multirec_from_file(char * pFileName,
+				uint8_t * pBufArea,
+				uint32_t size,
+				uint32_t offset)
 {
 	FILE * pFile;
-	unsigned long len = 0;
+	uint32_t len = 0;
 
-	pFile = fopen(pFileName,"rb");
+	pFile = fopen(pFileName, "rb");
 	if (pFile) {
 		fseek(pFile, offset,SEEK_SET);
 		len = fread(pBufArea, size, 1, pFile);
@@ -1619,15 +1626,15 @@ ipmi_fru_get_multirec_from_file(unsigned char * pFileName,
 
 static int
 ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
-					unsigned char fruId,
+					uint8_t fruId,
 					struct fru_info *pFruInfo,
-					unsigned long * pRetLocation,
-					unsigned long * pRetSize)
+					uint32_t * pRetLocation,
+					uint32_t * pRetSize)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char msg_data[4];
-	unsigned long end;
+	uint8_t msg_data[4];
+	uint32_t end;
 	struct fru_header header;
 
 	*pRetLocation = 0;
@@ -1740,7 +1747,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "read", 5)) {
-		unsigned char fruId=0;
+		uint8_t fruId=0;
 		if((argc >= 3) && (strlen(argv[2]) > 0))
 		{
 			/* There is a file name in the parameters */
@@ -1753,7 +1760,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 					printf("Fru Id           : %d\n", fruId);
 					printf("Fru File         : %s\n", fileName);
 				}
-				ipmi_fru_read_to_bin(intf,fileName,fruId);
+				ipmi_fru_read_to_bin(intf, fileName, fruId);
 			}
 			else
 			{
@@ -1767,7 +1774,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "write", 5)) {
-		unsigned char fruId = 0;
+		uint8_t fruId = 0;
 
 		if ((argc >= 3) && (strlen(argv[2]) > 0)) {
 			/* There is a file name in the parameters */
@@ -1778,13 +1785,13 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 					printf("Fru Id           : %d\n", fruId);
 					printf("Fru File         : %s\n", fileName);
 				}
-				ipmi_fru_write_from_bin(intf,fileName,fruId);
+				ipmi_fru_write_from_bin(intf, fileName, fruId);
 			} else {
-				fprintf(stderr,"File name must be smaller than 512 bytes\n");
+				lprintf(LOG_ERR, "File name must be smaller than 512 bytes\n");
 			}
 		} else {
-			fprintf(stderr,"A Fru Id and a path/file name must be specified\n");
-			fprintf(stderr,"Ex.: ipmitool fru write 0 /root/fru.bin\n");
+			lprintf(LOG_ERR, "A Fru Id and a path/file name must be specified\n");
+			lprintf(LOG_ERR, "Ex.: ipmitool fru write 0 /root/fru.bin\n");
 		}
 	}
 	else if (!strncmp(argv[0], "upgEkey", 7)) {

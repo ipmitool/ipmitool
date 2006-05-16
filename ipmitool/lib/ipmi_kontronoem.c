@@ -149,7 +149,8 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    uint8_t msg_data[4];
    char *sn;
    uint8_t sn_size, checksum;
-   uint8_t  *fru_data, *fru_area;
+   uint8_t  *fru_data;
+   char *fru_area;
    uint32_t fru_data_offset, fru_data_offset_tmp, board_sec_len, prod_sec_len, i;
    
    sn = NULL;

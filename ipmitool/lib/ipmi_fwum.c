@@ -201,7 +201,7 @@ int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
             /* There is a file name in the parameters */
             if(strlen(argv[1]) < 512)
             {
-               strcpy(fileName, argv[1]);
+               strcpy((char *)fileName, argv[1]);
                printf("Firmware File Name         : %s\n", fileName);
 
                KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
@@ -223,7 +223,7 @@ int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
             /* There is a file name in the parameters */
             if(strlen(argv[1]) < 512)
             {
-               strcpy(fileName, argv[1]);
+               strcpy((char *)fileName, argv[1]);
                printf("Upgrading using file name %s\n", fileName);
                KfwumMain(intf, KFWUM_TASK_UPGRADE);
             }
@@ -312,8 +312,8 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
 {
    tKFWUM_Status status = KFWUM_STATUS_OK;
    tKFWUM_BoardInfo boardInfo;
-   tKFWUM_InFirmwareInfo firmInfo;
-   unsigned long fileSize;
+   tKFWUM_InFirmwareInfo firmInfo = { 0 };
+   unsigned long fileSize = 0;
    static unsigned short padding;
 
    if((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_INFO))
@@ -447,7 +447,7 @@ static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
    tKFWUM_Status status = KFWUM_STATUS_ERROR;
    FILE * pFileHandle;
 
-   pFileHandle = fopen(pFileName, "rb");
+   pFileHandle = fopen((const char *)pFileName, "rb");
 
    if(pFileHandle)
    {
@@ -473,7 +473,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
    tKFWUM_Status status = KFWUM_STATUS_OK;
    FILE * pFileHandle;
 
-   pFileHandle = fopen(pFileName, "rb");
+   pFileHandle = fopen((const char *)pFileName, "rb");
 
    if(pFileHandle)
    {
@@ -485,7 +485,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
 
       for(qty=0;qty<count;qty++)
       {
-         KfwumShowProgress( "Reading Firmware from File", qty, count );
+         KfwumShowProgress((const unsigned char *)"Reading Firmware from File", qty, count );
          if(fread(&firmBuf[qty*MAX_BUFFER_SIZE], 1, MAX_BUFFER_SIZE ,pFileHandle)
             ==  MAX_BUFFER_SIZE)
          {
@@ -501,7 +501,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
       }
       if(status == KFWUM_STATUS_OK)
       {
-         KfwumShowProgress( "Reading Firmware from File", 100, 100);
+         KfwumShowProgress((const unsigned char *)"Reading Firmware from File", 100, 100);
       }
    }
    return(status);
@@ -1133,7 +1133,7 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
       {
          if((address % 1024) == 0)
          {
-            KfwumShowProgress("Writting Firmware in Flash",address,totalSize);
+            KfwumShowProgress((const unsigned char *)"Writting Firmware in Flash",address,totalSize);
          }
          sequenceNumber++;
       }
@@ -1142,7 +1142,7 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
 
    if(status == KFWUM_STATUS_OK)
    {
-      KfwumShowProgress( "Writting Firmware in Flash", 100 , 100 );
+      KfwumShowProgress((const unsigned char *)"Writting Firmware in Flash", 100 , 100 );
    }
 
 
