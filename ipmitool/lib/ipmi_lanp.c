@@ -1136,7 +1136,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 
 	for (i = 0; i < 15; ++i)
 	{
-		unsigned char priv_level;
+		unsigned char priv_level = IPMI_SESSION_PRIV_ADMIN;
 
 		switch (arg[i])
 		{
