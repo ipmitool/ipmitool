@@ -148,8 +148,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    struct fru_header header;
    uint8_t msg_data[4];
    char *sn;
-   uint8_t sn_size, checksum,prev_lun;
-   int ret = 0;
+   uint8_t sn_size, checksum;
    uint8_t  *fru_data, *fru_area;
    uint32_t fru_data_offset, fru_data_offset_tmp, board_sec_len, prod_sec_len, i;
    
@@ -193,7 +192,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(sn == NULL)
    {
       printf("Out of memory!");
-      return;
+      return -1;
    }
 
    memset(sn, 0, sn_size + 1);
@@ -435,7 +434,6 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
    
    uint32_t board_sec_len, i;
    uint8_t *fru_data, checksum;
-   int ret = 0;
 
       
    
@@ -551,7 +549,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
    
    if(fru_data == NULL)
    {
-      lprintf("Out of memory!");
+      printf("Out of memory!");
       return(-1);
    }
    
