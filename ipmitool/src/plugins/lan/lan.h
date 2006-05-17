@@ -36,22 +36,6 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 
-#define IPMI_LAN_CHANNEL_1	0x07
-#define IPMI_LAN_CHANNEL_2	0x06
-#define IPMI_LAN_CHANNEL_E	0x0e
-#define IPMI_LAN_PORT		0x26f
-
-#define IPMI_LAN_TIMEOUT	2
-#define IPMI_LAN_RETRY		4
-
-
-struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
-int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
-int  ipmi_lan_open(struct ipmi_intf * intf);
-void ipmi_lan_close(struct ipmi_intf * intf);
-void ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel);
-int ipmi_lan_ping(struct ipmi_intf * intf);
-
 extern struct ipmi_intf ipmi_lan_intf;
 
 #endif /*IPMI_LAN_H*/

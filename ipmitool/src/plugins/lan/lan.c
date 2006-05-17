@@ -41,7 +41,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <netdb.h>
 #include <fcntl.h>
 
@@ -63,23 +62,29 @@
 #include "asf.h"
 #include "auth.h"
 
+#define IPMI_LAN_TIMEOUT	2
+#define IPMI_LAN_RETRY		4
+#define IPMI_LAN_PORT		0x26f
+#define IPMI_LAN_CHANNEL_E	0x0e
+
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
+extern int verbose;
 
 struct ipmi_rq_entry * ipmi_req_entries;
 static struct ipmi_rq_entry * ipmi_req_entries_tail;
-
-extern int verbose;
-
-static uint8_t bridgePossible = 0; 
-
-static sigjmp_buf jmpbuf;
+static uint8_t bridge_possible = 0;
 
 static int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len);
 static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static int ipmi_lan_setup(struct ipmi_intf * intf);
 static int ipmi_lan_keepalive(struct ipmi_intf * intf);
+static struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
+static int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
+static int ipmi_lan_open(struct ipmi_intf * intf);
+static void ipmi_lan_close(struct ipmi_intf * intf);
+static int ipmi_lan_ping(struct ipmi_intf * intf);
 
 struct ipmi_intf ipmi_lan_intf = {
 	name:		"lan",
@@ -92,13 +97,6 @@ struct ipmi_intf ipmi_lan_intf = {
 	keepalive:	ipmi_lan_keepalive,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
-
-static void
-query_alarm(int signo)
-{
-	siglongjmp(jmpbuf, 1);
-}
-
 
 static struct ipmi_rq_entry *
 ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
@@ -208,7 +206,8 @@ get_random(void *data, int len)
 	return rv;
 }
 
-int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len)
+static int
+ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len)
 {
 	if (verbose > 2)
 		printbuf(data, data_len, "send_packet");
@@ -216,20 +215,26 @@ int ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len)
 	return send(intf->fd, data, data_len, 0);
 }
 
-struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
+static struct ipmi_rs *
+ipmi_lan_recv_packet(struct ipmi_intf * intf)
 {
 	static struct ipmi_rs rsp;
-	int rc;
+	fd_set read_set, err_set;
+	struct timeval tmout;
+	int ret;
 
-	/* setup alarm timeout */
-	if (sigsetjmp(jmpbuf, 1) != 0) {
-		alarm(0);
+	FD_ZERO(&read_set);
+	FD_SET(intf->fd, &read_set);
+
+	FD_ZERO(&err_set);
+	FD_SET(intf->fd, &err_set);
+
+	tmout.tv_sec = intf->session->timeout;
+	tmout.tv_usec = 0;
+
+	ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
+	if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
 		return NULL;
-	}
-
-	alarm(intf->session->timeout);
-	rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
-	alarm(0);
 
 	/* the first read may return ECONNREFUSED because the rmcp ping
 	 * packet--sent to UDP port 623--will be processed by both the
@@ -241,17 +246,31 @@ struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * regardless of the order they were sent out.  (unless the
 	 * response is read before the connection refused is returned)
 	 */
-	if (rc < 0) {
-		alarm(intf->session->timeout);
-		rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
-		alarm(0);
-		if (rc < 0) {
-			perror("recv failed");
-			return NULL;
+	ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+
+	if (ret < 0) {
+		FD_ZERO(&read_set);
+		FD_SET(intf->fd, &read_set);
+
+		FD_ZERO(&err_set);
+		FD_SET(intf->fd, &err_set);
+
+		tmout.tv_sec = intf->session->timeout;
+		tmout.tv_usec = 0;
+
+		ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
+		if (ret < 0) {
+			if (FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
+				return NULL;
+
+			ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+			if (ret < 0)
+				return NULL;
 		}
 	}
-	rsp.data[rc] = '\0';
-	rsp.data_len = rc;
+
+	rsp.data[ret] = '\0';
+	rsp.data_len = ret;
 
 	return &rsp;
 }
@@ -328,7 +347,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
  * asf.len	= 0x00
  *
  */
-int
+static int
 ipmi_lan_ping(struct ipmi_intf * intf)
 {
 	struct asf_hdr asf_ping = {
@@ -375,7 +394,8 @@ ipmi_lan_ping(struct ipmi_intf * intf)
  * request message.  This may kick-start some BMCs that get confused with
  * bad passwords or operate poorly under heavy network load.
  */
-static void ipmi_lan_thump_first(struct ipmi_intf * intf)
+static void
+ipmi_lan_thump_first(struct ipmi_intf * intf)
 {
 	/* is this random data? */
 	uint8_t data[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -383,7 +403,8 @@ static void ipmi_lan_thump_first(struct ipmi_intf * intf)
 	ipmi_lan_send_packet(intf, data, 16);
 }
 
-static void ipmi_lan_thump(struct ipmi_intf * intf)
+static void
+ipmi_lan_thump(struct ipmi_intf * intf)
 {
 	uint8_t data[10] = "thump";
 	ipmi_lan_send_packet(intf, data, 10);
@@ -396,10 +417,10 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq_entry * entry;
 	int x=0, rv;
-	uint8_t ourAddress = intf->my_addr;
+	uint8_t our_address = intf->my_addr;
 
-	if (ourAddress == 0)
-		ourAddress = IPMI_BMC_SLAVE_ADDR;
+	if (our_address == 0)
+		our_address = IPMI_BMC_SLAVE_ADDR;
 
 	rsp = ipmi_lan_recv_packet(intf);
 
@@ -441,7 +462,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		rsp->payload.ipmi_response.rs_addr = rsp->data[x++];
 		rsp->payload.ipmi_response.rq_seq  = rsp->data[x] >> 2;
 		rsp->payload.ipmi_response.rs_lun  = rsp->data[x++] & 0x3;
-		rsp->payload.ipmi_response.cmd     = rsp->data[x++]; 
+		rsp->payload.ipmi_response.cmd     = rsp->data[x++];
 		rsp->ccode          = rsp->data[x++];
 
 		if (verbose > 2)
@@ -454,7 +475,6 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			(long)rsp->session.seq);
 		lprintf(LOG_DEBUG+1, "<<   Session ID : 0x%08lx",
 			(long)rsp->session.id);
-			
 		lprintf(LOG_DEBUG+1, "<< IPMI Response Message Header");
 		lprintf(LOG_DEBUG+1, "<<   Rq Addr    : %02x",
 			rsp->payload.ipmi_response.rq_addr);
@@ -478,7 +498,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 					      rsp->payload.ipmi_response.cmd);
 		if (entry) {
 			lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-			if ((intf->target_addr != ourAddress) && bridgePossible) {
+			if ((intf->target_addr != our_address) && bridge_possible) {
 				if ((rsp->data_len) &&
 				    (rsp->payload.ipmi_response.cmd != 0x34)) {
 					printbuf(&rsp->data[x], rsp->data_len-x,
@@ -564,11 +584,11 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rq_entry * entry;
 	struct ipmi_session * s = intf->session;
 	static int curr_seq = 0;
-	uint8_t ourAddress = intf->my_addr;
-	uint8_t bridgedRequest = 0;
+	uint8_t our_address = intf->my_addr;
+	uint8_t bridge_request = 0;
 
-	if (ourAddress == 0)
-		ourAddress = IPMI_BMC_SLAVE_ADDR;
+	if (our_address == 0)
+		our_address = IPMI_BMC_SLAVE_ADDR;
 
 	if (curr_seq >= 64)
 		curr_seq = 0;
@@ -609,12 +629,12 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	/* message length */
-	if ((intf->target_addr == ourAddress) || !bridgePossible) {
+	if ((intf->target_addr == our_address) || !bridge_possible) {
 		msg[len++] = req->msg.data_len + 7;
 		cs = mp = len;
 	} else {
 		/* bridged request: encapsulate w/in Send Message */
-		bridgedRequest = 1;
+		bridge_request = 1;
 		msg[len++] = req->msg.data_len + 15;
 		cs = mp = len;
 		msg[len++] = IPMI_BMC_SLAVE_ADDR;
@@ -638,7 +658,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 	cs = len;
 
-	if (!bridgedRequest)
+	if (!bridge_request)
 		msg[len++] = IPMI_REMOTE_SWID;
 	else  /* Bridged message */
 		msg[len++] = intf->my_addr;
@@ -672,7 +692,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
 	/* bridged request: 2nd checksum */
-	if (bridgedRequest) {
+	if (bridge_request) {
 		tmp = len - cs2;
 		msg[len++] = ipmi_csum(msg+cs2, tmp);
 	}
@@ -707,7 +727,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return entry;
 }
 
-struct ipmi_rs *
+static struct ipmi_rs *
 ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	struct ipmi_rq_entry * entry;
@@ -719,8 +739,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	if (intf->opened == 0 && intf->open != NULL) {
 		if (intf->open(intf) < 0) {
-			lprintf(LOG_ERR,
-				"ipmi_lan_send_cmd failed to open intf");
+			lprintf(LOG_DEBUG, "Failed to open LAN interface");
 			return NULL;
 		}
 		lprintf(LOG_DEBUG, "\topened=[%d], open=[%d]",
@@ -763,7 +782,8 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return rsp;
 }
 
-uint8_t * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
+static uint8_t *
+ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
 {
 	struct rmcp_hdr rmcp = {
 		.ver	= RMCP_VERSION_1,
@@ -848,17 +868,19 @@ uint8_t * ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int 
 			d = ipmi_auth_md2(s, msg+mp, msg[mp-1]);
 			memcpy(msg+ap, d, 16);
 			break;
-		}			
+		}
 	}
 
 	*llen = len;
 	return msg;
 }
 
-int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
+static int
+ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 {
 	uint8_t * msg;
-	int len, rv;
+	int len = 0;
+	int rv;
 
 	msg = ipmi_lan_build_rsp(intf, rsp, &len);
 	if (len <= 0 || msg == NULL) {
@@ -1069,7 +1091,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 	lprintf(LOG_DEBUG, "Opening Session");
 	lprintf(LOG_DEBUG, "  Session ID      : %08lx", (long)s->session_id);
 	lprintf(LOG_DEBUG, "  Challenge       : %s", buf2str(s->challenge, 16));
-	
+
 	return 0;
 }
 
@@ -1171,8 +1193,8 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-   bridgePossible = 1;
-   
+	bridge_possible = 1;
+
 	lprintf(LOG_DEBUG, "\nSession Activated");
 	lprintf(LOG_DEBUG, "  Auth Type       : %s",
 		val2str(rsp->data[0], ipmi_authtype_session_vals));
@@ -1194,7 +1216,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t privlvl = intf->session->privlvl;
-   uint8_t backupBridgePossible = bridgePossible;
+	uint8_t backup_bridge_possible = bridge_possible;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
 		return 0;	/* no need to set higher */
@@ -1205,11 +1227,9 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	req.msg.data		= &privlvl;
 	req.msg.data_len	= 1;
 
-   bridgePossible = 0;
-
+	bridge_possible = 0;
 	rsp = intf->sendrecv(intf, &req);
-   
-   bridgePossible = backupBridgePossible;
+	bridge_possible = backup_bridge_possible;
 
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
@@ -1244,7 +1264,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 		return -1;
 
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
-   bridgePossible = 0;  /* Not a bridge message */
+	bridge_possible = 0;  /* Not a bridge message */
 
 	memcpy(&msg_data, &session_id, 4);
 
@@ -1340,7 +1360,8 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 	return -1;
 }
 
-void ipmi_lan_close(struct ipmi_intf * intf)
+static void
+ipmi_lan_close(struct ipmi_intf * intf)
 {
 	if (intf->abort == 0)
 		ipmi_close_session_cmd(intf);
@@ -1359,10 +1380,10 @@ void ipmi_lan_close(struct ipmi_intf * intf)
 	intf = NULL;
 }
 
-int ipmi_lan_open(struct ipmi_intf * intf)
+static int
+ipmi_lan_open(struct ipmi_intf * intf)
 {
 	int rc;
-	struct sigaction act;
 	struct ipmi_session *s;
 
 	if (intf == NULL || intf->session == NULL)
@@ -1420,16 +1441,6 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	/* setup alarm handler */
-	act.sa_handler = query_alarm;
-	act.sa_flags = 0;
-	if (sigemptyset(&act.sa_mask) == 0 &&
-	    sigaction(SIGALRM, &act, NULL) < 0) {
-		lperror(LOG_ERR, "Alarm signal setup failed");
-		intf->close(intf);
-		return -1;
-	}
-
 	intf->opened = 1;
 
 	/* try to open session */
@@ -1443,7 +1454,8 @@ int ipmi_lan_open(struct ipmi_intf * intf)
 	return intf->fd;
 }
 
-static int ipmi_lan_setup(struct ipmi_intf * intf)
+static int
+ipmi_lan_setup(struct ipmi_intf * intf)
 {
 	intf->session = malloc(sizeof(struct ipmi_session));
 	if (intf->session == NULL) {
