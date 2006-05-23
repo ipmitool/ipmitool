@@ -730,6 +730,7 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 	char tbuf[40];
+	uint32_t timei;
 	time_t ts;
 
 	memset(&req, 0, sizeof(req));
@@ -741,11 +742,12 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 			"Last S/W processed ID");
 		return;
 	}
+	memcpy(&timei, rsp->data, sizeof(timei));
 #if WORDS_BIGENDIAN
-	ts = (time_t)(rsp->data[0]<<24 + rsp->data[1]<<16 + rsp->data[2]<<8 + rsp->data[3]);
-#else
-	ts = (time_t)(*(long *)rsp->data);
+	timei = BSWAP_32(timei);
 #endif
+	ts = (time_t)timei;
+
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&ts));
 
 	ipmi_pef_print_str("Last SEL addition", tbuf);

@@ -1501,7 +1501,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 	
 	memcpy(&timei, rsp->data, 4);
 #if WORDS_BIGENDIAN
-	timei = BSWAP_32(time);
+	timei = BSWAP_32(timei);
 #endif
 	time = (time_t)timei;
 
