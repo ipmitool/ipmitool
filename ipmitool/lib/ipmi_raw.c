@@ -49,6 +49,7 @@
  * IPMI interface.  It has a maximum transfer size of 32 bytes.
  *
  * @intf:	ipmi interface
+ * @bus:	channel number, i2c bus id and type
  * @addr:	i2c slave address
  * @wdata:	data to write
  * @wsize:	length of data to write (max 64 bytes)
@@ -57,7 +58,8 @@
  * Returns pointer to IPMI Response
  */
 struct ipmi_rs *
-ipmi_master_write_read(struct ipmi_intf * intf, uint8_t addr, uint8_t * wdata, uint8_t wsize, uint8_t rsize)
+ipmi_master_write_read(struct ipmi_intf * intf, uint8_t bus, uint8_t addr,
+		       uint8_t * wdata, uint8_t wsize, uint8_t rsize)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
@@ -79,7 +81,7 @@ ipmi_master_write_read(struct ipmi_intf * intf, uint8_t addr, uint8_t * wdata, u
 	req.msg.data_len = 3;
 
 	memset(rqdata, 0, IPMI_I2C_MASTER_MAX_SIZE + 3);
-	rqdata[0] = 0x00;	/* channel number, bus id, bus type */
+	rqdata[0] = bus;	/* channel number, bus id, bus type */
 	rqdata[1] = addr;	/* slave address */
 	rqdata[2] = rsize;      /* number of bytes to read */
 
@@ -126,7 +128,9 @@ ipmi_master_write_read(struct ipmi_intf * intf, uint8_t addr, uint8_t * wdata, u
 
 static void rawi2c_usage(void)
 {
-	lprintf(LOG_NOTICE, "usage: i2c <i2caddr> <read bytes> [write data]");
+	lprintf(LOG_NOTICE, "usage: i2c [bus=public|# [chan=#]] <i2caddr> <read bytes> [write data]");
+	lprintf(LOG_NOTICE, "            bus=public is default");
+	lprintf(LOG_NOTICE, "            chan=0 is default, bus= must be specified to use chan=");
 }
 
 int
@@ -137,20 +141,40 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t i2caddr = 0;
 	uint8_t rsize = 0;
 	uint8_t wsize = 0;
-	int i;
+	uint8_t rbus = 0, bus = 0;
+	int i = 0;
 
-	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
+	/* handle bus= argument */
+	if (argc > 2 && strncmp(argv[0], "bus=", 4) == 0) {
+		i = 1;
+		if (strncmp(argv[0], "bus=public", 10) == 0)
+			bus = 0;
+		else if (sscanf(argv[0], "bus=%u", &rbus) == 1)
+			bus = ((rbus & 7) << 1) | 1;
+		else
+			bus = 0;
+
+		/* handle channel= argument
+		 * the bus= argument must be supplied first on command line */
+		if (argc > 3 && strncmp(argv[1], "chan=", 5) == 0) {
+			i = 2;
+			if (sscanf(argv[1], "chan=%u", &rbus) == 1)
+				bus |= rbus << 4;
+		}
+	}
+
+	if ((argc-i) < 2 || strncmp(argv[0], "help", 4) == 0) {
 		rawi2c_usage();
 		return 0;
 	}
-	else if (argc-2 > IPMI_I2C_MASTER_MAX_SIZE) {
+	else if (argc-i-2 > IPMI_I2C_MASTER_MAX_SIZE) {
 		lprintf(LOG_ERR, "Raw command input limit (%d bytes) exceeded",
 			IPMI_I2C_MASTER_MAX_SIZE);
 		return -1;
 	}
 
-	i2caddr = (uint8_t)strtoul(argv[0], NULL, 0);
-	rsize = (uint8_t)strtoul(argv[1], NULL, 0);
+	i2caddr = (uint8_t)strtoul(argv[i++], NULL, 0);
+	rsize = (uint8_t)strtoul(argv[i++], NULL, 0);
 
 	if (i2caddr == 0) {
 		lprintf(LOG_ERR, "Invalid I2C address 0");
@@ -159,7 +183,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	memset(wdata, 0, IPMI_I2C_MASTER_MAX_SIZE);
-	for (i=2; i<argc; i++) {
+	for (; i < argc; i++) {
 		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
 		wdata[i-2] = val;
 		wsize++;
@@ -169,7 +193,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 		i2caddr, rsize, wsize);
 	printbuf(wdata, wsize, "WRITE DATA");
 
-	rsp = ipmi_master_write_read(intf, i2caddr, wdata, wsize, rsize);
+	rsp = ipmi_master_write_read(intf, bus, i2caddr, wdata, wsize, rsize);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to perform I2C Master Write-Read");
 		return -1;
@@ -183,6 +207,9 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (rsize > 0) {
 		if (verbose || wsize == 0)
 			printf("Read %d bytes from I2C device %02Xh\n", rsp->data_len, i2caddr);
+
+		if (rsp->data_len < rsize)
+			return -1;
 
 		/* print the raw response buffer */
 		for (i=0; i<rsp->data_len; i++) {
