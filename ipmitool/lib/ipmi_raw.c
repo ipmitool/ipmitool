@@ -141,7 +141,8 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t i2caddr = 0;
 	uint8_t rsize = 0;
 	uint8_t wsize = 0;
-	uint8_t rbus = 0, bus = 0;
+	unsigned int rbus = 0;
+	uint8_t bus = 0;
 	int i = 0;
 
 	/* handle bus= argument */
