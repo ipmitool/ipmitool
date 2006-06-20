@@ -564,8 +564,12 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "setenables", 10) == 0) {
 		rc = ipmi_mc_set_enables(intf, argc-1, &(argv[1]));
 	}
-   else if (!strncmp(argv[0], "selftest", 8)) {
+    else if (!strncmp(argv[0], "selftest", 8)) {
 		rc = ipmi_mc_get_selftest(intf);
+	}
+    else {
+		lprintf(LOG_ERR, "Invalid mc/bmc command: %s", argv[0]);
+		rc = -1;
 	}
 
 	return rc;

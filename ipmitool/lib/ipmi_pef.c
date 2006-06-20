@@ -845,6 +845,7 @@ int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
 	// PEF subcommand handling
 	*/
 	int help = 0;
+    int rc = 0;
 
 	if (!argc || !strncmp(argv[0], "info", 4))
 		ipmi_pef_get_info(intf);
@@ -858,11 +859,14 @@ int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_pef_list_entries(intf);
 	else {
 		help = 1;
+        rc   = -1;
 		lprintf(LOG_ERR, "Invalid PEF command: '%s'\n", argv[0]);
 	}
+
 	if (help)
 		lprintf(LOG_NOTICE, "PEF commands: info status policy list");
 	else if (!verbose)
 		printf("\n");
-	return 0;
+
+	return rc;
 }

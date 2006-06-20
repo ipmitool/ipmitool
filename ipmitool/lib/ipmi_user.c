@@ -815,12 +815,13 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 						0); /* This field is ignored */
 	}
 	
-
+    else
+    {
+        retval = -1;
+        lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);
+        print_user_usage();
+    }
     
-	else
-	{
-		print_user_usage();
-	}
 
 	return retval;
 }

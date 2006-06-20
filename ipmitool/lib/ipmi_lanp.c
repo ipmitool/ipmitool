@@ -2115,6 +2115,7 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else
 	{
 		lprintf(LOG_NOTICE, "Invalid LAN command: %s", argv[0]);
+        rc = -1;
 	}
 	return rc;
 }

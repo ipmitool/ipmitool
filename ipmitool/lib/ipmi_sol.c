@@ -1106,7 +1106,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 	struct ipmi_rq   req;
 	uint8_t    data[6];	 
 
-   memset(&req, 0, sizeof(req));
+    memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
 	req.msg.cmd      = IPMI_DEACTIVATE_PAYLOAD;
 	req.msg.data_len = 6;
