@@ -1281,7 +1281,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 
 	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
 		lprintf(LOG_ERR, "SEL has no entries");
-		return -1;
+		return 0;
 	}
 
 	memset(&req, 0, sizeof(req));
