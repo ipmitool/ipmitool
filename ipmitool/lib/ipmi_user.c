@@ -72,11 +72,10 @@ extern int csv_output;
  */
 static int
 ipmi_get_user_access(
-		     struct ipmi_intf * intf,	   
-		     uint8_t	channel_number,
-		     uint8_t	user_id,       
-		     struct		user_access_rsp * user_access)
-					 
+		     struct ipmi_intf *intf,
+		     uint8_t channel_number,
+		     uint8_t user_id,
+		     struct user_access_rsp *user_access)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
@@ -92,7 +91,7 @@ ipmi_get_user_access(
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = channel_number;
 	msg_data[1] = user_id;
-	
+
 	rsp = intf->sendrecv(intf, &req);
 
 	if (rsp == NULL) {
@@ -129,10 +128,9 @@ ipmi_get_user_access(
  */
 static int
 ipmi_get_user_name(
-		   struct ipmi_intf * intf,	   
-		   uint8_t      user_id,	     
-		   char		    * user_name)
-					 
+		   struct ipmi_intf *intf,
+		   uint8_t user_id,
+		   char	*user_name)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
@@ -141,13 +139,13 @@ ipmi_get_user_name(
 	memset(user_name, 0, 17);
 
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;	   /* 0x06 */
-	req.msg.cmd	     = IPMI_GET_USER_NAME; /* 0x45 */
+	req.msg.netfn    = IPMI_NETFN_APP;     /* 0x06 */
+	req.msg.cmd      = IPMI_GET_USER_NAME; /* 0x45 */
 	req.msg.data     = msg_data;
 	req.msg.data_len = 1;
 
 	msg_data[0] = user_id;
-	
+
 	rsp = intf->sendrecv(intf, &req);
 
 	if (rsp == NULL) {
@@ -185,7 +183,6 @@ dump_user_access(
 		       "Channel Priv Limit\n");
 		printed_header = 1;
 	}
-	
 
 	printf("%-4d%-17s%-8s%-11s%-11s%-s\n",
 	       user_id,
@@ -201,9 +198,9 @@ dump_user_access(
 
 static void
 dump_user_access_csv(
-		     uint8_t	      user_id,
-		     const char		    * user_name,
-		     struct user_access_rsp * user_access)
+		     uint8_t user_id,
+		     const char *user_name,
+		     struct user_access_rsp *user_access)
 {
 	printf("%d,%s,%s,%s,%s,%s\n",
 	       user_id,
@@ -219,8 +216,8 @@ dump_user_access_csv(
 
 static int
 ipmi_print_user_list(
-		     struct ipmi_intf * intf,
-		     uint8_t	channel_number)
+		     struct ipmi_intf *intf,
+		     uint8_t channel_number)
 {
 	/* This is where you were! */
 	char user_name[17];
@@ -241,8 +238,7 @@ ipmi_print_user_list(
 				       current_user_id,
 				       user_name))
 			return -1;
-		
-		
+
 		if ((current_user_id == 0)	      ||
 		    user_access.link_auth_access      ||
 		    user_access.ipmi_messaging_access ||
@@ -308,9 +304,9 @@ ipmi_print_user_summary(
  */
 static int
 ipmi_user_set_username(
-		       struct ipmi_intf * intf,	   
-		       uint8_t	  user_id,	 
-		       const char	* name)
+		       struct ipmi_intf *intf,
+		       uint8_t user_id,
+		       const char *name)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
@@ -343,25 +339,23 @@ ipmi_user_set_username(
 
 	return 0;
 }
-	
 
 static int
 ipmi_user_set_userpriv(
-		       struct ipmi_intf * intf,
-             uint8_t	  channel,
-		       uint8_t	  user_id,
-		       const unsigned char	privLevel)
+		       struct ipmi_intf *intf,
+		       uint8_t channel,
+		       uint8_t user_id,
+		       const unsigned char privLevel)
 {
-	struct ipmi_rs	     * rsp;
-	struct ipmi_rq	       req;
-	uint8_t	       msg_data[3];
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[3];
 
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
-	req.msg.cmd	     = IPMI_SET_USER_ACCESS;   /* 0x43 */
+	req.msg.netfn    = IPMI_NETFN_APP;         /* 0x06 */
+	req.msg.cmd      = IPMI_SET_USER_ACCESS;   /* 0x43 */
 	req.msg.data     = msg_data;
 	req.msg.data_len = 3;
-
 
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = (channel   & 0x0f); /* Do not change any bytes */
@@ -370,14 +364,14 @@ ipmi_user_set_userpriv(
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) 
-   {
+	if (rsp == NULL)
+	{
 		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
 			user_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) 
-   {
+	if (rsp->ccode > 0)
+	{
 		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
 			user_id);
 		return -1;
@@ -385,7 +379,6 @@ ipmi_user_set_userpriv(
 
 	return 0;
 }
-
 
 /*
  * ipmi_user_set_password
@@ -396,11 +389,11 @@ ipmi_user_set_userpriv(
  */
 static int
 ipmi_user_set_password(
-		       struct ipmi_intf * intf,	   
-		       uint8_t	  user_id,
-		       uint8_t	  operation,
-		       const char	* password,
-		       int                is_twenty_byte_password)
+		       struct ipmi_intf * intf,
+		       uint8_t user_id,
+		       uint8_t operation,
+		       const char *password,
+		       int is_twenty_byte_password)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
@@ -420,10 +413,10 @@ ipmi_user_set_password(
 
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = user_id;
-	
+
 	if (is_twenty_byte_password)
 		msg_data[0] |= 0x80;
-	
+
 	msg_data[1] = operation;
 
 	memset(msg_data + 2, 0, password_length);
@@ -486,7 +479,6 @@ ipmi_user_test_password(
 	return ((ret == 0) ? 0 : -1);
 }
 
-	
 
 /*
  * print_user_usage
@@ -547,7 +539,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			channel = (uint8_t)strtol(argv[1], NULL, 0);
 		else
 		{
-			print_user_usage();	
+			print_user_usage();
 			return -1;
 		}
 
@@ -568,7 +560,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			channel = (uint8_t)strtol(argv[1], NULL, 0);
 		else
 		{
-			print_user_usage();	
+			print_user_usage();
 			return -1;
 		}
 
@@ -590,8 +582,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			char * password = NULL;
 			int password_length = atoi(argv[2]);
 			uint8_t user_id = (uint8_t)strtol(argv[1],
-								      NULL,
-								      0);
+							  NULL,
+							  0);
 			if (user_id == 0)
 			{
 				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
@@ -606,7 +598,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				char * tmp;
 				const char * password_prompt =
 					ipmi_user_build_password_prompt(user_id);
-				
 #ifdef HAVE_GETPASSPHRASE
 				tmp = getpassphrase (password_prompt);
 #else
@@ -637,7 +628,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 
-	
 	/*
 	 * Set
 	 */
@@ -647,12 +637,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		 * Set Password
 		 */
 		if ((argc >= 3) &&
-		    (strncmp("password", argv[1], 8) == 0)) 
+		    (strncmp("password", argv[1], 8) == 0))
 		{
 			char * password = NULL;
 			uint8_t user_id = (uint8_t)strtol(argv[2],
-								      NULL,
-								      0);
+							  NULL,
+							  0);
 			if (user_id == 0)
 			{
 				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
@@ -709,7 +699,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
 				return -1;
 			}
-			
 
 			retval = ipmi_user_set_password(intf,
 							user_id,
@@ -717,7 +706,6 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 							password,
 							strlen(password) > 16);
 		}
-		
 
 		/*
 		 * Set Name
@@ -733,8 +721,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			retval = ipmi_user_set_username(intf,
 							(uint8_t)strtol(argv[2],
-									      NULL,
-									      0),
+									NULL,
+									0),
 							argv[3]);
 		}
 		else
@@ -742,31 +730,29 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_user_usage();
 			return -1;
 		}
-
 	}
 
 	else if (strncmp(argv[0], "priv", 4) == 0)
 	{
-   	uint8_t user_id;
-   	uint8_t priv_level;
-   	uint8_t channel = 0x0e; /* Use channel running on */
+		uint8_t user_id;
+		uint8_t priv_level;
+		uint8_t channel = 0x0e; /* Use channel running on */
 
-		if (
-            (argc != 3) &&
-            (argc != 4)
-         )
-		
-
-      if (argc == 4)
-      {
-         channel = (uint8_t)strtol(argv[3], NULL, 0);
-         channel = (channel & 0x0f);
+		if (argc != 3 && argc != 4)
+		{
+			print_user_usage();
+			return -1;
 		}
-      
-      user_id = (uint8_t)strtol(argv[1], NULL, 0);
+		if (argc == 4)
+		{
+			channel = (uint8_t)strtol(argv[3], NULL, 0);
+			channel = (channel & 0x0f);
+		}
+
+		user_id = (uint8_t)strtol(argv[1], NULL, 0);
 
 		priv_level = (uint8_t)strtol(argv[2], NULL, 0);
-      priv_level = (priv_level & 0x0f);
+		priv_level = (priv_level & 0x0f);
 
 		if (user_id == 0)
 		{
@@ -775,7 +761,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		retval = ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
-   }
+	}
 
 	/*
 	 * Disable / Enable
@@ -796,8 +782,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		user_id = (uint8_t)strtol(argv[1],
-						NULL,
-						0);
+					  NULL,
+					  0);
 		if (user_id == 0)
 		{
 			lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
@@ -814,14 +800,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 						null_password,
 						0); /* This field is ignored */
 	}
-	
-    else
-    {
-        retval = -1;
-        lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);
-        print_user_usage();
-    }
-    
+	else
+	{
+		retval = -1;
+		lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);
+		print_user_usage();
+	}
 
 	return retval;
 }
