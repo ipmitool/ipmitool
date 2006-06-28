@@ -1560,7 +1560,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else {
 		ipmi_lan_set_usage();
 	}
-		
+
 	return rc;
 }
 

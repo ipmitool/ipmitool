@@ -1431,7 +1431,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 	free(pFruBuf);
 }
 
-static void
+static int
 ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		     char * pFileName,
 		     uint8_t fruId)
@@ -1486,6 +1486,8 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 
 	if (buf)
 		free(buf);
+
+	return retStatus;
 }
 
 static int

@@ -132,7 +132,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* for the all-important up arrow :) */
 		add_history(pbuf);
-		
+
 		/* change "" and '' with spaces in the middle to ~ */
 		ptr = pbuf;
 		while (*ptr != '\0') {
@@ -196,7 +196,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 					  &(__argv[1]));
 
 		free(pbuf);
-	}	
+	}
 	return rc;
 }
 
@@ -429,4 +429,3 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 	fclose(fp);
 	return rc;
 }
-

@@ -1332,7 +1332,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 
 	if (savefile != NULL) {
 		fp = ipmi_open_file_write(savefile);
-	}			
+	}
 
 	while (next_id != 0xffff) {
 		curr_id = next_id;
@@ -1498,7 +1498,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 			"Invalid data length %d", rsp->data_len);
 		return -1;
 	}
-	
+
 	memcpy(&timei, rsp->data, 4);
 #if WORDS_BIGENDIAN
 	timei = BSWAP_32(timei);
@@ -1551,7 +1551,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	}
 
 	timei = (uint32_t)t;
-	req.msg.data = (uint8_t *)&timei;	
+	req.msg.data = (uint8_t *)&timei;
 	req.msg.data_len = 4;
 
 #if WORDS_BIGENDIAN
@@ -1879,7 +1879,7 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else {
 			lprintf(LOG_ERR, "sel time commands: get set");
 		}
-	}			
+	}
 	else {
 		lprintf(LOG_ERR, "Invalid SEL command: %s", argv[0]);
 		rc = -1;
@@ -1887,4 +1887,3 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	return rc;
 }
-
