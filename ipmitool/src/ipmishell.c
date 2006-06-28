@@ -56,6 +56,11 @@ extern const struct valstr ipmi_authtype_session_vals[];
 
 #ifdef HAVE_READLINE
 
+/* avoid warnings errors due to non-ANSI type declarations in readline.h */
+#define _FUNCTION_DEF
+#define USE_VARARGS
+#define PREFER_STDARG
+
 #include <readline/readline.h>
 #include <readline/history.h>
 #define RL_PROMPT		"ipmitool> "
@@ -107,7 +112,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		shell_intf = intf;
 		rl_event_hook = rl_event_keepalive;
 #if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
-		/* There is a bug in readline 4.2 and later (at least on FreeBSD):
+		/* There is a bug in readline 4.2 and later (at least on FreeBSD and NetBSD):
 		 * timeout equal or greater than 1 second causes an infinite loop. */
 		rl_set_keyboard_input_timeout(1000 * 1000 - 1);
 #endif
@@ -139,7 +144,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (*ptr == '"') {
 				ptr++;
 				while (*ptr != '"') {
-					if (isspace(*ptr))
+					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
 				}
@@ -147,7 +152,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (*ptr == '\'') {
 				ptr++;
 				while (*ptr != '\'') {
-					if (isspace(*ptr))
+					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
 				}
@@ -211,7 +216,7 @@ ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 #endif /* HAVE_READLINE */
 
-void ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
+int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int i;
 
@@ -219,6 +224,8 @@ void ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("%s ", argv[i]);
 	}
 	printf("\n");
+
+	return 0;
 }
 
 static void
@@ -355,7 +362,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (*ptr == '"') {
 				ptr++;
 				while (*ptr != '"') {
-					if (isspace(*ptr))
+					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
 				}
@@ -363,7 +370,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (*ptr == '\'') {
 				ptr++;
 				while (*ptr != '\'') {
-					if (isspace(*ptr))
+					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
 				}
@@ -373,10 +380,10 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* clip off trailing and leading whitespace */
 		ptr--;
-		while (isspace(*ptr) && ptr >= buf)
+		while (isspace((int)*ptr) && ptr >= buf)
 			*ptr-- = '\0';
 		ptr = buf;
-		while (isspace(*ptr))
+		while (isspace((int)*ptr))
 			ptr++;
 		if (strlen(ptr) == 0)
 			continue;

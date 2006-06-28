@@ -117,8 +117,7 @@ lanplus_HMAC(uint8_t        mac,
 			 uint8_t       *md,
 			 uint32_t        *md_len)
 {
-	
-	const EVP_MD *evp_md;
+	const EVP_MD *evp_md = NULL;
 
 	if ((mac == IPMI_AUTH_RAKP_HMAC_SHA1) ||
 		(mac == IPMI_INTEGRITY_HMAC_SHA1_96))
@@ -128,7 +127,6 @@ lanplus_HMAC(uint8_t        mac,
 		fprintf(stderr, "Invalid mac type 0x%x in lanplus_HMAC\n", mac);
 		assert(0);
 	}
-	
 
 	return HMAC(evp_md, key, key_len, d, n, md, (unsigned int *)md_len);
 }
@@ -293,4 +291,3 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		printbuf(output, *bytes_written, "Decrypted this data");
 	}
 }
-

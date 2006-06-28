@@ -388,7 +388,7 @@ ipmi_start_daemon(void)
 		close(fd);
 	}
 #else
-	if (setpgrp() == -1)
+	if (setpgid(0, 0) == -1)
 		exit(1);
 	pid = (pid_t) fork();
 	if (pid < 0 || pid > 0)
@@ -405,4 +405,3 @@ ipmi_start_daemon(void)
 	dup(0);
 	dup(0);
 }
-

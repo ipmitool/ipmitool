@@ -71,7 +71,7 @@ ipmi_event_msg_print(struct ipmi_intf * intf, struct platform_event_msg * pmsg)
 	sel_event.sel_type.standard_type.event_data[0]  = pmsg->event_data[0];
 	sel_event.sel_type.standard_type.event_data[1]  = pmsg->event_data[1];
 	sel_event.sel_type.standard_type.event_data[2]  = pmsg->event_data[2];
-	
+
 	if (verbose)
 		ipmi_sel_print_extended_entry_verbose(intf, &sel_event);
 	else
@@ -523,10 +523,10 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 
 		/* clip off trailing and leading whitespace */
 		ptr--;
-		while (isspace(*ptr) && ptr >= buf)
+		while (isspace((int)*ptr) && ptr >= buf)
 			*ptr-- = '\0';
 		ptr = buf;
-		while (isspace(*ptr))
+		while (isspace((int)*ptr))
 			ptr++;
 		if (strlen(ptr) == 0)
 			continue;

@@ -354,10 +354,10 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 
 		/* clip off trailing and leading whitespace */
 		ptr--;
-		while (isspace(*ptr) && ptr >= buf)
+		while (isspace((int)*ptr) && ptr >= buf)
 			*ptr-- = '\0';
 		ptr = buf;
-		while (isspace(*ptr))
+		while (isspace((int)*ptr))
 			ptr++;
 		if (strlen(ptr) == 0)
 			continue;
@@ -476,6 +476,12 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_NEWISYS:
 		desc = get_newisys_evt_desc(intf, rec);
 		break;
+	case IPMI_OEM_SUN:
+	case IPMI_OEM_INTEL:
+	case IPMI_OEM_TYAN:
+	case IPMI_OEM_SUPERMICRO:
+	case IPMI_OEM_KONTRON:
+	case IPMI_OEM_UNKNOWN:
 	default:
 		break;
 	}
