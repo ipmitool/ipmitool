@@ -669,13 +669,74 @@ const struct valstr jedec_id5_vals[] = {
 };
 
 int
-ipmi_spd_print(struct ipmi_intf * intf, uint8_t id)
+ipmi_spd_print(uint8_t *spd_data, int len)
+{
+	int size;
+
+	if (len < 92)
+		return -1; /* we need first 91 bytes to do our thing */
+
+	size = spd_data[5] * (spd_data[31] << 2);
+	printf(" Memory Size           : %d MB\n", size);
+	printf(" Memory Type           : %s\n",
+	       val2str(spd_data[2], spd_memtype_vals));
+	printf(" Voltage Intf          : %s\n",
+	       val2str(spd_data[8], spd_voltage_vals));
+	printf(" Error Detect/Cor      : %s\n",
+	       val2str(spd_data[11], spd_config_vals));
+
+	/* handle jedec table bank continuation values */
+	printf(" Manufacturer          : ");
+	if (spd_data[64] != 0x7f)
+		printf("%s\n",
+		       val2str(spd_data[64], jedec_id1_vals));
+	else {
+		if (spd_data[65] != 0x7f)
+			printf("%s\n",
+			       val2str(spd_data[65], jedec_id2_vals));
+		else {
+			if (spd_data[66] != 0x7f)
+				printf("%s\n",
+				       val2str(spd_data[66], jedec_id3_vals));
+			else {
+				if (spd_data[67] != 0x7f)
+					printf("%s\n",
+					       val2str(spd_data[67],
+						       jedec_id4_vals));
+				else
+					printf("%s\n",
+					       val2str(spd_data[68],
+						       jedec_id5_vals));
+			}
+		}
+	}
+
+	if (spd_data[73]) {
+		char part[19];
+		memcpy(part, spd_data+73, 18);
+		part[18] = 0;
+		printf(" Part Number           : %s\n", part);
+	}
+
+	printf(" Serial Number         : %02x%02x%02x%02x\n",
+	       spd_data[95], spd_data[96], spd_data[97], spd_data[98]);
+
+	if (verbose) {
+		printf("\n");
+		printbuf(spd_data, len, "SPD DATA");
+	}
+
+	return 0;
+}
+
+int
+ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
 	uint8_t spd_data[256], msg_data[4];
-	int len, offset, size;
+	int len, offset;
 
 	msg_data[0] = id;
 
@@ -742,53 +803,8 @@ ipmi_spd_print(struct ipmi_intf * intf, uint8_t id)
 		offset += len;
 	} while (offset < fru.size);
 
-	if (verbose > 1)
-		printbuf(spd_data, offset, "SPD DATA");
-
-	if (offset < 92)
-		return -1; /* we need first 91 bytes to do our thing */
-
-	size = spd_data[5] * (spd_data[31] << 2);
-	printf(" Memory Size           : %d MB\n", size);
-	printf(" Memory Type           : %s\n",
-	       val2str(spd_data[2], spd_memtype_vals));
-	printf(" Voltage Intf          : %s\n",
-	       val2str(spd_data[8], spd_voltage_vals));
-	printf(" Error Detect/Cor      : %s\n",
-	       val2str(spd_data[11], spd_config_vals));
-
-	/* handle jedec table bank continuation values */
-	printf(" Manufacturer          : ");
-	if (spd_data[64] != 0x7f)
-		printf("%s\n",
-		       val2str(spd_data[64], jedec_id1_vals));
-	else {
-		if (spd_data[65] != 0x7f)
-			printf("%s\n",
-			       val2str(spd_data[65], jedec_id2_vals));
-		else {
-			if (spd_data[66] != 0x7f)
-				printf("%s\n",
-				       val2str(spd_data[66], jedec_id3_vals));
-			else {
-				if (spd_data[67] != 0x7f)
-					printf("%s\n",
-					       val2str(spd_data[67],
-						       jedec_id4_vals));
-				else
-					printf("%s\n",
-					       val2str(spd_data[68],
-						       jedec_id5_vals));
-			}
-		}
-	}
-
-	if (spd_data[73]) {
-		char part[19];
-		memcpy(part, spd_data+73, 18);
-		part[18] = 0;
-		printf(" Part Number           : %s\n", part);
-	}
+	/* now print spd info */
+	ipmi_spd_print(spd_data, offset);
 
 	return 0;
 }

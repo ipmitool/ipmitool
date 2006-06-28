@@ -58,7 +58,6 @@
 static char fileName[512];
 
 extern int verbose;
-extern int ipmi_spd_print(struct ipmi_intf * intf, uint8_t id);
 
 static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
 static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
@@ -1251,7 +1250,7 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		intf->target_addr = save_addr;
 		break;
 	case 0x01:
-		rc = ipmi_spd_print(intf, fru->device_id);
+		rc = ipmi_spd_print_fru(intf, fru->device_id);
 		break;
 	default:
 		if (verbose)

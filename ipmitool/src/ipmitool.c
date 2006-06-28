@@ -77,6 +77,7 @@ int verbose = 0;
 struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_raw_main,     "raw",     "Send a RAW IPMI request and print response" },
 	{ ipmi_rawi2c_main,  "i2c",     "Send an I2C Master Write-Read command and print response" },
+	{ ipmi_rawspd_main,  "spd",     "Print SPD info from remote I2C device" },
 	{ ipmi_lanp_main,    "lan",     "Configure LAN Channels" },
 	{ ipmi_chassis_main, "chassis", "Get chassis status and set power state" },
 	{ ipmi_power_main,   "power",   "Shortcut to chassis power commands" },
