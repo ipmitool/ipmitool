@@ -49,7 +49,7 @@ dist-hook:
 
 install-data-local:
 	mkdir -p $(DOCDIR)
-	install -m 644 $(DOCLIST) $(DOCDIR)
+	$(INSTALL_DATA) -m 644 $(DOCLIST) $(DOCDIR)
 
 .PHONY: pkg
 pkg: PKG := ipmitool-@VERSION@-@OS@-@ARCH@
@@ -76,4 +76,3 @@ rpm: control/ipmitool.spec dist
 .PHONY: clean-rpm
 clean-rpm:
 	-rm -rf $(RPMDIR)
-
