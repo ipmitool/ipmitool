@@ -1404,7 +1404,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 					output(rs);
  			}
 
-			
+
 			/*
 			 * ERROR in select
 			 */
@@ -1414,7 +1414,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 				bShouldExit = 1;
 			}
 		}
-	}		
+	}
 
 	leave_raw_mode();
 
