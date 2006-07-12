@@ -61,7 +61,7 @@ extern int verbose;
 
 static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
 static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
-static void ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
+static int ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
 static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, uint8_t fruId,
 						   struct fru_info *pFruInfo, uint32_t * pRetLocation,
 						   uint32_t * pRetSize);
