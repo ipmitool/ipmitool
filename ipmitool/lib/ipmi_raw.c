@@ -148,6 +148,8 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 	i2cbus  = (uint8_t)strtoul(argv[0], NULL, 0);
 	i2caddr = (uint8_t)strtoul(argv[1], NULL, 0);
 
+	i2cbus = ((i2cbus & 7) << 1) | 1;
+
 	for (i = 0; i < RAW_SPD_SIZE; i+= IPMI_I2C_MASTER_MAX_SIZE) {
 		rsp = ipmi_master_write_read(intf, i2cbus, i2caddr,
 					     (uint8_t *)&i, 1, IPMI_I2C_MASTER_MAX_SIZE);
