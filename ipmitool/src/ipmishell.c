@@ -202,6 +202,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		free(pbuf);
 	}
+	printf("\n");
 	return rc;
 }
 

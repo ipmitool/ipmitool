@@ -269,8 +269,14 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		}
 	}
 
+	if (ret == 0)
+		return NULL;
+
 	rsp.data[ret] = '\0';
 	rsp.data_len = ret;
+
+	if (verbose > 2)
+		printbuf(rsp.data, rsp.data_len, "recv_packet");
 
 	return &rsp;
 }
