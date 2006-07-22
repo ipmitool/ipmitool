@@ -4119,6 +4119,9 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "               type [sensor type]");
 		lprintf(LOG_ERR,
 			"                     list       Get a list of available sensor types");
+		lprintf(LOG_ERR,
+			"                     get        Retrieve the state of a specified sensor");
+
 		lprintf(LOG_ERR, "               info");
 		lprintf(LOG_ERR,
 			"                     Display information about the repository itself");
