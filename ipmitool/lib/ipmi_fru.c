@@ -1295,7 +1295,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 
 		fru = (struct sdr_record_fru_locator *)
 			ipmi_sdr_get_record(intf, header, itr);
-		if (fru == NULL)
+		if (fru == NULL || !fru->logical)
 			continue;
 		rc = ipmi_fru_print(intf, fru);
 		free(fru);
