@@ -159,7 +159,7 @@ struct sdr_record_mask {
 		struct {
 			uint16_t assert_event;	/* assertion event mask */
 			uint16_t deassert_event;	/* de-assertion event mask */
-			uint16_t read;	/* discrete reaading mask */
+			uint16_t read;	/* discrete reading mask */
 		} discrete;
 		struct {
 #if WORDS_BIGENDIAN
@@ -232,44 +232,52 @@ struct sdr_record_mask {
 			uint16_t status_unr:1;
 			uint16_t reserved_2:1;
 #endif
-			struct {
-#if WORDS_BIGENDIAN		/* settable threshold mask */
-				uint8_t reserved:2;
-				uint8_t unr:1;
-				uint8_t ucr:1;
-				uint8_t unc:1;
-				uint8_t lnr:1;
-				uint8_t lcr:1;
-				uint8_t lnc:1;
+			union {
+				struct {
+#if WORDS_BIGENDIAN			/* settable threshold mask */
+					uint16_t reserved:2;
+					uint16_t unr:1;
+					uint16_t ucr:1;
+					uint16_t unc:1;
+					uint16_t lnr:1;
+					uint16_t lcr:1;
+					uint16_t lnc:1;
+					/* padding lower 8 bits */
+					uint16_t readable:8;
 #else
-				uint8_t lnc:1;
-				uint8_t lcr:1;
-				uint8_t lnr:1;
-				uint8_t unc:1;
-				uint8_t ucr:1;
-				uint8_t unr:1;
-				uint8_t reserved:2;
+					uint16_t readable:8;
+					uint16_t lnc:1;
+					uint16_t lcr:1;
+					uint16_t lnr:1;
+					uint16_t unc:1;
+					uint16_t ucr:1;
+					uint16_t unr:1;
+					uint16_t reserved:2;
 #endif
-			} set;
-			struct {
-#if WORDS_BIGENDIAN		/* readable threshold mask */
-				uint8_t reserved:2;
-				uint8_t unr:1;
-				uint8_t ucr:1;
-				uint8_t unc:1;
-				uint8_t lnr:1;
-				uint8_t lcr:1;
-				uint8_t lnc:1;
+				} set;
+				struct {
+#if WORDS_BIGENDIAN			/* readable threshold mask */
+					/* padding upper 8 bits */
+					uint16_t settable:8;
+					uint16_t reserved:2;
+					uint16_t unr:1;
+					uint16_t ucr:1;
+					uint16_t unc:1;
+					uint16_t lnr:1;
+					uint16_t lcr:1;
+					uint16_t lnc:1;
 #else
-				uint8_t lnc:1;
-				uint8_t lcr:1;
-				uint8_t lnr:1;
-				uint8_t unc:1;
-				uint8_t ucr:1;
-				uint8_t unr:1;
-				uint8_t reserved:2;
+					uint16_t lnc:1;
+					uint16_t lcr:1;
+					uint16_t lnr:1;
+					uint16_t unc:1;
+					uint16_t ucr:1;
+					uint16_t unr:1;
+					uint16_t reserved:2;
+					uint16_t settable:8;
 #endif
-			} read;
+				} read;
+			};
 		} threshold;
 	} type;
 } __attribute__ ((packed));
