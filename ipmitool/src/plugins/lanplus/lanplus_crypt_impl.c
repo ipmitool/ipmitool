@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include "ipmitool/log.h"
 #include "ipmitool/ipmi_constants.h"
 #include "lanplus.h"
 #include "lanplus_crypt_impl.h"
@@ -124,7 +125,7 @@ lanplus_HMAC(uint8_t        mac,
 		evp_md = EVP_sha1();
 	else
 	{
-		fprintf(stderr, "Invalid mac type 0x%x in lanplus_HMAC\n", mac);
+		lprintf(LOG_DEBUG, "Invalid mac type 0x%x in lanplus_HMAC\n", mac);
 		assert(0);
 	}
 
@@ -165,7 +166,7 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 	if (input_length == 0)
 		return;
 
-	if (verbose > 2)
+	if (verbose >= 5)
 	{
 		printbuf(iv,  16, "encrypting with this IV");
 		printbuf(key, 16, "encrypting with this key");
@@ -233,10 +234,9 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	EVP_CIPHER_CTX_init(&ctx);
 	EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
-		
 
 
-	if (verbose > 2)
+	if (verbose >= 5)
 	{
 		printbuf(iv,  16, "decrypting with this IV");
 		printbuf(key, 16, "decrypting with this key");
@@ -260,7 +260,7 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	if (!EVP_DecryptUpdate(&ctx, output, (int *)bytes_written, input, input_length))
 	{
 		/* Error */
-		fprintf(stderr, "ERROR: decrypt update failed");
+		lprintf(LOG_DEBUG, "ERROR: decrypt update failed");
 		*bytes_written = 0;
 		return;
 	}
@@ -272,8 +272,8 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		{
 			char buffer[1000];
 			ERR_error_string(ERR_get_error(), buffer);
-			fprintf(stderr, "the ERR error %s", buffer);
-			fprintf(stderr, "ERROR: decrypt final failed");
+			lprintf(LOG_DEBUG, "the ERR error %s", buffer);
+			lprintf(LOG_DEBUG, "ERROR: decrypt final failed");
 			*bytes_written = 0;
 			return; /* Error */
 		}
@@ -285,9 +285,9 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		}
 	}
 
-	if (verbose > 1)
+	if (verbose >= 5)
 	{
-		fprintf(stderr, "Decrypted %d encrypted bytes", input_length);
+		lprintf(LOG_DEBUG, "Decrypted %d encrypted bytes", input_length);
 		printbuf(output, *bytes_written, "Decrypted this data");
 	}
 }

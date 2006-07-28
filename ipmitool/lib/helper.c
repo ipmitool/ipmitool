@@ -97,13 +97,13 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 	if (verbose < 1)
 		return;
 
-	fprintf(stderr, "%s (%d bytes)\n", desc, len);
+	fprintf(stderr, "%s (%d bytes)\r\n", desc, len);
 	for (i=0; i<len; i++) {
 		if (((i%16) == 0) && (i != 0))
-			fprintf(stderr, "\n");
+			fprintf(stderr, "\r\n");
 		fprintf(stderr, " %2.2x", buf[i]);
 	}
-	fprintf(stderr, "\n");
+	fprintf(stderr, "\r\n");
 }
 
 const char * val2str(uint16_t val, const struct valstr *vs)

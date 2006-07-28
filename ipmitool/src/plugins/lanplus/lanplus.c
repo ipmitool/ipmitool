@@ -40,9 +40,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
-#include <signal.h>
-#include <setjmp.h>
 #include <netdb.h>
+#include <time.h>
 #include <fcntl.h>
 #include <assert.h>
 
@@ -74,9 +73,6 @@ extern const struct valstr ipmi_encryption_algorithms[];
 
 static struct ipmi_rq_entry * ipmi_req_entries;
 static struct ipmi_rq_entry * ipmi_req_entries_tail;
-
-
-static sigjmp_buf jmpbuf;
 
 
 static int ipmi_lanplus_setup(struct ipmi_intf * intf);
@@ -265,13 +261,6 @@ void lanplus_swap(
 
 
 
-static void
-query_alarm(int signo)
-{
-	siglongjmp(jmpbuf, 1);
-}
-
-
 static const struct valstr plus_payload_types_vals[] = {
     { IPMI_PAYLOAD_TYPE_IPMI,              "IPMI (0)" },	// IPMI Message
     { IPMI_PAYLOAD_TYPE_SOL,               "SOL  (1)" },	// SOL (Serial over LAN)
@@ -384,7 +373,7 @@ ipmi_lan_send_packet(
 					 uint8_t * data, int
 					 data_len)
 {
-	if (verbose >= 2)
+	if (verbose >= 5)
 		printbuf(data, data_len, ">> sending packet");
 
 	return send(intf->fd, data, data_len, 0);
@@ -396,17 +385,22 @@ struct ipmi_rs *
 ipmi_lan_recv_packet(struct ipmi_intf * intf)
 {
 	static struct ipmi_rs rsp;
-	int rc;
+	fd_set read_set, err_set;
+	struct timeval tmout;
+	int ret;
 
-	/* setup alarm timeout */
-	if (sigsetjmp(jmpbuf, 1) != 0) {
-		alarm(0);
+	FD_ZERO(&read_set);
+	FD_SET(intf->fd, &read_set);
+
+	FD_ZERO(&err_set);
+	FD_SET(intf->fd, &err_set);
+
+	tmout.tv_sec = intf->session->timeout;
+	tmout.tv_usec = 0;
+
+	ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
+	if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
 		return NULL;
-	}
-
-	alarm(intf->session->timeout);
-	rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
-	alarm(0);
 
 	/* the first read may return ECONNREFUSED because the rmcp ping
 	 * packet--sent to UDP port 623--will be processed by both the
@@ -415,25 +409,40 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * The problem with this is that the ECONNREFUSED takes
 	 * priority over any other received datagram; that means that
 	 * the Connection Refused shows up _before_ the response packet,
-	 * regardless of the order they were sent out.	(unless the
+	 * regardless of the order they were sent out.  (unless the
 	 * response is read before the connection refused is returned)
 	 */
-	if (rc < 0) {
-		alarm(intf->session->timeout);
-		rc = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
-		alarm(0);
-		if (rc < 0) {
-			perror("recv failed");
-			return NULL;
+	ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+
+	if (ret < 0) {
+		FD_ZERO(&read_set);
+		FD_SET(intf->fd, &read_set);
+
+		FD_ZERO(&err_set);
+		FD_SET(intf->fd, &err_set);
+
+		tmout.tv_sec = intf->session->timeout;
+		tmout.tv_usec = 0;
+
+		ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
+		if (ret < 0) {
+			if (FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
+				return NULL;
+
+			ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+			if (ret < 0)
+				return NULL;
 		}
 	}
-	rsp.data[rc] = '\0';
-	rsp.data_len = rc;
 
-	if (verbose >= 2)
-	{
-		printbuf(rsp.data, rsp.data_len, "<< Received data");
-	}
+	if (ret == 0)
+		return NULL;
+
+	rsp.data[ret] = '\0';
+	rsp.data_len = ret;
+
+	if (verbose >= 5)
+		printbuf(rsp.data, rsp.data_len, "<< received packet");
 
 	return &rsp;
 }
@@ -1247,6 +1256,7 @@ void read_ipmi_response(struct ipmi_rs * rsp, int * offset)
  */
 void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 {
+
 	/*
 	 * The data here should be decrypted by now.
 	 */
@@ -1265,38 +1275,34 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 	rsp->payload.sol_packet.transfer_unavailable =
 		rsp->data[*offset] & 0x20;
 
-	rsp->payload.sol_packet.sol_inactive = 
+	rsp->payload.sol_packet.sol_inactive =
 		rsp->data[*offset] & 0x10;
 
 	rsp->payload.sol_packet.transmit_overrun =
 		rsp->data[*offset] & 0x08;
-	
+
 	rsp->payload.sol_packet.break_detected =
 		rsp->data[(*offset)++] & 0x04;
 
-	lprintf(LOG_DEBUG, "SOL sequence number     : 0x%02x",
+	lprintf(LOG_DEBUG, "< SOL sequence number     : 0x%02x",
 		rsp->payload.sol_packet.packet_sequence_number);
-
-	lprintf(LOG_DEBUG, "SOL acked packet        : 0x%02x",
+	lprintf(LOG_DEBUG, "< SOL acked packet        : 0x%02x",
 		rsp->payload.sol_packet.acked_packet_number);
-
-	lprintf(LOG_DEBUG, "SOL accepted char count : 0x%02x",
+	lprintf(LOG_DEBUG, "< SOL accepted char count : 0x%02x",
 		rsp->payload.sol_packet.accepted_character_count);
-
-	lprintf(LOG_DEBUG, "SOL is nack             : %s",
+	lprintf(LOG_DEBUG, "< SOL is nack             : %s",
 		rsp->payload.sol_packet.is_nack? "true" : "false");
-
-	lprintf(LOG_DEBUG, "SOL xfer unavailable    : %s",
+	lprintf(LOG_DEBUG, "< SOL xfer unavailable    : %s",
 		rsp->payload.sol_packet.transfer_unavailable? "true" : "false");
-		
-	lprintf(LOG_DEBUG, "SOL inactive            : %s",
+	lprintf(LOG_DEBUG, "< SOL inactive            : %s",
 		rsp->payload.sol_packet.sol_inactive? "true" : "false");
-
-	lprintf(LOG_DEBUG, "SOL transmit overrun    : %s",
+	lprintf(LOG_DEBUG, "< SOL transmit overrun    : %s",
 		rsp->payload.sol_packet.transmit_overrun? "true" : "false");
-
-	lprintf(LOG_DEBUG, "SOL break detected      : %s",
+	lprintf(LOG_DEBUG, "< SOL break detected      : %s",
 		rsp->payload.sol_packet.break_detected? "true" : "false");
+
+	if (verbose >= 5)
+		printbuf(rsp->data + *offset - 4, 4, "SOL MSG FROM BMC");
 }
 
 
@@ -1409,10 +1415,31 @@ void getSolPayloadWireRep(
 {
 	int i = 0;
 
+	lprintf(LOG_DEBUG, "> SOL sequence number     : 0x%02x",
+		payload->payload.sol_packet.packet_sequence_number);
+	lprintf(LOG_DEBUG, "> SOL acked packet        : 0x%02x",
+		payload->payload.sol_packet.acked_packet_number);
+	lprintf(LOG_DEBUG, "> SOL accepted char count : 0x%02x",
+		payload->payload.sol_packet.accepted_character_count);
+	lprintf(LOG_DEBUG, "> SOL is nack             : %s",
+		payload->payload.sol_packet.is_nack ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL assert ring wor     : %s",
+		payload->payload.sol_packet.assert_ring_wor ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL generate break      : %s",
+		payload->payload.sol_packet.generate_break ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL deassert cts        : %s",
+		payload->payload.sol_packet.deassert_cts ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL deassert dcd dsr    : %s",
+		payload->payload.sol_packet.deassert_dcd_dsr ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL flush inbound       : %s",
+		payload->payload.sol_packet.flush_inbound ? "true" : "false");
+	lprintf(LOG_DEBUG, "> SOL flush outbound      : %s",
+		payload->payload.sol_packet.flush_outbound ? "true" : "false");
+
 	msg[i++] = payload->payload.sol_packet.packet_sequence_number;
 	msg[i++] = payload->payload.sol_packet.acked_packet_number;
 	msg[i++] = payload->payload.sol_packet.accepted_character_count;
-	
+
 	msg[i]    = payload->payload.sol_packet.is_nack           ? 0x40 : 0;
 	msg[i]   |= payload->payload.sol_packet.assert_ring_wor   ? 0x20 : 0;
 	msg[i]   |= payload->payload.sol_packet.generate_break    ? 0x10 : 0;
@@ -1425,6 +1452,12 @@ void getSolPayloadWireRep(
 	memcpy(msg + i,
 		   payload->payload.sol_packet.data,
 		   payload->payload.sol_packet.character_count);
+
+	lprintf(LOG_DEBUG, "> SOL character count     : %d",
+		payload->payload.sol_packet.character_count);
+
+	if (payload->payload.sol_packet.character_count)
+		printbuf(payload->payload.sol_packet.data, payload->payload.sol_packet.character_count, "SOL SEND DATA");
 
 	/*
 	 * At this point, the payload length becomes the whole payload
@@ -1489,7 +1522,6 @@ ipmi_lanplus_build_v2x_msg(
 
 	/* msg will hold the entire message to be sent */
 	uint8_t * msg;
-
 	int len = 0;
 
 
@@ -1531,7 +1563,6 @@ ipmi_lanplus_build_v2x_msg(
 	/* Payload Type -- also specifies whether were authenticated/encyrpted */
 	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] = payload->payload_type;
 
-	
 	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
 	{
 		msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
@@ -1554,17 +1585,16 @@ ipmi_lanplus_build_v2x_msg(
 		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
 		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
 	}
-	
+
 	/*
 	 * Payload Length is set below (we don't know how big the payload is until after
 	 * encryption).
 	 */
-	
 
 	/*
 	 * Payload
 	 *
-	 * At this point we are ready to slam the payload in.  
+	 * At this point we are ready to slam the payload in.
 	 * This includes:
 	 * 1) The confidentiality header
 	 * 2) The payload proper (possibly encrypted)
@@ -1586,6 +1616,10 @@ ipmi_lanplus_build_v2x_msg(
 		getSolPayloadWireRep(intf,
 							 msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
 							 payload);
+
+		if (verbose >= 5)
+			printbuf(msg + IPMI_LANPLUS_OFFSET_PAYLOAD, 4, "SOL MSG TO BMC");
+
 		len += payload->payload_length;
 
 		break;
@@ -1640,14 +1674,12 @@ ipmi_lanplus_build_v2x_msg(
 
 	}
 
-	
 	/* Now we know the payload length */
 	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_SIZE    ] =
 		payload->payload_length        & 0xff;
 	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_SIZE + 1] =
 		(payload->payload_length >> 8) & 0xff;
 
-	
 
 	/*
 	 *------------------------------------------
@@ -1684,11 +1716,10 @@ ipmi_lanplus_build_v2x_msg(
 
 		if (length_before_authcode % 4)
 			integrity_pad_size = 4 - (length_before_authcode % 4);
-							  
+
 		for (i = 0; i < integrity_pad_size; ++i)
 			msg[start_of_session_trailer + i] = 0xFF;
 
-		
 		/* Pad length */
 		msg[start_of_session_trailer + integrity_pad_size] = integrity_pad_size;
 
@@ -1696,7 +1727,6 @@ ipmi_lanplus_build_v2x_msg(
 		msg[start_of_session_trailer + integrity_pad_size + 1] =
 			0x07; /* Hardcoded per the spec, table 13-8 */
 
-		
 		hmac_input_size =
 			12                      +
 			payload->payload_length +
@@ -1771,9 +1801,9 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	 * representation far below.
 	 */
  	static uint8_t curr_seq = 0;
-   
-   curr_seq += 1;
-   
+
+	curr_seq += 1;
+
 	if (curr_seq >= 64)
 		curr_seq = 0;
 
@@ -1786,12 +1816,12 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	v2_payload.payload_length               = req->msg.data_len + 7;
 	v2_payload.payload.ipmi_request.request = req;
 	v2_payload.payload.ipmi_request.rq_seq  = curr_seq;
-	
-	ipmi_lanplus_build_v2x_msg(intf,                // in 
-							   &v2_payload,         // in 
-							   &(entry->msg_len),   // out
-							   &(entry->msg_data),  // out
-                        curr_seq); // in
+
+	ipmi_lanplus_build_v2x_msg(intf,                // in
+				   &v2_payload,         // in
+				   &(entry->msg_len),   // out
+				   &(entry->msg_data),  // out
+				   curr_seq); 		// in
 
 	return entry;
 }
@@ -1975,132 +2005,137 @@ ipmi_lanplus_send_payload(
 						  struct ipmi_v2_payload * payload)
 {
 	struct ipmi_rs      * rsp = NULL;
-	uint8_t       * msg_data;
+	uint8_t             * msg_data;
 	int                   msg_length;
 	struct ipmi_session * session = intf->session;
 	int                   try = 0;
+	int                   xmit = 1;
+	time_t                ltime;
 
 	if (!intf->opened && intf->open && intf->open(intf) < 0)
 		return NULL;
 
-	if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
-	{
-		/*
-		 * Build an IPMI v1.5 or v2 command
-		 */
-		struct ipmi_rq_entry * entry;
-		struct ipmi_rq * ipmi_request = payload->payload.ipmi_request.request;
-
-		lprintf(LOG_DEBUG, "");
-		lprintf(LOG_DEBUG, ">> Sending IPMI command payload");
-		lprintf(LOG_DEBUG, ">>    netfn   : 0x%02x", ipmi_request->msg.netfn);
-		lprintf(LOG_DEBUG, ">>    command : 0x%02x", ipmi_request->msg.cmd);
-
-		if (verbose > 1)
-		{
-			uint16_t i;
-			fprintf(stderr, ">>    data    : ");
-			for (i = 0; i < ipmi_request->msg.data_len; ++i)
-				fprintf(stderr, "0x%02x ", ipmi_request->msg.data[i]);
-			fprintf(stderr, "\n\n");
-		}
-
-
-		/*
-		 * If we are presession, and the command is GET CHANNEL AUTHENTICATION
-		 * CAPABILITIES, we will build the command in v1.5 format.  This is so
-		 * that we can ask any server whether it supports IPMI v2 / RMCP+
-		 * before we attempt to open a v2.x session.
-		 */
-		if ((ipmi_request->msg.netfn == IPMI_NETFN_APP) &&
-			(ipmi_request->msg.cmd   == IPMI_GET_CHANNEL_AUTH_CAP) &&
-			(session->v2_data.bmc_id  == 0)) // jme - check
-		{
-			lprintf(LOG_DEBUG+1, "BUILDING A v1.5 COMMAND");
-			entry = ipmi_lanplus_build_v15_ipmi_cmd(intf, ipmi_request);
-		}
-		else
-		{
-			lprintf(LOG_DEBUG+1, "BUILDING A v2 COMMAND");
-			entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request);
-		}
-
-		if (entry == NULL) {
-			lprintf(LOG_ERR, "Aborting send command, unable to build");
-			return NULL;
-		}
-
-		msg_data   = entry->msg_data;
-		msg_length = entry->msg_len;
-	}
-
-	else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST)
-	{
-		lprintf(LOG_DEBUG, ">> SENDING AN OPEN SESSION REQUEST\n");
-		assert(session->v2_data.session_state == LANPLUS_STATE_PRESESSION);
-
-		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
-								   payload,     /* in  */
-								   &msg_length, /* out */
-								   &msg_data,   /* out */
-                           0);  /* irrelevant for this msg*/
-
-	}
-
-	else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RAKP_1)
-	{
-		lprintf(LOG_DEBUG, ">> SENDING A RAKP 1 MESSAGE\n");
-		assert(session->v2_data.session_state ==
-			   LANPLUS_STATE_OPEN_SESSION_RECEIEVED);
-
-		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
-								   payload,     /* in  */
-								   &msg_length, /* out */
-								   &msg_data,   /* out */
-                           0);  /* irrelevant for this msg*/
-
-	}
-
-	else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RAKP_3)
-	{
-		lprintf(LOG_DEBUG, ">> SENDING A RAKP 3 MESSAGE\n");
-		assert(session->v2_data.session_state ==
-			   LANPLUS_STATE_RAKP_2_RECEIVED);
-
-		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
-								   payload,     /* in  */
-								   &msg_length, /* out */
-								   &msg_data,   /* out */
-                           0);  /* irrelevant for this msg*/
-
-	}
-
-	else if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
-	{
-		lprintf(LOG_DEBUG, ">> SENDING A SOL MESSAGE\n");
-		assert(session->v2_data.session_state == LANPLUS_STATE_ACTIVE);
-
-		ipmi_lanplus_build_v2x_msg(intf,        /* in  */
-								   payload,     /* in  */
-								   &msg_length, /* out */
-								   &msg_data,   /* out */
-                           0);  /* irrelevant for this msg*/
-	}
-
-	else
-	{
-		lprintf(LOG_ERR, "Payload type 0x%0x is unsupported!",
-			payload->payload_type);
-		assert(0);
-	}
-
-
 	while (try < session->retry) {
+		ltime = time(NULL);
+
+		if (xmit) {
+
+			if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
+			{
+				/*
+				 * Build an IPMI v1.5 or v2 command
+				 */
+				struct ipmi_rq_entry * entry;
+				struct ipmi_rq * ipmi_request = payload->payload.ipmi_request.request;
+
+				lprintf(LOG_DEBUG, "");
+				lprintf(LOG_DEBUG, ">> Sending IPMI command payload");
+				lprintf(LOG_DEBUG, ">>    netfn   : 0x%02x", ipmi_request->msg.netfn);
+				lprintf(LOG_DEBUG, ">>    command : 0x%02x", ipmi_request->msg.cmd);
+
+				if (verbose > 1)
+				{
+					uint16_t i;
+					fprintf(stderr, ">>    data    : ");
+					for (i = 0; i < ipmi_request->msg.data_len; ++i)
+						fprintf(stderr, "0x%02x ", ipmi_request->msg.data[i]);
+					fprintf(stderr, "\n\n");
+				}
 
 
-		if (ipmi_lan_send_packet(intf, msg_data, msg_length) < 0) {
-			lprintf(LOG_ERR, "IPMI LAN send command failed");
-			return NULL;
+				/*
+				 * If we are presession, and the command is GET CHANNEL AUTHENTICATION
+				 * CAPABILITIES, we will build the command in v1.5 format.  This is so
+				 * that we can ask any server whether it supports IPMI v2 / RMCP+
+				 * before we attempt to open a v2.x session.
+				 */
+				if ((ipmi_request->msg.netfn == IPMI_NETFN_APP) &&
+				    (ipmi_request->msg.cmd   == IPMI_GET_CHANNEL_AUTH_CAP) &&
+				    (session->v2_data.bmc_id  == 0)) // jme - check
+				{
+					lprintf(LOG_DEBUG+1, "BUILDING A v1.5 COMMAND");
+					entry = ipmi_lanplus_build_v15_ipmi_cmd(intf, ipmi_request);
+				}
+				else
+				{
+					lprintf(LOG_DEBUG+1, "BUILDING A v2 COMMAND");
+					entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request);
+				}
+
+				if (entry == NULL) {
+					lprintf(LOG_ERR, "Aborting send command, unable to build");
+					return NULL;
+				}
+
+				msg_data   = entry->msg_data;
+				msg_length = entry->msg_len;
+			}
+
+			else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST)
+			{
+				lprintf(LOG_DEBUG, ">> SENDING AN OPEN SESSION REQUEST\n");
+				assert(session->v2_data.session_state == LANPLUS_STATE_PRESESSION);
+
+				ipmi_lanplus_build_v2x_msg(intf,        /* in  */
+							   payload,     /* in  */
+							   &msg_length, /* out */
+							   &msg_data,   /* out */
+							   0);  /* irrelevant for this msg*/
+
+			}
+
+			else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RAKP_1)
+			{
+				lprintf(LOG_DEBUG, ">> SENDING A RAKP 1 MESSAGE\n");
+				assert(session->v2_data.session_state ==
+				       LANPLUS_STATE_OPEN_SESSION_RECEIEVED);
+
+				ipmi_lanplus_build_v2x_msg(intf,        /* in  */
+							   payload,     /* in  */
+							   &msg_length, /* out */
+							   &msg_data,   /* out */
+							   0);  /* irrelevant for this msg*/
+
+			}
+
+			else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RAKP_3)
+			{
+				lprintf(LOG_DEBUG, ">> SENDING A RAKP 3 MESSAGE\n");
+				assert(session->v2_data.session_state ==
+				       LANPLUS_STATE_RAKP_2_RECEIVED);
+
+				ipmi_lanplus_build_v2x_msg(intf,        /* in  */
+							   payload,     /* in  */
+							   &msg_length, /* out */
+							   &msg_data,   /* out */
+							   0);  /* irrelevant for this msg*/
+
+			}
+
+			else if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
+			{
+				lprintf(LOG_DEBUG, ">> SENDING A SOL MESSAGE\n");
+				assert(session->v2_data.session_state == LANPLUS_STATE_ACTIVE);
+
+				ipmi_lanplus_build_v2x_msg(intf,        /* in  */
+							   payload,     /* in  */
+							   &msg_length, /* out */
+							   &msg_data,   /* out */
+							   0);  /* irrelevant for this msg*/
+			}
+
+			else
+			{
+				lprintf(LOG_ERR, "Payload type 0x%0x is unsupported!",
+					payload->payload_type);
+				assert(0);
+			}
+
+
+			if (ipmi_lan_send_packet(intf, msg_data, msg_length) < 0) {
+				lprintf(LOG_ERR, "IPMI LAN send command failed");
+				return NULL;
+			}
 		}
 
 		/* if we are set to noanswer we do not expect response */
@@ -2173,10 +2208,16 @@ ipmi_lanplus_send_payload(
 			rsp = ipmi_lan_poll_recv(intf);
 			if (rsp)
 				break;
-
 		}
 
+		xmit = ((time(NULL) - ltime) >= intf->session->timeout);
+
 		usleep(5000);
+
+		if (xmit) {
+			/* incremet session timeout each retry */
+			intf->session->timeout++;
+		}
 
 		try++;
 	}
@@ -2205,6 +2246,7 @@ ipmi_lanplus_send_payload(
  *         0 if this isn't an ACK or we don't need to resend anything
  */
 int is_sol_partial_ack(
+					   struct ipmi_intf       * intf,
 					   struct ipmi_v2_payload * v2_payload,
 					   struct ipmi_rs         * rs)
 {
@@ -2217,6 +2259,10 @@ int is_sol_partial_ack(
 		(rs->payload.sol_packet.accepted_character_count <
 		 v2_payload->payload.sol_packet.character_count))
 	{
+		if (ipmi_oem_active(intf, "intelplus") &&
+		    rs->payload.sol_packet.accepted_character_count == 0)
+			return 0;
+
 		chars_to_resend =
 			v2_payload->payload.sol_packet.character_count -
 			rs->payload.sol_packet.accepted_character_count;
@@ -2277,16 +2323,17 @@ ipmi_lanplus_send_sol(
 	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
 
 	set_sol_packet_sequence_number(intf, v2_payload);
-	
+
 	v2_payload->payload.sol_packet.accepted_character_count = 0; /* NA */
 
 	rs = ipmi_lanplus_send_payload(intf, v2_payload);
 
 	/* Determine if we need to resend some of our data */
-	chars_to_resend = is_sol_partial_ack(v2_payload, rs);
+	chars_to_resend = is_sol_partial_ack(intf, v2_payload, rs);
 
-
-	while (chars_to_resend)
+	while (rs && !rs->payload.sol_packet.transfer_unavailable &&
+	       !rs->payload.sol_packet.is_nack &&
+	       chars_to_resend)
 	{
 		/*
 		 * We first need to handle any new data we might have
@@ -2296,7 +2343,7 @@ ipmi_lanplus_send_sol(
 			intf->session->sol_data.sol_input_handler(rs);
 
 		set_sol_packet_sequence_number(intf, v2_payload);
-		
+
 		/* Just send the required data */
 		memmove(v2_payload->payload.sol_packet.data,
 				v2_payload->payload.sol_packet.data +
@@ -2309,7 +2356,7 @@ ipmi_lanplus_send_sol(
 
 		rs = ipmi_lanplus_send_payload(intf, v2_payload);
 
-		chars_to_resend = is_sol_partial_ack(v2_payload, rs);
+		chars_to_resend = is_sol_partial_ack(intf, v2_payload, rs);
 	}
 
 	return rs;
@@ -2533,7 +2580,7 @@ ipmi_get_auth_capabilities_cmd(
 		}
 		if (rsp->ccode > 0) {
 			lprintf(LOG_INFO, "Get Auth Capabilities error: %s",
-				val2str(rsp->ccode, completion_code_vals));	
+				val2str(rsp->ccode, completion_code_vals));
 			return 1;
 		}
 	}
@@ -3172,7 +3219,6 @@ int
 ipmi_lanplus_open(struct ipmi_intf * intf)
 {
 	int rc;
-	struct sigaction act;
 	struct get_channel_auth_cap_rsp auth_cap;
 	struct sockaddr_in addr;
 	struct ipmi_session *session;
@@ -3246,16 +3292,6 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 				 (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
 	if (rc < 0) {
 		lperror(LOG_ERR, "Connect failed");
-		intf->close(intf);
-		return -1;
-	}
-
-	/* setup alarm handler */
-	act.sa_handler = query_alarm;
-	act.sa_flags = 0;
-	if (sigemptyset(&act.sa_mask) == 0 &&
-	    sigaction(SIGALRM, &act, NULL) < 0) {
-		lperror(LOG_ERR, "alarm signal");
 		intf->close(intf);
 		return -1;
 	}

@@ -44,6 +44,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_TYAN,       "Tyan Computer Corporation" },
    { IPMI_OEM_NEWISYS,    "Newisys" },
    { IPMI_OEM_SUPERMICRO, "Supermicro" },
+   { IPMI_OEM_GOOGLE,     "Google" },
    { IPMI_OEM_KONTRON,    "Kontron" },
    { 0xffff , NULL },
 };
