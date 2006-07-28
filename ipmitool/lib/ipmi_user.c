@@ -349,18 +349,20 @@ ipmi_user_set_userpriv(
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	uint8_t msg_data[3];
+	uint8_t msg_data[4];
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;         /* 0x06 */
 	req.msg.cmd      = IPMI_SET_USER_ACCESS;   /* 0x43 */
 	req.msg.data     = msg_data;
-	req.msg.data_len = 3;
+	req.msg.data_len = 4;
 
 	/* The channel number will remain constant throughout this function */
-	msg_data[0] = (channel   & 0x0f); /* Do not change any bytes */
+	msg_data[0] = (channel   & 0x0f);
+	msg_data[0] |= 0x90;		/* enable ipmi messaging */
 	msg_data[1] = (user_id   & 0x3f);
 	msg_data[2] = (privLevel & 0x0f);
+	msg_data[3] = 0;
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -372,8 +374,8 @@ ipmi_user_set_userpriv(
 	}
 	if (rsp->ccode > 0)
 	{
-		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
-			user_id);
+		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d): %s",
+			user_id, val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -492,7 +494,7 @@ print_user_usage(void)
 	lprintf(LOG_NOTICE, "		   set password <user id> [<password>]");
 	lprintf(LOG_NOTICE, "		   disable	<user id>");
 	lprintf(LOG_NOTICE, "		   enable	<user id>");
-	lprintf(LOG_NOTICE, "		   priv  	<user id> <privile level> [<channel number>]");
+	lprintf(LOG_NOTICE, "		   priv  	<user id> <privilege level> [<channel number>]");
 	lprintf(LOG_NOTICE, "		   test		<user id> <16|20> [<password]>\n");
 }
 

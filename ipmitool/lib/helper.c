@@ -398,8 +398,10 @@ ipmi_start_daemon(void)
 	chdir("/");
 	umask(0);
 
+#if 0
 	for (fd=0; fd<64; fd++)
 		close(fd);
+#endif
 
 	open("/dev/null", O_RDWR);
 	dup(0);
