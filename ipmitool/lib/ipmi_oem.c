@@ -63,7 +63,7 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		desc:   "IBM OEM support",
 		setup:	ipmi_oem_ibm,
 	},
-	{ 0 },
+	{ 0 }
 };
 
 /* Supermicro IPMIv2 BMCs use OEM authtype */
@@ -110,7 +110,6 @@ int
 ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 {
 	struct ipmi_oem_handle * oem;
-	int i;
 	int rc = 0;
 
 	if (strncmp(oemtype, "help", 4) == 0 ||
@@ -120,18 +119,13 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 		return -1;
 	}
 
-	for (oem=ipmi_oem_list, i=0; i < sizeof(ipmi_oem_list)/sizeof(struct ipmi_oem_handle); oem++, i++) {
-		if (oem->name == NULL)
-			continue;
+	for (oem=ipmi_oem_list; oem->name != NULL; oem++) {
 		if (strncmp(oemtype, oem->name, strlen(oem->name)) == 0)
 			break;
 	}
 
-	if (oem->name == NULL) {
-		/* nothing was found */
-		lprintf(LOG_ERR, "OEM support not found for \"%s\"", oemtype);
+	if (oem->name == NULL)
 		return -1;
-	}
 
 	/* save pointer for later use */
 	intf->oem = oem;
@@ -164,4 +158,3 @@ ipmi_oem_active(struct ipmi_intf * intf, const char * oemtype)
 
 	return 0;
 }
-
