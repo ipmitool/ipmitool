@@ -1284,6 +1284,7 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 	rsp->payload.sol_packet.break_detected =
 		rsp->data[(*offset)++] & 0x04;
 
+	lprintf(LOG_DEBUG, "<<<<<<<<<< RECV FROM BMC <<<<<<<<<<<");
 	lprintf(LOG_DEBUG, "< SOL sequence number     : 0x%02x",
 		rsp->payload.sol_packet.packet_sequence_number);
 	lprintf(LOG_DEBUG, "< SOL acked packet        : 0x%02x",
@@ -1300,6 +1301,7 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 		rsp->payload.sol_packet.transmit_overrun? "true" : "false");
 	lprintf(LOG_DEBUG, "< SOL break detected      : %s",
 		rsp->payload.sol_packet.break_detected? "true" : "false");
+	lprintf(LOG_DEBUG, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
 	if (verbose >= 5)
 		printbuf(rsp->data + *offset - 4, 4, "SOL MSG FROM BMC");
@@ -1415,6 +1417,7 @@ void getSolPayloadWireRep(
 {
 	int i = 0;
 
+	lprintf(LOG_DEBUG, ">>>>>>>>>> SENDING TO BMC >>>>>>>>>>");
 	lprintf(LOG_DEBUG, "> SOL sequence number     : 0x%02x",
 		payload->payload.sol_packet.packet_sequence_number);
 	lprintf(LOG_DEBUG, "> SOL acked packet        : 0x%02x",
@@ -1455,8 +1458,9 @@ void getSolPayloadWireRep(
 
 	lprintf(LOG_DEBUG, "> SOL character count     : %d",
 		payload->payload.sol_packet.character_count);
+	lprintf(LOG_DEBUG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
-	if (payload->payload.sol_packet.character_count)
+	if (verbose >= 5 && payload->payload.sol_packet.character_count)
 		printbuf(payload->payload.sol_packet.data, payload->payload.sol_packet.character_count, "SOL SEND DATA");
 
 	/*
