@@ -58,6 +58,7 @@
 #include <ipmitool/ipmi_fwum.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_kontronoem.h>
+#include <ipmitool/ipmi_firewall.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -99,6 +100,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_kontronoem_main, "kontronoem", "OEM Commands for Kontron devices"},
 	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},
 	{ ipmi_fwum_main,    "fwum",	"Update IPMC using Kontron OEM Firmware Update Manager" },
+	{ ipmi_firewall_main,"firewall","Configure Firmware Firewall" },
 #ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
 #endif
