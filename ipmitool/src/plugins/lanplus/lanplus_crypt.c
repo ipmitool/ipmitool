@@ -226,16 +226,15 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 		/* Intel BMC responds with the integrity Algorithm in RAKP4 */
 		if (session->v2_data.integrity_alg == IPMI_INTEGRITY_NONE)
 			return 1;
-		
+
 		/* We don't yet support other algorithms */
 		assert(session->v2_data.integrity_alg == IPMI_INTEGRITY_HMAC_SHA1_96);
-		
 	} else {
 		if (session->v2_data.auth_alg == IPMI_AUTH_RAKP_NONE)
-			return 1;		
+			return 1;
 
-		/* We don't yet support other algorithms */	
-		assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);	
+		/* We don't yet support other algorithms */
+		assert(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1);
 	}
 
 	bufferLength =
@@ -905,4 +904,3 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 	free(decrypted_payload);
 	return (bytes_decrypted == 0);
 }
-

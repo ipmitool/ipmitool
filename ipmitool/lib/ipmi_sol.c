@@ -543,14 +543,15 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
  */
 static int
 ipmi_sol_set_param(struct ipmi_intf * intf,
-				   uint8_t      channel,
-				   const char       * param,
-				   const char       * value)
+		   uint8_t            channel,
+		   const char       * param,
+		   const char       * value,
+		   uint8_t            guarded)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
 	uint8_t          data[4];
-	int              bGuarded = 1; /* Use set-in-progress indicator? */
+	int              bGuarded = guarded; /* Use set-in-progress indicator? */
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;           /* 0x0c */
@@ -907,9 +908,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	 */
 	if (bGuarded &&
 		(ipmi_sol_set_param(intf,
-							channel,
-							"set-in-progress",
-							"set-in-progress")))
+				    channel,
+				    "set-in-progress",
+				    "set-in-progress",
+				    bGuarded)))
 	{
 		lprintf(LOG_ERR, "Error: set of parameter \"%s\" failed", param);
 		return -1;
@@ -924,15 +926,38 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Error setting SOL parameter '%s': %s",
-			   param, val2str(rsp->ccode, completion_code_vals));
+	if (!(!strncmp(param, "set-in-progress", 15) && !strncmp(value, "commit-write", 12)) &&
+	    rsp->ccode > 0) {
+		switch (rsp->ccode) {
+		case 0x80:
+			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "
+				"Parameter not supported", param);
+			break;
+		case 0x81:
+			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "
+				"Attempt to set set-in-progress when not in set-complete state",
+				param);
+			break;
+		case 0x82:
+			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "
+				"Attempt to write read-only parameter", param);
+			break;
+		case 0x83:
+			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "
+				"Attempt to read write-only parameter", param);
+			break;
+		default:
+			lprintf(LOG_ERR, "Error setting SOL parameter '%s' to '%s': %s",
+				param, value, val2str(rsp->ccode, completion_code_vals));
+			break;
+		}
 
 		if (bGuarded &&
 			(ipmi_sol_set_param(intf,
-								channel,
-								"set-in-progress",
-								"set-complete")))
+					    channel,
+					    "set-in-progress",
+					    "set-complete",
+					    bGuarded)))
 		{
 			lprintf(LOG_ERR, "Error could not set \"set-in-progress\" "
 				   "to \"set-complete\"");
@@ -948,16 +973,18 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	 */
 	if (bGuarded)
 		ipmi_sol_set_param(intf,
-						   channel,
-						   "set-in-progress",
-						   "commit-write");
+				   channel,
+				   "set-in-progress",
+				   "commit-write",
+				   bGuarded);
 
 
 	if (bGuarded &&
  		ipmi_sol_set_param(intf,
-		 				   channel,
-			 			   "set-in-progress",
-						   "set-complete"))
+				   channel,
+				   "set-in-progress",
+				   "set-complete",
+				   bGuarded))
 	{
 		lprintf(LOG_ERR, "Error could not set \"set-in-progress\" "
 			   "to \"set-complete\"");
@@ -992,8 +1019,7 @@ enter_raw_mode(void)
 	}
 	_saved_tio = tio;
 	tio.c_iflag |= IGNPAR;
-	tio.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF)\
-		;
+	tio.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF);
 	tio.c_lflag &= ~(ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL);
 	//	#ifdef IEXTEN
 	tio.c_lflag &= ~IEXTEN;
@@ -1699,22 +1725,33 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * Set a parameter value
 	 */
 	else if (!strncmp(argv[0], "set", 3)) {
-		uint8_t channel;
+		uint8_t channel = 0xe;
+		uint8_t guard = 1;
 
 		if (argc == 3)
-			channel = 0x0E; /* Ask about the current channel */
+		{
+			channel = 0xe;
+		}
 		else if (argc == 4)
+		{
+			if (!strncmp(argv[3], "noguard", 7))
+				guard = 0;
+			else
+				channel = (uint8_t)strtol(argv[3], NULL, 0);
+		}
+		else if (argc == 5)
+		{
 			channel = (uint8_t)strtol(argv[3], NULL, 0);
+			if (!strncmp(argv[4], "noguard", 7))
+				guard = 0;
+		}
 		else
 		{
 			print_sol_set_usage();
 			return -1;
 		}
 
-		retval = ipmi_sol_set_param(intf,
-									channel,
-									argv[1],
-									argv[2]);
+		retval = ipmi_sol_set_param(intf, channel, argv[1], argv[2], guard);
 	}
 
 

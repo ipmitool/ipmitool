@@ -2226,6 +2226,9 @@ ipmi_lanplus_send_payload(
 		try++;
 	}
 
+	/* Reset timeout after retry loop completes */
+	intf->session->timeout = IPMI_LAN_TIMEOUT;
+
 	/* IPMI messages are deleted under ipmi_lan_poll_recv() */
 	switch (payload->payload_type) {
 	case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
