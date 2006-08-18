@@ -94,6 +94,54 @@ extern int verbose;
 static uint8_t G_u8ActiveSOL = 0;
 
 /*
+ * ipmi_sol_payload_access
+ */
+int
+ipmi_sol_payload_access(struct ipmi_intf * intf,
+			uint8_t channel,
+			uint8_t userid,
+			int enable)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	uint8_t data[6];
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn	 = IPMI_NETFN_APP;
+	req.msg.cmd	 = IPMI_SET_USER_PAYLOAD_ACCESS;
+	req.msg.data	 = data;
+	req.msg.data_len = 6;
+
+	memset(data, 0, 6);
+
+	data[0] = channel & 0xf;	/* channel */
+	data[1] = userid & 0x3f;	/* user id */
+	if (!enable)
+		data[1] |= 0x40;	/* disable */
+	data[2] = 0x02;			/* payload 1 is SOL */
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (NULL != rsp) {
+		switch (rsp->ccode) {
+			case 0x00:
+				return 0;
+			default:
+				lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d: %s",
+					enable ? "en" : "dis", userid, channel,
+					val2str(rsp->ccode, completion_code_vals));
+				break;
+		}
+	} else {
+		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d",
+			enable ? "en" : "dis", userid, channel);
+	}
+
+	return -1;
+}
+
+
+/*
  * ipmi_get_sol_info
  */
 int
@@ -1654,6 +1702,7 @@ print_sol_usage(void)
 {
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
+	lprintf(LOG_NOTICE, "              payload <enable|disable> [channel] [userid]");
 	lprintf(LOG_NOTICE, "              activate");
 	lprintf(LOG_NOTICE, "              deactivate");
 	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
@@ -1718,6 +1767,40 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		retval = ipmi_print_sol_info(intf, channel);
+	}
+
+	/*
+	 * Payload enable or disable
+	 */
+	else if (!strncmp(argv[0], "payload", 7)) {
+		uint8_t channel = 0xe;
+		uint8_t userid = 1;
+		int enable = -1;
+
+		if (!strncmp(argv[1], "enable", 6))
+		{
+			enable = 1;
+		}
+		else if (!strncmp(argv[1], "disable", 7))
+		{
+			enable = 0;
+		}
+		else
+		{
+			print_sol_usage();
+			return -1;
+		}
+
+		if (argc >= 3)
+		{
+			channel = (uint8_t)strtol(argv[2], NULL, 0);
+		}
+		if (argc >= 4)
+		{
+			userid = (uint8_t)strtol(argv[3], NULL, 0);
+		}
+
+		retval = ipmi_sol_payload_access(intf, channel, userid, enable);
 	}
 
 
