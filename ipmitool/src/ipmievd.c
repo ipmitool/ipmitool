@@ -87,6 +87,7 @@ int selwatch_timeout = 10;	/* default to 10 seconds */
 struct ipmi_event_intf {
 	char name[16];
 	char desc[128];
+	char prefix[72];
 	int (*setup)(struct ipmi_event_intf * eintf);
 	int (*wait)(struct ipmi_event_intf * eintf);
 	int (*read)(struct ipmi_event_intf * eintf);
@@ -105,6 +106,7 @@ static int openipmi_read(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf openipmi_event_intf = {
 	name:	"open",
 	desc:	"OpenIPMI asyncronous notification of events",
+	prefix: "",
 	setup:	openipmi_setup,
 	wait:	openipmi_wait,
 	read:	openipmi_read,
@@ -193,27 +195,34 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		return;
 
 	if (evt->record_type == 0xf0) {
-		lprintf(LOG_ALERT, "Linux kernel panic: %.11s", (char *) evt + 5);
+		lprintf(LOG_ALERT, "%sLinux kernel panic: %.11s",
+			eintf->prefix, (char *) evt + 5);
 		return;
 	}
 	else if (evt->record_type >= 0xc0) {
-		lprintf(LOG_NOTICE, "IPMI Event OEM Record %02x", evt->record_type);
+		lprintf(LOG_NOTICE, "%sIPMI Event OEM Record %02x",
+			eintf->prefix, evt->record_type);
 		return;
 	}
 
-	type = ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]);
+	type = ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type,
+					       evt->sel_type.standard_type.event_data[0]);
+
 	ipmi_get_event_desc(intf, evt, &desc);
 
-	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
+	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num,
+					  evt->sel_type.standard_type.sensor_type);
+
 	if (sdr == NULL) {
 		/* could not find matching SDR record */
 		if (desc) {
-			lprintf(LOG_NOTICE, "%s sensor - %s",
-				type, desc);
+			lprintf(LOG_NOTICE, "%s%s sensor - %s",
+				eintf->prefix, type, desc);
 			free(desc);
 		} else {
-			lprintf(LOG_NOTICE, "%s sensor %02x",
-				type, evt->sel_type.standard_type.sensor_num);
+			lprintf(LOG_NOTICE, "%s%s sensor %02x",
+				eintf->prefix, type,
+				evt->sel_type.standard_type.sensor_num);
 		}
 		return;
 	}
@@ -237,7 +246,8 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 					sdr->record.full, evt->sel_type.standard_type.event_data[2]);
 			}
 
-			lprintf(LOG_NOTICE, "%s sensor %s %s (Reading %.*f %s Threshold %.*f %s)",
+			lprintf(LOG_NOTICE, "%s%s sensor %s %s (Reading %.*f %s Threshold %.*f %s)",
+				eintf->prefix,
 				type,
 				sdr->record.full->id_string,
 				desc ? : "",
@@ -255,8 +265,8 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			/*
 			 * Discrete Event
 			 */
-			lprintf(LOG_NOTICE, "%s sensor %s %s",
-				type, sdr->record.full->id_string, desc ? : "");
+			lprintf(LOG_NOTICE, "%s%s sensor %s %s",
+				eintf->prefix, type, sdr->record.full->id_string, desc ? : "");
 			if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
 				/* previous state and/or severity in event data byte 2 */
 			}
@@ -265,26 +275,29 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			/*
 			 * OEM Event
 			 */
-			lprintf(LOG_NOTICE, "%s sensor %s %s",
-				type, sdr->record.full->id_string, desc ? : "");
+			lprintf(LOG_NOTICE, "%s%s sensor %s %s",
+				eintf->prefix, type, sdr->record.full->id_string, desc ? : "");
 		}
 		break;
 
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
 		if (evt->sel_type.standard_type.event_type == 0x6f) {
-			lprintf(LOG_NOTICE, "%s sensor %s - %s %s",
+			lprintf(LOG_NOTICE, "%s%s sensor %s - %s %s",
+				eintf->prefix,
 				type, sdr->record.compact->id_string,
 				desc ? : "",
 				evt->sel_type.standard_type.event_dir ? "Deasserted" : "Asserted");
 		} else {
-			lprintf(LOG_NOTICE, "%s sensor %s - %s",
-				type, sdr->record.compact->id_string, desc ? : "");
+			lprintf(LOG_NOTICE, "%s%s sensor %s - %s",
+				eintf->prefix, type,
+				sdr->record.compact->id_string, desc ? : "");
 		}
 		break;
 
 	default:
-		lprintf(LOG_NOTICE, "%s sensor - %s",
-			type, evt->sel_type.standard_type.sensor_num, desc ? : "");
+		lprintf(LOG_NOTICE, "%s%s sensor - %s",
+			eintf->prefix, type,
+			evt->sel_type.standard_type.sensor_num, desc ? : "");
 		break;
 	}
 
@@ -722,6 +735,10 @@ ipmievd_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	eintf->intf = intf;
+
+	snprintf(eintf->prefix,
+		 strlen((const char *)intf->session->hostname) + 3,
+		 "%s: ", intf->session->hostname);
 
 	return ipmievd_main(eintf, argc, argv);
 }
