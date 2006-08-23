@@ -51,6 +51,8 @@
 #define IPMI_SUSPEND_RESUME_PAYLOAD_ENCRYPTYION 0x55
 #define IPMI_GET_SEL_TIME                       0x48
 #define IPMI_SET_SEL_TIME                       0x49
+#define IPMI_SET_USER_PAYLOAD_ACCESS		0x4c
+#define IPMI_GET_USER_PAYLOAD_ACCESS		0x4d
 
 #define IPMI_1_5_AUTH_TYPE_BIT_NONE     0x01
 #define IPMI_1_5_AUTH_TYPE_BIT_MD2      0x02
