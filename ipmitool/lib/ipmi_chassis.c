@@ -172,7 +172,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 		printf("default (15 seconds)\n");
 	} else {
 		if (identify_data.force_on != 0) {
-			printf("indefinate\n");
+			printf("indefinite\n");
 		} else {
 			if (identify_data.interval == 0)
 				printf("off\n");
@@ -448,8 +448,10 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 		return -1;
 	}
 	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
-			param, val2str(rsp->ccode, completion_code_vals));
+		if (param != 0) {
+			lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
+				param, val2str(rsp->ccode, completion_code_vals));
+		}
 		return -1;
 	}
 
@@ -506,13 +508,32 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 {
 	uint8_t flags[5];
 	int rc = 0;
+	int use_progress = 1;
+
+	/* set set-in-progress flag */
+	memset(flags, 0, 5);
+	flags[0] = 0x01;
+	rc = ipmi_chassis_set_bootparam(intf,
+		IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
+	if (rc < 0)
+		use_progress = 0;
 
 	memset(flags, 0, 5);
 	flags[0] = 0x01;
 	flags[1] = 0x01;
-	rc = ipmi_chassis_set_bootparam(intf, 4, flags, 2);
-	if (rc < 0)
+	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
+					flags, 2);
+
+	if (rc < 0) {
+		if (use_progress) {
+			/* set-in-progress = set-complete */
+			memset(flags, 0, 5);
+			ipmi_chassis_set_bootparam(intf,
+				   IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+				   flags, 1);
+		}
 		return -1;
+	}
 
 	memset(flags, 0, 5);
 	if (arg == NULL)
@@ -542,6 +563,13 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 		flags[1] = 0x18;
 	else {
 		lprintf(LOG_ERR, "Invalid argument: %s", arg);
+		if (use_progress) {
+			/* set-in-progress = set-complete */
+			memset(flags, 0, 5);
+			ipmi_chassis_set_bootparam(intf,
+				   IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+				   flags, 1);
+		}
 		return -1;
 	}
 
@@ -550,9 +578,29 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 
 	/* set flag valid bit */
 	flags[0] = 0x80;
-	rc = ipmi_chassis_set_bootparam(intf, 5, flags, 5);
-	if (rc == 0)
+	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_BOOT_FLAGS,
+					flags, 5);
+	if (rc == 0) {
+		if (use_progress) {
+			/* set-in-progress = commit-write */
+			memset(flags, 0, 5);
+			flags[0] = 0x02;
+			ipmi_chassis_set_bootparam(intf,
+				   IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+				   flags, 1);
+		}
+
 		printf("Set Boot Device to %s\n", arg);
+	}
+
+	if (use_progress) {
+		/* set-in-progress = set-complete */
+		memset(flags, 0, 5);
+		ipmi_chassis_set_bootparam(intf,
+			   IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+			   flags, 1);
+	}
+
 	return rc;
 }
 
