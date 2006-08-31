@@ -667,7 +667,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 		FILE *fp;
 		struct stat st1;
 
-		ipmi_start_daemon();
+		ipmi_start_daemon(eintf->intf);
 
 		if (lstat(pidfile, &st1) == 0) {
 			/* already exists, erase first */

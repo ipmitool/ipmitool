@@ -344,7 +344,7 @@ ipmi_open_file(const char * file, int rw)
 }
 
 void
-ipmi_start_daemon(void)
+ipmi_start_daemon(struct ipmi_intf *intf)
 {
 	pid_t pid;
 	int fd;
@@ -398,10 +398,10 @@ ipmi_start_daemon(void)
 	chdir("/");
 	umask(0);
 
-#if 0
-	for (fd=0; fd<64; fd++)
-		close(fd);
-#endif
+	for (fd=0; fd<64; fd++) {
+		if (fd != intf->fd)
+			close(fd);
+	}
 
 	open("/dev/null", O_RDWR);
 	dup(0);
