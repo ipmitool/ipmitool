@@ -140,9 +140,9 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 			   (auth_cap.kg_status) ? "non-zero" : "default (all zeroes)");
 
 	printf("Per message authentication : %sabled\n",
-		   (auth_cap.per_message_auth) ? "en" : "dis");
+		   (auth_cap.per_message_auth) ? "dis" : "en");
 	printf("User level authentication  : %sabled\n",
-		   (auth_cap.user_level_auth) ? "en" : "dis");
+		   (auth_cap.user_level_auth) ? "dis" : "en");
 
 	printf("Non-null user names exist  : %s\n",
 		   (auth_cap.non_null_usernames) ? "yes" : "no");
@@ -858,4 +858,3 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	return retval;
 }
-
