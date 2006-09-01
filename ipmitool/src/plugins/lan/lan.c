@@ -751,13 +751,13 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			intf->opened, intf->open);
 	}
 
-	entry = ipmi_lan_build_cmd(intf, req);
-	if (entry == NULL) {
-		lprintf(LOG_ERR, "Aborting send command, unable to build");
-		return NULL;
-	}
-
 	for (;;) {
+		entry = ipmi_lan_build_cmd(intf, req);
+		if (entry == NULL) {
+			lprintf(LOG_ERR, "Aborting send command, unable to build");
+			return NULL;
+		}
+
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
 			try++;
 			usleep(5000);
