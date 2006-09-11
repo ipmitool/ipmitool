@@ -2165,21 +2165,6 @@ ipmi_lanplus_send_payload(
 
 		/*
 		 * Special case for SOL outbound packets.
-		 *
-		 * Non-ACK packets require an ACK from the BMC (that matches
-		 * our packet!).
-		 *
-		 * While waiting for our ACK, it's very possible that we
-		 * will receive additional data form the BMC (that we will have
-		 * to ACK).
-		 *
-		 * Also, this is not perfectly correct.  We would like
-		 * to give the appropriate timeout for SOL retries, but our
-		 * timeout mechanism is in our recv() call.  Thus _any_
-		 * incoming packet from the BMC will use up one of our tries,
-		 * even if it is not our ACK, and even if it comes in before
-		 * our retry timeout.  I will make this code more sophisticated
-		 * if I see that this is a problem.
 		 */
 		if (payload->payload_type == IPMI_PAYLOAD_TYPE_SOL)
 		{
