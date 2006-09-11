@@ -54,6 +54,8 @@
 # define _PATH_VARRUN "/var/run/"
 #endif
 
+#include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 

@@ -38,6 +38,8 @@
 #include <stdio.h>
 #include <string.h>
 
+struct ipmi_intf;
+
 struct valstr {
 	uint16_t val;
 	const char * str;
@@ -54,7 +56,7 @@ const char * buf2str(uint8_t * buf, int len);
 void printbuf(const uint8_t * buf, int len, const char * desc);
 uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);
-void ipmi_start_daemon(void);
+void ipmi_start_daemon(struct ipmi_intf *intf);
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
