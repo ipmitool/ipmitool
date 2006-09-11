@@ -504,19 +504,21 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 }
 
 static int
-ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
+ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 {
 	uint8_t flags[5];
 	int rc = 0;
 	int use_progress = 1;
 
-	/* set set-in-progress flag */
-	memset(flags, 0, 5);
-	flags[0] = 0x01;
-	rc = ipmi_chassis_set_bootparam(intf,
-		IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
-	if (rc < 0)
-		use_progress = 0;
+	if (use_progress) {
+		/* set set-in-progress flag */
+		memset(flags, 0, 5);
+		flags[0] = 0x01;
+		rc = ipmi_chassis_set_bootparam(intf,
+			IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
+		if (rc < 0)
+			use_progress = 0;
+	}
 
 	memset(flags, 0, 5);
 	flags[0] = 0x01;
@@ -535,7 +537,11 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 		return -1;
 	}
 
-	memset(flags, 0, 5);
+	if (iflags == NULL)
+			memset(flags, 0, 5);
+	else
+			memcpy(flags, iflags, sizeof (flags));
+
 	if (arg == NULL)
 		flags[1] = 0x00;
 	else if (strncmp(arg, "none", 4) == 0)
@@ -573,11 +579,9 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, int clearcmos)
 		return -1;
 	}
 
-	if (clearcmos)
-		flags[1] |= 0x80;
-
 	/* set flag valid bit */
-	flags[0] = 0x80;
+	flags[0] |= 0x80;
+
 	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_BOOT_FLAGS,
 					flags, 5);
 	if (rc == 0) {
@@ -697,7 +701,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, selftest");
+		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, bootparam, selftest");
 	}
 	else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = ipmi_chassis_status(intf);
@@ -798,7 +802,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				} else {
 					if (strncmp(argv[2], "bootflag", 8) == 0)
-						rc = ipmi_chassis_set_bootdev(intf, argv[3], 0);
+						rc = ipmi_chassis_set_bootdev(intf, argv[3], NULL);
 					else
 						lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
 				}
@@ -810,6 +814,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "bootdev", 7) == 0) {
 		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE, "bootdev <device> [clear-cmos=yes|no]");
+			lprintf(LOG_NOTICE, "bootdev <device> [options=help,...]");
 			lprintf(LOG_NOTICE, "  none  : Do not change boot device order");
 			lprintf(LOG_NOTICE, "  pxe   : Force PXE boot");
 			lprintf(LOG_NOTICE, "  disk  : Force boot from default Hard-drive");
@@ -817,17 +822,116 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "  diag  : Force boot from Diagnostic Partition");
 			lprintf(LOG_NOTICE, "  cdrom : Force boot from CD/DVD");
 			lprintf(LOG_NOTICE, "  bios  : Force boot into BIOS Setup");
+			lprintf(LOG_NOTICE, "  floppy: Force boot from Floppy/primary removable media");
 		} else {
 			if (argc < 3)
-				rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
 			else if (strncmp(argv[2], "clear-cmos=", 11) == 0) {
-				if (strncmp(argv[2]+11, "yes", 3) == 0)
-					rc = ipmi_chassis_set_bootdev(intf, argv[1], 1);
-				else 
-					rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
+				if (strncmp(argv[2]+11, "yes", 3) == 0) {
+					uint8_t flags[5] = {0, (1<<7), 0, 0, 0};
+
+					rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
+				} else 
+					rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
+			}
+			else if (strncmp(argv[2], "options=", 8) == 0) {
+				char *token;
+				char *saveptr = NULL;
+				int optionError = 0;
+				unsigned char flags[5];
+				static struct {
+					char *name;
+					int i;
+					unsigned char mask;
+					unsigned char value;
+					char *desc;
+				} options[] = {
+					/* data 1 */
+					{"valid", 0, (1<<7), (1<<7),
+					 "Boot flags valid"},
+					{"persistent", 0, (1<<6), (1<<6),
+					 "Changes are persistent for all future boots"},
+					{"efiboot", 0, (1<<5), (1<<5),
+					 "Extensible Firmware Interface Boot (EFI)"},
+
+					/* data 2 */
+					{"clear-cmos", 1, (1<<7), (1<<7),
+					 "CMOS clear"},
+					{"lockkbd", 1, (1<<6), (1<<6),
+					 "Lock Keyboard"},
+					/* data2[5:2] is parsed elsewhere */
+					{"screenblank", 1, (1<<1), (1<<1),
+					 "Screen Blank"},
+					{"lockoutreset", 1, (1<<0), (1<<0),
+					 "Lock out Resetbuttons"},
+
+					/* data 3 */
+					{"lockout_power", 2, (1<<7), (1<<7),
+					 "Lock out (power off/sleep request) via Power Button"},
+					{"verbose=default", 2, (3<<5), (0<<5),
+					 "Request quiet BIOS display"},
+					{"verbose=no", 2, (3<<5), (1<<5),
+					 "Request quiet BIOS display"},
+					{"verbose=yes", 2, (3<<5), (2<<5),
+					 "Request verbose BIOS display"},
+					{"force_pet", 2, (1<<4), (1<<4),
+					 "Force progress event traps"},
+					{"upw_bypass", 2, (1<<3), (1<<3),
+					 "User password bypass"},
+					{"lockout_sleep", 2, (1<<2), (1<<2),
+					 "Log Out Sleep Button"},
+					{"cons_redirect=default", 2, (3<<0), (0<<0),
+					 "Console redirection occurs per BIOS configuration setting"},
+					{"cons_redirect=skip", 2, (3<<0), (1<<0),
+					 "Suppress (skip) console redirection if enabled"},
+					{"cons_redirect=enable", 2, (3<<0), (2<<0),
+					 "Suppress (skip) console redirection if enabled"},
+
+					/* data 4 */
+					/* data4[7:4] reserved */
+					/* data4[3] BIOS Shared Mode Override, not implemented here */
+					/* data4[2:0] BIOS Mux Control Override, not implemented here */
+
+					/* data5 reserved */
+					
+					{NULL}	/* End marker */
+				}, *op;
+
+				memset(&flags[0], 0, sizeof(flags));
+				token = strtok_r(argv[2] + 8, ",", &saveptr);
+				while (token != NULL) {
+					int i;
+
+					if (strcmp(token, "help") == 0) {
+						optionError = 1;
+						break;
+					}
+					for (op = options; op->name != NULL; ++op) {
+						if (strcmp(token, op->name) == 0) {
+								flags[op->i] &= op->mask;
+								flags[op->i] |= op->value;
+								break;
+						}
+					}
+					if (op->name == NULL) {
+						/* Option not found */
+						optionError = 1;
+						lprintf(LOG_ERR, "Invalid option: %s", token);
+					}
+					token = strtok_r(NULL, ",", &saveptr);
+				}
+				if (optionError) {
+						lprintf(LOG_NOTICE, "Legal options are:");
+						lprintf(LOG_NOTICE, "\thelp:\tprint this message");
+						for (op = options; op->name != NULL; ++op) {
+								lprintf(LOG_NOTICE, "\t%s:\t%s", op->name, op->desc);
+						}
+						return (-1);
+				}
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
 			}
 			else
-				rc = ipmi_chassis_set_bootdev(intf, argv[1], 0);
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
 		}
 	}
 	else {
