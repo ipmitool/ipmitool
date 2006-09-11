@@ -272,7 +272,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[32];
-	
+
 	if (param < 0)
 		return -1;
 
@@ -394,9 +394,10 @@ ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
 	rc = __set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
 	if (rc < 0) {
 		lprintf(LOG_DEBUG, "LAN Parameter Commit not supported");
-		val = IPMI_LANP_WRITE_UNLOCK;
-		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 0, 0);
 	}
+
+	val = IPMI_LANP_WRITE_UNLOCK;
+	__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
 }
 
 /* set_lan_param - Wrap LAN parameter write with set-in-progress lock
@@ -448,7 +449,7 @@ lan_set_arp_interval(struct ipmi_intf * intf,
 	struct lan_param *lp;
 	uint8_t interval;
 	int rc = 0;
-	
+
 	lp = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
 	if (lp == NULL)
 		return -1;
@@ -520,7 +521,7 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 static char priv_level_to_char(unsigned char priv_level)
 {
 	char ret = 'X';
-	
+
 	switch (priv_level)
 	{
 	case IPMI_SESSION_PRIV_CALLBACK:
@@ -801,7 +802,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 		       priv_level_to_char(p->data[7] & 0x0F),
 		       priv_level_to_char(p->data[7] >> 4),
 		       priv_level_to_char(p->data[8] & 0x0F));
-		
+
 		/* Now print a legend */
 		printf("%-24s: %s\n", "", "    X=Cipher Suite Unused");
 		printf("%-24s: %s\n", "", "    c=CALLBACK");
@@ -870,7 +871,7 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 			data[2] = authtype;
 		else if (strncasecmp(p, "admin", 5) == 0)
 			data[3] = authtype;
-		else 
+		else
 			lprintf(LOG_WARNING, "Invalid authentication level: %s", p);
 		p = strchr(p, ',');
 		if (p)
@@ -1018,7 +1019,7 @@ ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable
 	if (enable != 0)
 		rqdata[1] |= 0x2; /* set always available if enable is set */
 	rqdata[2] = 0x44; 	/* set channel privilege limit to ADMIN */
-	
+
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
@@ -1068,7 +1069,7 @@ ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 	rqdata[1] = userid & 0x3f;
 	rqdata[2] = 0x4;
 	rqdata[3] = 0;
-	
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = 0x43;
@@ -1164,7 +1165,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 			ret = -1;
 			break;
 		}
-		
+
 		if (ret != 0)
 			break;
 		else
@@ -1181,7 +1182,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 			}
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -1950,18 +1951,16 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 			val2str(rsp->ccode, completion_code_vals));
 		return 0;
 	}
-      
-	if (verbose > 1)
-	{
+
+	if (verbose > 1) {
 		uint8_t counter;
-		printf("--- Rx Stats ---\n"); 
-		for(counter=0;counter<18;counter+=2)
-		{
-			printf("%02X", *(rsp->data + counter)); 
-			printf(" %02X - ", *(rsp->data + counter+1)); 
-		} 
-		printf("\n"); 
-	}       
+		printf("--- Rx Stats ---\n");
+		for (counter=0; counter<18; counter+=2) {
+			printf("%02X", *(rsp->data + counter));
+			printf(" %02X - ", *(rsp->data + counter+1));
+		}
+		printf("\n");
+	}
 
 	statsTemp = ((*(rsp->data + 0)) << 8) | (*(rsp->data + 1));
 	printf("IP Rx Packet              : %d\n", statsTemp);
@@ -2099,7 +2098,7 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else if (argc > 2)
 			chan = (uint8_t)strtol(argv[2], NULL, 0);
-         
+
 		if (chan < 2 || chan > IPMI_CHANNEL_NUMBER_MAX)
 		{
 			lprintf(LOG_ERR, "Invalid channel: %d", chan);
