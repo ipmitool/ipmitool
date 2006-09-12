@@ -228,6 +228,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 	lprintf(LOG_NOTICE, "       -k key         Use Kg key for IPMIv2 authentication");
 	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=ADMINISTRATOR]");
+	lprintf(LOG_NOTICE, "                      Append a '+' to use name/privilege lookup in RAKP1");
 	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
@@ -269,6 +270,7 @@ ipmi_main(int argc, char ** argv,
 	uint8_t target_channel = 0;
 	uint8_t target_lun     = 0;
 	uint8_t my_addr = 0;
+	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
 	int authtype = -1;
 	char * tmp = NULL;
 	char * hostname = NULL;
@@ -447,9 +449,15 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'L':
+			i = strlen(optarg);
+			if ((i > 0) && (optarg[i-1] == '+')) {
+				lookupbit = 0;
+				optarg[i-1] = 0;
+			}
 			privlvl = str2val(optarg, ipmi_privlvl_vals);
-			if (privlvl == 0xFF)
+			if (privlvl == 0xFF) {
 				lprintf(LOG_WARN, "Invalid privilege level %s", optarg);
+			}
 			break;
 		case 'A':
 			authtype = str2val(optarg, ipmi_authtype_session_vals);
@@ -564,6 +572,7 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_privlvl(intf,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
 
+	ipmi_intf_session_set_lookupbit(intf, lookupbit);
 	ipmi_intf_session_set_sol_escape_char(intf, sol_escape_char);
 	ipmi_intf_session_set_cipher_suite_id(intf, cipher_suite_id);
 

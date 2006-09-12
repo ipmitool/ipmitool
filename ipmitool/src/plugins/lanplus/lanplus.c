@@ -2893,10 +2893,8 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	/*
 	 * Requested maximum privilege level.
 	 */
-	msg[24]  = 0x10; /* We will specify a name-only lookup */
-	msg[24] |= session->privlvl;
+	msg[24] = session->privlvl | session->v2_data.lookupbit;
 	session->v2_data.requested_role = msg[24];
-	
 	msg[25] = 0; /* reserved */
 	msg[26] = 0; /* reserved */
 
@@ -2929,7 +2927,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	}
 
 	session->v2_data.session_state = LANPLUS_STATE_RAKP_2_RECEIVED;
-	
+
 	if (verbose)
 		lanplus_dump_rakp2_message(rsp, session->v2_data.auth_alg);
 

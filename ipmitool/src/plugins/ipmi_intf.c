@@ -213,6 +213,15 @@ ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t level)
 }
 
 void
+ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit)
+{
+	if (intf->session == NULL)
+		return;
+
+	intf->session->v2_data.lookupbit = lookupbit;
+}
+
+void
 ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id)
 {
 	if (intf->session == NULL)

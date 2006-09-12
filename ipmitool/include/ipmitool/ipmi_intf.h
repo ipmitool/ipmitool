@@ -106,6 +106,7 @@ struct ipmi_session {
 		uint8_t integrity_alg;
 		uint8_t crypt_alg;
 		uint8_t max_priv_level;
+		uint8_t lookupbit;
 
 		uint32_t console_id;
 		uint32_t bmc_id;
@@ -190,6 +191,7 @@ void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
 void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
 void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
+void ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit);
 void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id);
 void ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char);
 void ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey);
