@@ -88,10 +88,9 @@ const struct valstr sol_parameter_vals[] = {
 static struct timeval _start_keepalive;
 static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
+static int            _disable_keepalive = 0;
 
 extern int verbose;
-
-static uint8_t G_u8ActiveSOL = 0;
 
 /*
  * ipmi_sol_payload_access
@@ -1375,6 +1374,9 @@ ipmi_sol_keepalive(struct ipmi_intf * intf)
 	struct timeval end;
 	int ret = 0;
 
+	if (_disable_keepalive)
+		return 0;
+
 	gettimeofday(&end, 0);
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
@@ -1582,7 +1584,6 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 	data[4] = 0x00; /* reserved */
 	data[5] = 0x00; /* reserved */
 
-	G_u8ActiveSOL = 1;
 	rsp = intf->sendrecv(intf, &req);
 
 	if (NULL != rsp) {
@@ -1841,8 +1842,15 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Activate
 	 */
- 	else if (!strncmp(argv[0], "activate", 8))
+ 	else if (!strncmp(argv[0], "activate", 8)) {
+
+		if (argc > 1) {
+			if (!strncmp(argv[1], "nokeepalive", 11))
+				_disable_keepalive = 1;
+		}
+
 		retval = ipmi_sol_activate(intf, 0, 0);
+	}
 
 
 	/*
