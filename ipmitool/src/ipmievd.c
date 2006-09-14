@@ -54,7 +54,9 @@
 
 #ifdef IPMI_INTF_OPEN
 # if defined(HAVE_OPENIPMI_H)
-#  include <linux/compiler.h>
+#  if defined(HAVE_LINUX_COMPILER_H)
+#   include <linux/compiler.h>
+#  endif
 #  include <linux/ipmi.h>
 # elif defined(HAVE_FREEBSD_IPMI_H)
 #  include <sys/ipmi.h>

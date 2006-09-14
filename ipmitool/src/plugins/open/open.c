@@ -50,7 +50,9 @@
 #endif
 
 #if defined(HAVE_OPENIPMI_H)
-# include <linux/compiler.h>
+# if defined(HAVE_LINUX_COMPILER_H)
+#  include <linux/compiler.h>
+# endif
 # include <linux/ipmi.h>
 #elif defined(HAVE_FREEBSD_IPMI_H)
 /* FreeBSD OpenIPMI-compatible header */
@@ -61,7 +63,7 @@
 
 extern int verbose;
 
-#define IPMI_OPENIPMI_DEV		"/dev/ipmi0"
+#define IPMI_OPENIPMI_DEV	"/dev/ipmi0"
 #define IPMI_OPENIPMI_DEVFS	"/dev/ipmi/0"
 #define IPMI_OPENIPMI_DEVFS2	"/dev/ipmidev/0"
 
@@ -274,4 +276,3 @@ struct ipmi_intf ipmi_open_intf = {
 	my_addr:	IPMI_BMC_SLAVE_ADDR,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
-

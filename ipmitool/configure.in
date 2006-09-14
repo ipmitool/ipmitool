@@ -183,6 +183,8 @@ else
     enable_intf_lanplus=no
 fi
 
+ORIG_CPPFLAGS=$CPPFLAGS
+
 dnl look for OpenIPMI header files
 AC_ARG_WITH([kerneldir],
 	[AC_HELP_STRING([--with-kerneldir=DIR],
@@ -192,6 +194,8 @@ AC_ARG_WITH([kerneldir],
 	fi
 	CFLAGS="$CFLAGS -I ${with_kerneldir}/include"
 	AC_SUBST(CFLAGS)
+	CPPFLAGS="$CPPFLAGS -I ${with_kerneldir}/include"
+	AC_SUBST(CPPFLAGS)
 	if test -s ${with_kerneldir}/include/linux/version.h ; then
 	    kernelver=`grep UTS_RELEASE ${with_kerneldir}/include/linux/version.h | \
 	        sed 's/^\#define UTS_RELEASE \"\(2\.[0-9]\)\..*/\1/'`
@@ -200,11 +204,23 @@ AC_ARG_WITH([kerneldir],
 		AC_SUBST(CPPFLAGS)
 	    fi
 	fi])
+
+AH_TEMPLATE([HAVE_LINUX_COMPILER_H], [])
+AC_MSG_CHECKING([for linux/compiler.h])
+AC_PREPROC_IFELSE([#include <linux/compiler.h>],
+                   [AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
+		   [Define to 1 if you have the <linux/compiler.h> header file.])
+                    AC_MSG_RESULT([yes])],
+                   [AC_MSG_RESULT([no])])
+
+CPPFLAGS=$ORIG_CPPFLAGS
+AC_SUBST(CPPFLAGS)
+
 AC_CHECK_HEADER([linux/ipmi.h],
 	[AC_DEFINE(HAVE_OPENIPMI_H, [1],
 	[Define to 1 if you have the <linux/ipmi.h> header file.])],
 	[AC_CHECK_HEADER([sys/ipmi.h],
-		[AC_DEFINE(HAVE_FREEBSD_IPMI_H, [1],
+		[AC_DEFINE(HAVE_OPENIPMI_H, [1],
 		[Define to 1 if you have the <sys/ipmi.h> header file.])],
 		[echo "** Unable to find OpenIPMI header files.  Using internal version."])])
 
