@@ -572,7 +572,12 @@ static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
 struct KfwumGetInfoResp {
    unsigned char protocolRevision;
    unsigned char controllerDeviceId;
-   unsigned char mode;
+   struct 
+   {
+      unsigned char mode:1;
+      unsigned char seqAdd:1;
+      unsigned char res : 6;
+   } byte;
    unsigned char firmRev1;
    unsigned char firmRev2;
    unsigned char numBank;
@@ -618,7 +623,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          printf("Firmware Revision         : %u.%u%u",
                                  pGetInfo->firmRev1, pGetInfo->firmRev2 >> 4,
                                                      pGetInfo->firmRev2 & 0x0f);
-         if(pGetInfo->mode != 0)
+         if(pGetInfo->byte.mode != 0)
          {
             printf(" - DEBUG BUILD\n");
          }
