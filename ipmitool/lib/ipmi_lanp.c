@@ -2151,7 +2151,7 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else if (argc > 2)
 			chan = (uint8_t)strtol(argv[2], NULL, 0);
 
-		if (chan < 2 || chan > IPMI_CHANNEL_NUMBER_MAX)
+		if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX)
 		{
 			lprintf(LOG_ERR, "Invalid channel: %d", chan);
 			return -1;
