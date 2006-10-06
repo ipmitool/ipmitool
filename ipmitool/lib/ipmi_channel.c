@@ -593,12 +593,10 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 	if (rsp->data_len >= 1)
 		channel = rsp->data[0];
 		
-
-	while ((rsp->data_len > 1) && (list_index < 0x3F))
+   while ((rsp->data_len > 1) && (rsp->data_len == 17) && (list_index < 0x3F))
 	{
-		//
+   	//
 		// We got back cipher suite data -- store it.
-		//
 		//printf("copying data to offset %d\n", offset);
 		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
 		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
@@ -622,6 +620,16 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 		}
 	}
 
+   /* Copy last chunk */
+   if(rsp->data_len > 1)
+   {
+      //
+	   // We got back cipher suite data -- store it.
+	   //printf("copying data to offset %d\n", offset);
+	   //printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+	   memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
+	   offset += rsp->data_len - 1;
+	}
 
 	//
 	// We can chomp on all our data now.
@@ -842,7 +850,7 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else
 		{
 			uint8_t ch = 0xe;
-			if (argc == 4)
+			if (argc == 3)
 				ch = (uint8_t)strtol(argv[2], NULL, 0);
 			retval = ipmi_get_channel_cipher_suites(intf,
 								argv[1], // ipmi | sol
