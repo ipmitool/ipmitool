@@ -125,6 +125,7 @@ typedef struct sKFWUM_SaveFirmwareInfo
   
 #define KFWUM_SMALL_BUFFER     28
 #define KFWUM_BIG_BUFFER       36
+#define KFWUM_BIG_BUFFER_LAN   32
 #define KFWUM_OLD_CMD_OVERHEAD 6
 #define KFWUM_NEW_CMD_OVERHEAD 4
 #define KFWUM_PAGE_SIZE        256
@@ -155,7 +156,8 @@ static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf);
 static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
                                    unsigned long length,unsigned short padding);
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address, unsigned char *pFirmBuf, unsigned char inBufLength);
+     unsigned char sequenceNumber, unsigned long address, 
+     unsigned char *pFirmBuf, unsigned char * pInBufLength);
 static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
                                                 tKFWUM_InFirmwareInfo firmInfo);
 static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
@@ -649,13 +651,17 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          saveFirmwareInfo.overheadSize = KFWUM_NEW_CMD_OVERHEAD;
          /* Buffer size depending on access type (Local or remote) */
          /* Look if we run remote or locally */
-         if ( intf->target_addr != IPMI_BMC_SLAVE_ADDR )
+         if(strstr(intf->name,"lan")!= NULL)
          {
-            saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;     	
+            saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER_LAN;
+         }
+         else if(intf->target_addr != IPMI_BMC_SLAVE_ADDR )
+         {
+            saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
          }
          else
          {
-         	saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;     	
+         	saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
          }
       }
    }
@@ -953,12 +959,12 @@ struct KfwumSaveFirmwareAddressReq
 struct KfwumSaveFirmwareSequenceReq
 {
  	unsigned char sequenceNumber;
-   unsigned char txBuf[KFWUM_BIG_BUFFER-KFWUM_NEW_CMD_OVERHEAD];
+   unsigned char txBuf[KFWUM_BIG_BUFFER];
 }__attribute__ ((packed));
 
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
      unsigned char sequenceNumber, unsigned long address, unsigned char *pFirmBuf, 
-     unsigned char inBufLength)
+     unsigned char * pInBufLength)
 {
    tKFWUM_Status status = KFWUM_STATUS_OK;
    struct ipmi_rs * rsp;
@@ -967,7 +973,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
    unsigned char retry = 0;
    struct KfwumSaveFirmwareAddressReq  addressReq;
    struct KfwumSaveFirmwareSequenceReq sequenceReq;
-   
+
    do
    {
    	memset(&req, 0, sizeof(req));
@@ -979,17 +985,17 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
       	addressReq.addressLSB  = address         & 0x000000ff;
          addressReq.addressMid  = (address >>  8) & 0x000000ff;
          addressReq.addressMSB  = (address >> 16) & 0x000000ff;
-         addressReq.numBytes    = inBufLength;
-         memcpy(addressReq.txBuf, pFirmBuf, inBufLength);
+         addressReq.numBytes    = (* pInBufLength);
+         memcpy(addressReq.txBuf, pFirmBuf, (* pInBufLength));
          req.msg.data = (unsigned char *) &addressReq;
-         req.msg.data_len = inBufLength+4;
+         req.msg.data_len = (* pInBufLength)+4;
    	}
       else
       {
       	sequenceReq.sequenceNumber = sequenceNumber;
-         memcpy(sequenceReq.txBuf, pFirmBuf, inBufLength);
+         memcpy(sequenceReq.txBuf, pFirmBuf, (* pInBufLength));
          req.msg.data = (unsigned char *) &sequenceReq;
-         req.msg.data_len = inBufLength+sizeof(unsigned char); /* + 1 => sequenceNumber*/
+         req.msg.data_len = (* pInBufLength)+sizeof(unsigned char); /* + 1 => sequenceNumber*/
       }
       							      
       rsp = intf->sendrecv(intf, &req);
@@ -1006,6 +1012,19 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
          {
             status = KFWUM_STATUS_OK;
             sleep(1);
+         }
+         else if(
+                  (rsp->ccode == 0xc7)
+                  ||
+                  (
+                     (rsp->ccode == 0xC3) &&
+                     (sequenceNumber == 0)
+                  )
+                )
+         {
+            (* pInBufLength) -= 1;
+            status = KFWUM_STATUS_OK;
+            retry = 1;
          }
          else if(rsp->ccode == 0x82)
          {
@@ -1100,9 +1119,11 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
    tKFWUM_Status status = KFWUM_STATUS_ERROR;
    unsigned long address    = 0x0;
    unsigned char writeSize;
+   unsigned char oldWriteSize;
    unsigned long lastAddress = 0;
    unsigned char sequenceNumber = 0;
    unsigned char retry = FWUM_MAX_UPLOAD_RETRY;
+   unsigned char isLengthValid = 1;
 
    do
    {
@@ -1119,8 +1140,9 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
          writeSize = (KFWUM_PAGE_SIZE - (address % KFWUM_PAGE_SIZE));
       }
 
-      status = KfwumSaveFirmwareImage(intf, sequenceNumber, address, &pBuffer[address], 
-                                                                     writeSize);
+      oldWriteSize = writeSize;
+      status = KfwumSaveFirmwareImage(intf, sequenceNumber, address, 
+                                                &pBuffer[address], &writeSize);
 
       if((status != KFWUM_STATUS_OK) && (retry-- != 0))
       {
@@ -1129,6 +1151,11 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
       }
       else
       {
+         if(writeSize != oldWriteSize)
+         {
+            printf("Adjusting length to %d bytes \n", writeSize);
+            saveFirmwareInfo.bufferSize -= (oldWriteSize - writeSize);
+         }
          retry = FWUM_MAX_UPLOAD_RETRY;
          lastAddress = address;
          address+= writeSize;
