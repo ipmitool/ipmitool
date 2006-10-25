@@ -43,6 +43,7 @@
 
 extern int verbose;
 
+#define SCANNING_DISABLED       0x40
 #define READING_UNAVAILABLE	0x20
 
 static
@@ -110,6 +111,8 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 		return -1;
 	} else if (rsp->ccode > 0 || (rsp->data[1] & READING_UNAVAILABLE)) {
 		validread = 0;
+	} else if (!(rsp->data[1] & SCANNING_DISABLED)) {
+	  	validread = 0;
 	} else {
 		/* convert RAW reading into units */
 		val = rsp->data[0];
@@ -189,6 +192,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 			id, sensor->keys.sensor_num);
 		return -1;
 	} else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE)) {
+		validread = 0;
+	} else if (!(rsp->data[1] & SCANNING_DISABLED)) {
 		validread = 0;
 	} else {
 		/* convert RAW reading into units */
@@ -426,6 +431,8 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 			id, sensor->keys.sensor_num);
 		return -1;
 	} else if (rsp->ccode || (rsp->data[1] & READING_UNAVAILABLE)) {
+		validread = 0;
+	} else if (!(rsp->data[1] & SCANNING_DISABLED)) {
 		validread = 0;
 	} else {
 		/* convert RAW reading into units */
@@ -770,6 +777,8 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 			} else if (rsp->ccode > 0) {
 				continue;
 			} else if (rsp->data[1] & READING_UNAVAILABLE) {
+				continue;
+			} else if (!(rsp->data[1] & SCANNING_DISABLED)) {
 				continue;
 			} else if (rsp->data[0] > 0) {
 				/* convert RAW reading into units */

@@ -1038,14 +1038,6 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
 			/* Sensor Scanning Disabled */
 			validread = 0;
-			if (rsp->data[0] != 0) {
-				/* we might still get a valid reading */
-				val =
-				    sdr_convert_sensor_reading(sensor,
-							       rsp->data[0]);
-				if (val != 0.0)
-					validread = 1;
-			}
 		} else if (rsp->data[0] != 0) {
 			/* convert RAW reading into units */
 			val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
