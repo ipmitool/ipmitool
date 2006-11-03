@@ -92,7 +92,6 @@ ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier)
 
 	return unitstr;
 }
-
 /* sdr_convert_sensor_reading  -  convert raw sensor reading
  *
  * @sensor:	sensor record
@@ -169,6 +168,87 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor, uint8_t val)
 	}
 	return result;
 }
+/* sdr_convert_sensor_hysterisis  -  convert raw sensor hysterisis
+ *
+ * Even though spec says histerisis should be computed using Mx+B
+ * formula, B is irrelevant when doing raw comparison
+ * 
+ * threshold rearm point is computed using threshold +/- hysterisis
+ * with the full formula however B can't be applied in raw comparisons
+ *
+ * @sensor:	sensor record
+ * @val:	raw sensor reading
+ *
+ * returns floating-point sensor reading
+ */
+double
+sdr_convert_sensor_hysterisis(struct sdr_record_full_sensor *sensor, uint8_t val)
+{
+	int m, k1, k2;
+	double result;
+
+	m = __TO_M(sensor->mtol);
+
+	k1 = __TO_B_EXP(sensor->bacc);
+	k2 = __TO_R_EXP(sensor->bacc);
+
+	switch (sensor->unit.analog) {
+	case 0:
+		result = (double) (((m * val)) * pow(10, k2));
+		break;
+	case 1:
+		if (val & 0x80)
+			val++;
+		/* Deliberately fall through to case 2. */
+	case 2:
+		result = (double) (((m * (int8_t) val) ) * pow(10, k2));
+		break;
+	default:
+		/* Oops! This isn't an analog sensor. */
+		return 0.0;
+	}
+
+	switch (sensor->linearization & 0x7f) {
+	case SDR_SENSOR_L_LN:
+		result = log(result);
+		break;
+	case SDR_SENSOR_L_LOG10:
+		result = log10(result);
+		break;
+	case SDR_SENSOR_L_LOG2:
+		result = (double) (log(result) / log(2.0));
+		break;
+	case SDR_SENSOR_L_E:
+		result = exp(result);
+		break;
+	case SDR_SENSOR_L_EXP10:
+		result = pow(10.0, result);
+		break;
+	case SDR_SENSOR_L_EXP2:
+		result = pow(2.0, result);
+		break;
+	case SDR_SENSOR_L_1_X:
+		result = pow(result, -1.0);	/*1/x w/o exception */
+		break;
+	case SDR_SENSOR_L_SQR:
+		result = pow(result, 2.0);
+		break;
+	case SDR_SENSOR_L_CUBE:
+		result = pow(result, 3.0);
+		break;
+	case SDR_SENSOR_L_SQRT:
+		result = sqrt(result);
+		break;
+	case SDR_SENSOR_L_CUBERT:
+		result = cbrt(result);
+		break;
+	case SDR_SENSOR_L_LINEAR:
+	default:
+		break;
+	}
+	return result;
+}
+
 
 /* sdr_convert_sensor_tolerance  -  convert raw sensor reading
  *
@@ -1273,7 +1353,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	SENSOR_PRINT_THRESH("Lower non-critical", lower.non_critical, lnc);
 
 	creading =
-	    sdr_convert_sensor_reading(sensor,
+	    sdr_convert_sensor_hysterisis(sensor,
 				       sensor->threshold.hysteresis.positive);
 	if (sensor->threshold.hysteresis.positive == 0x00
 	    || sensor->threshold.hysteresis.positive == 0xff || creading == 0)
@@ -1282,7 +1362,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		printf(" Positive Hysteresis   : %.3f\n", creading);
 
 	creading =
-	    sdr_convert_sensor_reading(sensor,
+	    sdr_convert_sensor_hysterisis(sensor,
 				       sensor->threshold.hysteresis.negative);
 	if (sensor->threshold.hysteresis.negative == 0x00
 	    || sensor->threshold.hysteresis.negative == 0xff || creading == 0.0)

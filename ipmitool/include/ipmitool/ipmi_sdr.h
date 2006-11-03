@@ -807,6 +807,8 @@ double sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
 double sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
+double sdr_convert_sensor_hysterisis(struct sdr_record_full_sensor *sensor,
+				  uint8_t val);
 uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor *sensor,
 					double val);
 struct ipmi_rs *ipmi_sdr_get_sensor_reading(struct ipmi_intf *intf,
