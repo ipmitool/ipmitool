@@ -56,6 +56,7 @@ extern int verbose;
 static int use_built_in;	/* Uses DeviceSDRs instead of SDRR */
 static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
 static int sdr_extended = 0;
+static long sdriana = 0;
 
 static struct sdr_record_list *sdr_list_head = NULL;
 static struct sdr_record_list *sdr_list_tail = NULL;
@@ -518,7 +519,10 @@ ipmi_sdr_get_sensor_type_desc(const uint8_t type)
 	if (type < 0xc0)
 		snprintf(desc, 32, "reserved #%02x", type);
 	else
-		snprintf(desc, 32, "OEM reserved #%02x", type);
+   {
+      snprintf(desc, 32, oemval2str(sdriana,type,ipmi_oem_sdr_type_vals), 
+                                                                   type); 
+   }
 	return desc;
 }
 
@@ -2510,6 +2514,8 @@ ipmi_sdr_start(struct ipmi_intf *intf)
 		return NULL;
 	}
 	devid = (struct ipm_devid_rsp *) rsp->data;
+
+   sdriana =  (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);
 
 	if (devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK) {
 		if ((devid->adtl_device_support & 0x02) == 0) {

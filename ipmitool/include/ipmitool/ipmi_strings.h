@@ -53,5 +53,8 @@ extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
 extern const struct valstr ipmi_oem_info[];
 
+extern const struct oemvalstr ipmi_oem_sdr_type_vals[];
+
+
 
 #endif /*IPMI_STRINGS_H*/

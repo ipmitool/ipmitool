@@ -124,6 +124,35 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 	return un_str;
 }
 
+const char * oemval2str(uint16_t oem, uint16_t val,
+                                             const struct oemvalstr *vs)
+{
+	static char un_str[32];
+	int i;
+
+	for (i = 0; vs[i].oem != 0x00 &&  vs[i].str != NULL; i++) {
+      /* FIXME: for now on we assume PICMG capability on all IANAs */
+      if
+      ( 
+         (
+            vs[i].oem == oem 
+            ||
+            vs[i].oem == IPMI_OEM_PICMG 
+         )
+         &&  
+         vs[i].val == val  
+      )
+      {
+         return vs[i].str;
+      }
+	}
+
+	memset(un_str, 0, 32);
+	snprintf(un_str, 32, "OEM reserved #%02x", val);
+
+	return un_str;
+}
+
 uint16_t str2val(const char *str, const struct valstr *vs)
 {
 	int i;

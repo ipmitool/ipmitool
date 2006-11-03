@@ -46,7 +46,25 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_SUPERMICRO, "Supermicro" },
    { IPMI_OEM_GOOGLE,     "Google" },
    { IPMI_OEM_KONTRON,    "Kontron" },
+   { IPMI_OEM_NOKIA,      "Nokia" },
    { 0xffff , NULL },
+};
+
+const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
+   /* Keep OEM grouped together */
+   { IPMI_OEM_KONTRON , 0xC0 , "OEM Firmware Info" },
+   { IPMI_OEM_KONTRON , 0xC2 , "OEM Init Agent" },
+   { IPMI_OEM_KONTRON , 0xC3 , "OEM IPMBL Link State" },
+   { IPMI_OEM_KONTRON , 0xC4 , "OEM Board Reset" },
+   { IPMI_OEM_KONTRON , 0xC5 , "OEM FRU Information Agent" },
+   { IPMI_OEM_KONTRON , 0xC6 , "OEM POST Value Sensor" },
+   { IPMI_OEM_KONTRON , 0xC7 , "OEM FWUM Status" },
+   { IPMI_OEM_KONTRON , 0xC8 , "OEM Switch Mngt Software Status" },
+
+   { IPMI_OEM_PICMG   , 0xF0 , "PICMG FRU Hotswap" },
+   { IPMI_OEM_PICMG   , 0xF1 , "PICMG IPMB0 Link State" },
+
+   { 0xffff,            0x00,  NULL }
 };
 
 const struct valstr ipmi_netfn_vals[] = {

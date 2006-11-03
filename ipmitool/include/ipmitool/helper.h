@@ -44,7 +44,14 @@ struct valstr {
 	uint16_t val;
 	const char * str;
 };
+struct oemvalstr {
+	uint16_t oem;
+   uint16_t val;
+	const char * str;
+};
+
 const char * val2str(uint16_t val, const struct valstr * vs);
+const char * oemval2str(uint16_t oem,uint16_t val, const struct oemvalstr * vs);
 uint16_t str2val(const char * str, const struct valstr * vs);
 void print_valstr(const struct valstr * vs, const char * title, int loglevel);
 void print_valstr_2col(const struct valstr * vs, const char * title, int loglevel);

@@ -234,6 +234,21 @@ struct ipmi_rs {
 #define IPMI_BMC_SLAVE_ADDR		0x20
 #define IPMI_REMOTE_SWID		0x81
 
+
+/* These values are IANA numbers */
+typedef enum IPMI_OEM {
+    IPMI_OEM_UNKNOWN    = 0,
+    IPMI_OEM_SUN        = 42,
+    IPMI_OEM_NOKIA      = 94,
+    IPMI_OEM_INTEL      = 343,
+    IPMI_OEM_TYAN       = 6653,
+    IPMI_OEM_NEWISYS    = 9237,
+    IPMI_OEM_SUPERMICRO = 10876,
+    IPMI_OEM_GOOGLE	   = 11129,
+    IPMI_OEM_PICMG      = 12634,
+    IPMI_OEM_KONTRON    = 15000,
+} IPMI_OEM;
+
 extern const struct valstr completion_code_vals[];
 
 #endif				/* IPMI_H */
