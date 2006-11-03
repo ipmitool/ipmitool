@@ -771,8 +771,9 @@ static const char *unit_desc[] __attribute__ ((unused)) = {
 	    "overflow", "underrun", "collision", "packets", "messages",
 	    "characters", "error", "correctable error", "uncorrectable error",};
 
-/* sensor type codes (IPMI v1.5 table 36.3) */
-#define SENSOR_TYPE_MAX 0x29
+/* sensor type codes (IPMI v1.5 table 36.3) 
+  / Updated to v2.0 Table 42-3, Sensor Type Codes */
+#define SENSOR_TYPE_MAX 0x2C
 static const char *sensor_type_desc[] __attribute__ ((unused)) = {
 "reserved",
 	    "Temperature", "Voltage", "Current", "Fan",
@@ -787,7 +788,8 @@ static const char *sensor_type_desc[] __attribute__ ((unused)) = {
 	    "OS Boot", "OS Critical Stop", "Slot / Connector",
 	    "System ACPI Power State", "Watchdog", "Platform Alert",
 	    "Entity Presence", "Monitor ASIC", "LAN",
-	    "Management Subsystem Health", "Battery"};
+	    "Management Subsystem Health", "Battery","Session Audit",
+       "Version Change","FRU State" };
 
 struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf);
 struct sdr_get_rs *ipmi_sdr_get_next_header(struct ipmi_intf *intf,
