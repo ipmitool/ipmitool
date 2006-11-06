@@ -146,16 +146,19 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 			printf(" Sensor Type (Discrete): %s\n",
 			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
 							     type));
-			ipmi_sdr_print_discrete_state("States Asserted",
-						      sensor->sensor.type,
-						      sensor->event_type,
-						      rsp->data[2],
-						      rsp->data[3]);
-			printf("\n");
+         if( validread )
+         {
+            ipmi_sdr_print_discrete_state("States Asserted",
+												      sensor->sensor.type,
+												      sensor->event_type,
+												      rsp->data[2],
+												      rsp->data[3]);
+				printf("\n");
+         }
 		}
 	}
 
-	return 0;
+	return (validread ? 0 : -1 );
 }
 
 static int
@@ -390,7 +393,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 		}
 	}
 
-	return 0;
+	return (validread ? 0 : -1 );
 }
 
 int
@@ -468,16 +471,20 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 			printf(" Sensor Type (Discrete): %s\n",
 			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
 							     type));
-			ipmi_sdr_print_discrete_state("States Asserted",
-						      sensor->sensor.type,
-						      sensor->event_type,
-						      rsp->data[2],
-						      rsp->data[3]);
-			printf("\n");
+
+         if(validread)
+         {
+            ipmi_sdr_print_discrete_state("States Asserted",
+						      						sensor->sensor.type,
+												      sensor->event_type,
+												      rsp->data[2],
+												      rsp->data[3]);
+            printf("\n");
+         }
 		}
 	}
 
-	return 0;
+	return (validread ? 0 : -1 );
 }
 
 static int
