@@ -1367,11 +1367,13 @@ processSolUserInput(
 	return retval;
 }
 
-
 static int
-ipmi_sol_keepalive(struct ipmi_intf * intf)
+ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 {
+	struct ipmi_v2_payload v2_payload;
+   struct ipmi_rs * rsp = NULL;
 	struct timeval end;
+
 	int ret = 0;
 
 	if (_disable_keepalive)
@@ -1380,10 +1382,14 @@ ipmi_sol_keepalive(struct ipmi_intf * intf)
 	gettimeofday(&end, 0);
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
-		ret = intf->keepalive(intf);
-		gettimeofday(&_start_keepalive, 0);
-	}
+	   memset(&v2_payload, 0, sizeof(v2_payload));
 
+      v2_payload.payload.sol_packet.character_count = 0;
+
+      rsp = intf->send_sol(intf, &v2_payload);
+
+		gettimeofday(&_start_keepalive, 0);
+   }
 	return ret;
 }
 
@@ -1406,7 +1412,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 
 	buffer = (char*)malloc(buffer_size);
 	if (buffer == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		lprintf(LOG_ERR, "ipmitool: malloc failure"); 
 		return -1;
 	}
 
@@ -1422,7 +1428,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		FD_SET(intf->fd, &read_fds);
 
 		/* Send periodic keepalive packet */
-		keepAliveRet = ipmi_sol_keepalive(intf);
+		keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
 		if (keepAliveRet != 0)
 		{
 			/* no response to keepalive message */
