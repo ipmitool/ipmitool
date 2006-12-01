@@ -1049,7 +1049,21 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
          {
             retry = 1;
             status = KFWUM_STATUS_OK;
-         }else
+         }
+         else if(rsp->ccode == 0xC3)
+         {
+            if(retry == 0)
+           {
+               retry = 1;
+               status = KFWUM_STATUS_OK;
+            }
+            else
+            {
+               status = KFWUM_STATUS_ERROR;
+               out = 1;
+            }
+         }
+         else
          {
             printf("FWUM Firmware Save Firmware Image Download returned %x\n",
                                                                      rsp->ccode);
