@@ -460,7 +460,7 @@ ipmi_picmg_amc_portstate_get(struct ipmi_intf * intf,int device,int channel,
             /* I don't know what kind of frug addict defined this record */
             port     = d->linkInfo[0] & 0x0F;
             type     = ((d->linkInfo[0] & 0xF0) >> 4 )|(d->linkInfo[1] & 0x0F );
-            ext      = (d->linkInfo[1] & 0xF0 >> 4 );
+            ext      = ((d->linkInfo[1] & 0xF0) >> 4 );
             grouping = d->linkInfo[2];
 
             #else
