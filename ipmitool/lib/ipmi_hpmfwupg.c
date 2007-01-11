@@ -132,7 +132,7 @@ extern int verbose;
  * will be removed once a new Open IPMI driver is released.
  * (Buggy version = 39)
  */ 
-#define ENABLE_OPENIPMI_V39_PATCH
+#undef ENABLE_OPENIPMI_V39_PATCH
 
 #ifdef ENABLE_OPENIPMI_V39_PATCH
 
