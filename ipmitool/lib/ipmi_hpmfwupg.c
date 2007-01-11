@@ -132,7 +132,7 @@ extern int verbose;
  * will be removed once a new Open IPMI driver is released.
  * (Buggy version = 39)
  */ 
-#undef ENABLE_OPENIPMI_V39_PATCH
+#define ENABLE_OPENIPMI_V39_PATCH
 
 #ifdef ENABLE_OPENIPMI_V39_PATCH
 
@@ -1134,7 +1134,8 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                      {
                         uploadCmd.req.blockNumber++;
                         pData += count;
-                        lprintf(LOG_NOTICE,"    Writing firmware: %.0f %c completed\r", 
+                        /* avoid lprintf to control \n generation */
+                        printf("    Writing firmware: %.0f %c completed\r", 
                                (float)totalSent/firmwareLength*100, '%');
                         fflush(stdout);
                      }
