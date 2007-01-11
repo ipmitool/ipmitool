@@ -72,6 +72,13 @@
 *    that lan iface will not return C7 on excessive length
 *  - Fixed some typos
 *  - now uses lprintf()
+* 
+* - Incremented to version 0.3    
+* - added patch for openipmi si driver V39 (send message in driver does not
+*    retry on 82/83 completion code and return 82/83 as response from target
+*    [conditionnaly built with ENABLE_OPENIPMI_V39_PATCH]
+*
+*    see: ipmi-fix-send-msg-retry.pacth in openipmi-developer mailing list
 *
 * TODO
 * ===========================================================================
@@ -79,17 +86,7 @@
 *
 * - Add interpretation of GetSelftestResults
 * - Add interpretation of component ID string
-*
-* KNOWN BUGS
-* ===========================================================================
-* 2007-01-11
-*
-* - does not work with openipmi si driver v39
-*   send message in driver does not  retry on 82/83 completion code and 
-*   return 82/83 as response from target
-*
-*   see: ipmi-fix-send-msg-retry.pacth in openipmi-developer mailing list 
-*
+* 
 *****************************************************************************/
 
 extern int verbose;
@@ -98,7 +95,7 @@ extern int verbose;
  *  Agent version
  */
 #define HPMFWUPG_VERSION_MAJOR 0 
-#define HPMFWUPG_VERSION_MINOR 2
+#define HPMFWUPG_VERSION_MINOR 3
 
 /* 
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -128,6 +125,26 @@ extern int verbose;
 #define HPMFWUPG_INT_CHECKSUM_ERROR          0x82
 #define HPMFWUPG_INV_UPLOAD_MODE             0x82
 #define HPMFWUPG_FW_MISMATCH                 0x83
+
+/* 
+ * This error code is used as a temporary PATCH to
+ * the latest Open ipmi driver.  This PATCH
+ * will be removed once a new Open IPMI driver is released.
+ * (Buggy version = 39)
+ */ 
+#undef ENABLE_OPENIPMI_V39_PATCH
+
+#ifdef ENABLE_OPENIPMI_V39_PATCH
+
+#define RETRY_COUNT_MAX 3
+
+static int errorCount;
+
+#define HPMFWUPG_IS_RETRYABLE(error)                                          \
+((((error==0x83)||(error==0x82)) && (errorCount++<RETRY_COUNT_MAX))?TRUE:FALSE)
+#else
+#define HPMFWUPG_IS_RETRYABLE(error) FALSE
+#endif
 
 /* 
  *  HPM FIRMWARE UPGRADE GENERAL DEFINITIONS
@@ -608,9 +625,12 @@ typedef enum eHpmfwupgActionType
 
 static int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename, int activate); 
 static int HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx* pFwupgCtx);
-static int HpmfwupgPreparationStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwupgCtx);
-static int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwupgCtx);
-static int HpmfwupgActivationStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwupgCtx);
+static int HpmfwupgPreparationStage(struct ipmi_intf *intf, 
+                                    struct HpmfwupgUpgradeCtx* pFwupgCtx);
+static int HpmfwupgUpgradeStage(struct ipmi_intf *intf, 
+                                struct HpmfwupgUpgradeCtx* pFwupgCtx);
+static int HpmfwupgActivationStage(struct ipmi_intf *intf, 
+                                  struct HpmfwupgUpgradeCtx* pFwupgCtx);
 static int HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf, 
                                              struct HpmfwupgGetTargetUpgCapabilitiesCtx* pCtx);
 static int HpmfwupgGetComponentProperties(struct ipmi_intf *intf, 
@@ -623,10 +643,12 @@ static int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
                                        struct HpmfwupgUpgradeCtx* pFwupgCtx);
 static int HpmfwupgPrepareComponents(struct ipmi_intf *intf, 
                                      struct HpmfwupgPrepareComponentsCtx* pCtx,
-                                     struct HpmfwupgUpgradeCtx* pFwupgCtx);                                 
+                                     struct HpmfwupgUpgradeCtx* pFwupgCtx);  
+                            
 static int HpmfwupgBackupComponents(struct ipmi_intf *intf, 
                                     struct HpmfwupgBackupComponentsCtx* pCtx,
-                                    struct HpmfwupgUpgradeCtx* pFwupgCtx);                                                                          
+                                    struct HpmfwupgUpgradeCtx* pFwupgCtx);    
+                                                                      
 static int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf, 
                                        struct HpmfwupgUploadFirmwareBlockCtx* pCtx, 
                                        struct HpmfwupgUpgradeCtx* pFwupgCtx, int count);
@@ -1592,11 +1614,21 @@ int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf, struct HpmfwupgUploadFir
        */
       else if ( (rsp->ccode != 0x00) && (rsp->ccode != 0xcc) )
       {
+         /*
+          * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
+          *           This will be fixed in the next release of open ipmi and this 
+          *           check will have to be removed. (Buggy version = 39)
+          */
+         if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) )
+         {
+            lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
+            rc = HPMFWUPG_UPLOAD_RETRY;
+         }
          /* 
           * If completion code = 0xc7, we will retry with a reduced buffer length. 
           * Do not print error.
           */
-         if ( rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH )
+         else if ( rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH )
          {
             rc = HPMFWUPG_UPLOAD_BLOCK_LENGTH;
          }
@@ -1734,6 +1766,17 @@ int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, struct HpmfwupgGetUpgradeSt
             lprintf(LOG_NOTICE," Last command completion code: %x", pCtx->resp.lastCmdCompCode);
          }
       }
+      /*
+       * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
+       *           This will be fixed in the next release of open ipmi and this 
+       *           check will have to be removed. (Buggy version = 39)
+       */
+      else if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) )
+      {
+         lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
+
+         pCtx->resp.lastCmdCompCode = HPMFWUPG_COMMAND_IN_PROGRESS;
+      }
       else
       {
          if ( verbose )
@@ -1833,6 +1876,19 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
       /* Must wait at least 100 ms between status requests */
       usleep(100000);
       rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
+      /*
+       * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
+       *           This will be fixed in the next release of open ipmi and this 
+       *           check will have to be removed. (Buggy version = 39)
+       */
+      if ( rsp )
+      {
+         if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) )
+         {
+            lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
+            rsp->ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
+         }
+      }
       timeoutSec2 = time(NULL);
       
    }while( rsp &&
@@ -1918,6 +1974,19 @@ int HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelf
       /* Must wait at least 100 ms between status requests */
       usleep(100000);
       rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
+      /*
+       * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
+       *           This will be fixed in the next release of open ipmi and this 
+       *           check will have to be removed. (Buggy version = 39)
+       */
+      if ( rsp )
+      {
+         if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) )
+         {
+            lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
+            rsp->ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
+         }
+      }
       timeoutSec2 = time(NULL);
       
    }while( rsp &&
@@ -2062,6 +2131,12 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
      }
      else
      {
+        #ifdef ENABLE_OPENIPMI_V39_PATCH
+        if( rsp->ccode == IPMI_CC_OK )
+        {
+           errorCount = 0 ;
+        }
+        #endif
         retry = 0;
      }
    }while( retry );
