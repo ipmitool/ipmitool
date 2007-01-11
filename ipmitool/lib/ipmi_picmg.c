@@ -7,25 +7,39 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_fru.h>		/* for access to link descriptor defines */
+#include <ipmitool/log.h>
 
+
+#define PICMG_EKEY_MODE_QUERY          0
+#define PICMG_EKEY_MODE_PRINT_ALL      1
+#define PICMG_EKEY_MODE_PRINT_ENABLED  2
+#define PICMG_EKEY_MODE_PRINT_DISABLED 3
+
+#define PICMG_EKEY_MAX_CHANNEL   16
+#define PICMG_EKEY_MAX_INTERFACE 3
 
 void
 ipmi_picmg_help (void)
 {
-	printf(" properties     - get PICMG properties\n");
-	printf(" addrinfo       - get address information\n");
-	printf(" activate       - activate a FRU\n");
-	printf(" deactivate     - deactivate a FRU\n");
-	printf(" policy get     - get the FRU activation policy\n");
-	printf(" policy set     - set the FRU activation policy\n");
-	printf(" portstate get  - get port state \n");
-	printf(" portstate set  - set port state \n");
-	printf(" led prop       - get led properties\n");
-	printf(" led cap        - get led color capabilities\n");
-	printf(" led state get  - get led state\n");
-	printf(" led state set  - set led state\n");
-	printf(" power get      - get power level info\n");
-	printf(" power set      - set power level\n");
+	printf(" properties           - get PICMG properties\n");
+	printf(" addrinfo             - get address information\n");
+	printf(" activate             - activate a FRU\n");
+	printf(" deactivate           - deactivate a FRU\n");
+	printf(" policy get           - get the FRU activation policy\n");
+	printf(" policy set           - set the FRU activation policy\n");
+	printf(" portstate get        - get port state \n");
+	printf(" portstate getdenied  - get all denied[disabled] port description\n");
+	printf(" portstate getgranted - get all granted[enabled] port description\n");
+	printf(" portstate getall     - get all port state description\n");
+	printf(" portstate set        - set port state \n");
+	printf(" amcportstate get     - get port state \n");
+	printf(" amcportstate set     - set port state \n");
+	printf(" led prop             - get led properties\n");
+	printf(" led cap              - get led color capabilities\n");
+	printf(" led state get        - get led state\n");
+	printf(" led state set        - set led state\n");
+	printf(" power get            - get power level info\n");
+	printf(" power set            - set power level\n");
 }
 
 int
@@ -197,8 +211,11 @@ ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, int argc, char ** 
 	return 0;
 }
 
+#define PICMG_MAX_LINK_PER_CHANNEL 4
+
 int
-ipmi_picmg_portstate_get(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_portstate_get(struct ipmi_intf * intf, int interface,int channel,
+                         int mode)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -215,8 +232,9 @@ ipmi_picmg_portstate_get(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data_len = 2;
 
 	msg_data[0] = 0x00;						/* PICMG identifier */
-	msg_data[1] = (atoi(argv[0]) & 0x3)<<6;	/* interface      */
-	msg_data[1] |= (atoi(argv[1]) & 0x3F);	/* channel number */
+	msg_data[1] = (interface & 0x3)<<6;	/* interface      */
+	msg_data[1] |= (channel & 0x3F);	/* channel number */
+
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -226,53 +244,79 @@ ipmi_picmg_portstate_get(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	if (rsp->ccode) {
-		printf("returned CC code 0x%02x\n", rsp->ccode);
+      if( mode == PICMG_EKEY_MODE_QUERY ){
+         printf("returned CC code 0x%02x\n", rsp->ccode);
+      }
 		return -1;
 	}
 
-	if (rsp->data_len == 6) {
-		d = (struct fru_picmgext_link_desc *) &(rsp->data[1]);
+	if (rsp->data_len >= 6) {
+      int index;
+      
+      /* add support for more than one link per channel */
+      for(index=0;index<PICMG_MAX_LINK_PER_CHANNEL;index++){
+                  
+         if( rsp->data_len > (1+ (index*5))){
 
-		printf("      Link Grouping ID:     0x%02x\n", d->grouping);
-		printf("      Link Type Extension:  0x%02x\n", d->ext);
-		printf("      Link Type:            ");
-		if (d->type == 0 || d->type == 0xff)
-		{
-			printf("Reserved\n");
-		}
-		else if (d->type >= 0x06 && d->type <= 0xef)
-		{
-			printf("Reserved\n");
-		}
-		else if (d->type >= 0xf0 && d->type <= 0xfe)
-		{
-			printf("OEM GUID Definition\n");
-		}
-		else
-		{
-			switch (d->type)
-			{
-				case FRU_PICMGEXT_LINK_TYPE_BASE:
-					printf("PICMG 3.0 Base Interface 10/100/1000\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET:
-					printf("PICMG 3.1 Ethernet Fabric Interface\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND:
-					printf("PICMG 3.2 Infiniband Fabric Interface\n");
-					break;
-				case FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR:
-					printf("PICMG 3.3 Star Fabric Interface\n");
-					break;
-				case  FRU_PICMGEXT_LINK_TYPE_PCIE:
-					printf("PCI Express Fabric Interface\n");
-				default:
-					printf("Invalid\n");
-			}
-		}
-		printf("      Link Designator:      0x%03x\n", d->designator);
-		printf("        Port Flag:            0x%02x\n", d->designator >> 8);
-		printf("        Interface:            ");
+         d = (struct fru_picmgext_link_desc *) &(rsp->data[1 + (index*5)]);
+
+         if
+         ( 
+            mode == PICMG_EKEY_MODE_PRINT_ALL 
+            ||
+            (
+               mode == PICMG_EKEY_MODE_PRINT_ENABLED
+               &&
+               rsp->data[5 + (index*5) ] == 0x01
+            )
+            ||
+            (
+               mode == PICMG_EKEY_MODE_PRINT_DISABLED
+               &&
+               rsp->data[5 + (index*5) ] == 0x00
+            )
+         )
+         {
+         printf("      Link Grouping ID:     0x%02x\n", d->grouping);
+         printf("      Link Type Extension:  0x%02x\n", d->ext);
+         printf("      Link Type:            ");
+         if (d->type == 0 || d->type == 0xff)
+         {
+            printf("Reserved\n");
+         }
+         else if (d->type >= 0x06 && d->type <= 0xef)
+         {
+            printf("Reserved\n");
+         }
+         else if (d->type >= 0xf0 && d->type <= 0xfe)
+         {
+            printf("OEM GUID Definition\n");
+         }
+         else
+         {
+            switch (d->type)
+            {
+               case FRU_PICMGEXT_LINK_TYPE_BASE:
+                  printf("PICMG 3.0 Base Interface 10/100/1000\n");
+                  break;
+               case FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET:
+                  printf("PICMG 3.1 Ethernet Fabric Interface\n");
+                  break;
+               case FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND:
+                  printf("PICMG 3.2 Infiniband Fabric Interface\n");
+                  break;
+               case FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR:
+                  printf("PICMG 3.3 Star Fabric Interface\n");
+                  break;
+               case  FRU_PICMGEXT_LINK_TYPE_PCIE:
+                  printf("PCI Express Fabric Interface\n");
+               default:
+                  printf("Invalid\n");
+            }
+         }
+         printf("      Link Designator:      0x%03x\n", d->designator);
+         printf("        Port Flag:            0x%02x\n", d->designator >> 8);
+         printf("        Interface:            ");
 			switch ((d->designator & 0xff) >> 6)
 			{
 				case FRU_PICMGEXT_DESIGN_IF_BASE:
@@ -289,17 +333,25 @@ ipmi_picmg_portstate_get(struct ipmi_intf * intf, int argc, char ** argv)
 				default:
 					printf("Invalid");
 			}
-		printf("        Channel Number:       0x%02x\n", d->designator & 0x1f);
-		printf("\n");
-		printf("        STATE: %s\n", rsp->data[5] == 0x01?"enabled":"disabled");
+         printf("      Channel Number:       0x%02x\n", d->designator & 0x1f);
+         printf("\n");
+         printf("      STATE: %s\n", rsp->data[5 +(index*5)] == 0x01?"enabled":"disabled");
+         }
+         }
+      }
 	}
+   else
+   {
+      lprintf(LOG_NOTICE,"Unexpected answer, can't print result");
+   }
 
 
 	return 0;
 }
 
 int
-ipmi_picmg_portstate_set(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_portstate_set(struct ipmi_intf * intf, int interface, int channel,  
+                         int port, int type, int typeext, int group, int enable)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -318,15 +370,15 @@ ipmi_picmg_portstate_set(struct ipmi_intf * intf, int argc, char ** argv)
 
 	d = (struct fru_picmgext_link_desc*) &(msg_data[1]);
 
-	d->designator = (unsigned char) (atoi(argv[0]) & 0x1F);        /* channel   */
-	d->designator = (unsigned char) ((atoi(argv[1]) & 0x03) << 6); /* interface */
-	d->designator = (unsigned char) ((atoi(argv[2]) & 0x03) << 8); /* port      */
+	d->designator = (unsigned char) (channel & 0x1F);        /* channel   */
+	d->designator = (unsigned char) ((interface & 0x03) << 6); /* interface */
+	d->designator = (unsigned char) ((port & 0x03) << 8); /* port      */
 
-	d->type       = (unsigned char) (atoi(argv[3]) & 0xFF);       /* link type */
-	d->ext        = (unsigned char) (atoi(argv[4]) & 0x03);       /* type ext  */
-	d->grouping   = (unsigned char) (atoi(argv[5]) & 0xFF);       /* type ext  */
+	d->type       = (unsigned char) (type & 0xFF);       /* link type */
+	d->ext        = (unsigned char) (typeext & 0x03);       /* type ext  */
+	d->grouping   = (unsigned char) (group & 0xFF);       /* type ext  */
 
-	msg_data[5]   = (unsigned char) (atoi(argv[6]) & 0x01);       /* en/dis */
+	msg_data[5]   = (unsigned char) (enable & 0x01);       /* en/dis */
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -626,27 +678,83 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 
 	/* portstate command */
 	else if (!strncmp(argv[0], "portstate", 9)) {
-		if (argc > 2) {
-			if (!strncmp(argv[1], "get", 3)) {
-				rc = ipmi_picmg_portstate_get(intf, argc-1, &(argv[2]));
-			}
 
-			else {
-				printf("portstate get <intf><chn>\n");
-			}
-		}
+      lprintf(LOG_DEBUG,"PICMG: portstate API");
 
-		else if (!strncmp(argv[1], "set", 3)) {
-			if (argc > 5) {
-				rc = ipmi_picmg_portstate_set(intf, argc-1, &(argv[2]));
-			}
-			else {
-				printf("portstate set <chn><intf><port><type><typeext><group><en|dis>\n");
-				return -1;
-			}
-		}
+		if (argc > 1) {
+         if (!strncmp(argv[1], "get", 3)){
+
+            int iface;
+            int channel  ;
+
+            lprintf(LOG_DEBUG,"PICMG: get");
+
+            if(!strncmp(argv[1], "getall", 6)){
+               for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
+                  for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
+                     rc = ipmi_picmg_portstate_get(intf,iface,channel,
+                                                   PICMG_EKEY_MODE_PRINT_ALL);
+                  }
+               }
+            }
+            else if(!strncmp(argv[1], "getgranted", 10)){
+               for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
+                  for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
+                     rc = ipmi_picmg_portstate_get(intf,iface,channel,
+                                                  PICMG_EKEY_MODE_PRINT_ENABLED);
+                  }
+               }
+            }
+            else if(!strncmp(argv[1], "getdenied", 9)){
+               for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
+                  for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
+                     rc = ipmi_picmg_portstate_get(intf,iface,channel,
+                                                 PICMG_EKEY_MODE_PRINT_DISABLED);
+                  }
+               }
+            }
+            else if (argc > 3){
+               iface     = atoi(argv[2]);
+               channel   = atoi(argv[3]);        
+               lprintf(LOG_DEBUG,"PICMG: requesting interface %d",iface);
+               lprintf(LOG_DEBUG,"PICMG: requesting channel %d",channel);
+               
+               rc = ipmi_picmg_portstate_get(intf,iface,channel,
+                                             PICMG_EKEY_MODE_QUERY );
+            }
+            else {
+               printf("<intf> <chn>|getall|getgranted|getdenied\n");
+            }
+         }
+         else if (!strncmp(argv[1], "set", 3)) {
+            if (argc > 5) {
+               int interface= atoi(argv[2]);
+               int channel  = atoi(argv[3]);        
+               int port     = atoi(argv[4]);
+               int type     = atoi(argv[5]);        
+               int typeext  = atoi(argv[6]);
+               int group    = atoi(argv[7]); 
+               int enable   = atoi(argv[8]); 
+            
+               lprintf(LOG_DEBUG,"PICMG: interface %d",interface);
+               lprintf(LOG_DEBUG,"PICMG: channel %d",channel);
+               lprintf(LOG_DEBUG,"PICMG: port %d",port);
+               lprintf(LOG_DEBUG,"PICMG: type %d",type);
+               lprintf(LOG_DEBUG,"PICMG: typeext %d",typeext);
+               lprintf(LOG_DEBUG,"PICMG: group %d",group);
+               lprintf(LOG_DEBUG,"PICMG: enable %d",enable);
+               
+               rc = ipmi_picmg_portstate_set(intf, interface, channel, port ,
+                                                type, typeext  ,group ,enable);
+            }
+            else {
+               printf("<intf> <chn> <port> <type> <ext> <group> <1|0>\n");
+               return -1;
+            }
+         }
+      }
 		else {
-			printf("<set>|<get>\n");
+			printf("<set>|<get>|<getall>|<getgranted>|<getdenied>\n");
 			return -1;
 		}
 	}
