@@ -3459,6 +3459,17 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 		return 0;
 
 	rsp = intf->sendrecv(intf, &req);
+	while (rsp != NULL && is_sol_packet(rsp)) {
+                /* rsp was SOL data instead of our answer */
+                /* since it didn't go through the sol recv, do sol recv stuff here */
+                ack_sol_packet(intf, rsp);
+                check_sol_packet_for_new_data(intf, rsp);
+                if (rsp->data_len)
+                        intf->session->sol_data.sol_input_handler(rsp);
+		rsp = ipmi_lan_poll_recv(intf);
+		if (rsp == NULL) /* the get device id answer never got back, but retry mechanism was bypassed by SOL data */
+			return 0; /* so get device id command never returned, the connection is still alive */
+        }
 
 	if (rsp == NULL)
 		return -1;
