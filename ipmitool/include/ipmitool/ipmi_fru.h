@@ -252,6 +252,57 @@ struct fru_picmgext_link_desc {
 #endif
 } __attribute__ ((packed));
 
+
+#define FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED			 	  0x00
+#define FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED1            0x01
+#define FRU_PICMGEXT_AMC_LINK_TYPE_PCI_EXPRESS          0x02
+#define FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING1  0x03
+#define FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING2  0x04
+#define FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET             0x05
+#define FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO              0x06
+#define FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE              0x07
+
+/* This is used in command, not in FRU */
+struct fru_picmgext_amc_link_info {
+   unsigned char linkInfo[3];
+} __attribute__ ((packed));
+
+struct fru_picmgext_amc_link_desc_core {
+#ifndef WORDS_BIGENDIAN
+	unsigned int designator:12;
+	unsigned int type:8;
+	unsigned int ext:4;
+	unsigned int grouping:8;
+#else
+	unsigned int grouping:8;
+	unsigned int ext:4;
+	unsigned int type:8;
+	unsigned int designator:12;
+#endif
+} __attribute__ ((packed));
+
+struct fru_picmgext_amc_link_desc_extra {
+#ifndef WORDS_BIGENDIAN
+	unsigned char asymetricMatch:2;
+	unsigned char reserved:6;
+#else
+	unsigned char reserved:6;
+	unsigned char asymetricMatch:2;
+#endif
+} __attribute__ ((packed));
+
+
+struct fru_picmgext_amc_link_desc {
+#ifndef WORDS_BIGENDIAN
+   struct fru_picmgext_amc_link_desc_core  core;/* lsb */
+   struct fru_picmgext_amc_link_desc_extra extra;
+#else
+   struct fru_picmgext_amc_link_desc_extra extra;
+   struct fru_picmgext_amc_link_desc_core  core;/* lsb */
+#endif
+} __attribute__ ((packed));
+
+
 struct fru_picmgext_chn_desc {
 #ifndef WORDS_BIGENDIAN
 	unsigned char remote_slot:8;
@@ -272,8 +323,8 @@ struct fru_picmgext_slot_desc {
 	unsigned char chn_count;
 } __attribute__ ((packed));
 
-#define FRU_PICMGEXT_DESIGN_IF_BASE				0x00
-#define FRU_PICMGEXT_DESIGN_IF_FABRIC			0x01
+#define FRU_PICMGEXT_DESIGN_IF_BASE				   0x00
+#define FRU_PICMGEXT_DESIGN_IF_FABRIC			   0x01
 #define FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL	0x02
 #define FRU_PICMGEXT_DESIGN_IF_RESERVED			0x03
 
