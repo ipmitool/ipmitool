@@ -108,7 +108,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_exec_main,    "exec",    "Run list of commands from file" },
 	{ ipmi_set_main,     "set",     "Set runtime variable for shell and exec" },
 	{ ipmi_echo_main,    "echo",    NULL }, /* for echoing lines to stdout in scripts */
-   { ipmi_hpmfwupg_main,"hpmfwupg", "Update IPM Controller using PICMG HPM.1 specification"},
+   { ipmi_hpmfwupg_main,"hpm", "Update HPM components using PICMG HPM.1 file"},
 	{ NULL },
 };
 
