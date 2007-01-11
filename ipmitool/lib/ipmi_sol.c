@@ -1,4 +1,4 @@
-/*
+/*                                 
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,7 @@ static struct timeval _start_keepalive;
 static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
 static int            _disable_keepalive = 0;
+static int            _use_sol_for_keepalive = 0;
 
 extern int verbose;
 
@@ -1393,6 +1394,27 @@ ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 	return ret;
 }
 
+static int
+ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
+{
+	struct timeval  end;
+	int ret = 0;
+
+	if (_disable_keepalive)
+		return 0;
+
+	gettimeofday(&end, 0);
+
+	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
+	   ret = intf->keepalive(intf);
+		gettimeofday(&_start_keepalive, 0);
+   }
+	return ret;
+}
+
+
+
+
 
 /*
  * ipmi_sol_red_pill
@@ -1428,7 +1450,15 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		FD_SET(intf->fd, &read_fds);
 
 		/* Send periodic keepalive packet */
-		keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
+      if(_use_sol_for_keepalive == 0)
+      {
+         keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
+      }
+      else
+      {
+         keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
+      }
+		
 		if (keepAliveRet != 0)
 		{
 			/* no response to keepalive message */
@@ -1710,7 +1740,7 @@ print_sol_usage(void)
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
 	lprintf(LOG_NOTICE, "              payload <enable|disable> [channel] [userid]");
-	lprintf(LOG_NOTICE, "              activate");
+	lprintf(LOG_NOTICE, "              activate [<usesolforkeepalive|nokeepalive>]");
 	lprintf(LOG_NOTICE, "              deactivate");
 	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
 }
@@ -1851,7 +1881,9 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
  	else if (!strncmp(argv[0], "activate", 8)) {
 
 		if (argc > 1) {
-			if (!strncmp(argv[1], "nokeepalive", 11))
+			if (!strncmp(argv[1], "usesolkeepalive", 11))
+				_use_sol_for_keepalive = 1;
+			else if (!strncmp(argv[1], "nokeepalive", 11))
 				_disable_keepalive = 1;
 		}
 
