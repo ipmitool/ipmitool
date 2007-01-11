@@ -39,6 +39,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_cc.h>
+
 
 #define IPMI_BUF_SIZE 1024
 
