@@ -1592,7 +1592,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
  */
 /* Work in progress, copy paste most of the stuff for other functions in this 
    file ... not elegant yet */
-static void
+static int
 ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
 {
 
@@ -1719,6 +1719,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
 
       free(fru_data);
    }
+   return 0;
 }
 
 
