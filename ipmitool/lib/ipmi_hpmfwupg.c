@@ -80,6 +80,14 @@
 *
 *    see: ipmi-fix-send-msg-retry.pacth in openipmi-developer mailing list
 *
+* 2007-01-16 
+*
+*  - Incremented to version 0.4
+*  - Fixed lan iface inaccesiblity timeout handling. Waiting for firmware 
+*    activation completion (fixed sleep) before re-opening a session and
+*    get the final firmware upgrade status.
+*  - Fixed some user interface stuff.
+*
 * TODO
 * ===========================================================================
 * 2007-01-11
@@ -95,7 +103,7 @@ extern int verbose;
  *  Agent version
  */
 #define HPMFWUPG_VERSION_MAJOR 0 
-#define HPMFWUPG_VERSION_MINOR 3
+#define HPMFWUPG_VERSION_MINOR 4
 
 /* 
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -696,15 +704,15 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename, int activate)
    
    /*
     *  VALIDATE IMAGE INTEGRITY
-    */
-   
+    */  
+    
    if ( rc == HPMFWUPG_SUCCESS )
    {
-      lprintf(LOG_NOTICE,"Validating firmware image integrity...");
+      printf("Validating firmware image integrity...");
       rc = HpmfwupgValidateImageIntegrity(&fwupgCtx);
       if ( rc == HPMFWUPG_SUCCESS )
       {
-         lprintf(LOG_NOTICE,"OK");
+         printf("OK\n");
       }
       else
       {
@@ -718,11 +726,11 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename, int activate)
    
    if ( rc == HPMFWUPG_SUCCESS )
    {
-      lprintf(LOG_NOTICE,"Performing preparation stage...");
+      printf("Performing preparation stage...");
       rc = HpmfwupgPreparationStage(intf, &fwupgCtx);
       if ( rc == HPMFWUPG_SUCCESS )
       {
-         lprintf(LOG_NOTICE,"OK");
+         printf("OK\n");
          /* Print useful information to user */
          lprintf(LOG_NOTICE,"    Target Product ID     : %u", buf2short(fwupgCtx.devId.product_id));
          lprintf(LOG_NOTICE,"    Target Manufacturer ID: %u", buf2short(fwupgCtx.devId.manufacturer_id));
@@ -1192,7 +1200,7 @@ static int HpmfwupgActivationStage(struct ipmi_intf *intf, struct HpmfwupgUpgrad
                                                          pFwupgCtx->pImageData;
 
    /* Print out stuf...*/
-   lprintf(LOG_NOTICE,"    ");
+   printf("    ");
    /* Activate new firmware */
    rc = HpmfwupgActivateFirmware(intf, &activateCmd, pFwupgCtx);
    
@@ -1689,7 +1697,7 @@ int HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf, struct HpmfwupgFinishFi
 } 
 
 int HpmfwupgActivateFirmware(struct ipmi_intf *intf, struct HpmfwupgActivateFirmwareCtx* pCtx,
-                             struct HpmfwupgUpgradeCtx* pFwupgCtx)
+                             struct HpmfwupgUpgradeCtx* pFwupgCtx)               
 {
    int    rc = HPMFWUPG_SUCCESS;
    struct ipmi_rs * rsp;
@@ -1710,9 +1718,11 @@ int HpmfwupgActivateFirmware(struct ipmi_intf *intf, struct HpmfwupgActivateFirm
       /* Long duration command handling */
       if ( rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS )
       {
-         lprintf(LOG_NOTICE,"Waiting firmware activation...");
+         printf("Waiting firmware activation...");
          fflush(stdout);
+         
          rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
+
          if ( rc == HPMFWUPG_SUCCESS )
          {
             lprintf(LOG_NOTICE,"OK");
@@ -1822,7 +1832,7 @@ int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf, struct HpmfwupgManual
       if ( rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS )
       {
          struct HpmfwupgQueryRollbackStatusCtx resCmd;
-         lprintf(LOG_NOTICE,"Waiting firmware rollback...");
+         printf("Waiting firmware rollback...");
          fflush(stdout);
          rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, pFwupgCtx);
       }
@@ -2056,6 +2066,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
          if(strstr(intf->name,"lan")!= NULL) /* also covers lanplus */
          {
             static int errorCount=0;
+            static struct ipmi_rs fakeRsp;
 
             lprintf(LOG_DEBUG,"HPM: no response available");
             lprintf(LOG_DEBUG,"HPM: the command may be rejected for " \
@@ -2069,14 +2080,60 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                errorCount < HPM_LAN_PACKET_RESIZE_LIMIT 
             )
             {
-               static struct ipmi_rs fakeRsp;
-
                lprintf(LOG_DEBUG,"HPM: upload firmware block API called");
                lprintf(LOG_DEBUG,"HPM: returning length error to force resize");
 
                fakeRsp.ccode = IPMI_CC_REQ_DATA_INV_LENGTH;
                rsp = &fakeRsp;
                errorCount++;
+            }
+            else if 
+            ( 
+               req.msg.netfn == IPMI_NETFN_PICMG
+               &&
+               ( req.msg.cmd == HPMFWUPG_ACTIVATE_FIRMWARE ||
+                 req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK )
+                 
+            )
+            {
+               /* 
+                * rsp == NULL and command activate firmware or manual firmware 
+                * rollback most likely occurs when we have sent a firmware activation 
+                * request. Fake a command in progress response.
+                */
+               lprintf(LOG_DEBUG,"HPM: activate/rollback firmware API called");
+               lprintf(LOG_DEBUG,"HPM: returning in progress to handle IOL session lost");
+               
+               fakeRsp.ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
+               rsp = &fakeRsp;
+            }
+            else if 
+            ( 
+               req.msg.netfn == IPMI_NETFN_PICMG
+               &&
+               ( req.msg.cmd == HPMFWUPG_GET_UPGRADE_STATUS ||
+                 req.msg.cmd == HPMFWUPG_QUERY_ROLLBACK_STATUS )
+            )
+            {
+               /* 
+                * rsp == NULL and command get upgrade status or query rollback
+                * status most likely occurs when we are waiting for firmware 
+                * activation. Try to re-open the IOL session (re-open will work
+                * once the IPMC recovers from firmware activation.
+                */
+                
+               lprintf(LOG_DEBUG,"HPM: upg/rollback status firmware API called");
+               lprintf(LOG_DEBUG,"HPM: try to re-open IOL session");
+               
+               sleep(inaccessTimeout-inaccessTimeoutCounter);
+               
+               /* force session re-open */
+               intf->opened              = 0;
+               intf->session->authtype   = IPMI_SESSION_AUTHTYPE_NONE;
+               intf->session->session_id = 0;
+               intf->session->in_seq     = 0;
+               intf->session->active     = 0;
+               intf->open(intf);
             }
          }
       }
@@ -2117,18 +2174,6 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
         {
            retry = 0;
         }
-     }
-     else if ( (rsp->ccode == 0xd4) && (strstr(intf->name,"lan")) != NULL )
-     {
-        /* 
-         * We have to re-open the LAN session after inacessiblity 
-         * 0xd4 indicates we have insufficient privilege to exectute 
-         * the command and this is certainly because a reset occured 
-         * on the IPMC.
-         */
-        intf->opened = 0;
-        intf->open(intf);
-        retry = 1;
      }
      else
      {
