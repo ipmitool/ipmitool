@@ -36,6 +36,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_strings.h>  /* IANA id strings */
 
 #include <stdlib.h>
 #include <string.h>
@@ -793,11 +794,25 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 			printf ("  Maximum current load       : %.3f A\n",
 				(double) dl->max_current / 1000);
 			break;
-		case FRU_RECORD_TYPE_PICMG_EXTENSION:
-			printf("  PICMG Extension Record\n");
-			ipmi_fru_picmg_ext_print(fru_data, 
-						 i + sizeof(struct fru_multirec_header), 
-						 h->len);
+		case FRU_RECORD_TYPE_OEM_EXTENSION:
+         {
+            struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *) 
+                               &fru_data[i + sizeof(struct fru_multirec_header)];
+            uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
+
+            /* Now makes sure this is really PICMG record */
+
+            if( iana == IPMI_OEM_PICMG ){ 
+               printf("  PICMG Extension Record\n");
+               ipmi_fru_picmg_ext_print(fru_data, 
+                                        i + sizeof(struct fru_multirec_header), 
+                                        h->len);
+            }
+            /* FIXME: Add OEM record support here */
+            else{
+               printf("  OEM (0x%s) Record\n", val2str( iana,  ipmi_oem_info));
+            }
+         }
 			break;
 		}
 		i += h->len + sizeof (struct fru_multirec_header);
@@ -806,17 +821,152 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 	free(fru_data);
 }
 
+/* ipmi_fru_query_new_value  -  Query new values to replace original FRU content
+ *
+ * @data:	FRU data 
+ * @offset:	offset of the bytes to be modified in data 
+ * @len:    size of the modified data 
+ * 
+ * returns : TRUE if data changed
+ * returns : FALSE if data not changed
+ */
+int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
+{
+   int status=FALSE;
+   char answer;
+             
+
+   printf("Would you like to change this value <y/n> ? ");
+
+   scanf("%c",&answer);
+
+   if( answer == 'y' || answer == 'Y' ){
+      int i;
+      unsigned int *holder;
+
+      holder = malloc(len);
+      printf("Enter hex values for each of the %d entries (lsb first),"   \
+             " hit <enter> between entries\n",len);
+
+      /* I can't assign scanf' %x into a single char */
+      for( i=0;i<len;i++ ){
+         scanf("%x",holder+i);
+      }
+      for( i=0;i<len;i++ ){
+         data[offset++] = (unsigned char) *(holder+i);
+      }
+      /* &data[offset++] */
+      free(holder);
+      status = TRUE;
+   }
+   else{
+      printf("Entered %c\n",answer);
+   }
+
+   return status;
+}
+
+/* ipmi_fru_picmg_ext_edit  -  Query new values to replace original FRU content
+ *
+ * @data:	FRU data 
+ * @offset:	start of the current multi record (start of header)
+ * @len:    len of the current record (excluding header)
+ * @h:      pointer to record header
+ * @oh:     pointer to OEM /PICMG header
+ *
+ * returns: TRUE if data changed
+ * returns: FALSE if data not changed
+ */
+static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
+                                    int off,int len,
+                                    struct fru_multirec_header *h,
+                                    struct fru_multirec_oem_header *oh)
+{
+   int hasChanged = FALSE;
+   int start = off;
+	int offset = start;
+   int length = len;
+	offset += sizeof(struct fru_multirec_oem_header);
+
+   if(oh->record_id == FRU_AMC_ACTIVATION )
+   { 
+		printf("    FRU_AMC_ACTIVATION\n");
+		{
+         int index=offset;
+			uint16_t max_current;
+
+			max_current = fru_data[offset];
+			max_current |= fru_data[++offset]<<8;
+
+			printf("      Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
+                       (float)(max_current) / 10.0f , max_current);
+
+         if( ipmi_fru_query_new_value(fru_data,index,2) ){
+            max_current = fru_data[index];
+            max_current |= fru_data[++index]<<8;
+            printf("      New Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
+                       (float)(max_current) / 10.0f , max_current);
+            hasChanged = TRUE;
+
+         }
+
+			printf("      Module Activation Rediness:     %i sec.\n", fru_data[++offset]);
+			printf("      Descriptor Count: %i\n", fru_data[++offset]);
+			printf("\n");
+
+			for (++offset;
+			     offset < (off + length);
+			     offset += sizeof(struct fru_picmgext_activation_record)) {
+				struct fru_picmgext_activation_record * a =
+					(struct fru_picmgext_activation_record *) &fru_data[offset];
+
+				printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
+				printf("        Max. Module Current:  %i A\n", a->max_module_curr/10);
+				printf("\n");
+			}
+		}
+   }
+   if( hasChanged ){
+
+      uint8_t record_checksum =0;
+      uint8_t header_checksum =0;
+      int index;
+
+      lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
+      lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
+      for(index=0;index<length;index++){         
+         record_checksum+=  fru_data[start+index];
+      }
+      /* Update Record checksum */
+      h->record_checksum =  ~record_checksum + 1;
+
+
+      for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){ 
+         uint8_t data= *( (uint8_t *)h+ index);
+         header_checksum+=data;
+      }
+      /* Update header checksum */
+      h->header_checksum =  ~header_checksum + 1;
+
+      lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
+      lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
+
+      /* write back data */
+   }
+
+   return hasChanged;
+}
 
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 {
-	struct fru_multirec_picmgext_header *h;
+	struct fru_multirec_oem_header *h;
 	int guid_count;
 	int offset = off;
 	int start_offset = off;
 	int i;
 
-	h = (struct fru_multirec_picmgext_header *) &fru_data[offset];
-	offset += sizeof(struct fru_multirec_picmgext_header);
+	h = (struct fru_multirec_oem_header *) &fru_data[offset];
+	offset += sizeof(struct fru_multirec_oem_header);
 
 	switch (h->record_id)
 	{
@@ -1049,7 +1199,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		break;
 
 	default:
-		printf("    Unknown PICMG Extension Record ID: %x\n", h->record_id);
+		printf("    Unknown OEM Extension Record ID: %x\n", h->record_id);
 		break;
 
 	}
@@ -1431,6 +1581,147 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 	free(pFruBuf);
 }
 
+
+
+/* ipmi_fru_edit_multirec  -  Query new values to replace original FRU content
+ *
+ * @intf:	interface to use
+ * @id:   	FRU id to work on 
+ *
+ * returns: nothing
+ */
+/* Work in progress, copy paste most of the stuff for other functions in this 
+   file ... not elegant yet */
+static void
+ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
+{
+
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct fru_info fru;
+	struct fru_header header;
+	uint8_t msg_data[4];
+
+	uint16_t retStatus = 0;
+	uint32_t offFruMultiRec;
+	uint32_t fruMultiRecSize = 0;
+	uint32_t offFileMultiRec = 0;
+	uint32_t fileMultiRecSize = 0;
+	struct fru_info fruInfo;
+	uint8_t *buf = NULL;
+	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, id, &fruInfo,
+							    &offFruMultiRec,
+							    &fruMultiRecSize);
+
+
+	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
+	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
+
+   {
+
+
+	memset(&fru, 0, sizeof(struct fru_info));
+	memset(&header, 0, sizeof(struct fru_header));
+
+	/*
+	 * get info about this FRU
+	 */
+	memset(msg_data, 0, 4);
+	msg_data[0] = id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+
+	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
+		fru.size, fru.access ? "words" : "bytes");
+
+	if (fru.size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
+		return -1;
+	}
+   }
+
+   {
+      uint8_t * fru_data;
+      uint32_t fru_len, i;
+      uint32_t offset= offFruMultiRec;
+      struct fru_multirec_header * h;
+      uint32_t last_off, len;
+
+      i = last_off = offset;
+      fru_len = 0;
+
+      fru_data = malloc(fru.size + 1);
+      if (fru_data == NULL) {
+         lprintf(LOG_ERR, " Out of memory!");
+         return;
+      }
+      memset(fru_data, 0, fru.size + 1);
+
+      do {
+         h = (struct fru_multirec_header *) (fru_data + i);
+
+         /* read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time */
+         if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
+         {
+            len = fru.size - last_off;
+            if (len > FRU_MULTIREC_CHUNK_SIZE)
+               len = FRU_MULTIREC_CHUNK_SIZE;
+
+            if (read_fru_area(intf, &fru, id, last_off, len, fru_data) < 0)
+               break;
+
+            last_off += len;
+         }
+         if( h->type ==  FRU_RECORD_TYPE_OEM_EXTENSION ){
+
+            struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *) 
+                               &fru_data[i + sizeof(struct fru_multirec_header)];
+            uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
+
+            /* Now makes sure this is really PICMG record */
+
+            if( iana == IPMI_OEM_PICMG ){ 
+               if( ipmi_fru_picmg_ext_edit(fru_data, 
+    						 i + sizeof(struct fru_multirec_header), 
+                     h->len, h, oh )){
+                  /* The fru changed */
+                  write_fru_area(intf,&fru,id, i,i,
+               h->len+ sizeof(struct fru_multirec_header), fru_data);
+               }
+            }
+            #if 0
+            /* FIXME: Add OEM record support here */
+            else{
+               printf("  OEM (%s) Record\n", val2str( iana,  ipmi_oem_info));
+            }
+            #endif
+         }
+         i += h->len + sizeof (struct fru_multirec_header);
+      } while (!(h->format & 0x80));
+
+      free(fru_data);
+   }
+}
+
+
 static int
 ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		     char * pFileName,
@@ -1737,7 +2028,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_fru_print_all(intf);
 	}
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey");
+		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit");
 	}
 	else if (strncmp(argv[0], "print", 5) == 0 ||
 		 strncmp(argv[0], "list", 4) == 0) {
@@ -1803,9 +2094,16 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("fru upgEkey <fru id> <fru file>\n");
 		}
 	}
+	else if (!strncmp(argv[0], "edit", 4)) {
+		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
+			ipmi_fru_edit_multirec(intf,atoi(argv[1]));
+		} else {
+			printf("fru edit <fru id>\n");
+		}
+	}
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
-		lprintf(LOG_ERR, "FRU Commands:  print");
+		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit"); 
 		rc = -1;
 	}
 

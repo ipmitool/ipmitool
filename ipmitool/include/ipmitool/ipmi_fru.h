@@ -118,7 +118,7 @@ struct fru_multirec_header {
 #define FRU_RECORD_TYPE_MANAGEMENT_ACCESS 0x03
 #define FRU_RECORD_TYPE_BASE_COMPATIBILITY 0x04
 #define FRU_RECORD_TYPE_EXTENDED_COMPATIBILITY 0x05
-#define FRU_RECORD_TYPE_PICMG_EXTENSION	0xc0
+#define FRU_RECORD_TYPE_OEM_EXTENSION	0xc0
 	uint8_t type;
 	uint8_t format;
 	uint8_t len;
@@ -207,7 +207,7 @@ struct fru_multirec_dcload {
 	uint16_t max_current;
 } __attribute__ ((packed));
 
-struct fru_multirec_picmgext_header {
+struct fru_multirec_oem_header {
 	unsigned char mfg_id[3];
 #define FRU_PICMG_BACKPLANE_P2P			0x04
 #define FRU_PICMG_ADDRESS_TABLE			0x10
@@ -327,6 +327,12 @@ struct fru_picmgext_slot_desc {
 #define FRU_PICMGEXT_DESIGN_IF_FABRIC			   0x01
 #define FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL	0x02
 #define FRU_PICMGEXT_DESIGN_IF_RESERVED			0x03
+
+struct fru_picmgext_carrier_activation_record {
+	unsigned short max_internal_curr;
+	unsigned char  allowance_for_readiness;
+   unsigned char  module_activation_record_count;
+} __attribute__ ((packed));
 
 struct fru_picmgext_activation_record {
 	unsigned char ibmb_addr;
