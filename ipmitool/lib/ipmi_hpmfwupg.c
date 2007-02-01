@@ -40,6 +40,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 /****************************************************************************
 *
 *       Copyright (c) 2006 Kontron Canada, Inc.  All Rights Reserved.
@@ -186,6 +190,16 @@ struct HpmfwupgComponentBitMask
       unsigned char byte;
       struct
       {
+      	 #ifdef WORDS_BIGENDIAN
+      	 unsigned char component7 : 1;
+         unsigned char component6 : 1;
+         unsigned char component5 : 1;
+         unsigned char component4 : 1;
+         unsigned char component3 : 1;
+         unsigned char component2 : 1;
+         unsigned char component1 : 1;
+         unsigned char component0 : 1;
+         #else
          unsigned char component0 : 1;
          unsigned char component1 : 1;
          unsigned char component2 : 1;
@@ -194,6 +208,7 @@ struct HpmfwupgComponentBitMask
          unsigned char component5 : 1;
          unsigned char component6 : 1;
          unsigned char component7 : 1;
+         #endif
       }bitField;
    }ComponentBits;
 }__attribute__ ((packed));
@@ -224,6 +239,16 @@ struct HpmfwupgGetTargetUpgCapabilitiesResp
       unsigned char byte;
       struct
       {
+      	 #if WORDS_BIGENDIAN
+         unsigned char reserved            : 1;
+         unsigned char payloadAffected     : 1;
+         unsigned char manualRollback      : 1;      
+         unsigned char ipmcDeferActivation : 1;
+         unsigned char ipmcRollback        : 1;
+         unsigned char ipmcSelftest        : 1;
+         unsigned char ipmbbAccess         : 1;
+         unsigned char ipmbaAccess         : 1;
+         #else
          unsigned char ipmbaAccess         : 1;
          unsigned char ipmbbAccess         : 1;
          unsigned char ipmcSelftest        : 1;
@@ -232,6 +257,7 @@ struct HpmfwupgGetTargetUpgCapabilitiesResp
          unsigned char manualRollback      : 1;      
          unsigned char payloadAffected     : 1;      
          unsigned char reserved            : 1;
+         #endif
       }bitField;
    }GlobalCapabilities;
    unsigned char upgradeTimeout;
@@ -278,6 +304,15 @@ struct HpmfwupgGetGeneralPropResp
       unsigned char byte;
       struct
       {
+      	 #if WORDS_BIGENDIAN
+         unsigned char payloadColdReset   : 1;
+      	 unsigned char deferredActivation : 1;
+      	 unsigned char validationSupport  : 1;
+      	 unsigned char preparationSupport : 1;
+      	 unsigned char rollbackBackup     : 2;
+      	 unsigned char ipmbbAccess        : 1;
+      	 unsigned char ipmbaAccess        : 1;
+      	 #else
          unsigned char ipmbaAccess        : 1;
          unsigned char ipmbbAccess        : 1;
          unsigned char rollbackBackup     : 2;
@@ -285,6 +320,7 @@ struct HpmfwupgGetGeneralPropResp
          unsigned char validationSupport  : 1;
          unsigned char deferredActivation : 1;
          unsigned char payloadColdReset   : 1;
+         #endif
       }bitfield;
    }GeneralCompProperties;
 }__attribute__ ((packed));   
@@ -575,10 +611,17 @@ struct HpmfwupgImageHeader
   {
  	 struct 
  	 {
+ 	 	#if WORDS_BIGENDIAN
+ 		unsigned char imageSelfTest   : 1;
+ 	 	unsigned char imageRollback   : 1;
+ 	 	unsigned char payloadAffected : 1;
+ 	 	unsigned char reserved        : 5;
+ 	 	#else
  	    unsigned char reserved        : 5;
  	    unsigned char payloadAffected : 1;
  		 unsigned char imageRollback   : 1;
  		 unsigned char imageSelfTest   : 1;
+ 	 	#endif
  	 }	bitField;
 	 unsigned char byte;
   }imageCapabilities;
@@ -2316,8 +2359,8 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
    else if ( (argc == 3) && (strcmp(argv[0], "compprop") == 0) )
    {
       struct HpmfwupgGetComponentPropertiesCtx cmdCtx;
-      sscanf(argv[1], "%d", &cmdCtx.req.componentId);
-      sscanf(argv[2], "%d", &cmdCtx.req.selector);
+      cmdCtx.req.componentId = strtol(argv[1], NULL, 0);
+      cmdCtx.req.selector    = strtol(argv[2], NULL, 0);
       verbose++;
       rc = HpmfwupgGetComponentProperties(intf, &cmdCtx);
    }
