@@ -115,6 +115,67 @@ struct ipmi_event_sensor_types {
 	const char	* desc;
 };
 
+/* The sel module uses the "iana" number to select the appropriate array at run time 
+   This table if for iana number 15000 ( Kontron ), you can add you own OEM sensor types
+   using a similar constuct, look for switch(iana) in ipmi_sel.c
+ */
+static struct ipmi_event_sensor_types oem_kontron_event_types[] __attribute__((unused)) = { 
+
+   /* event type details uses an oem event type */
+   { 0xC0 , 0xFF , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info", NULL },
+   { 0xC0 , 0xFF , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info", NULL },
+
+   { 0xC1 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Push Button" },
+   { 0xC1 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Bridge Reset" },
+   { 0xC1 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Backplane" },
+   { 0xC1 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Hotswap Fault" },
+   { 0xC1 , 0x04 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Hotswap Healty" },
+   { 0xC1 , 0x05 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Unknown" },
+   { 0xC1 , 0x06 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "ITP" },
+   { 0xC1 , 0x07 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Hardware Watchdog" },
+   { 0xC1 , 0x08 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset(cPCI)", "Software Reset" },
+
+   /* Uses standard digital reading type */
+   { 0xC2 , 0xFF , 0xff, IPMI_EVENT_CLASS_DIGITAL , "SDRR Init Agent", NULL },
+   
+   /* based on PICMG IPMB-0 Link state sensor */
+   { 0xC3 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "IPMB-L Link State", "IPMB L Disabled" },
+   { 0xC3 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "IPMB-L Link State", "IPMB L Enabled" },
+
+   { 0xC4 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Push Button" },
+   { 0xC4 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Hardware Power Failure" },
+   { 0xC4 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Unknown" },
+   { 0xC4 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Hardware Watchdog" },
+   { 0xC4 , 0x04 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Soft Reset" },
+   { 0xC4 , 0x05 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Warm Reset" },
+   { 0xC4 , 0x06 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Cold Reset" },
+   { 0xC4 , 0x07 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "IPMI Command" },
+   { 0xC4 , 0x08 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Setup Reset (Save CMOS)" },
+   { 0xC4 , 0x09 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Board Reset", "Power Up Reset" },
+
+   /* event type details uses a standard */
+   { 0xC5 , 0xFF , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Information Agent", NULL  },
+
+   { 0xC6 , 0x0E , 0xff, IPMI_EVENT_CLASS_DISCRETE , "POST Value", "Post Error (see data2)" },
+
+   { 0xC7 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Upgrade" },
+   { 0xC7 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Rollback(error)" },
+   { 0xC7 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Errors (watchdog)" },
+   { 0xC7 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Manual Rollback" },
+   { 0xC7 , 0x08 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "Firmware Watchdog Bite, reset occured" },
+
+   { 0xC8 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Not Loaded" },
+   { 0xC8 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Initializing" },
+   { 0xC8 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Ready" },
+   { 0xC8 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Failure (see data2)" },
+
+   { 0xC9 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Started" },
+   { 0xC9 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Pass" },
+   { 0xC9 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Fail" },
+	/* END */
+	{ 0x00, 0x00, 0xff, 0x00, NULL, NULL },
+};
+
 static struct ipmi_event_sensor_types generic_event_types[] __attribute__((unused)) = {
 	/* Threshold Based States */
 	{ 0x01, 0x00, 0xff, IPMI_EVENT_CLASS_THRESHOLD, "Threshold", "Lower Non-critical going low " },

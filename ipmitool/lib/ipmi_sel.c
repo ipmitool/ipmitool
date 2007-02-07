@@ -401,7 +401,36 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 	return rc;
 }
 
+static struct ipmi_event_sensor_types oem_kontron_event_reading_types[] __attribute__((unused)) = { 
+   { 0x70 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 1", "Reserved" },
+   { 0x71 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 2", "Reserved" },
+};
+ 
+char *
+get_kontron_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
+{
+	char * description = NULL;
+	/*
+	 * Kontron OEM events are described in the product's user manual,  but are limited in favor of
+    * sensor specific 
+	 */
 
+	/* Only standard records are defined so far */
+	if( rec->record_type < 0xC0 ){
+		struct ipmi_event_sensor_types *st=NULL;
+		for ( st=oem_kontron_event_reading_types ; st->type != NULL; st++){
+			if (st->code == rec->sel_type.standard_type.event_type ){
+				size_t len =strlen(st->desc);
+				description = (char*)malloc( len + 1 );
+				memcpy(description, st->desc , len);
+				description[len] = 0;;
+				return description;
+			}
+		}
+	}
+
+	return "Unsupported event";
+}
 
 char *
 get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
@@ -481,6 +510,8 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_TYAN:
 	case IPMI_OEM_SUPERMICRO:
 	case IPMI_OEM_KONTRON:
+		desc =  get_kontron_evt_desc(intf, rec);
+		break;
 	case IPMI_OEM_UNKNOWN:
 	default:
 		break;
@@ -494,7 +525,7 @@ void
 ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char ** desc)
 {
 	uint8_t code, offset;
-	struct ipmi_event_sensor_types *evt;
+	struct ipmi_event_sensor_types *evt = NULL;
 
 	if (desc == NULL)
 		return;
@@ -504,8 +535,29 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		*desc = ipmi_get_oem_desc(intf, rec);
 		return;
 	} else if (rec->sel_type.standard_type.event_type == 0x6f) {
-		evt = sensor_specific_types;
-		code = rec->sel_type.standard_type.sensor_type;
+
+		if( rec->sel_type.standard_type.sensor_type >= 0xC0 &&  rec->sel_type.standard_type.sensor_type < 0xF0) {
+			IPMI_OEM iana = ipmi_get_oem(intf);
+
+			switch(iana){
+				case IPMI_OEM_KONTRON:
+					lprintf(LOG_DEBUG, "oem sensor type %x %d using oem type supplied description",
+		                       rec->sel_type.standard_type.sensor_type , iana);
+
+					evt = oem_kontron_event_types;
+					code = rec->sel_type.standard_type.sensor_type;
+				 break;
+				 /* add your oem sensor assignation here */
+			}			
+			if( evt == NULL ){		
+				lprintf(LOG_DEBUG, "oem sensor type %x  using standard type supplied description",
+		                          rec->sel_type.standard_type.sensor_type );
+			}
+		}
+		if( evt == NULL ){
+			evt = sensor_specific_types;
+			code = rec->sel_type.standard_type.sensor_type;
+		}
 	} else {
 		evt = generic_event_types;
 		code = rec->sel_type.standard_type.event_type;
@@ -527,9 +579,52 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			memset(*desc, 0, strlen(evt->desc)+48);
 			sprintf(*desc, "%s", evt->desc);
 			return;
-		}
+		}	
 		evt++;
 	}
+}
+
+
+const char *
+ipmi_sel_get_oem_sensor_type(IPMI_OEM iana, uint8_t code)
+{
+	struct ipmi_event_sensor_types *st = NULL;
+
+	switch(iana){
+		case IPMI_OEM_KONTRON:
+			st = oem_kontron_event_types;	
+		break;
+		/* add you oem sensor type lookup assignement here */
+	}
+
+	if( st != NULL ) 
+		for (; st->type != NULL; st++)
+			if (st->code == code)
+				return st->type;
+
+	return ipmi_sel_get_sensor_type(code);
+}
+
+const char *
+ipmi_sel_get_oem_sensor_type_offset(IPMI_OEM iana, uint8_t code, uint8_t offset)
+{
+	struct ipmi_event_sensor_types *st = NULL;
+
+	switch(iana){
+		case IPMI_OEM_KONTRON:
+			st = oem_kontron_event_types;	
+		break;
+		/* add you oem sensor type lookup assignement here */
+	}
+
+	if( st != NULL ) 
+		for (; st->type != NULL; st++)
+		{
+			if (st->code == code && st->offset == (offset&0xf))
+				return st->type;
+		}
+
+	return ipmi_sel_get_oem_sensor_type(iana,code);
 }
 
 const char *
@@ -549,6 +644,7 @@ ipmi_sel_get_sensor_type_offset(uint8_t code, uint8_t offset)
 	for (st = sensor_specific_types; st->type != NULL; st++)
 		if (st->code == code && st->offset == (offset&0xf))
 			return st->type;
+
 	return ipmi_sel_get_sensor_type(code);
 }
 
@@ -785,7 +881,13 @@ ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt
 		evt->sel_type.standard_type.event_data[0],
 		evt->sel_type.standard_type.event_data[1],
 		evt->sel_type.standard_type.event_data[2],
-		ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]),
+      ( 
+			(evt->sel_type.standard_type.sensor_type >=0xC0 && evt->sel_type.standard_type.sensor_type < 0xF0)
+			?  
+   		ipmi_sel_get_oem_sensor_type_offset(ipmi_get_oem(intf),evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			:
+			ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+      ),
 		evt->sel_type.standard_type.sensor_num,
 		(description != NULL) ? description : "Unknown");
 
@@ -896,7 +998,15 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 
 	/* lookup SDR entry based on sensor number and type */
 	if (sdr != NULL) {
-		printf("%s ", ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]));
+		printf("%s ",
+	   (	 
+			(evt->sel_type.standard_type.sensor_type >=0xC0 && evt->sel_type.standard_type.sensor_type < 0xF0)
+			?  
+   		ipmi_sel_get_oem_sensor_type_offset(ipmi_get_oem(intf),evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			:
+			ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			)
+		);
 		switch (sdr->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			printf("%s", sdr->record.full->id_string);
@@ -921,7 +1031,13 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			break;
 		}
 	} else {
-		printf("%s", ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]));
+		printf("%s",(	 
+			(evt->sel_type.standard_type.sensor_type >=0xC0 && evt->sel_type.standard_type.sensor_type < 0xF0)
+			?  
+   		ipmi_sel_get_oem_sensor_type_offset(ipmi_get_oem(intf),evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			:
+			ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+		));
 		if (evt->sel_type.standard_type.sensor_num != 0)
 			printf(" #0x%02x", evt->sel_type.standard_type.sensor_num);
 	}
@@ -1072,7 +1188,14 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	printf(" EvM Revision          : %02x\n",
 	       evt->sel_type.standard_type.evm_rev);
 	printf(" Sensor Type           : %s\n",
-	       ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0]));
+   (	 
+			(evt->sel_type.standard_type.sensor_type >=0xC0 && evt->sel_type.standard_type.sensor_type < 0xF0)
+			?  
+   		ipmi_sel_get_oem_sensor_type_offset(ipmi_get_oem(intf),evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			:
+			ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type, evt->sel_type.standard_type.event_data[0])
+			)		
+	);
 	printf(" Sensor Number         : %02x\n",
 	       evt->sel_type.standard_type.sensor_num);
 	printf(" Event Type            : %s\n",
@@ -1241,6 +1364,11 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			printf(" Event Data            : CPU %d DIMM %d\n",
 			       evt->sel_type.standard_type.event_data[2] & 0x0f,
 			       (evt->sel_type.standard_type.event_data[2] & 0xf0) >> 4);
+		}
+		else
+		{
+			/* FIXME : Add sensor specific discrete types */
+			printf(" Event Interpretation Missing\n");
 		}
 	} else if (evt->sel_type.standard_type.event_type >= 0x70 && evt->sel_type.standard_type.event_type <= 0x7f) {
 		/* OEM */
