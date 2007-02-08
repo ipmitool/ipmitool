@@ -456,16 +456,14 @@ ipmi_picmg_amc_portstate_get(struct ipmi_intf * intf,int device,int channel,
             unsigned char enabled;
             d = (struct fru_picmgext_amc_link_info *)&(rsp->data[1 + (index*4)]);
 
-            #ifndef WORDS_BIGENDIAN
-            /* I don't know what kind of frug addict defined this record */
+        
+            /* Removed endianness check here, probably not required
+               as we dont use bitfields  */
             port     = d->linkInfo[0] & 0x0F;
             type     = ((d->linkInfo[0] & 0xF0) >> 4 )|(d->linkInfo[1] & 0x0F );
             ext      = ((d->linkInfo[1] & 0xF0) >> 4 );
             grouping = d->linkInfo[2];
 
-            #else
-            #error "FIXME"
-            #endif
 
             enabled =  rsp->data[4 + (index*4) ];
 
@@ -809,7 +807,6 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 	}
-
 	/* portstate command */
 	else if (!strncmp(argv[0], "portstate", 9)) {
 
