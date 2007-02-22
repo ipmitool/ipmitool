@@ -1521,6 +1521,16 @@ on the cipher suite ID found in the IPMIv2.0 specification in table
 22\-19.  The default cipher suite is \fI3\fP which specifies
 RAKP\-HMAC\-SHA1 authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128
 encryption algorightms.
+
+.SH "FREE INTERFACE"
+.LP
+The ipmitool \fIfree\fP interface utilizes the FreeIPMI libfreeipmi
+drivers.  
+.LP
+You can tell ipmitool to use the FreeIPMI interface with the -I option:
+.PP
+ipmitool \fB\-I\fR \fIfree\fP <\fIcommand\fP>
+
 .SH "EXAMPLES"
 .TP 
 \fIExample 1\fP: Listing remote sensors
@@ -1583,4 +1593,6 @@ http://www.intel.com/design/servers/ipmi
 .TP 
 OpenIPMI Homepage
 http://openipmi.sourceforge.net
-
+.TP
+FreeIPMI Homepage
+http://www.gnu.org/software/freeipmi/

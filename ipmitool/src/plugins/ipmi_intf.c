@@ -59,6 +59,9 @@ extern struct ipmi_intf ipmi_lan_intf;
 #ifdef IPMI_INTF_LANPLUS
 extern struct ipmi_intf ipmi_lanplus_intf;
 #endif
+#ifdef IPMI_INTF_FREE
+extern struct ipmi_intf ipmi_free_intf;
+#endif
 
 struct ipmi_intf * ipmi_intf_table[] = {
 #ifdef IPMI_INTF_OPEN
@@ -78,6 +81,9 @@ struct ipmi_intf * ipmi_intf_table[] = {
 #endif
 #ifdef IPMI_INTF_LANPLUS
 	&ipmi_lanplus_intf,
+#endif
+#ifdef IPMI_INTF_FREE
+	&ipmi_free_intf,
 #endif
 	NULL
 };

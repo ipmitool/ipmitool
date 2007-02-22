@@ -224,6 +224,45 @@ AC_CHECK_HEADER([linux/ipmi.h],
 		[Define to 1 if you have the <sys/ipmi.h> header file.])],
 		[echo "** Unable to find OpenIPMI header files.  Using internal version."])])
 
+dnl look for FreeIPMI files
+AC_CHECK_LIB(freeipmi, ipmi_open_inband, [have_free=yes], [have_free=no])
+AC_ARG_ENABLE([intf-free],
+        [AC_HELP_STRING([--enable-intf-free],
+                        [enable FreeIPMI IPMI interface [default=auto]])],
+        [if test "x$enable_intf_free" != "xno" && test "x$have_free" != "xyes"; then
+            echo "** Unable to build FreeIPMI interface support!"
+            enable_intf_free=no
+        fi],
+        [enable_intf_free=$have_free])
+if test "x$enable_intf_free" = "xstatic" || test "x$enable_intf_free" = "xplugin"; then
+   enable_intf_free=yes
+fi
+if test "x$enable_intf_free" = "xyes"; then
+dnl Determine if you got the right FreeIPMI version  
+    AC_MSG_CHECKING([for good libfreeipmi version])
+    AC_TRY_COMPILE([
+#include <freeipmi/freeipmi.h>
+#include <freeipmi/udm/ipmi-udm.h>
+    ], [
+    ipmi_device_t dev;
+    dev = ipmi_open_inband(IPMI_DEVICE_KCS,
+                           0,
+                           0,
+                           0,
+                           NULL,
+                           0);
+    ], ac_free_version_good=yes,ac_free_version_good=no)
+    AC_MSG_RESULT($ac_free_version_good)
+    if test "x$ac_free_version_good" = "xyes"; then
+       AC_DEFINE(IPMI_INTF_FREE, [1], [Define to 1 to enable FreeIPMI interface.])
+       AC_SUBST(INTF_FREE, [free])
+       AC_SUBST(INTF_FREE_LIB, [libintf_free.la])
+       IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB free/libintf_free.la"
+    else
+       enable_intf_free=no
+    fi
+fi
+
 dnl look for termios header file
 AC_CHECK_HEADER([termios.h],
 	[AC_DEFINE(HAVE_TERMIOS_H, [1], [Define to 1 if you have <termios.h>.])],
@@ -360,6 +399,7 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/lan/Makefile
                 src/plugins/lanplus/Makefile
 		src/plugins/open/Makefile
+                src/plugins/free/Makefile
 		src/plugins/imb/Makefile
 		src/plugins/bmc/Makefile
 		src/plugins/lipmi/Makefile])
@@ -373,6 +413,7 @@ AC_MSG_RESULT([Interfaces])
 AC_MSG_RESULT([  lan     : $enable_intf_lan])
 AC_MSG_RESULT([  lanplus : $enable_intf_lanplus])
 AC_MSG_RESULT([  open    : $enable_intf_open])
+AC_MSG_RESULT([  free    : $enable_intf_free])
 AC_MSG_RESULT([  imb     : $enable_intf_imb])
 AC_MSG_RESULT([  bmc     : $enable_intf_bmc])
 AC_MSG_RESULT([  lipmi   : $enable_intf_lipmi])
