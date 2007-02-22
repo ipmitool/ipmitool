@@ -629,7 +629,7 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 			continue;
 		} else if (rsp->ccode == 0xc5) {
 			/* lost reservation */
-			lprintf(LOG_DEBUG, "SDR reserveration %04x cancelled. "
+			lprintf(LOG_DEBUG, "SDR reservation %04x cancelled. "
 				"Sleeping a bit and retrying...",
 				itr->reservation);
 
@@ -2473,7 +2473,7 @@ ipmi_sdr_get_reservation(struct ipmi_intf *intf, uint16_t * reserve_id)
 		return -1;
 
 	*reserve_id = ((struct sdr_reserve_repo_rs *) &(rsp->data))->reserve_id;
-	lprintf(LOG_DEBUG, "SDR reserveration ID %04x", *reserve_id);
+	lprintf(LOG_DEBUG, "SDR reservation ID %04x", *reserve_id);
 
 	return 0;
 }
@@ -2668,7 +2668,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			continue;
 		case 0xc5:
 			/* lost reservation */
-			lprintf(LOG_DEBUG, "SDR reserveration cancelled. "
+			lprintf(LOG_DEBUG, "SDR reservation cancelled. "
 				"Sleeping a bit and retrying...");
 
 			sleep(rand() & 3);

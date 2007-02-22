@@ -1174,7 +1174,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 	}
 
 	/*
-	 * The first byte is reservered (0).  The resst of the buffer is setup
+	 * The first byte is reserved (0).  The rest of the buffer is setup
 	 * so that each nibble holds the maximum privilege level available for
 	 * that cipher suite number.  The number of nibbles (15) matches the number
 	 * of fixed cipher suite IDs.  This command documentation mentions 16 IDs

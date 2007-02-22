@@ -229,12 +229,12 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		msg_data[2] = (uint8_t)(tmp >> 8);
 		tmp = finish - (doffset+off);                 /* bytes remaining */
 		if (tmp > 16) {
-			lprintf(LOG_INFO,"Writting 16 bytes");
+			lprintf(LOG_INFO,"Writing 16 bytes");
 			memcpy(&msg_data[3], pFrubuf + soffset + off, 16);
 			req.msg.data_len = 16 + 3;
 		}
 		else {
-			lprintf(LOG_INFO,"Writting %d bytes", tmp);
+			lprintf(LOG_INFO,"Writing %d bytes", tmp);
 			memcpy(&msg_data[3], pFrubuf + soffset + off, (uint8_t)tmp);
 			req.msg.data_len = tmp + 3;
 		}
