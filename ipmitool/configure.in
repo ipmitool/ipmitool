@@ -220,7 +220,7 @@ AC_CHECK_HEADER([linux/ipmi.h],
 	[AC_DEFINE(HAVE_OPENIPMI_H, [1],
 	[Define to 1 if you have the <linux/ipmi.h> header file.])],
 	[AC_CHECK_HEADER([sys/ipmi.h],
-		[AC_DEFINE(HAVE_OPENIPMI_H, [1],
+		[AC_DEFINE(HAVE_FREEBSD_IPMI_H, [1],
 		[Define to 1 if you have the <sys/ipmi.h> header file.])],
 		[echo "** Unable to find OpenIPMI header files.  Using internal version."])])
 
