@@ -738,9 +738,11 @@ ipmievd_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	eintf->intf = intf;
 
-	snprintf(eintf->prefix,
-		 strlen((const char *)intf->session->hostname) + 3,
-		 "%s: ", intf->session->hostname);
+	if (intf->session != NULL) {
+		snprintf(eintf->prefix,
+			 strlen((const char *)intf->session->hostname) + 3,
+			 "%s: ", intf->session->hostname);
+	}
 
 	return ipmievd_main(eintf, argc, argv);
 }
