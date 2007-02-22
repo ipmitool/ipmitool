@@ -209,7 +209,9 @@ ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, int argc, char ** 
 	}
 
 	printf("Activation Policy for FRU %x: ", atoi(argv[0]) );
-	printf(" %s\n",(((*(rsp->data+3))&0x01) == 0x01)?"is locked":"is not locked");
+	printf("%s, ", (rsp->data[1] & 0x01) ? "is locked" : "is not locked");
+	printf("%s\n", (rsp->data[1] & 0x02) ? "deactivation locked"
+			: "deactivation not locked");
 
 	return 0;
 }
