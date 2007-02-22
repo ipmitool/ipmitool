@@ -624,7 +624,8 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	struct sigaction act;
 
 	memset(pidfile, 0, 64);
-	strncpy(pidfile, DEFAULT_PIDFILE, strlen(DEFAULT_PIDFILE));
+	sprintf(pidfile, "%s%d", DEFAULT_PIDFILE, eintf->intf->devnum);
+	lprintf(LOG_NOTICE, "ipmievd: using pidfile %s", pidfile);
 
 	for (i = 0; i < argc; i++) {
 		if (strncasecmp(argv[i], "help", 4) == 0) {

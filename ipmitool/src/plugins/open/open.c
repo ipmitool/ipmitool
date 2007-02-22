@@ -63,10 +63,6 @@
 
 extern int verbose;
 
-#define IPMI_OPENIPMI_DEV	"/dev/ipmi0"
-#define IPMI_OPENIPMI_DEVFS	"/dev/ipmi/0"
-#define IPMI_OPENIPMI_DEVFS2	"/dev/ipmidev/0"
-
 static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
 {
@@ -76,17 +72,28 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 	struct ipmi_rs *rsp;
 	char msg_data;
 #endif
+	char ipmi_dev[16];
+	char ipmi_devfs[16];
+	char ipmi_devfs2[16];
+	int devnum = 0;
 
-	intf->fd = open(IPMI_OPENIPMI_DEV, O_RDWR);
+	devnum = intf->devnum;
+
+	sprintf(ipmi_dev, "/dev/ipmi%d", devnum);
+	sprintf(ipmi_devfs, "/dev/ipmi/%d", devnum);
+	sprintf(ipmi_devfs2, "/dev/ipmidev/%d", devnum);
+	lprintf(LOG_DEBUG, "Using ipmi device %d", devnum);
+
+	intf->fd = open(ipmi_dev, O_RDWR);
 
 	if (intf->fd < 0) {
-		intf->fd = open(IPMI_OPENIPMI_DEVFS, O_RDWR);
+		intf->fd = open(ipmi_devfs, O_RDWR);
 		if (intf->fd < 0) {
-			intf->fd = open(IPMI_OPENIPMI_DEVFS2, O_RDWR);
+			intf->fd = open(ipmi_devfs2, O_RDWR);
 		}
 		if (intf->fd < 0) {
 			lperror(LOG_ERR, "Could not open device at %s or %s or %s",
-			IPMI_OPENIPMI_DEV, IPMI_OPENIPMI_DEVFS , IPMI_OPENIPMI_DEVFS2);
+			ipmi_dev, ipmi_devfs , ipmi_devfs2);
 			return -1;
 		}
 	}

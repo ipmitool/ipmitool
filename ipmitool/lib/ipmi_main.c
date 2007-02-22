@@ -71,9 +71,9 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:P:f:U:p:C:L:A:t:m:S:l:b:e:k:O:"
+# define OPTION_STRING	"I:hVvcgsEao:H:d:P:f:U:p:C:L:A:t:m:S:l:b:e:k:O:"
 #else
-# define OPTION_STRING	"I:hVvcH:f:U:p:S:"
+# define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
 
 extern int verbose;
@@ -216,6 +216,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -V             Show version information");
 	lprintf(LOG_NOTICE, "       -v             Verbose (can use multiple times)");
 	lprintf(LOG_NOTICE, "       -c             Display output in comma separated format");
+	lprintf(LOG_NOTICE, "       -d N           Specify a /dev/ipmiN device to use (default=0)");
 	lprintf(LOG_NOTICE, "       -I intf        Interface to use");
 	lprintf(LOG_NOTICE, "       -H hostname    Remote host name for LAN interface");
 	lprintf(LOG_NOTICE, "       -p port        Remote RMCP port [default=623]");
@@ -283,6 +284,7 @@ ipmi_main(int argc, char ** argv,
 	char * kgkey    = NULL;
 	char * seloem   = NULL;
 	int port = 0;
+	int devnum = 0;
 	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
 	int rc = -1;
@@ -324,6 +326,9 @@ ipmi_main(int argc, char ** argv,
 			printf("%s version %s\n", progname, VERSION);
 			rc = 0;
 			goto out_free;
+			break;
+		case 'd':
+			devnum = atoi(optarg);
 			break;
 		case 'p':
 			port = atoi(optarg);
@@ -581,6 +586,8 @@ ipmi_main(int argc, char ** argv,
 
 	/* setup destination channel if given */
 	intf->target_channel = target_channel ;
+
+	intf->devnum = devnum;
 
 	/* setup IPMB local and target address if given */
 	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;

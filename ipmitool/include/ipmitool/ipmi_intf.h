@@ -174,6 +174,8 @@ struct ipmi_intf {
 	uint8_t target_lun;
 	uint8_t target_channel;
 
+	uint8_t devnum;
+
 	int (*setup)(struct ipmi_intf * intf);
 	int (*open)(struct ipmi_intf * intf);
 	void (*close)(struct ipmi_intf * intf);

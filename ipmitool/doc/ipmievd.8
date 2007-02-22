@@ -2,7 +2,7 @@
 .SH "NAME"
 ipmievd \- IPMI event daemon for sending events to syslog
 .SH "SYNOPSIS"
-ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
+ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-d \fIN\fP\fR|\fB\-v\fR|\fB\-V\fR]
 \fB\-I\fR \fIopen\fP <\fIopen\fR | \fIsel\fR> [<\fIoption\fP>]
 
 ipmievd [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
@@ -116,6 +116,13 @@ Bridge IPMI requests to the remote target address.
 \fB\-U\fR <\fIusername\fP>
 Remote server username, default is NULL user.
 .TP 
+\fB\-d \fIN\fP\fR
+Use device number N to specify the /dev/ipmiN (or 
+/dev/ipmi/N or /dev/ipmidev/N) device to use for in-band 
+BMC communication.  Used to target a specific BMC on a 
+multi-node, multi-BMC system through the ipmi device 
+driver interface.  Default is 0.
+.TP 
 \fB\-v\fR
 Increase verbose output level.  This option may be specified
 multiple times to increase the level of debug output.  If given
@@ -167,7 +174,8 @@ Do NOT become a daemon, instead log all messages to stderr.
 .TP
 \fIpidfile\fP=<\fBfilename\fR>
 Save process ID to this file when in daemon mode.  Defaults to
-/var/run/ipmievd.pid.
+/var/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
+number -- defaults to 0).
 .RE
 
 .TP 
@@ -189,7 +197,8 @@ Do NOT become a daemon, instead log all messages to stderr.
 .TP
 \fIpidfile\fP=<\fBfilename\fR>
 Save process ID to this file when in daemon mode.  Defaults to
-/var/run/ipmievd.pid.
+/var/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
+number -- defaults to 0).
 .TP 
 \fItimeout\fP=<\fBseconds\fR>
 Time between checks for SEL polling method.  Default is 10 seconds.

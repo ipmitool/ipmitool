@@ -2,7 +2,7 @@
 .SH "NAME"
 ipmitool \- utility for controlling IPMI\-enabled devices
 .SH "SYNOPSIS"
-ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
+ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-d \fIN\fP\fR|\fB\-v\fR|\fB\-V\fR]
 \fB\-I\fR \fIopen\fP <\fIcommand\fP>
 
 ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
@@ -130,6 +130,13 @@ Bridge IPMI requests to the remote target address.
 .TP 
 \fB\-U\fR <\fIusername\fP>
 Remote server username, default is NULL user.
+.TP
+\fB\-d \fIN\fP\fR
+Use device number N to specify the /dev/ipmiN (or 
+/dev/ipmi/N or /dev/ipmidev/N) device to use for in-band 
+BMC communication.  Used to target a specific BMC on a 
+multi-node, multi-BMC system through the ipmi device 
+driver interface.  Default is 0.
 .TP 
 \fB\-v\fR
 Increase verbose output level.  This option may be specified
