@@ -28,8 +28,8 @@
 # LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
 # EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-DOCDIR = $(DESTDIR)/$(datadir)/doc/$(PACKAGE)
-DOCLIST = README COPYING AUTHORS ChangeLog
+DOCDIR = $(datadir)/doc/$(PACKAGE)
+DOCLIST = $(top_srcdir)/README $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
 
 EXTRA_DIST = $(DOCLIST) \
 	debian/changelog debian/control debian/copyright \
@@ -48,8 +48,11 @@ dist-hook:
 	cp control/ipmitool.spec $(distdir)
 
 install-data-local:
-	mkdir -p $(DOCDIR)
-	$(INSTALL_DATA) -m 644 $(DOCLIST) $(DOCDIR)
+	mkdir -p $(DESTDIR)$(DOCDIR)
+	$(INSTALL_DATA) $(DOCLIST) $(DESTDIR)$(DOCDIR)
+
+uninstall-local:
+	-rm -rf $(DESTDIR)$(DOCDIR)
 
 .PHONY: pkg
 pkg: PKG := ipmitool-@VERSION@-@OS@-@ARCH@

@@ -5,7 +5,7 @@ Release:      @RPM_RELEASE@%{?_distro:.%{_distro}}
 License:      BSD
 Group:        Utilities
 Packager:     Duncan Laurie <duncan@iceblink.org>
-Source:       ipmitool-@VERSION@.tar.gz
+Source:       %{name}-%{version}.tar.gz
 Buildroot:    /var/tmp/ipmitool-root
 
 %description
@@ -50,18 +50,64 @@ make DESTDIR=$RPM_BUILD_ROOT install-strip
 if [ "$RPM_BUILD_ROOT" ] && [ "$RPM_BUILD_ROOT" != "/" ]; then
     rm -rf $RPM_BUILD_ROOT
 fi
-rm -rf $RPM_BUILD_DIR/ipmitool-@VERSION@
 
 %files
-%defattr(-,root,root)
-%{_bindir}/*
-%{_sbindir}/*
-%{_datadir}/ipmitool/*
-%doc %{_mandir}/man1/*
-%doc %{_mandir}/man8/*
-%doc %{_datadir}/doc/ipmitool/*
+%defattr(755,root,root)
+%attr(755,root,root) %{_bindir}/*
+%attr(755,root,root) %{_sbindir}/*
+%{_mandir}/man*/*
+%doc %{_datadir}/doc/ipmitool
+
 
 %changelog
+* Fri Feb 23 2007 <pere@hungry.com>  1.8.9-1
+ - Added initial AMC ekey query operation support
+ - Improvements to ekeying support (PICMG 3.x only)
+ - Added initial interactive edition support for multirec; added IANA
+   verification before interpreting PICMG records.
+ - Added edit support for AMC activation "Maximum Internal Current"
+ - Fix bug generating garbage on the screen when handling GetDeviceId
+   and sol traffic occurs
+ - Added ability to map OEM sensor types to OEM description string using 
+   IANA number; moved IANA number table
+ - Fix lan set access command to use value already saved within parameters 
+   for PEF and authentication
+ - Fix bug in cmd ipmitool lan stats get 1
+ - Add support to allow ipmitool/ipmievd to target specific device nodes 
+   on multi-BMC systems
+ - Add support for name+privilege lookup for lanplus sessions
+ - Fix time_t conversion bug for 64-bit OS
+ - Added prefix of hostname on sel ipmievd sessions
+ - Fixed FWUM Get Info
+ - Fix ipmievd fd closing bug
+ - Add set-in-progress flag support to chassis bootdev
+ - Added new chassis bootdev options
+ - Add sol payload enable/disable comman
+ - Fix SOL set errors when commit-write not supported
+ - Fix reset of session timeout for lanplus interface
+ - Fixed lan interface accessibility timeout handling
+ - Fix bug with Function Get Channel Cipher Suites command when more 
+   than 1 page used.
+ - Fix missing firmware firewall top-level command
+ - Fix bug in SOL keepalive functionality
+ - Fix SOLv2 NACK and retry handling for Intel ESB2 BMC
+ - Added ipmi_sel_get_oem_sensor* APIs
+ - Added HPM.1 support 
+ - Fix segfault when incorrect oem option supplied
+ - Fix bus problem with spd command
+ - Fix segfault in SOL when remote BMC does not return packet
+ - Adjust packet length for AMC.0 retricting IPMB packets to 32 bytes
+ - Added lan packet size reduction mechanism
+ - Fix bug with sendMessage of bad length with different target
+ - Fix for big endian (PPC) architecture
+ - NetBSD fixes
+ - Fix segfault and channel problem with user priv command
+ - Add support for bus/chan on i2c raw command
+ - Add freeipmi interface support
+ - Add remote spd printing
+ - Add better detection of linux/compiler.h to config
+ - Makefile changes to fix makedistcheck, etc. 
+
 * Tue May 02 2006 <duncan@iceblink.org>  1.8.8-1
  - Fix segfaults in sensor data repository list
  - Fix ipmievd to open interface before daemonizing
