@@ -794,7 +794,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "policy", 6)) {
 		if (argc > 2) {
 			if (!strncmp(argv[1], "get", 3)) {
-				rc = ipmi_picmg_fru_activation_policy_get(intf, argc-1, &(argv[2]));
+				rc = ipmi_picmg_fru_activation_policy_get(intf, argc-2, &(argv[2]));
 			}
 			else if (!strncmp(argv[1], "set", 6)) {
 				printf("tbd\n");
