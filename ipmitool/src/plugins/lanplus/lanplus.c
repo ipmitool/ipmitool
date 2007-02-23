@@ -2187,6 +2187,8 @@ ipmi_lanplus_send_payload(
 				 * the BMC
 				 */
 				intf->session->sol_data.sol_input_handler(rsp);
+            /* In order to avoid duplicate output, just set data_len to 0 */
+            rsp->data_len = 0;
 			}
 		}
 
