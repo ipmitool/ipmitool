@@ -241,6 +241,8 @@ if test "x$enable_intf_free" = "xyes"; then
 dnl Determine if you got the right FreeIPMI version  
     AC_MSG_CHECKING([for good libfreeipmi version])
     AC_TRY_COMPILE([
+#include <sys/types.h>	/* For size_t */
+#include <stdio.h>	/* For NULL */
 #include <freeipmi/freeipmi.h>
 #include <freeipmi/udm/ipmi-udm.h>
     ], [
