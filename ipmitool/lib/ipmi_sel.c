@@ -1635,9 +1635,10 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 
 	memcpy(&timei, rsp->data, 4);
 #if WORDS_BIGENDIAN
-	timei = BSWAP_32(timei);
-#endif
+	time = (time_t)(BSWAP_32(timei));
+#else
 	time = (time_t)timei;
+#endif
 
 	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&time));
 	printf("%s\n", tbuf);
