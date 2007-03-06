@@ -60,7 +60,7 @@ fi
 
 
 %changelog
-* Fri Feb 23 2007 <pere@hungry.com>  1.8.9-1
+* Tue Mar  6 2007 <pere@hungry.com>  1.8.9-1
  - Added initial AMC ekey query operation support
  - Improvements to ekeying support (PICMG 3.x only)
  - Added initial interactive edition support for multirec; added IANA

@@ -1,4 +1,4 @@
-version 1.8.9
+version 1.8.9 released 2007-03-06
 	* Added initial AMC ekey query operation support
 	* Improvements to ekeying support (PICMG 3.x only)
 	* Added initial interactive edition support for multirec; added IANA
