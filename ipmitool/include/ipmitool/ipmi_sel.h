@@ -566,7 +566,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
  	{ 0xF0, 0x04, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M4" },
  	{ 0xF0, 0x05, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M5" },
  	{ 0xF0, 0x06, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M6" },
- 	{ 0xF0, 0x06, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M7" },
+ 	{ 0xF0, 0x07, 0xFF, IPMI_EVENT_CLASS_DISCRETE, "FRU Hot Swap", "Transition to M7" },
  
  	{ 0xF1, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A disabled, IPMB-B disabled" },
  	{ 0xF1, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "IPMB-0 Status", "IPMB-A enabled, IPMB-B disabled" },

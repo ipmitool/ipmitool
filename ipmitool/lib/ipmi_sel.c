@@ -50,6 +50,8 @@ extern int verbose;
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
 
+static IPMI_OEM sel_iana = IPMI_OEM_UNKNOWN;
+
 struct ipmi_sel_oem_msg_rec {
 	int	value[14];
 	char	*string[14];
@@ -271,8 +273,12 @@ ipmi_get_oem(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct ipm_devid_rsp *devid;
 
-	if (intf->fd == 0)
+	if (intf->fd == 0) {
+		if( sel_iana != IPMI_OEM_UNKNOWN ){
+			return sel_iana;
+		}
 		return IPMI_OEM_UNKNOWN;
+	}	
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -291,6 +297,10 @@ ipmi_get_oem(struct ipmi_intf * intf)
 	}
 
 	devid = (struct ipm_devid_rsp *) rsp->data;
+
+	lprintf(LOG_DEBUG,"Iana: 0x%ul",
+           IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+
 	return  IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);
 }
 
@@ -402,8 +412,8 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 }
 
 static struct ipmi_event_sensor_types oem_kontron_event_reading_types[] __attribute__((unused)) = { 
-   { 0x70 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 1", "Reserved" },
-   { 0x71 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 2", "Reserved" },
+   { 0x70 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 1", "Code Assert" },
+   { 0x71 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "OEM Firmware Info 2", "Code Assert" },
 };
  
 char *
@@ -510,6 +520,7 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_TYAN:
 	case IPMI_OEM_SUPERMICRO:
 	case IPMI_OEM_KONTRON:
+	case IPMI_OEM_NOKIA:
 		desc =  get_kontron_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_UNKNOWN:
@@ -541,6 +552,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 
 			switch(iana){
 				case IPMI_OEM_KONTRON:
+				case IPMI_OEM_NOKIA:
 					lprintf(LOG_DEBUG, "oem sensor type %x %d using oem type supplied description",
 		                       rec->sel_type.standard_type.sensor_type , iana);
 
@@ -592,9 +604,13 @@ ipmi_sel_get_oem_sensor_type(IPMI_OEM iana, uint8_t code)
 
 	switch(iana){
 		case IPMI_OEM_KONTRON:
+		case IPMI_OEM_NOKIA:
 			st = oem_kontron_event_types;	
 		break;
 		/* add you oem sensor type lookup assignement here */
+		default:
+			lprintf(LOG_ERR, "ipmitool: missing OEM sensor type for 0x%ul",iana);
+		break;
 	}
 
 	if( st != NULL ) 
@@ -612,9 +628,14 @@ ipmi_sel_get_oem_sensor_type_offset(IPMI_OEM iana, uint8_t code, uint8_t offset)
 
 	switch(iana){
 		case IPMI_OEM_KONTRON:
+		case IPMI_OEM_NOKIA:
 			st = oem_kontron_event_types;	
 		break;
 		/* add you oem sensor type lookup assignement here */
+		default:
+			lprintf(LOG_ERR, 
+                      "ipmitool: missing OEM sensor type offset for 0x%ul",iana);
+		break;
 	}
 
 	if( st != NULL ) 
@@ -1519,6 +1540,174 @@ ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
 	return __ipmi_sel_savelist_entries(intf, count, savefile, 0);
 }
 
+/*
+ * ipmi_sel_interpret
+ *
+ * return 0 on success,
+ *        -1 on error
+ */
+static int
+ipmi_sel_interpret(struct ipmi_intf * intf, unsigned long iana, const char * readfile, const char *format)
+{
+	FILE* fp = 0;
+	int status = 0;
+
+	struct sel_event_record evt;
+	char *buffer;
+
+
+	/* since the interface is not used, iana is taken from the command line */
+	sel_iana = iana;
+
+
+	if( strncmp("pps",format,3) == 0 ) {
+			/* Parser for the following format */
+			/* 
+             0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7);				\ 
+                    sensor:(0xc3,119); event:0x6f(asserted): 0xA3 0x00 0x88   
+            commonly found in PPS shelf managers 
+            Supports a tweak for hotswap events that are already interpreted.
+         */
+		fp = ipmi_open_file(readfile, 0);
+		if (fp){
+			buffer = (char*)malloc((size_t)256);
+			if( buffer != NULL ) {		
+				do {
+					/* Only allow complete lines to be parsed,hardcoded maximum
+                  line length */
+
+					if( fgets(buffer, 256, fp) != NULL ){
+						if( strlen(buffer) < 256 )	{
+							char *cursor = buffer;
+
+							evt.record_type= 2; /* assume normal "System" event */
+							evt.record_id=
+								strtol((const char*)cursor, (char **)NULL,16);
+							
+							evt.sel_type.standard_type.evm_rev = 4;
+
+							/* FIXME: convert*/ evt.sel_type.standard_type.timestamp;
+
+							/* skip timestamp */
+							cursor = index((const char*)cursor,';');
+							cursor++;
+
+							/* FIXME: parse originator */
+							evt.sel_type.standard_type.gen_id = 0x0020;
+
+							/* skip  originator info */
+							cursor = index((const char*)cursor,';');
+							cursor++;
+
+							/* Get sensor type */
+							cursor = index((const char*)cursor,'(');
+							cursor++;
+
+							evt.sel_type.standard_type.sensor_type=
+								strtol((const char*)cursor, (char **)NULL,16);
+
+							cursor = index((const char*)cursor,',');
+							cursor++;
+
+							evt.sel_type.standard_type.sensor_num=
+								strtol((const char*)cursor, (char **)NULL,10);
+
+							/* skip  to event type  info */
+							cursor = index((const char*)cursor,':');
+							cursor++;
+
+							evt.sel_type.standard_type.event_type=
+								strtol((const char*)cursor, (char **)NULL,16);
+
+							/* skip  to event dir  info */
+							cursor = index((const char*)cursor,'(');
+							cursor++;
+							if( *cursor == 'a' ) {
+								evt.sel_type.standard_type.event_dir = 0;
+							}
+							else {
+								evt.sel_type.standard_type.event_dir = 1;
+							}
+							/* skip  to data info */
+							cursor = index((const char*)cursor,' ');
+							cursor++;
+
+							if( evt.sel_type.standard_type.sensor_type == 0xF0 ) {		
+								
+								/* got to FRU id */
+								while( !isdigit(*cursor) ){
+									cursor++;
+								}
+                        /* store FRUid */
+								evt.sel_type.standard_type.event_data[2] =
+									strtol(cursor, (char **)NULL,10);
+
+								/* Get to previous state */
+								cursor = index((const char*)cursor,'M');
+								cursor++;
+		
+
+								/* Set previous state */
+								evt.sel_type.standard_type.event_data[1] =
+									strtol(cursor, (char **)NULL,10);
+
+								/* Get to current state */
+								cursor = index((const char*)cursor,'M');
+								cursor++;
+
+
+								/* Set current state */
+								evt.sel_type.standard_type.event_data[0] =
+									0xA0 | strtol(cursor, (char **)NULL,10) ;
+
+								/* skip  to cause */
+								cursor = index((const char*)cursor,'=');
+								cursor++;							
+								evt.sel_type.standard_type.event_data[1] |=
+									(strtol(cursor, (char **)NULL,16))<<4 ; 
+							}else if( *cursor == '0' ) { 
+
+								evt.sel_type.standard_type.event_data[0]=
+									strtol((const char*)cursor, (char **)NULL,16);
+
+								cursor = index((const char*)cursor,' ');
+								cursor++;
+
+								evt.sel_type.standard_type.event_data[1]=
+									strtol((const char*)cursor, (char **)NULL,16);
+
+								cursor = index((const char*)cursor,' ');
+								cursor++;
+							
+								evt.sel_type.standard_type.event_data[2]=
+									strtol((const char*)cursor, (char **)NULL,16);
+							}else {
+								lprintf(LOG_ERR, "ipmitool: can't guess format.");
+							}
+							
+							/* parse the PPS line into a sel_event_record */
+							if (verbose) {
+								ipmi_sel_print_std_entry_verbose(intf, &evt);
+							}
+							else {
+								ipmi_sel_print_std_entry(intf, &evt);
+							}
+						}else{   /* length didn't fit */
+							lprintf(LOG_ERR, "ipmitool: invalid entry found in file.");
+						}	
+					}else{ /* fgets failed (or reached end of file) */
+						status = -1;
+					}
+				}while (status == 0); /* until file is completely read */
+				free(buffer);
+			}	/* if memory allocation succeeded */
+			fclose(fp);
+		} 	/* if file open succeeded */
+	}	/* if format is known */
+
+	return status;	
+}
+
 
 static int
 ipmi_sel_writeraw(struct ipmi_intf * intf, const char * savefile)
@@ -1905,7 +2094,14 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "help", 4) == 0)
 		lprintf(LOG_ERR, "SEL Commands:  "
-				"info clear delete list elist get add time save readraw writeraw");
+				"info clear delete list elist get add time save readraw writeraw interpret");
+	else if (strncmp(argv[0], "interpret", 9) == 0) {
+		if (argc < 4) {
+			lprintf(LOG_NOTICE, "usage: sel interpret iana filename format(pps)");
+			return 0;
+		}
+		rc = ipmi_sel_interpret(intf, atol(argv[1]),argv[2],argv[3]);
+	}
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
 	else if (strncmp(argv[0], "save", 4) == 0) {
