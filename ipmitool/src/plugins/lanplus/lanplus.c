@@ -2962,6 +2962,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 			/* Error */
 			lprintf(LOG_INFO, "> RAKP 2 HMAC is invalid");
 			session->v2_data.rakp2_return_code = IPMI_RAKP_STATUS_INVALID_INTEGRITY_CHECK_VALUE;
+                        rc = 1;
 		}
 		else
 		{
