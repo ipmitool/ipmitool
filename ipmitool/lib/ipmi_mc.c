@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -156,6 +156,7 @@ printf_mc_usage(void)
 	printf("MC Commands:\n");
 	printf("  reset <warm|cold>\n");
 	printf("  info\n");
+	printf("  wdt\n");
 	printf("  selftest\n");
 	printf("  getenables\n");
 	printf("  setenables <option=on|off> ...\n");
@@ -248,14 +249,14 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 			if (strncmp(argv[i], bf->name, nl) != 0)
 				continue;
 			if (strncmp(argv[i]+nl+1, "off", 3) == 0) {
-				printf("Disabling %s\n", bf->desc);
-				en &= ~bf->mask;
-			}
+					printf("Disabling %s\n", bf->desc);
+					en &= ~bf->mask;
+				}
 			else if (strncmp(argv[i]+nl+1, "on", 2) == 0) {
-				printf("Enabling %s\n", bf->desc);
-				en |= bf->mask;
-			}
-			else {
+					printf("Enabling %s\n", bf->desc);
+					en |= bf->mask;
+				}
+				else {
 				lprintf(LOG_ERR, "Unrecognized option: %s", argv[i]);
 			}
 		}
@@ -278,7 +279,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Set Global Enables command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -332,7 +333,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	}
 
 	devid = (struct ipm_devid_rsp *) rsp->data;
-	printf("Device ID                 : %i\n", 
+	printf("Device ID                 : %i\n",
 		devid->device_id);
 	printf("Device Revision           : %i\n",
 		devid->device_revision & IPM_DEV_DEVICE_ID_REV_MASK);
@@ -343,7 +344,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 		IPM_DEV_IPMI_VERSION_MAJOR(devid->ipmi_version),
 		IPM_DEV_IPMI_VERSION_MINOR(devid->ipmi_version));
 	printf("Manufacturer ID           : %lu\n",
-           (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
+		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
    printf("Manufacturer Name         : %s\n",
             val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id), 
             ipmi_oem_info) );
@@ -352,7 +353,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
 	printf("Device Available          : %s\n",
-		(devid->fw_rev1 & IPM_DEV_FWREV1_AVAIL_MASK) ? 
+		(devid->fw_rev1 & IPM_DEV_FWREV1_AVAIL_MASK) ?
 		"no" : "yes");
 	printf("Provides Device SDRs      : %s\n",
 		(devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK) ?
@@ -456,6 +457,7 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "No response from devices\n"); 
 		return -1;
 	}
+
 	if (rsp->ccode) {
 	   lprintf(LOG_ERR, "Bad response: (%s)",
 	                                 val2str(rsp->ccode, completion_code_vals));
@@ -503,15 +505,18 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 			printf("controller operational firmware corrupted\n");
 		}
 	}
+
 	else if (sft_res->code == IPM_SFT_CODE_FATAL_ERROR) {
 		printf("Selftest     : fatal error\n");
 		printf("Failure code : %02x\n", sft_res->test);
 		rv = -1;
 	}
+
 	else if (sft_res->code == IPM_SFT_CODE_RESERVED) {
 		printf("Selftest: N/A");
 		rv = -1;
 	}
+
 	else {
 		printf("Selttest     : device specific\n");
 		printf("Failure code : %02x\n", sft_res->test);
@@ -519,6 +524,150 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 	}
 
 	return rv;
+}
+
+/* ipmi_mc_get_watchdog
+ *
+ * @intf:	ipmi interface
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+
+const char *wdt_use_string[8] = {
+	"reserved",
+	"BIOS FRB2",
+	"BIOS/POST",
+	"OS Load",
+	"SMS/OS",
+	"OEM",
+	"reserved",
+	"reserved"
+};
+
+const char *wdt_action_string[8] = {
+	"no action",
+	"Hard Reset",
+	"Power Down",
+	"Power Cycle",
+	"reserved",
+	"reserved",
+	"reserved",
+	"reserved"
+};
+ 
+static int
+ipmi_mc_get_watchdog(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct ipm_get_watchdog_rsp * wdt_res;
+	
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_WATCHDOG_TIMER;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("no response\n");
+		return -1;
+	}
+
+	if (rsp->ccode) {
+		printf("returned CC code 0x%02x\n", rsp->ccode);
+		return -1;
+	}
+	
+	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
+	
+	printf("Timer Use:            0x%02x - %s\n", wdt_res->timer_use, wdt_use_string[wdt_res->timer_use]);
+	printf("Timer Actions:        0x%02x - %s\n", wdt_res->timer_actions, wdt_action_string[wdt_res->timer_actions]);
+	printf("Pre-timeout interval: 0x%02x\n", wdt_res->pre_timeout);
+	printf("Timer Use Expiration: 0x%02x\n", wdt_res->timer_use_exp);
+	printf("Initial Countdown:    %i ms\n", 
+	    (wdt_res->initial_countdown_msb << 8) | wdt_res->initial_countdown_lsb);
+	printf("Present Countdown:    %i ms\n", 
+	    (wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb);
+	
+	
+	return 0;	
+}
+
+/* ipmi_mc_set_watchdog
+ *
+ * @intf:	ipmi interface
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+static int
+ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	unsigned char msg_data[6];
+	
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd   = BMC_SET_WATCHDOG_TIMER;
+	req.msg.data  = msg_data;
+	req.msg.data_len = 6;
+
+	printf("FIXME - not fully implemented\n");
+	
+	msg_data[0] = 0x03; /* os load*/
+	msg_data[1] = 0x02; /* action power down */
+	msg_data[2] = 10;   /* pretimeout */
+	msg_data[3] = 0;
+	msg_data[4] = 10; /* timeout lsb in 100ms/count */
+	msg_data[5] = 0;  /* timeout lsb */
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("no response\n");
+		return -1;
+	}
+
+	if (rsp->ccode) {
+		printf("returned CC code 0x%02x\n", rsp->ccode);
+		return -1;
+	}
+		
+	return 0;	
+}
+
+
+/* ipmi_mc_set_watchdog
+ *
+ * @intf:	ipmi interface
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+static int
+ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd   = BMC_RESET_WATCHDOG_TIMER;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		printf("no response\n");
+		return -1;
+	}
+
+	if (rsp->ccode) {
+		printf("returned CC code 0x%02x\n", rsp->ccode);
+		return -1;
+	}
+		
+	return 0;	
 }
 
 /* ipmi_mc_main  -  top-level handler for MC functions
@@ -534,7 +683,7 @@ int
 ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
-
+	
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
 		printf_mc_usage();
 	}
@@ -554,23 +703,36 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (strncmp(argv[0], "info", 4) == 0) {
 		rc = ipmi_mc_get_deviceid(intf);
-	}
+		}
 	else if (strncmp(argv[0], "guid", 4) == 0) {
 		rc = ipmi_mc_get_guid(intf);
-	}
+		}
 	else if (strncmp(argv[0], "getenables", 10) == 0) {
 		rc = ipmi_mc_get_enables(intf);
 	}
 	else if (strncmp(argv[0], "setenables", 10) == 0) {
 		rc = ipmi_mc_set_enables(intf, argc-1, &(argv[1]));
 	}
-    else if (!strncmp(argv[0], "selftest", 8)) {
+	else if (!strncmp(argv[0], "selftest", 8)) {
 		rc = ipmi_mc_get_selftest(intf);
 	}
-    else {
+	else if (!strncmp(argv[0], "wdt", 3)) {
+		if (argc < 2) {
+			rc = ipmi_mc_get_watchdog(intf);
+		}else if(strncmp(argv[1], "get", 3) == 0){
+			rc = ipmi_mc_get_watchdog(intf);
+		}else if(strncmp(argv[1], "set", 3) == 0){
+			if(argc > 5)
+				rc = ipmi_mc_set_watchdog(intf, argc-1, &(argv[1]));
+			else
+				printf("wdt set <use><action><pretimeout><countdown> FIXME - not fully implemented\n");
+		}else if(strncmp(argv[1], "rst", 3) == 0){
+			rc = ipmi_mc_rst_watchdog(intf);
+		}
+	}
+	else {
 		lprintf(LOG_ERR, "Invalid mc/bmc command: %s", argv[0]);
 		rc = -1;
 	}
-
 	return rc;
 }
