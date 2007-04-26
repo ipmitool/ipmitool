@@ -71,7 +71,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:d:P:f:U:p:C:L:A:t:m:S:l:b:e:k:O:"
+# define OPTION_STRING	"I:hVvcgsEao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -235,8 +235,10 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
-	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
+	lprintf(LOG_NOTICE, "       -B channel     Set transit channel for bridged request (dual bridge)");
+	lprintf(LOG_NOTICE, "       -T address     Set transit address for bridge request (dual bridge)");
+	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
 	lprintf(LOG_NOTICE, "       -O seloem      Use file for OEM SEL event descriptions");
 #endif
@@ -269,6 +271,8 @@ ipmi_main(int argc, char ** argv,
 	int privlvl = 0;
 	uint8_t target_addr = 0;
 	uint8_t target_channel = 0;
+	uint8_t transit_addr = 0;
+	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
 	uint8_t my_addr = 0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
@@ -473,6 +477,12 @@ ipmi_main(int argc, char ** argv,
 		case 'b':
 			target_channel = (uint8_t)strtol(optarg, NULL, 0);
 			break;
+		case 'T':
+			transit_addr = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+		case 'B':
+			transit_channel = (uint8_t)strtol(optarg, NULL, 0);
+			break;
 		case 'l':
 			target_lun = (uint8_t)strtol(optarg, NULL, 0);
 			break;
@@ -596,6 +606,11 @@ ipmi_main(int argc, char ** argv,
 		if (intf->open != NULL)
 			intf->open(intf);
 		intf->target_addr = target_addr;
+
+      if (transit_addr > 0) {
+         intf->transit_addr    = transit_addr;
+         intf->transit_channel = transit_channel;
+      }
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 	}
