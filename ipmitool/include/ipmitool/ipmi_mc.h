@@ -39,6 +39,9 @@
 #define BMC_COLD_RESET		0x02
 #define BMC_WARM_RESET		0x03
 #define BMC_GET_SELF_TEST	0x04
+#define BMC_RESET_WATCHDOG_TIMER	0x22
+#define BMC_SET_WATCHDOG_TIMER	0x24
+#define BMC_GET_WATCHDOG_TIMER	0x25
 #define BMC_SET_GLOBAL_ENABLES	0x2e
 #define BMC_GET_GLOBAL_ENABLES	0x2f
 #define BMC_GET_GUID		0x37
@@ -99,5 +102,16 @@ struct ipm_selftest_rsp {
 #define IPM_SELFTEST_INTERNAL_USE	0x04
 #define IPM_SELFTEST_FW_BOOTBLOCK	0x02
 #define IPM_SELFTEST_FW_CORRUPTED	0x01
+
+struct ipm_get_watchdog_rsp {
+	unsigned char timer_use;
+	unsigned char timer_actions;
+	unsigned char pre_timeout;
+	unsigned char timer_use_exp;
+	unsigned char initial_countdown_lsb;
+	unsigned char initial_countdown_msb;
+	unsigned char present_countdown_lsb;
+	unsigned char present_countdown_msb;
+} __attribute__ ((packed));
 
 #endif				/*IPMI_MC_H */
