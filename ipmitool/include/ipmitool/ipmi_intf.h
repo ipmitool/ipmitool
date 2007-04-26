@@ -173,6 +173,8 @@ struct ipmi_intf {
 	uint32_t target_addr;
 	uint8_t target_lun;
 	uint8_t target_channel;
+	uint32_t transit_addr;
+	uint8_t transit_channel;
 
 	uint8_t devnum;
 
