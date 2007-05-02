@@ -444,6 +444,9 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
 
+	if (strcpy(intf->name, "ipmb"))
+		return ipmi_sdr_get_sensor_reading(intf, sensor);
+
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
 
