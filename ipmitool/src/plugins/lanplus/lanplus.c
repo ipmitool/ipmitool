@@ -714,28 +714,28 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 								rsp->payload.ipmi_response.cmd);
 			if (entry != NULL) {
 				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-				if (intf->target_addr != ourAddress &&
+				if (intf->target_addr != intf->my_addr &&
 					 bridgePossible) {
+               if (rsp->data[offset-1] == 0)
+               {
+					   lprintf(LOG_DEBUG, "Bridged command answer,"
+					         " waiting for next answer ");
+					   rsp = ipmi_lan_recv_packet(intf);
+					}
+					else
+					{		
+					   lprintf(LOG_DEBUG, "WARNING: Bridged "
+								"cmd ccode = 0x%02x",
+								rsp->data[offset-1]);
+               }
+
 					if (rsp->data_len &&
-						 rsp->payload.ipmi_response.cmd != 0x34) {
+						 rsp->payload.ipmi_response.cmd == 0x34) {
+                  memcpy(rsp->data, &rsp->data[offset],(rsp->data_len-offset)); 
 						printbuf(
 							&rsp->data[offset],
 							(rsp->data_len-offset),
 							"bridge command response");
-					}
-					/* bridged command: lose extra header */
-					if (rsp->payload.ipmi_response.cmd == 0x34) {
-						if (rsp->data_len == 38) {
-							entry->req.msg.cmd = entry->req.msg.target_cmd;
-							rsp = ipmi_lan_recv_packet(intf);
-							continue;
-						}
-					} else {
-						//x += sizeof(rsp->payload.ipmi_response);
-						if (rsp->data[offset-1] != 0)
-							lprintf(LOG_DEBUG, "WARNING: Bridged "
-								"cmd ccode = 0x%02x",
-								rsp->data[offset-1]);
 					}
 				}
 				ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
@@ -1847,7 +1847,21 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	if (curr_seq >= 64)
 		curr_seq = 0;
 
+
+	/* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec */
+	if ((intf->target_addr == intf->my_addr) || (!bridgePossible))
+   {
 	entry = ipmi_req_add_entry(intf, req, curr_seq);
+   }
+   else 
+   {
+      unsigned char backup_cmd;
+      backup_cmd = req->msg.cmd;
+      req->msg.cmd = 0x34;
+   	entry = ipmi_req_add_entry(intf, req, curr_seq);
+      req->msg.cmd = backup_cmd;
+   }   
+
 	if (entry == NULL)
 		return NULL;
 
