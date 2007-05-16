@@ -611,6 +611,10 @@ ipmi_main(int argc, char ** argv,
          intf->transit_addr    = transit_addr;
          intf->transit_channel = transit_channel;
       }
+      else
+      {
+         intf->transit_addr = intf->my_addr;
+      }
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
 	}
