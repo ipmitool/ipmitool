@@ -65,6 +65,9 @@ static void ipmi_kontron_help(void);
 static int ipmi_kontron_set_serial_number(struct ipmi_intf * intf);
 static int ipmi_kontron_set_mfg_date (struct ipmi_intf * intf);
 
+static void ipmi_kontron_nextboot_help(void);
+static int ipmi_kontron_nextboot_set(struct ipmi_intf * intf,
+                                     int argc, char **argv);
 
 
 int
@@ -77,7 +80,7 @@ ipmi_kontronoem_main(struct ipmi_intf * intf, int argc, char ** argv)
    else if (strncmp(argv[0], "help", 4) == 0)
       ipmi_kontron_help();
 
-   else if(!strncmp(argv[0], "setsn", 5))
+   else if (!strncmp(argv[0], "setsn", 5))
    {
       if(argc >= 1)
       {
@@ -95,7 +98,7 @@ ipmi_kontronoem_main(struct ipmi_intf * intf, int argc, char ** argv)
          printf("fru setsn\n");
       }
    }
-   else if(!strncmp(argv[0], "setmfgdate", 5))
+   else if (!strncmp(argv[0], "setmfgdate", 5))
    {
       if(argc >= 1)
       {
@@ -112,7 +115,24 @@ ipmi_kontronoem_main(struct ipmi_intf * intf, int argc, char ** argv)
       {
          printf("fru setmfgdate\n");
       }
-
+   }
+   else if (!strncmp(argv[0], "nextboot", sizeof("nextboot")-1))
+   {
+      if (argc > 1)
+      {
+         if ((rc = ipmi_kontron_nextboot_set(intf, argc-1, argv+1)) == 0)
+         {
+            printf("Nextboot set successfully\n");
+         }
+         else
+         {
+            printf("Nextboot set failed\n");
+         }      
+      }
+      else
+      {
+         ipmi_kontron_nextboot_help();
+      }
    }
 
    else 
@@ -128,7 +148,7 @@ ipmi_kontronoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 static void ipmi_kontron_help(void)
 {
-   printf("Kontron Commands:  setsn setmfgdate\n");
+   printf("Kontron Commands:  setsn setmfgdate nextboot\n");
 }   
 
 /* ipmi_fru_set_serial_number -  Set the Serial Number in FRU
@@ -583,4 +603,80 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
 
    free(fru_data);
    return(1);
-}   
+}
+
+
+static char *bootdev[] = {"BIOS", "FDD", "HDD", "CDROM", "network", 0};
+
+static void
+ipmi_kontron_nextboot_help(void)
+{
+   int i;
+   printf("nextboot <device>\n"
+          "Supported devices:\n");
+   for (i = 0; bootdev[i] != 0; i++) {
+       printf("- %s\n", bootdev[i]);
+   }
+}
+
+/* ipmi_kontron_next_boot_set - Select the next boot order on CP6012
+ *
+ * @intf:		ipmi interface
+ * @id:		fru id
+ *
+ * returns -1 on error
+ * returns 1 if successful
+ */
+static int
+ipmi_kontron_nextboot_set(struct ipmi_intf * intf, int argc, char **argv)
+{
+   struct ipmi_rs *rsp;
+   struct ipmi_rq req;
+   uint8_t msg_data[8];
+   int i;
+   
+   memset(msg_data, 0, sizeof(msg_data));
+   msg_data[0] = 0xb4;
+   msg_data[1] = 0x90;
+   msg_data[2] = 0x91;
+   msg_data[3] = 0x8b;
+   msg_data[4] = 0x9d;
+   msg_data[5] = 0xFF;
+   msg_data[6] = 0xFF; /* any */
+
+   for (i = 0; bootdev[i] != 0; i++) {
+       if (strcmp(argv[0], bootdev[i]) == 0) {
+           msg_data[5] = i;
+           break;
+       }
+   }
+
+   /* Invalid device selected? */
+   if (msg_data[5] == 0xFF) {
+       printf("Unknown boot device: %s\n", argv[0]);
+       return -1;
+   }
+   
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = 0x3E;
+   req.msg.cmd = 0x02;
+   req.msg.data = msg_data;
+   req.msg.data_len = 7;
+   
+   /* Set Lun temporary, necessary for this oem command */
+   req.msg.lun = 0x03;
+      
+   rsp = intf->sendrecv(intf, &req);
+   if (rsp == NULL) 
+   {
+      printf("Device not present (No Response)\n");
+      return(-1);
+   }
+   if (rsp->ccode > 0) {
+      printf("Device not present (%s)\n",
+         val2str(rsp->ccode, completion_code_vals));
+      return(-1);
+   }
+   return 0;
+}
+ 
