@@ -239,7 +239,7 @@ if test "x$enable_intf_free" = "xstatic" || test "x$enable_intf_free" = "xplugin
 fi
 if test "x$enable_intf_free" = "xyes"; then
 dnl Determine if you got the right FreeIPMI version  
-    AC_MSG_CHECKING([for good libfreeipmi version])
+    AC_MSG_CHECKING([for libfreeipmi version 0.3.0])
     AC_TRY_COMPILE([
 #include <sys/types.h>	/* For size_t */
 #include <stdio.h>	/* For NULL */
@@ -253,13 +253,39 @@ dnl Determine if you got the right FreeIPMI version
                            0,
                            NULL,
                            0);
-    ], ac_free_version_good=yes,ac_free_version_good=no)
-    AC_MSG_RESULT($ac_free_version_good)
-    if test "x$ac_free_version_good" = "xyes"; then
+    ], ac_free_version_0_3_0=yes,ac_free_version_0_3_0=no)
+    AC_MSG_RESULT($ac_free_version_0_3_0)
+    AC_MSG_CHECKING([for libfreeipmi version 0.4.0])
+    AC_TRY_COMPILE([
+#include <sys/types.h>	/* For size_t */
+#include <stdio.h>	/* For NULL */
+#include <freeipmi/freeipmi.h>
+#include <freeipmi/udm/ipmi-udm.h>
+    ], [
+    ipmi_device_t dev = NULL;
+    int rv;
+    dev = ipmi_device_create();
+    rv = ipmi_open_inband(dev,
+                          IPMI_DEVICE_KCS,
+                          0,
+                          0,
+                          0,
+                          NULL,
+                          0);
+    ], ac_free_version_0_4_0=yes,ac_free_version_0_4_0=no)
+    AC_MSG_RESULT($ac_free_version_0_4_0)
+
+    if test "x$ac_free_version_0_3_0" = "xyes" || test "x$ac_free_version_0_4_0" = "xyes"; then
        AC_DEFINE(IPMI_INTF_FREE, [1], [Define to 1 to enable FreeIPMI interface.])
        AC_SUBST(INTF_FREE, [free])
        AC_SUBST(INTF_FREE_LIB, [libintf_free.la])
        IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB free/libintf_free.la"
+       if test "x$ac_free_version_0_3_0" = "xyes"; then
+          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_3_0, [1], [Define to 1 for FreeIPMI 0.3.0.])
+       fi
+       if test "x$ac_free_version_0_4_0" = "xyes"; then
+          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_4_0, [1], [Define to 1 for FreeIPMI 0.4.0.])
+       fi
     else
        enable_intf_free=no
     fi

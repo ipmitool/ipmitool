@@ -58,6 +58,7 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                 return -1;
         }
 
+#if IPMI_INTF_FREE_VERSION_0_3_0
         if (!(dev = ipmi_open_inband (IPMI_DEVICE_KCS,
                                       0,
                                       0,
@@ -74,19 +75,53 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                         goto cleanup;
                 }
         }
+#elif IPMI_INTF_FREE_VERSION_0_4_0
+        if (!(dev = ipmi_device_create())) {
+                perror("ipmi_open_inband()");
+                goto cleanup;
+        }
+        if (ipmi_open_inband (dev,
+                              IPMI_DEVICE_KCS,
+                              0,
+                              0,
+                              0,
+                              NULL,
+                              IPMI_FLAGS_DEFAULT) < 0) {
+                if (ipmi_open_inband (dev,
+                                      IPMI_DEVICE_SSIF,
+                                      0,
+                                      0,
+                                      0,
+                                      NULL,
+                                      IPMI_FLAGS_DEFAULT) < 0) {
+                       fprintf(stderr, 
+                               "ipmi_open_inband(): %s\n",
+                               ipmi_device_strerror(ipmi_device_errnum(dev)));
+                       goto cleanup;
+                }
+        }
+#endif
 
 	intf->opened = 1;
 	return 0;
  cleanup:
-        if (dev)
+        if (dev) {
                 ipmi_close_device(dev);
+#if IPMI_INTF_FREE_VERSION_0_4_0
+                ipmi_device_destroy(dev);
+#endif
+        }
         return -1;
 }
 
 static void ipmi_free_close(struct ipmi_intf * intf)
 {
-        if (dev)
+        if (dev) {
                 ipmi_close_device(dev);
+#if IPMI_INTF_FREE_VERSION_0_4_0
+                ipmi_device_destroy(dev);
+#endif
+        }
 	intf->opened = 0;
 }
 
@@ -132,7 +167,13 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
                                    req->msg.data_len + 1,
                                    rs_buf, 
                                    rs_buf_len)) < 0) {
+#if IPMI_INTF_FREE_VERSION_0_3_0
                 perror("ipmi_cmd_raw");
+#elif IPMI_INTF_FREE_VERSION_0_4_0
+                fprintf(stderr,
+                        "ipmi_cmd_raw: %s\n",
+                        ipmi_device_strerror(ipmi_device_errnum(dev)));
+#endif
                 return NULL;
         }
 
