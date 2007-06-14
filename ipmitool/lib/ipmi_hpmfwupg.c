@@ -2359,10 +2359,9 @@ static void HpmfwupgPrintUsage(void)
    lprintf(LOG_NOTICE,"                          Properties <select> can be one of the following: ");
    lprintf(LOG_NOTICE,"                          0- General properties");
    lprintf(LOG_NOTICE,"                          1- Current firmware version");
-   lprintf(LOG_NOTICE,"                          2- Grouping ID");
-   lprintf(LOG_NOTICE,"                          3- Description string");
-   lprintf(LOG_NOTICE,"                          4- Rollback firmware version");
-   lprintf(LOG_NOTICE,"                          5- Deferred firmware version");
+   lprintf(LOG_NOTICE,"                          2- Description string");
+   lprintf(LOG_NOTICE,"                          3- Rollback firmware version");
+   lprintf(LOG_NOTICE,"                          4- Deferred firmware version");
    lprintf(LOG_NOTICE,"abort                   - Abort the on-going firmware upgrade");
    lprintf(LOG_NOTICE,"upgstatus               - Returns the status of the last long duration command");
    lprintf(LOG_NOTICE,"rollback                - Performs a manual rollback on the IPM Controller");
