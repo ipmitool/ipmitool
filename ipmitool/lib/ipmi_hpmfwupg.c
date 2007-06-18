@@ -1202,8 +1202,6 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                         strstr(intf->name,"open") != NULL
                         &&
                         (
-                           intf->target_addr == IPMI_BMC_SLAVE_ADDR 
-                           ||
                            intf->target_addr ==  intf->my_addr
                         )
                      )
