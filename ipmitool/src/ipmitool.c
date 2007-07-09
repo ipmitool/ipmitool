@@ -100,7 +100,6 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
 	{ ipmi_kontronoem_main, "kontronoem", "OEM Commands for Kontron devices"},
 	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},
-	{ ipmi_watchdog_main, "watchdog", "Set IPMI watchdog"},
 	{ ipmi_fwum_main,    "fwum",	"Update IPMC using Kontron OEM Firmware Update Manager" },
 	{ ipmi_firewall_main,"firewall","Configure Firmware Firewall" },
 #ifdef HAVE_READLINE
