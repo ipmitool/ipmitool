@@ -60,7 +60,6 @@
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_hpmfwupg.h>
-#include <ipmitool/ipmi_watchdog.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
