@@ -512,8 +512,22 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 				/* bridged command: lose extra header */
 				if (rsp->payload.ipmi_response.cmd == 0x34) {
 					if (rsp->data_len == 38) {
+						rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
+						if (rsp && !rsp->ccode &&
+							intf->transit_addr != intf->my_addr &&
+							intf->transit_addr != 0 &&
+						    (rsp->data[34] >> 2) == entry->rq_seq) {
+							/* double bridging: remove the Send Message prologue */
+							memmove(rsp->data + 29, rsp->data + 36,
+								rsp->data_len - 36);
+							rsp->data[28] -= 8;
+							rsp->data_len -= 8;
+							entry->rq_seq = rsp->data[34] >> 2;
+						}
 						entry->req.msg.cmd = entry->req.msg.target_cmd;
-						rsp = ipmi_lan_recv_packet(intf);
+						if (rsp == NULL) {
+						    ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
+						}
 						continue;
 					}
 				} else {
@@ -585,7 +599,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	int cs, mp, tmp;
 	int ap = 0;
 	int len = 0;
-	int cs2 = 0;
+	int cs2 = 0, cs3 = 0;
 	struct ipmi_rq_entry * entry;
 	struct ipmi_session * s = intf->session;
 	static int curr_seq = 0;
@@ -605,6 +619,8 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	len = req->msg.data_len + 29;
 	if (s->active && s->authtype)
 		len += 16;
+	if (intf->transit_addr != intf->my_addr && intf->transit_addr != 0)
+		len += 8;
 	msg = malloc(len);
 	if (msg == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
@@ -640,7 +656,8 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	} else {
 		/* bridged request: encapsulate w/in Send Message */
 		bridge_request = 1;
-		msg[len++] = req->msg.data_len + 15;
+		msg[len++] = req->msg.data_len + 15 +
+		  (intf->transit_addr != intf->my_addr && intf->transit_addr != 0 ? 8 : 0);
 		cs = mp = len;
 		msg[len++] = IPMI_BMC_SLAVE_ADDR;
 		msg[len++] = IPMI_NETFN_APP << 2;
@@ -652,7 +669,22 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		msg[len++] = 0x34;			/* Send Message rqst */
 		entry->req.msg.target_cmd = entry->req.msg.cmd;	/* Save target command */
 		entry->req.msg.cmd = 0x34;		/* (fixup request entry) */
-		msg[len++] = (0x40|intf->target_channel); /* Track request*/
+
+		if (intf->transit_addr == intf->my_addr || intf->transit_addr == 0) {
+		        msg[len++] = (0x40|intf->target_channel); /* Track request*/
+		} else {
+               		msg[len++] = (0x40|intf->transit_channel); /* Track request*/
+			cs = len;
+			msg[len++] = intf->transit_addr;
+			msg[len++] = IPMI_NETFN_APP << 2;
+			tmp = len - cs;
+			msg[len++] = ipmi_csum(msg+cs, tmp);
+			cs3 = len;
+			msg[len++] = IPMI_BMC_SLAVE_ADDR;
+			msg[len++] = curr_seq << 2;
+			msg[len++] = 0x34;			/* Send Message rqst */
+			msg[len++] = (0x40|intf->target_channel); /* Track request */
+		}
 		cs = len;
 	}
 
@@ -698,6 +730,10 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	/* bridged request: 2nd checksum */
 	if (bridge_request) {
+		if (intf->transit_addr != intf->my_addr && intf->transit_addr != 0) {
+			tmp = len - cs3;
+			msg[len++] = ipmi_csum(msg+cs3, tmp);
+		}
 		tmp = len - cs2;
 		msg[len++] = ipmi_csum(msg+cs2, tmp);
 	}
@@ -761,6 +797,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len) < 0) {
 			try++;
 			usleep(5000);
+			ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.target_cmd);	
 			continue;
 		}
 
