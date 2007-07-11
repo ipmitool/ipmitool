@@ -445,8 +445,8 @@ struct HpmfwupgInitiateUpgradeActionCtx
  */
 
 #define HPMFWUPG_SEND_DATA_COUNT_MAX   32
-#define HPMFWUPG_SEND_DATA_COUNT_KCS   HPMFWUPG_SEND_DATA_COUNT_MAX
-#define HPMFWUPG_SEND_DATA_COUNT_LAN   26
+#define HPMFWUPG_SEND_DATA_COUNT_KCS   30
+#define HPMFWUPG_SEND_DATA_COUNT_LAN   25
 #define HPMFWUPG_SEND_DATA_COUNT_IPMB  26
 #define HPMFWUPG_SEND_DATA_COUNT_IPMBL 26
 
@@ -478,7 +478,7 @@ struct HpmfwupgUploadFirmwareBlockCtx
 struct HpmfwupgFinishFirmwareUploadReq
 {
    unsigned char picmgId;
-   struct HpmfwupgComponentBitMask componentsMask;
+   unsigned char componentId;
    unsigned char imageLength[HPMFWUPG_IMAGE_SIZE_BYTE_COUNT];
 }__attribute__ ((packed));
 
@@ -500,6 +500,7 @@ struct HpmfwupgFinishFirmwareUploadCtx
 struct HpmfwupgActivateFirmwareReq
 {
    unsigned char picmgId;
+   unsigned char rollback_override;
 }__attribute__ ((packed));
 
 struct HpmfwupgActivateFirmwareResp
@@ -1046,12 +1047,12 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
                 if (rc != HPMFWUPG_SUCCESS)
                 {
                     lprintf(LOG_NOTICE,"Get CompRollbackVersion Failed for component Id %d\n",componentId);
-                    return rc;
+                } else {
+                    gVersionInfo[componentId].rollbackMajor = getCompProp.resp
+                      .Response.rollbackFwVersionResp.rollbackFwVersion[0];
+                    gVersionInfo[componentId].rollbackMinor = getCompProp.resp
+                      .Response.rollbackFwVersionResp.rollbackFwVersion[1];
                 }
-                gVersionInfo[componentId].rollbackMajor = getCompProp.resp
-                    .Response.rollbackFwVersionResp.rollbackFwVersion[0];
-                gVersionInfo[componentId].rollbackMinor = getCompProp.resp
-                    .Response.rollbackFwVersionResp.rollbackFwVersion[1];
                 mode |= ROLLBACK_VER;
             }
 
@@ -1853,7 +1854,9 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                   /* Find max buffer length according the connection parameters */
                   if ( strstr(intf->name,"lan") != NULL )
                   {
-                     bufLength = HPMFWUPG_SEND_DATA_COUNT_LAN;
+                     bufLength = HPMFWUPG_SEND_DATA_COUNT_LAN - 2;
+                     if ( intf->transit_addr != intf->my_addr && intf->transit_addr != 0 )
+                         bufLength -= 8;
                   }
                   else
                   {
@@ -1866,7 +1869,7 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                         )
                      )
                      {
-                        bufLength = HPMFWUPG_SEND_DATA_COUNT_KCS;
+                        bufLength = HPMFWUPG_SEND_DATA_COUNT_KCS - 2;
                      }
                      else
                      {
@@ -2036,7 +2039,7 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                    {
                      /* Send finish component */
                      /* Set image length */
-                     finishCmd.req.componentsMask = pActionRecord->components;
+                     finishCmd.req.componentId = componentId;
                      /* We need to send the actual data that is sent 
                       * not the comlete firmware image length   
                       */
@@ -2627,7 +2630,8 @@ int HpmfwupgActivateFirmware(struct ipmi_intf *intf, struct HpmfwupgActivateFirm
    req.msg.netfn    = IPMI_NETFN_PICMG;
 	req.msg.cmd      = HPMFWUPG_ACTIVATE_FIRMWARE;
 	req.msg.data     = (unsigned char*)&pCtx->req;
-	req.msg.data_len = sizeof(struct HpmfwupgActivateFirmwareReq);
+        req.msg.data_len = sizeof(struct HpmfwupgActivateFirmwareReq) -
+          (!pCtx->req.rollback_override ? 1 : 0);
       
    rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx); 
    
@@ -3014,7 +3018,8 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                req.msg.netfn == IPMI_NETFN_PICMG
                &&
                ( req.msg.cmd == HPMFWUPG_ACTIVATE_FIRMWARE ||
-                 req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK )
+                 req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK ||
+                 req.msg.cmd == HPMFWUPG_GET_UPGRADE_STATUS )
                  
             )
             {
@@ -3033,8 +3038,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
             ( 
                req.msg.netfn == IPMI_NETFN_PICMG
                &&
-               ( req.msg.cmd == HPMFWUPG_GET_UPGRADE_STATUS ||
-                 req.msg.cmd == HPMFWUPG_QUERY_ROLLBACK_STATUS )
+               ( req.msg.cmd == HPMFWUPG_QUERY_ROLLBACK_STATUS )
             )
             {
                /* 
@@ -3190,7 +3194,7 @@ static void HpmfwupgPrintUsage(void)
    lprintf(LOG_NOTICE,"upgrade <file> activate - Upgrade the firmware using a valid HPM.1 image <file>");
    lprintf(LOG_NOTICE,"                          If activate is specified, activate new firmware rigth");
    lprintf(LOG_NOTICE,"                          away");
-   lprintf(LOG_NOTICE,"activate                - Activate the newly uploaded firmware");
+   lprintf(LOG_NOTICE,"activate [norollback]   - Activate the newly uploaded firmware");
    lprintf(LOG_NOTICE,"targetcap               - Get the target upgrade capabilities");
    lprintf(LOG_NOTICE,"compprop <id> <select>  - Get the specified component properties");
    lprintf(LOG_NOTICE,"                          Valid component <ID> 0-7 ");
@@ -3298,9 +3302,13 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
       }
    }
     
-   else if ( (argc == 1) && (strcmp(argv[0], "activate") == 0) )
+   else if ( (argc >= 1) && (strcmp(argv[0], "activate") == 0) )
    {
       struct HpmfwupgActivateFirmwareCtx cmdCtx;
+      if ( (argc == 2) && (strcmp(argv[1], "norollback") == 0) )
+         cmdCtx.req.rollback_override = 1;
+      else
+         cmdCtx.req.rollback_override = 0;
       rc = HpmfwupgActivateFirmware(intf, &cmdCtx, NULL);
    }
    else if ( (argc == 1) && (strcmp(argv[0], "targetcap") == 0) )
