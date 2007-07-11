@@ -726,6 +726,7 @@ struct ipmi_sdr_iterator {
 	uint16_t reservation;
 	int total;
 	int next;
+	int use_built_in;
 };
 
 struct sdr_record_list {
@@ -791,7 +792,8 @@ static const char *sensor_type_desc[] __attribute__ ((unused)) = {
 	    "Management Subsystem Health", "Battery","Session Audit",
        "Version Change","FRU State" };
 
-struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf);
+struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf,
+                                         int use_builtin);
 struct sdr_get_rs *ipmi_sdr_get_next_header(struct ipmi_intf *intf,
 					    struct ipmi_sdr_iterator *i);
 uint8_t *ipmi_sdr_get_record(struct ipmi_intf *intf, struct sdr_get_rs *header,
@@ -824,7 +826,8 @@ struct ipmi_rs *ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf,
 struct ipmi_rs *ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf,
 					       uint8_t sensor);
 const char *ipmi_sdr_get_sensor_type_desc(const uint8_t type);
-int ipmi_sdr_get_reservation(struct ipmi_intf *intf, uint16_t * reserve_id);
+int ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
+                             uint16_t * reserve_id);
 
 int ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			       struct sdr_record_full_sensor *sensor);

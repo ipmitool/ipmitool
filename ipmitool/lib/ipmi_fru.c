@@ -1904,7 +1904,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	rc = ipmi_fru_print(intf, NULL);
 	printf("\n");
 
-	if ((itr = ipmi_sdr_start(intf)) == NULL)
+	if ((itr = ipmi_sdr_start(intf, 0)) == NULL)
 		return -1;
 
 	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)

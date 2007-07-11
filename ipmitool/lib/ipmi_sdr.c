@@ -613,7 +613,7 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 	sdr_rq.length = 5;	/* only get the header */
 
 	memset(&req, 0, sizeof (req));
-	if (use_built_in == 0) {
+	if (itr->use_built_in == 0) {
 		req.msg.netfn = IPMI_NETFN_STORAGE;
 		req.msg.cmd = GET_SDR;
 	} else {
@@ -638,8 +638,8 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 
 			sleep(rand() & 3);
 
-			if (ipmi_sdr_get_reservation(intf, &(itr->reservation))
-			    < 0) {
+			if (ipmi_sdr_get_reservation(intf, itr->use_built_in, 
+                                      &(itr->reservation)) < 0) {
 				lprintf(LOG_ERR,
 					"Unable to renew SDR reservation");
 				return NULL;
@@ -2351,7 +2351,7 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 	lprintf(LOG_DEBUG, "Querying SDR for sensor list");
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return -1;
@@ -2452,7 +2452,8 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
  * returns -1 on error
  */
 int
-ipmi_sdr_get_reservation(struct ipmi_intf *intf, uint16_t * reserve_id)
+ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
+                         uint16_t * reserve_id)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -2460,7 +2461,7 @@ ipmi_sdr_get_reservation(struct ipmi_intf *intf, uint16_t * reserve_id)
 	/* obtain reservation ID */
 	memset(&req, 0, sizeof (req));
 
-	if (use_built_in == 0) {
+	if (use_builtin == 0) {
 		req.msg.netfn = IPMI_NETFN_STORAGE;
 	} else {
 		req.msg.netfn = IPMI_NETFN_SE;
@@ -2489,7 +2490,7 @@ ipmi_sdr_get_reservation(struct ipmi_intf *intf, uint16_t * reserve_id)
  * returns NULL on error
  */
 struct ipmi_sdr_iterator *
-ipmi_sdr_start(struct ipmi_intf *intf)
+ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 {
 	struct ipmi_sdr_iterator *itr;
 	struct ipmi_rs *rsp;
@@ -2516,11 +2517,15 @@ ipmi_sdr_start(struct ipmi_intf *intf)
 		free(itr);
 		return NULL;
 	}
+	if (rsp->ccode > 0) {
+		free(itr);
+		return NULL;
+	}
 	devid = (struct ipm_devid_rsp *) rsp->data;
 
    sdriana =  (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);
 
-	if (devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK) {
+	if (!use_builtin && (devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK)) {
 		if ((devid->adtl_device_support & 0x02) == 0) {
 			if ((devid->adtl_device_support & 0x01)) {
 				lprintf(LOG_DEBUG, "Using Device SDRs\n");
@@ -2534,8 +2539,9 @@ ipmi_sdr_start(struct ipmi_intf *intf)
 			lprintf(LOG_DEBUG, "Using SDR from Repository \n");
 		}
 	}
+	itr->use_built_in = use_builtin ? 1 : use_built_in;
    /***********************/
-	if (use_built_in == 0) {
+	if (itr->use_built_in == 0) {
 		struct sdr_repo_info_rs sdr_info;
 		/* get sdr repository info */
 		memset(&req, 0, sizeof (req));
@@ -2592,7 +2598,8 @@ ipmi_sdr_start(struct ipmi_intf *intf)
 		lprintf(LOG_DEBUG, "SDR records   : %d", sdr_info.count);
 	}
 
-	if (ipmi_sdr_get_reservation(intf, &(itr->reservation)) < 0) {
+	if (ipmi_sdr_get_reservation(intf, itr->use_built_in, 
+                                &(itr->reservation)) < 0) {
 		lprintf(LOG_ERR, "Unable to obtain SDR reservation");
 		free(itr);
 		return NULL;
@@ -2636,7 +2643,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	sdr_rq.offset = 0;
 
 	memset(&req, 0, sizeof (req));
-	if (use_built_in == 0) {
+	if (itr->use_built_in == 0) {
 		req.msg.netfn = IPMI_NETFN_STORAGE;
 		req.msg.cmd = GET_SDR;
 	} else {
@@ -2676,8 +2683,8 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 
 			sleep(rand() & 3);
 
-			if (ipmi_sdr_get_reservation(intf, &(itr->reservation))
-			    < 0) {
+			if (ipmi_sdr_get_reservation(intf, itr->use_built_in,
+                                      &(itr->reservation)) < 0) {
 				free(data);
 				return NULL;
 			}
@@ -2832,7 +2839,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
 	int found = 0;
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
@@ -2959,7 +2966,7 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 	memset(head, 0, sizeof (struct sdr_record_list));
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
@@ -3077,7 +3084,7 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 	memset(head, 0, sizeof (struct sdr_record_list));
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
@@ -3261,7 +3268,7 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 	memset(head, 0, sizeof (struct sdr_record_list));
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
@@ -3362,7 +3369,7 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 	idlen = strlen(id);
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return NULL;
@@ -3671,7 +3678,7 @@ ipmi_sdr_list_cache(struct ipmi_intf *intf)
 	struct sdr_get_rs *header;
 
 	if (sdr_list_itr == NULL) {
-		sdr_list_itr = ipmi_sdr_start(intf);
+		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
 			lprintf(LOG_ERR, "Unable to open SDR for reading");
 			return -1;
@@ -3921,7 +3928,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 	int rc = 0;
 
 	/* open connection to SDR */
-	itr = ipmi_sdr_start(intf);
+	itr = ipmi_sdr_start(intf, 0);
 	if (itr == NULL) {
 		lprintf(LOG_ERR, "Unable to open SDR for reading");
 		return -1;
@@ -4184,24 +4191,24 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR,
 			"SDR Commands:  list | elist [all|full|compact|event|mcloc|fru|generic]");
 		lprintf(LOG_ERR,
-			"                     all        All SDR Records");
+			"                     all           All SDR Records");
 		lprintf(LOG_ERR,
-			"                     full       Full Sensor Record");
+			"                     full          Full Sensor Record");
 		lprintf(LOG_ERR,
-			"                     compact    Compact Sensor Record");
+			"                     compact       Compact Sensor Record");
 		lprintf(LOG_ERR,
-			"                     event      Event-Only Sensor Record");
+			"                     event         Event-Only Sensor Record");
 		lprintf(LOG_ERR,
-			"                     mcloc      Management Controller Locator Record");
+			"                     mcloc         Management Controller Locator Record");
 		lprintf(LOG_ERR,
-			"                     fru        FRU Locator Record");
+			"                     fru           FRU Locator Record");
 		lprintf(LOG_ERR,
-			"                     generic    Generic Device Locator Record");
+			"                     generic       Generic Device Locator Record");
 		lprintf(LOG_ERR, "               type [sensor type]");
 		lprintf(LOG_ERR,
-			"                     list       Get a list of available sensor types");
+			"                     list          Get a list of available sensor types");
 		lprintf(LOG_ERR,
-			"                     get        Retrieve the state of a specified sensor");
+			"                     get           Retrieve the state of a specified sensor");
 
 		lprintf(LOG_ERR, "               info");
 		lprintf(LOG_ERR,
@@ -4212,6 +4219,11 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "               dump <file>");
 		lprintf(LOG_ERR,
 			"                     Dump raw SDR data to a file");
+		lprintf(LOG_ERR, "               fill");
+		lprintf(LOG_ERR,
+			"                     sensors       Creates the SDR repository for the current configuration");
+		lprintf(LOG_ERR,
+			"                     file <file>   Load SDR repository from a file");
 	} else if (strncmp(argv[0], "list", 4) == 0
 		   || strncmp(argv[0], "elist", 5) == 0) {
 
@@ -4260,6 +4272,21 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 			lprintf(LOG_ERR, "usage: sdr dump <filename>");
 		else
 			rc = ipmi_sdr_dump_bin(intf, argv[1]);
+	} else if (strncmp(argv[0], "fill", 3) == 0) {
+		if (argc <= 1) {
+			lprintf(LOG_ERR, "usage: sdr fill sensors");
+			lprintf(LOG_ERR, "usage: sdr fill file <filename>");
+			rc = -1;
+		} else if (strncmp(argv[1], "sensors", 7) == 0) {
+			rc = ipmi_sdr_add_from_sensors(intf, 21);
+		} else if (strncmp(argv[1], "file", 4) == 0) {
+         if (argc < 3) {
+			  lprintf(LOG_ERR, "sdr fill: Missing filename");
+           rc = -1;
+         } else {
+			  rc = ipmi_sdr_add_from_file(intf, argv[2]);
+         }
+      }
 	} else {
 		lprintf(LOG_ERR, "Invalid SDR command: %s", argv[0]);
 		rc = -1;

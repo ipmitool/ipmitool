@@ -496,7 +496,7 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 
 	lprintf(LOG_DEBUG, "Querying SDR for sensor list");
 
-	itr = ipmi_sdr_start(intf);
+	itr = ipmi_sdr_start(intf, 0);
 	if (itr == NULL) {
 		lprintf(LOG_ERR, "Unable to open SDR for reading");
 		return -1;
