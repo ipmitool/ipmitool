@@ -89,8 +89,10 @@ struct ipmi_ipmb_addr {
 	short channel;
 	unsigned char slave_addr;
 	unsigned char lun;
+#ifdef ENABLE_INTF_OPEN_DUAL_BRIDGE
 	short transit_channel;
 	unsigned char transit_slave_addr;
+#endif
 };
 
 #define IPMI_IOC_MAGIC			'i'

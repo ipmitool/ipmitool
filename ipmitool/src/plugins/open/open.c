@@ -228,12 +228,14 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
       ipmb_addr.lun = req->msg.lun;
 		lprintf(LOG_DEBUG, "Sending request to "
 			"IPMB target @ 0x%x", intf->target_addr);
+#ifdef ENABLE_INTF_OPEN_DUAL_BRIDGE
       if(intf->transit_addr != 0 &&
 	    intf->transit_addr != intf->my_addr) {
          ipmb_addr.transit_slave_addr = intf->transit_addr;
          lprintf(LOG_DEBUG, "Sending through transit "
 			   "IPMB target @ 0x%x", intf->transit_addr);
       }
+#endif
 		_req.addr = (unsigned char *) &ipmb_addr;
 		_req.addr_len = sizeof(ipmb_addr);
 	} else {

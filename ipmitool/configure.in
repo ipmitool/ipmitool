@@ -410,6 +410,15 @@ AC_ARG_ENABLE([file-security],
 	    AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
 	fi], [])
 
+dnl Enable OpenIPMI dual bridge extension
+AC_ARG_ENABLE([intf-open-dual-bridge],
+	[AC_HELP_STRING([--enable-intf-open-dual-bridge],
+		[enable OpenIPMI interface dual bridge support [default=yes]])])
+if test "x$enable_intf_open_dual_bridge" != "xno"; then
+	AC_DEFINE(ENABLE_INTF_OPEN_DUAL_BRIDGE, [1],
+		[Define to 1 to enable OpenIPMI interface dual bridge support])
+fi
+
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
 		doc/Makefile
