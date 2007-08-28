@@ -79,6 +79,11 @@ static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static int ipmi_lan_setup(struct ipmi_intf * intf);
 static int ipmi_lan_keepalive(struct ipmi_intf * intf);
+static struct ipmi_rs * ipmi_lan_send_payload(struct ipmi_intf * intf,
+ 					      struct ipmi_v2_payload * payload);
+static struct ipmi_rs * ipmi_lan_recv_sol(struct ipmi_intf * intf);
+static struct ipmi_rs * ipmi_lan_send_sol(struct ipmi_intf * intf,
+					  struct ipmi_v2_payload * payload);
 static struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
 static int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 static int ipmi_lan_open(struct ipmi_intf * intf);
@@ -93,6 +98,8 @@ struct ipmi_intf ipmi_lan_intf = {
 	close:		ipmi_lan_close,
 	sendrecv:	ipmi_lan_send_cmd,
 	sendrsp:	ipmi_lan_send_rsp,
+	recv_sol:	ipmi_lan_recv_sol,
+	send_sol:	ipmi_lan_send_sol,
 	keepalive:	ipmi_lan_keepalive,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
@@ -456,94 +463,155 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		memcpy(&rsp->session.id, rsp->data+x, 4);
 		x += 4;
 
-		if (intf->session->active && (rsp->session.authtype || intf->session->authtype))
-			x += 16;
+		if (rsp->session.id == (intf->session->session_id + 0x10000000)) {
+			/* With SOL, authtype is always NONE, so we have no authcode */
+			rsp->session.payloadtype = IPMI_PAYLOAD_TYPE_SOL;
+	
+			rsp->session.msglen = rsp->data[x++];
+			
+			rsp->payload.sol_packet.packet_sequence_number =
+				rsp->data[x++] & 0x0F;
 
-		rsp->session.msglen = rsp->data[x++];
-		rsp->payload.ipmi_response.rq_addr = rsp->data[x++];
-		rsp->payload.ipmi_response.netfn   = rsp->data[x] >> 2;
-		rsp->payload.ipmi_response.rq_lun  = rsp->data[x++] & 0x3;
-		x++;		/* checksum */
-		rsp->payload.ipmi_response.rs_addr = rsp->data[x++];
-		rsp->payload.ipmi_response.rq_seq  = rsp->data[x] >> 2;
-		rsp->payload.ipmi_response.rs_lun  = rsp->data[x++] & 0x3;
-		rsp->payload.ipmi_response.cmd     = rsp->data[x++];
-		rsp->ccode          = rsp->data[x++];
+			rsp->payload.sol_packet.acked_packet_number =
+				rsp->data[x++] & 0x0F;
 
-		if (verbose > 2)
-			printbuf(rsp->data, rsp->data_len, "ipmi message header");
+			rsp->payload.sol_packet.accepted_character_count =
+				rsp->data[x++];
 
-		lprintf(LOG_DEBUG+1, "<< IPMI Response Session Header");
-		lprintf(LOG_DEBUG+1, "<<   Authtype   : %s",
-		       val2str(rsp->session.authtype, ipmi_authtype_session_vals));
-		lprintf(LOG_DEBUG+1, "<<   Sequence   : 0x%08lx",
-			(long)rsp->session.seq);
-		lprintf(LOG_DEBUG+1, "<<   Session ID : 0x%08lx",
-			(long)rsp->session.id);
-		lprintf(LOG_DEBUG+1, "<< IPMI Response Message Header");
-		lprintf(LOG_DEBUG+1, "<<   Rq Addr    : %02x",
-			rsp->payload.ipmi_response.rq_addr);
-		lprintf(LOG_DEBUG+1, "<<   NetFn      : %02x",
-			rsp->payload.ipmi_response.netfn);
-		lprintf(LOG_DEBUG+1, "<<   Rq LUN     : %01x",
-			rsp->payload.ipmi_response.rq_lun);
-		lprintf(LOG_DEBUG+1, "<<   Rs Addr    : %02x",
-			rsp->payload.ipmi_response.rs_addr);
-		lprintf(LOG_DEBUG+1, "<<   Rq Seq     : %02x",
-			rsp->payload.ipmi_response.rq_seq);
-		lprintf(LOG_DEBUG+1, "<<   Rs Lun     : %01x",
-			rsp->payload.ipmi_response.rs_lun);
-		lprintf(LOG_DEBUG+1, "<<   Command    : %02x",
-			rsp->payload.ipmi_response.cmd);
-		lprintf(LOG_DEBUG+1, "<<   Compl Code : 0x%02x",
-			rsp->ccode);
+			rsp->payload.sol_packet.is_nack =
+				rsp->data[x] & 0x40;
 
-		/* now see if we have outstanding entry in request list */
-		entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
-					      rsp->payload.ipmi_response.cmd);
-		if (entry) {
-			lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-			if ((intf->target_addr != our_address) && bridge_possible) {
-				if ((rsp->data_len) &&
-				    (rsp->payload.ipmi_response.cmd != 0x34)) {
-					printbuf(&rsp->data[x], rsp->data_len-x,
-						 "bridge command response");
-				}
-				/* bridged command: lose extra header */
-				if (rsp->payload.ipmi_response.cmd == 0x34) {
-					if (rsp->data_len == 38) {
-						rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
-						if (rsp && !rsp->ccode &&
-							intf->transit_addr != intf->my_addr &&
-							intf->transit_addr != 0 &&
-						    (rsp->data[34] >> 2) == entry->rq_seq) {
-							/* double bridging: remove the Send Message prologue */
-							memmove(rsp->data + 29, rsp->data + 36,
-								rsp->data_len - 36);
-							rsp->data[28] -= 8;
-							rsp->data_len -= 8;
-							entry->rq_seq = rsp->data[34] >> 2;
-						}
-						entry->req.msg.cmd = entry->req.msg.target_cmd;
-						if (rsp == NULL) {
-						    ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
-						}
-						continue;
+			rsp->payload.sol_packet.transfer_unavailable =
+				rsp->data[x] & 0x20;
+
+			rsp->payload.sol_packet.sol_inactive = 
+				rsp->data[x] & 0x10;
+
+			rsp->payload.sol_packet.transmit_overrun =
+				rsp->data[x] & 0x08;
+	
+			rsp->payload.sol_packet.break_detected =
+				rsp->data[x++] & 0x04;
+
+			x++; /* On ISOL there's and additional fifth byte before the data starts */
+	
+			lprintf(LOG_DEBUG, "SOL sequence number     : 0x%02x",
+				rsp->payload.sol_packet.packet_sequence_number);
+
+			lprintf(LOG_DEBUG, "SOL acked packet        : 0x%02x",
+				rsp->payload.sol_packet.acked_packet_number);
+			
+			lprintf(LOG_DEBUG, "SOL accepted char count : 0x%02x",
+				rsp->payload.sol_packet.accepted_character_count);
+			
+			lprintf(LOG_DEBUG, "SOL is nack             : %s",
+				rsp->payload.sol_packet.is_nack? "true" : "false");
+			
+			lprintf(LOG_DEBUG, "SOL xfer unavailable    : %s",
+				rsp->payload.sol_packet.transfer_unavailable? "true" : "false");
+			
+			lprintf(LOG_DEBUG, "SOL inactive            : %s",
+				rsp->payload.sol_packet.sol_inactive? "true" : "false");
+			
+			lprintf(LOG_DEBUG, "SOL transmit overrun    : %s",
+				rsp->payload.sol_packet.transmit_overrun? "true" : "false");
+			
+			lprintf(LOG_DEBUG, "SOL break detected      : %s",
+				rsp->payload.sol_packet.break_detected? "true" : "false");
+		}
+		else
+		{
+			/* Standard IPMI 1.5 packet */
+			rsp->session.payloadtype = IPMI_PAYLOAD_TYPE_IPMI;
+			if (intf->session->active && (rsp->session.authtype || intf->session->authtype))
+				x += 16;
+
+			rsp->session.msglen = rsp->data[x++];
+			rsp->payload.ipmi_response.rq_addr = rsp->data[x++];
+			rsp->payload.ipmi_response.netfn   = rsp->data[x] >> 2;
+			rsp->payload.ipmi_response.rq_lun  = rsp->data[x++] & 0x3;
+			x++;		/* checksum */
+			rsp->payload.ipmi_response.rs_addr = rsp->data[x++];
+			rsp->payload.ipmi_response.rq_seq  = rsp->data[x] >> 2;
+			rsp->payload.ipmi_response.rs_lun  = rsp->data[x++] & 0x3;
+			rsp->payload.ipmi_response.cmd     = rsp->data[x++];
+			rsp->ccode          = rsp->data[x++];
+			
+			if (verbose > 2)
+				printbuf(rsp->data, rsp->data_len, "ipmi message header");
+			
+			lprintf(LOG_DEBUG+1, "<< IPMI Response Session Header");
+			lprintf(LOG_DEBUG+1, "<<   Authtype   : %s",
+				val2str(rsp->session.authtype, ipmi_authtype_session_vals));
+			lprintf(LOG_DEBUG+1, "<<   Sequence   : 0x%08lx",
+				(long)rsp->session.seq);
+			lprintf(LOG_DEBUG+1, "<<   Session ID : 0x%08lx",
+				(long)rsp->session.id);
+			lprintf(LOG_DEBUG+1, "<< IPMI Response Message Header");
+			lprintf(LOG_DEBUG+1, "<<   Rq Addr    : %02x",
+				rsp->payload.ipmi_response.rq_addr);
+			lprintf(LOG_DEBUG+1, "<<   NetFn      : %02x",
+				rsp->payload.ipmi_response.netfn);
+			lprintf(LOG_DEBUG+1, "<<   Rq LUN     : %01x",
+				rsp->payload.ipmi_response.rq_lun);
+			lprintf(LOG_DEBUG+1, "<<   Rs Addr    : %02x",
+				rsp->payload.ipmi_response.rs_addr);
+			lprintf(LOG_DEBUG+1, "<<   Rq Seq     : %02x",
+				rsp->payload.ipmi_response.rq_seq);
+			lprintf(LOG_DEBUG+1, "<<   Rs Lun     : %01x",
+				rsp->payload.ipmi_response.rs_lun);
+			lprintf(LOG_DEBUG+1, "<<   Command    : %02x",
+				rsp->payload.ipmi_response.cmd);
+			lprintf(LOG_DEBUG+1, "<<   Compl Code : 0x%02x",
+				rsp->ccode);
+			
+			/* now see if we have outstanding entry in request list */
+			entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
+						      rsp->payload.ipmi_response.cmd);
+			if (entry) {
+				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
+				if ((intf->target_addr != our_address) && bridge_possible) {
+					if ((rsp->data_len) &&
+					    (rsp->payload.ipmi_response.cmd != 0x34)) {
+						printbuf(&rsp->data[x], rsp->data_len-x,
+							 "bridge command response");
 					}
-				} else {
-					//x += sizeof(rsp->payload.ipmi_response);
-					if (rsp->data[x-1] != 0)
-						lprintf(LOG_DEBUG, "WARNING: Bridged "
-							"cmd ccode = 0x%02x",
-						       rsp->data[x-1]);
+					/* bridged command: lose extra header */
+					if (rsp->payload.ipmi_response.cmd == 0x34) {
+						if (rsp->data_len == 38) {
+							rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
+							if (rsp && !rsp->ccode &&
+								intf->transit_addr != intf->my_addr &&
+								intf->transit_addr != 0 &&
+							    (rsp->data[34] >> 2) == entry->rq_seq) {
+								/* double bridging: remove the Send Message prologue */
+								memmove(rsp->data + 29, rsp->data + 36,
+									rsp->data_len - 36);
+								rsp->data[28] -= 8;
+								rsp->data_len -= 8;
+								entry->rq_seq = rsp->data[34] >> 2;
+							}
+							entry->req.msg.cmd = entry->req.msg.target_cmd;
+							if (rsp == NULL) {
+							    ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
+							}
+							continue;
+						}
+					} else {
+						//x += sizeof(rsp->payload.ipmi_response);
+						if (rsp->data[x-1] != 0)
+							lprintf(LOG_DEBUG, "WARNING: Bridged "
+								"cmd ccode = 0x%02x",
+								rsp->data[x-1]);
+					}
 				}
+				ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
+						      rsp->payload.ipmi_response.cmd);
+			} else {
+				lprintf(LOG_INFO, "IPMI Request Match NOT FOUND");
+				rsp = ipmi_lan_recv_packet(intf);
+				continue;
 			}
-			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
-					      rsp->payload.ipmi_response.cmd);
-		} else {
-			lprintf(LOG_INFO, "IPMI Request Match NOT FOUND");
-			rsp = ipmi_lan_recv_packet(intf);
-			continue;
 		}
 
 		break;
@@ -551,7 +619,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 
 	/* shift response data to start of array */
 	if (rsp && rsp->data_len > x) {
-		rsp->data_len -= x + 1;
+		rsp->data_len -= x;
+		if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_IPMI)
+			rsp->data_len -= 1; /* We don't want the checksum */
 		memmove(rsp->data, rsp->data + x, rsp->data_len);
 		memset(rsp->data + rsp->data_len, 0, IPMI_BUF_SIZE - rsp->data_len);
 	}
@@ -567,9 +637,9 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
  * |  rmcp.seq          |
  * |  rmcp.class        |
  * +--------------------+
- * |  session.authtype | 9 bytes
- * |  session.seq   |
- * |  session.id    |
+ * |  session.authtype  | 9 bytes
+ * |  session.seq       |
+ * |  session.id        |
  * +--------------------+
  * | [session.authcode] | 16 bytes (AUTHTYPE != none)
  * +--------------------+
@@ -945,6 +1015,430 @@ ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 	if (msg != NULL)
 		free(msg);
 	return 0;
+}
+
+/*
+ * IPMI SOL Payload Format
+ * +--------------------+
+ * |  rmcp.ver          | 4 bytes
+ * |  rmcp.__reserved   |
+ * |  rmcp.seq          |
+ * |  rmcp.class        |
+ * +--------------------+
+ * |  session.authtype  | 9 bytes
+ * |  session.seq       |
+ * |  session.id        |
+ * +--------------------+
+ * |  message length    | 1 byte
+ * +--------------------+
+ * |  sol.seq           | 5 bytes
+ * |  sol.ack_seq       |
+ * |  sol.acc_count     |
+ * |  sol.control       |
+ * |  sol.__reserved    |
+ * +--------------------+
+ * | [request data]     | data_len bytes
+ * +--------------------+
+ */
+uint8_t * ipmi_lan_build_sol_msg(struct ipmi_intf * intf,
+				 struct ipmi_v2_payload * payload,
+				 int * llen)
+{
+	struct rmcp_hdr rmcp = {
+		.ver		= RMCP_VERSION_1,
+		.class		= RMCP_CLASS_IPMI,
+		.seq		= 0xff,
+	};
+	struct ipmi_session * session = intf->session;
+
+	/* msg will hold the entire message to be sent */
+	uint8_t * msg;
+
+	int len = 0;
+
+	len =	sizeof(rmcp)                                 +  // RMCP Header (4)
+		10                                           +  // IPMI Session Header
+		5                                            +  // SOL header
+		payload->payload.sol_packet.character_count;    // The actual payload
+
+	msg = malloc(len);
+	if (msg == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return;
+	}
+	memset(msg, 0, len);
+
+	/* rmcp header */
+	memcpy(msg, &rmcp, sizeof(rmcp));
+	len = sizeof(rmcp);
+
+	/* ipmi session header */
+	msg[len++] = 0; /* SOL is always authtype = NONE */
+	msg[len++] = session->in_seq & 0xff;
+	msg[len++] = (session->in_seq >> 8) & 0xff;
+	msg[len++] = (session->in_seq >> 16) & 0xff;
+	msg[len++] = (session->in_seq >> 24) & 0xff;
+
+	msg[len++] = session->session_id & 0xff;
+	msg[len++] = (session->session_id >> 8) & 0xff;
+	msg[len++] = (session->session_id >> 16) & 0xff;
+	msg[len++] = ((session->session_id >> 24) + 0x10) & 0xff; /* Add 0x10 to MSB for SOL */
+
+	msg[len++] = payload->payload.sol_packet.character_count + 5;
+	
+	/* sol header */
+	msg[len++] = payload->payload.sol_packet.packet_sequence_number;
+	msg[len++] = payload->payload.sol_packet.acked_packet_number;
+	msg[len++] = payload->payload.sol_packet.accepted_character_count;
+	msg[len]    = payload->payload.sol_packet.is_nack           ? 0x40 : 0;
+	msg[len]   |= payload->payload.sol_packet.assert_ring_wor   ? 0x20 : 0;
+	msg[len]   |= payload->payload.sol_packet.generate_break    ? 0x10 : 0;
+	msg[len]   |= payload->payload.sol_packet.deassert_cts      ? 0x08 : 0;
+	msg[len]   |= payload->payload.sol_packet.deassert_dcd_dsr  ? 0x04 : 0;
+	msg[len]   |= payload->payload.sol_packet.flush_inbound     ? 0x02 : 0;
+	msg[len++] |= payload->payload.sol_packet.flush_outbound    ? 0x01 : 0;
+
+	len++; /* On SOL there's and additional fifth byte before the data starts */
+
+	if (payload->payload.sol_packet.character_count) {
+		/* We may have data to add */
+		memcpy(msg + len,
+		       payload->payload.sol_packet.data,
+		       payload->payload.sol_packet.character_count);
+		len += payload->payload.sol_packet.character_count;		
+	}
+
+	session->in_seq++;
+	if (session->in_seq == 0)
+		session->in_seq++;
+	
+	*llen = len;
+	return msg;
+}
+
+/*
+ * is_sol_packet
+ */
+static int
+is_sol_packet(struct ipmi_rs * rsp)
+{
+	return (rsp                                                           &&
+		(rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL));
+}
+
+
+
+/*
+ * sol_response_acks_packet
+ */
+static int
+sol_response_acks_packet(struct ipmi_rs         * rsp,
+			 struct ipmi_v2_payload * payload)
+{
+	return (is_sol_packet(rsp)                                            &&
+		payload                                                       &&
+		(payload->payload_type    == IPMI_PAYLOAD_TYPE_SOL)           && 
+		(rsp->payload.sol_packet.acked_packet_number ==
+		 payload->payload.sol_packet.packet_sequence_number));
+}
+
+/*
+ * ipmi_lan_send_sol_payload
+ *
+ */
+static struct ipmi_rs *
+ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
+			  struct ipmi_v2_payload * payload)
+{
+	struct ipmi_rs      * rsp = NULL;
+	uint8_t             * msg;
+	int                   len;
+	int                   try = 0;
+
+	if (intf->opened == 0 && intf->open != NULL) {
+		if (intf->open(intf) < 0)
+			return NULL;
+	}
+
+	msg = ipmi_lan_build_sol_msg(intf, payload, &len);
+	if (len <= 0 || msg == NULL) {
+		lprintf(LOG_ERR, "Invalid SOL payload packet");
+		if (msg != NULL)
+			free(msg);
+		return NULL;
+	}
+
+	lprintf(LOG_DEBUG, ">> SENDING A SOL MESSAGE\n");
+
+	for (;;) {
+		if (ipmi_lan_send_packet(intf, msg, len) < 0) {
+			try++;
+			usleep(5000);
+			continue;
+		}
+
+		/* if we are set to noanswer we do not expect response */
+		if (intf->noanswer)
+			break;
+		
+		if (payload->payload.sol_packet.packet_sequence_number == 0) {
+			/* We're just sending an ACK.  No need to retry. */
+			break;
+		}
+
+		usleep(100);
+		
+		rsp = ipmi_lan_recv_sol(intf); /* Grab the next packet */
+
+		if (sol_response_acks_packet(rsp, payload))
+			break;
+
+		else if (is_sol_packet(rsp) && rsp->data_len)
+		{
+			/*
+			 * We're still waiting for our ACK, but we more data from
+			 * the BMC
+			 */
+			intf->session->sol_data.sol_input_handler(rsp);
+		}
+
+		usleep(5000);
+		if (++try >= intf->session->retry) {
+			lprintf(LOG_DEBUG, "  No response from remote controller");
+			break;
+		}
+	}
+
+	return rsp;
+}
+
+/*
+ * is_sol_partial_ack
+ *
+ * Determine if the response is a partial ACK/NACK that indicates
+ * we need to resend part of our packet.
+ *
+ * returns the number of characters we need to resend, or
+ *         0 if this isn't an ACK or we don't need to resend anything
+ */
+static int is_sol_partial_ack(struct ipmi_v2_payload * v2_payload,
+			      struct ipmi_rs         * rsp)
+{
+	int chars_to_resend = 0;
+
+	if (v2_payload                                &&
+	    rsp                                       &&
+	    is_sol_packet(rsp)                        &&
+	    sol_response_acks_packet(rsp, v2_payload) &&
+	    (rsp->payload.sol_packet.accepted_character_count <
+	     v2_payload->payload.sol_packet.character_count))
+	{
+		if (rsp->payload.sol_packet.accepted_character_count == 0) {
+			/* We should not resend data */
+			chars_to_resend = 0;
+		}
+		else
+		{
+			chars_to_resend =
+				v2_payload->payload.sol_packet.character_count -
+				rsp->payload.sol_packet.accepted_character_count;
+		}
+	}
+
+	return chars_to_resend;
+}
+
+/*
+ * set_sol_packet_sequence_number
+ */
+static void set_sol_packet_sequence_number(struct ipmi_intf * intf,
+					   struct ipmi_v2_payload * v2_payload)
+{
+	/* Keep our sequence number sane */
+	if (intf->session->sol_data.sequence_number > 0x0F)
+		intf->session->sol_data.sequence_number = 1;
+
+	v2_payload->payload.sol_packet.packet_sequence_number =
+		intf->session->sol_data.sequence_number++;
+}
+
+/*
+ * ipmi_lan_send_sol
+ *
+ * Sends a SOL packet..  We handle partial ACK/NACKs from the BMC here.
+ *
+ * Returns a pointer to the SOL ACK we received, or
+ *         0 on failure
+ * 
+ */
+struct ipmi_rs *
+ipmi_lan_send_sol(struct ipmi_intf * intf,
+		  struct ipmi_v2_payload * v2_payload)
+{
+	struct ipmi_rs * rsp;
+	int chars_to_resend = 0;
+
+	v2_payload->payload_type   = IPMI_PAYLOAD_TYPE_SOL;
+
+	/*
+	 * Payload length is just the length of the character
+	 * data here.
+	 */
+	v2_payload->payload.sol_packet.acked_packet_number = 0; /* NA */
+
+	set_sol_packet_sequence_number(intf, v2_payload);
+	
+	v2_payload->payload.sol_packet.accepted_character_count = 0; /* NA */
+
+	rsp = ipmi_lan_send_sol_payload(intf, v2_payload);
+
+	/* Determine if we need to resend some of our data */
+	chars_to_resend = is_sol_partial_ack(v2_payload, rsp);
+
+	while (chars_to_resend)
+	{
+		/*
+		 * We first need to handle any new data we might have
+		 * received in our NACK
+		 */
+		if (rsp->data_len)
+			intf->session->sol_data.sol_input_handler(rsp);
+
+		set_sol_packet_sequence_number(intf, v2_payload);
+		
+		/* Just send the required data */
+		memmove(v2_payload->payload.sol_packet.data,
+			v2_payload->payload.sol_packet.data +
+			rsp->payload.sol_packet.accepted_character_count,
+			chars_to_resend);
+
+		v2_payload->payload.sol_packet.character_count = chars_to_resend;
+
+		rsp = ipmi_lan_send_sol_payload(intf, v2_payload);
+
+		chars_to_resend = is_sol_partial_ack(v2_payload, rsp);
+	}
+
+	return rsp;
+}
+
+/*
+ * check_sol_packet_for_new_data
+ *
+ * Determine whether the SOL packet has already been seen
+ * and whether the packet has new data for us.
+ *
+ * This function has the side effect of removing an previously
+ * seen data, and moving new data to the front.
+ *
+ * It also "Remembers" the data so we don't get repeats.
+ *
+ */
+static int
+check_sol_packet_for_new_data(struct ipmi_intf * intf,
+			      struct ipmi_rs *rsp)
+{
+	static uint8_t last_received_sequence_number = 0;
+	static uint8_t last_received_byte_count      = 0;
+	int new_data_size                            = 0;
+
+	if (rsp &&
+	    (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL))
+	    
+	{
+		uint8_t unaltered_data_len = rsp->data_len;
+		if (rsp->payload.sol_packet.packet_sequence_number ==
+		    last_received_sequence_number)
+		{
+			/*
+			 * This is the same as the last packet, but may include
+			 * extra data
+			 */
+			new_data_size = rsp->data_len - last_received_byte_count;
+			
+			if (new_data_size > 0)
+			{
+				/* We have more data to process */
+				memmove(rsp->data,
+					rsp->data +
+					rsp->data_len - new_data_size,
+					new_data_size);
+			}
+			
+			rsp->data_len = new_data_size;
+		}
+	
+		/*
+		 *Rember the data for next round
+		 */
+		if (rsp && rsp->payload.sol_packet.packet_sequence_number)
+		{
+			last_received_sequence_number =
+				rsp->payload.sol_packet.packet_sequence_number;
+			last_received_byte_count = unaltered_data_len;
+		}
+	}
+
+	return new_data_size;
+}
+
+/*
+ * ack_sol_packet
+ *
+ * Provided the specified packet looks reasonable, ACK it.
+ */
+static void
+ack_sol_packet(struct ipmi_intf * intf,
+	       struct ipmi_rs * rsp)
+{
+	if (rsp &&
+	    (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL) &&
+	    (rsp->payload.sol_packet.packet_sequence_number))
+	{
+		struct ipmi_v2_payload ack;
+
+		memset(&ack, 0, sizeof(struct ipmi_v2_payload));
+
+		ack.payload_type = IPMI_PAYLOAD_TYPE_SOL;
+
+		/*
+		 * Payload length is just the length of the character
+		 * data here.
+		 */
+		ack.payload_length = 0;
+
+		/* ACK packets have sequence numbers of 0 */
+		ack.payload.sol_packet.packet_sequence_number = 0;
+
+		ack.payload.sol_packet.acked_packet_number =
+			rsp->payload.sol_packet.packet_sequence_number;
+
+		ack.payload.sol_packet.accepted_character_count = rsp->data_len;
+		
+		ipmi_lan_send_sol_payload(intf, &ack);
+	}
+}
+
+/*
+ * ipmi_recv_sol
+ *
+ * Receive a SOL packet and send an ACK in response.
+ *
+ */
+struct ipmi_rs *
+ipmi_lan_recv_sol(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);
+
+	ack_sol_packet(intf, rsp);              
+
+	/*
+	 * Remembers the data sent, and alters the data to just
+	 * include the new stuff.
+	 */
+	check_sol_packet_for_new_data(intf, rsp);
+
+	return rsp;
 }
 
 /* send a get device id command to keep session active */
@@ -1448,6 +1942,8 @@ ipmi_lan_open(struct ipmi_intf * intf)
 
 	intf->abort = 1;
 
+	intf->session->sol_data.sequence_number = 1;
+	
 	/* open port to BMC */
 	memset(&s->addr, 0, sizeof(struct sockaddr_in));
 	s->addr.sin_family = AF_INET;

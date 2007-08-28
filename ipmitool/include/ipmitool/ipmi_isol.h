@@ -41,15 +41,16 @@
 
 #define ISOL_ENABLE_PARAM		0x01
 #define ISOL_AUTHENTICATION_PARAM	0x02
-#define ISOL_ENABLE_FLAG			0x01
-#define ISOL_PRIVILEGE_LEVEL_USER	0x02
+
 #define ISOL_BAUD_RATE_PARAM		0x05
-#define ISOL_BAUD_RATE_9600		0x06
-#define ISOL_BAUD_RATE_19200		0x07
-#define ISOL_BAUD_RATE_38400		0x08
-#define ISOL_BAUD_RATE_57600		0x09
-#define ISOL_BAUD_RATE_115200		0x0A
-#define ISOL_PREFERRED_BAUD_RATE		0x07
+
+#define ISOL_PREFERRED_BAUD_RATE	0x07
+
+struct isol_config_parameters {
+	uint8_t  enabled;
+	uint8_t  privilege_level;
+	uint8_t  bit_rate;
+};
 
 int ipmi_isol_main(struct ipmi_intf *, int, char **);
 
