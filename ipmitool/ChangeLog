@@ -1,3 +1,10 @@
+version 1.8.10
+	* Added "isol info", "isol set" and "isol activate" commands
+		to support Intel IPMI v1.5 SOL functionality. Removed
+		"isol setup" command.
+	* Fix bug in ipmi_lan_recv_packet() in lan and lanplus interfaces.
+	* Fix bug in "chassis poh" command.
+
 version 1.8.9 released 2007-03-06
 	* Added initial AMC ekey query operation support
 	* Improvements to ekeying support (PICMG 3.x only)
