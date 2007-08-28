@@ -156,7 +156,7 @@ ipmi_get_sol_info(
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;
-	req.msg.cmd      = IMPI_GET_SOL_CONFIG_PARAMETERS;
+	req.msg.cmd      = IPMI_GET_SOL_CONFIG_PARAMETERS;
 	req.msg.data_len = 4;
 	req.msg.data     = data;
 
@@ -533,10 +533,10 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
 		printf("%d,", params.retry_interval * 10);
 
 		printf("%s,",
-			   val2str(params.volatile_bit_rate, impi_bit_rate_vals));
+			   val2str(params.volatile_bit_rate, ipmi_bit_rate_vals));
 
 		printf("%s,",
-			   val2str(params.non_volatile_bit_rate, impi_bit_rate_vals));
+			   val2str(params.non_volatile_bit_rate, ipmi_bit_rate_vals));
 
 		printf("%d,", params.payload_channel);
 		printf("%d\n", params.payload_port);
@@ -564,10 +564,10 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
 			   params.retry_interval * 10);
 
 		printf("Volatile Bit Rate (kbps)        : %s\n",
-			   val2str(params.volatile_bit_rate, impi_bit_rate_vals));
+			   val2str(params.volatile_bit_rate, ipmi_bit_rate_vals));
 
 		printf("Non-Volatile Bit Rate (kbps)    : %s\n",
-			   val2str(params.non_volatile_bit_rate, impi_bit_rate_vals));
+			   val2str(params.non_volatile_bit_rate, ipmi_bit_rate_vals));
 
 		printf("Payload Channel                 : %d (0x%02x)\n",
 			   params.payload_channel, params.payload_channel);
@@ -603,7 +603,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_TRANSPORT;           /* 0x0c */
-	req.msg.cmd      = IMPI_SET_SOL_CONFIG_PARAMETERS; /* 0x21 */
+	req.msg.cmd      = IPMI_SET_SOL_CONFIG_PARAMETERS; /* 0x21 */
 	req.msg.data     = data;
 
 	data[0] = channel;
@@ -1180,7 +1180,7 @@ output(struct ipmi_rs * rsp)
 
 
 /*
- * impi_sol_deactivate
+ * ipmi_sol_deactivate
  */
 static int
 ipmi_sol_deactivate(struct ipmi_intf * intf)
@@ -1564,7 +1564,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 
 
 /*
- * impi_sol_activate
+ * ipmi_sol_activate
  */
 static int
 ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)

@@ -1,7 +1,7 @@
 This document was last updated for release 1.8.8.
 
 This document explains how Serial Over Lan is implemented on in the
-impitool IPMI client.  Obviously, the code itself is authoritative, but
+ipmitool IPMI client.  Obviously, the code itself is authoritative, but
 this document should serve as a good starting point.
 
 Serial Over Lan (SOL) is defined in the IPMI v2 specification published by
@@ -15,10 +15,10 @@ command maps directly to the IPMI Activate Payload command.  It first
 verifies that an RMCP+ session (lanplus interface) is being used to
 establish the session.  Although the spec allows for a SOL connection to be
 established on a port different than the RMCP+ port that the "activate
-payload" command issued, impitool does not support this.
+payload" command issued, ipmitool does not support this.
 
 Once a session has been established (the activate payload command
-succeeds), impitool simply loops over a select() on user input and data
+succeeds), ipmitool simply loops over a select() on user input and data
 returned from the BMC.  All user input is first filtered so that special
 escape sequences can suspend or deactivate the SOL session and so that data
 can be broken into chunks no greater than N bytes.  This maximum is
@@ -36,7 +36,7 @@ honored by ipmitool.
 Note that one way that SOL communication differs from standard IPMI
 commands, is that it is not simply a request response protocol.  Packets
 may be returned asyncrhonously from the BMC.  When establishing a SOL
-session, impitool registers a callback for asynchonously received data.
+session, ipmitool registers a callback for asynchonously received data.
 This call back simply prints text returned from the BMC.
 
 Once a user has chosen to exit the SOL session (with ~.) ipmitool sends the

@@ -93,7 +93,7 @@ struct ipmi_session {
 	socklen_t addrlen;
 
 	/*
-	 * This struct holds state data specific to IMPI v2 / RMCP+ sessions
+	 * This struct holds state data specific to IPMI v2 / RMCP+ sessions
 	 */
 	struct {
 		enum LANPLUS_SESSION_STATE session_state;

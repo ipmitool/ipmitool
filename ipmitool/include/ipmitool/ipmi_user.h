@@ -40,7 +40,7 @@
 
 
 /*
- * The GET USER ACCESS response from table 22-32 of the IMPI v2.0 spec
+ * The GET USER ACCESS response from table 22-32 of the IPMI v2.0 spec
  */
 struct user_access_rsp {
 #if WORDS_BIGENDIAN

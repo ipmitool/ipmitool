@@ -41,7 +41,7 @@ extern const struct valstr entity_device_type_vals[];
 extern const struct valstr ipmi_netfn_vals[];
 extern const struct valstr ipmi_channel_activity_type_vals[];
 extern const struct valstr ipmi_privlvl_vals[];
-extern const struct valstr impi_bit_rate_vals[];
+extern const struct valstr ipmi_bit_rate_vals[];
 extern const struct valstr ipmi_set_in_progress_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 extern const struct valstr ipmi_authtype_vals[];

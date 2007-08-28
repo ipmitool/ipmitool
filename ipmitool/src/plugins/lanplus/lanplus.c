@@ -862,7 +862,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 /*
  * read_open_session_reponse
  *
- * Initialize the ipmi_rs from the IMPI 2.x open session response data.
+ * Initialize the ipmi_rs from the IPMI 2.x open session response data.
  *
  * The offset should point to the first byte of the the Open Session Response
  * payload when this function is called.
@@ -924,7 +924,7 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
 /*
  * read_rakp2_message
  *
- * Initialize the ipmi_rs from the IMPI 2.x RAKP 2 message
+ * Initialize the ipmi_rs from the IPMI 2.x RAKP 2 message
  *
  * The offset should point the first byte of the the RAKP 2 payload when this
  * function is called.
@@ -1004,7 +1004,7 @@ read_rakp2_message(
 /*
  * read_rakp4_message
  *
- * Initialize the ipmi_rs from the IMPI 2.x RAKP 4 message
+ * Initialize the ipmi_rs from the IPMI 2.x RAKP 4 message
  *
  * The offset should point the first byte of the the RAKP 4 payload when this
  * function is called.
@@ -1212,7 +1212,7 @@ void read_session_data_v15(
 /*
  * read_ipmi_response
  *
- * Initialize the impi_rs from with the IPMI response specific data
+ * Initialize the ipmi_rs from with the IPMI response specific data
  *
  * The offset should point the first byte of the the IPMI payload when this
  * function is called. 
@@ -1244,7 +1244,7 @@ void read_ipmi_response(struct ipmi_rs * rsp, int * offset)
 /*
  * read_sol_packet
  *
- * Initialize the impi_rs with the SOL response data
+ * Initialize the ipmi_rs with the SOL response data
  *
  * The offset should point the first byte of the the SOL payload when this
  * function is called. 
@@ -1598,32 +1598,32 @@ ipmi_lanplus_build_v2x_msg(
 	 *------------------------------------------
 	 */
 	/* ipmi session Auth Type / Format is always 0x06 for IPMI v2 */
-	msg[IMPI_LANPLUS_OFFSET_AUTHTYPE] = 0x06;
+	msg[IPMI_LANPLUS_OFFSET_AUTHTYPE] = 0x06;
 
 	/* Payload Type -- also specifies whether were authenticated/encyrpted */
-	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] = payload->payload_type;
+	msg[IPMI_LANPLUS_OFFSET_PAYLOAD_TYPE] = payload->payload_type;
 
 	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
 	{
-		msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
+		msg[IPMI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
 			((session->v2_data.crypt_alg != IPMI_CRYPT_NONE	)? 0x80 : 0x00);
-		msg[IMPI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
+		msg[IPMI_LANPLUS_OFFSET_PAYLOAD_TYPE] |=
 			((session->v2_data.integrity_alg  != IPMI_INTEGRITY_NONE)? 0x40 : 0x00);
 	}
 
 	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
 	{
 		/* Session ID  -- making it LSB */
-		msg[IMPI_LANPLUS_OFFSET_SESSION_ID    ] = session->v2_data.bmc_id         & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 1] = (session->v2_data.bmc_id >> 8)  & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 2] = (session->v2_data.bmc_id >> 16) & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SESSION_ID + 3] = (session->v2_data.bmc_id >> 24) & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SESSION_ID    ] = session->v2_data.bmc_id         & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SESSION_ID + 1] = (session->v2_data.bmc_id >> 8)  & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SESSION_ID + 2] = (session->v2_data.bmc_id >> 16) & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SESSION_ID + 3] = (session->v2_data.bmc_id >> 24) & 0xff;
 
 		/* Sequence Number -- making it LSB */
-		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM    ] = session->out_seq         & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 1] = (session->out_seq >> 8)  & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
-		msg[IMPI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SEQUENCE_NUM    ] = session->out_seq         & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SEQUENCE_NUM + 1] = (session->out_seq >> 8)  & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SEQUENCE_NUM + 2] = (session->out_seq >> 16) & 0xff;
+		msg[IPMI_LANPLUS_OFFSET_SEQUENCE_NUM + 3] = (session->out_seq >> 24) & 0xff;
 	}
 
 	/*
@@ -1715,9 +1715,9 @@ ipmi_lanplus_build_v2x_msg(
 	}
 
 	/* Now we know the payload length */
-	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_SIZE    ] =
+	msg[IPMI_LANPLUS_OFFSET_PAYLOAD_SIZE    ] =
 		payload->payload_length        & 0xff;
-	msg[IMPI_LANPLUS_OFFSET_PAYLOAD_SIZE + 1] =
+	msg[IPMI_LANPLUS_OFFSET_PAYLOAD_SIZE + 1] =
 		(payload->payload_length >> 8) & 0xff;
 
 
@@ -1781,14 +1781,14 @@ ipmi_lanplus_build_v2x_msg(
 			2;
 
 		if (verbose > 2)
-			printbuf(msg + IMPI_LANPLUS_OFFSET_AUTHTYPE, hmac_input_size, "authcode input");
+			printbuf(msg + IPMI_LANPLUS_OFFSET_AUTHTYPE, hmac_input_size, "authcode input");
 
 
 		/* Auth Code */
 		lanplus_HMAC(session->v2_data.integrity_alg,
 					 session->v2_data.k1,                /* key        */
 					 20,                                 /* key length */
-					 msg + IMPI_LANPLUS_OFFSET_AUTHTYPE, /* hmac input */
+					 msg + IPMI_LANPLUS_OFFSET_AUTHTYPE, /* hmac input */
 					 hmac_input_size,
 					 hmac_output,
 					 &hmac_length);
@@ -2569,7 +2569,7 @@ ipmi_lanplus_send_ipmi_cmd(
  * ipmi_get_auth_capabilities_cmd
  *
  * This command may have to be sent twice.  We first ask for the
- * authentication capabilities with the "request IMPI v2 data bit"
+ * authentication capabilities with the "request IPMI v2 data bit"
  * set.  If this fails, we send the same command without that bit
  * set.
  *
@@ -2642,7 +2642,7 @@ ipmi_get_auth_capabilities_cmd(
 
 
 static int
-impi_close_session_cmd(struct ipmi_intf * intf)
+ipmi_close_session_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -2876,7 +2876,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 /*
  * ipmi_lanplus_rakp1
  *
- * Build and send the RAKP 1 message as part of the IMPI v2 / RMCP+ session
+ * Build and send the RAKP 1 message as part of the IPMI v2 / RMCP+ session
  * negotiation protocol.  We also read and validate the RAKP 2 message received
  * from the BMC, here.  See section 13.20 of the IPMI v2 specification for
  * details.
@@ -3029,7 +3029,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 /*
  * ipmi_lanplus_rakp3
  *
- * Build and send the RAKP 3 message as part of the IMPI v2 / RMCP+ session
+ * Build and send the RAKP 3 message as part of the IPMI v2 / RMCP+ session
  * negotiation protocol.  We also read and validate the RAKP 4 message received
  * from the BMC, here.  See section 13.20 of the IPMI v2 specification for
  * details.
@@ -3193,7 +3193,7 @@ void
 ipmi_lanplus_close(struct ipmi_intf * intf)
 {
 	if (!intf->abort)
-		impi_close_session_cmd(intf);
+		ipmi_close_session_cmd(intf);
 
 	if (intf->fd >= 0)
 		close(intf->fd);

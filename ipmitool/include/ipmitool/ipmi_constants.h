@@ -38,9 +38,9 @@
  * COMMANDS
  */
 #define IPMI_GET_SDR_REPOSITORY_INFO            0x20
-#define IMPI_SOL_ACTIVATING                     0x20
-#define IMPI_SET_SOL_CONFIG_PARAMETERS          0x21
-#define IMPI_GET_SOL_CONFIG_PARAMETERS          0x22
+#define IPMI_SOL_ACTIVATING                     0x20
+#define IPMI_SET_SOL_CONFIG_PARAMETERS          0x21
+#define IPMI_GET_SOL_CONFIG_PARAMETERS          0x22
 #define IPMI_SET_USER_ACCESS                    0x43
 #define IPMI_GET_USER_ACCESS                    0x44
 #define IPMI_SET_USER_NAME                      0x45

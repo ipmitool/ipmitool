@@ -81,7 +81,7 @@ const struct valstr ipmi_netfn_vals[] = {
 /*
  * From table 26-4 of the IPMI v2 specification
  */
-const struct valstr impi_bit_rate_vals[] = {
+const struct valstr ipmi_bit_rate_vals[] = {
 	{ 0x00, "IPMI-Over-Serial-Setting"}, /* Using the value in the IPMI Over Serial Config */
 	{ 0x06, "9.6" },
 	{ 0x07, "19.2" },
