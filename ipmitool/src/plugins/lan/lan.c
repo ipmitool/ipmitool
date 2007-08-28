@@ -265,14 +265,12 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		tmout.tv_usec = 0;
 
 		ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
-		if (ret < 0) {
-			if (FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
-				return NULL;
+		if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
+			return NULL;
 
-			ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
-			if (ret < 0)
-				return NULL;
-		}
+		ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+		if (ret < 0)
+			return NULL;
 	}
 
 	if (ret == 0)
