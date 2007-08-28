@@ -197,7 +197,7 @@ Commands:
         pef          Configure Platform Event Filtering (PEF)
         sol          Configure and connect IPMIv2.0 Serial\-over\-LAN
         tsol         Configure and connect Tyan IPMIv1.5 Serial\-over\-LAN
-        isol         Configure Intel IPMIv1.5 Serial\-over\-LAN
+        isol         Configure and connect Intel IPMIv1.5 Serial\-over\-LAN
         user         Configure Management Controller users
         channel      Configure Management Controller channels
         session      Print session information
@@ -639,10 +639,60 @@ Write\-Read IPMI command.
 \fIisol\fP
 .RS
 .TP 
-\fIsetup\fP <\fBbaud rate\fR>
+\fIinfo\fP
 .br 
 
-Setup baud rate for Intel IPMI v1.5 Serial\-over\-LAN.
+Retrieve information about the Intel IPMI v1.5 Serial\-Over\-LAN
+configuration.
+.TP 
+\fIset\fP <\fBparameter\fR> <\fBvalue\fR>
+.br 
+
+Configure parameters for Intel IPMI v1.5 Serial\-over\-LAN.
+.RS
+.TP
+Valid parameters and values are:
+.br
+.TP
+\fIenabled\fP
+true, false.
+.TP
+\fIprivilege\-level\fP
+user, operator, admin, oem.
+.TP
+\fIbit\-rate\fP
+9.6, 19.2, 38.4, 57.6, 115.2.
+.RE
+.TP
+\fIactivate\fP
+.br
+
+Causes ipmitool to enter Intel IPMI v1.5 Serial Over LAN mode. An RMCP+
+connection is made to the BMC, the terminal is set to raw mode, and user
+input is sent to the serial console on the remote server. On exit, the
+the SOL payload mode is deactivated and the terminal is reset to its
+original settings.
+.RS
+
+Special escape sequences are provided to control the SOL session:
+.RS
+.TP
+\fI~.\fP        Terminate connection
+.TP
+\fI~^Z\fP       Suspend ipmitool
+.TP
+\fI~^X\fP       Suspend ipmitool, but don't restore tty on restart
+.TP
+\fI~B\fP        Send break
+.TP
+\fI~~\fP        Send the escape character by typing it twice
+.TP
+\fI~?\fP        Print the supported escape sequences
+.RE
+
+Note that escapes are only recognized immediately after newline.
+.RE
+
 .RE
 .TP 
 \fIlan\fP
@@ -1207,12 +1257,16 @@ Special escape sequences are provided to control the SOL session:
 .TP 
 \fI~^Z\fP	Suspend ipmitool
 .TP 
+\fI~^X\fP	Suspend ipmitool, but don't restore tty on restart
+.TP 
 \fI~B\fP	Send break
 .TP 
 \fI~~\fP	Send the escape character by typing it twice
 .TP 
 \fI~?\fP	Print the supported escape sequences
 .RE
+
+Note that escapes are only recognized immediately after newline.
 .RE
 .TP 
 \fIdeactivate\fP
