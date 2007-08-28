@@ -188,7 +188,10 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
 {
    struct ipmi_rs * rsp;
    struct ipmi_rq req;
+   uint8_t mins_per_count;
    uint32_t count;
+   float minutes;
+   uint32_t days, hours;
 
    memset(&req, 0, sizeof(req));
    req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -205,10 +208,24 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
       return -1;
    }
 
+   mins_per_count = rsp->data[0];
    memcpy(&count, rsp->data+1, 4);
+#if WORDS_BIGENDIAN
+   count = BSWAP_32(count);
+#endif
 
-   printf("POH Counter  : %li hours total (%li days, %li hours)\n",
-          (long)count, (long)(count / 24), (long)(count % 24));
+   minutes = (float)count * mins_per_count;
+   days = minutes / 1440;
+   minutes -= (float)days * 1440;
+   hours = minutes / 60;
+   minutes -= hours * 60;
+
+   if (mins_per_count < 60) {
+       printf("POH Counter  : %li days, %li hours, %li minutes\n",
+               days, hours, (long)minutes);
+   } else {
+       printf("POH Counter  : %li days, %li hours\n", days, hours);
+   }
 
    return 0;
 }
