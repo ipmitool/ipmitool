@@ -243,6 +243,7 @@ typedef enum IPMI_OEM {
     IPMI_OEM_SUN        = 42,
     IPMI_OEM_NOKIA      = 94,
     IPMI_OEM_INTEL      = 343,
+    IPMI_OEM_RADISYS    = 4337,
     IPMI_OEM_TYAN       = 6653,
     IPMI_OEM_NEWISYS    = 9237,
     IPMI_OEM_SUPERMICRO = 10876,
