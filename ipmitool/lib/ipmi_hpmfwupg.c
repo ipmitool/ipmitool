@@ -1816,16 +1816,6 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                unsigned char  componentIdByte = 0x00;
    
 
-               /* Send initiate command */
-               initUpgActionCmd.req.componentsMask = pActionRecord->components;
-              /* Action is upgrade */
-               initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_UPGRADE;
-               rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
-               
-               if (rc != HPMFWUPG_SUCCESS)
-			   {
-			 		break;
-			   }
                /* Save component ID on which the upload is done */
                componentIdByte = pActionRecord->components.ComponentBits.byte;
                while ((componentIdByte>>=1)!=0)
@@ -1895,6 +1885,17 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                   {
                      /* We will skip if the user has given some components in command line "component 2" */
                      pImagePtr = pDataInitial + firmwareLength;
+                     break;
+                  }
+                
+                  /* Send initiate command */
+                  initUpgActionCmd.req.componentsMask = pActionRecord->components;
+                  /* Action is upgrade */
+                  initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_UPGRADE;
+                  rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
+               
+                  if (rc != HPMFWUPG_SUCCESS)
+                  {
                      break;
                   }
                   

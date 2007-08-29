@@ -6,6 +6,8 @@ version 1.8.10
 	* Fix bug in "chassis poh" command.
 	* Added configure option to disable dual bridge support in open
 		interface to help compiling on FreeBSD
+	* Fix HPM.1 upgrade to apply to only given component when instructed
+		to do so
 
 version 1.8.9 released 2007-03-06
 	* Added initial AMC ekey query operation support
