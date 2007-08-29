@@ -324,6 +324,33 @@ if test "x$enable_intf_open" = "xyes"; then
     AC_SUBST(INTF_OPEN, [open])
     AC_SUBST(INTF_OPEN_LIB, [libintf_open.la])
     IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB open/libintf_open.la"
+
+	dnl Check for dual bridge support in OpenIPMI
+	AC_MSG_CHECKING([for OpenIPMI dual bridge support])
+	have_openipmi_dual_bridge=no
+	ORIG_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS -Isrc/plugins/open -DENABLE_INTF_OPEN_DUAL_BRIDGE"
+	AC_TRY_COMPILE([
+			#if defined(HAVE_OPENIPMI_H)
+			# if defined(HAVE_LINUX_COMPILER_H)
+			#  include <linux/compiler.h>
+			# endif
+			# include <linux/ipmi.h>
+			#elif defined(HAVE_FREEBSD_IPMI_H)
+			# include <sys/ipmi.h>
+			#else
+			# include "open.h"
+			#endif
+		], [
+			struct ipmi_ipmb_addr a;
+			a.transit_slave_addr = 0;
+		], [have_openipmi_dual_bridge=yes])
+	if test x"$have_openipmi_dual_bridge" = x"yes"; then
+		AC_DEFINE(ENABLE_INTF_OPEN_DUAL_BRIDGE, [1],
+			[Define to 1 to enable OpenIPMI interface dual bridge support])
+	fi
+	CPPFLAGS="$ORIG_CPPFLAGS"
+	AC_MSG_RESULT([$have_openipmi_dual_bridge])
 fi
 
 dnl enable Intel IMB interface
@@ -409,15 +436,6 @@ AC_ARG_ENABLE([file-security],
 	[if test "x$enable_file_security" != "xno"; then
 	    AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
 	fi], [])
-
-dnl Enable OpenIPMI dual bridge extension
-AC_ARG_ENABLE([intf-open-dual-bridge],
-	[AC_HELP_STRING([--enable-intf-open-dual-bridge],
-		[enable OpenIPMI interface dual bridge support [default=yes]])])
-if test "x$enable_intf_open_dual_bridge" != "xno"; then
-	AC_DEFINE(ENABLE_INTF_OPEN_DUAL_BRIDGE, [1],
-		[Define to 1 to enable OpenIPMI interface dual bridge support])
-fi
 
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
