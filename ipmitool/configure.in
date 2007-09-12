@@ -275,7 +275,30 @@ dnl Determine if you got the right FreeIPMI version
     ], ac_free_version_0_4_0=yes,ac_free_version_0_4_0=no)
     AC_MSG_RESULT($ac_free_version_0_4_0)
 
-    if test "x$ac_free_version_0_3_0" = "xyes" || test "x$ac_free_version_0_4_0" = "xyes"; then
+    AC_MSG_CHECKING([for libfreeipmi version 0.5.0])
+    AC_TRY_COMPILE([
+#include <sys/types.h>	/* For size_t */
+#include <stdio.h>	/* For NULL */
+#include <freeipmi/freeipmi.h>
+#include <freeipmi/udm/ipmi-udm.h>
+    ], [
+    ipmi_device_t dev = NULL;
+    int rv;
+    dev = ipmi_device_create();
+    rv = ipmi_open_inband(dev,
+                          IPMI_DEVICE_KCS,
+                          0,
+                          0,
+                          0,
+                          NULL,
+                          0,
+                          0);
+    ], ac_free_version_0_5_0=yes,ac_free_version_0_5_0=no)
+    AC_MSG_RESULT($ac_free_version_0_5_0)
+
+    if test "x$ac_free_version_0_3_0" = "xyes" \
+       || test "x$ac_free_version_0_4_0" = "xyes" \
+       || test "x$ac_free_version_0_5_0" = "xyes"; then
        AC_DEFINE(IPMI_INTF_FREE, [1], [Define to 1 to enable FreeIPMI interface.])
        AC_SUBST(INTF_FREE, [free])
        AC_SUBST(INTF_FREE_LIB, [libintf_free.la])
@@ -285,6 +308,9 @@ dnl Determine if you got the right FreeIPMI version
        fi
        if test "x$ac_free_version_0_4_0" = "xyes"; then
           AC_DEFINE(IPMI_INTF_FREE_VERSION_0_4_0, [1], [Define to 1 for FreeIPMI 0.4.0.])
+       fi
+       if test "x$ac_free_version_0_5_0" = "xyes"; then
+          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_5_0, [1], [Define to 1 for FreeIPMI 0.5.0.])
        fi
     else
        enable_intf_free=no

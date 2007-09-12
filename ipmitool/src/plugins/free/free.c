@@ -100,6 +100,33 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                        goto cleanup;
                 }
         }
+#elif IPMI_INTF_FREE_VERSION_0_5_0
+        if (!(dev = ipmi_device_create())) {
+                perror("ipmi_open_inband()");
+                goto cleanup;
+        }
+        if (ipmi_open_inband (dev,
+                              IPMI_DEVICE_KCS,
+                              0,
+                              0,
+                              0,
+                              NULL,
+                              0,
+                              IPMI_FLAGS_DEFAULT) < 0) {
+                if (ipmi_open_inband (dev,
+                                      IPMI_DEVICE_SSIF,
+                                      0,
+                                      0,
+                                      0,
+                                      NULL,
+                                      0,
+                                      IPMI_FLAGS_DEFAULT) < 0) {
+                       fprintf(stderr, 
+                               "ipmi_open_inband(): %s\n",
+                               ipmi_device_strerror(ipmi_device_errnum(dev)));
+                       goto cleanup;
+                }
+        }
 #endif
 
 	intf->opened = 1;
