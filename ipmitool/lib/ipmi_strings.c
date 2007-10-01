@@ -48,6 +48,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_GOOGLE,     "Google" },
    { IPMI_OEM_KONTRON,    "Kontron" },
    { IPMI_OEM_NOKIA,      "Nokia" },
+   { IPMI_OEM_PICMG,      "PICMG" },
    { 0xffff , NULL },
 };
 
