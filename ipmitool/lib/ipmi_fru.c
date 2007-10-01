@@ -864,6 +864,214 @@ int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
    return status;
 }
 
+/* ipmi_fru_kontron_ext_edit  -
+ *  Query new values to replace original FRU content
+ *  This is a generic enough to support any type of 'OEM' record
+ *  because the user supplies 'IANA number' , 'record Id' and 'record' version'
+ *  
+ * However, the parser must have 'apriori' knowledge of the record format
+ * The currently supported record is : 
+ *
+ *    IANA          : 15000  (Kontron)
+ *    RECORD ID     : 3      
+ *    RECORD VERSION: 0
+ *
+ * I would have like to put that stuff in an OEM specific file, but apart for
+ * the record format information, all commands are really standard 'FRU' command
+ * 
+ *
+ * @data:	FRU data 
+ * @offset:	start of the current multi record (start of header)
+ * @len:    len of the current record (excluding header)
+ * @h:      pointer to record header
+ * @oh:     pointer to OEM /PICMG header
+ *
+ * returns: TRUE if data changed
+ * returns: FALSE if data not changed
+ */
+#define OEM_KONTRON_INFORMATION_RECORD 3
+
+#define OEM_KONTRON_COMPLETE_ARG_COUNT   12
+/*
+./src/ipmitool  fru edit 0
+  oem 15000 3 0 name instance FIELD1 FIELD2 FIELD3 crc32
+*/
+
+#define OEM_KONTRON_SUBCOMMAND_ARG_POS   2
+#define OEM_KONTRON_IANA_ARG_POS         3
+#define OEM_KONTRON_RECORDID_ARG_POS     4
+#define OEM_KONTRON_FORMAT_ARG_POS       5
+#define OEM_KONTRON_NAME_ARG_POS         6
+#define OEM_KONTRON_INSTANCE_ARG_POS     7
+#define OEM_KONTRON_VERSION_ARG_POS      8
+#define OEM_KONTRON_BUILDDATE_ARG_POS    9
+#define OEM_KONTRON_UPDATEDATE_ARG_POS   10
+#define OEM_KONTRON_CRC32_ARG_POS        11
+
+#define OEM_KONTRON_FIELD_SIZE          8
+
+typedef struct OemKontronInformationRecord{
+   uint8_t field1TypeLength;
+   uint8_t field1[OEM_KONTRON_FIELD_SIZE];
+   uint8_t field2TypeLength;
+   uint8_t field2[OEM_KONTRON_FIELD_SIZE];
+   uint8_t field3TypeLength;
+   uint8_t field3[OEM_KONTRON_FIELD_SIZE];
+   uint8_t crcTypeLength;
+   uint8_t crc32[OEM_KONTRON_FIELD_SIZE];   
+}tOemKontronInformationRecord;
+
+static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
+                                    int off,int len,
+                                    struct fru_multirec_header *h,
+                                    struct fru_multirec_oem_header *oh)
+{
+   static int badParams=FALSE;
+   int hasChanged = FALSE;
+   int start = off;
+	int offset = start;
+   int length = len;
+   int i;
+	offset += sizeof(struct fru_multirec_oem_header);
+
+   if(!badParams){
+      if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
+         if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
+            printf("usage: fru edit <id> <oem> <args...>\r\n"); 
+            badParams = TRUE;
+            return hasChanged;
+         }
+      }
+      if( argc<OEM_KONTRON_COMPLETE_ARG_COUNT ){
+         printf("usage: oem <iana> <recordid> <format> <args...>\r\n");
+         printf("usage: oem 15000 3 0 <name> <instance> <field1>"\
+                " <field2> <field3> <crc32>\r\n");
+         badParams = TRUE;
+         return hasChanged;
+      }
+      if( atoi(argv[OEM_KONTRON_RECORDID_ARG_POS])
+          ==   OEM_KONTRON_INFORMATION_RECORD){
+         for(i=OEM_KONTRON_VERSION_ARG_POS;i<=OEM_KONTRON_CRC32_ARG_POS;i++){
+            if(strlen(argv[i]) != OEM_KONTRON_FIELD_SIZE ){
+               printf("error: version fields must have a %d caracters\r\n",
+                              OEM_KONTRON_FIELD_SIZE);
+               badParams = TRUE;
+               return hasChanged;
+            }
+         }
+      }
+   }
+     
+   if(!badParams){
+
+   if(oh->record_id == OEM_KONTRON_INFORMATION_RECORD ) { 
+		printf("   Kontron OEM Information Record\n");
+		{
+
+			uint8_t version;
+
+			version = oh->record_version;
+
+         if( version == 00 ){
+            int blockstart;
+            uint8_t blockCount;
+            uint8_t blockIndex=0;
+            unsigned long blockCrc = 0;   
+            unsigned int  blockLen = 0;
+
+            unsigned int matchInstance = 0; 
+            unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+
+            blockCount = fru_data[offset++];
+            printf("   blockCount: %d\n",blockCount);    
+
+            for(blockIndex=0;blockIndex<blockCount;blockIndex++){
+               tOemKontronInformationRecord *recordData;
+               uint8_t nameLen;
+               uint8_t fieldLength;
+             
+               blockstart = offset;
+                       
+               nameLen = ( fru_data[offset++] &= 0x3F );
+
+               if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],fru_data+offset,
+                           nameLen)
+                   && 
+                   (matchInstance == instance)){
+
+                  printf ("Found : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
+                  offset+=nameLen;      
+
+                  recordData = ( tOemKontronInformationRecord *) 
+                                             &fru_data[offset];
+
+                  memcpy( recordData->field1 ,
+                          argv[OEM_KONTRON_VERSION_ARG_POS] ,
+                          OEM_KONTRON_FIELD_SIZE);
+                  memcpy( recordData->field2 ,
+                          argv[OEM_KONTRON_BUILDDATE_ARG_POS],
+                          OEM_KONTRON_FIELD_SIZE);
+                  memcpy( recordData->field3 ,
+                          argv[OEM_KONTRON_UPDATEDATE_ARG_POS],
+                          OEM_KONTRON_FIELD_SIZE);
+						memcpy( recordData->crc32 ,
+								  argv[OEM_KONTRON_CRC32_ARG_POS] ,
+								  OEM_KONTRON_FIELD_SIZE);
+
+						matchInstance++;
+						hasChanged = TRUE; 
+					}
+					else if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],fru_data+offset,
+						  nameLen)){
+						printf ("Skipped : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
+                  matchInstance++;
+                  offset+=nameLen;      
+               }
+               else{
+                  offset+=nameLen;      
+               }
+            
+               offset+=37;
+            }
+         }
+         else{
+            printf("   Version: %d\n",version);
+         }
+      }
+		    
+   }
+   if( hasChanged ){
+
+      uint8_t record_checksum =0;
+      uint8_t header_checksum =0;
+      int index;
+
+      lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
+      lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
+      for(index=0;index<length;index++){         
+         record_checksum+=  fru_data[start+index];
+      }
+      /* Update Record checksum */
+      h->record_checksum =  ~record_checksum + 1;
+
+
+      for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){ 
+         uint8_t data= *( (uint8_t *)h+ index);
+         header_checksum+=data;
+      }
+      /* Update header checksum */
+      h->header_checksum =  ~header_checksum + 1;
+
+      lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
+      lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
+
+      /* write back data */
+   }
+   }
+
+   return hasChanged;
+}
+
 /* ipmi_fru_picmg_ext_edit  -  Query new values to replace original FRU content
  *
  * @data:	FRU data 
@@ -2062,7 +2270,8 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 /* Work in progress, copy paste most of the stuff for other functions in this 
    file ... not elegant yet */
 static int
-ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
+ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
+                                      int argc, char ** argv)
 {
 
 	struct ipmi_rs * rsp;
@@ -2167,7 +2376,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
 
             /* Now makes sure this is really PICMG record */
 
-            if( iana == IPMI_OEM_PICMG ){ 
+            if( iana == IPMI_OEM_PICMG && (argc <=2  )){ 
                if( ipmi_fru_picmg_ext_edit(fru_data, 
     						 i + sizeof(struct fru_multirec_header), 
                      h->len, h, oh )){
@@ -2176,12 +2385,19 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id)
                h->len+ sizeof(struct fru_multirec_header), fru_data);
                }
             }
-            #if 0
+            else if( iana == IPMI_OEM_KONTRON) {
+               if( ipmi_fru_oemkontron_edit( argc,argv,fru_data, 
+    						 i + sizeof(struct fru_multirec_header), 
+                     h->len, h, oh )){
+                  /* The fru changed */
+                  write_fru_area(intf,&fru,id, i,i,
+               h->len+ sizeof(struct fru_multirec_header), fru_data);
+               }
+            }
             /* FIXME: Add OEM record support here */
             else{
                printf("  OEM (%s) Record\n", val2str( iana,  ipmi_oem_info));
             }
-            #endif
          }
          i += h->len + sizeof (struct fru_multirec_header);
       } while (!(h->format & 0x80));
@@ -2564,7 +2780,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (!strncmp(argv[0], "edit", 4)) {
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-			ipmi_fru_edit_multirec(intf,atoi(argv[1]));
+			ipmi_fru_edit_multirec(intf,atoi(argv[1]), argc, argv);
 		} else {
 			printf("fru edit <fru id>\n");
 		}
