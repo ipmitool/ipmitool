@@ -621,11 +621,47 @@ sel list # get a list of sel records
 \fIfru\fP
 .RS
 .TP 
-\fIedit\fP <\fBfru id\fR> [<\fBoem\fR> <\fBrecord\fR> <\fBformat\fR>] [<\fBargs\fR>]
+\fIedit\fP <\fBfruid\fR> \fBfield\fR <\fBsection\fR> <\fBindex\fR> <\fBstring\fR>
+.br 
+
+This command replace the data found at \fBindex\fR in specified \fBsection\fR 
+with the supplied \fBstring\fR.
+
+The supported <\fBsection\fR> are  
+.RS
+.TP 
+\fIc\fP FRU Inventory Chassis Area
+.br
+.TP
+\fIb\fP FRU Inventory Board Area
+.br
+.TP
+\fIp\fP FRU Inventory Product Area
+.br
+
+.TP
+The parameter <\fBindex\fR> specifies the field number. Field numbering starts on first 'english text' field type. For intance in the <\fBboard\fR> info area field '0' is <\fBBoard Manufacturer\fR> and field '2' is <\fBBoard Serial Number\fR>, see IPMI Platform Management FRU Information Storage Definition v1.0 R1.1 for field locations.
+.br
+
+
+.TP
+The parameter <\fBstring\fR> must have the same length as the original one and must be 8-bit ASCII (0xCx)
+.br
+
+.RE
+.TP 
+\fIedit\fP <\fBfruid\fR> \fBoem\fR <\fBrecord\fR> <\fBformat\fR>] [<\fBargs\fR>]
 .br 
 
 This command edits the data found in the multirecord area. Support for
 OEM specific records is limited.
+
+.TP 
+\fIedit\fP <\fBfruid\fR> 
+.br 
+
+This command provides interactive editing of some supported records, namely
+PICMG Carrier Activation Record.
 
 .TP 
 \fIprint\fP
