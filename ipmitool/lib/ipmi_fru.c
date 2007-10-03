@@ -1,28 +1,28 @@
 /*
- * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ * Copyright (c) 2003 Sun Microsystems, Inc.	 All Rights Reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
  * PARTICULAR PURPOSE OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED.
  * SUN MICROSYSTEMS, INC. ("SUN") AND ITS LICENSORS SHALL NOT BE LIABLE
  * FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
- * OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL
+ * OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.	IN NO EVENT WILL
  * SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA,
  * OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR
  * PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
@@ -36,7 +36,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sdr.h>
-#include <ipmitool/ipmi_strings.h>  /* IANA id strings */
+#include <ipmitool/ipmi_strings.h>	/* IANA id strings */
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +47,7 @@
 
 /*
  * Apparently some systems have problems with FRU access greater than 16 bytes
- * at a time, even when using byte (not word) access.  In order to ensure we
+ * at a time, even when using byte (not word) access.	 In order to ensure we
  * work with the widest variety of hardware request size is capped at 16 bytes.
  * Since this may result in slowdowns on some systems with lots of FRU data you
  * can undefine this to enable larger (up to 32 bytes at a time) access.
@@ -64,15 +64,18 @@ static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint
 static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
 static int ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
 static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, uint8_t fruId,
-						   struct fru_info *pFruInfo, uint32_t * pRetLocation,
-						   uint32_t * pRetSize);
+							struct fru_info *pFruInfo, uint32_t * pRetLocation,
+							uint32_t * pRetSize);
 static int ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
-					   uint32_t size, uint32_t offset);
+						uint32_t size, uint32_t offset);
 static int ipmi_fru_get_multirec_size_from_file(char * pFileName, uint32_t * pSize, uint32_t * pOffset);
 static void ipmi_fru_get_adjust_size_from_buffer(uint8_t * pBufArea, uint32_t *pSize);
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
+static int ipmi_fru_set_field_string(struct ipmi_intf * intf, unsigned
+						char fruId, uint8_t f_type, uint8_t f_index, char *f_string);
 
-/* get_fru_area_str  -  Parse FRU area string from raw data
+
+/* get_fru_area_str	-	Parse FRU area string from raw data
  *
  * @data:	raw FRU data
  * @offset:	offset into data for area
@@ -175,14 +178,14 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 	return str;
 }
 
-/* write_fru_area  -  write fru data
+/* write_fru_area	 -	 write fru data
  *
  * @intf:	  ipmi interface
  * @fru_info: information about FRU device
- * @id      : Fru id
- * @soffset : Source offset      (from buffer)
+ * @id		: Fru id
+ * @soffset : Source offset		(from buffer)
  * @doffset : Destination offset (in device)
- * @length  : Size of data to write (in bytes)
+ * @length	: Size of data to write (in bytes)
  * @pFrubuf : Pointer on data to write
  *
  * returns 0 on success
@@ -190,76 +193,76 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
  */
 int
 write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
-               uint16_t soffset,  uint16_t doffset,
-               uint16_t length, uint8_t *pFrubuf)
-{  /*
-   // fill in frubuf[offset:length] from the FRU[offset:length]
-   // rc=1 on success
-   */
+					uint16_t soffset,	 uint16_t doffset,
+					uint16_t length, uint8_t *pFrubuf)
+{	/*
+	// fill in frubuf[offset:length] from the FRU[offset:length]
+	// rc=1 on success
+	*/
 	static uint16_t fru_data_rqst_size = 32;
 	uint16_t off=0,  tmp, finish;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
 	uint8_t msg_data[25];
 	uint8_t writeLength;
 
-   finish = doffset + length;        /* destination offset */
-   if (finish > fru->size)
-   {
-      printf("Return error\n");
-      return -1;
-   }
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_STORAGE;
-   req.msg.cmd = SET_FRU_DATA;
-   req.msg.data = msg_data;
+	finish = doffset + length;			 /* destination offset */
+	if (finish > fru->size)
+	{
+		printf("Return error\n");
+		return -1;
+	}
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = SET_FRU_DATA;
+	req.msg.data = msg_data;
 
 #ifdef LIMIT_ALL_REQUEST_SIZE
-   if (fru_data_rqst_size > 16)
+	if (fru_data_rqst_size > 16)
 #else
-   if (fru->access && fru_data_rqst_size > 16)
+	if (fru->access && fru_data_rqst_size > 16)
 #endif
-     fru_data_rqst_size = 16;
+	  fru_data_rqst_size = 16;
 
 	do {
-      /* real destination offset */
-      tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
-      msg_data[0] = id;
+		/* real destination offset */
+		tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
+		msg_data[0] = id;
 		msg_data[1] = (uint8_t)tmp;
 		msg_data[2] = (uint8_t)(tmp >> 8);
-      tmp = finish - (doffset+off);                 /* bytes remaining */
+		tmp = finish - (doffset+off);						 /* bytes remaining */
 		if (tmp > 16) {
 			lprintf(LOG_INFO,"Writing 16 bytes");
 			memcpy(&msg_data[3], pFrubuf + soffset + off, 16);
-         req.msg.data_len = 16 + 3;
-      }
+			req.msg.data_len = 16 + 3;
+		}
 		else {
 			lprintf(LOG_INFO,"Writing %d bytes", tmp);
 			memcpy(&msg_data[3], pFrubuf + soffset + off, (uint8_t)tmp);
-         req.msg.data_len = tmp + 3;
-      }
+			req.msg.data_len = tmp + 3;
+		}
 
-      writeLength = req.msg.data_len-3;
+		writeLength = req.msg.data_len-3;
 
-      rsp = intf->sendrecv(intf, &req);
+		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
-         break;
+			break;
 		}
 		if ((rsp->ccode==0xc7 || rsp->ccode==0xc8 || rsp->ccode==0xca ) &&
-		    --fru_data_rqst_size > 8) {
-         lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
-         break; /*continue;*/
-      }
+			 --fru_data_rqst_size > 8) {
+			lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
+			break; /*continue;*/
+		}
 		if (rsp->ccode > 0)
-         break;
+			break;
 
-      off += writeLength;
-   } while ((doffset+off) < finish);
+		off += writeLength;
+	} while ((doffset+off) < finish);
 
-   return ((doffset+off) >= finish);
+	return ((doffset+off) >= finish);
 }
 
-/* read_fru_area  -  fill in frubuf[offset:length] from the FRU[offset:length]
+/* read_fru_area	-	fill in frubuf[offset:length] from the FRU[offset:length]
  *
  * @intf:	ipmi interface
  * @fru:	fru info
@@ -273,7 +276,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
  */
 int
 read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
-	      uint32_t offset, uint32_t length, uint8_t *frubuf)
+			uint32_t offset, uint32_t length, uint8_t *frubuf)
 {
 	static uint32_t fru_data_rqst_size = 20;
 	uint32_t off = offset, tmp, finish;
@@ -327,7 +330,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			/* if we get C7 or C8  or CA return code then we requested too
 			 * many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
-			    (--fru_data_rqst_size > 8)) {
+				 (--fru_data_rqst_size > 8)) {
 				lprintf(LOG_INFO, "Retrying FRU read with request size %d",
 					fru_data_rqst_size);
 				continue;
@@ -342,7 +345,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		off += tmp;
 
 		/* sometimes the size returned in the Info command
-		 * is too large.  return 0 so higher level function
+		 * is too large.	return 0 so higher level function
 		 * still attempts to parse what was returned */
 		if (tmp == 0 && off < finish)
 			return 0;
@@ -355,16 +358,16 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	return 0;
 }
 
-/* fru_area_print_chassis  -  Print FRU Chassis Area
+/* fru_area_print_chassis	-	Print FRU Chassis Area
  *
  * @intf:	ipmi interface
  * @fru:	fru info
- * @id: 	fru id
+ * @id:	fru id
  * @offset:	offset pointer
  */
 static void
 fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
-		    uint8_t id, uint32_t offset)
+			 uint8_t id, uint32_t offset)
 {
 	char * fru_area;
 	uint8_t * fru_data;
@@ -397,18 +400,18 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	i++;	/* skip fru area version */
 	area_len = fru_data[i++] * 8; /* fru area length */
 
-	printf(" Chassis Type          : %s\n",
-	       chassis_type_desc[fru_data[i++]]);
+	printf(" Chassis Type			 : %s\n",
+			 chassis_type_desc[fru_data[i++]]);
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Chassis Part Number   : %s\n", fru_area);
+		printf(" Chassis Part Number	 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Chassis Serial        : %s\n", fru_area);
+		printf(" Chassis Serial			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
@@ -418,7 +421,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Chassis Extra         : %s\n", fru_area);
+			printf(" Chassis Extra			 : %s\n", fru_area);
 			free(fru_area);
 		}
 		if (i == j)
@@ -428,16 +431,16 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	free(fru_data);
 }
 
-/* fru_area_print_board  -  Print FRU Board Area
+/* fru_area_print_board	 -	 Print FRU Board Area
  *
  * @intf:	ipmi interface
  * @fru:	fru info
- * @id: 	fru id
+ * @id:	fru id
  * @offset:	offset pointer
  */
 static void
 fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
-		     uint8_t id, uint32_t offset)
+			  uint8_t id, uint32_t offset)
 {
 	char * fru_area;
 	uint8_t * fru_data;
@@ -475,32 +478,32 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Mfg             : %s\n", fru_area);
+		printf(" Board Mfg				 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Product         : %s\n", fru_area);
+		printf(" Board Product			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Serial          : %s\n", fru_area);
+		printf(" Board Serial			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Part Number     : %s\n", fru_area);
+		printf(" Board Part Number		 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
 		if (verbose > 0)
-			printf(" Board FRU ID          : %s\n", fru_area);
+			printf(" Board FRU ID			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
@@ -510,7 +513,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Board Extra           : %s\n", fru_area);
+			printf(" Board Extra				 : %s\n", fru_area);
 			free(fru_area);
 		}
 		if (i == j)
@@ -520,16 +523,16 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	free(fru_data);
 }
 
-/* fru_area_print_product  -  Print FRU Product Area
+/* fru_area_print_product	-	Print FRU Product Area
  *
  * @intf:	ipmi interface
  * @fru:	fru info
- * @id: 	fru id
+ * @id:	fru id
  * @offset:	offset pointer
  */
 static void
 fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
-		       uint8_t id, uint32_t offset)
+				 uint8_t id, uint32_t offset)
 {
 	char * fru_area;
 	uint8_t * fru_data;
@@ -565,44 +568,44 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Manufacturer  : %s\n", fru_area);
+		printf(" Product Manufacturer	 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Name          : %s\n", fru_area);
+		printf(" Product Name			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Part Number   : %s\n", fru_area);
+		printf(" Product Part Number	 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Version       : %s\n", fru_area);
+		printf(" Product Version		 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Serial        : %s\n", fru_area);
+		printf(" Product Serial			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Asset Tag     : %s\n", fru_area);
+		printf(" Product Asset Tag		 : %s\n", fru_area);
 		free(fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
 		if (verbose > 0)
-			printf(" Product FRU ID        : %s\n", fru_area);
+			printf(" Product FRU ID			 : %s\n", fru_area);
 		free(fru_area);
 	}
 
@@ -612,7 +615,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Product Extra         : %s\n", fru_area);
+			printf(" Product Extra			 : %s\n", fru_area);
 			free(fru_area);
 		}
 		if (i == j)
@@ -624,11 +627,11 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 
 #define FRU_MULTIREC_CHUNK_SIZE		(255 + sizeof(struct fru_multirec_header))
 
-/* fru_area_print_multirec  -  Print FRU Multi Record Area
+/* fru_area_print_multirec	 -	 Print FRU Multi Record Area
  *
  * @intf:	ipmi interface
  * @fru:	fru info
- * @id: 	fru id
+ * @id:	fru id
  * @offset:	offset pointer
  */
 static void
@@ -687,27 +690,27 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 			ps->combined_capacity	= BSWAP_16(ps->combined_capacity);
 			ps->peak_cap_ht		= BSWAP_16(ps->peak_cap_ht);
 #endif
-			peak_hold_up_time 	= (ps->peak_cap_ht & 0xf000) >> 12;
-			peak_capacity 		= ps->peak_cap_ht & 0x0fff;
+			peak_hold_up_time	= (ps->peak_cap_ht & 0xf000) >> 12;
+			peak_capacity		= ps->peak_cap_ht & 0x0fff;
 
 			printf (" Power Supply Record\n");
-			printf ("  Capacity                   : %d W\n",
+			printf ("  Capacity						  : %d W\n",
 				ps->capacity);
-			printf ("  Peak VA                    : %d VA\n",
+			printf ("  Peak VA						  : %d VA\n",
 				ps->peak_va);
-			printf ("  Inrush Current             : %d A\n",
+			printf ("  Inrush Current				  : %d A\n",
 				ps->inrush_current);
-			printf ("  Inrush Interval            : %d ms\n",
+			printf ("  Inrush Interval				  : %d ms\n",
 				ps->inrush_interval);
-			printf ("  Input Voltage Range 1      : %d-%d V\n",
+			printf ("  Input Voltage Range 1		  : %d-%d V\n",
 				ps->lowend_input1 / 100, ps->highend_input1 / 100);
-			printf ("  Input Voltage Range 2      : %d-%d V\n",
+			printf ("  Input Voltage Range 2		  : %d-%d V\n",
 				ps->lowend_input2 / 100, ps->highend_input2 / 100);
-			printf ("  Input Frequency Range      : %d-%d Hz\n",
+			printf ("  Input Frequency Range		  : %d-%d Hz\n",
 				ps->lowend_freq, ps->highend_freq);
-			printf ("  A/C Dropout Tolerance      : %d ms\n",
+			printf ("  A/C Dropout Tolerance		  : %d ms\n",
 				ps->dropout_tolerance);
-			printf ("  Flags                      : %s%s%s%s%s\n",
+			printf ("  Flags							  : %s%s%s%s%s\n",
 				ps->predictive_fail ? "'Predictive fail' " : "",
 				ps->pfc ? "'Power factor correction' " : "",
 				ps->autoswitch ? "'Autoswitch voltage' " : "",
@@ -715,19 +718,19 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 				ps->predictive_fail ? ps->rps_threshold ?
 				ps->tach ? "'Two pulses per rotation'" : "'One pulse per rotation'" :
 				ps->tach ? "'Failure on pin de-assertion'" : "'Failure on pin assertion'" : "");
-			printf ("  Peak capacity              : %d W\n",
+			printf ("  Peak capacity				  : %d W\n",
 				peak_capacity);
-			printf ("  Peak capacity holdup       : %d s\n",
+			printf ("  Peak capacity holdup		  : %d s\n",
 				peak_hold_up_time);
 			if (ps->combined_capacity == 0)
-				printf ("  Combined capacity          : not specified\n");
+				printf ("  Combined capacity			  : not specified\n");
 			else
-				printf ("  Combined capacity          : %d W (%s and %s)\n",
+				printf ("  Combined capacity			  : %d W (%s and %s)\n",
 					ps->combined_capacity,
 					combined_voltage_desc [ps->combined_voltage1],
 					combined_voltage_desc [ps->combined_voltage2]);
 			if (ps->predictive_fail)
-				printf ("  Fan lower threshold        : %d RPS\n",
+				printf ("  Fan lower threshold		  : %d RPS\n",
 					ps->rps_threshold);
 			break;
 
@@ -745,21 +748,21 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 #endif
 
 			printf (" DC Output Record\n");
-			printf ("  Output Number              : %d\n",
+			printf ("  Output Number				  : %d\n",
 				dc->output_number);
-			printf ("  Standby power              : %s\n",
+			printf ("  Standby power				  : %s\n",
 				dc->standby ? "Yes" : "No");
-			printf ("  Nominal voltage            : %.2f V\n",
+			printf ("  Nominal voltage				  : %.2f V\n",
 				(double) dc->nominal_voltage / 100);
-			printf ("  Max negative deviation     : %.2f V\n",
+			printf ("  Max negative deviation	  : %.2f V\n",
 				(double) dc->max_neg_dev / 100);
-			printf ("  Max positive deviation     : %.2f V\n",
+			printf ("  Max positive deviation	  : %.2f V\n",
 				(double) dc->max_pos_dev / 100);
-			printf ("  Ripple and noise pk-pk     : %d mV\n",
+			printf ("  Ripple and noise pk-pk	  : %d mV\n",
 				dc->ripple_and_noise);
-			printf ("  Minimum current draw       : %.3f A\n",
+			printf ("  Minimum current draw		  : %.3f A\n",
 				(double) dc->min_current / 1000);
-			printf ("  Maximum current draw       : %.3f A\n",
+			printf ("  Maximum current draw		  : %.3f A\n",
 				(double) dc->max_current / 1000);
 			break;
 
@@ -777,41 +780,41 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 #endif
 
 			printf (" DC Load Record\n");
-			printf ("  Output Number              : %d\n",
+			printf ("  Output Number				  : %d\n",
 				dl->output_number);
-			printf ("  Nominal voltage            : %.2f V\n",
+			printf ("  Nominal voltage				  : %.2f V\n",
 				(double) dl->nominal_voltage / 100);
-			printf ("  Min voltage allowed        : %.2f V\n",
+			printf ("  Min voltage allowed		  : %.2f V\n",
 				(double) dl->min_voltage / 100);
-			printf ("  Max voltage allowed        : %.2f V\n",
+			printf ("  Max voltage allowed		  : %.2f V\n",
 				(double) dl->max_voltage / 100);
-			printf ("  Ripple and noise pk-pk     : %d mV\n",
+			printf ("  Ripple and noise pk-pk	  : %d mV\n",
 				dl->ripple_and_noise);
-			printf ("  Minimum current load       : %.3f A\n",
+			printf ("  Minimum current load		  : %.3f A\n",
 				(double) dl->min_current / 1000);
-			printf ("  Maximum current load       : %.3f A\n",
+			printf ("  Maximum current load		  : %.3f A\n",
 				(double) dl->max_current / 1000);
 			break;
 		case FRU_RECORD_TYPE_OEM_EXTENSION:
-         {
-            struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *) 
-                               &fru_data[i + sizeof(struct fru_multirec_header)];
-            uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
+			{
+				struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *)
+										 &fru_data[i + sizeof(struct fru_multirec_header)];
+				uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
 
-            /* Now makes sure this is really PICMG record */
+				/* Now makes sure this is really PICMG record */
 
-            if( iana == IPMI_OEM_PICMG ){ 
-               printf("  PICMG Extension Record\n");
-               ipmi_fru_picmg_ext_print(fru_data, 
-                                        i + sizeof(struct fru_multirec_header), 
-                                        h->len);
-            }
-            /* FIXME: Add OEM record support here */
-            else{
-               printf("  OEM (0x%s) Record\n", val2str( iana,  ipmi_oem_info));
-            }
-         }
-         break;
+				if( iana == IPMI_OEM_PICMG ){
+					printf("	 PICMG Extension Record\n");
+					ipmi_fru_picmg_ext_print(fru_data,
+													 i + sizeof(struct fru_multirec_header),
+													 h->len);
+				}
+				/* FIXME: Add OEM record support here */
+				else{
+					printf("	 OEM (0x%s) Record\n", val2str( iana,	ipmi_oem_info));
+				}
+			}
+			break;
 		}
 		i += h->len + sizeof (struct fru_multirec_header);
 	} while (!(h->format & 0x80));
@@ -821,346 +824,341 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 
 /* ipmi_fru_query_new_value  -  Query new values to replace original FRU content
  *
- * @data:	FRU data 
- * @offset:	offset of the bytes to be modified in data 
- * @len:    size of the modified data 
- * 
+ * @data:	FRU data
+ * @offset:	offset of the bytes to be modified in data
+ * @len:		size of the modified data
+ *
  * returns : TRUE if data changed
  * returns : FALSE if data not changed
  */
 int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 {
-   int status=FALSE;
-   char answer;
-             
+	int status=FALSE;
+	char answer;
 
-   printf("Would you like to change this value <y/n> ? ");
 
-   scanf("%c",&answer);
+	printf("Would you like to change this value <y/n> ? ");
 
-   if( answer == 'y' || answer == 'Y' ){
-      int i;
-      unsigned int *holder;
+	scanf("%c",&answer);
 
-      holder = malloc(len);
-      printf("Enter hex values for each of the %d entries (lsb first),"   \
-             " hit <enter> between entries\n",len);
+	if( answer == 'y' || answer == 'Y' ){
+		int i;
+		unsigned int *holder;
 
-      /* I can't assign scanf' %x into a single char */
-      for( i=0;i<len;i++ ){
-         scanf("%x",holder+i);
-      }
-      for( i=0;i<len;i++ ){
-         data[offset++] = (unsigned char) *(holder+i);
-      }
-      /* &data[offset++] */
-      free(holder);
-      status = TRUE;
-   }
-   else{
-      printf("Entered %c\n",answer);
-   }
+		holder = malloc(len);
+		printf("Enter hex values for each of the %d entries (lsb first),"	  \
+				 " hit <enter> between entries\n",len);
 
-   return status;
+		/* I can't assign scanf' %x into a single char */
+		for( i=0;i<len;i++ ){
+			scanf("%x",holder+i);
+		}
+		for( i=0;i<len;i++ ){
+			data[offset++] = (unsigned char) *(holder+i);
+		}
+		/* &data[offset++] */
+		free(holder);
+		status = TRUE;
+	}
+	else{
+		printf("Entered %c\n",answer);
+	}
+
+	return status;
 }
 
-/* ipmi_fru_kontron_ext_edit  -
- *  Query new values to replace original FRU content
- *  This is a generic enough to support any type of 'OEM' record
- *  because the user supplies 'IANA number' , 'record Id' and 'record' version'
- *  
- * However, the parser must have 'apriori' knowledge of the record format
- * The currently supported record is : 
+/* ipmi_fru_oemkontron_edit  -
+ *	 Query new values to replace original FRU content
+ *	 This is a generic enough to support any type of 'OEM' record
+ *	 because the user supplies 'IANA number' , 'record Id' and 'record' version'
  *
- *    IANA          : 15000  (Kontron)
- *    RECORD ID     : 3      
- *    RECORD VERSION: 0
+ * However, the parser must have 'apriori' knowledge of the record format
+ * The currently supported record is :
+ *
+ *		IANA			  : 15000  (Kontron)
+ *		RECORD ID	  : 3
+ *		RECORD VERSION: 0
  *
  * I would have like to put that stuff in an OEM specific file, but apart for
  * the record format information, all commands are really standard 'FRU' command
- * 
  *
- * @data:	FRU data 
+ *
+ * @data:	FRU data
  * @offset:	start of the current multi record (start of header)
- * @len:    len of the current record (excluding header)
- * @h:      pointer to record header
- * @oh:     pointer to OEM /PICMG header
+ * @len:		len of the current record (excluding header)
+ * @h:		pointer to record header
+ * @oh:		pointer to OEM /PICMG header
  *
  * returns: TRUE if data changed
  * returns: FALSE if data not changed
  */
 #define OEM_KONTRON_INFORMATION_RECORD 3
 
-#define OEM_KONTRON_COMPLETE_ARG_COUNT   12
+#define OEM_KONTRON_COMPLETE_ARG_COUNT	  12
 /*
-./src/ipmitool  fru edit 0
+./src/ipmitool	 fru edit 0
   oem 15000 3 0 name instance FIELD1 FIELD2 FIELD3 crc32
 */
 
-#define OEM_KONTRON_SUBCOMMAND_ARG_POS   2
-#define OEM_KONTRON_IANA_ARG_POS         3
-#define OEM_KONTRON_RECORDID_ARG_POS     4
-#define OEM_KONTRON_FORMAT_ARG_POS       5
-#define OEM_KONTRON_NAME_ARG_POS         6
-#define OEM_KONTRON_INSTANCE_ARG_POS     7
-#define OEM_KONTRON_VERSION_ARG_POS      8
-#define OEM_KONTRON_BUILDDATE_ARG_POS    9
-#define OEM_KONTRON_UPDATEDATE_ARG_POS   10
-#define OEM_KONTRON_CRC32_ARG_POS        11
+#define OEM_KONTRON_SUBCOMMAND_ARG_POS	  2
+#define OEM_KONTRON_IANA_ARG_POS			  3
+#define OEM_KONTRON_RECORDID_ARG_POS	  4
+#define OEM_KONTRON_FORMAT_ARG_POS		  5
+#define OEM_KONTRON_NAME_ARG_POS			  6
+#define OEM_KONTRON_INSTANCE_ARG_POS	  7
+#define OEM_KONTRON_VERSION_ARG_POS		  8
+#define OEM_KONTRON_BUILDDATE_ARG_POS	  9
+#define OEM_KONTRON_UPDATEDATE_ARG_POS	  10
+#define OEM_KONTRON_CRC32_ARG_POS		  11
 
-#define OEM_KONTRON_FIELD_SIZE          8
+#define OEM_KONTRON_FIELD_SIZE			 8
 
 typedef struct OemKontronInformationRecord{
-   uint8_t field1TypeLength;
-   uint8_t field1[OEM_KONTRON_FIELD_SIZE];
-   uint8_t field2TypeLength;
-   uint8_t field2[OEM_KONTRON_FIELD_SIZE];
-   uint8_t field3TypeLength;
-   uint8_t field3[OEM_KONTRON_FIELD_SIZE];
-   uint8_t crcTypeLength;
-   uint8_t crc32[OEM_KONTRON_FIELD_SIZE];   
+	uint8_t field1TypeLength;
+	uint8_t field1[OEM_KONTRON_FIELD_SIZE];
+	uint8_t field2TypeLength;
+	uint8_t field2[OEM_KONTRON_FIELD_SIZE];
+	uint8_t field3TypeLength;
+	uint8_t field3[OEM_KONTRON_FIELD_SIZE];
+	uint8_t crcTypeLength;
+	uint8_t crc32[OEM_KONTRON_FIELD_SIZE];
 }tOemKontronInformationRecord;
 
 static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
-                                    int off,int len,
-                                    struct fru_multirec_header *h,
-                                    struct fru_multirec_oem_header *oh)
+												int off,int len,
+												struct fru_multirec_header *h,
+												struct fru_multirec_oem_header *oh)
 {
-   static int badParams=FALSE;
-   int hasChanged = FALSE;
-   int start = off;
+	static int badParams=FALSE;
+	int hasChanged = FALSE;
+	int start = off;
 	int offset = start;
-   int length = len;
-   int i;
+	int length = len;
+	int i;
 	offset += sizeof(struct fru_multirec_oem_header);
 
-   if(!badParams){
-      if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
-         if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
-            printf("usage: fru edit <id> <oem> <args...>\r\n"); 
-            badParams = TRUE;
-            return hasChanged;
-         }
-      }
-      if( argc<OEM_KONTRON_COMPLETE_ARG_COUNT ){
-         printf("usage: oem <iana> <recordid> <format> <args...>\r\n");
-         printf("usage: oem 15000 3 0 <name> <instance> <field1>"\
-                " <field2> <field3> <crc32>\r\n");
-         badParams = TRUE;
-         return hasChanged;
-      }
-      if( atoi(argv[OEM_KONTRON_RECORDID_ARG_POS])
-          ==   OEM_KONTRON_INFORMATION_RECORD){
-         for(i=OEM_KONTRON_VERSION_ARG_POS;i<=OEM_KONTRON_CRC32_ARG_POS;i++){
-            if(strlen(argv[i]) != OEM_KONTRON_FIELD_SIZE ){
-               printf("error: version fields must have a %d caracters\r\n",
-                              OEM_KONTRON_FIELD_SIZE);
-               badParams = TRUE;
-               return hasChanged;
-            }
-         }
-      }
-   }
-     
-   if(!badParams){
+	if(!badParams){
+		/* the 'OEM' field is already checked in caller */
+		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
+			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
+				printf("usage: fru edit <id> <oem> <args...>\r\n");
+				badParams = TRUE;
+				return hasChanged;
+			}
+		}
+		if( argc<OEM_KONTRON_COMPLETE_ARG_COUNT ){
+			printf("usage: oem <iana> <recordid> <format> <args...>\r\n");
+			printf("usage: oem 15000 3 0 <name> <instance> <field1>"\
+					 " <field2> <field3> <crc32>\r\n");
+			badParams = TRUE;
+			return hasChanged;
+		}
+		if( atoi(argv[OEM_KONTRON_RECORDID_ARG_POS])
+			 ==	OEM_KONTRON_INFORMATION_RECORD){
+			for(i=OEM_KONTRON_VERSION_ARG_POS;i<=OEM_KONTRON_CRC32_ARG_POS;i++){
+				if(strlen(argv[i]) != OEM_KONTRON_FIELD_SIZE ){
+					printf("error: version fields must have a %d caracters\r\n",
+										OEM_KONTRON_FIELD_SIZE);
+					badParams = TRUE;
+					return hasChanged;
+				}
+			}
+		}
+	}
 
-   if(oh->record_id == OEM_KONTRON_INFORMATION_RECORD ) { 
-		printf("   Kontron OEM Information Record\n");
-		{
+	if(!badParams){
 
+		if(oh->record_id == OEM_KONTRON_INFORMATION_RECORD ) {
 			uint8_t version;
 
+			printf("	  Kontron OEM Information Record\n");
 			version = oh->record_version;
 
-         if( version == 00 ){
-            int blockstart;
-            uint8_t blockCount;
-            uint8_t blockIndex=0;
-            unsigned long blockCrc = 0;   
-            unsigned int  blockLen = 0;
+			if( version == 0 ){
+				int blockstart;
+				uint8_t blockCount;
+				uint8_t blockIndex=0;
+				unsigned long blockCrc = 0;
+				unsigned int  blockLen = 0;
 
-            unsigned int matchInstance = 0; 
-            unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+				unsigned int matchInstance = 0;
+				unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
 
-            blockCount = fru_data[offset++];
-            printf("   blockCount: %d\n",blockCount);    
+				blockCount = fru_data[offset++];
+				printf("	  blockCount: %d\n",blockCount);
 
-            for(blockIndex=0;blockIndex<blockCount;blockIndex++){
-               tOemKontronInformationRecord *recordData;
-               uint8_t nameLen;
-               uint8_t fieldLength;
-             
-               blockstart = offset;
-                       
-               nameLen = ( fru_data[offset++] &= 0x3F );
+				for(blockIndex=0;blockIndex<blockCount;blockIndex++){
+					tOemKontronInformationRecord *recordData;
+					uint8_t nameLen;
+					uint8_t fieldLength;
 
-               if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],fru_data+offset,
-                           nameLen)
-                   && 
-                   (matchInstance == instance)){
+					blockstart = offset;
 
-                  printf ("Found : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
-                  offset+=nameLen;      
+					nameLen = ( fru_data[offset++] &= 0x3F );
 
-                  recordData = ( tOemKontronInformationRecord *) 
-                                             &fru_data[offset];
+					if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],
+					fru_data+offset,nameLen)&& (matchInstance == instance)){
 
-                  memcpy( recordData->field1 ,
-                          argv[OEM_KONTRON_VERSION_ARG_POS] ,
-                          OEM_KONTRON_FIELD_SIZE);
-                  memcpy( recordData->field2 ,
-                          argv[OEM_KONTRON_BUILDDATE_ARG_POS],
-                          OEM_KONTRON_FIELD_SIZE);
-                  memcpy( recordData->field3 ,
-                          argv[OEM_KONTRON_UPDATEDATE_ARG_POS],
-                          OEM_KONTRON_FIELD_SIZE);
-						memcpy( recordData->crc32 ,
-								  argv[OEM_KONTRON_CRC32_ARG_POS] ,
+						printf ("Found : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
+						offset+=nameLen;
+
+						recordData = ( tOemKontronInformationRecord *)
+															&fru_data[offset];
+
+						memcpy( recordData->field1 ,
+								  argv[OEM_KONTRON_VERSION_ARG_POS] ,
 								  OEM_KONTRON_FIELD_SIZE);
+						memcpy( recordData->field2 ,
+								  argv[OEM_KONTRON_BUILDDATE_ARG_POS],
+								  OEM_KONTRON_FIELD_SIZE);
+						memcpy( recordData->field3 ,
+								  argv[OEM_KONTRON_UPDATEDATE_ARG_POS],
+								  OEM_KONTRON_FIELD_SIZE);
+						memcpy( recordData->crc32 ,
+							  argv[OEM_KONTRON_CRC32_ARG_POS] ,
+							  OEM_KONTRON_FIELD_SIZE);
 
 						matchInstance++;
-						hasChanged = TRUE; 
+						hasChanged = TRUE;
 					}
 					else if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],fru_data+offset,
 						  nameLen)){
 						printf ("Skipped : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
-                  matchInstance++;
-                  offset+=nameLen;      
-               }
-               else{
-                  offset+=nameLen;      
-               }
-            
-               offset+=37;
-            }
-         }
-         else{
-            printf("   Version: %d\n",version);
-         }
-      }
-		    
-   }
-   if( hasChanged ){
+						matchInstance++;
+						offset+=nameLen;
+					}
+					else{
+						offset+=nameLen;
+					}
 
-      uint8_t record_checksum =0;
-      uint8_t header_checksum =0;
-      int index;
+					offset+=37;
+				}
+			}
+			else{
+				printf("	  Version: %d\n",version);
+			}
+		}
+		if( hasChanged ){
 
-      lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
-      lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
-      for(index=0;index<length;index++){         
-         record_checksum+=  fru_data[start+index];
-      }
-      /* Update Record checksum */
-      h->record_checksum =  ~record_checksum + 1;
+			uint8_t record_checksum =0;
+			uint8_t header_checksum =0;
+			int index;
+
+			lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
+			lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
+			for(index=0;index<length;index++){
+				record_checksum+=	 fru_data[start+index];
+			}
+			/* Update Record checksum */
+			h->record_checksum =	 ~record_checksum + 1;
 
 
-      for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){ 
-         uint8_t data= *( (uint8_t *)h+ index);
-         header_checksum+=data;
-      }
-      /* Update header checksum */
-      h->header_checksum =  ~header_checksum + 1;
+			for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){
+				uint8_t data= *( (uint8_t *)h+ index);
+				header_checksum+=data;
+			}
+			/* Update header checksum */
+			h->header_checksum =	 ~header_checksum + 1;
 
-      lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
-      lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
+			lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
+			lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
 
-      /* write back data */
-   }
-   }
+			/* write back data */
+		}
+	}
 
-   return hasChanged;
+	return hasChanged;
 }
 
-/* ipmi_fru_picmg_ext_edit  -  Query new values to replace original FRU content
+/* ipmi_fru_picmg_ext_edit	 -	 Query new values to replace original FRU content
  *
- * @data:	FRU data 
+ * @data:	FRU data
  * @offset:	start of the current multi record (start of header)
- * @len:    len of the current record (excluding header)
- * @h:      pointer to record header
- * @oh:     pointer to OEM /PICMG header
+ * @len:		len of the current record (excluding header)
+ * @h:		pointer to record header
+ * @oh:		pointer to OEM /PICMG header
  *
  * returns: TRUE if data changed
  * returns: FALSE if data not changed
  */
 static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
-                                    int off,int len,
-                                    struct fru_multirec_header *h,
-                                    struct fru_multirec_oem_header *oh)
+												int off,int len,
+												struct fru_multirec_header *h,
+												struct fru_multirec_oem_header *oh)
 {
-   int hasChanged = FALSE;
-   int start = off;
+	int hasChanged = FALSE;
+	int start = off;
 	int offset = start;
-   int length = len;
+	int length = len;
 	offset += sizeof(struct fru_multirec_oem_header);
 
-   if(oh->record_id == FRU_AMC_ACTIVATION )
-   { 
-		printf("    FRU_AMC_ACTIVATION\n");
+	if(oh->record_id == FRU_AMC_ACTIVATION )
+	{
+		printf("		FRU_AMC_ACTIVATION\n");
 		{
-         int index=offset;
+			int index=offset;
 			uint16_t max_current;
 
 			max_current = fru_data[offset];
 			max_current |= fru_data[++offset]<<8;
 
-			printf("      Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
-                       (float)(max_current) / 10.0f , max_current);
+			printf("		  Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
+							  (float)(max_current) / 10.0f , max_current);
 
-         if( ipmi_fru_query_new_value(fru_data,index,2) ){
-            max_current = fru_data[index];
-            max_current |= fru_data[++index]<<8;
-            printf("      New Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
-                       (float)(max_current) / 10.0f , max_current);
-            hasChanged = TRUE;
+			if( ipmi_fru_query_new_value(fru_data,index,2) ){
+				max_current = fru_data[index];
+				max_current |= fru_data[++index]<<8;
+				printf("		  New Maximum Internal Current(@12V): %02.2f A (0x%02x)\n",
+							  (float)(max_current) / 10.0f , max_current);
+				hasChanged = TRUE;
 
-         }
+			}
 
-			printf("      Module Activation Rediness:     %i sec.\n", fru_data[++offset]);
-			printf("      Descriptor Count: %i\n", fru_data[++offset]);
+			printf("		  Module Activation Rediness:		 %i sec.\n", fru_data[++offset]);
+			printf("		  Descriptor Count: %i\n", fru_data[++offset]);
 			printf("\n");
 
 			for (++offset;
-			     offset < (off + length);
-			     offset += sizeof(struct fru_picmgext_activation_record)) {
+				  offset < (off + length);
+				  offset += sizeof(struct fru_picmgext_activation_record)) {
 				struct fru_picmgext_activation_record * a =
 					(struct fru_picmgext_activation_record *) &fru_data[offset];
 
-				printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
-				printf("        Max. Module Current:  %i A\n", a->max_module_curr/10);
+				printf("			 IPMB-Address:			  0x%x\n", a->ibmb_addr);
+				printf("			 Max. Module Current:  %i A\n", a->max_module_curr/10);
 				printf("\n");
 			}
 		}
-   }
-   if( hasChanged ){
+	}
+	if( hasChanged ){
 
-      uint8_t record_checksum =0;
-      uint8_t header_checksum =0;
-      int index;
+		uint8_t record_checksum =0;
+		uint8_t header_checksum =0;
+		int index;
 
-      lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
-      lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
-      for(index=0;index<length;index++){         
-         record_checksum+=  fru_data[start+index];
-      }
-      /* Update Record checksum */
-      h->record_checksum =  ~record_checksum + 1;
+		lprintf(LOG_DEBUG,"Initial record checksum : %x",h->record_checksum);
+		lprintf(LOG_DEBUG,"Initial header checksum : %x",h->header_checksum);
+		for(index=0;index<length;index++){
+			record_checksum+=	 fru_data[start+index];
+		}
+		/* Update Record checksum */
+		h->record_checksum =	 ~record_checksum + 1;
 
 
-      for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){ 
-         uint8_t data= *( (uint8_t *)h+ index);
-         header_checksum+=data;
-      }
-      /* Update header checksum */
-      h->header_checksum =  ~header_checksum + 1;
+		for(index=0;index<(sizeof(struct fru_multirec_header) -1);index++){
+			uint8_t data= *( (uint8_t *)h+ index);
+			header_checksum+=data;
+		}
+		/* Update header checksum */
+		h->header_checksum =	 ~header_checksum + 1;
 
-      lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
-      lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
+		lprintf(LOG_DEBUG,"Final record checksum : %x",h->record_checksum);
+		lprintf(LOG_DEBUG,"Final header checksum : %x",h->header_checksum);
 
-      /* write back data */
-   }
+		/* write back data */
+	}
 
-   return hasChanged;
+	return hasChanged;
 }
 
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
@@ -1180,61 +1178,61 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		case FRU_PICMG_BACKPLANE_P2P:
 		{
 			uint8_t index;
-		    struct fru_picmgext_slot_desc * slot_d
-		    			= (struct fru_picmgext_slot_desc*) &fru_data[offset];
+			 struct fru_picmgext_slot_desc * slot_d
+					= (struct fru_picmgext_slot_desc*) &fru_data[offset];
 
-		    offset += sizeof(struct fru_picmgext_slot_desc);
-		    printf("    FRU_PICMG_BACKPLANE_P2P\n");
+			 offset += sizeof(struct fru_picmgext_slot_desc);
+			 printf("	 FRU_PICMG_BACKPLANE_P2P\n");
 
 			while (offset <= (start_offset+length)) {
 				printf("\n");
-				printf("    Channel Type:  ");
+				printf("		Channel Type:	");
 				switch ( slot_d -> chan_type )
-  				{
-  				        case 0x00:
-  				        case 0x07:
-  				                printf("PICMG 2.9\n");
-  				                break;
-  				        case 0x08:
-  				                printf("Single Port Fabric IF\n");
-  				                break;
-  				        case 0x09:
-  				                printf("Double Port Fabric IF\n");
-  				                break;
-  				        case 0x0a:
-  				                printf("Full Channel Fabric IF\n");
-  				                break;
-  				        case 0x0b:
-  				                printf("Base IF\n");
-  				                break;
-  				        case 0x0c:
-  				                printf("Update Channel IF\n");
-  				        	    break;
-  				        default:
-  				                printf("Unknown IF\n");
-  				                break;
-  				}
-  				printf("    Slot Addr.   : %02x\n", slot_d -> slot_addr );
-  				printf("    Channel Count: %i\n", slot_d -> chn_count);
+				{
+						  case 0x00:
+						  case 0x07:
+									 printf("PICMG 2.9\n");
+									 break;
+						  case 0x08:
+									 printf("Single Port Fabric IF\n");
+									 break;
+						  case 0x09:
+									 printf("Double Port Fabric IF\n");
+									 break;
+						  case 0x0a:
+									 printf("Full Channel Fabric IF\n");
+									 break;
+						  case 0x0b:
+									 printf("Base IF\n");
+									 break;
+						  case 0x0c:
+									 printf("Update Channel IF\n");
+						 break;
+						  default:
+									 printf("Unknown IF\n");
+									 break;
+				}
+				printf("		Slot Addr.	 : %02x\n", slot_d -> slot_addr );
+				printf("		Channel Count: %i\n", slot_d -> chn_count);
 
 				for (index = 0; index < (slot_d -> chn_count); index++) {
-  				    struct fru_picmgext_chn_desc * d
-  				    	   = (struct fru_picmgext_chn_desc *) &fru_data[offset];
+					 struct fru_picmgext_chn_desc * d
+						= (struct fru_picmgext_chn_desc *) &fru_data[offset];
 
 					if (verbose)
-						printf(	"       "
-								"Chn: %02x  ->  "
-						        "Chn: %02x in "
-						        "Slot: %02x\n",
+						printf(	"		  "
+								"Chn: %02x	->	 "
+								  "Chn: %02x in "
+								  "Slot: %02x\n",
 								d->local_chn, d->remote_chn, d->remote_slot);
 
-  				    offset += sizeof(struct fru_picmgext_chn_desc);
-  				}
+					 offset += sizeof(struct fru_picmgext_chn_desc);
+				}
 
-  				slot_d = (struct fru_picmgext_slot_desc*) &fru_data[offset];
-  				offset += sizeof(struct fru_picmgext_slot_desc);
-  			}
-  		}
+				slot_d = (struct fru_picmgext_slot_desc*) &fru_data[offset];
+				offset += sizeof(struct fru_picmgext_slot_desc);
+			}
+		}
 			break;
 
 		case FRU_PICMG_ADDRESS_TABLE:
@@ -1242,21 +1240,21 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			unsigned char entries = 0;
 			unsigned char i;
 			
-            printf("    FRU_PICMG_ADDRESS_TABLE\n");
-			
-			printf("      Type/Len:  0x%02x\n", fru_data[offset++]);
-			printf("      Shelf Addr: ");
+				printf("		FRU_PICMG_ADDRESS_TABLE\n");
+
+			printf("		  Type/Len:	 0x%02x\n", fru_data[offset++]);
+			printf("		  Shelf Addr: ");
 			for (i=0;i<20;i++) {
 				printf("0x%02x ", fru_data[offset++]);
 			}
 			printf("\n");
-			
+
 			entries = fru_data[offset++];
-			printf("      Addr Table Entries: 0x%02x\n", entries);
-			
+			printf("		  Addr Table Entries: 0x%02x\n", entries);
+
 			for (i=0; i<entries; i++) {
-				printf("        HWAddr: 0x%02x  - SiteNum: 0x%02x - SiteType: 0x%02x \n", 
-				    fru_data[offset++], fru_data[offset++], fru_data[offset++]);
+				printf("			 HWAddr: 0x%02x  - SiteNum: 0x%02x - SiteType: 0x%02x \n",
+					 fru_data[offset++], fru_data[offset++], fru_data[offset++]);
 			}
 		}
 			break;
@@ -1265,30 +1263,30 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char i,j;
 			unsigned char feeds = 0;
-			
-			printf("    FRU_PICMG_SHELF_POWER_DIST\n");
-			
+
+			printf("		FRU_PICMG_SHELF_POWER_DIST\n");
+
 			feeds = fru_data[offset++];
-			printf("      Number of Power Feeds:   0x%02x\n", feeds);
-			
+			printf("		  Number of Power Feeds:	0x%02x\n", feeds);
+
 			for (i=0; i<feeds; i++) {
 				unsigned char entries;
-				
-				printf("        Max Ext Current:   0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
+
+				printf("			 Max Ext Current:	  0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
 				offset += 2;
-				printf("        Max Int Current:   0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
+				printf("			 Max Int Current:	  0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
 				offset += 2;
-				printf("        Min Exp Voltage:   0x%02x\n", fru_data[offset++]);
-				
+				printf("			 Min Exp Voltage:	  0x%02x\n", fru_data[offset++]);
+
 				entries = fru_data[offset++];
-				printf("        Feed to FRU count:   0x%02x\n", entries);
-				
+				printf("			 Feed to FRU count:	 0x%02x\n", entries);
+
 				for (j=0; j<entries; j++) {
-					printf("          HW: 0x%02x",   fru_data[offset++]);
-					printf("          FRU ID: 0x%02x\n", fru_data[offset++]);
+					printf("				HW: 0x%02x",	fru_data[offset++]);
+					printf("				FRU ID: 0x%02x\n", fru_data[offset++]);
 				}
 			}
-			
+
 		}
 		break;
 
@@ -1296,58 +1294,58 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char i;
 			unsigned char count = 0;
-			
-			printf("    FRU_PICMG_SHELF_ACTIVATION\n");
-			
-			printf("      Allowance for FRU Act Readiness:   0x%02x\n", fru_data[offset++]);
-			
+
+			printf("		FRU_PICMG_SHELF_ACTIVATION\n");
+
+			printf("		  Allowance for FRU Act Readiness:	 0x%02x\n", fru_data[offset++]);
+
 			count = fru_data[offset++];
-			printf("      FRU activation and Power Desc Cnt: 0x%02x\n", count);
-			
+			printf("		  FRU activation and Power Desc Cnt: 0x%02x\n", count);
+
 			for (i=0; i<count; i++) {
-				printf("         HW Addr: 0x%02x ", fru_data[offset++]);
-				printf("         FRU ID: 0x%02x ", fru_data[offset++]);
-				printf("         Max FRU Power: 0x%04x ", fru_data[offset+0] | (fru_data[offset+1]<<8));
+				printf("			  HW Addr: 0x%02x ", fru_data[offset++]);
+				printf("			  FRU ID: 0x%02x ", fru_data[offset++]);
+				printf("			  Max FRU Power: 0x%04x ", fru_data[offset+0] | (fru_data[offset+1]<<8));
 				offset += 2;
-				printf("         Config: 0x%02x \n", fru_data[offset++]);
-			}		
+				printf("			  Config: 0x%02x \n", fru_data[offset++]);
+			}
 		}
 		break;
 
 		case FRU_PICMG_SHMC_IP_CONN:
-			printf("    FRU_PICMG_SHMC_IP_CONN\n");
+			printf("		FRU_PICMG_SHMC_IP_CONN\n");
 			break;
 
 		case FRU_PICMG_BOARD_P2P:
-			printf("    FRU_PICMG_BOARD_P2P\n");
+			printf("		FRU_PICMG_BOARD_P2P\n");
 
 			guid_count = fru_data[offset++];
-			printf("      GUID count: %2d\n", guid_count);
+			printf("		  GUID count: %2d\n", guid_count);
 			for (i = 0 ; i < guid_count; i++ ) {
 				int j;
-				printf("        GUID [%2d]: 0x", i);
-				
+				printf("			 GUID [%2d]: 0x", i);
+
 				for (j=0; j < sizeof(struct fru_picmgext_guid); j++) {
 					printf("%02x", fru_data[offset+j]);
 				}
-				
+
 				printf("\n");
 				offset += sizeof(struct fru_picmgext_guid);
 			}
-            printf("\n");
-            
+				printf("\n");
+
 			for (offset; offset < off + length; offset += sizeof(struct fru_picmgext_link_desc)) {
-				
+
 				/* to solve little endian /big endian problem */
-				unsigned long data = 		(fru_data[offset+0])
-										| 	(fru_data[offset+1] << 8)
-										| 	(fru_data[offset+2] << 16)
+				unsigned long data =		(fru_data[offset+0])
+										|	(fru_data[offset+1] << 8)
+										|	(fru_data[offset+2] << 16)
 										|	(fru_data[offset+3] << 24);
 
 				struct fru_picmgext_link_desc * d = (struct fru_picmgext_link_desc *) &data;
 
-				printf("      Link Grouping ID:     0x%02x\n", d->grouping);
-				printf("      Link Type Extension:  0x%02x - ", d->ext);
+				printf("		  Link Grouping ID:		0x%02x\n", d->grouping);
+				printf("		  Link Type Extension:	0x%02x - ", d->ext);
 				if (d->type == FRU_PICMGEXT_LINK_TYPE_BASE){
 					switch (d->ext)
 					{
@@ -1377,7 +1375,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							printf("Unknwon\n");
 							break;
 					}
-					
+
 				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND){
 					printf("Unknwon\n");
 				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR){
@@ -1388,8 +1386,8 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 				{
 					printf("Unknwon\n");
 				}
-				
-				printf("      Link Type:            0x%02x - ",d->type);
+
+				printf("		  Link Type:				0x%02x - ",d->type);
 				if (d->type == 0 || d->type == 0xff)
 				{
 					printf("Reserved\n");
@@ -1415,7 +1413,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 						case FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR:
 							printf("PICMG 3.3 Star Fabric Interface\n");
 							break;
-						case  FRU_PICMGEXT_LINK_TYPE_PCIE:
+						case	FRU_PICMGEXT_LINK_TYPE_PCIE:
 							printf("PICMG 3.4 PCI Express Fabric Interface\n");
 							break;
 						default:
@@ -1423,9 +1421,9 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							break;
 					}
 				}
-				printf("      Link Designator: \n");
-				printf("        Port Flag:            0x%02x\n", d->desig_port);
-				printf("        Interface:            0x%02x - ", d->desig_if);
+				printf("		  Link Designator: \n");
+				printf("			 Port Flag:				  0x%02x\n", d->desig_port);
+				printf("			 Interface:				  0x%02x - ", d->desig_if);
 					switch (d->desig_if)
 					{
 						case FRU_PICMGEXT_DESIGN_IF_BASE:
@@ -1444,7 +1442,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							printf("Invalid");
 							break;
 					}
-				printf("        Channel Number:       0x%02x\n", d->desig_channel);
+				printf("			 Channel Number:		  0x%02x\n", d->desig_channel);
 				printf("\n");
 			}
 
@@ -1454,29 +1452,29 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char recVersion;
 			unsigned char current;
-			printf("    FRU_AMC_CURRENT\n");
-			
+			printf("		FRU_AMC_CURRENT\n");
+
 			//recVersion = fru_data[offset++];
-			current    = fru_data[offset];
-			printf("      Current draw: %.1f A @ 12V => %.2f Watt\n",
+			current	  = fru_data[offset];
+			printf("		  Current draw: %.1f A @ 12V => %.2f Watt\n",
 										(float) current/10.0,	((float)current/10.0)*12.0);
 			printf("\n");
 		}
 		break;
 
 		case FRU_AMC_ACTIVATION:
-			printf("    FRU_AMC_ACTIVATION\n");
+			printf("		FRU_AMC_ACTIVATION\n");
 			{
 				uint16_t max_current;
 
 				max_current = fru_data[offset];
 				max_current |= fru_data[++offset]<<8;
-				printf("      Maximum Internal Current(@12V): %.2f A [ %.2f Watt ]\n", 
+				printf("		  Maximum Internal Current(@12V): %.2f A [ %.2f Watt ]\n",
 																(float) max_current / 10,
 																(float) max_current / 10 * 12);
-				printf("      Module Activation Readiness:    %i sec.\n", fru_data[++offset]);
+				printf("		  Module Activation Readiness:	 %i sec.\n", fru_data[++offset]);
 
-				printf("      Descriptor Count: %i\n", fru_data[++offset]);
+				printf("		  Descriptor Count: %i\n", fru_data[++offset]);
 				printf("\n");
 
 				for(++offset; offset < off + length; offset += sizeof(struct fru_picmgext_activation_record))
@@ -1484,15 +1482,15 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					struct fru_picmgext_activation_record * a =
 											(struct fru_picmgext_activation_record *) &fru_data[offset];
 
-					printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
-					printf("        Max. Module Current:  %.2f A\n", (float)a->max_module_curr/10);
+					printf("			 IPMB-Address:			  0x%x\n", a->ibmb_addr);
+					printf("			 Max. Module Current:  %.2f A\n", (float)a->max_module_curr/10);
 					printf("\n");
 				}
 			}
 			break;
 
 		case FRU_AMC_CARRIER_P2P:
-			printf("    FRU_CARRIER_P2P\n");
+			printf("		FRU_CARRIER_P2P\n");
 			{
 				uint16_t index;
 
@@ -1502,14 +1500,14 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 						(struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
 
 					printf("\n");
-					printf("      Resource ID:      %i", h->resource_id & 0x07);
-					printf("  Type: ");
+					printf("		  Resource ID:		  %i", h->resource_id & 0x07);
+					printf("	 Type: ");
 					if ((h->resource_id>>7) == 1) {
 						printf("AMC\n");
 					} else {
 						printf("Local\n");
 					}
-					printf("      Descriptor Count: %i\n", h->p2p_count);
+					printf("		  Descriptor Count: %i\n", h->p2p_count);
 
 					offset += sizeof(struct fru_picmgext_carrier_p2p_record);
 
@@ -1527,14 +1525,14 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 						data[0] = fru_data[offset+2];
 						data[1] = fru_data[offset+1];
 						data[2] = fru_data[offset+0];
-					#endif		
-					
+					#endif
+
 						desc = (struct fru_picmgext_carrier_p2p_descriptor*)&data;
-						
-						printf("        Port: %02d\t->  Remote Port: %02d\t",
+
+						printf("			 Port: %02d\t->  Remote Port: %02d\t",
 							 desc->local_port, desc->remote_port);
 						if((desc->remote_resource_id >> 7) == 1)
-							printf("[ AMC   ID: %02d ]\n", desc->remote_resource_id & 0x0F);
+							printf("[ AMC	 ID: %02d ]\n", desc->remote_resource_id & 0x0F);
 						else
 							printf("[ local ID: %02d ]\n", desc->remote_resource_id & 0x0F);
 
@@ -1545,20 +1543,20 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			break;
 
 		case FRU_AMC_P2P:
-			printf("    FRU_AMC_P2P\n");
+			printf("		FRU_AMC_P2P\n");
 			{
 				unsigned int index;
 				unsigned char channel_count;
 				struct fru_picmgext_amc_p2p_record * h;
 
 				guid_count = fru_data[offset];
-				printf("      GUID count: %2d\n", guid_count);
-				
+				printf("		  GUID count: %2d\n", guid_count);
+
 				for (i = 0 ; i < guid_count; i++ )
 				{
 					int j;
-					printf("        GUID %2d: ", i);
-					
+					printf("			 GUID %2d: ", i);
+
 					for (j=0; j < sizeof(struct fru_picmgext_guid); j++) {
 						printf("%02x", fru_data[offset+j]);
 					}
@@ -1566,152 +1564,152 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					offset += sizeof(struct fru_picmgext_guid);
 					printf("\n");
 				}
-				
+
 				h = (struct fru_picmgext_amc_p2p_record *) &fru_data[++offset];
-				printf("      %s", (h->record_type?"AMC Module:":"On-Carrier Device"));
-				printf("   Recource ID: %i\n", h->resource_id);
-								
+				printf("		  %s", (h->record_type?"AMC Module:":"On-Carrier Device"));
+				printf("	  Recource ID: %i\n", h->resource_id);
+
 				offset += sizeof(struct fru_picmgext_amc_p2p_record);
-				
+
 				channel_count = fru_data[offset++];
-				printf("       Descriptor Count: %i\n", channel_count);
-				
+				printf("			Descriptor Count: %i\n", channel_count);
+
 				for (index=0 ;index < channel_count; index++)
 				{
 					struct fru_picmgext_amc_channel_desc_record * d =
 					  (struct fru_picmgext_amc_channel_desc_record *) &fru_data[offset];
-					
-					printf("        Lane 0 Port: %i\n", d->lane0port); 
-					printf("        Lane 1 Port: %i\n", d->lane1port); 
-					printf("        Lane 2 Port: %i\n", d->lane2port); 
-					printf("        Lane 3 Port: %i\n\n", d->lane3port); 
-					
-					  
+
+					printf("			 Lane 0 Port: %i\n", d->lane0port);
+					printf("			 Lane 1 Port: %i\n", d->lane1port);
+					printf("			 Lane 2 Port: %i\n", d->lane2port);
+					printf("			 Lane 3 Port: %i\n\n", d->lane3port);
+
+
 					offset += sizeof(struct fru_picmgext_amc_channel_desc_record);
 				}
-				
+
 				for ( offset; offset < off + length;)
 				{
 					struct fru_picmgext_amc_link_desc_record * l =
-					   (struct fru_picmgext_amc_link_desc_record *) &fru_data[offset];
-					   
-					printf("      Link Designator:  Channel ID: %i\n"
-					       "            Port Flag 0: %s%s%s%s\n",
-					                      l->channel_id,
-					                      (l->port_flag_0)?"o":"-",
-					                      (l->port_flag_1)?"o":"-",
-					                      (l->port_flag_2)?"o":"-",
-					                      (l->port_flag_3)?"o":"-"  );
-					
+						(struct fru_picmgext_amc_link_desc_record *) &fru_data[offset];
+
+					printf("		  Link Designator:  Channel ID: %i\n"
+							 "				  Port Flag 0: %s%s%s%s\n",
+												 l->channel_id,
+												 (l->port_flag_0)?"o":"-",
+												 (l->port_flag_1)?"o":"-",
+												 (l->port_flag_2)?"o":"-",
+												 (l->port_flag_3)?"o":"-"	);
+
 					switch (l->type)
 					{
 						/* AMC.1 */
 						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE:
-							printf("        Link Type:       %02x - "
-							       "AMC.1 PCI Express\n", l->type);
+							printf("			 Link Type:			%02x - "
+									 "AMC.1 PCI Express\n", l->type);
 							switch (l->type_ext)
 							{
 								case AMC_LINK_TYPE_EXT_PCIE_G1_NSSC:
-									printf("        Link Type Ext:   %i - "
-									       " Gen 1 capable - non SSC\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Gen 1 capable - non SSC\n", l->type_ext);
 								break;
-								
+
 								case AMC_LINK_TYPE_EXT_PCIE_G1_SSC:
-									printf("        Link Type Ext:   %i - "
-									       " Gen 1 capable - SSC\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Gen 1 capable - SSC\n", l->type_ext);
 								break;
-								
+
 								case AMC_LINK_TYPE_EXT_PCIE_G2_NSSC:
-									printf("        Link Type Ext:   %i - "
-									       " Gen 2 capable - non SSC\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Gen 2 capable - non SSC\n", l->type_ext);
 								break;
 								case AMC_LINK_TYPE_EXT_PCIE_G2_SSC:
-									printf("        Link Type Ext:   %i - "
-									       " Gen 2 capable - SSC\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Gen 2 capable - SSC\n", l->type_ext);
 								break;
 								default:
-									printf("        Link Type Ext:   %i - "
-									       " Invalid\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Invalid\n", l->type_ext);
 								break;
 							}
-							
+
 						break;
-						
+
 						/* AMC.1 */
 						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS1:
 						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS2:
-							printf("        Link Type:       %02x - "
-							       "AMC.1 PCI Express Advanced Switching\n", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
+							printf("			 Link Type:			%02x - "
+									 "AMC.1 PCI Express Advanced Switching\n", l->type);
+							printf("			 Link Type Ext:	%i\n", l->type_ext);
 						break;
-						
+
 						/* AMC.2 */
 						case FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET:
-							printf("        Link Type:       %02x - "
-							       "AMC.2 Ethernet\n", l->type);
+							printf("			 Link Type:			%02x - "
+									 "AMC.2 Ethernet\n", l->type);
 							switch (l->type_ext)
 							{
 								case AMC_LINK_TYPE_EXT_ETH_1000_BX:
-									printf("        Link Type Ext:   %i - "
-									       " 1000Base-Bx (SerDES Gigabit) Ethernet Link\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " 1000Base-Bx (SerDES Gigabit) Ethernet Link\n", l->type_ext);
 								break;
-								
+
 								case AMC_LINK_TYPE_EXT_ETH_10G_XAUI:
-									printf("        Link Type Ext:   %i - "
-									       " 10Gbit XAUI Ethernet Link\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " 10Gbit XAUI Ethernet Link\n", l->type_ext);
 								break;
-								
+
 								default:
-									printf("        Link Type Ext:   %i - "
-									       " Invalid\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Invalid\n", l->type_ext);
 								break;
 							}
 						break;
-						
+
 						/* AMC.3 */
 						case FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE:
-							printf("        Link Type:       %02x - "
-							       "AMC.3 Storage\n", l->type);
+							printf("			 Link Type:			%02x - "
+									 "AMC.3 Storage\n", l->type);
 							switch (l->type_ext)
 							{
 								case AMC_LINK_TYPE_EXT_STORAGE_FC:
-									printf("        Link Type Ext:   %i - "
-									       " Fibre Channel\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Fibre Channel\n", l->type_ext);
 								break;
-								
+
 								case AMC_LINK_TYPE_EXT_STORAGE_SATA:
-									printf("        Link Type Ext:   %i - "
-									       " Serial ATA\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Serial ATA\n", l->type_ext);
 								break;
-								
+
 								case AMC_LINK_TYPE_EXT_STORAGE_SAS:
-									printf("        Link Type Ext:   %i - "
-									       " Serial Attached SCSI\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Serial Attached SCSI\n", l->type_ext);
 								break;
-								
+
 								default:
-									printf("        Link Type Ext:   %i - "
-									       " Invalid\n", l->type_ext);
+									printf("			 Link Type Ext:	%i - "
+											 " Invalid\n", l->type_ext);
 								break;
 							}
 						break;
-						
+
 						/* AMC.4 */
 						case FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO:
-							printf("        Link Type:       %02x - "
-							       "AMC.4 Serial Rapid IO\n", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
+							printf("			 Link Type:			%02x - "
+									 "AMC.4 Serial Rapid IO\n", l->type);
+							printf("			 Link Type Ext:	%i\n", l->type_ext);
 						break;
 						default:
-							printf("        Link Type:       %02x - "
-							       "reserved or OEM GUID", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
+							printf("			 Link Type:			%02x - "
+									 "reserved or OEM GUID", l->type);
+							printf("			 Link Type Ext:	%i\n", l->type_ext);
 						break;
 					}
-						
-					printf("        Link group Id:   %i\n", l->group_id);
-					printf("        Link Asym Match: %i\n\n",l->asym_match);
-					 
+
+					printf("			 Link group Id:	%i\n", l->group_id);
+					printf("			 Link Asym Match: %i\n\n",l->asym_match);
+
 					offset += sizeof(struct fru_picmgext_amc_link_desc_record);
 				}
 			}
@@ -1721,20 +1719,20 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char extVersion;
 			unsigned char siteCount;
-			
-			printf("    FRU_CARRIER_INFO\n");
-			
+
+			printf("		FRU_CARRIER_INFO\n");
+
 			extVersion = fru_data[offset++];
 			siteCount  = fru_data[offset++];
-			
-			printf("      AMC.0 extension version: R%d.%d\n", 
-												(extVersion >> 0)& 0x0F, 
+
+			printf("		  AMC.0 extension version: R%d.%d\n",
+												(extVersion >> 0)& 0x0F,
 												(extVersion >> 4)& 0x0F );
-			printf("      Carrier Sie Number Cnt: %d\n", siteCount);
-			
+			printf("		  Carrier Sie Number Cnt: %d\n", siteCount);
+
 			for (i = 0 ; i < siteCount; i++ ){
-				printf("       Site ID: %i \n", fru_data[offset++]);
-			}	
+				printf("			Site ID: %i \n", fru_data[offset++]);
+			}
 			printf("\n");
 		}
 		break;
@@ -1742,39 +1740,39 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char desc_count;
 			int i,j;
-			
-			printf("    FRU_PICMG_CLK_CARRIER_P2P\n");
-			
+
+			printf("		FRU_PICMG_CLK_CARRIER_P2P\n");
+
 			desc_count = fru_data[offset++];
-			
+
 			for(i=0; i<desc_count; i++){
 				unsigned char resource_id;
 				unsigned char channel_count;
-				
-				resource_id   = fru_data[offset++];
+
+				resource_id	  = fru_data[offset++];
 				channel_count = fru_data[offset++];
-				
+
 				printf("\n");
-				printf("      Clock Resource ID: 0x%02x  Type: ", resource_id);
+				printf("		  Clock Resource ID: 0x%02x  Type: ", resource_id);
 				if((resource_id & 0xC0)>>6 == 0) {printf("On-Carrier-Device\n");}
 				else if((resource_id & 0xC0)>>6 == 1) {printf("AMC slot\n");}
 				else if((resource_id & 0xC0)>>6 == 2) {printf("Backplane\n");}
 				else{ printf("reserved\n");}
-				printf("      Channel Count: 0x%02x\n", channel_count);
-				
+				printf("		  Channel Count: 0x%02x\n", channel_count);
+
 				for(j=0; j<channel_count; j++){
 					unsigned char loc_channel, rem_channel, rem_resource;
-					
-					loc_channel  = fru_data[offset++];
-					rem_channel  = fru_data[offset++];
+
+					loc_channel	 = fru_data[offset++];
+					rem_channel	 = fru_data[offset++];
 					rem_resource = fru_data[offset++];
-					
-					printf("        CLK-ID: 0x%02x    ->", loc_channel);
-					printf(" remote CLKID: 0x%02x   ", rem_channel);
+
+					printf("			 CLK-ID: 0x%02x	 ->", loc_channel);
+					printf(" remote CLKID: 0x%02x	  ", rem_channel);
 					if((rem_resource & 0xC0)>>6 == 0) {printf("[ Carrier-Dev");}
-					else if((rem_resource & 0xC0)>>6 == 1) {printf("[ AMC slot   ");}
-					else if((rem_resource & 0xC0)>>6 == 2) {printf("[ Backplane  ");}
-  					else{ printf("reserved         ");}
+					else if((rem_resource & 0xC0)>>6 == 1) {printf("[ AMC slot	 ");}
+					else if((rem_resource & 0xC0)>>6 == 2) {printf("[ Backplane	 ");}
+					else{ printf("reserved			 ");}
 					printf(" 0x%02x ]\n", rem_resource&0xF);
 				}
 			}
@@ -1785,69 +1783,69 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned char resource_id, descr_count;
 			int i,j;
-			
-			printf("    FRU_PICMG_CLK_CONFIG\n");
-			
+
+			printf("		FRU_PICMG_CLK_CONFIG\n");
+
 			resource_id = fru_data[offset++];
 			descr_count = fru_data[offset++];
-			
+
 			printf("\n");
-			printf("      Clock Resource ID: 0x%02x\n", resource_id);
-			printf("      Descr. Count:      0x%02x\n", descr_count);
-			
+			printf("		  Clock Resource ID: 0x%02x\n", resource_id);
+			printf("		  Descr. Count:		0x%02x\n", descr_count);
+
 			for(i=0; i<descr_count; i++){
 				unsigned char channel_id, control;
 				unsigned char indirect_cnt, direct_cnt;
-				
+
 				channel_id = fru_data[offset++];
-				control    = fru_data[offset++];
-				printf("        CLK-ID: 0x%02x  -  ", channel_id);
-				printf("CTRL 0x%02x [ %12s ]\n", 
-									control, 
+				control	  = fru_data[offset++];
+				printf("			 CLK-ID: 0x%02x  -  ", channel_id);
+				printf("CTRL 0x%02x [ %12s ]\n",
+									control,
 									((control&0x1)==0)?"Carrier IPMC":"Application");
-				
+
 				indirect_cnt = fru_data[offset++];
-				direct_cnt   = fru_data[offset++];
-				printf("         Cnt: Indirect 0x%02x  /  Direct 0x%02x\n", 
+				direct_cnt	 = fru_data[offset++];
+				printf("			  Cnt: Indirect 0x%02x	/	Direct 0x%02x\n",
 											indirect_cnt,
 											direct_cnt	);
-				
+
 				/* indirect desc */
 				for(j=0; j<indirect_cnt; j++){
 					unsigned char feature;
 					unsigned char dep_chn_id;
-					
-					feature    = fru_data[offset++];
+
+					feature	  = fru_data[offset++];
 					dep_chn_id = fru_data[offset++];
-					
-					printf("          Feature: 0x%02x [%8s] - ", feature, (feature&0x1)==1?"Source":"Receiver");
-					printf("          Dep. CLK-ID: 0x%02x\n", dep_chn_id);
+
+					printf("				Feature: 0x%02x [%8s] - ", feature, (feature&0x1)==1?"Source":"Receiver");
+					printf("				Dep. CLK-ID: 0x%02x\n", dep_chn_id);
 				}
-				
+
 				/* direct desc */
 				for(j=0; j<direct_cnt; j++){
 					unsigned char feature, family, accuracy;
 					unsigned long freq, min_freq, max_freq;
-					
-					feature  = fru_data[offset++];
-					family   = fru_data[offset++];
+
+					feature	= fru_data[offset++];
+					family	= fru_data[offset++];
 					accuracy = fru_data[offset++];
-					freq     = (fru_data[offset+0] << 0 ) | (fru_data[offset+1] << 8 ) 
-					         | (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
+					freq		= (fru_data[offset+0] << 0 ) | (fru_data[offset+1] << 8 )
+								| (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
 					offset += 4;
-					min_freq = (fru_data[offset+0] << 0 ) | (fru_data[offset+1] << 8 ) 
-					         | (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
+					min_freq = (fru_data[offset+0] << 0 ) | (fru_data[offset+1] << 8 )
+								| (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
 					offset += 4;
 					max_freq = (fru_data[offset+0] << 0 ) | (fru_data[offset+1] << 8 )
-					         | (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
+								| (fru_data[offset+2] << 16) | (fru_data[offset+3] << 24);
 					offset += 4;
-					
-					printf("          - Feature: 0x%02x  - PLL: %x / Asym: %s\n",
-										       feature, 
-										       (feature > 1) & 1, 
-										       (feature&1)?"Source":"Receiver");
-					printf("            Family:  0x%02x  - AccLVL: 0x%02x\n", family, accuracy);
-					printf("            FRQ: %-9d - min: %-9d - max: %-9d\n", 
+
+					printf("				- Feature: 0x%02x	 - PLL: %x / Asym: %s\n",
+												 feature,
+												 (feature > 1) & 1,
+												 (feature&1)?"Source":"Receiver");
+					printf("				  Family:  0x%02x	 - AccLVL: 0x%02x\n", family, accuracy);
+					printf("				  FRQ: %-9d - min: %-9d - max: %-9d\n",
 										freq, min_freq, max_freq);
 				}
 				printf("\n");
@@ -1855,7 +1853,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			printf("\n");
 		}
 		break;
-		
+
 		case FRU_UTCA_FRU_INFO_TABLE:
 		case FRU_UTCA_CARRIER_MNG_IP:
 		case FRU_UTCA_CARRIER_INFO:
@@ -1868,19 +1866,19 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		case FRU_UTCA_CLOCK_MAPPING:
 		case FRU_UTCA_MSG_BRIDGE_POLICY:
 		case FRU_UTCA_OEM_MODULE_DESC:
-			printf("    Not implemented yet. uTCA specific record found!!\n");
-			printf("     - Record ID: 0x%02x\n", h->record_id);
+			printf("		Not implemented yet. uTCA specific record found!!\n");
+			printf("		 - Record ID: 0x%02x\n", h->record_id);
 		break;
-		
+
 		default:
-			printf("    Unknown OEM Extension Record ID: %x\n", h->record_id);
+			printf("		Unknown OEM Extension Record ID: %x\n", h->record_id);
 		break;
 
 	}
 }
 
 
-/* __ipmi_fru_print  -  Do actual work to print a FRU by its ID
+/* __ipmi_fru_print	-	Do actual work to print a FRU by its ID
  *
  * @intf:	ipmi interface
  * @id:		fru id
@@ -1956,7 +1954,7 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	}
 	if (rsp->ccode > 0) {
 		printf(" Device not present (%s)\n",
-		       val2str(rsp->ccode, completion_code_vals));
+				 val2str(rsp->ccode, completion_code_vals));
 		return 1;
 	}
 
@@ -1976,17 +1974,17 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	 * because we may end up with offset > 255
 	 * which would overflow our 1-byte offset field */
 
-	lprintf(LOG_DEBUG, "fru.header.version:         0x%x",
+	lprintf(LOG_DEBUG, "fru.header.version:			0x%x",
 		header.version);
 	lprintf(LOG_DEBUG, "fru.header.offset.internal: 0x%x",
 		header.offset.internal * 8);
-	lprintf(LOG_DEBUG, "fru.header.offset.chassis:  0x%x",
+	lprintf(LOG_DEBUG, "fru.header.offset.chassis:	0x%x",
 		header.offset.chassis * 8);
-	lprintf(LOG_DEBUG, "fru.header.offset.board:    0x%x",
+	lprintf(LOG_DEBUG, "fru.header.offset.board:		0x%x",
 		header.offset.board * 8);
-	lprintf(LOG_DEBUG, "fru.header.offset.product:  0x%x",
+	lprintf(LOG_DEBUG, "fru.header.offset.product:	0x%x",
 		header.offset.product * 8);
-	lprintf(LOG_DEBUG, "fru.header.offset.multi:    0x%x",
+	lprintf(LOG_DEBUG, "fru.header.offset.multi:		0x%x",
 		header.offset.multi * 8);
 
 	/*
@@ -2005,18 +2003,18 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	/* product area */
 	if ((header.offset.product*8) >= sizeof(struct fru_header))
 		fru_area_print_product(intf, &fru, id, header.offset.product*8);
-	
+
 	/* multirecord area */
 	if( verbose==0 ) /* scipp parsing multirecord */
 		return 0;
-		
+
 	if ((header.offset.multi*8) >= sizeof(struct fru_header))
 		fru_area_print_multirec(intf, &fru, id, header.offset.multi*8);
 
 	return 0;
 }
 
-/* ipmi_fru_print  -  Print a FRU from its SDR locator record
+/* ipmi_fru_print	 -	 Print a FRU from its SDR locator record
  *
  * @intf:	ipmi interface
  * @fru:	SDR FRU Locator Record
@@ -2034,29 +2032,29 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		return __ipmi_fru_print(intf, 0);
 
 	/* Logical FRU Device
-	 *  dev_type == 0x10
-	 *  modifier
-	 *   0x00 = IPMI FRU Inventory
-	 *   0x01 = DIMM Memory ID
-	 *   0x02 = IPMI FRU Inventory
-	 *   0x03 = System Processor FRU
-	 *   0xff = unspecified
+	 *	 dev_type == 0x10
+	 *	 modifier
+	 *	  0x00 = IPMI FRU Inventory
+	 *	  0x01 = DIMM Memory ID
+	 *	  0x02 = IPMI FRU Inventory
+	 *	  0x03 = System Processor FRU
+	 *	  0xff = unspecified
 	 *
 	 * EEPROM 24C01 or equivalent
-	 *  dev_type >= 0x08 && dev_type <= 0x0f
-	 *  modifier
-	 *   0x00 = unspecified
-	 *   0x01 = DIMM Memory ID
-	 *   0x02 = IPMI FRU Inventory
-	 *   0x03 = System Processor Cartridge
+	 *	 dev_type >= 0x08 && dev_type <= 0x0f
+	 *	 modifier
+	 *	  0x00 = unspecified
+	 *	  0x01 = DIMM Memory ID
+	 *	  0x02 = IPMI FRU Inventory
+	 *	  0x03 = System Processor Cartridge
 	 */
 	if (fru->dev_type != 0x10 &&
-	    (fru->dev_type_modifier != 0x02 ||
-	     fru->dev_type < 0x08 || fru->dev_type > 0x0f))
+		 (fru->dev_type_modifier != 0x02 ||
+		  fru->dev_type < 0x08 || fru->dev_type > 0x0f))
 		return -1;
 
 	if (fru->dev_slave_addr == IPMI_BMC_SLAVE_ADDR &&
-	    fru->device_id == 0)
+		 fru->device_id == 0)
 		return 0;
 
 	memset(desc, 0, sizeof(desc));
@@ -2082,9 +2080,9 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 	default:
 		if (verbose)
 			printf(" Unsupported device 0x%02x "
-			       "type 0x%02x with modifier 0x%02x\n",
-			       fru->device_id, fru->dev_type,
-			       fru->dev_type_modifier);
+					 "type 0x%02x with modifier 0x%02x\n",
+					 fru->device_id, fru->dev_type,
+					 fru->dev_type_modifier);
 		else
 			printf(" Unsupported device\n");
 	}
@@ -2136,64 +2134,64 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 
 static void
 ipmi_fru_read_to_bin(struct ipmi_intf * intf,
-		     char * pFileName,
-		     uint8_t fruId)
+			  char * pFileName,
+			  uint8_t fruId)
 {
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   struct fru_info fru;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct fru_info fru;
 	uint8_t msg_data[4];
 	uint8_t * pFruBuf;
 
-   msg_data[0] = fruId;
+	msg_data[0] = fruId;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_STORAGE;
-   req.msg.cmd = GET_FRU_INFO;
-   req.msg.data = msg_data;
-   req.msg.data_len = 1;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
 
-   rsp = intf->sendrecv(intf, &req);
-   if (!rsp)
-      return;
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp)
+		return;
 
 	if (rsp->ccode > 0) {
-      if (rsp->ccode == 0xc3)
-         printf ("  Timeout accessing FRU info. (Device not present?)\n");
-      return;
-   }
-   fru.size = (rsp->data[1] << 8) | rsp->data[0];
-   fru.access = rsp->data[2] & 0x1;
+		if (rsp->ccode == 0xc3)
+			printf ("  Timeout accessing FRU info. (Device not present?)\n");
+		return;
+	}
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
 
 	if (verbose) {
-      printf("Fru Size   = %d bytes\n",fru.size);
-      printf("Fru Access = %xh\n", fru.access);
-   }
-   
-   pFruBuf = malloc(fru.size);
+		printf("Fru Size	 = %d bytes\n",fru.size);
+		printf("Fru Access = %xh\n", fru.access);
+	}
+
+	pFruBuf = malloc(fru.size);
 	if (pFruBuf != NULL) {
-      printf("Fru Size         : %d bytes\n",fru.size);
-      read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
+		printf("Fru Size			 : %d bytes\n",fru.size);
+		read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
 	} else {
 		lprintf(LOG_ERR, "Cannot allocate %d bytes\n", fru.size);
 		return;
-   }
-   
-   if(pFruBuf != NULL)
-   {
-      FILE * pFile;
-      pFile = fopen(pFileName,"wb");
+	}
+
+	if(pFruBuf != NULL)
+	{
+		FILE * pFile;
+		pFile = fopen(pFileName,"wb");
 		if (pFile) {
-         fwrite(pFruBuf, fru.size, 1, pFile);
+			fwrite(pFruBuf, fru.size, 1, pFile);
 			printf("Done\n");
 		} else {
 			lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
 			free(pFruBuf);
 			return;
-      }
-      fclose(pFile);
-   }
-   free(pFruBuf);
+		}
+		fclose(pFile);
+	}
+	free(pFruBuf);
 }
 
 static void
@@ -2223,14 +2221,14 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
-			printf("  Timeout accessing FRU info. (Device not present?)\n");
+			printf("	 Timeout accessing FRU info. (Device not present?)\n");
 		return;
 	}
 	fru.size = (rsp->data[1] << 8) | rsp->data[0];
 	fru.access = rsp->data[2] & 0x1;
 
 	if (verbose) {
-		printf("Fru Size   = %d bytes\n", fru.size);
+		printf("Fru Size	 = %d bytes\n", fru.size);
 		printf("Fru Access = %xh\n", fru.access);
 	}
 
@@ -2243,8 +2241,8 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 		pFile = fopen(pFileName, "rb");
 		if (pFile != NULL) {
 			len = fread(pFruBuf, 1, fru.size, pFile);
-			printf("Fru Size         : %d bytes\n", fru.size);
-			printf("Size to Write    : %d bytes\n", len);
+			printf("Fru Size			 : %d bytes\n", fru.size);
+			printf("Size to Write	 : %d bytes\n", len);
 			fclose(pFile);
 		} else {
 		lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
@@ -2252,7 +2250,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 		if (len != 0) {
 			write_fru_area(intf, &fru, fruId,0, 0, len, pFruBuf);
-         lprintf(LOG_INFO,"Done");
+			lprintf(LOG_INFO,"Done");
 		}
 
 	free(pFruBuf);
@@ -2260,18 +2258,18 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 
 
-/* ipmi_fru_edit_multirec  -  Query new values to replace original FRU content
+/* ipmi_fru_edit_multirec	-	Query new values to replace original FRU content
  *
  * @intf:	interface to use
- * @id:   	FRU id to work on 
+ * @id:	FRU id to work on
  *
  * returns: nothing
  */
-/* Work in progress, copy paste most of the stuff for other functions in this 
-   file ... not elegant yet */
+/* Work in progress, copy paste most of the stuff for other functions in this
+	file ... not elegant yet */
 static int
 ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
-                                      int argc, char ** argv)
+												  int argc, char ** argv)
 {
 
 	struct ipmi_rs * rsp;
@@ -2288,14 +2286,14 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 	struct fru_info fruInfo;
 	uint8_t *buf = NULL;
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, id, &fruInfo,
-							    &offFruMultiRec,
-							    &fruMultiRecSize);
+								 &offFruMultiRec,
+								 &fruMultiRecSize);
 
 
-	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
+	lprintf(LOG_DEBUG, "FRU Size			: %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
 
-   {
+	{
 
 
 	memset(&fru, 0, sizeof(struct fru_info));
@@ -2334,84 +2332,108 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
 		return -1;
 	}
-   }
+	}
 
-   {
-      uint8_t * fru_data;
-      uint32_t fru_len, i;
-      uint32_t offset= offFruMultiRec;
-      struct fru_multirec_header * h;
-      uint32_t last_off, len;
+	{
+		uint8_t * fru_data;
+		uint32_t fru_len, i;
+		uint32_t offset= offFruMultiRec;
+		struct fru_multirec_header * h;
+		uint32_t last_off, len;
+		uint8_t error=0;
 
-      i = last_off = offset;
-      fru_len = 0;
+		i = last_off = offset;
+		fru_len = 0;
 
-      fru_data = malloc(fru.size + 1);
-      if (fru_data == NULL) {
-         lprintf(LOG_ERR, " Out of memory!");
-         return;
-      }
-      memset(fru_data, 0, fru.size + 1);
+		fru_data = malloc(fru.size + 1);
+		if (fru_data == NULL) {
+			lprintf(LOG_ERR, " Out of memory!");
+			return;
+		}
+		memset(fru_data, 0, fru.size + 1);
 
-      do {
-         h = (struct fru_multirec_header *) (fru_data + i);
+		do {
+			h = (struct fru_multirec_header *) (fru_data + i);
 
-         /* read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time */
-         if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
-         {
-            len = fru.size - last_off;
-            if (len > FRU_MULTIREC_CHUNK_SIZE)
-               len = FRU_MULTIREC_CHUNK_SIZE;
+			/* read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time */
+			if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
+			{
+				len = fru.size - last_off;
+				if (len > FRU_MULTIREC_CHUNK_SIZE)
+					len = FRU_MULTIREC_CHUNK_SIZE;
 
-            if (read_fru_area(intf, &fru, id, last_off, len, fru_data) < 0)
-               break;
+				if (read_fru_area(intf, &fru, id, last_off, len, fru_data) < 0)
+					break;
 
-            last_off += len;
-         }
-         if( h->type ==  FRU_RECORD_TYPE_OEM_EXTENSION ){
+				last_off += len;
+			}
+			if( h->type ==	 FRU_RECORD_TYPE_OEM_EXTENSION ){
 
-            struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *) 
-                               &fru_data[i + sizeof(struct fru_multirec_header)];
-            uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
+				struct fru_multirec_oem_header *oh=(struct fru_multirec_oem_header *)
+										 &fru_data[i + sizeof(struct fru_multirec_header)];
+				uint32_t iana = oh->mfg_id[0] | oh->mfg_id[1]<<8 | oh->mfg_id[2]<<16;
 
-            /* Now makes sure this is really PICMG record */
+				uint32_t suppliedIana = 0 ;
+				/* Now makes sure this is really PICMG record */
 
-            if( iana == IPMI_OEM_PICMG && (argc <=2  )){ 
-               if( ipmi_fru_picmg_ext_edit(fru_data, 
-    						 i + sizeof(struct fru_multirec_header), 
-                     h->len, h, oh )){
-                  /* The fru changed */
-                  write_fru_area(intf,&fru,id, i,i,
-               h->len+ sizeof(struct fru_multirec_header), fru_data);
-               }
-            }
-            else if( iana == IPMI_OEM_KONTRON) {
-               if( ipmi_fru_oemkontron_edit( argc,argv,fru_data, 
-    						 i + sizeof(struct fru_multirec_header), 
-                     h->len, h, oh )){
-                  /* The fru changed */
-                  write_fru_area(intf,&fru,id, i,i,
-               h->len+ sizeof(struct fru_multirec_header), fru_data);
-               }
-            }
-            /* FIXME: Add OEM record support here */
-            else{
-               printf("  OEM (%s) Record\n", val2str( iana,  ipmi_oem_info));
-            }
-         }
-         i += h->len + sizeof (struct fru_multirec_header);
-      } while (!(h->format & 0x80));
+				/* Default to PICMG for backward compatibility */
+				if( argc <=2 ) {
+					suppliedIana =	 IPMI_OEM_PICMG;
+				}	else {
+					if( !strncmp( argv[2] , "oem" , 3 )) {
+						/* Expect IANA number next */
+						if( argc <= 3 ) {
+							lprintf(LOG_ERR, "oem iana <record> <format> [<args>]");
+							error = 1;
+						} else {
+							suppliedIana = atol ( argv[3] ) ;
+							lprintf(LOG_DEBUG, "using iana: %d", suppliedIana);
+						}
+					}
+				}
 
-      free(fru_data);
-   }
-   return 0;
+				if( suppliedIana == iana ) {
+					lprintf(LOG_DEBUG, "Matching record found" );
+
+					if( iana == IPMI_OEM_PICMG ){
+						if( ipmi_fru_picmg_ext_edit(fru_data,
+						 i + sizeof(struct fru_multirec_header),
+						 h->len, h, oh )){
+							/* The fru changed */
+							write_fru_area(intf,&fru,id, i,i,
+						h->len+ sizeof(struct fru_multirec_header), fru_data);
+						}
+					}
+					else if( iana == IPMI_OEM_KONTRON) {
+						if( ipmi_fru_oemkontron_edit( argc,argv,fru_data,
+						 i + sizeof(struct fru_multirec_header),
+						 h->len, h, oh )){
+							/* The fru changed */
+							write_fru_area(intf,&fru,id, i,i,
+						h->len+ sizeof(struct fru_multirec_header), fru_data);
+						}
+					}
+					/* FIXME: Add OEM record support here */
+					else{
+						printf("	 OEM IANA (%s) Record not support in this mode\n",
+															val2str( iana,	 ipmi_oem_info));
+						error = 1;
+					}
+				}
+			}
+			i += h->len + sizeof (struct fru_multirec_header);
+		} while (!(h->format & 0x80) && (error != 1));
+
+		free(fru_data);
+	}
+	return 0;
 }
 
 
 static int
 ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
-		     char * pFileName,
-		     uint8_t fruId)
+			  char * pFileName,
+			  uint8_t fruId)
 {
 	uint16_t retStatus = 0;
 	uint32_t offFruMultiRec;
@@ -2421,15 +2443,15 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	struct fru_info fruInfo;
 	uint8_t *buf = NULL;
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-						    &offFruMultiRec,
-						    &fruMultiRecSize);
+							 &offFruMultiRec,
+							 &fruMultiRecSize);
 
-	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
+	lprintf(LOG_DEBUG, "FRU Size			: %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
 
 	if (retStatus == 0) {
 		retStatus =
-		    ipmi_fru_get_multirec_size_from_file(pFileName,
+			 ipmi_fru_get_multirec_size_from_file(pFileName,
 							 &fileMultiRecSize,
 							 &offFileMultiRec);
 	}
@@ -2438,9 +2460,9 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		buf = malloc(fileMultiRecSize);
 		if (buf) {
 			retStatus =
-			    ipmi_fru_get_multirec_from_file(pFileName, buf,
-							    fileMultiRecSize,
-							    offFileMultiRec);
+				 ipmi_fru_get_multirec_from_file(pFileName, buf,
+								 fileMultiRecSize,
+								 offFileMultiRec);
 
 		} else {
 			printf("Error allocating memory for multirec buffer\n");
@@ -2448,18 +2470,18 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		}
 	}
 
-   if(retStatus == 0)
-   {
-      ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
+	if(retStatus == 0)
+	{
+		ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
 		if (buf)
 		write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
-			       fileMultiRecSize, buf);
+					 fileMultiRecSize, buf);
 	}
 
-   if(retStatus == 0 )
-      lprintf(LOG_INFO, "Done");
-   else
-      lprintf(LOG_ERR, "Failed");
+	if(retStatus == 0 )
+		lprintf(LOG_INFO, "Done");
+	else
+		lprintf(LOG_ERR, "Failed");
 
 	if (buf)
 		free(buf);
@@ -2469,107 +2491,107 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 
 static int
 ipmi_fru_get_multirec_size_from_file(char * pFileName,
-				     uint32_t * pSize,
-				     uint32_t * pOffset)
+					  uint32_t * pSize,
+					  uint32_t * pOffset)
 {
-   struct fru_header header;
-   FILE * pFile;
+	struct fru_header header;
+	FILE * pFile;
 	uint8_t len = 0;
 	uint32_t end = 0;
-   *pSize = 0;
+	*pSize = 0;
 
-   pFile = fopen(pFileName,"rb");
+	pFile = fopen(pFileName,"rb");
 	if (pFile) {
-      rewind(pFile);
-      len = fread(&header, 1, 8, pFile);
-      fseek(pFile, 0, SEEK_END);      
-      end = ftell(pFile);
-      fclose(pFile);                         
-   }
+		rewind(pFile);
+		len = fread(&header, 1, 8, pFile);
+		fseek(pFile, 0, SEEK_END);
+		end = ftell(pFile);
+		fclose(pFile);
+	}
 
 	lprintf(LOG_DEBUG, "File Size = %lu\n", end);
 	lprintf(LOG_DEBUG, "Len = %u\n", len);
 
 	if (len != 8) {
-      printf("Error with file %s in getting size\n", pFileName);
-      return -1;
-   }
-   
-	if (header.version != 0x01) {
-      printf ("Unknown FRU header version %02x.\n", header.version);
-      return -1;
-   }
+		printf("Error with file %s in getting size\n", pFileName);
+		return -1;
+	}
 
-   /* Retreive length */
+	if (header.version != 0x01) {
+		printf ("Unknown FRU header version %02x.\n", header.version);
+		return -1;
+	}
+
+	/* Retreive length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
-	   ((header.offset.internal * 8) < end))
-      end = (header.offset.internal * 8);
+		((header.offset.internal * 8) < end))
+		end = (header.offset.internal * 8);
 
 	if (((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
-	   ((header.offset.chassis * 8) < end))
-      end = (header.offset.chassis * 8);
+		((header.offset.chassis * 8) < end))
+		end = (header.offset.chassis * 8);
 
 	if (((header.offset.board * 8) > (header.offset.board * 8)) &&
-	    ((header.offset.board * 8) < end))
-      end = (header.offset.board * 8);
+		 ((header.offset.board * 8) < end))
+		end = (header.offset.board * 8);
 
 	if (((header.offset.product * 8) > (header.offset.product * 8)) &&
-	    ((header.offset.product * 8) < end))
-      end = (header.offset.product * 8);
-   
-   *pSize = end - (header.offset.multi * 8);
-   *pOffset = (header.offset.multi * 8);
+		 ((header.offset.product * 8) < end))
+		end = (header.offset.product * 8);
 
-   return 0;
+	*pSize = end - (header.offset.multi * 8);
+	*pOffset = (header.offset.multi * 8);
+
+	return 0;
 }
 
 static void
 ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data,
-				     uint32_t *pSize)
+					  uint32_t *pSize)
 {
-   struct fru_multirec_header * head;
-   #define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
+	struct fru_multirec_header * head;
+	#define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
 	uint16_t count = 0;
 	uint16_t status = 0;
 	uint8_t counter;
 	uint8_t checksum = 0;
-   
+
 	do {
-      checksum = 0;
-      head = (struct fru_multirec_header *) (fru_data + count);
-      
-      if(verbose )
-         printf("Adding (");
-      
+		checksum = 0;
+		head = (struct fru_multirec_header *) (fru_data + count);
+
+		if(verbose )
+			printf("Adding (");
+
 		for (counter = 0; counter < sizeof(struct fru_multirec_header);	counter++) {
-         if(verbose )
-            printf(" %02X", *(fru_data + count + counter));
+			if(verbose )
+				printf(" %02X", *(fru_data + count + counter));
 			checksum += *(fru_data + count + counter);
-         }
-         
-      if( verbose )
-         printf(")");
-      
+			}
+
+		if( verbose )
+			printf(")");
+
 		if (checksum != 0) {
-         printf("Bad checksum in Multi Records\n");
-         status = -1;
-      }
-      else if ( verbose )
-         printf("--> OK");
-      
+			printf("Bad checksum in Multi Records\n");
+			status = -1;
+		}
+		else if ( verbose )
+			printf("--> OK");
+
 		if (verbose > 1 && checksum == 0) {
 			for(counter = 0; counter < head->len; counter++) {
-            printf(" %02X", *(fru_data + count + counter + 
-                                        sizeof(struct fru_multirec_header)));
-         }
-      }
-      if(verbose )
-         printf("\n");
+				printf(" %02X", *(fru_data + count + counter +
+													 sizeof(struct fru_multirec_header)));
+			}
+		}
+		if(verbose )
+			printf("\n");
 
-      count += head->len + sizeof (struct fru_multirec_header);
-   } while( (!(head->format & 0x80)) && (status == 0));
-   
-   *pSize = count;
+		count += head->len + sizeof (struct fru_multirec_header);
+	} while( (!(head->format & 0x80)) && (status == 0));
+
+	*pSize = count;
 
 	lprintf(LOG_DEBUG, "Size of multirec: %lu\n", *pSize);
 }
@@ -2580,121 +2602,121 @@ ipmi_fru_get_multirec_from_file(char * pFileName,
 				uint32_t size,
 				uint32_t offset)
 {
-   FILE * pFile;
+	FILE * pFile;
 	uint32_t len = 0;
 
-   pFile = fopen(pFileName,"rb");
+	pFile = fopen(pFileName,"rb");
 	if (pFile) {
-      fseek(pFile, offset,SEEK_SET);
-      len = fread(pBufArea, size, 1, pFile);
-      fclose(pFile);
+		fseek(pFile, offset,SEEK_SET);
+		len = fread(pBufArea, size, 1, pFile);
+		fclose(pFile);
 	} else {
-      printf("Error opening file\n");
-   }
-   
+		printf("Error opening file\n");
+	}
+
 	if (len != 1) {
-      printf("Error with file %s\n", pFileName);
-      return -1;
-   }
-   
-   return 0;
+		printf("Error with file %s\n", pFileName);
+		return -1;
+	}
+
+	return 0;
 }
 
 static int
 ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 					uint8_t fruId,
-                                    struct fru_info *pFruInfo,
+												struct fru_info *pFruInfo,
 					uint32_t * pRetLocation,
 					uint32_t * pRetSize)
 {
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
 	uint8_t msg_data[4];
 	uint32_t end;
-   struct fru_header header;
+	struct fru_header header;
 
-   *pRetLocation = 0;
+	*pRetLocation = 0;
 
-   msg_data[0] = fruId;
+	msg_data[0] = fruId;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_STORAGE;
-   req.msg.cmd = GET_FRU_INFO;
-   req.msg.data = msg_data;
-   req.msg.data_len = 1;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
 
-   rsp = intf->sendrecv(intf, &req);
-   if (!rsp) {
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
 		if (verbose > 1)
-         printf("no response\n");
-      return -1;
-   }
+			printf("no response\n");
+		return -1;
+	}
 
 	if (rsp->ccode > 0) {
 		if (rsp->ccode == 0xc3)
-         printf ("  Timeout accessing FRU info. (Device not present?)\n");
+			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		else
-         printf ("   CCODE = 0x%02x\n", rsp->ccode);
-      return -1;
-   }
-   pFruInfo->size = (rsp->data[1] << 8) | rsp->data[0];
-   pFruInfo->access = rsp->data[2] & 0x1;
+			printf ("	CCODE = 0x%02x\n", rsp->ccode);
+		return -1;
+	}
+	pFruInfo->size = (rsp->data[1] << 8) | rsp->data[0];
+	pFruInfo->access = rsp->data[2] & 0x1;
 
-   if (verbose > 1)
-      printf("pFruInfo->size = %d bytes (accessed by %s)\n",
-             pFruInfo->size, pFruInfo->access ? "words" : "bytes");
+	if (verbose > 1)
+		printf("pFruInfo->size = %d bytes (accessed by %s)\n",
+				 pFruInfo->size, pFruInfo->access ? "words" : "bytes");
 
 	if (!pFruInfo->size)
-      return -1;
+		return -1;
 
-   msg_data[0] = fruId;
-   msg_data[1] = 0;
-   msg_data[2] = 0;
-   msg_data[3] = 8;
+	msg_data[0] = fruId;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_STORAGE;
-   req.msg.cmd = GET_FRU_DATA;
-   req.msg.data = msg_data;
-   req.msg.data_len = 4;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
 
-   rsp = intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
 
-   if (!rsp)
-      return -1;
+	if (!rsp)
+		return -1;
 	if (rsp->ccode > 0) {
 		if (rsp->ccode == 0xc3)
-         printf ("  Timeout while reading FRU data. (Device not present?)\n");
-      return -1;
-   }
+			printf ("  Timeout while reading FRU data. (Device not present?)\n");
+		return -1;
+	}
 
-   if (verbose > 1)
-      printbuf(rsp->data, rsp->data_len, "FRU DATA");
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
 
-   memcpy(&header, rsp->data + 1, 8);
+	memcpy(&header, rsp->data + 1, 8);
 
 	if (header.version != 0x01) {
-      printf ("  Unknown FRU header version %02x.\n", header.version);
-      return -1;
-   }
-   
-   end = pFruInfo->size;
-   
-   /* Retreive length */
+		printf ("  Unknown FRU header version %02x.\n", header.version);
+		return -1;
+	}
+
+	end = pFruInfo->size;
+
+	/* Retreive length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
-	    ((header.offset.internal * 8) < end))
+		 ((header.offset.internal * 8) < end))
 		end = (header.offset.internal * 8);
 
 	if (((header.offset.chassis * 8) > (header.offset.chassis * 8)) &&
-	    ((header.offset.chassis * 8) < end))
+		 ((header.offset.chassis * 8) < end))
 		end = (header.offset.chassis * 8);
 
 	if (((header.offset.board * 8) > (header.offset.board * 8)) &&
-	    ((header.offset.board * 8) < end))
+		 ((header.offset.board * 8) < end))
 		end = (header.offset.board * 8);
 
 	if (((header.offset.product * 8) > (header.offset.product * 8)) &&
-	    ((header.offset.product * 8) < end))
+		 ((header.offset.product * 8) < end))
 		end = (header.offset.product * 8);
 
 	*pRetSize = end;
@@ -2705,14 +2727,14 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 
 int
 ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
-   {
+	{
 	int rc = 0;
 
 	if (argc == 0) {
 		rc = ipmi_fru_print_all(intf);
 	}
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit");
+		lprintf(LOG_ERR, "FRU Commands:	print read write upgEkey edit");
 	}
 	else if (strncmp(argv[0], "print", 5) == 0 ||
 		 strncmp(argv[0], "list", 4) == 0) {
@@ -2721,31 +2743,26 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else {
 			rc = ipmi_fru_print_all(intf);
 		}
-   }
+	}
 	else if (!strncmp(argv[0], "read", 5)) {
 		uint8_t fruId=0;
-		if((argc >= 3) && (strlen(argv[2]) > 0))
-		{
+		if((argc >= 3) && (strlen(argv[2]) > 0)){
 			/* There is a file name in the parameters */
 			if(strlen(argv[2]) < 512)
 			{
 				fruId = atoi(argv[1]);
 				strcpy(fileName, argv[2]);
-				if (verbose)
-   {
-					printf("Fru Id           : %d\n", fruId);
-					printf("Fru File         : %s\n", fileName);
+				if (verbose){
+					printf("Fru Id				 : %d\n", fruId);
+					printf("Fru File			 : %s\n", fileName);
 				}
 				ipmi_fru_read_to_bin(intf, fileName, fruId);
-   }
-			else
-   {
-
+			}
+			else{
 				fprintf(stderr,"File name must be smaller than 512 bytes\n");
 			}
-   }
-		else
-   {
+		}
+		else{
 			printf("fru read <fru id> <fru file>\n");
 		}
 	}
@@ -2758,8 +2775,8 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				fruId = atoi(argv[1]);
 				strcpy(fileName, argv[2]);
 				if (verbose) {
-					printf("Fru Id           : %d\n", fruId);
-					printf("Fru File         : %s\n", fileName);
+					printf("Fru Id				 : %d\n", fruId);
+					printf("Fru File			 : %s\n", fileName);
 				}
 				ipmi_fru_write_from_bin(intf, fileName, fruId);
 			} else {
@@ -2779,17 +2796,224 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "edit", 4)) {
+		uint8_t fruId = 0;
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-			ipmi_fru_edit_multirec(intf,atoi(argv[1]), argc, argv);
+			fruId = atoi(argv[1]);
+			if (verbose) {
+				printf("Fru Id				 : %d\n", fruId);
+			}
+		}else {
+			printf("Using default FRU id: %d\n", fruId);
+		}
+
+		if ((argc >= 3) && (strlen(argv[1]) > 0)) {
+			if (!strncmp(argv[2], "field", 4)){
+				if (argc == 6) {
+					ipmi_fru_set_field_string(intf, fruId,\
+														*argv[3], *argv[4], (char *) argv[5]);
+				}
+				else {
+					printf("fru edit [fruid] field [section] [index] [string]\n");
+				}
+			}else if (!strncmp(argv[2], "oem", 3)){
+				ipmi_fru_edit_multirec(intf,fruId, argc, argv);
+			}
 		} else {
-			printf("fru edit <fru id>\n");
+			ipmi_fru_edit_multirec(intf,fruId, argc, argv);
 		}
 	}
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
-		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit"); 
+		lprintf(LOG_ERR, "FRU Commands:	print read write upgEkey edit");
 		rc = -1;
-   }
+	}
 
 	return rc;
+}
+/* ipmi_fru_set_field_string -  Set a field string to a new value, Need to be the same size
+ *
+ * @intf:		ipmi interface
+ * @id:		fru id
+ * @f_type:		 Type of the Field : c=Chassis b=Board p=Product
+ * @f_index:	  findex of the field, zero indexed.
+ * @f_string:		NULL terminated string
+ *
+ * returns -1 on error
+ * returns 1 if successful
+ */
+static int
+ipmi_fru_set_field_string(struct ipmi_intf * intf, uint8_t fruId, uint8_t
+f_type, uint8_t f_index, char *f_string)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+
+	struct fru_info fru;
+	struct fru_header header;
+	uint8_t msg_data[4];
+	uint8_t sn_size, checksum,prev_lun;
+	int ret = 0, i = 0;
+	uint8_t	*fru_data, *fru_area;
+	uint32_t fru_field_offset, fru_field_offset_tmp;
+	uint32_t fru_section_len, header_offset;
+
+	fru_data = NULL;
+
+	memset(msg_data, 0, 4);
+	msg_data[0] = fruId;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return(-1);
+	}
+	printf("OK\n");
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+
+	if (fru.size < 1) {
+		printf(" Invalid FRU size %d", fru.size);
+		return -1;
+	}
+	/*
+	 * retrieve the FRU header
+	 */
+	msg_data[0] = fruId;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		printf(" Device not present (No Response)\n");
+		return(-1);
+	}
+	if (rsp->ccode > 0)
+	{
+		printf(" Device not present (%s)\n",
+				 val2str(rsp->ccode, completion_code_vals));
+		return(-1);
+	}
+
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	if (header.version != 1)
+	{
+		printf(" Unknown FRU header version 0x%02x",
+			header.version);
+		return(-1);
+	}
+
+	fru_data = malloc( fru.size );
+
+	if( fru_data == NULL )
+	{
+		printf("Out of memory!\n");
+		return(-1);
+	}
+
+	/* Setup offset from the field type */
+
+	/* Chassis type field */
+	if (f_type == 0x63) {
+		header_offset = (header.offset.chassis * 8);
+		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
+		fru_field_offset = (header.offset.chassis * 8) + 3;
+		fru_section_len = *(fru_data + header_offset + 1) * 8;
+	}
+	/* Board type field */
+	else if (f_type == 0x62) {
+		header_offset = (header.offset.board * 8);
+		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
+		fru_field_offset = (header.offset.board * 8) + 6;
+		fru_section_len = *(fru_data + header_offset + 1) * 8;
+	}
+	/* Product type field */
+	else if (f_type == 0x70) {
+		header_offset = (header.offset.product * 8);
+		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
+		fru_field_offset = (header.offset.product * 8) + 3;
+		fru_section_len = *(fru_data + header_offset + 1) * 8;
+	}
+	else
+	{
+		printf("Wrong field type.");
+		return -1;
+	}
+	memset(fru_data, 0, fru.size);
+	if( read_fru_area(intf ,&fru, fruId, header_offset ,
+					fru_section_len , fru_data) < 0 )
+	{
+		free(fru_data);
+		return -1;
+	}
+	/* Convert index from character to decimal */
+	f_index= f_index - 0x30;
+
+	/*Seek to field index */
+	for( i=0; i<f_index; i++ )
+	{
+		  fru_area = get_fru_area_str(fru_data, &fru_field_offset);
+	}
+	if ( strlen(fru_area) == 0 ) {
+		printf("Field not found!\n");
+		return -1;
+	}
+		/* Get original field string */
+	fru_field_offset_tmp = fru_field_offset;
+	fru_area = get_fru_area_str(fru_data, &fru_field_offset);
+
+	if ( strlen(fru_area) == strlen(f_string) )
+	{
+			printf("Updating Field...\n");
+			memcpy(fru_data + fru_field_offset_tmp + 1,
+									f_string, strlen(f_string));
+
+			checksum = 0;
+			/* Calculate Header Checksum */
+			for( i = header_offset; i < header_offset
+							+ fru_section_len - 1; i ++ )
+			{
+				checksum += fru_data[i];
+			}
+			checksum = (~checksum) + 1;
+			fru_data[header_offset + fru_section_len - 1] = checksum;
+
+			 /* Write te updated section to the FRU data */
+			if( write_fru_area(intf, &fru, fruId, header_offset,
+					header_offset, fru_section_len, fru_data) < 0 )
+			{
+				printf("Write to FRU data failed.\n");
+				free(fru_data);
+				return -1;
+			}
+	}
+	else {
+			printf("String size are not equal.\n");
+			free(fru_data);
+			return -1;
+	}
+	free(fru_data);
+	return 1;
 }
