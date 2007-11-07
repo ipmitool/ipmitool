@@ -172,6 +172,23 @@ static struct ipmi_event_sensor_types oem_kontron_event_types[] __attribute__((u
    { 0xC9 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Started" },
    { 0xC9 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Pass" },
    { 0xC9 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Diagnostic Status", "Fail" },
+
+   { 0xCA , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Firmware Upgrade Status", "In progress"},
+   { 0xCA , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Firmware Upgrade Status", "Success"},
+   { 0xCA , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Firmware Upgrade Status", "Failure"},
+
+   { 0xCB , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Over Current", "Asserted"},
+   { 0xCB , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Over Current", "Deasserted"},
+
+   { 0xCC , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Sensor Error", "Asserted"},
+   { 0xCC , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Sensor Error", "Deasserted"},
+
+   { 0xCD , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Power Denied", "Asserted"},
+   { 0xCD , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FRU Power Denied", "Deasserted"},
+
+   { 0xCF , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Reset", "Asserted"},
+   { 0xCF , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Reset", "Deasserted"},
+
 	/* END */
 	{ 0x00, 0x00, 0xff, 0x00, NULL, NULL },
 };
