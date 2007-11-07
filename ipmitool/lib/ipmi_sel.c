@@ -515,12 +515,7 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_NEWISYS:
 		desc = get_newisys_evt_desc(intf, rec);
 		break;
-	case IPMI_OEM_SUN:
-	case IPMI_OEM_INTEL:
-	case IPMI_OEM_TYAN:
-	case IPMI_OEM_SUPERMICRO:
 	case IPMI_OEM_KONTRON:
-	case IPMI_OEM_NOKIA:
 		desc =  get_kontron_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_UNKNOWN:
@@ -552,7 +547,6 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 
 			switch(iana){
 				case IPMI_OEM_KONTRON:
-				case IPMI_OEM_NOKIA:
 					lprintf(LOG_DEBUG, "oem sensor type %x %d using oem type supplied description",
 		                       rec->sel_type.standard_type.sensor_type , iana);
 
@@ -604,12 +598,11 @@ ipmi_sel_get_oem_sensor_type(IPMI_OEM iana, uint8_t code)
 
 	switch(iana){
 		case IPMI_OEM_KONTRON:
-		case IPMI_OEM_NOKIA:
 			st = oem_kontron_event_types;	
 		break;
 		/* add you oem sensor type lookup assignement here */
 		default:
-			lprintf(LOG_ERR, "ipmitool: missing OEM sensor type for 0x%ul",iana);
+			lprintf(LOG_DEBUG, "ipmitool: missing OEM sensor type for %ul",iana);
 		break;
 	}
 
@@ -628,13 +621,12 @@ ipmi_sel_get_oem_sensor_type_offset(IPMI_OEM iana, uint8_t code, uint8_t offset)
 
 	switch(iana){
 		case IPMI_OEM_KONTRON:
-		case IPMI_OEM_NOKIA:
 			st = oem_kontron_event_types;	
 		break;
 		/* add you oem sensor type lookup assignement here */
 		default:
-			lprintf(LOG_ERR, 
-                      "ipmitool: missing OEM sensor type offset for 0x%ul",iana);
+			lprintf(LOG_DEBUG, 
+                      "ipmitool: missing OEM sensor type offset for %ul",iana);
 		break;
 	}
 
