@@ -654,6 +654,9 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 		}
 	}
 
+   if (try == 5)
+      return NULL;
+
 	if (!rsp)
 		return NULL;
 
