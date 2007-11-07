@@ -487,9 +487,13 @@ ipmi_get_sol_info(
 				}
 				break;
 			case 0x80:
-				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d",
-				    val2str(data[1], sol_parameter_vals), intf->session->port);
-				params->payload_port = intf->session->port;
+            if( intf->session != NULL ){
+               lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d", val2str(data[1], sol_parameter_vals), intf->session->port);
+               params->payload_port = intf->session->port;
+            } else {
+               lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - can't determine which payload port to use on NULL session" );
+               return -1;               
+            }
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
