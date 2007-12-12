@@ -53,15 +53,11 @@
 #define PICMG_PMC                                  0x08
 #define PICMG_RTM                                  0x09
 
-
-
 struct picmg_set_fru_activation_cmd {
    unsigned char  picmg_id;      /* always 0*/
    unsigned char  fru_id;        /* threshold setting mask */
    unsigned char  fru_state;     /* fru activation/deactivation */
 } __attribute__ ((packed));
-
-
 
 /* the LED color capabilities */
 static const char* led_color_str[] __attribute__((unused)) = {
@@ -77,16 +73,81 @@ static const char* led_color_str[] __attribute__((unused)) = {
 
 
 static const char* amc_link_type_str[] __attribute__((unused)) = {
-   " FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED1",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_PCI_EXPRESS",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING1",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING2",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO",
-   " FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE",
+   "RESERVED",
+   "RESERVED1",
+   "PCI EXPRESS",
+   "ADVANCED SWITCHING1",
+   "ADVANCED SWITCHING2",
+   "ETHERNET",
+   "RAPIDIO",
+   "STORAGE",
 };
 
+static const char* amc_link_type_ext_str[][16] __attribute__((unused)) = {
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED */
+	{
+		"", "", "", "", "", "", "", "",   "", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED1 */
+	{
+		"", "", "", "", "", "", "", "",   "", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_PCI_EXPRESS */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "", 
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING1 */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "", 
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING2 */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "", 
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET */
+	{
+   		"1000BASE-BX (SerDES Gigabit)",
+   		"10GBASE-BX410 Gigabit XAUI",
+   		"", "", 
+   		"", "", "", "",
+		"", "", "", "", 
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO */
+	{
+   		"1.25 Gbaud transmission rate",
+   		"2.5 Gbaud transmission rate",
+   		"3.125 Gbaud transmission rate",
+   		"", "", "", "", "",
+		"", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE */
+	{
+   		"Fibre Channel", 
+   		"Serial ATA", 
+   		"Serial Attached SCSI",
+   		"", "", "", "", "",
+		"", "", "", "", "", "", "", ""
+	}
+};
 
 struct sAmcPortState {
 #ifndef WORDS_BIGENDIAN
