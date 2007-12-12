@@ -1398,7 +1398,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					}
             
 					lprintf(LOG_DEBUG,"PICMG: channel %d",channel);
-					lprintf(LOG_DEBUG,"PICMG: port %d",port);
+					lprintf(LOG_DEBUG,"PICMG: portflags %d",port);
 					lprintf(LOG_DEBUG,"PICMG: type %d",type);
 					lprintf(LOG_DEBUG,"PICMG: typeext %d",typeext);
 					lprintf(LOG_DEBUG,"PICMG: group %d",group);
@@ -1409,7 +1409,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
                                                typeext, group, enable, device);
 				}
 				else {
-					printf("<chn> <port> <type> <ext> <group> <1|0> [<device>]\n");
+      				printf("<chn> <portflags> <type> <ext> <group> <1|0> [<device>]\n");
 					return -1;
 				}
 			}
