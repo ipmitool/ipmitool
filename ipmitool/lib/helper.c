@@ -119,7 +119,7 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 	}
 
 	memset(un_str, 0, 32);
-	snprintf(un_str, 32, "Unknown (0x%x)", val);
+	snprintf(un_str, 32, "Unknown (0x%02X)", val);
 
 	return un_str;
 }
@@ -148,7 +148,7 @@ const char * oemval2str(uint16_t oem, uint16_t val,
 	}
 
 	memset(un_str, 0, 32);
-	snprintf(un_str, 32, "OEM reserved #%02x", val);
+	snprintf(un_str, 32, "Unknown (0x%X)", val);
 
 	return un_str;
 }

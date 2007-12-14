@@ -68,6 +68,49 @@ const struct valstr ipmi_oem_info[] = {
    { 0xffff , NULL },
 };
 
+const struct oemvalstr ipmi_oem_product_info[] = {
+   /* Keep OEM grouped together */
+   /* Intel stuff, thanks to Tim Bell */
+   { IPMI_OEM_INTEL, 0x000C, "TSRLT2" },
+   { IPMI_OEM_INTEL, 0x001B, "TIGPR2U" },
+   { IPMI_OEM_INTEL, 0x0022, "TIGI2U" },
+   { IPMI_OEM_INTEL, 0x0026, "Bridgeport" },
+   { IPMI_OEM_INTEL, 0x0028, "S5000PAL" },
+   { IPMI_OEM_INTEL, 0x0029, "S5000PSL" },
+   { IPMI_OEM_INTEL, 0x0100, "Tiger4" },
+   { IPMI_OEM_INTEL, 0x0103, "McCarran" },
+   { IPMI_OEM_INTEL, 0x0800, "ZT5504" },
+   { IPMI_OEM_INTEL, 0x0808, "MPCBL0001" },
+   { IPMI_OEM_INTEL, 0x0811, "TIGW1U" },
+   { IPMI_OEM_INTEL, 0x4311, "NSI2U" },
+   /* Kontron */
+   { IPMI_OEM_KONTRON,4000, "AM4000 AdvancedMC" },
+   { IPMI_OEM_KONTRON,4001, "AM4001 AdvancedMC" },
+   { IPMI_OEM_KONTRON,4002, "AM4002 AdvancedMC" },
+   { IPMI_OEM_KONTRON,4010, "AM4010 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5503, "AM4500/4520 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5504, "AM4300 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5507, "AM4301 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5508, "AM4330 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5703, "RTM8020" },
+   { IPMI_OEM_KONTRON,5704, "RTM8030" },
+   { IPMI_OEM_KONTRON,6000, "CP6000" },
+   { IPMI_OEM_KONTRON,6006, "DT-64" },
+   { IPMI_OEM_KONTRON,6010, "CP6010" },
+   { IPMI_OEM_KONTRON,6011, "CP6011" },
+   { IPMI_OEM_KONTRON,6012, "CP6012" },
+   { IPMI_OEM_KONTRON,6014, "CP6014" },
+   { IPMI_OEM_KONTRON,5002, "AT8001" },
+   { IPMI_OEM_KONTRON,5003, "AT8010" },
+   { IPMI_OEM_KONTRON,5004, "AT8020" },
+   { IPMI_OEM_KONTRON,5006, "AT8030 IPMC" },
+   { IPMI_OEM_KONTRON,2025, "AT8030 MMC" },
+   { IPMI_OEM_KONTRON,5301, "AT8400" },
+   { IPMI_OEM_KONTRON,5303, "AT8901" },
+
+   { 0xffff        , 0xffff , NULL },
+ };
+
 const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
    /* Keep OEM grouped together */
    { IPMI_OEM_KONTRON , 0xC0 , "OEM Firmware Info" },
