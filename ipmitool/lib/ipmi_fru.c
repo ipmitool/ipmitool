@@ -40,6 +40,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -445,6 +446,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	char * fru_area;
 	uint8_t * fru_data;
 	uint32_t fru_len, area_len, i;
+	time_t tval;
 
 	i = offset;
 	fru_len = 0;
@@ -473,8 +475,11 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	i++;	/* skip fru area version */
 	area_len = fru_data[i++] * 8; /* fru area length */
 	i++;	/* skip fru board language */
-	i += 3;	/* skip mfg. date time */
-
+	tval=((fru_data[i+2] << 16) + (fru_data[i+1] << 8) + (fru_data[i]));
+	tval=tval * 60;
+	tval=tval + secs_from_1970_1996;
+	printf(" Board Mfg Date        : %s", asctime(localtime(&tval)));
+	i += 3;  /* skip mfg. date time */
 
 	fru_area = get_fru_area_str(fru_data, &i);
 	if (fru_area != NULL && strlen(fru_area) > 0) {
@@ -513,7 +518,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Board Extra				 : %s\n", fru_area);
+			printf(" Board Extra           : %s\n", fru_area);
 			free(fru_area);
 		}
 		if (i == j)
@@ -615,7 +620,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Product Extra			 : %s\n", fru_area);
+			printf(" Product Extra         : %s\n", fru_area);
 			free(fru_area);
 		}
 		if (i == j)
@@ -639,13 +644,13 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
 	uint8_t * fru_data;
-	uint32_t fru_len, i;
+	uint32_t fru_len, i, j, toff;
 	struct fru_multirec_header * h;
 	struct fru_multirec_powersupply * ps;
 	struct fru_multirec_dcoutput * dc;
 	struct fru_multirec_dcload * dl;
 	uint16_t peak_capacity;
-	uint8_t peak_hold_up_time;
+	uint8_t peak_hold_up_time, bn;
 	uint32_t last_off, len;
 
 	i = last_off = offset;
@@ -804,7 +809,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 				/* Now makes sure this is really PICMG record */
 
 				if( iana == IPMI_OEM_PICMG ){
-               printf("  PICMG Extension Record\n");
+					printf("	 PICMG Extension Record\n");
 					ipmi_fru_picmg_ext_print(fru_data,
 													 i + sizeof(struct fru_multirec_header),
 													 h->len);
