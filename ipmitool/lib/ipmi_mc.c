@@ -315,7 +315,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct ipm_devid_rsp *devid;
 	int i;
-	char *product=NULL;
+	const char *product=NULL;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -353,7 +353,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	printf("Product ID                : %u (0x%02x%02x)\n",
 		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
-
+ 
 	product=oemval2str(IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id),
 							 (devid->product_id[1]<<8)+devid->product_id[0],
 							 ipmi_oem_product_info);

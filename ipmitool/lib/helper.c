@@ -123,8 +123,8 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 
 	return un_str;
 }
-
-const char * oemval2str(uint16_t oem, uint16_t val,
+ 
+const char * oemval2str(uint32_t oem, uint16_t val,
                                              const struct oemvalstr *vs)
 {
 	static char un_str[32];
