@@ -3019,9 +3019,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                req.msg.netfn == IPMI_NETFN_PICMG
                &&
                ( req.msg.cmd == HPMFWUPG_ACTIVATE_FIRMWARE ||
-                 req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK ||
-                 req.msg.cmd == HPMFWUPG_GET_UPGRADE_STATUS )
-                 
+                 req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK )
             )
             {
                /* 
@@ -3039,7 +3037,8 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
             ( 
                req.msg.netfn == IPMI_NETFN_PICMG
                &&
-               ( req.msg.cmd == HPMFWUPG_QUERY_ROLLBACK_STATUS )
+               ( req.msg.cmd == HPMFWUPG_QUERY_ROLLBACK_STATUS ||
+                 req.msg.cmd == HPMFWUPG_GET_UPGRADE_STATUS )
             )
             {
                /* 
@@ -3052,15 +3051,34 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                lprintf(LOG_DEBUG,"HPM: upg/rollback status firmware API called");
                lprintf(LOG_DEBUG,"HPM: try to re-open IOL session");
                
-               sleep(inaccessTimeout-inaccessTimeoutCounter);
-               
                /* force session re-open */
                intf->opened              = 0;
                intf->session->authtype   = IPMI_SESSION_AUTHTYPE_NONE;
                intf->session->session_id = 0;
                intf->session->in_seq     = 0;
                intf->session->active     = 0;
-               intf->open(intf);
+               
+               while 
+               ( 
+                  intf->open(intf) == HPMFWUPG_ERROR 
+                  &&
+                  inaccessTimeoutCounter < inaccessTimeout
+               ) 
+               {
+                  inaccessTimeoutCounter += time(NULL) - timeoutSec1;
+                  timeoutSec1 = time(NULL);
+                  usleep(100000);                  
+               }
+               
+               if ( inaccessTimeoutCounter < inaccessTimeout )
+               {
+                  fakeRsp.ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
+               }
+               else
+               {
+                  fakeRsp.ccode = 0xc3;
+               }
+               rsp = &fakeRsp;
             }
          }
       }
