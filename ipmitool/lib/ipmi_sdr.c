@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -173,7 +173,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor, uint8_t val)
  *
  * Even though spec says histerisis should be computed using Mx+B
  * formula, B is irrelevant when doing raw comparison
- * 
+ *
  * threshold rearm point is computed using threshold +/- hysterisis
  * with the full formula however B can't be applied in raw comparisons
  *
@@ -523,8 +523,8 @@ ipmi_sdr_get_sensor_type_desc(const uint8_t type)
 		snprintf(desc, 32, "reserved #%02x", type);
 	else
    {
-      snprintf(desc, 32, oemval2str(sdriana,type,ipmi_oem_sdr_type_vals), 
-                                                                   type); 
+      snprintf(desc, 32, oemval2str(sdriana,type,ipmi_oem_sdr_type_vals),
+                                                                   type);
    }
 	return desc;
 }
@@ -638,7 +638,7 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 
 			sleep(rand() & 3);
 
-			if (ipmi_sdr_get_reservation(intf, itr->use_built_in, 
+			if (ipmi_sdr_get_reservation(intf, itr->use_built_in,
                                       &(itr->reservation)) < 0) {
 				lprintf(LOG_ERR,
 					"Unable to renew SDR reservation");
@@ -1156,7 +1156,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		}
 	}
 
-	/* 
+	/*
 	 * CSV OUTPUT
 	 */
 
@@ -1211,7 +1211,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		return 0;	/* done */
 	}
 
-	/* 
+	/*
 	 * NORMAL OUTPUT
 	 */
 
@@ -1271,7 +1271,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 		return 0;	/* done */
 	}
 
-	/* 
+	/*
 	 * VERBOSE OUTPUT
 	 */
 
@@ -1660,30 +1660,30 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 			desc, sensor->keys.sensor_num);
 		validread = 0;
 	}
- 	
- 	else if (rsp->ccode > 0) {
-  		/* completion code 0xcd is special case */
- 		if (rsp->ccode == 0xcd) {
- 			/* sensor not found */
- 			validread = 0;
- 		} else {
- 			lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
+
+	else if (rsp->ccode > 0) {
+		/* completion code 0xcd is special case */
+		if (rsp->ccode == 0xcd) {
+			/* sensor not found */
+			validread = 0;
+		} else {
+			lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x): %s",
 				desc, sensor->keys.sensor_num,
 				val2str(rsp->ccode, completion_code_vals));
- 			validread = 0;
- 		} 
- 	} else {
- 		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
- 			/* sensor reading unavailable */
- 			validread = 0;
- 		} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
- 			validread = 0;
- 			/* check for sensor scanning disabled bit */
- 			lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
+			validread = 0;
+		}
+	} else {
+		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
+			/* sensor reading unavailable */
+			validread = 0;
+		} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
+			validread = 0;
+			/* check for sensor scanning disabled bit */
+			lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
 				desc, sensor->keys.sensor_num);
- 		}
+		}
 	}
-		
+
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
 		       (sensor->id_code) ? desc : "", sensor->keys.sensor_num);
@@ -2601,7 +2601,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		lprintf(LOG_DEBUG, "SDR records   : %d", sdr_info.count);
 	}
 
-	if (ipmi_sdr_get_reservation(intf, itr->use_built_in, 
+	if (ipmi_sdr_get_reservation(intf, itr->use_built_in,
                                 &(itr->reservation)) < 0) {
 		lprintf(LOG_ERR, "Unable to obtain SDR reservation");
 		free(itr);
