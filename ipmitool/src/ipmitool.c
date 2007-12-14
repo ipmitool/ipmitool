@@ -60,6 +60,7 @@
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_hpmfwupg.h>
+#include <ipmitool/ipmi_ekanalyzer.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -108,7 +109,8 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_exec_main,    "exec",    "Run list of commands from file" },
 	{ ipmi_set_main,     "set",     "Set runtime variable for shell and exec" },
 	{ ipmi_echo_main,    "echo",    NULL }, /* for echoing lines to stdout in scripts */
-   { ipmi_hpmfwupg_main,"hpm", "Update HPM components using PICMG HPM.1 file"},
+	{ ipmi_hpmfwupg_main,"hpm", "Update HPM components using PICMG HPM.1 file"},
+	{ ipmi_ekanalyzer_main,"ekanalyzer", "run FRU-Ekeying analyzer using FRU files"},
 	{ NULL },
 };
 

@@ -204,6 +204,7 @@ Commands:
         sunoem       Manage Sun OEM Extensions
         exec         Run list of commands from file
         set          Set runtime variable for shell and exec
+        ekanalyzer   run FRU-Ekeying analyzer using FRU files
 
 ipmitool chassis help
 .br 
@@ -1464,6 +1465,196 @@ Enables access to the BMC by the given userid.
 .br 
 
 Determine whether a password has been stored as 16 or 20 bytes.
+.RE
+.TP
+\fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
+.RS
+.TP
+.br
+\fINOTE\fP : This command can get a maximum of 8 files per command line
+.TP
+.br
+\fIfilename1\fP : binary file that stores FRU data of a Carrier or an AMC module
+.TP
+.br
+\fIfilename2\fP : binary file that stores FRU data of an AMC module.
+      These binary files can be generated from command:
+      \fIipmitool fru read <id> <filename>\fP
+.TP
+.br
+\fIfilename3\fP : configuration file used for configuring On-Carrier Device ID
+or OEM GUID. This file is optional.
+.TP
+.br
+\fIxx\fP : indicates the type of the file. It can take the following value:
+.RS
+.TP
+.br
+\fIoc\fP : On-Carrier device
+.TP
+.br
+\fIa1\fP : AMC slot A1
+.TP
+.br
+\fIa2\fP : AMC slot A2
+.TP
+.br
+\fIa3\fP : AMC slot A3
+.TP
+.br
+\fIa4\fP : AMC slot A4
+.TP
+.br
+\fIb1\fP : AMC slot B1
+.TP
+.br
+\fIb2\fP : AMC slot B2
+.TP
+.br
+\fIb3\fP : AMC slot B3
+.TP
+.br
+\fIb4\fP : AMC slot B4
+.TP
+.br
+\fIsm\fP : Shelf Manager
+
+.RE
+.TP
+.br
+The available commands for ekanalyzer are:
+
+.RE
+.RS
+.TP
+\fIprint\fP [<\fBcarrier\fR | \fBpower\fR | \fBall\fR>]
+.RS
+.TP
+\fIcarrier\fP (default) <\fBoc=filename1\fR> <\fBoc=filename2\fR> \fB...\fR
+.br
+
+Display point to point physical connectivity between carriers and AMC modules.
+ Example:
+   > ipmitool ekanalyzer print carrier oc=fru oc=carrierfru
+   From Carrier file: fru
+      Number of AMC bays supported by Carrier: 2 
+      AMC slot B1 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 16
+         Port 1 =====> On Carrier Device ID 0, Port 12
+         Port 2 =====> AMC slot B2, Port 2
+      AMC slot B2 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 3
+         Port 2 =====> AMC slot B1, Port 2
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+   From Carrier file: carrierfru
+      On Carrier Device ID 0 topology:
+         Port 0 =====> AMC slot B1, Port 4
+         Port 1 =====> AMC slot B1, Port 5
+         Port 2 =====> AMC slot B2, Port 6
+         Port 3 =====> AMC slot B2, Port 7
+      AMC slot B1 topology:
+         Port 0 =====> AMC slot B2, Port 0
+      AMC slot B1 topology:
+         Port 1 =====> AMC slot B2, Port 1
+      Number of AMC bays supported by Carrier: 2
+
+.TP
+\fIpower\fP <\fBxx=filename1\fR> <\fBxx=filename2\fR> \fB...\fr
+.br
+
+Display power supply informations between carrier and AMC modules.
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both physical connectivity and power supply of each carrier and AMC
+modules.
+
+.RE
+.TP
+\fIfrushow\fP <\fBxx=filename\fR>
+.br
+Convert a binary FRU file into human readable text format. Use -v option to get
+more display information.
+
+.RE
+.RS
+.TP
+\fIsummary\fP [<\fBmatch\fR | \fBunmatch\fR | \fBall\fR>]
+.RS
+.TP
+\fImatch\fP (default) <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fR
+.br
+Display only matched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules. Example:
+ > ipmitool ekanalyzer summary match oc=fru b1=amcB1 a2=amcA2
+ On-Carrier Device vs AMC slot B1
+  AMC slot B1 port 0 ==> On-Carrier Device 0 port 16
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 11 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+ *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+  AMC slot B1 port 1 ==> On-Carrier Device 0 port 12
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 6 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 1 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ On-Carrier Device vs AMC slot A2
+  AMC slot A2 port 0 ==> On-Carrier Device 0 port 3
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 9 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot A2
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ AMC slot B1 vs AMC slot A2
+  AMC slot A2 port 2 ==> AMC slot B1 port 2
+   Matching Result
+   - From AMC slot B1
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+   - To AMC slot A2
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+ *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+.TP
+\fIunmatch\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display the unmatched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both matched result and unmatched results of Ekeying match between two
+cards or two modules.
 .RE
 
 .SH "OPEN INTERFACE"

@@ -65,6 +65,7 @@
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_oem.h>
+#include <ipmitool/ipmi_ekanalyzer.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>

@@ -1,21 +1,24 @@
 /*
+ * Copyright (c) 2007 Kontron Canada, Inc.  All Rights Reserved.
+ *
+ * Base on code from
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -30,70 +33,36 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#ifndef IPMI_EKANALYZER_H
+#define IPMI_EKANALYZER_H
 
-#include <sys/types.h>
 #include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
+#include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_fru.h>
 
-#ifndef TRUE
-#define TRUE    1
-#endif
+#define RTM_FRU_FILE             0x00
+#define A1_AMC_FRU_FILE          0x01
+#define A2_AMC_FRU_FILE          0x02
+#define A3_AMC_FRU_FILE          0x03
+#define A4_AMC_FRU_FILE          0x04
+#define B1_AMC_FRU_FILE          0x05
+#define B2_AMC_FRU_FILE          0x06
+#define B3_AMC_FRU_FILE          0x07
+#define B4_AMC_FRU_FILE          0x08
+#define ON_CARRIER_FRU_FILE      0x09
+#define CONFIG_FILE              0x0A
+#define SHELF_MANAGER_FRU_FILE   0x0B
 
-#ifndef FALSE
-#define FALSE   0
-#endif
+#define MIN_ARGUMENT             0x02
+#define RTM_IPMB_L               0x90
 
-#ifndef tboolean
-#define tboolean   int
-#endif
+#define MAX_FILE_NUMBER          8
+/* this voltag is specified in AMC.0 specification Table 3-10 */
+#define AMC_VOLTAGE                  12 /*volts*/
 
-struct ipmi_intf;
+#define SIZE_OF_GUID             16
+#define FRU_RADIAL_IPMB0_LINK_MAPPING 0x15
 
-struct valstr {
-	uint16_t val;
-	const char * str;
-};
-struct oemvalstr {
-	uint16_t oem;
-   uint16_t val;
-	const char * str;
-};
+int ipmi_ekanalyzer_main(struct ipmi_intf *, int, char **);
 
-const char * val2str(uint16_t val, const struct valstr * vs);
-const char * oemval2str(uint16_t oem,uint16_t val, const struct oemvalstr * vs);
-uint16_t str2val(const char * str, const struct valstr * vs);
-void print_valstr(const struct valstr * vs, const char * title, int loglevel);
-void print_valstr_2col(const struct valstr * vs, const char * title, int loglevel);
-
-
-uint16_t buf2short(uint8_t * buf);
-uint32_t buf2long(uint8_t * buf);
-const char * buf2str(uint8_t * buf, int len);
-void printbuf(const uint8_t * buf, int len, const char * desc);
-uint8_t ipmi_csum(uint8_t * d, int s);
-FILE * ipmi_open_file(const char * file, int rw);
-void ipmi_start_daemon(struct ipmi_intf *intf);
-
-#define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
-#define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
-
-#ifndef __min
-# define __min(a, b)  ((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef __max
-# define __max(a, b)  ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef __minlen
-# define __minlen(a, b) ({ int x=strlen(a); int y=strlen(b); (x < y) ? x : y;})
-#endif
-
-#ifndef __maxlen
-# define __maxlen(a, b) ({ int x=strlen(a); int y=strlen(b); (x > y) ? x : y;})
-#endif
-
-#endif /* IPMI_HELPER_H */
+#endif /* IPMI_EKANALYZER_H */

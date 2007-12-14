@@ -395,9 +395,9 @@ struct fru_picmgext_amc_channel_desc_record {
 	unsigned char lane1port           :5;
 	unsigned char lane2port           :5;
 	unsigned char lane3port           :5;
-	unsigned char /* reserved */      :4;
+	unsigned char  /*reserved */     :4;
 #else	
-	unsigned char /* reserved */      :4;
+	unsigned char /*reserved  */     :4;
 	unsigned char lane3port           :5;
 	unsigned char lane2port           :5;
 	unsigned char lane1port           :5;
@@ -448,7 +448,8 @@ struct fru_picmgext_amc_link_desc_record {
 	unsigned short channel_id          :8;
 #endif 
 } __attribute__ ((packed));
-
+/* FRU Board manufacturing date */
+static const uint64_t secs_from_1970_1996 = 820450800;
 static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Unspecified", "Other", "Unknown",
 	"Desktop", "Low Profile Desktop", "Pizza Box",
