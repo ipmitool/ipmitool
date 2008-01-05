@@ -226,6 +226,9 @@ AC_CHECK_HEADER([linux/ipmi.h],
 
 dnl look for FreeIPMI files
 AC_CHECK_LIB(freeipmi, ipmi_open_inband, [have_free=yes], [have_free=no])
+if test "x$have_free" != "xyes"; then
+     AC_CHECK_LIB(freeipmi, ipmi_ctx_open_inband, [have_free=yes], [have_free=no])
+fi
 AC_ARG_ENABLE([intf-free],
         [AC_HELP_STRING([--enable-intf-free],
                         [enable FreeIPMI IPMI interface [default=auto]])],
@@ -274,7 +277,6 @@ dnl Determine if you got the right FreeIPMI version
                           0);
     ], ac_free_version_0_4_0=yes,ac_free_version_0_4_0=no)
     AC_MSG_RESULT($ac_free_version_0_4_0)
-
     AC_MSG_CHECKING([for libfreeipmi version 0.5.0])
     AC_TRY_COMPILE([
 #include <sys/types.h>	/* For size_t */
@@ -296,21 +298,44 @@ dnl Determine if you got the right FreeIPMI version
     ], ac_free_version_0_5_0=yes,ac_free_version_0_5_0=no)
     AC_MSG_RESULT($ac_free_version_0_5_0)
 
+    AC_MSG_CHECKING([for libfreeipmi version 0.6.0])
+    AC_TRY_COMPILE([
+#include <stdio.h>	/* For NULL */
+#include <freeipmi/freeipmi.h>
+    ], [
+    ipmi_ctx_t ctx = NULL;
+    int rv;
+    ctx = ipmi_ctx_create();
+    rv = ipmi_ctx_open_inband(ctx,
+                              IPMI_DEVICE_KCS,
+                              0,
+                              0,
+                              0,
+                              NULL,
+                              0,
+                              0);
+    ], ac_free_version_0_6_0=yes,ac_free_version_0_6_0=no)
+    AC_MSG_RESULT($ac_free_version_0_6_0)
+
     if test "x$ac_free_version_0_3_0" = "xyes" \
        || test "x$ac_free_version_0_4_0" = "xyes" \
-       || test "x$ac_free_version_0_5_0" = "xyes"; then
+       || test "x$ac_free_version_0_5_0" = "xyes" \
+       || test "x$ac_free_version_0_6_0" = "xyes"; then
        AC_DEFINE(IPMI_INTF_FREE, [1], [Define to 1 to enable FreeIPMI interface.])
        AC_SUBST(INTF_FREE, [free])
        AC_SUBST(INTF_FREE_LIB, [libintf_free.la])
        IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB free/libintf_free.la"
        if test "x$ac_free_version_0_3_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_3_0, [1], [Define to 1 for FreeIPMI 0.3.0.])
+          AC_DEFINE(IPMI_INTF_FREE_0_3_0, [1], [Define to 1 for FreeIPMI 0.3.0.])
        fi
        if test "x$ac_free_version_0_4_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_4_0, [1], [Define to 1 for FreeIPMI 0.4.0.])
+          AC_DEFINE(IPMI_INTF_FREE_0_4_0, [1], [Define to 1 for FreeIPMI 0.4.0.])
        fi
        if test "x$ac_free_version_0_5_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_VERSION_0_5_0, [1], [Define to 1 for FreeIPMI 0.5.0.])
+          AC_DEFINE(IPMI_INTF_FREE_0_5_0, [1], [Define to 1 for FreeIPMI 0.5.0.])
+       fi
+       if test "x$ac_free_version_0_6_0" = "xyes"; then
+          AC_DEFINE(IPMI_INTF_FREE_0_6_0, [1], [Define to 1 for FreeIPMI 0.6.0.])
        fi
     else
        enable_intf_free=no

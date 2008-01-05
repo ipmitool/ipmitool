@@ -34,6 +34,10 @@
  * facility.
  */
 
+#if defined(HAVE_CONFIG_H)
+# include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,11 +47,15 @@
 #include <ipmitool/ipmi_intf.h>
 
 #include <freeipmi/freeipmi.h>
+#if IPMI_INTF_FREE_0_3_0 || IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
 #include <freeipmi/udm/ipmi-udm.h>
+#endif
 
-#include <config.h>
-
+#if IPMI_INTF_FREE_0_6_0
+ipmi_ctx_t dev = NULL;
+#else  /* !IPMI_INTF_FREE_0_6_0 */
 ipmi_device_t dev = NULL;
+#endif  /* !IPMI_INTF_FREE_0_6_0 */
 
 extern int verbose;
 
@@ -58,7 +66,7 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                 return -1;
         }
 
-#if IPMI_INTF_FREE_VERSION_0_3_0
+#if IPMI_INTF_FREE_0_3_0
         if (!(dev = ipmi_open_inband (IPMI_DEVICE_KCS,
                                       0,
                                       0,
@@ -75,9 +83,9 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                         goto cleanup;
                 }
         }
-#elif IPMI_INTF_FREE_VERSION_0_4_0
+#elif IPMI_INTF_FREE_0_4_0
         if (!(dev = ipmi_device_create())) {
-                perror("ipmi_open_inband()");
+                perror("ipmi_device_create");
                 goto cleanup;
         }
         if (ipmi_open_inband (dev,
@@ -100,9 +108,9 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                        goto cleanup;
                 }
         }
-#elif IPMI_INTF_FREE_VERSION_0_5_0
+#elif IPMI_INTF_FREE_0_5_0
         if (!(dev = ipmi_device_create())) {
-                perror("ipmi_open_inband()");
+                perror("ipmi_device_create");
                 goto cleanup;
         }
         if (ipmi_open_inband (dev,
@@ -124,6 +132,33 @@ static int ipmi_free_open(struct ipmi_intf * intf)
                        fprintf(stderr, 
                                "ipmi_open_inband(): %s\n",
                                ipmi_device_strerror(ipmi_device_errnum(dev)));
+                       goto cleanup;
+                }
+        }
+#elif IPMI_INTF_FREE_0_6_0
+        if (!(dev = ipmi_ctx_create())) {
+                perror("ipmi_ctx_create");
+                goto cleanup;
+        }
+        if (ipmi_ctx_open_inband (dev,
+                                  IPMI_DEVICE_KCS,
+                                  0,
+                                  0,
+                                  0,
+                                  NULL,
+                                  0,
+                                  IPMI_FLAGS_DEFAULT) < 0) {
+                if (ipmi_ctx_open_inband (dev,
+                                          IPMI_DEVICE_SSIF,
+                                          0,
+                                          0,
+                                          0,
+                                          NULL,
+                                          0,
+                                          IPMI_FLAGS_DEFAULT) < 0) {
+                       fprintf(stderr, 
+                               "ipmi_open_inband(): %s\n",
+                               ipmi_ctx_strerror(ipmi_ctx_errnum(dev)));
                        goto cleanup;
                 }
         }
@@ -133,9 +168,14 @@ static int ipmi_free_open(struct ipmi_intf * intf)
 	return 0;
  cleanup:
         if (dev) {
+#if IPMI_INTF_FREE_0_3_0
                 ipmi_close_device(dev);
-#if IPMI_INTF_FREE_VERSION_0_4_0
+#elif IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
+                ipmi_close_device(dev);
                 ipmi_device_destroy(dev);
+#elif IPMI_INTF_FREE_0_6_0
+                ipmi_ctx_close(dev);
+                ipmi_ctx_destroy(dev);
 #endif
         }
         return -1;
@@ -144,9 +184,14 @@ static int ipmi_free_open(struct ipmi_intf * intf)
 static void ipmi_free_close(struct ipmi_intf * intf)
 {
         if (dev) {
+#if IPMI_INTF_FREE_0_3_0
                 ipmi_close_device(dev);
-#if IPMI_INTF_FREE_VERSION_0_4_0
+#elif IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
+                ipmi_close_device(dev);
                 ipmi_device_destroy(dev);
+#elif IPMI_INTF_FREE_0_6_0
+                ipmi_ctx_close(dev);
+                ipmi_ctx_destroy(dev);
 #endif
         }
 	intf->opened = 0;
@@ -194,12 +239,16 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
                                    req->msg.data_len + 1,
                                    rs_buf, 
                                    rs_buf_len)) < 0) {
-#if IPMI_INTF_FREE_VERSION_0_3_0
+#if IPMI_INTF_FREE_0_3_0
                 perror("ipmi_cmd_raw");
-#elif IPMI_INTF_FREE_VERSION_0_4_0
+#elif IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
                 fprintf(stderr,
                         "ipmi_cmd_raw: %s\n",
                         ipmi_device_strerror(ipmi_device_errnum(dev)));
+#elif IPMI_INTF_FREE_0_6_0
+                fprintf(stderr,
+                        "ipmi_cmd_raw: %s\n",
+                        ipmi_ctx_strerror(ipmi_ctx_errnum(dev)));
 #endif
                 return NULL;
         }
