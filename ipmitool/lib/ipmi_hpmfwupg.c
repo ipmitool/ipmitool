@@ -115,8 +115,9 @@ extern int verbose;
 /*
  *  Agent version
  */
-#define HPMFWUPG_VERSION_MAJOR 1 
-#define HPMFWUPG_VERSION_MINOR 0
+#define HPMFWUPG_VERSION_MAJOR    1 
+#define HPMFWUPG_VERSION_MINOR    0
+#define HPMFWUPG_VERSION_SUBMINOR 1
 
 /* 
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -3051,42 +3052,37 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                lprintf(LOG_DEBUG,"HPM: upg/rollback status firmware API called");
                lprintf(LOG_DEBUG,"HPM: try to re-open IOL session");
                
-               /* force session re-open */
-               intf->opened              = 0;
-               intf->session->authtype   = IPMI_SESSION_AUTHTYPE_NONE;
-               intf->session->session_id = 0;
-               intf->session->in_seq     = 0;
-               intf->session->active     = 0;
+               if ( intf->target_addr ==  intf->my_addr )
+               {
+                  /* force session re-open */
+                  intf->opened              = 0;
+                  intf->session->authtype   = IPMI_SESSION_AUTHTYPE_NONE;
+                  intf->session->session_id = 0;
+                  intf->session->in_seq     = 0;
+                  intf->session->active     = 0;
                
-               while 
-               ( 
-                  intf->open(intf) == HPMFWUPG_ERROR 
-                  &&
-                  inaccessTimeoutCounter < inaccessTimeout
-               ) 
-               {
-                  inaccessTimeoutCounter += time(NULL) - timeoutSec1;
-                  timeoutSec1 = time(NULL);
-                  usleep(100000);                  
-               }
-               
-               if ( inaccessTimeoutCounter < inaccessTimeout )
-               {
-                  fakeRsp.ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
-               }
-               else
-               {
+                  while 
+                  ( 
+                     intf->open(intf) == HPMFWUPG_ERROR 
+                     &&
+                     inaccessTimeoutCounter < inaccessTimeout
+                  ) 
+                  {
+                     inaccessTimeoutCounter += time(NULL) - timeoutSec1;
+                     timeoutSec1 = time(NULL);
+                     usleep(100000);                  
+                  }
+                  /* Fake timeout to retry command */
                   fakeRsp.ccode = 0xc3;
+                  rsp = &fakeRsp;
                }
-               rsp = &fakeRsp;
             }
          }
       }
       
      /* Handle inaccessibility timeout (rsp = NULL if IOL) */
-     if ( rsp == NULL || rsp->ccode == 0xff || rsp->ccode == 0xc3 )
+     if ( rsp == NULL || rsp->ccode == 0xff || rsp->ccode == 0xc3 || rsp->ccode == 0xd3 )
      {
-
         if ( inaccessTimeoutCounter < inaccessTimeout ) 
         {
            timeoutSec2 = time(NULL);
@@ -3095,7 +3091,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
               inaccessTimeoutCounter += timeoutSec2 - timeoutSec1;
               timeoutSec1 = time(NULL);
            }
-
+           usleep(100000);
            retry = 1;
         }
         else
@@ -3114,6 +3110,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
               timeoutSec1 = time(NULL);
               upgradeTimeoutCounter += timeoutSec2 - timeoutSec1;
            }
+           usleep(100000);
            retry = 1;
         }
         else
@@ -3241,8 +3238,8 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
    lprintf(LOG_DEBUG,"ipmi_hpmfwupg_main()");
    
 
-   lprintf(LOG_NOTICE,"\nPICMG HPM.1 Upgrade Agent %d.%d: \n", 
-           HPMFWUPG_VERSION_MAJOR, HPMFWUPG_VERSION_MINOR);
+   lprintf(LOG_NOTICE,"\nPICMG HPM.1 Upgrade Agent %d.%d.%d: \n", 
+           HPMFWUPG_VERSION_MAJOR, HPMFWUPG_VERSION_MINOR, HPMFWUPG_VERSION_SUBMINOR);
    
    if ( (argc == 0) || (strcmp(argv[0], "help") == 0) ) 
    {
