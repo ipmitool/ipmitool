@@ -101,10 +101,14 @@
 *    as compared to the Image file (*.hpm).This will ensure that user does 
 *    not update the target incase its already been updated
 *
+* 2008-01-25
+*  - Reduce buffer length more aggressively when no response from iol.
+*  - Incremented version to 1.02
+*
+* ===========================================================================
 * TODO
 * ===========================================================================
 * 2007-01-11
-*
 * - Add interpretation of GetSelftestResults
 * - Add interpretation of component ID string
 * 
@@ -117,7 +121,7 @@ extern int verbose;
  */
 #define HPMFWUPG_VERSION_MAJOR    1 
 #define HPMFWUPG_VERSION_MINOR    0
-#define HPMFWUPG_VERSION_SUBMINOR 1
+#define HPMFWUPG_VERSION_SUBMINOR 2
 
 /* 
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -1961,7 +1965,14 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                         if ( rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH )
                         {
                            /* Retry with a smaller buffer length */
-                           bufLength -= (unsigned char)1;
+                           if ( strstr(intf->name,"lan") != NULL ) 
+                           {
+                              bufLength -= (unsigned char)8;
+                           }
+                           else
+                           {
+                              bufLength -= (unsigned char)1;
+                           }
                            rc = HPMFWUPG_SUCCESS; 
                         }
                         else if ( rc == HPMFWUPG_UPLOAD_RETRY )
