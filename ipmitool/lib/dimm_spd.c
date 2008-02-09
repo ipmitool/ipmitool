@@ -41,10 +41,25 @@
 
 extern int verbose;
 
+/*
+ * Also, see ipmi_fru.c.
+ *
+ * Apparently some systems have problems with FRU access greater than 16 bytes
+ * at a time, even when using byte (not word) access.	 In order to ensure we
+ * work with the widest variety of hardware request size is capped at 16 bytes.
+ * Since this may result in slowdowns on some systems with lots of FRU data you
+ * can change this define to enable larger (up to 32 bytes at a time) access.
+ */
+#define FRU_DATA_RQST_SIZE 16;
+
 const struct valstr spd_memtype_vals[] = {
+	{ 0x01, "STD FPM DRAM" },
 	{ 0x02, "EDO" },
 	{ 0x04, "SDRAM" },
-	{ 0x07, "DDR" },
+	{ 0x05, "ROM" },
+	{ 0x06, "DDR SGRAM" },
+	{ 0x07, "DDR SDRAM" },
+	{ 0x08, "DDR2 SDRAM" },
 	{ 0x00, NULL },
 };
 
@@ -52,6 +67,7 @@ const struct valstr spd_config_vals[] = {
 	{ 0x00, "None" },
 	{ 0x01, "Parity" },
 	{ 0x02, "ECC" },
+	{ 0x04, "Addr Cmd Parity" },
 	{ 0x00, NULL },
 };
 
@@ -61,6 +77,7 @@ const struct valstr spd_voltage_vals[] = {
 	{ 0x02, "HSTL 1.5V" },
 	{ 0x03, "SSTL 3.3V" },
 	{ 0x04, "SSTL 2.5V" },
+	{ 0x05, "SSTL 1.8V" },
 	{ 0x00, NULL },
 };
 
@@ -780,7 +797,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		msg_data[0] = id;
 		msg_data[1] = offset;
 		msg_data[2] = 0;
-		msg_data[3] = 32;
+		msg_data[3] = FRU_DATA_RQST_SIZE;
 
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
