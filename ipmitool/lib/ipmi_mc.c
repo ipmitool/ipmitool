@@ -155,8 +155,9 @@ printf_mc_usage(void)
 	struct bitfield_data * bf;
 	printf("MC Commands:\n");
 	printf("  reset <warm|cold>\n");
+	printf("  guid\n");
 	printf("  info\n");
-	printf("  wdt\n");
+	printf("  watchdog <get|reset|off>\n");
 	printf("  selftest\n");
 	printf("  getenables\n");
 	printf("  setenables <option=on|off> ...\n");
@@ -165,6 +166,17 @@ printf_mc_usage(void)
 		printf("    %-20s  %s\n", bf->name, bf->desc);
 	}
 }
+
+
+static void
+print_watchdog_usage(void)
+{
+	lprintf(LOG_NOTICE, "usage: watchdog <command>:");
+	lprintf(LOG_NOTICE, "   get    :  Get Current Watchdog settings");
+	lprintf(LOG_NOTICE, "   reset  :  Restart Watchdog timer based on most recent settings");
+	lprintf(LOG_NOTICE, "   off    :  Shut off a running Watchdog timer");
+}
+
 
 /* ipmi_mc_get_enables  -  print out MC enables
  *
@@ -251,12 +263,12 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 			if (strncmp(argv[i]+nl+1, "off", 3) == 0) {
 					printf("Disabling %s\n", bf->desc);
 					en &= ~bf->mask;
-				}
+			}
 			else if (strncmp(argv[i]+nl+1, "on", 2) == 0) {
 					printf("Enabling %s\n", bf->desc);
 					en |= bf->mask;
-				}
-				else {
+			}
+			else {
 				lprintf(LOG_ERR, "Unrecognized option: %s", argv[i]);
 			}
 		}
@@ -470,7 +482,7 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 	   lprintf(LOG_ERR, "Bad response: (%s)",
-	                                 val2str(rsp->ccode, completion_code_vals));
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
@@ -545,25 +557,25 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
  */
 
 const char *wdt_use_string[8] = {
-	"reserved",
+	"Reserved",
 	"BIOS FRB2",
 	"BIOS/POST",
 	"OS Load",
 	"SMS/OS",
 	"OEM",
-	"reserved",
-	"reserved"
+	"Reserved",
+	"Reserved"
 };
 
 const char *wdt_action_string[8] = {
-	"no action",
+	"No action",
 	"Hard Reset",
 	"Power Down",
 	"Power Cycle",
-	"reserved",
-	"reserved",
-	"reserved",
-	"reserved"
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved"
 };
  
 static int
@@ -579,32 +591,37 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("no response\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get Watchdog Timer command failed");
 		return -1;
 	}
 
 	if (rsp->ccode) {
-		printf("returned CC code 0x%02x\n", rsp->ccode);
+		lprintf(LOG_ERR, "Get Watchdog Timer command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 	
-	printf("Timer Use:            0x%02x - %s\n", wdt_res->timer_use, wdt_use_string[wdt_res->timer_use]);
-	printf("Timer Actions:        0x%02x - %s\n", wdt_res->timer_actions, wdt_action_string[wdt_res->timer_actions]);
-	printf("Pre-timeout interval: 0x%02x\n", wdt_res->pre_timeout);
-	printf("Timer Use Expiration: 0x%02x\n", wdt_res->timer_use_exp);
-	printf("Initial Countdown:    %i ms\n", 
-	    (wdt_res->initial_countdown_msb << 8) | wdt_res->initial_countdown_lsb);
-	printf("Present Countdown:    %i ms\n", 
-	    (wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb);
+	printf("Watchdog Timer Use:     %s (0x%02x)\n", 
+		wdt_use_string[wdt_res->timer_use], wdt_res->timer_use);
+	printf("Watchdog Timer Is:      %s\n", 
+		wdt_res->timer_use & 0x40 ? "Started/Running" : "Stopped");
+	printf("Watchdog Timer Actions: %s (0x%02x)\n", 
+		 wdt_action_string[wdt_res->timer_actions], wdt_res->timer_actions);
+	printf("Pre-timeout interval:   %d seconds\n", wdt_res->pre_timeout);
+	printf("Timer Expiration Flags: 0x%02x\n", wdt_res->timer_use_exp);
+	printf("Initial Countdown:      %i sec\n", 
+	    ((wdt_res->initial_countdown_msb << 8) | wdt_res->initial_countdown_lsb)/10 );
+	printf("Present Countdown:      %i sec\n", 
+	    (((wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb)) / 10);
 	
 	
 	return 0;	
 }
 
-/* ipmi_mc_set_watchdog
+/* ipmi_mc_shutoff_watchdog
  *
  * @intf:	ipmi interface
  *
@@ -612,7 +629,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
  * returns -1 on error
  */
 static int
-ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -624,31 +641,43 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data  = msg_data;
 	req.msg.data_len = 6;
 
-	printf("FIXME - not fully implemented\n");
+	/*
+	 * The only set cmd we're allowing is to shut off the timer.
+	 * Turning on the timer should be the job of the ipmi watchdog driver.
+	 * See 'modinfo ipmi_watchdog' for more info. (NOTE: the reset 
+	 * command will restart the timer if it's already been initialized.)
+	 *
+	 * Out-of-band watchdog set commands can still be sent via the raw
+	 * command interface but this is a very dangerous thing to do since
+	 * a periodic "poke"/reset over a network is unreliable.  This is
+	 * not a recommended way to use the IPMI watchdog commands. 
+	 */
 	
-	msg_data[0] = 0x03; /* os load*/
-	msg_data[1] = 0x02; /* action power down */
-	msg_data[2] = 10;   /* pretimeout */
-	msg_data[3] = 0;
-	msg_data[4] = 10; /* timeout lsb in 100ms/count */
-	msg_data[5] = 0;  /* timeout lsb */
+	msg_data[0] = IPM_WATCHDOG_SMS_OS;
+	msg_data[1] = IPM_WATCHDOG_NO_ACTION;
+	msg_data[2] = 0x00;  // pretimeout interval
+	msg_data[3] = IPM_WATCHDOG_CLEAR_SMS_OS;
+	msg_data[4] = 0xb8;  // countdown lsb (100 ms/count)
+	msg_data[5] = 0x0b;  // countdown msb - 5 mins
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("no response\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Watchdog Timer Shutoff command failed!");
 		return -1;
 	}
 
 	if (rsp->ccode) {
-		printf("returned CC code 0x%02x\n", rsp->ccode);
+		lprintf(LOG_ERR, "Watchdog Timer Shutoff command failed! %s",
+			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 		
+	lprintf(LOG_ERR, "Watchdog Timer Shutoff successful -- timer stopped");
 	return 0;	
 }
 
 
-/* ipmi_mc_set_watchdog
+/* ipmi_mc_rst_watchdog
  *
  * @intf:	ipmi interface
  *
@@ -667,16 +696,20 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf("no response\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Reset Watchdog Timer command failed!");
 		return -1;
 	}
 
 	if (rsp->ccode) {
-		printf("returned CC code 0x%02x\n", rsp->ccode);
+		lprintf(LOG_ERR, "Reset Watchdog Timer command failed: %s",
+			(rsp->ccode == IPM_WATCHDOG_RESET_ERROR) ? 
+				"Attempt to reset unitialized watchdog" :
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 		
+	lprintf(LOG_ERR, "IPMI Watchdog Timer Reset -  countdown restarted!");
 	return 0;	
 }
 
@@ -726,18 +759,21 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "selftest", 8)) {
 		rc = ipmi_mc_get_selftest(intf);
 	}
-	else if (!strncmp(argv[0], "wdt", 3)) {
-		if (argc < 2) {
+	else if (!strncmp(argv[0], "watchdog", 3)) {
+		if (argc < 2 || strncmp(argv[1], "help", 4) == 0) {
+			print_watchdog_usage(); 
+		}
+		else if (strncmp(argv[1], "get", 3) == 0) {
 			rc = ipmi_mc_get_watchdog(intf);
-		}else if(strncmp(argv[1], "get", 3) == 0){
-			rc = ipmi_mc_get_watchdog(intf);
-		}else if(strncmp(argv[1], "set", 3) == 0){
-			if(argc > 5)
-				rc = ipmi_mc_set_watchdog(intf, argc-1, &(argv[1]));
-			else
-				printf("wdt set <use><action><pretimeout><countdown> FIXME - not fully implemented\n");
-		}else if(strncmp(argv[1], "rst", 3) == 0){
+		}
+		else if(strncmp(argv[1], "off", 3) == 0) {
+			rc = ipmi_mc_shutoff_watchdog(intf);
+		}
+		else if(strncmp(argv[1], "reset", 5) == 0) {
 			rc = ipmi_mc_rst_watchdog(intf);
+		}
+		else {
+			print_watchdog_usage(); 
 		}
 	}
 	else {

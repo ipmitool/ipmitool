@@ -233,6 +233,36 @@ Displays information about the BMC hardware, including device
 revision, firmware revision, IPMI version supported, manufacturer ID,
 and information on additional device support.
 .TP 
+\fIwatchdog\fP <\fBcommand\fR>
+.br 
+
+Perform various watchdog timer setting commands to view and
+change the current state of the timer.
+.RS
+.TP 
+\fIget\fP
+.br 
+
+Show current Watchdog Timer settings and countdown state.
+.TP 
+\fIreset\fP
+.br 
+
+Reset the Watchdog Timer to its most recent state and restart the 
+countdown timer.
+.TP 
+\fIoff\fP
+.br 
+
+Turn off a currently running Watchdog countdown timer.
+.RE
+.TP 
+\fIselftest\fP
+.br 
+
+Check on the basic health of the BMC by executing the Get Self Test
+results command and report the results.
+.TP 
 \fIgetenables\fP
 .br 
 

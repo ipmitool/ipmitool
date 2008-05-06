@@ -114,4 +114,23 @@ struct ipm_get_watchdog_rsp {
 	unsigned char present_countdown_msb;
 } __attribute__ ((packed));
 
+#define IPM_WATCHDOG_RESET_ERROR	0x80
+
+#define IPM_WATCHDOG_BIOS_FRB2		0x01
+#define IPM_WATCHDOG_BIOS_POST		0x02
+#define IPM_WATCHDOG_OS_LOAD		0x03
+#define IPM_WATCHDOG_SMS_OS		0x04
+#define IPM_WATCHDOG_OEM		0x05
+
+#define IPM_WATCHDOG_NO_ACTION		0x00
+#define IPM_WATCHDOG_HARD_RESET		0x01
+#define IPM_WATCHDOG_POWER_DOWN		0x02
+#define IPM_WATCHDOG_POWER_CYCLE	0x03
+
+#define IPM_WATCHDOG_CLEAR_OEM		0x20
+#define IPM_WATCHDOG_CLEAR_SMS_OS	0x10
+#define IPM_WATCHDOG_CLEAR_OS_LOAD	0x08
+#define IPM_WATCHDOG_CLEAR_BIOS_POST	0x04
+#define IPM_WATCHDOG_CLEAR_BIOS_FRB2	0x02
+
 #endif				/*IPMI_MC_H */
