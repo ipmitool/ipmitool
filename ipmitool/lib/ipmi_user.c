@@ -576,7 +576,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
 	else if (strncmp(argv[0], "test", 4) == 0)
 	{
-		// a little fucking irritating, isn't it
+		// a little irritating, isn't it
 		if ((argc == 3 || argc == 4)  &&
 		    ((strncmp(argv[2], "16", 2) == 0) ||
 		     (strncmp(argv[2], "20", 2) == 0)))
