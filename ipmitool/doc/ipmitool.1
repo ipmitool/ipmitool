@@ -186,8 +186,11 @@ ipmitool help
 .br 
 Commands:
         raw          Send a RAW IPMI request and print response
+        i2c          Send an I2C Master Write-Read command and print response
+        spd          Print SPD info from remote I2C device
         lan          Configure LAN Channels
         chassis      Get chassis status and set power state
+        power        Shortcut to chassis power commands
         event        Send events to MC
         mc           Management Controller status and global enables
         sdr          Print Sensor Data Repository entries and readings
@@ -202,13 +205,18 @@ Commands:
         channel      Configure Management Controller channels
         session      Print session information
         sunoem       Manage Sun OEM Extensions
+        kontronoem   Manage Kontron OEM Extensions
+        picmg        Run a PICMG/ATA extended command
+        firewall     Configure Firmware Firewall
+        shell        Launch interactive IPMI shell
         exec         Run list of commands from file
         set          Set runtime variable for shell and exec
+        echo         Used to echo lines to stdout in scripts
         ekanalyzer   run FRU-Ekeying analyzer using FRU files
 
 ipmitool chassis help
 .br 
-Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev
+Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, bootparam, selftest
 
 ipmitool chassis power help
 .br 
@@ -227,32 +235,32 @@ Instructs the BMC to perform a warm or cold reset.
 Display the Management Controller Globally Unique IDentifier.
 .TP 
 \fIinfo\fP
-.br 
+.br
 
 Displays information about the BMC hardware, including device
 revision, firmware revision, IPMI version supported, manufacturer ID,
 and information on additional device support.
 .TP 
-\fIwatchdog\fP <\fBcommand\fR>
+\fIwatchdog\fP
 .br 
 
-Perform various watchdog timer setting commands to view and
-change the current state of the timer.
+These commands allow a user to view and change the current 
+state of the watchdog timer.
 .RS
 .TP 
 \fIget\fP
-.br 
+.br
 
 Show current Watchdog Timer settings and countdown state.
 .TP 
 \fIreset\fP
-.br 
+.br
 
 Reset the Watchdog Timer to its most recent state and restart the 
 countdown timer.
 .TP 
 \fIoff\fP
-.br 
+.br
 
 Turn off a currently running Watchdog countdown timer.
 .RE
@@ -269,7 +277,7 @@ results command and report the results.
 Displays a list of the currently enabled options for the BMC.
 .br 
 .TP 
-\fIsetenables\fP <\fBoption\fR>=[\fBon\fR|\fBoff\fR]
+\fIsetenables\fP <\fBoption\fR>=[\fIon\fP|\fIoff\fP]
 .br 
 
 Enables or disables the given \fIoption\fR.  This command is
@@ -338,9 +346,8 @@ Possible privilege levels are:
 .TP 
 \fIinfo\fP [\fBchannel number\fR]
 
-Displays  information  about  the
-selected  channel.  If no channel is given it will
-display information about the currently used channel:
+Displays  information  about  the selected  channel.  If no channel 
+is given it will display information about the currently used channel.
 .RS
 .PP 
 > ipmitool channel info
@@ -365,13 +372,13 @@ Configure the given userid as the default on the given channel number.
 When the given channel is subsequently used, the user is identified 
 implicitly by the given userid.
 .TP 
-\fIsetaccess\fP <\fBchannel number\fR> <\fBuserid\fR> [<\fBcallin\fR=\fBon\fR|\fBoff\fR>]
-[<\fBipmi\fR=\fBon\fR|\fBoff\fR>] [<\fBlink\fR=\fBon\fR|\fBoff\fR>] [<\fBprivilege\fR=\fBlevel\fR>]
+\fIsetaccess\fP <\fBchannel number\fR> <\fBuserid\fR> [<\fIcallin\fP=\fBon\fR|\fBoff\fR>]
+[<\fIipmi\fP=\fBon\fR|\fBoff\fR>] [<\fIlink\fP=\fBon\fR|\fBoff\fR>] [<\fIprivilege\fP=\fBlevel\fR>]
 .br 
 
 Configure user access information on the given channel for the given userid.
 .TP 
-\fIgetciphers\fP <\fBipmi\fR|\fBsol\fR> [<\fBchannel\fR>]
+\fIgetciphers\fP <\fIipmi\fP|\fIsol\fP> [<\fBchannel\fR>]
 .br 
 
 Displays the list of cipher suites supported for the given
@@ -395,13 +402,20 @@ This command will return the Power\-On Hours counter.
 .TP 
 \fIidentify\fP <\fBinterval\fR>
 
-Control the front panel identify  light.   Default
-is 15.  Use 0 to turn off.
+Control the front panel identify  light.   Default interval
+is 15 seconds.  Use 0 to turn off.  Use "force" to turn on 
+indefinitely.
 .TP 
 \fIrestart_cause\fP
 .br 
 
 Query the chassis for the cause of the last system restart.
+.TP 
+\fIselftest\fP
+.br 
+
+Check on the basic health of the BMC by executing the Get Self Test
+results command and report the results.
 .TP 
 \fIpolicy\fP
 .br 
@@ -483,12 +497,15 @@ be Operating System support for ACPI and some sort of daemon
 watching for events for this soft power to work.
 .RE
 .TP 
-\fIbootdev\fP <\fBdevice\fR> [<\fBclear\-cmos\fR=\fByes\fR|\fBno\fR>]
+\fIbootdev\fP <\fBdevice\fR> [<\fIclear\-cmos\fP=\fByes\fR|\fBno\fR>] [<\fIoptions\fP=\fBhelp,...\fR>]
 .br 
 
 Request the system to boot from an alternate boot device on next reboot.
 The \fIclear\-cmos\fP option, if supplied, will instruct the BIOS to
-clear its CMOS on the next reboot.
+clear its CMOS on the next reboot.  Various options may be used to modify 
+the boot device settings.  Run \fI"bootdev none options=help"\fP for a list of 
+available boot device modifiers/options.  
+
 .RS
 .TP 
 Currently supported values for <device> are:
@@ -527,27 +544,294 @@ Force boot from CD/DVD
 .br 
 
 Force boot into BIOS setup
+.TP 
+\fIfloppy\fP
+.br 
+
+Force boot from Floppy/primary removable media
+.RE
+.TP 
+\fIbootparam\fP
+.br 
+
+Get or set various system boot option parameters.
+.RS
+.TP 
+\fIget\fP <\fBparam #\fR>
+.br 
+
+Get boot parameter. Currently supported values for <\fBparam #\fR> are:
+
+\fI0\fP - Set In Progress
+
+\fI1\fP - Service Partition Selector
+
+\fI2\fP - Service Partition Scan
+
+\fI3\fP - BMC Boot Flag Valid Bit Clearing
+
+\fI4\fP - Boot Info Acknowledge 
+
+\fI5\fP - Boot Flags
+
+\fI6\fP - Boot Initiator Info
+
+\fI7\fP - Boot Initiator Mailbox
+.br 
+
+.TP 
+\fIset\fP <\fBoption\fR> [\fBvalue ...\fR]
+.br 
+
+Set boot parameter.
+
+.RS
+.TP 
+Currently supported values for \fB<option>\fR are:
+.TP 
+\fIforce_pxe\fP
+.br 
+
+Force PXE boot
+.TP 
+\fIforce_disk\fP
+.br 
+
+Force boot from default hard-drive
+.TP 
+\fIforce_safe\fP
+.br 
+
+Force boot from default hard-drive, request Safe Mode
+.TP 
+\fIforce_diag\fP
+.br 
+
+Force boot from diagnostic partition
+.TP 
+\fIforce_cdrom\fP
+.br 
+
+Force boot from CD/DVD 
+.TP 
+\fIforce_bios\fP
+.br 
+
+Force boot into BIOS setup
+
+.RE
+.RE
+.RE
+.TP
+\fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
+.RS
+.TP
+.br
+\fINOTE\fP : This command can support a maximum of 8 files per command line
+.TP
+.br
+\fIfilename1\fP : binary file that stores FRU data of a Carrier or an AMC module
+.TP
+.br
+\fIfilename2\fP : binary file that stores FRU data of an AMC module.
+      These binary files can be generated from command:
+      \fIipmitool fru read <id> <filename>\fP
+.TP
+.br
+\fIfilename3\fP : configuration file used for configuring On-Carrier Device ID
+or OEM GUID. This file is optional.
+.TP
+.br
+\fIxx\fP : indicates the type of the file. It can take the following value:
+.RS
+.TP
+.br
+\fIoc\fP : On-Carrier device
+.TP
+.br
+\fIa1\fP : AMC slot A1
+.TP
+.br
+\fIa2\fP : AMC slot A2
+.TP
+.br
+\fIa3\fP : AMC slot A3
+.TP
+.br
+\fIa4\fP : AMC slot A4
+.TP
+.br
+\fIb1\fP : AMC slot B1
+.TP
+.br
+\fIb2\fP : AMC slot B2
+.TP
+.br
+\fIb3\fP : AMC slot B3
+.TP
+.br
+\fIb4\fP : AMC slot B4
+.TP
+.br
+\fIsm\fP : Shelf Manager
+
+.RE
+.TP
+.br
+The available commands for ekanalyzer are:
+
+.RE
+.RS
+.TP
+\fIprint\fP [<\fBcarrier\fR | \fBpower\fR | \fBall\fR>]
+.RS
+.TP
+\fIcarrier\fP (default) <\fBoc=filename1\fR> <\fBoc=filename2\fR> \fB...\fR
+.br
+
+Display point to point physical connectivity between carriers and AMC modules.
+ Example:
+   > ipmitool ekanalyzer print carrier oc=fru oc=carrierfru
+   From Carrier file: fru
+      Number of AMC bays supported by Carrier: 2 
+      AMC slot B1 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 16
+         Port 1 =====> On Carrier Device ID 0, Port 12
+         Port 2 =====> AMC slot B2, Port 2
+      AMC slot B2 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 3
+         Port 2 =====> AMC slot B1, Port 2
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+   From Carrier file: carrierfru
+      On Carrier Device ID 0 topology:
+         Port 0 =====> AMC slot B1, Port 4
+         Port 1 =====> AMC slot B1, Port 5
+         Port 2 =====> AMC slot B2, Port 6
+         Port 3 =====> AMC slot B2, Port 7
+      AMC slot B1 topology:
+         Port 0 =====> AMC slot B2, Port 0
+      AMC slot B1 topology:
+         Port 1 =====> AMC slot B2, Port 1
+      Number of AMC bays supported by Carrier: 2
+
+.TP
+\fIpower\fP <\fBxx=filename1\fR> <\fBxx=filename2\fR> \fB...\fr
+.br
+
+Display power supply informations between carrier and AMC modules.
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both physical connectivity and power supply of each carrier and AMC
+modules.
+
+.RE
+.TP
+\fIfrushow\fP <\fBxx=filename\fR>
+.br
+Convert a binary FRU file into human readable text format. Use -v option to get
+more display information.
+
+.RE
+.RS
+.TP
+\fIsummary\fP [<\fBmatch\fR | \fBunmatch\fR | \fBall\fR>]
+.RS
+.TP
+\fImatch\fP (default) <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fR
+.br
+Display only matched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules. Example:
+ > ipmitool ekanalyzer summary match oc=fru b1=amcB1 a2=amcA2
+ On-Carrier Device vs AMC slot B1
+  AMC slot B1 port 0 ==> On-Carrier Device 0 port 16
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 11 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+  AMC slot B1 port 1 ==> On-Carrier Device 0 port 12
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 6 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 1 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ On-Carrier Device vs AMC slot A2
+  AMC slot A2 port 0 ==> On-Carrier Device 0 port 3
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 9 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot A2
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ AMC slot B1 vs AMC slot A2
+  AMC slot A2 port 2 ==> AMC slot B1 port 2
+   Matching Result
+   - From AMC slot B1
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+   - To AMC slot A2
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+ *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+.TP
+\fIunmatch\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display the unmatched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both matched result and unmatched results of Ekeying match between two
+cards or two modules.
 .RE
 .RE
 .TP 
 \fIevent\fP
 .RS
 .TP 
-<\fBpredefined event number\fR>
+<\fBpredefined event number\fR \fIN\fR>
 .br 
 
-Send a pre\-defined event to the System Event Log.  The following
+Send a pre\-defined test event to the System Event Log.  The following
 events are included as a means to test the functionality of the 
 System Event Log component of the BMC (an entry will be added each 
-time the event \fIn\fP command is executed).
+time the event \fIN\fP command is executed).
 
-Currently supported values for \fIn\fR are:
+Currently supported values for \fIN\fR are:
 .br 
 \fI1\fP	Temperature: Upper Critical: Going High
 .br 
 \fI2\fP	Voltage Threshold: Lower Critical: Going Low
 .br 
-\fI3\fP	Memory: Correctable ECC Error Detected
+\fI3\fP	Memory: Correctable ECC 
 .br 
 
 \fBNOTE\fR: These pre\-defined events will likely not produce
@@ -559,62 +843,59 @@ sufficient to verify correct operation of the SEL.
 \fIfile\fP <\fBfilename\fR>
 .br 
 
-Event log records specified in \fIfilename\fR will be added to
+Event log records specified in <\fBfilename\fP> will be added to
 the System Event Log.
 
 The format of each line in the file is as follows:
 
 <{\fIEvM Revision\fP} {\fISensor Type\fP} {\fISensor Num\fP} {\fIEvent Dir/Type\fP} {\fIEvent Data 0\fP} {\fIEvent Data 1\fP} {\fIEvent Data 2\fP}>[\fI# COMMENT\fP]
 
-Note: The Event Dir/Type field is encoded with the event direction 
-as the high bit (bit 7) and the event type as the low 7 bits.
-
 e.g.:
-.br 
 0x4 0x2 0x60 0x1 0x52 0x0 0x0 # Voltage threshold: Lower Critical: Going Low
+.br 
+
+\fIEvM Revision\fP - 
+The "Event Message Revision" is 0x04 for messages that comply with the IPMI 2.0 
+Specification and 0x03 for messages that comply with the IPMI 1.0 Specification.
+
+\fISensor Type\fP - 
+Indicates the Event Type or Class.
+
+\fISensor Num\fP - 
+Represents the 'sensor' within the management controller that generated 
+the Event Message.
+
+\fIEvent Dir/Type\fP - 
+This field is encoded with the event direction as the high bit 
+(bit 7) and the event type as the low 7 bits.  Event direction is 
+0 for an assertion event and 1 for a deassertion event. 
+
+See the IPMI 2.0 specification for further details on the definitions for
+each field.
 
 .TP 
-<\fBsensorid\fR> <\fBstate\fR> [<\fBeventdir\fR>]
+<\fBsensorid\fR> <\fBlist\fR>
+.br 
 
-Generate a custom event based on existing sensor information.
-The optional event direction can be either \fIassert\fP or
-\fIdeassert\fP and defaults to assert.  To get a list of
-possible states for a sensor supply a state of \fBlist\fR
-on the command line.  Each sensor may be different but some
-states will have pre\-defined shortcuts.  For example:
+Get a list of all the possible Sensor States and pre-defined Sensor State
+Shortcuts available for a particular sensor.   \fBsensorid\fR is the character 
+string representation of the sensor and must be enclosed in double quotes
+if it includes white space.  Several different commands including 
+\fIipmitool sensor list\fP may be used to obtain a list that includes 
+the \fBsensorid\fR strings representing the sensors on a given system. 
 .RS
 .PP 
-> ipmitool \-I open event p0.t_core
+> ipmitool \-I open event "PS 2T Fan Fault" list
 .br 
-Finding sensor p0.t_core... ok
+Finding sensor PS 2T Fan Fault... ok
 .br 
 Sensor States:
 .br 
-  lnr : Lower Non\-Recoverable
+  State Deasserted
 .br 
-  lcr : Lower Critical
+  State Asserted
 .br 
-  lnc : Lower Non\-Critical
-.br 
-  unc : Upper Non\-Critical
-.br 
-  ucr : Upper Critical
-.br 
-  unr : Upper Non\-Recoverable
-.RE
-.RS
-.PP 
-> ipmitool \-I open event ps0.prsnt
-.br 
-Finding sensor ps0.prsnt... ok
-.br 
-Sensor States:
-.br 
-  Device Absent
-.br 
-  Device Present
-.br 
-State State Shortcuts:
+Sensor State Shortcuts:
 .br 
   present    absent
 .br 
@@ -629,9 +910,34 @@ State State Shortcuts:
   on         off
 .br 
   up         down
-.br 
-.RE
 
+.RE
+.TP 
+<\fBsensorid\fR> <\fBsensor state\fR> [<\fBdirection\fR>]
+
+Generate a custom event based on existing sensor information.
+The optional event \fBdirection can be either \fIassert\fP 
+(the default) or \fIdeassert\fP.  
+
+.RS
+.PP 
+> ipmitool event "PS 2T Fan Fault" "State Asserted"
+.br 
+Finding sensor PS 2T Fan Fault... ok
+.br 
+   0 | Pre-Init Time-stamp   | Fan PS 2T Fan Fault | State Asserted
+.RE
+.RS
+.PP 
+> ipmitool event "PS 2T Fan Fault" "State Deasserted"
+.br 
+Finding sensor PS 2T Fan Fault... ok
+.br 
+   0 | Pre-Init Time-stamp   | Fan PS 2T Fan Fault | State Desserted
+.RE
+.RS
+.PP 
+.RE
 .RE
 .TP 
 \fIexec\fP <\fBfilename\fR>
@@ -652,63 +958,181 @@ sel list # get a list of sel records
 \fIfru\fP
 .RS
 .TP 
-\fIedit\fP <\fBfruid\fR> \fBfield\fR <\fBsection\fR> <\fBindex\fR> <\fBstring\fR>
+\fIprint\fP
 .br 
 
-This command replace the data found at \fBindex\fR in specified \fBsection\fR 
-with the supplied \fBstring\fR.
+Read all Field  Replaceable  Unit (FRU) inventory data and extract 
+such information as serial number, part number, asset tags, and 
+short strings describing the chassis, board, or product.
+.TP 
+\fIread\fP <\fBfru id\fR> <\fBfru file\fR>
+.br 
 
-The supported <\fBsection\fR> are  
+\fBfru id\fR is the digit ID of the FRU (see output of 'fru print').
+\fBfru file\fR is the absolute pathname of a file in which to dump the
+binary FRU data pertaining to the specified FRU entity.
+.TP 
+\fIwrite\fP <\fBfru id\fR> <\fBfru file\fR>
+.br 
+
+\fBfru id\fR is the digit ID of the FRU (see output of 'fru print').
+\fBfru file\fR is the absolute pathname of a file from which to pull
+the binary FRU data before uploading it to the specified FRU.
+.TP 
+\fIupgEkey\fP <\fBfru id\fR> <\fBfru file\fR>
+.br 
+
+Update a multirecord FRU location.
+\fBfru id\fR is the digit ID of the FRU (see output of 'fru print').
+\fBfru file\fR is the absolute pathname of a file from which to pull the
+binary FRU data to upload into the specified multirecord FRU entity.
+
+.TP 
+\fIedit\fP <\fBfru id\fR> 
+.br 
+
+This command provides interactive editing of some supported records, namely
+PICMG Carrier Activation Record.  \fBfru id\fR is the digit ID of the FRU 
+(see output of 'fru print'); default is 0.
+
+.TP 
+\fIedit\fP <\fBfru id\fR> \fBfield\fR <\fBsection\fR> <\fBindex\fR> <\fBstring\fR>
+.br 
+
+This command may be used to set a field string to a new value.  It replaces 
+the FRU data found at \fBindex\fR in the specified \fBsection\fR with the 
+supplied \fBstring\fR.  
+
+.RS
+.TP
+\fBfru id\fR is the digit ID of the FRU (see output of 'fru print').
+.br
+
+.TP
+<\fBsection\fR> is a string which refers to FRU Inventory Information
+Storage Areas and may be refer to:
 .RS
 .TP 
-\fIc\fP FRU Inventory Chassis Area
+\fIc\fP FRU Inventory Chassis Info Area
 .br
 .TP
-\fIb\fP FRU Inventory Board Area
+\fIb\fP FRU Inventory Board Info Area
 .br
 .TP
-\fIp\fP FRU Inventory Product Area
+\fIp\fP FRU Inventory Product Info Area
+.br
+.RE
+
+.TP
+<\fBindex\fR> specifies the field number. Field numbering starts on the first 'english text' field type. For instance in the <\fBboard\fR> info area field '0' is <\fBBoard Manufacturer\fR> and field '2' is <\fBBoard Serial Number\fR>; see IPMI Platform Management FRU Information Storage Definition v1.0 R1.1 for field locations.
 .br
 
 .TP
-The parameter <\fBindex\fR> specifies the field number. Field numbering starts on first 'english text' field type. For intance in the <\fBboard\fR> info area field '0' is <\fBBoard Manufacturer\fR> and field '2' is <\fBBoard Serial Number\fR>, see IPMI Platform Management FRU Information Storage Definition v1.0 R1.1 for field locations.
-.br
-
-
-.TP
-The parameter <\fBstring\fR> must have the same length as the original one and must be 8-bit ASCII (0xCx)
+<\fBstring\fR> must be the same length as the string being replaced and must be 8-bit ASCII (0xCx).
 .br
 
 .RE
+
 .TP 
-\fIedit\fP <\fBfruid\fR> \fBoem\fR \fBiana\fR <\fBrecord\fR> <\fBformat\fR> [<\fBargs\fR>]
+\fIedit\fP <\fBfru id\fR> \fBoem\fR \fBiana\fR <\fBrecord\fR> <\fBformat\fR> [<\fBargs\fR>]
 .br 
 
 This command edits the data found in the multirecord area. Support for
 OEM specific records is limited. 
-
-.TP 
-\fIedit\fP <\fBfruid\fR> 
-.br 
-
-This command provides interactive editing of some supported records, namely
-PICMG Carrier Activation Record.
-
-.TP 
-\fIprint\fP
-.br 
-
-This command will read all Field  Replaceable  Unit (FRU) inventory
-data and extract such information as serial number, part number, asset
-tags, and short strings describing the chassis, board, or product.
 .RE
+.TP 
+\fIfirewall\fP
+.br 
+
+This command supports the Firmware Firewall capability.  It may be used to 
+add or remove security-based restrictions on certain commands/command 
+sub-functions  or to list the current firmware firewall restrictions set on 
+any commands.  For each firmware firewall command listed below, parameters 
+may be included to cause the command to be executed with increasing 
+granularity on a specific LUN, for a specific NetFn, for a specific IPMI 
+Command, and finally for a specific command's sub-function (see Appendix H in the 
+IPMI 2.0 Specification for a listing of any sub-function numbers that may 
+be associated with a particular command).
+
+Parameter syntax and dependencies are as follows:
+
+[<\fIchannel\fP \fBH\fR>] [<\fIlun\fP \fBL\fR> [ <\fInetfn\fP \fBN\fR> [<\fIcommand\fP \fBC\fR [<\fIsubfn\fP \fBS\fR>]]]] 
+
+Note that if "netfn <\fBN\fR>" is specified, then "lun <\fBL\fR>" must also be 
+specified;  if "command <\fBC\fR>" is specified, then "netfn <\fBN\fR>" (and
+therefore "lun <\fBL\fR>") must also be specified, and so forth.
+
+"channel <\fBH\fR>" is an optional and standalone parameter.  If not specified,
+the requested operation will be performed on the current channel.  Note that
+command support may vary from channel to channel. 
+
+Firmware firewall commands:
+.RS
+.TP 
+\fIinfo\fP [<\fBParms as described above\fR>]
+.br 
+
+List firmware firewall information for the specified LUN, NetFn, and 
+Command (if supplied) on the current or specified channel.  Listed
+information includes the support, configurable, and enabled bits for
+the specified command or commands.
+
+Some usage examples:
+.RS
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR>] 
+.br 
+
+This command will list firmware firewall information for all NetFns for the 
+specified LUN on either the current or the specified channel.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> ] 
+.br 
+
+This command will print out all command information for a single LUN/NetFn pair.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR] ]] 
+.br 
+
+This prints out detailed, human-readable information showing the support, configurable,
+and enabled bits for the specified command on the specified LUN/NetFn pair.  Information
+will be printed about each of the command subfunctions.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR [<\fBsubfn S\fR>]]]] 
+.br 
+
+Print out information for a specific sub-function.
+.RE
+.TP 
+\fIenable\fP [<\fBParms as described above\fR>]
+.br 
+
+This command is used to enable commands for a given NetFn/LUN combination on
+the specified channel. 
+.TP 
+\fIdisable\fP [<\fBParms as described above\fR>] [\fBforce\fR]
+.br 
+
+This command is used to disable commands for a given NetFn/LUN combination on
+the specified channel.   Great care should be taken if using the "force"
+option so as not to disable the "Set Command Enables" command.
+.TP 
+\fIreset\fP [<\fBParms as described above\fR>]
+.br 
+
+This command may be used to reset the firmware firewall back to a state
+where all commands and command sub-functions are enabled.
+
+.RE
+
 .TP 
 \fIi2c\fP <\fBi2caddr\fR> <\fBread bytes\fR> [<\fBwrite data\fR>]
 .br 
 
-This will allow you to execute raw I2C commands with the Master
+This command may be used to execute raw I2C commands with the Master
 Write\-Read IPMI command.
 
+.RE
 .TP 
 \fIisol\fP
 .RS
@@ -769,6 +1193,27 @@ Note that escapes are only recognized immediately after newline.
 
 .RE
 .TP 
+\fIkontronoem\fP
+.RS
+
+OEM commands specific to Kontron devices.
+.TP
+\fIsetsn\fP
+.br
+
+Set FRU serial number.
+.TP
+\fIsetmfgdate\fP
+.br
+
+Set FRU manufacturing date.
+.TP
+\fInextboot\fP <\fBboot device\fR>
+.br
+
+Select the next boot order on the Kontron CP6012.
+.RE
+.TP 
 \fIlan\fP
 .RS
 
@@ -791,16 +1236,17 @@ Channel 0x1 info:
   Protocol Vendor ID    : 7154
 
 .TP 
-\fIprint\fP <\fBchannel\fR>
+\fIprint\fP [<\fBchannel\fR>]
 .br 
 
 Print the  current  configuration  for  the  given channel.
+The default will print information on the first found LAN channel.
 .TP 
-\fIset\fP <\fBchannel\fR> <\fBparameter\fR>
+\fIset\fP <\fBchannel number\fR> <\fBcommand\fR> <\fBparameter\fR>
 .br 
 
-Set the given  parameter  on  the  given  channel.
-Valid parameters are:
+Set the given command and parameter on the specified channel.  Valid 
+command/parameter options are:
 .RS
 .TP 
 \fIipaddr\fP <\fBx.x.x.x\fR>
@@ -858,6 +1304,11 @@ command to display information about userids for a given channel).
 .br 
 
 Set LAN channel access mode.
+.TP 
+\fIalert\fP <\fBon|off\fR>
+.br 
+
+Enable or disable PEF alerting for this channel.
 .TP 
 \fIipsrc\fP <\fBsource\fR>
 .br 
@@ -946,6 +1397,69 @@ ADMIN, issue the following command:
 > ipmitool \-I \fIinterface\fR lan set \fIchannel\fR cipher_privs uaXXXXXXXXXXXXX
 
 .RE
+.TP
+\fIalert\fP \fIprint\fP [<\fBchannel\fR>] [<\fBalert destination\fR>]
+.br 
+
+Print alert information for the specified channel and destination.  
+The default will print all alerts for all alert destinations on the 
+first found LAN channel.
+
+.TP
+\fIalert\fP \fIset\fP <\fBchannel number\fR> <\fBalert destination\fR> <\fBcommand\fR> <\fBparameter\fR>
+.br 
+
+Set an alert on the given LAN channel and destination.   Alert Destinations are
+listed via the '\fIlan alert print\fP' command.  Valid command/parameter options are:
+.RS
+.TP 
+\fIipaddr\fP <\fBx.x.x.x\fR>
+.br 
+
+Set alert IP address.
+.TP 
+\fImacaddr\fP <\fBxx:xx:xx:xx:xx:xx\fR>
+.br 
+
+Set alert MAC address.
+.TP 
+\fIgateway\fP <\fBdefault | backup\fR>
+.br 
+
+Set the channel gateway to use for alerts.
+.TP 
+\fIack\fP <\fBon | off\fR>
+.br 
+
+Set Alert Acknowledge on or off.
+.TP 
+\fItype\fP <\fBpet | oem1 | oem2\fR>
+.br 
+
+Set the destination type as PET or OEM.
+.TP 
+\fItime\fP <\fBseconds\fR>
+.br 
+
+Set ack timeout or unack retry interval.
+.TP 
+\fIretry\fP <\fBnumber\fR>
+.br 
+
+Set the number of alert retries.
+.RE
+.TP
+\fIstats\fP \fIget\fP [<\fBchannel number\fR>]
+.br 
+
+Retrieve information about the IP connections on the specified channel.
+The default will retrieve statistics on the first found LAN channel.
+.TP
+\fIstats\fP \fIclear\fP [<\fBchannel number\fR>]
+.br 
+
+Clear all IP/UDP/RMCP Statistics to 0 on the specified channel.
+The default will clear statistics on the first found LAN channel.
 .RE
 .TP 
 \fIpef\fP
@@ -980,6 +1494,81 @@ entries matching the event, and possible actions to be taken.
 Actions are performed in priority order (higher criticality first).
 .RE
 .TP 
+\fIpicmg\fP <\fBproperties\fR> 
+.RS
+
+Run a PICMG/ATA extended command. Get PICMG properties may be used to
+obtain and print Extension major version information, PICMG identifier,
+FRU Device ID and Max FRU Device ID.
+.TP 
+\fIaddrinfo\fP
+.br 
+
+Get address information.  This command may return information on the Hardware
+address, IPMB-0 Address, FRU ID, Site/Entity ID, and Site/Entity Type.
+.TP 
+\fIfrucontrol\fP <\fBfru id\fR> <\fBoptions\fR>
+.br 
+
+Set various control options:
+.RS
+.TP 
+\fI0x00\fP      - Cold Reset
+.br 
+.TP 
+\fI0x01\fP      - Warm Reset
+.br 
+.TP 
+\fI0x02\fP      - Graceful Reboot
+.br 
+.TP 
+\fI0x03\fP      - Issue Diagnostic Interrupt
+.br 
+.TP 
+\fI0x04\fP      - Quiesce [AMC only]
+.br 
+.TP 
+\fI0x05-0xFF\fP - Cold Reset
+.br 
+.RE
+.TP 
+\fIactivate\fP <\fBfru id\fR>
+.br 
+
+Activate the specified FRU.
+.TP 
+\fIdeactivate\fP <\fBfru id\fR>
+.br 
+
+Deactivate the specified FRU.
+.TP 
+\fIpolicy\fP \fIget\fP <\fBfru id\fR>
+.br 
+
+Get FRU activation policy.
+.TP 
+\fIpolicy\fP \fIset\fP <\fBfru id\fR> <\fBlockmask\fR> <\fBlock\fR>
+.br 
+
+Set FRU activation policy.  \fBlockmask\fR is 1 or 0 to indicate action
+on the deactivation or activation locked bit respectively.  \fBlock\fR is
+1 or 0 to set/clear locked bit.
+.TP 
+\fIportstate\fP \fBset\fR|\fBgetall\fR|\fBgetgranted\fR|\fBgetdenied\fR <\fBparameters\fR> 
+.br 
+
+Get or set various port states.  See usage for parameter details.
+
+.RE
+.TP 
+\fIpower\fP <\fBchassis power command\fR>
+.br 
+
+Shortcut to the \fIchassis power\fP commands.
+See the \fIchassis power\fP commands for usage information.
+.RE
+
+.TP 
 \fIraw\fP <\fBnetfn\fR> <\fBcmd\fR> [<\fBdata\fR>]
 .br 
 
@@ -1005,13 +1594,13 @@ Prints information for sensor data records specified by sensor id.
 \fIinfo\fP
 .br 
 
-This command will query the BMC for SDR information.
+This command will query the BMC for Sensor Data Record (SDR) Repository information.
 .TP 
-\fItype\fP <\fBsensor type\fP>
+\fItype\fP [<\fBsensor type\fP>]
 
-This command will display all records from the SDR of a specific type.
-Run with type \fIlist\fP to see the list of available types.  For
-example to query for all Temperature sensors:
+This command will display all records from the SDR Repository of a specific type.
+Run with type \fIlist\fP (or simply with no type) to see the list of available types.
+For example to query for all Temperature sensors:
 
 > ipmitool sdr type Temperature
 .br 
@@ -1090,13 +1679,25 @@ Dumps raw SDR data to a file.  This data file can then be used as
 a local SDR cache of the remote managed system with the \fI\-S <file>\fP
 option on the ipmitool command line.  This can greatly improve performance
 over system interface or remote LAN.
+.TP 
+\fIfill\fP \fIsensors\fP
+.br 
+
+Create the SDR Repository for the current configuration.  Will perform
+a 'Clear SDR Repository' command so be careful.
+.TP 
+\fIfill\fP \fIfile\fP <\fBfilename\fR>
+.br 
+
+Fill the SDR Repository using records stored in a binary data file. Will perform
+a 'Clear SDR Repository' command so be careful.
 .RE
 .TP 
 \fIsel\fP
 .br 
 
-NOTE: SEL entry\-times are displayed as `Pre\-Init Time\-stamp'
-if the SEL clock needs to be set.
+NOTE: System Event Log (SEL) entry\-times are displayed as 
+`Pre\-Init Time\-stamp' if the SEL clock needs to be set.
 Ensure that the SEL clock is accurate by invoking the
 \fIsel time get\fP and
 \fIsel time set <time string>\fP commands.
@@ -1111,7 +1712,7 @@ about the System Event Log (SEL) and its contents.
 \fIclear\fP
 .br 
 
-This command will clear the contents of  the  SEL.
+This command will clear the contents of the SEL.
 It cannot be undone so be careful.
 .TP 
 \fIlist\fP | \fIelist\fP
@@ -1119,13 +1720,14 @@ It cannot be undone so be careful.
 
 When this command is invoked without arguments, the entire
 contents of the System Event Log are displayed.  If invoked as
-\fIelist\fP it will also use the Sensor Data Record entries
-to display the sensor ID for the sensor that caused each event.
-\fBNote\fR this can take a long time over the system interface.
+\fIelist\fP (extended list) it will also use the Sensor Data 
+Record entries to display the sensor ID for the sensor that caused 
+each event.  \fBNote\fR this can take a long time over the 
+system interface.
 
 .RS
 .TP 
-<\fBcount\fR>|\fIfirst\fP <\fBcount\fR>
+<\fBcount\fR> | \fIfirst\fP <\fBcount\fR>
 .br 
 
 Displays the first \fIcount\fR (least\-recent) entries in the SEL.
@@ -1138,18 +1740,31 @@ Displays the last \fIcount\fR (most\-recent) entries in the SEL.
 If \fIcount\fR is zero, all entries are displayed.
 .RE
 .TP          
-\fIdelete\fP <\fBnumber\fR>
+\fIdelete\fP <\fBSEL Record ID\fR> ... <\fBSEL Record ID\fR>
 .br 
 
-Delete a single event.
+Delete one or more SEL event records.
+.TP 
+\fIadd\fP <\fBfilename ID\fR>
+.br 
+
+Read event entries from a file and add them to the SEL.  New SEL
+entries area added onto the SEL after the last record in the SEL.
+Record added is of type 2 and is automatically timestamped.
+.TP 
+\fIget\fP <\fBSEL Record ID\fR>
+.br 
+
+Print information on the specified SEL Record entry.
 .TP 
 \fIsave\fP <\fBfile\fR>
 
-Save SEL records to text file that can be fed back into the
+Save SEL records to a text file that can be fed back into the
 \fIevent file\fP ipmitool command.  This can be useful for
 testing Event generation by building an appropriate Platform
 Event Message file based on existing events.  Please see the
-help for that command to view the format of this file.
+available help for the 'event file ...' command for a description of
+the format of this file.
 .TP 
 \fIwriteraw\fP <\fBfile\fR>
 
@@ -1172,7 +1787,7 @@ Displays the SEL clock's current time.
 .br 
 
 Sets the SEL clock.  Future SEL entries will use the time
-set by this command.  <time string> is of the
+set by this command.  <\fBtime string\fR> is of the
 form "MM/DD/YYYY HH:MM:SS".  Note that hours are in 24\-hour
 form.  It is recommended that the SEL be cleared before
 setting the time.
@@ -1195,7 +1810,7 @@ Prints information for sensors specified by name.
 \fIthresh\fP <\fBid\fR> <\fBthreshold\fR> <\fBsetting\fR>
 .br 
 
-This allows you to set a particular sensor  threshold 
+This allows you to set a particular sensor threshold 
 value.  The sensor is specified by name.
 .RS
 .TP 
@@ -1225,7 +1840,6 @@ Lower Non\-Recoverable, Lower Critical, and Lower Non\-Critical.
 This allows you to set all upper thresholds for a sensor at the same time.
 The sensor is specified by name and the thresholds are listed in order of
 Upper Non\-Critical, Upper Critical, and Upper Non\-Recoverable.
-
 .RE
 .TP 
 \fIsession\fP
@@ -1260,6 +1874,11 @@ from timing out.
 Retrieve information about the Serial\-Over\-LAN configuration on 
 the specified channel.  If no channel is given, it will display 
 SOL configuration data for the currently used channel.
+.TP 
+\fIpayload\fP <\fIenable\fP | \fIdisable\fP> <\fBchannel number\fR> <\fBuserid\fR>
+.br 
+
+Enable or disable SOL payload for the user on the specified channel. 
 .TP 
 \fIset\fP <\fBparameter\fR> <\fBvalue\fR> [<\fBchannel\fR>]
 .br 
@@ -1312,7 +1931,7 @@ serial indiates that the BMC should use the setting used
 by the IPMI over serial channel.
 .RE
 .TP 
-\fIactivate\fP
+\fIactivate\fP [\fIusesolkeepalive\fP | \fInokeepalive\fP]
 .br 
 
 Causes ipmitool to enter Serial Over LAN
@@ -1352,6 +1971,13 @@ this command to be sent to the BMC, but in the case of an
 unintentional exit from SOL mode, this command may be
 necessary to reset the state of the BMC.
 .RE
+.TP 
+\fIspd\fP <\fBi2cbus\fR> <\fBi2caddr\fR> [<\fBchannel\fR>] [<\fmaxread\fR>]
+.br 
+
+This command may be used to read SPD (Serial Presence Detect) data using the 
+I2C Master Write\-Read IPMI command.
+
 .TP 
 \fIsunoem\fP
 .RS
@@ -1401,6 +2027,11 @@ LED Type is optional:
 
 .RE
 .TP 
+\fIfan\fP \fIspeed\fP <0-100>
+
+Set system fan speed (PWM duty cycle).
+.RS
+.TP 
 \fIsshkey\fP
 .RS
 .TP 
@@ -1416,7 +2047,7 @@ with the 'user list' command.
 This command will delete the SSH key for a specified userid.
 .RE
 .RE
-
+.RE
 
 .TP
 \fItsol\fP
@@ -1433,7 +2064,7 @@ Optional arguments may be supplied in any order.
 
 Send receiver IP address to SMDC which it will use to send serial
 traffic to.  By default this detects the local IP address and establishes
-two-way session.
+two-way session.  Format of ipaddr is XX.XX.XX.XX
 
 .TP
 \fIport=NUM\fP
@@ -1491,200 +2122,16 @@ Disables access to the BMC by the given userid.
 
 Enables access to the BMC by the given userid.
 .TP 
+\fIpriv\fP <\fBuserid\fR> <\fBprivilege level\fR> [<\fBchannel number\fR>]
+.br 
+
+Set user privilege level on the specified channel.  If the channel is not 
+specified, the current channel will be used.
+.TP 
 \fItest\fP <\fBuserid\fR> <\fB16\fR|\fB20\fR> [<\fBpassword\fR>]
 .br 
 
 Determine whether a password has been stored as 16 or 20 bytes.
-.RE
-.TP
-\fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
-.RS
-.TP
-.br
-\fINOTE\fP : This command can get a maximum of 8 files per command line
-.TP
-.br
-\fIfilename1\fP : binary file that stores FRU data of a Carrier or an AMC module
-.TP
-.br
-\fIfilename2\fP : binary file that stores FRU data of an AMC module.
-      These binary files can be generated from command:
-      \fIipmitool fru read <id> <filename>\fP
-.TP
-.br
-\fIfilename3\fP : configuration file used for configuring On-Carrier Device ID
-or OEM GUID. This file is optional.
-.TP
-.br
-\fIxx\fP : indicates the type of the file. It can take the following value:
-.RS
-.TP
-.br
-\fIoc\fP : On-Carrier device
-.TP
-.br
-\fIa1\fP : AMC slot A1
-.TP
-.br
-\fIa2\fP : AMC slot A2
-.TP
-.br
-\fIa3\fP : AMC slot A3
-.TP
-.br
-\fIa4\fP : AMC slot A4
-.TP
-.br
-\fIb1\fP : AMC slot B1
-.TP
-.br
-\fIb2\fP : AMC slot B2
-.TP
-.br
-\fIb3\fP : AMC slot B3
-.TP
-.br
-\fIb4\fP : AMC slot B4
-.TP
-.br
-\fIsm\fP : Shelf Manager
-
-.RE
-.TP
-.br
-The available commands for ekanalyzer are:
-
-.RE
-.RS
-.TP
-\fIprint\fP [<\fBcarrier\fR | \fBpower\fR | \fBall\fR>]
-.RS
-.TP
-\fIcarrier\fP (default) <\fBoc=filename1\fR> <\fBoc=filename2\fR> \fB...\fR
-.br
-
-Display point to point physical connectivity between carriers and AMC modules.
- Example:
-   > ipmitool ekanalyzer print carrier oc=fru oc=carrierfru
-   From Carrier file: fru
-      Number of AMC bays supported by Carrier: 2 
-      AMC slot B1 topology:
-         Port 0 =====> On Carrier Device ID 0, Port 16
-         Port 1 =====> On Carrier Device ID 0, Port 12
-         Port 2 =====> AMC slot B2, Port 2
-      AMC slot B2 topology:
-         Port 0 =====> On Carrier Device ID 0, Port 3
-         Port 2 =====> AMC slot B1, Port 2
-   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-   From Carrier file: carrierfru
-      On Carrier Device ID 0 topology:
-         Port 0 =====> AMC slot B1, Port 4
-         Port 1 =====> AMC slot B1, Port 5
-         Port 2 =====> AMC slot B2, Port 6
-         Port 3 =====> AMC slot B2, Port 7
-      AMC slot B1 topology:
-         Port 0 =====> AMC slot B2, Port 0
-      AMC slot B1 topology:
-         Port 1 =====> AMC slot B2, Port 1
-      Number of AMC bays supported by Carrier: 2
-
-.TP
-\fIpower\fP <\fBxx=filename1\fR> <\fBxx=filename2\fR> \fB...\fr
-.br
-
-Display power supply informations between carrier and AMC modules.
-.TP
-\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display both physical connectivity and power supply of each carrier and AMC
-modules.
-
-.RE
-.TP
-\fIfrushow\fP <\fBxx=filename\fR>
-.br
-Convert a binary FRU file into human readable text format. Use -v option to get
-more display information.
-
-.RE
-.RS
-.TP
-\fIsummary\fP [<\fBmatch\fR | \fBunmatch\fR | \fBall\fR>]
-.RS
-.TP
-\fImatch\fP (default) <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fR
-.br
-Display only matched results of Ekeying match between an On-Carrier device
-and an AMC module or between 2 AMC modules. Example:
- > ipmitool ekanalyzer summary match oc=fru b1=amcB1 a2=amcA2
- On-Carrier Device vs AMC slot B1
-  AMC slot B1 port 0 ==> On-Carrier Device 0 port 16
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 11 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot B1
-    -Channel ID 0 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
- *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-  AMC slot B1 port 1 ==> On-Carrier Device 0 port 12
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 6 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot B1
-    -Channel ID 1 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
- On-Carrier Device vs AMC slot A2
-  AMC slot A2 port 0 ==> On-Carrier Device 0 port 3
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 9 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot A2
-    -Channel ID 0 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
- AMC slot B1 vs AMC slot A2
-  AMC slot A2 port 2 ==> AMC slot B1 port 2
-   Matching Result
-   - From AMC slot B1
-    -Channel ID 2 || Lane 0: enable
-    -Link Type: AMC.3 Storage
-    -Link Type extension: Serial Attached SCSI (SAS/SATA)
-    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
-   - To AMC slot A2
-    -Channel ID 2 || Lane 0: enable
-    -Link Type: AMC.3 Storage
-    -Link Type extension: Serial Attached SCSI (SAS/SATA)
-    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
- *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-.TP
-\fIunmatch\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display the unmatched results of Ekeying match between an On-Carrier device
-and an AMC module or between 2 AMC modules
-.TP
-\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display both matched result and unmatched results of Ekeying match between two
-cards or two modules.
 .RE
 
 .SH "OPEN INTERFACE"
@@ -1855,6 +2302,16 @@ drivers.
 You can tell ipmitool to use the FreeIPMI interface with the -I option:
 .PP
 ipmitool \fB\-I\fR \fIfree\fP <\fIcommand\fP>
+
+
+.SH "IMB INTERFACE"
+.LP
+The ipmitool \fIimb\fP interface supports the Intel IMB (Intel
+Inter-module Bus) Interface through the /dev/imb device.  
+.LP
+You can tell ipmitool to use the IMB interface with the -I option:
+.PP
+ipmitool \fB\-I\fR \fIimb\fP <\fIcommand\fP>
 
 .SH "EXAMPLES"
 .TP 
