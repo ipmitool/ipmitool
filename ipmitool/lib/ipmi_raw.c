@@ -175,7 +175,7 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 static void rawi2c_usage(void)
 {
-	lprintf(LOG_NOTICE, "usage: i2c [bus=#| [chan=#] <i2caddr> <read bytes> [write data]");
+	lprintf(LOG_NOTICE, "usage: i2c [bus=public|# [chan=#] <i2caddr> <read bytes> [write data]");
 	lprintf(LOG_NOTICE, "            bus=public is default");
 	lprintf(LOG_NOTICE, "            chan=0 is default, bus= must be specified to use chan=");
 }
