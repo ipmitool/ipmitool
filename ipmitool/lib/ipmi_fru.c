@@ -2806,9 +2806,9 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "edit commands:");
 			lprintf(LOG_ERR, "  edit - interactively edit records");
 			lprintf(LOG_ERR, 
-				"  edit <fruid> field <section> <index> <string>" - edit FRU string);
+				"  edit <fruid> field <section> <index> <string> - edit FRU string");
 			lprintf(LOG_ERR, 
-				"  edit <fruid> oem iana <record> <format> <args>" - limited OEM support);
+				"  edit <fruid> oem iana <record> <format> <args> - limited OEM support");
 		} else {
 
 		uint8_t fruId = 0;
