@@ -1119,7 +1119,7 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 
 			}
 
-			printf("		  Module Activation Rediness:		 %i sec.\n", fru_data[++offset]);
+			printf("		  Module Activation Readiness:		 %i sec.\n", fru_data[++offset]);
 			printf("		  Descriptor Count: %i\n", fru_data[++offset]);
 			printf("\n");
 
@@ -2801,18 +2801,29 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "edit", 4)) {
+
+		if ((argc >= 2) && (strncmp(argv[1], "help", 4) == 0)) {
+			lprintf(LOG_ERR, "edit commands:");
+			lprintf(LOG_ERR, "  edit - interactively edit records");
+			lprintf(LOG_ERR, 
+				"  edit <fruid> field <section> <index> <string>" - edit FRU string);
+			lprintf(LOG_ERR, 
+				"  edit <fruid> oem iana <record> <format> <args>" - limited OEM support);
+		} else {
+
 		uint8_t fruId = 0;
+
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
 			fruId = atoi(argv[1]);
 			if (verbose) {
 				printf("Fru Id				 : %d\n", fruId);
 			}
-		}else {
+		} else {
 			printf("Using default FRU id: %d\n", fruId);
 		}
 
 		if ((argc >= 3) && (strlen(argv[1]) > 0)) {
-			if (!strncmp(argv[2], "field", 4)){
+			if (!strncmp(argv[2], "field", 5)){
 				if (argc == 6) {
 					ipmi_fru_set_field_string(intf, fruId,\
 														*argv[3], *argv[4], (char *) argv[5]);
@@ -2825,6 +2836,8 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		} else {
 			ipmi_fru_edit_multirec(intf,fruId, argc, argv);
+		}
+
 		}
 	}
 	else {
@@ -3005,7 +3018,7 @@ f_type, uint8_t f_index, char *f_string)
 			checksum = (~checksum) + 1;
 			fru_data[header_offset + fru_section_len - 1] = checksum;
 
-			 /* Write te updated section to the FRU data */
+			 /* Write the updated section to the FRU data */
 			if( write_fru_area(intf, &fru, fruId, header_offset,
 					header_offset, fru_section_len, fru_data) < 0 )
 			{

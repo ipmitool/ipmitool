@@ -2158,7 +2158,7 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (strncmp(argv[1], "last", 4) == 0) {
 				sign = -1;
 			}
-			else if (strncmp(argv[1], "first", 6) != 0) {
+			else if (strncmp(argv[1], "first", 5) != 0) {
 				lprintf(LOG_ERR, "Unknown sel list option");
 				return -1;
 			}

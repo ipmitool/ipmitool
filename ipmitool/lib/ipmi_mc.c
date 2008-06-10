@@ -759,7 +759,7 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "selftest", 8)) {
 		rc = ipmi_mc_get_selftest(intf);
 	}
-	else if (!strncmp(argv[0], "watchdog", 3)) {
+	else if (!strncmp(argv[0], "watchdog", 8)) {
 		if (argc < 2 || strncmp(argv[1], "help", 4) == 0) {
 			print_watchdog_usage(); 
 		}

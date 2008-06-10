@@ -1256,8 +1256,8 @@ get_cmdline_ipaddr(char * arg, uint8_t * buf)
 
 static void ipmi_lan_set_usage(void)
 {
-	lprintf(LOG_NOTICE, "\nusage: lan set <channel> <command> [option]\n");
-	lprintf(LOG_NOTICE, "LAN set commands:");
+	lprintf(LOG_NOTICE, "\nusage: lan set <channel> <command> <parameter>\n");
+	lprintf(LOG_NOTICE, "LAN set command/parameter options:");
 	lprintf(LOG_NOTICE, "  ipaddr <x.x.x.x>               Set channel IP address");
 	lprintf(LOG_NOTICE, "  netmask <x.x.x.x>              Set channel IP netmask");
 	lprintf(LOG_NOTICE, "  macaddr <x:x:x:x:x:x>          Set channel MAC address");
@@ -1722,21 +1722,22 @@ ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
 static void
 ipmi_lan_alert_print_usage(void)
 {
-	lprintf(LOG_NOTICE, "\nusage: lan alert print [channel] [alert]\n");
+	lprintf(LOG_NOTICE, "\nusage: lan alert print [channel number] [alert destination]\n");
 	lprintf(LOG_NOTICE, "Default will print all alerts for the first found LAN channel");
 }
 
 static void
 ipmi_lan_alert_set_usage(void)
 {
-	lprintf(LOG_NOTICE, "\nusage: lan alert set <channel> <alert> <command> <option>\n");
-	lprintf(LOG_NOTICE, "  ipaddr <x.x.x.x>               Set alert IP address");
-	lprintf(LOG_NOTICE, "  macaddr <x:x:x:x:x:x>          Set alert MAC address");
-	lprintf(LOG_NOTICE, "  gateway <default|backup>       Set channel gateway to use for alerts");
-	lprintf(LOG_NOTICE, "  ack <on|off>                   Set Alert Acknowledge on or off");
-	lprintf(LOG_NOTICE, "  type <pet|oem1|oem2>           Set destination type as PET or OEM");
-	lprintf(LOG_NOTICE, "  time <seconds>                 Set ack timeout or unack retry interval");
-	lprintf(LOG_NOTICE, "  retry <number>                 Set number of alert retries");
+	lprintf(LOG_NOTICE, "\nusage: lan alert set <channel number> <alert destination> <command> <parameter>\n");
+	lprintf(LOG_NOTICE, "    Command/parameter options:\n");
+	lprintf(LOG_NOTICE, "    ipaddr <x.x.x.x>               Set alert IP address");
+	lprintf(LOG_NOTICE, "    macaddr <x:x:x:x:x:x>          Set alert MAC address");
+	lprintf(LOG_NOTICE, "    gateway <default|backup>       Set channel gateway to use for alerts");
+	lprintf(LOG_NOTICE, "    ack <on|off>                   Set Alert Acknowledge on or off");
+	lprintf(LOG_NOTICE, "    type <pet|oem1|oem2>           Set destination type as PET or OEM");
+	lprintf(LOG_NOTICE, "    time <seconds>                 Set ack timeout or unack retry interval");
+	lprintf(LOG_NOTICE, "    retry <number>                 Set number of alert retries");
 	lprintf(LOG_NOTICE, "");
 }
 
@@ -1994,12 +1995,12 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-		lprintf(LOG_INFO, "Get LAN Stats command failed");
+		lprintf(LOG_ERR, "Get LAN Stats command failed");
 		return 0;
 	}
 
 	if (rsp->ccode > 0) {
-		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
+		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return 0;
 	}
@@ -2102,8 +2103,9 @@ print_lan_usage(void)
 {
 	lprintf(LOG_NOTICE, "LAN Commands:");
 	lprintf(LOG_NOTICE, "		   print [<channel number>]");
-	lprintf(LOG_NOTICE, "		   set [<channel number>]");
-	lprintf(LOG_NOTICE, "		   alert [<channel number>]");
+	lprintf(LOG_NOTICE, "		   set <channel number> <command> <parameter>");
+	lprintf(LOG_NOTICE, "		   alert print <channel number> <alert destination>");
+	lprintf(LOG_NOTICE, "		   alert set <channel number> <alert destination> <command> <parameter>");
 	lprintf(LOG_NOTICE, "		   stats get [<channel number>]");
 	lprintf(LOG_NOTICE, "		   stats clear [<channel number>]");
 }

@@ -493,7 +493,7 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
          if ( file_type[type_offset] != ERROR_STATUS ){
             if ( file_type[type_offset] != CONFIG_FILE ){
                /* because of strlen doesn't count '\0', we need to add 1 byte for
-               * this caracter to filename size
+               * this character to filename size
                */
                filename[type_offset] = malloc( strlen(argv[argument_offset]) + 1
                                                 - SIZE_OF_FILE_TYPE

@@ -4268,14 +4268,14 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		rc = ipmi_sdr_print_entity(intf, argv[1]);
 	} else if (strncmp(argv[0], "info", 4) == 0) {
 		rc = ipmi_sdr_print_info(intf);
-	} else if (strncmp(argv[0], "get", 4) == 0) {
+	} else if (strncmp(argv[0], "get", 3) == 0) {
 		rc = ipmi_sdr_print_entry_byid(intf, argc - 1, &argv[1]);
 	} else if (strncmp(argv[0], "dump", 4) == 0) {
 		if (argc < 2)
 			lprintf(LOG_ERR, "usage: sdr dump <filename>");
 		else
 			rc = ipmi_sdr_dump_bin(intf, argv[1]);
-	} else if (strncmp(argv[0], "fill", 3) == 0) {
+	} else if (strncmp(argv[0], "fill", 4) == 0) {
 		if (argc <= 1) {
 			lprintf(LOG_ERR, "usage: sdr fill sensors");
 			lprintf(LOG_ERR, "usage: sdr fill file <filename>");
@@ -4283,13 +4283,13 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		} else if (strncmp(argv[1], "sensors", 7) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
 		} else if (strncmp(argv[1], "file", 4) == 0) {
-         if (argc < 3) {
-			  lprintf(LOG_ERR, "sdr fill: Missing filename");
-           rc = -1;
-         } else {
-			  rc = ipmi_sdr_add_from_file(intf, argv[2]);
-         }
-      }
+			if (argc < 3) {
+				lprintf(LOG_ERR, "sdr fill: Missing filename");
+				rc = -1;
+			} else {
+				rc = ipmi_sdr_add_from_file(intf, argv[2]);
+			}
+		}
 	} else {
 		lprintf(LOG_ERR, "Invalid SDR command: %s", argv[0]);
 		rc = -1;

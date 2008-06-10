@@ -233,8 +233,8 @@ ipmi_picmg_fru_activation(struct ipmi_intf * intf, int argc, char ** argv, unsig
 	req.msg.data     = (unsigned char*) &cmd;
 	req.msg.data_len = 3;
 
-	cmd.picmg_id  = 0;								/* PICMG identifier */
-	cmd.fru_id    = (unsigned char) atoi(argv[0]);	/* FRU ID			*/
+	cmd.picmg_id  = 0;						/* PICMG identifier */
+	cmd.fru_id    = (unsigned char) atoi(argv[0]);			/* FRU ID	*/
 	cmd.fru_state = state;
 
 	rsp = intf->sendrecv(intf, &req);
@@ -958,10 +958,10 @@ ipmi_picmg_set_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data  = msg_data;
 	req.msg.data_len = 4;
 
-	msg_data[0] = 0x00;									/* PICMG identifier	 */
-	msg_data[1] = atoi(argv[0]);						/* FRU-ID				 */
-	msg_data[2] = atoi(argv[1]);						/* power level			 */
-	msg_data[3] = atoi(argv[2]);						/* present to desired */
+	msg_data[0] = 0x00;					/* PICMG identifier	 */
+	msg_data[1] = atoi(argv[0]);				/* FRU-ID		 */
+	msg_data[2] = atoi(argv[1]);				/* power level		 */
+	msg_data[3] = atoi(argv[2]);				/* present to desired */
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -989,13 +989,13 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(&req, 0, sizeof(req));
 
 	req.msg.netfn	  = IPMI_NETFN_PICMG;
-	req.msg.cmd		  = PICMG_FRU_CONTROL_CMD;
+	req.msg.cmd	  = PICMG_FRU_CONTROL_CMD;
 	req.msg.data	  = msg_data;
 	req.msg.data_len = 3;
 
-	msg_data[0] = 0x00;									/* PICMG identifier */
-	msg_data[1] = atoi(argv[0]);						/* FRU-ID			  */
-	msg_data[2] = atoi(argv[1]);						/* control option	  */
+	msg_data[0] = 0x00;					/* PICMG identifier */
+	msg_data[1] = atoi(argv[0]);				/* FRU-ID	  */
+	msg_data[2] = atoi(argv[1]);				/* control option  */
 
 	printf("0: 0x%02x   1: 0x%02x\n\r", msg_data[1], msg_data[2]);
 
@@ -1167,7 +1167,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_picmg_fru_control(intf, argc-1, &(argv[1]));
 		}
 		else {
-			printf("usage: frucontrol <FRU-ID><OPTION>\n");
+			printf("usage: frucontrol <FRU-ID> <OPTION>\n");
 			printf("   OPTION:\n");
 			printf("      0x00      - Cold Reset\n");
 			printf("      0x01      - Warm Reset\n");
@@ -1211,113 +1211,111 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					rc = ipmi_picmg_fru_activation_policy_get(intf, argc-1, &(argv[2]));
 				} else {
 					printf("usage: get <fruid>\n");
-            }
-         } else if (!strncmp(argv[1], "set", 3)) {
-            if (argc > 4) {
-               rc = ipmi_picmg_fru_activation_policy_set(intf, argc-1, &(argv[2]));
-            } else {
-               printf("usage: set <fruid> <lockmask> <lock>\n");
+				}
+			} else if (!strncmp(argv[1], "set", 3)) {
+				if (argc > 4) {
+					rc = ipmi_picmg_fru_activation_policy_set(intf, argc-1, &(argv[2]));
+				} else {
+					printf("usage: set <fruid> <lockmask> <lock>\n");
 					printf("    lockmask:  [1] affect the deactivation locked bit\n");
 					printf("               [0] affect the activation locked bit\n");
 					printf("    lock:      [1] set/clear deactivation locked\n");
 					printf("               [0] set/clear locked \n");
-            }
-         }
-         else {
-            printf("specify fru\n");
-            return -1;
-         }
-      } else {
-         printf("wrong parameters\n");
-         return -1;
-      }
-   }
+				}
+			}
+			else {
+				printf("specify fru\n");
+				return -1;
+			}
+		} else {
+			printf("wrong parameters\n");
+			return -1;
+		}
+	}
 
-   /* portstate command */
-   else if (!strncmp(argv[0], "portstate", 9)) {
+	/* portstate command */
+	else if (!strncmp(argv[0], "portstate", 9)) {
 
-      lprintf(LOG_DEBUG,"PICMG: portstate API");
+		lprintf(LOG_DEBUG,"PICMG: portstate API");
 
-      if (argc > 1) {
-         if (!strncmp(argv[1], "get", 3)) {
+		if (argc > 1) {
+			if (!strncmp(argv[1], "get", 3)) {
 
-         int iface;
-         int channel  ;
+				int iface;
+				int channel;
 
-         lprintf(LOG_DEBUG,"PICMG: get");
+				lprintf(LOG_DEBUG,"PICMG: get");
 
-         if(!strncmp(argv[1], "getall", 6)){
-            for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
-               for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
-                  if(
-                     !(( iface == FRU_PICMGEXT_DESIGN_IF_FABRIC )
-                     &&
-                     ( channel > PICMG_EKEY_MAX_FABRIC_CHANNEL ) )
-                  ){
-                     rc = ipmi_picmg_portstate_get(intf,iface,channel,
-                                                     PICMG_EKEY_MODE_PRINT_ALL);
-                  }
-               }
-            }
-         }
-         else if(!strncmp(argv[1], "getgranted", 10)){
-            for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
-               for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
-                  rc = ipmi_picmg_portstate_get(intf,iface,channel,
-                                                 PICMG_EKEY_MODE_PRINT_ENABLED);
-               }
-            }
-         }
-         else if(!strncmp(argv[1], "getdenied", 9)){
-            for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++){
-               for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++){
-                  rc = ipmi_picmg_portstate_get(intf,iface,channel,
-                                                PICMG_EKEY_MODE_PRINT_DISABLED);
-               }
-            }
-         }
-         else if (argc > 3){
-            iface     = atoi(argv[2]);
-            channel   = atoi(argv[3]);
-            lprintf(LOG_DEBUG,"PICMG: requesting interface %d",iface);
-            lprintf(LOG_DEBUG,"PICMG: requesting channel %d",channel);
+				if(!strncmp(argv[1], "getall", 6)) {
+					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
+						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
+							if(!(( iface == FRU_PICMGEXT_DESIGN_IF_FABRIC ) &&
+							      ( channel > PICMG_EKEY_MAX_FABRIC_CHANNEL ) ))
+							{
+								rc = ipmi_picmg_portstate_get(intf,iface,channel,
+								        PICMG_EKEY_MODE_PRINT_ALL);
+							}
+						}
+					}
+				}
+				else if(!strncmp(argv[1], "getgranted", 10)) {
+					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
+						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
+							rc = ipmi_picmg_portstate_get(intf,iface,channel,
+							            PICMG_EKEY_MODE_PRINT_ENABLED);
+						}
+					}
+				}
+				else if(!strncmp(argv[1], "getdenied", 9)){
+					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
+						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
+							rc = ipmi_picmg_portstate_get(intf,iface,channel,
+							           PICMG_EKEY_MODE_PRINT_DISABLED);
+						}
+					}
+				}
+				else if (argc > 3){
+					iface     = atoi(argv[2]);
+					channel   = atoi(argv[3]);
+					lprintf(LOG_DEBUG,"PICMG: requesting interface %d",iface);
+					lprintf(LOG_DEBUG,"PICMG: requesting channel %d",channel);
+	
+					rc = ipmi_picmg_portstate_get(intf,iface,channel,
+					            PICMG_EKEY_MODE_QUERY );
+				}
+				else {
+					printf("<intf> <chn>|getall|getgranted|getdenied\n");
+				}
+			}
+			else if (!strncmp(argv[1], "set", 3)) {
+					if (argc == 9) {
+						int interface = strtoul(argv[2], NULL, 0);
+						int channel   = strtoul(argv[3], NULL, 0);
+						int port      = strtoul(argv[4], NULL, 0);
+						int type      = strtoul(argv[5], NULL, 0);
+						int typeext   = strtoul(argv[6], NULL, 0);
+						int group     = strtoul(argv[7], NULL, 0);
+						int enable    = strtoul(argv[8], NULL, 0);
 
-            rc = ipmi_picmg_portstate_get(intf,iface,channel,
-                                       PICMG_EKEY_MODE_QUERY );
-            }
-            else {
-               printf("<intf> <chn>|getall|getgranted|getdenied\n");
-            }
-         }
-         else if (!strncmp(argv[1], "set", 3)) {
-				if (argc == 9) {
-               int interface = strtoul(argv[2], NULL, 0);
-               int channel   = strtoul(argv[3], NULL, 0);
-               int port      = strtoul(argv[4], NULL, 0);
-               int type      = strtoul(argv[5], NULL, 0);
-               int typeext   = strtoul(argv[6], NULL, 0);
-               int group     = strtoul(argv[7], NULL, 0);
-               int enable    = strtoul(argv[8], NULL, 0);
+						lprintf(LOG_DEBUG,"PICMG: interface %d",interface);
+						lprintf(LOG_DEBUG,"PICMG: channel %d",channel);
+						lprintf(LOG_DEBUG,"PICMG: port %d",port);
+						lprintf(LOG_DEBUG,"PICMG: type %d",type);
+						lprintf(LOG_DEBUG,"PICMG: typeext %d",typeext);
+						lprintf(LOG_DEBUG,"PICMG: group %d",group);
+						lprintf(LOG_DEBUG,"PICMG: enable %d",enable);
 
-               lprintf(LOG_DEBUG,"PICMG: interface %d",interface);
-               lprintf(LOG_DEBUG,"PICMG: channel %d",channel);
-               lprintf(LOG_DEBUG,"PICMG: port %d",port);
-               lprintf(LOG_DEBUG,"PICMG: type %d",type);
-               lprintf(LOG_DEBUG,"PICMG: typeext %d",typeext);
-               lprintf(LOG_DEBUG,"PICMG: group %d",group);
-               lprintf(LOG_DEBUG,"PICMG: enable %d",enable);
-
-               rc = ipmi_picmg_portstate_set(intf, interface, channel, port,
-                                                type, typeext  ,group ,enable);
-            }
-            else {
-               printf("<intf> <chn> <port> <type> <ext> <group> <1|0>\n");
-               return -1;
-            }
-         }
-      }
-      else {
-			printf("<set>|<get>|<getall>|<getgranted>|<getdenied>\n");
+						rc = ipmi_picmg_portstate_set(intf, interface, 
+						    channel, port, type, typeext  ,group ,enable);
+					}
+					else {
+						printf("<intf> <chn> <port> <type> <ext> <group> <1|0>\n");
+						return -1;
+					}
+			}
+		}
+		else {
+			printf("<set>|<getall>|<getgranted>|<getdenied>\n");
 			return -1;
 		}
 	}

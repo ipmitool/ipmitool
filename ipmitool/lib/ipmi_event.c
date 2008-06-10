@@ -597,7 +597,7 @@ ipmi_event_usage(void)
 	lprintf(LOG_NOTICE, "   Use the 'sel save' command to generate from SEL");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "usage: event <sensorid> <state> [event_dir]");
-	lprintf(LOG_NOTICE, "   sensorid  : Sensor ID to use for event data");
+	lprintf(LOG_NOTICE, "   sensorid  : Sensor ID string to use for event data");
 	lprintf(LOG_NOTICE, "   state     : Sensor state, use 'list' to see possible states for sensor");
 	lprintf(LOG_NOTICE, "   event_dir : assert, deassert [default=assert]");
 	lprintf(LOG_NOTICE, "");

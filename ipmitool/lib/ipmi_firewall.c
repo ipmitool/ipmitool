@@ -49,9 +49,9 @@ printf_firewall_usage(void)
 {
 	printf("Firmware Firewall Commands:\n");
 	printf("\tinfo [channel H] [lun L]\n");
-	printf("\tinfo [channel H] [lun L [netfn N [cmd C [subfn S]]]]\n");
-	printf("\tenable [channel H] [lun L [netfn N [cmd C [subfn S]]]]\n");
-	printf("\tdisable [channel H] [lun L [netfn N [cmd C [subfn S]]]] [force])\n");
+	printf("\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]\n");
+	printf("\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]\n");
+	printf("\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])\n");
 	printf("\treset [channel H] \n");
 	printf("\t\twhere H is a Channel, L is a LUN, N is a NetFn,\n");
 	printf("\t\tC is a Command and S is a Sub-Function\n");

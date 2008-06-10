@@ -587,7 +587,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
       break;
       case 4:
       {
-         printf(   " Boot Info Acknoledge :\n");
+         printf(   " Boot Info Acknowledge :\n");
          if((rsp->data[3]&0x1f) != 0)
          {
             if((rsp->data[3]&0x10) == 0x10)
