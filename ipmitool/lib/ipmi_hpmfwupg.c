@@ -2989,7 +2989,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
        * times which is not effecient -So reducing the Timout to 5 seconds which is
        * almost 200 retries if it continuously recieves 0xC3 as completion code.
        */
-      inaccessTimeout = 5;
+      inaccessTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
       upgradeTimeout  = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
    }
    
@@ -3010,6 +3010,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
             lprintf(LOG_DEBUG,"HPM: no response available");
             lprintf(LOG_DEBUG,"HPM: the command may be rejected for " \
                               "security reasons");
+                              
             if
             ( 
                req.msg.netfn == IPMI_NETFN_PICMG
@@ -3041,7 +3042,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                 */
                lprintf(LOG_DEBUG,"HPM: activate/rollback firmware API called");
                lprintf(LOG_DEBUG,"HPM: returning in progress to handle IOL session lost");
-               
+                            
                fakeRsp.ccode = HPMFWUPG_COMMAND_IN_PROGRESS;
                rsp = &fakeRsp;
             }
@@ -3070,7 +3071,9 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                   intf->session->authtype   = IPMI_SESSION_AUTHTYPE_NONE;
                   intf->session->session_id = 0;
                   intf->session->in_seq     = 0;
+                  intf->session->out_seq    = 0;
                   intf->session->active     = 0;
+                  intf->session->retry      = 10;
                
                   while 
                   ( 
@@ -3079,9 +3082,8 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                      inaccessTimeoutCounter < inaccessTimeout
                   ) 
                   {
-                     inaccessTimeoutCounter += time(NULL) - timeoutSec1;
+                     inaccessTimeoutCounter += (time(NULL) - timeoutSec1);
                      timeoutSec1 = time(NULL);
-                     usleep(100000);                  
                   }
                   /* Fake timeout to retry command */
                   fakeRsp.ccode = 0xc3;
