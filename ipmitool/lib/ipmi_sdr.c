@@ -444,7 +444,7 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
 
-	if (strcpy(intf->name, "ipmb"))
+	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
 		return ipmi_sdr_get_sensor_reading(intf, sensor);
 
 	save_addr = intf->target_addr;
@@ -1103,7 +1103,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	}
 
 	/* get sensor reading */
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
+		sensor->keys.owner_id, sensor->keys.lun);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
@@ -1654,7 +1655,8 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
 	/* get sensor reading */
-	rsp = ipmi_sdr_get_sensor_reading(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
+		sensor->keys.owner_id, sensor->keys.lun);
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
 			desc, sensor->keys.sensor_num);
