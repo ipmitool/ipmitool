@@ -55,7 +55,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_DELL,                   "DELL Inc" },
    { IPMI_OEM_NEC,                    "NEC" },
    { IPMI_OEM_MAGNUM,                 "Magnum Technologies" },
-   { IPMI_OEM_FUJITSU_SEIMENS,        "Fujitsu Siemens" },
+   { IPMI_OEM_FUJITSU_SIEMENS,        "Fujitsu Siemens" },
    { IPMI_OEM_TATUNG,                 "Tatung" },
    { IPMI_OEM_AMI,                    "AMI" },
    { IPMI_OEM_RARITAN,                "Raritan" },
