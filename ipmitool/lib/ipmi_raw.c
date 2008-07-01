@@ -233,7 +233,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(wdata, 0, IPMI_I2C_MASTER_MAX_SIZE);
 	for (; i < argc; i++) {
 		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
-		wdata[i-2] = val;
+		wdata[wsize] = val;
 		wsize++;
 	}
 
