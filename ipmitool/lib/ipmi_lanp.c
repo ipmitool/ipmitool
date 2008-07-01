@@ -1489,28 +1489,49 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* ip address */
-	else if ((strncmp(argv[1], "ipaddr", 6) == 0) &&
-		 (get_cmdline_ipaddr(argv[2], data) == 0)) {
-		printf("Setting LAN %s to %d.%d.%d.%d\n",
-		       ipmi_lan_params[IPMI_LANP_IP_ADDR].desc,
-		       data[0], data[1], data[2], data[3]);
-		rc = set_lan_param(intf, chan, IPMI_LANP_IP_ADDR, data, 4);
+	else if (strncmp(argv[1], "ipaddr", 6) == 0) {
+		if(argc != 3)
+		{
+			ipmi_lan_set_usage();
+			return -1;
+		}
+		rc = get_cmdline_ipaddr(argv[2], data);
+		if (rc == 0) {
+			printf("Setting LAN %s to %d.%d.%d.%d\n",
+				ipmi_lan_params[IPMI_LANP_IP_ADDR].desc,
+				data[0], data[1], data[2], data[3]);
+			rc = set_lan_param(intf, chan, IPMI_LANP_IP_ADDR, data, 4);
+		}
 	}
 	/* network mask */
-	else if ((strncmp(argv[1], "netmask", 7) == 0) &&
-		 (get_cmdline_ipaddr(argv[2], data) == 0)) {
-		printf("Setting LAN %s to %d.%d.%d.%d\n",
-		       ipmi_lan_params[IPMI_LANP_SUBNET_MASK].desc,
-		       data[0], data[1], data[2], data[3]);
-		rc = set_lan_param(intf, chan, IPMI_LANP_SUBNET_MASK, data, 4);
+	else if (strncmp(argv[1], "netmask", 7) == 0) {
+		if(argc != 3)
+		{
+			ipmi_lan_set_usage();
+			return -1;
+		}
+		rc = get_cmdline_ipaddr(argv[2], data);
+		if (rc == 0) {
+			printf("Setting LAN %s to %d.%d.%d.%d\n",
+		       		ipmi_lan_params[IPMI_LANP_SUBNET_MASK].desc,
+		       		data[0], data[1], data[2], data[3]);
+			rc = set_lan_param(intf, chan, IPMI_LANP_SUBNET_MASK, data, 4);
+		}
 	}
 	/* mac address */
-	else if ((strncmp(argv[1], "macaddr", 7) == 0) &&
-		 (get_cmdline_macaddr(argv[2], data) == 0)) {
-		printf("Setting LAN %s to %02x:%02x:%02x:%02x:%02x:%02x\n",
-		       ipmi_lan_params[IPMI_LANP_MAC_ADDR].desc,
-		       data[0], data[1], data[2], data[3], data[4], data[5]);
-		rc = set_lan_param(intf, chan, IPMI_LANP_MAC_ADDR, data, 6);
+	else if (strncmp(argv[1], "macaddr", 7) == 0) {
+		if(argc != 3)
+		{
+			ipmi_lan_set_usage();
+			return -1;
+		}
+		rc = get_cmdline_macaddr(argv[2], data);
+		if (rc == 0) {
+			printf("Setting LAN %s to %02x:%02x:%02x:%02x:%02x:%02x\n",
+		       		ipmi_lan_params[IPMI_LANP_MAC_ADDR].desc,
+		       		data[0], data[1], data[2], data[3], data[4], data[5]);
+			rc = set_lan_param(intf, chan, IPMI_LANP_MAC_ADDR, data, 6);
+		}
 	}
 	/* default gateway settings */
 	else if (strncmp(argv[1], "defgw", 5) == 0) {
@@ -1531,6 +1552,10 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			       data[0], data[1], data[2], data[3], data[4], data[5]);
 			rc = set_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_MAC, data, 6);
 		}
+		else {
+			ipmi_lan_set_usage();
+			return -1;
+		}
 	}
 	/* backup gateway settings */
 	else if (strncmp(argv[1], "bakgw", 5) == 0) {
@@ -1550,6 +1575,10 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			       ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_MAC].desc,
 			       data[0], data[1], data[2], data[3], data[4], data[5]);
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
+		}
+		else {
+			ipmi_lan_set_usage();
+			return -1;
 		}
 	}
 	else if (strncasecmp(argv[1], "vlan", 4) == 0) {
