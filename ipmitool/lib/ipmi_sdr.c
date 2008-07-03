@@ -3850,8 +3850,8 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 	       sdr_repository_info.record_count_lsb);
 
 	free_space =
-	    (sdr_repository_info.free_space[0] << 8) |
-	    sdr_repository_info.free_space[1];
+	    (sdr_repository_info.free_space[1] << 8) |
+	    sdr_repository_info.free_space[0];
 
 	printf("Free Space                          : ");
 	switch (free_space) {
