@@ -154,8 +154,11 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 												      rsp->data[2],
 												      rsp->data[3]);
 				printf("\n");
-         }
-		}
+         } else {
+	   printf(" READ ERROR: Device Not Present\n\n");
+	 }
+	   
+	   }
 	}
 
 	return (validread ? 0 : -1 );
@@ -373,7 +376,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 						    (" Upper Non-Recoverable : na\n");
 				}
 			} else {
-				printf("Not Present\n");
+			  printf(" READ ERROR: Device Not Present\n\n");
 			}
 
 			ipmi_sdr_print_sensor_event_status(intf,
@@ -480,7 +483,10 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 												      rsp->data[2],
 												      rsp->data[3]);
             printf("\n");
-         }
+         } else {
+	   printf(" READ ERROR: Device Not Present\n\n");
+	 }
+
 		}
 	}
 
@@ -528,8 +534,9 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 		}
 		free(rec);
 
-		/* save any errors */
-		rc = (r == 0) ? rc : r;
+		/* fix for CR6604909: */
+		/* mask failure of individual reads in sensor list command */
+		/* rc = (r == 0) ? rc : r; */
 	}
 
 	ipmi_sdr_end(intf, itr);
