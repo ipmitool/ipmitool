@@ -71,6 +71,8 @@
 #define SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
 #define SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
 
+#define MAX_SOL_RETRY           		6
+
 const struct valstr sol_parameter_vals[] = {
 	{ SOL_PARAMETER_SET_IN_PROGRESS,           "Set In Progress (0)" },
 	{ SOL_PARAMETER_SOL_ENABLE,                "Enable (1)" },
@@ -1418,8 +1420,6 @@ ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 
 
 
-
-
 /*
  * ipmi_sol_red_pill
  */
@@ -1435,6 +1435,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	int    retval;
 	int    buffer_size = intf->session->sol_data.max_inbound_payload_size;
 	int    keepAliveRet = 0;
+	int    retrySol = 0;
 
 	buffer = (char*)malloc(buffer_size);
 	if (buffer == NULL) {
@@ -1454,20 +1455,40 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		FD_SET(intf->fd, &read_fds);
 
 		/* Send periodic keepalive packet */
-      if(_use_sol_for_keepalive == 0)
-      {
-         keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
-      }
-      else
-      {
-         keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
-      }
+		if(_use_sol_for_keepalive == 0)
+		{
+			keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
+		}
+		else
+		{
+			keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
+		}
 		
 		if (keepAliveRet != 0)
 		{
-			/* no response to keepalive message */
-			bShouldExit = 1;
-			continue;
+			/*
+			 * Retrying the keep Alive before declaring a communication
+			 * lost state with the IPMC. Helpful when the payload is 
+			 * reset and brings down the connection temporarily. Otherwise,
+			 * if we send getDevice Id to check the status of IPMC during
+			 * this down time when the connection is restarting, SOL will 
+			 * exit even though the IPMC is available and the session is open.
+			 */
+			if (retrySol == MAX_SOL_RETRY)
+			{
+				/* no response to Get Device ID keepalive message */
+				bShouldExit = 1;
+				continue;
+			}
+			else 
+			{ 
+				retrySol++;         
+			}
+		}
+		else
+		{
+			/* if the keep Alive is successful reset retries to zero */
+			retrySol = 0;
 		}
 
 		/* Wait up to half a second */
