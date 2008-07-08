@@ -291,7 +291,7 @@ ipmi_chassis_restart_cause(struct ipmi_intf * intf)
    return 0;
 }
 
-static int
+int
 ipmi_chassis_status(struct ipmi_intf * intf)
 {
    struct ipmi_rs * rsp;
