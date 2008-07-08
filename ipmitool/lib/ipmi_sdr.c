@@ -1541,7 +1541,7 @@ ipmi_sdr_print_discrete_state_mini(const char *separator,
 	struct ipmi_event_sensor_types *evt;
 	int pre = 0, c = 0;
 
-	if (state1 == 0)
+	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
 
 	if (event_type == 0x6f) {
@@ -1557,7 +1557,7 @@ ipmi_sdr_print_discrete_state_mini(const char *separator,
 			continue;
 
 		if (evt->offset > 7) {
-			if ((1 << (evt->offset - 8)) & state2) {
+			if ((1 << (evt->offset - 8)) & (state2 & 0x7f)) {
 				if (pre++ != 0)
 					printf("%s", separator);
 				printf("%s", evt->desc);
@@ -1592,7 +1592,7 @@ ipmi_sdr_print_discrete_state(const char *desc,
 	struct ipmi_event_sensor_types *evt;
 	int pre = 0, c = 0;
 
-	if (state1 == 0)
+	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
 
 	if (event_type == 0x6f) {
@@ -1613,7 +1613,7 @@ ipmi_sdr_print_discrete_state(const char *desc,
 		}
 
 		if (evt->offset > 7) {
-			if ((1 << (evt->offset - 8)) & state2) {
+			if ((1 << (evt->offset - 8)) & (state2 & 0x7f)) {
 				if (evt->desc) {
 					printf("                         "
 					       "[%s]\n",
