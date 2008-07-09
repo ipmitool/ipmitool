@@ -3819,7 +3819,7 @@ ipmi_sdr_timestamp(uint32_t stamp)
 	memset(tbuf, 0, 40);
 	if (stamp)
 		strftime(tbuf, sizeof (tbuf), "%m/%d/%Y %H:%M:%S",
-			 localtime(&s));
+			 gmtime(&s));
 	return tbuf;
 }
 

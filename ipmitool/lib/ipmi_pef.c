@@ -748,7 +748,7 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 #endif
 	ts = (time_t)timei;
 
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&ts));
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&ts));
 
 	ipmi_pef_print_str("Last SEL addition", tbuf);
 	ipmi_pef_print_2xd("Last SEL record ID", rsp->data[5], rsp->data[4]);

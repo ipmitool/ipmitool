@@ -223,7 +223,7 @@ ipmi_sel_timestamp(uint32_t stamp)
 	static char tbuf[40];
 	time_t s = (time_t)stamp;
 	memset(tbuf, 0, 40);
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&s));
 	return tbuf;
 }
 
@@ -232,7 +232,7 @@ ipmi_sel_timestamp_date(uint32_t stamp)
 {
 	static char tbuf[11];
 	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", localtime(&s));
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", gmtime(&s));
 	return tbuf;
 }
 
@@ -241,7 +241,7 @@ ipmi_sel_timestamp_time(uint32_t stamp)
 {
 	static char tbuf[9];
 	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", localtime(&s));
+	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", gmtime(&s));
 	return tbuf;
 }
 
@@ -1821,7 +1821,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 	time = (time_t)timei;
 #endif
 
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&time));
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&time));
 	printf("%s\n", tbuf);
 
 	return 0;
@@ -1864,6 +1864,28 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 			lprintf(LOG_ERR, "Specified time could not be parsed");
 			return -1;
 		}
+	}
+
+	{
+		//modify UTC time to local time expressed in number of seconds from 1/1/70 0:0:0 1970 GMT
+		struct tm * tm_tmp;
+		int gt_year,gt_yday,gt_hour,lt_year,lt_yday,lt_hour;
+		int delta_hour;
+		tm_tmp=gmtime(&t);
+		gt_year=tm_tmp->tm_year;
+		gt_yday=tm_tmp->tm_yday;
+		gt_hour=tm_tmp->tm_hour;
+		tm_tmp=localtime(&t);
+		lt_year=tm_tmp->tm_year;
+		lt_yday=tm_tmp->tm_yday;
+		lt_hour=tm_tmp->tm_hour;
+		delta_hour=lt_hour - gt_hour;
+		if ( (lt_year > gt_year) || ((lt_year == gt_year) && (lt_yday > gt_yday)) )
+			delta_hour += 24;
+		if ( (lt_year < gt_year) || ((lt_year == gt_year) && (lt_yday < gt_yday)) )
+			delta_hour -= 24;
+
+		t += (delta_hour * 60 * 60);
 	}
 
 	timei = (uint32_t)t;
