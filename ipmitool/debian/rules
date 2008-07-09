@@ -18,6 +18,9 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
+
+	./bootstrap
+
 	./configure --prefix=/usr \
 		    --with-kerneldir \
 		    --mandir=/usr/share/man

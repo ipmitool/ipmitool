@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Petter Reinholdtsen <pere@debian.org>
 Uploaders: Duncan Laurie <duncan@iceblink.org>
-Build-Depends: debhelper (>> 4.0.0), libreadline5-dev | libreadline-dev, libssl-dev
+Build-Depends: debhelper (>> 4.0.0), libreadline5-dev | libreadline-dev, libssl-dev, autoconf, automake1.9 | automake, autotools-dev, libtool
 Standards-Version: 3.6.2.1
 
 Package: ipmitool
