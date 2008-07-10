@@ -55,6 +55,7 @@ fi
 %defattr(755,root,root)
 %attr(755,root,root) %{_bindir}/*
 %attr(755,root,root) %{_sbindir}/*
+%{_datadir}/ipmitool/*
 %{_mandir}/man*/*
 %doc %{_datadir}/doc/ipmitool
 
