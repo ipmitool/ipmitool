@@ -61,6 +61,79 @@ fi
 
 
 %changelog
+* <date> <pere@hungry.com>  1.8.10-1
+ - Added support for BULL IANA number.
+ - Fixed contrib build so the oem_ibm_sel_map file gets included in rpm 
+   builds again.
+ - Added support for Debian packages to be built from CVS
+ - Fix for sdr and sel timestamp reporting issues
+ - Fix for discrete sensor state print routines to address state bits 8-14
+ - Change ipmi_chassis_status() to non-static so it can be used externally
+ - Added retries to SOL keepalive
+ - Fix to stop sensor list command from reporting a failure due to missing 
+   sensor
+ - Fix bug in sdr free space reporting
+ - Add support for IANA number to vendor name conversion for many vendors
+ - Fix segfault bug in lan set command
+ - Fix bug in population of raw i2c wdata buffer
+ - Fix bug in ipmb sensor reading
+ - Fix misspellings, typos, incorrect strncmp lengths, white space
+ - Update/fix printed help and usages for many commands
+ - Add and update support for all commands in ipmitool man page
+ - Fix for lanplus session re-open when the target becomes unavailable following
+   a fw upgrade activation
+ - Add support for watchdog timer shutoff, reset, and get info
+ - Add support for more ibm systems in oem_ibm_sel_map
+ - Add more JEDEC support info for DIMMs; decrease request size for DIMM FRU
+   info to 16 bytes at a time to allow more DIMM FRUs to respond.
+ - Fix to change hpmfwupg to version 1.02; fix to reduce hpmfwupg buffer 
+   length more aggressively when no response from iol
+ - Fix HPM firmware activation via IOL; fake a timeout after IOL session 
+   re-open to force get upgrade status retry; Added retries on 0xD3 
+   completion code
+ - Add support for freeipmi 0.6.0; adjust autoconf for changes
+ - Fix for oemval2str size
+ - Add support for product name resolution in mc info
+ - Fix FRU display format
+ - Added PICMG ekeying analyzer module support (ekanalyzer); display point
+   to point physical connectivity and power supply information between 
+   carriers and AMC modules; display matched results of ekeying match 
+   between an on-carrier device and AMC module or between 2 AMC modules
+ - Fix AMC GUID display support
+ - Improved amcportstate operations
+ - Added resolution for new sensor types
+ - Fix segfault in SOL
+ - Fix bug that caused infinite loop on BMCs with empty SDRs
+ - Fix to move out Kontron OEM sensor resolution for other OEMs which could 
+   lead to bad event descriptions
+ - Add new FRU edit mode thereby allowing serial numbers, etc. to be changed;
+    improvements to OEM edit mode
+ - Added SPD support for parms: channel number, max read size
+ - Add SDR support for adding SDR records from a dumped file, clearing SDR, 
+   adding partial SDR records
+ - Add updates and fixes to hpmfwupg: upload block size to 32 bytes for KCS,
+   handle long response option, implement rollback override, garbage output fix
+ - Add double bridge lan support , fix bridging issue
+ - Add HPM support to pre-check which components need to be skipped
+ - Fix autodetection of maximum packet size when using IPMB
+ - Add new Kontron OEM command to set the BIOS boot option sequence
+ - Add support for dual-bridge/ dual send message
+ - Add auto-detect for local IPMB address using PICMG 2.X extension
+ - Add support for HPM.1 1.0 specification compliance
+ - Fix for improper lan/lanplus addressing
+ - Added transit_channel and transit_addr to ipmi_intf struct
+ - Fix bad password assertion bug due to rakp2 HMAC not being checked properly
+ - Added ability to interpret PPS shelf manager clia sel dump
+ - Corrected PICMG M7 state event definition macros
+ - Added FRU parsing enhancements
+ - Added "isol info", "isol set" and "isol activate" commands to support 
+   Intel IPMI v1.5 SOL functionality. Removed "isol setup" command.
+ - Fix bug in ipmi_lan_recv_packet() in lan and lanplus interfaces.
+ - Fix bug in "chassis poh" command.
+ - Fix HPM.1 upgrade to apply to only given component when instructed to do so
+ - Added configure auto-detection if dual bridge extension is supported 
+   by OpenIPMI
+
 * Tue Mar  6 2007 <pere@hungry.com>  1.8.9-1
  - Added initial AMC ekey query operation support
  - Improvements to ekeying support (PICMG 3.x only)
