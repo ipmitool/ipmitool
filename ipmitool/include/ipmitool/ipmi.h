@@ -243,6 +243,7 @@ typedef enum IPMI_OEM {
      IPMI_OEM_HP         = 11,
      IPMI_OEM_SUN        = 42,
      IPMI_OEM_NOKIA      = 94,
+     IPMI_OEM_BULL       = 107,
      IPMI_OEM_HITACHI_116 = 116,
      IPMI_OEM_NEC        = 119,
      IPMI_OEM_TOSHIBA    = 186,

@@ -65,6 +65,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_HITACHI_116,            "Hitachi" },
    { IPMI_OEM_HITACHI_399,            "Hitachi" },
    { IPMI_OEM_NOKIA_SIEMENS_NETWORKS, "Nokia Siemens Networks" },
+   { IPMI_OEM_BULL,                   "Bull Company" },
    { 0xffff , NULL },
 };
 
