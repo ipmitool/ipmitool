@@ -1,3 +1,10 @@
+ipmitool (1.8.10) unstable; urgency=low
+
+  * New upstream version.
+  * Patch to allow Debian package builds from cvs.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Fri,  8 Aug 2008 09:44:31 +0200
+
 ipmitool (1.8.7-2) unstable; urgency=low
 
   * Fix typo in init.d/ipmievd. (Closes: #361309)

@@ -61,7 +61,7 @@ fi
 
 
 %changelog
-* <date> <pere@hungry.com>  1.8.10-1
+* Fri Aug 08 2008 <pere@hungry.com>  1.8.10-1
  - Added support for BULL IANA number.
  - Fixed contrib build so the oem_ibm_sel_map file gets included in rpm 
    builds again.

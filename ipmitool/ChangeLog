@@ -1,4 +1,4 @@
-version 1.8.10
+version 1.8.10 released 2008-08-08
 	* Added support for BULL IANA number.
 	* Fixed contrib build so the oem_ibm_sel_map file gets included in 
 		rpm builds again.
