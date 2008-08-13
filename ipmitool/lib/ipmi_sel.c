@@ -666,7 +666,8 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint16_t e, f, version;
+	uint16_t e, version;
+	uint32_t f;
 	int pctfull = 0;
 	uint32_t fs    = 0xffffffff;
 	uint32_t zeros = 0;
@@ -699,13 +700,20 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	e = buf2short(rsp->data + 1);
 	f = buf2short(rsp->data + 3);
 	printf("Entries          : %d\n", e);
-	printf("Free Space       : %d bytes\n", f);
+	printf("Free Space       : %d bytes %s\n", f ,(f==65535 ? "or more" : "" ));
+
 	if (e) {
-		e *= 16;
-		f += e;
+		e *= 16; /* each entry takes 16 bytes */
+		f += e;	/* this is supposed to give the total size ... */
 		pctfull = (int)(100 * ( (double)e / (double)f ));
 	}
-	printf("Percent Used     : %d%%\n", pctfull);
+
+	if( f >= 65535 ) {
+		printf("Percent Used     : %s\n", "unknown" );
+	}
+	else {
+		printf("Percent Used     : %d%%\n", pctfull);
+	}
 
 
 	if ((!memcmp(rsp->data + 5, &fs,    4)) ||
