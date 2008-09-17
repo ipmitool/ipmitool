@@ -38,6 +38,7 @@
 #include <ipmitool/ipmi_main.h>
 
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_gendev.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sol.h>
@@ -90,6 +91,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_sdr_main,     "sdr",     "Print Sensor Data Repository entries and readings" },
 	{ ipmi_sensor_main,  "sensor",  "Print detailed sensor information" },
 	{ ipmi_fru_main,     "fru",     "Print built-in FRU and scan SDR for FRU locators" },
+	{ ipmi_gendev_main,  "gendev",  "Read/Write Device associated with Generic Device locators sdr" },
 	{ ipmi_sel_main,     "sel",     "Print System Event Log (SEL)" },
 	{ ipmi_pef_main,     "pef",     "Configure Platform Event Filtering (PEF)" },
 	{ ipmi_sol_main,     "sol",     "Configure and connect IPMIv2.0 Serial-over-LAN" },
