@@ -49,6 +49,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_gendev.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sol.h>
