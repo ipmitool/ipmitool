@@ -359,6 +359,102 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	return 0;
 }
 
+/* read_fru_area	-	fill in frubuf[offset:length] from the FRU[offset:length]
+ *
+ * @intf:	ipmi interface
+ * @fru:	fru info
+ * @id:		fru id
+ * @offset:	offset into buffer
+ * @length:	how much to read
+ * @frubuf:	buffer read into
+ *
+ * returns -1 on error
+ * returns 0 if successful
+ */
+int
+read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+			uint32_t offset, uint32_t length, uint8_t *frubuf)
+{
+	static uint32_t fru_data_rqst_size = 20;
+	uint32_t off = offset, tmp, finish;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[4];
+
+	if (offset > fru->size) {
+		lprintf(LOG_ERR, "Read FRU Area offset incorrect: %d > %d",
+			offset, fru->size);
+		return -1;
+	}
+
+	finish = offset + length;
+	if (finish > fru->size) {
+		finish = fru->size;
+		lprintf(LOG_NOTICE, "Read FRU Area length %d too large, "
+			"Adjusting to %d",
+			offset + length, finish - offset);
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+#ifdef LIMIT_ALL_REQUEST_SIZE
+	if (fru_data_rqst_size > 16)
+#else
+	if (fru->access && fru_data_rqst_size > 16)
+#endif
+		fru_data_rqst_size = 16;
+	do {
+		tmp = fru->access ? off >> 1 : off;
+		msg_data[0] = id;
+		msg_data[1] = (uint8_t)(tmp & 0xff);
+		msg_data[2] = (uint8_t)(tmp >> 8);
+		tmp = finish - off;
+		if (tmp > fru_data_rqst_size)
+			msg_data[3] = (uint8_t)fru_data_rqst_size;
+		else
+			msg_data[3] = (uint8_t)tmp;
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_NOTICE, "FRU Read failed");
+			break;
+		}
+		if (rsp->ccode > 0) {
+			/* if we get C7 or C8  or CA return code then we requested too
+			 * many bytes at once so try again with smaller size */
+			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
+				 (--fru_data_rqst_size > 8)) {
+				lprintf(LOG_INFO, "Retrying FRU read with request size %d",
+					fru_data_rqst_size);
+				continue;
+			}
+			lprintf(LOG_NOTICE, "FRU Read failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			break;
+		}
+
+		tmp = fru->access ? rsp->data[0] << 1 : rsp->data[0];
+		memcpy((frubuf + off)-offset, rsp->data + 1, tmp);
+		off += tmp;
+
+		/* sometimes the size returned in the Info command
+		 * is too large.	return 0 so higher level function
+		 * still attempts to parse what was returned */
+		if (tmp == 0 && off < finish)
+			return 0;
+
+	} while (off < finish);
+
+	if (off < finish)
+		return -1;
+
+	return 0;
+}
+
 /* fru_area_print_chassis	-	Print FRU Chassis Area
  *
  * @intf:	ipmi interface
@@ -823,6 +919,8 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 		}
 		i += h->len + sizeof (struct fru_multirec_header);
 	} while (!(h->format & 0x80));
+
+   lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
 
 	free(fru_data);
 }
@@ -1996,25 +2094,24 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	 * rather than reading the entire part
 	 * only read the areas we'll format
 	 */
-
-	/* chassis area */
+   /* chassis area */
 	if ((header.offset.chassis*8) >= sizeof(struct fru_header))
-		fru_area_print_chassis(intf, &fru, id, header.offset.chassis*8);
+	   fru_area_print_chassis(intf, &fru, id, header.offset.chassis*8);
 
 	/* board area */
 	if ((header.offset.board*8) >= sizeof(struct fru_header))
-		fru_area_print_board(intf, &fru, id, header.offset.board*8);
+	  	fru_area_print_board(intf, &fru, id, header.offset.board*8);
 
 	/* product area */
 	if ((header.offset.product*8) >= sizeof(struct fru_header))
-		fru_area_print_product(intf, &fru, id, header.offset.product*8);
+	   fru_area_print_product(intf, &fru, id, header.offset.product*8);
 
 	/* multirecord area */
 	if( verbose==0 ) /* scipp parsing multirecord */
-		return 0;
+	   return 0;
 
-	if ((header.offset.multi*8) >= sizeof(struct fru_header))
-		fru_area_print_multirec(intf, &fru, id, header.offset.multi*8);
+   if ((header.offset.multi*8) >= sizeof(struct fru_header))
+      fru_area_print_multirec(intf, &fru, id, header.offset.multi*8);
 
 	return 0;
 }
@@ -2730,6 +2827,344 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	return 0;
 }
 
+
+/* ipmi_fru_get_internal_use_offset	-	Retreive internal use offset
+ *
+ * @intf:	ipmi interface
+ * @id:		fru id
+ *
+ * returns -1 on error
+ * returns 0 if successful
+ * returns 1 if device not present
+ */
+static int
+ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf, 
+                                 uint8_t id, 
+                                 struct fru_info * fru, 
+                                 uint16_t * size, 
+                                 uint16_t * offset)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct fru_header header;
+	uint8_t msg_data[4];
+
+   // Init output value
+   * offset = 0;
+   * size = 0;
+
+	memset(fru, 0, sizeof(struct fru_info));
+	memset(&header, 0, sizeof(struct fru_header));
+
+	/*
+	 * get info about this FRU
+	 */
+	memset(msg_data, 0, 4);
+	msg_data[0] = id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	fru->size = (rsp->data[1] << 8) | rsp->data[0];
+	fru->access = rsp->data[2] & 0x1;
+
+	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
+		fru->size, fru->access ? "words" : "bytes");
+
+	if (fru->size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru->size);
+		return -1;
+	}
+
+	/*
+	 * retrieve the FRU header
+	 */
+	msg_data[0] = id;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return 1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+				 val2str(rsp->ccode, completion_code_vals));
+		return 1;
+	}
+
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	if (header.version != 1) {
+		lprintf(LOG_ERR, " Unknown FRU header version 0x%02x",
+			header.version);
+		return -1;
+	}
+
+
+	lprintf(LOG_DEBUG, "fru.header.version:			0x%x",
+		header.version);
+	lprintf(LOG_DEBUG, "fru.header.offset.internal: 0x%x",
+		header.offset.internal * 8);
+	lprintf(LOG_DEBUG, "fru.header.offset.chassis:	0x%x",
+		header.offset.chassis * 8);
+	lprintf(LOG_DEBUG, "fru.header.offset.board:		0x%x",
+		header.offset.board * 8);
+	lprintf(LOG_DEBUG, "fru.header.offset.product:	0x%x",
+		header.offset.product * 8);
+	lprintf(LOG_DEBUG, "fru.header.offset.multi:		0x%x",
+		header.offset.multi * 8);
+
+   if((header.offset.internal*8) == 0)
+   {
+      * size = 0;
+      * offset = 0;
+   }
+   else
+   {
+      (* offset) = (header.offset.internal*8);
+
+      if(header.offset.chassis != 0)
+      {
+         (* size) = ((header.offset.chassis*8)-(* offset));
+      }
+      else if(header.offset.board != 0)
+      {
+         (* size) = ((header.offset.board*8)-(* offset));
+      }
+      else if(header.offset.product != 0)
+      {
+         (* size) = ((header.offset.product*8)-(* offset));
+      }
+      else if(header.offset.multi != 0)
+      {
+         (* size) = ((header.offset.multi*8)-(* offset));
+      }
+      else
+      {
+         (* size) = (fru->size - (* offset));
+      }
+   }
+   return 0;
+}
+
+
+/* ipmi_fru_info_internal_use	-	print internal use info
+ *
+ * @intf:	ipmi interface
+ * @id:		fru id
+ *
+ * returns -1 on error
+ * returns 0 if successful
+ * returns 1 if device not present
+ */
+static int
+ipmi_fru_info_internal_use(struct ipmi_intf * intf, uint8_t id)
+{
+   struct fru_info fru;
+   uint16_t size;
+   uint16_t offset;
+   int rc = 0;
+
+   rc = ipmi_fru_get_internal_use_info(intf, id, &fru, &size, &offset);
+
+   if(rc == 0)
+   {
+      lprintf(LOG_DEBUG, "Internal Use Area Offset: %i", offset);
+      printf(          "Internal Use Area Size  : %i\n", size);
+   }
+   else
+   {
+		lprintf(LOG_ERR, "Cannot access internal use area");
+   }
+}
+
+
+/* ipmi_fru_read_internal_use	-	print internal use are in hex or file
+ *
+ * @intf:	ipmi interface
+ * @id:		fru id
+ *
+ * returns -1 on error
+ * returns 0 if successful
+ * returns 1 if device not present
+ */
+static int
+ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName)
+{
+   struct fru_info fru;
+   uint16_t size;
+   uint16_t offset;
+   int rc = 0;
+
+   rc = ipmi_fru_get_internal_use_info(intf, id, &fru, &size, &offset);
+
+   if(rc == 0)
+   {
+      uint8_t * frubuf;
+
+      lprintf(LOG_DEBUG, "Internal Use Area Offset: %i", offset);
+      printf(          "Internal Use Area Size  : %i\n", size);
+
+      frubuf = malloc( size );
+      if(frubuf)
+      {
+         rc = read_fru_area_section(intf, &fru, id, offset, size, frubuf);
+
+         if(rc == 0)
+         {
+            if(pFileName == NULL)
+            {
+               uint16_t counter;
+               for(counter = 0; counter < size; counter ++)
+               {
+                  if((counter % 16) == 0)
+                     printf("\n%02i- ", (counter / 16));
+                  printf("%02X ", frubuf[counter]);
+               }
+            }
+            else
+            {
+               FILE * pFile;
+               pFile = fopen(pFileName,"wb");
+               if (pFile) 
+               {
+                  fwrite(frubuf, size, 1, pFile);
+                  printf("Done\n");
+               } 
+               else 
+               {
+                  lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
+                  free(frubuf);
+                  return;
+               }
+               fclose(pFile);
+            }
+         }
+         printf("\n");
+
+         free(frubuf);
+      }
+
+   }
+   else
+   {
+		lprintf(LOG_ERR, "Cannot access internal use area");
+   }
+}
+
+/* ipmi_fru_write_internal_use	-	print internal use are in hex or file
+ *
+ * @intf:	ipmi interface
+ * @id:		fru id
+ *
+ * returns -1 on error
+ * returns 0 if successful
+ * returns 1 if device not present
+ */
+static int
+ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName)
+{
+   struct fru_info fru;
+   uint16_t size;
+   uint16_t offset;
+   int rc = 0;
+
+   rc = ipmi_fru_get_internal_use_info(intf, id, &fru, &size, &offset);
+
+   if(rc == 0)
+   {
+      uint8_t * frubuf;
+      FILE * fp;
+      uint32_t fileLength = 0;
+
+      lprintf(LOG_DEBUG, "Internal Use Area Offset: %i", offset);
+      printf(            "Internal Use Area Size  : %i\n", size);
+
+      fp = fopen(pFileName, "r");
+
+      if(fp)
+      {
+         /* Retreive file length, check if it's fits the Eeprom Size */
+         fseek(fp, 0 ,SEEK_END);
+         fileLength = ftell(fp);
+
+         lprintf(LOG_ERR, "File Size: %i", fileLength);
+         lprintf(LOG_ERR, "Area Size: %i", size);
+         if(fileLength != size)
+         {
+            lprintf(LOG_ERR, "File size does not fit Eeprom Size");
+            fclose(fp);
+            fp = NULL;
+         }
+         else
+         {
+            fseek(fp, 0 ,SEEK_SET);
+         }
+      }
+
+      if(fp)
+      {
+         frubuf = malloc( size );
+         if(frubuf)
+         {
+            uint16_t fru_read_size;
+            fru_read_size = fread(frubuf, 1, size, fp);
+
+            if(fru_read_size == size)
+            {
+               rc = write_fru_area(intf, &fru, id, 0, offset, size, frubuf);
+
+               if(rc == 0)
+               {
+                  lprintf(LOG_INFO, "Done\n");
+               }
+            }
+            else
+            {
+                  lprintf(LOG_ERR, "Unable to read file: %i\n", fru_read_size);
+            }
+
+            free(frubuf);
+         }
+         fclose(fp);
+         fp = NULL;
+      }
+   }
+   else
+   {
+		lprintf(LOG_ERR, "Cannot access internal use area");
+   }
+}
+
+
+
+
 int
 ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	{
@@ -2739,7 +3174,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_fru_print_all(intf);
 	}
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR, "FRU Commands:	print read write upgEkey edit");
+		lprintf(LOG_ERR, "FRU Commands:	print read write upgEkey edit internaluse");
 	}
 	else if (strncmp(argv[0], "print", 5) == 0 ||
 		 strncmp(argv[0], "list", 4) == 0) {
@@ -2800,6 +3235,59 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("fru upgEkey <fru id> <fru file>\n");
 		}
 	}
+
+	else if (!strncmp(argv[0], "internaluse", 11)) {
+      if (
+            (argc >= 3) 
+            && 
+            (!strncmp(argv[2], "info", 4))
+         )
+      {
+         ipmi_fru_info_internal_use(intf, atoi(argv[1]));
+      }
+      else if (
+            (argc >= 3) 
+            && 
+            (!strncmp(argv[2], "print", 5))
+         )
+      {
+         ipmi_fru_read_internal_use(intf, atoi(argv[1]), NULL);
+      }
+		else if (
+		      (argc >= 4) 
+		      && 
+            (!strncmp(argv[2], "read", 4))
+            &&
+		      (strlen(argv[3]) > 0)
+              )
+	   {
+         strcpy(fileName, argv[3]);
+			lprintf(LOG_DEBUG, "Fru Id				 : %d", atoi(argv[1]));
+   		lprintf(LOG_DEBUG, "Fru File			 : %s", fileName);
+         ipmi_fru_read_internal_use(intf, atoi(argv[1]), fileName);
+		} 
+		else if (
+		      (argc >= 4) 
+		      && 
+            (!strncmp(argv[2], "write", 5))
+            &&
+		      (strlen(argv[3]) > 0)
+              )
+	   {
+			strcpy(fileName, argv[3]);
+			lprintf(LOG_DEBUG, "Fru Id				 : %d", atoi(argv[1]));
+   		lprintf(LOG_DEBUG, "Fru File			 : %s", fileName);
+         ipmi_fru_write_internal_use(intf, atoi(argv[1]), fileName);
+		} 
+		else 
+		{
+			printf("fru internaluse <fru id> info             - get internal use area size\n");
+			printf("fru internaluse <fru id> print            - print internal use area in hex\n");
+			printf("fru internaluse <fru id> read  <fru file> - read internal use area to file\n");
+			printf("fru internaluse <fru id> write <fru file> - write internal use area from file\n");
+		}
+	}
+
 	else if (!strncmp(argv[0], "edit", 4)) {
 
 		if ((argc >= 2) && (strncmp(argv[1], "help", 4) == 0)) {
