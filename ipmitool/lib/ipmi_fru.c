@@ -56,6 +56,7 @@
  * TODO: make this a command line option
  */
 #define LIMIT_ALL_REQUEST_SIZE 1
+#define FRU_MULTIREC_CHUNK_SIZE		(255 + sizeof(struct fru_multirec_header))
 
 static char fileName[512];
 
@@ -74,7 +75,12 @@ static void ipmi_fru_get_adjust_size_from_buffer(uint8_t * pBufArea, uint32_t *p
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
 static int ipmi_fru_set_field_string(struct ipmi_intf * intf, unsigned
 						char fruId, uint8_t f_type, uint8_t f_index, char *f_string);
-
+static void
+fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
+			uint8_t id, uint32_t offset);
+int
+read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+			uint32_t offset, uint32_t length, uint8_t *frubuf);
 
 /* get_fru_area_str	-	Parse FRU area string from raw data
  *
@@ -179,7 +185,11 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
 	return str;
 }
 
-/* write_fru_area	 -	 write fru data
+
+
+
+
+/* build_fru_bloc	 -	 build fru bloc for write protection
  *
  * @intf:	  ipmi interface
  * @fru_info: information about FRU device
@@ -192,6 +202,419 @@ get_fru_area_str(uint8_t * data, uint32_t * offset)
  * returns 0 on success
  * returns -1 on error
  */
+#define FRU_NUM_BLOC_COMMON_HEADER  6
+typedef struct ipmi_fru_bloc
+{
+   uint16_t start;
+   uint16_t size;
+   uint8_t  blocId[32];
+}t_ipmi_fru_bloc;
+
+t_ipmi_fru_bloc *
+build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+                                         /* OUT */uint16_t * ptr_number_bloc)
+{
+   t_ipmi_fru_bloc * p_bloc;
+   struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct fru_header header;
+   uint8_t * fru_data = NULL;
+	uint8_t msg_data[4];
+   uint16_t num_bloc;
+   uint16_t bloc_count;
+   
+   (* ptr_number_bloc) = 0;
+
+	/*memset(&fru, 0, sizeof(struct fru_info));*/
+	memset(&header, 0, sizeof(struct fru_header));
+
+	/*
+	 * get COMMON Header format
+	 */
+	msg_data[0] = id;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, " Device not present (No Response)\n");
+		return NULL;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR," Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return NULL;
+	}
+
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	if (header.version != 1) {
+		lprintf(LOG_ERR, " Unknown FRU header version 0x%02x",
+			header.version);
+		return NULL;
+	}
+
+   /******************************************
+      Count the number of bloc
+   *******************************************/
+
+    // Common header
+   num_bloc = 1;
+   // Internal
+   if( header.offset.internal )
+      num_bloc ++;
+   // Chassis
+   if( header.offset.chassis )
+      num_bloc ++;
+   // Board
+   if( header.offset.board )
+      num_bloc ++;
+   // Product
+   if( header.offset.product )
+      num_bloc ++;
+
+   // Multi
+   if( header.offset.multi )
+   {
+   
+	   uint32_t i;
+	   struct fru_multirec_header * h;
+	   uint32_t last_off, len;
+
+	   i = last_off = (header.offset.multi*8);
+	   //fru_len = 0;
+
+	   fru_data = malloc(fru->size + 1);
+	   if (fru_data == NULL) {
+		   lprintf(LOG_ERR, " Out of memory!");
+		   return;
+	   }
+
+	   memset(fru_data, 0, fru->size + 1);
+
+	   do {
+		   h = (struct fru_multirec_header *) (fru_data + i);
+
+		   // read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time 
+		   if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
+		   {
+			   len = fru->size - last_off;
+			   if (len > FRU_MULTIREC_CHUNK_SIZE)
+				   len = FRU_MULTIREC_CHUNK_SIZE;
+
+			   if (read_fru_area(intf, fru, id, last_off, len, fru_data) < 0)
+				   break;
+
+			   last_off += len;
+		   }
+   
+         num_bloc++;
+         //printf("Bloc Numb : %i\n", counter);
+         //printf("Bloc Start: %i\n", i);
+         //printf("Bloc Size : %i\n", h->len);
+         //printf("\n");
+		   i += h->len + sizeof (struct fru_multirec_header);
+	   } while (!(h->format & 0x80));
+
+      lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
+
+      if(fru->size > i)
+      {
+         // Bloc for remaining space
+         num_bloc ++;
+      }
+   }
+   else
+   {
+      /* Since there is no multi-rec area and no end delimiter, the remaining
+         space will be added to the last bloc */
+   }
+
+
+
+   /******************************************
+      Malloc and fill up the bloc contents
+   *******************************************/
+   p_bloc = malloc( sizeof( t_ipmi_fru_bloc ) * num_bloc );
+   if(!p_bloc)
+   {
+      lprintf(LOG_ERR, " Unable to get memory to build Fru bloc");
+      return NULL;
+   }
+
+   // Common header
+   bloc_count = 0;
+
+   p_bloc[bloc_count].start= 0;
+   p_bloc[bloc_count].size = 8;
+   strcpy(p_bloc[bloc_count].blocId, "Common Header Section");
+   bloc_count ++;
+
+   // Internal
+   if( header.offset.internal )
+   {
+      p_bloc[bloc_count].start = (header.offset.internal * 8);
+      p_bloc[bloc_count].size = 0; // Will be fillup later
+      strcpy(p_bloc[bloc_count].blocId, "Internal Use Section");
+      bloc_count ++;
+   }
+   // Chassis
+   if( header.offset.chassis )
+   {
+      p_bloc[bloc_count].start = (header.offset.chassis * 8);
+      p_bloc[bloc_count].size = 0; // Will be fillup later
+      strcpy(p_bloc[bloc_count].blocId, "Chassis Section");
+      bloc_count ++;
+   }
+   // Board
+   if( header.offset.board )
+   {
+      p_bloc[bloc_count].start = (header.offset.board * 8);
+      p_bloc[bloc_count].size = 0; // Will be fillup later
+      strcpy(p_bloc[bloc_count].blocId, "Board Section");
+      bloc_count ++;
+   }
+   // Product
+   if( header.offset.product )
+   {
+      p_bloc[bloc_count].start = (header.offset.product * 8);
+      p_bloc[bloc_count].size = 0; // Will be fillup later
+      strcpy(p_bloc[bloc_count].blocId, "Product Section");
+      bloc_count ++;
+   }
+
+   // Multi-Record Area
+   if(
+      ( header.offset.multi )
+      &&
+      ( fru_data )
+     )
+   {
+      uint32_t i = (header.offset.multi*8);
+	   struct fru_multirec_header * h;
+
+	   do {
+		   h = (struct fru_multirec_header *) (fru_data + i);
+
+         p_bloc[bloc_count].start = i;
+         p_bloc[bloc_count].size  = h->len + sizeof (struct fru_multirec_header);
+         sprintf(p_bloc[bloc_count].blocId, "Multi-Rec Aread: Type %i", h->type);
+         bloc_count ++;
+         /*printf("Bloc Start: %i\n", i);
+         printf("Bloc Size : %i\n", h->len);
+         printf("\n");*/
+
+		   i += h->len + sizeof (struct fru_multirec_header);
+	   } while (!(h->format & 0x80));
+
+      lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
+      /* If last bloc size was defined and is not until the end, create a 
+         last bloc with the remaining unused space */
+
+      if(fru->size > i)
+      {
+         // Bloc for remaining space
+         p_bloc[bloc_count].start = i;
+         p_bloc[bloc_count].size  = (fru->size - i);
+         sprintf(p_bloc[bloc_count].blocId, "Unused space");     
+         bloc_count ++;
+       }
+     
+
+	   free(fru_data);
+   }
+
+   /* Fill up size for first bloc */
+   {
+      unsigned short counter;
+      lprintf(LOG_DEBUG ,"\nNumber Bloc : %i\n", num_bloc);
+      for(counter = 0; counter < (num_bloc); counter ++)
+      {
+         /* If size where not initialized, do it. */
+         if( p_bloc[counter].size == 0)
+         {
+            /* If not the last bloc, use the next bloc to determine the end */
+            if((counter+1) < num_bloc)
+            {
+               p_bloc[counter].size = (p_bloc[counter+1].start - p_bloc[counter].start);
+            }
+            else
+            {
+               p_bloc[counter].size = (fru->size - p_bloc[counter].start);
+            }
+         }
+         lprintf(LOG_DEBUG ,"Bloc Numb : %i\n", counter);
+         lprintf(LOG_DEBUG ,"Bloc Id   : %s\n", p_bloc[counter].blocId);
+         lprintf(LOG_DEBUG ,"Bloc Start: %i\n", p_bloc[counter].start);
+         lprintf(LOG_DEBUG ,"Bloc Size : %i\n", p_bloc[counter].size);
+         lprintf(LOG_DEBUG ,"\n");
+      }
+
+     
+      
+
+
+   }
+
+   (* ptr_number_bloc) = num_bloc;
+
+   return p_bloc;
+}
+
+
+
+
+int
+write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
+					uint16_t soffset,	 uint16_t doffset,
+					uint16_t length, uint8_t *pFrubuf)
+{	/*
+	// fill in frubuf[offset:length] from the FRU[offset:length]
+	// rc=1 on success
+	*/
+	static uint16_t fru_data_rqst_size = 32;
+	uint16_t off=0,  tmp, finish;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[25];
+	uint8_t writeLength;
+   uint16_t num_bloc;
+
+	finish = doffset + length;			 /* destination offset */
+	if (finish > fru->size)
+	{
+		lprintf(LOG_ERROR, "Return error\n");
+		return -1;
+	}
+
+   t_ipmi_fru_bloc * fru_bloc = build_fru_bloc(intf, fru, id, &num_bloc);
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.cmd = SET_FRU_DATA;
+	req.msg.data = msg_data;
+
+#ifdef LIMIT_ALL_REQUEST_SIZE
+	if (fru_data_rqst_size > 16)
+#else
+	if (fru->access && fru_data_rqst_size > 16)
+#endif
+	  fru_data_rqst_size = 16;
+
+	do {
+      /* Temp init end_bloc to the end, if not found */
+      uint16_t end_bloc = finish;
+      uint8_t protected_bloc = 0;
+      uint16_t found_bloc = 0xffff;
+
+		/* real destination offset */
+		tmp = fru->access ? (doffset+off) >> 1 : (doffset+off);
+		msg_data[0] = id;
+		msg_data[1] = (uint8_t)tmp;
+		msg_data[2] = (uint8_t)(tmp >> 8);
+
+      /* Write per bloc, try to find the end of a bloc*/
+      {
+         uint16_t counter;
+         for(counter = 0; counter < (num_bloc); counter ++)
+         {
+            if(
+               (tmp >= fru_bloc[counter].start)
+               &&
+               (tmp < (fru_bloc[counter].start + fru_bloc[counter].size))
+              )
+            {
+               found_bloc = counter;
+               end_bloc = (fru_bloc[counter].start + fru_bloc[counter].size);
+               counter = num_bloc;
+            }
+         }
+      }
+
+		tmp = end_bloc - (doffset+off); /* bytes remaining for the bloc */
+		if (tmp > 16) {
+			memcpy(&msg_data[3], pFrubuf + soffset + off, 16);
+			req.msg.data_len = 16 + 3;
+		}
+		else {
+			memcpy(&msg_data[3], pFrubuf + soffset + off, (uint8_t)tmp);
+			req.msg.data_len = tmp + 3;
+		}
+      if(found_bloc == 0)
+      {
+		   lprintf(LOG_INFO,"Writing %d bytes", (req.msg.data_len-3));
+      }
+      else
+      {
+         lprintf(LOG_INFO,"Writing %d bytes (Bloc #%i: %s)", 
+                        (req.msg.data_len-3),
+                        found_bloc, fru_bloc[found_bloc].blocId);
+      }
+
+
+		writeLength = req.msg.data_len-3;
+
+		rsp = intf->sendrecv(intf, &req);
+		if (!rsp) {
+			break;
+		}
+
+      if(rsp->ccode==0x80) // Write protected section
+      {
+         protected_bloc = 1;
+      }
+      else if ((rsp->ccode==0xc7 || rsp->ccode==0xc8 || rsp->ccode==0xca ) &&
+			 --fru_data_rqst_size > 8) {
+			lprintf(LOG_NOTICE,"Bad CC -> %x\n", rsp->ccode);
+			break; /*continue;*/
+		}
+		else if (rsp->ccode > 0)
+			break;
+
+      if(protected_bloc == 0)
+      {
+		   off += writeLength; // Write OK, bloc not protected, continue
+      }
+      else
+      {
+         
+         if(found_bloc != 0xffff)
+         {
+            // Bloc protected, advise user and jump over protected bloc
+            lprintf(LOG_INFO,"Bloc [%s] protected at offset: %i (size %i bytes)", 
+                          fru_bloc[found_bloc].blocId,
+                          fru_bloc[found_bloc].start,
+                          fru_bloc[found_bloc].size);
+            lprintf(LOG_INFO,"Jumping over this bloc"); 
+         }
+         else
+         {
+            lprintf(LOG_INFO,"Remaining FRU is protected following offset: %i",
+                                 off);
+               
+         }
+         off = end_bloc;
+      }
+	} while ((doffset+off) < finish);
+
+   free(fru_bloc);
+
+	return ((doffset+off) >= finish);
+}
+
+
+#if 0
 int
 write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 					uint16_t soffset,	 uint16_t doffset,
@@ -262,6 +685,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	return ((doffset+off) >= finish);
 }
+#endif
 
 /* read_fru_area	-	fill in frubuf[offset:length] from the FRU[offset:length]
  *
@@ -454,6 +878,68 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	return 0;
 }
+
+  
+static void
+fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
+			uint8_t id, uint32_t offset)
+{
+	uint8_t * fru_data;
+	uint32_t fru_len, i;
+	struct fru_multirec_header * h;
+	uint32_t last_off, len;
+
+	i = last_off = offset;
+	fru_len = 0;
+
+	fru_data = malloc(fru->size + 1);
+	if (fru_data == NULL) {
+		lprintf(LOG_ERR, " Out of memory!");
+		return;
+	}
+
+	memset(fru_data, 0, fru->size + 1);
+
+	do {
+		h = (struct fru_multirec_header *) (fru_data + i);
+
+		// read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time 
+		if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
+		{
+			len = fru->size - last_off;
+			if (len > FRU_MULTIREC_CHUNK_SIZE)
+				len = FRU_MULTIREC_CHUNK_SIZE;
+
+			if (read_fru_area(intf, fru, id, last_off, len, fru_data) < 0)
+				break;
+
+			last_off += len;
+		}
+   
+      //printf("Bloc Numb : %i\n", counter);
+      printf("Bloc Start: %i\n", i);
+      printf("Bloc Size : %i\n", h->len);
+      printf("\n");
+
+		i += h->len + sizeof (struct fru_multirec_header);
+	} while (!(h->format & 0x80));
+
+   i = offset;
+	do {
+		h = (struct fru_multirec_header *) (fru_data + i);
+
+      printf("Bloc Start: %i\n", i);
+      printf("Bloc Size : %i\n", h->len);
+      printf("\n");
+
+		i += h->len + sizeof (struct fru_multirec_header);
+	} while (!(h->format & 0x80));
+
+   lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
+
+	free(fru_data);
+}
+      
 
 /* fru_area_print_chassis	-	Print FRU Chassis Area
  *
@@ -726,7 +1212,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	free(fru_data);
 }
 
-#define FRU_MULTIREC_CHUNK_SIZE		(255 + sizeof(struct fru_multirec_header))
+
 
 /* fru_area_print_multirec	 -	 Print FRU Multi Record Area
  *
