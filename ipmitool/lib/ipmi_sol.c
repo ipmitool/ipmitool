@@ -92,6 +92,7 @@ static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
 static int            _disable_keepalive = 0;
 static int            _use_sol_for_keepalive = 0;
+static int            _keepalive_retries = 0;
 
 extern int verbose;
 
@@ -1413,6 +1414,12 @@ ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
 	   ret = intf->keepalive(intf);
+	   if ( (ret!=0) && (_keepalive_retries < SOL_KEEPALIVE_RETRIES) ) {
+         ret = 0;
+         _keepalive_retries++;
+	   }
+	   else if ((ret==0) && (_keepalive_retries > 0))
+         _keepalive_retries = 0;
 		gettimeofday(&_start_keepalive, 0);
    }
 	return ret;
