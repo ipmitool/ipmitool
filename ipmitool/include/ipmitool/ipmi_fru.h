@@ -321,6 +321,11 @@ struct fru_picmgext_amc_link_desc {
 } __attribute__ ((packed));
 
 
+#define FRU_PICMGEXT_OEM_SWFW 0x03
+#define OEM_SWFW_NBLOCK_OFFSET 0x05
+#define OEM_SWFW_FIELD_START_OFFSET 0x06
+
+
 struct fru_picmgext_chn_desc {
 #ifndef WORDS_BIGENDIAN
 	unsigned char remote_slot:8;
