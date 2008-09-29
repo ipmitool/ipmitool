@@ -202,6 +202,9 @@ typedef enum eHpmfwupgComponentId
    HPMFWUPG_COMPONENT_ID_MAX
 } tHpmfwupgComponentId;   
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgComponentBitMask
 {
    union
@@ -230,7 +233,10 @@ struct HpmfwupgComponentBitMask
          #endif
       }bitField;
    }ComponentBits;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 static const int HPMFWUPG_SUCCESS              = 0;
@@ -244,12 +250,20 @@ static const int HPMFWUPG_UPLOAD_RETRY         = 2;
  *  TARGET UPGRADE CAPABILITIES DEFINITIONS
  */
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetTargetUpgCapabilitiesReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
-
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetTargetUpgCapabilitiesResp
 {
    unsigned char picmgId;
@@ -285,13 +299,22 @@ struct HpmfwupgGetTargetUpgCapabilitiesResp
    unsigned char rollbackTimeout;
    unsigned char inaccessTimeout;
    struct HpmfwupgComponentBitMask componentsPresent;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetTargetUpgCapabilitiesCtx
 {
    struct HpmfwupgGetTargetUpgCapabilitiesReq  req;
    struct HpmfwupgGetTargetUpgCapabilitiesResp resp;
-}__attribute__ ((packed));   
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /* 
  *  COMPONENT PROPERTIES DEFINITIONS
@@ -308,13 +331,22 @@ typedef enum eHpmfwupgCompPropertiesSelect
    HPMFWUPG_COMP_OEM_PROPERTIES = 192   
 } tHpmfwupgCompPropertiesSelect; 
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetComponentPropertiesReq
 {
    unsigned char picmgId;
    unsigned char componentId;
    unsigned char selector;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetGeneralPropResp 
 {
    unsigned char picmgId;
@@ -340,42 +372,78 @@ struct HpmfwupgGetGeneralPropResp
          #endif
       }bitfield;
    }GeneralCompProperties;
-}__attribute__ ((packed));   
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetCurrentVersionResp 
 {
    unsigned char picmgId;
    unsigned char currentVersion[HPMFWUPG_VERSION_SIZE];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetDescStringResp 
 {
    unsigned char picmgId;
    char descString[HPMFWUPG_DESC_STRING_LENGTH];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetRollbackFwVersionResp 
 {
    unsigned char picmgId;
    unsigned char rollbackFwVersion[HPMFWUPG_VERSION_SIZE];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetDeferredFwVersionResp 
 {
    unsigned char picmgId;
    unsigned char deferredFwVersion[HPMFWUPG_VERSION_SIZE];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /* 
  * GetComponentProperties - OEM properties (192)
  */
 #define HPMFWUPG_OEM_LENGTH         4
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetOemProperties 
 {
    unsigned char picmgId;
    unsigned char oemRspData[HPMFWUPG_OEM_LENGTH];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetComponentPropertiesResp
 {
    union
@@ -387,33 +455,60 @@ struct HpmfwupgGetComponentPropertiesResp
       struct HpmfwupgGetDeferredFwVersionResp deferredFwVersionResp;
       struct HpmfwupgGetOemProperties         oemProperties;
    }Response;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetComponentPropertiesCtx
 {
    struct HpmfwupgGetComponentPropertiesReq  req;
    struct HpmfwupgGetComponentPropertiesResp resp;
-}__attribute__ ((packed));      
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 /* 
  *  ABORT UPGRADE DEFINITIONS
  */
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgAbortUpgradeReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgAbortUpgradeResp
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgAbortUpgradeCtx
 {
    struct HpmfwupgAbortUpgradeReq  req;
    struct HpmfwupgAbortUpgradeResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /* 
  * UPGRADE ACTIONS DEFINITIONS
@@ -427,23 +522,41 @@ typedef enum eHpmfwupgUpgradeAction
    HPMFWUPG_UPGRADE_ACTION_INVALID = 0xff
 }  tHpmfwupgUpgradeAction;
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgInitiateUpgradeActionReq
 {
    unsigned char picmgId;
    struct HpmfwupgComponentBitMask componentsMask;
    unsigned char upgradeAction;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgInitiateUpgradeActionResp
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgInitiateUpgradeActionCtx
 {
    struct HpmfwupgInitiateUpgradeActionReq  req;
    struct HpmfwupgInitiateUpgradeActionResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /* 
  *  UPLOAD FIRMWARE BLOCK DEFINITIONS
@@ -455,23 +568,42 @@ struct HpmfwupgInitiateUpgradeActionCtx
 #define HPMFWUPG_SEND_DATA_COUNT_IPMB  26
 #define HPMFWUPG_SEND_DATA_COUNT_IPMBL 26
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgUploadFirmwareBlockReq
 {
    unsigned char picmgId;
    unsigned char blockNumber;
    unsigned char data[HPMFWUPG_SEND_DATA_COUNT_MAX];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgUploadFirmwareBlockResp
 {
   unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgUploadFirmwareBlockCtx
 {
    struct HpmfwupgUploadFirmwareBlockReq  req;
    struct HpmfwupgUploadFirmwareBlockResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 /*
@@ -480,131 +612,234 @@ struct HpmfwupgUploadFirmwareBlockCtx
 
 #define HPMFWUPG_IMAGE_SIZE_BYTE_COUNT 4
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgFinishFirmwareUploadReq
 {
    unsigned char picmgId;
    unsigned char componentId;
    unsigned char imageLength[HPMFWUPG_IMAGE_SIZE_BYTE_COUNT];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgFinishFirmwareUploadResp
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgFinishFirmwareUploadCtx
 {
    struct HpmfwupgFinishFirmwareUploadReq  req;
    struct HpmfwupgFinishFirmwareUploadResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /*
  *   ACTIVATE FW DEFINITIONS
  */
-
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgActivateFirmwareReq
 {
    unsigned char picmgId;
    unsigned char rollback_override;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgActivateFirmwareResp
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgActivateFirmwareCtx
 {
    struct HpmfwupgActivateFirmwareReq  req;
    struct HpmfwupgActivateFirmwareResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
                                                      
 /*
  *   GET UPGRADE STATUS DEFINITIONS
  */
-
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetUpgradeStatusReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetUpgradeStatusResp
 {
    unsigned char picmgId;
    unsigned char cmdInProcess;
    unsigned char lastCmdCompCode;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgGetUpgradeStatusCtx
 {
    struct HpmfwupgGetUpgradeStatusReq  req;
    struct HpmfwupgGetUpgradeStatusResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
                          
 /*
  *   MANUAL FW ROLLBACK DEFINITIONS
  */
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgManualFirmwareRollbackReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgManualFirmwareRollbackResp
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 struct HpmfwupgManualFirmwareRollbackCtx
 {
    struct HpmfwupgManualFirmwareRollbackReq  req;
    struct HpmfwupgManualFirmwareRollbackResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /*
  *   QUERY ROLLBACK STATUS DEFINITIONS
  */
-
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgQueryRollbackStatusReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgQueryRollbackStatusResp
 {
    unsigned char picmgId;
    struct HpmfwupgComponentBitMask rollbackComp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgQueryRollbackStatusCtx
 {
    struct HpmfwupgQueryRollbackStatusReq  req;
    struct HpmfwupgQueryRollbackStatusResp resp;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 /*
  *   QUERY SELF TEST RESULT DEFINITIONS
  */
-
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct  HpmfwupgQuerySelftestResultReq
 {
    unsigned char picmgId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct  HpmfwupgQuerySelftestResultResp
 {
    unsigned char picmgId;
    unsigned char result1;
    unsigned char result2;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgQuerySelftestResultCtx
 {
    struct HpmfwupgQuerySelftestResultReq  req;
    struct HpmfwupgQuerySelftestResultResp resp;
-}__attribute__ ((packed));
-
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 /*
  *  HPM.1 IMAGE DEFINITIONS
  */ 
@@ -619,6 +854,9 @@ struct HpmfwupgQuerySelftestResultCtx
 #define HPMFWUPG_IMAGE_HEADER_VERSION    0 
 #define HPMFWUPG_IMAGE_SIGNATURE "PICMGFWU"
  
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgImageHeader
 {
   char           signature[HPMFWUPG_HEADER_SIGNATURE_LENGTH];
@@ -654,27 +892,45 @@ struct HpmfwupgImageHeader
   unsigned char  compRevision[HPMFWUPG_COMP_REVISION_LENGTH];
   unsigned char  firmRevision[HPMFWUPG_FIRM_REVISION_LENGTH];
   unsigned short oemDataLength;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 #define HPMFWUPG_DESCRIPTION_LENGTH   21
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgActionRecord
 {
    unsigned char  actionType;
    struct HpmfwupgComponentBitMask components;
    unsigned char  checksum;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 #define HPMFWUPG_FIRMWARE_SIZE_LENGTH 4
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgFirmwareImage
 {
    unsigned char version[HPMFWUPG_FIRM_REVISION_LENGTH];
    char          desc[HPMFWUPG_DESCRIPTION_LENGTH];
    unsigned char length[HPMFWUPG_FIRMWARE_SIZE_LENGTH];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct HpmfwupgUpgradeCtx
 {
    unsigned int   imageSize;
@@ -683,7 +939,10 @@ struct HpmfwupgUpgradeCtx
    struct HpmfwupgGetTargetUpgCapabilitiesResp targetCap;
    struct HpmfwupgGetGeneralPropResp           genCompProp[HPMFWUPG_COMPONENT_ID_MAX];
    struct ipm_devid_rsp                        devId;
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 typedef enum eHpmfwupgActionType
 {

@@ -488,6 +488,30 @@ AC_ARG_ENABLE([file-security],
 	    AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
 	fi], [])
 
+
+AC_TRY_RUN([
+	#include <stdio.h>
+	
+	struct packstruct {
+		unsigned char t0       :5;
+		unsigned char t1       :5;
+		unsigned char t2       :5;
+		unsigned char t3       :5;
+		unsigned char t4       :4;
+	} __attribute__ ((packed));
+	
+	int
+	main(int argc, char ** argv)
+	{
+	if(sizeof(struct packstruct) != 3)
+	return(1);
+	else
+	return(0);
+	}
+	],[],[AC_DEFINE(HAVE_PRAGMA_PACK,[1],[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
+)
+
+
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
 		doc/Makefile

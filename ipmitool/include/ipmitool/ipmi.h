@@ -44,6 +44,13 @@
 
 #define IPMI_BUF_SIZE 1024
 
+#if HAVE_PRAGMA_PACK
+#define ATTRIBUTE_PACKING
+#else
+#define ATTRIBUTE_PACKING __attribute__ ((packed))
+#endif
+
+
 /* From table 13.16 of the IPMI v2 specification */
 #define IPMI_PAYLOAD_TYPE_IPMI               0x00
 #define IPMI_PAYLOAD_TYPE_SOL                0x01

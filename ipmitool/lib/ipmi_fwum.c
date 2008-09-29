@@ -616,6 +616,9 @@ static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
 /******************************************************************************
 ******************************* COMMANDS **************************************
 ******************************************************************************/
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumGetInfoResp {
    unsigned char protocolRevision;
    unsigned char controllerDeviceId;
@@ -628,7 +631,11 @@ struct KfwumGetInfoResp {
    unsigned char firmRev1;
    unsigned char firmRev2;
    unsigned char numBank;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
+
 
 
 /* KfwumGetInfo  -  Get Firmware Update Manager (FWUM) information
@@ -827,6 +834,10 @@ static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf * intf,
    return status;
 }
 
+
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumGetStatusResp {
    unsigned char bankState;
    unsigned char firmLengthLSB;
@@ -835,7 +846,11 @@ struct KfwumGetStatusResp {
    unsigned char firmRev1;
    unsigned char firmRev2;
    unsigned char firmRev3;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
+ 
 
 const struct valstr bankStateValS[] = {
    { 0x00, "Not programmed" },
@@ -917,9 +932,16 @@ static tKFWUM_Status KfwumGetStatus(struct ipmi_intf * intf)
    printf("\n");
    return status;
 }
+
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumManualRollbackReq{
    unsigned char type;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 /* KfwumManualRollback  -  Ask IPMC to rollback to previous version
@@ -964,6 +986,9 @@ static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf)
    return status;
 }
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumStartFirmwareDownloadReq{
    unsigned char lengthLSB;
    unsigned char lengthMid;
@@ -971,10 +996,20 @@ struct KfwumStartFirmwareDownloadReq{
    unsigned char paddingLSB;
    unsigned char paddingMSB;
 	unsigned char useSequence;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
+
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumStartFirmwareDownloadResp {
    unsigned char bank;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
                                    unsigned long length,unsigned short padding)
@@ -1030,6 +1065,9 @@ static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
    return status;
 }
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumSaveFirmwareAddressReq
 {
  	unsigned char addressLSB;
@@ -1037,13 +1075,22 @@ struct KfwumSaveFirmwareAddressReq
    unsigned char addressMSB;
    unsigned char numBytes;
    unsigned char txBuf[KFWUM_SMALL_BUFFER-KFWUM_OLD_CMD_OVERHEAD];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumSaveFirmwareSequenceReq
 {
  	unsigned char sequenceNumber;
    unsigned char txBuf[KFWUM_BIG_BUFFER];
-}__attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 
 #define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT ((unsigned char)6)
@@ -1187,12 +1234,19 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
    return status;
 }
 
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct KfwumFinishFirmwareDownloadReq{
    unsigned char versionMaj;
    unsigned char versionMinSub;
    unsigned char versionSdr;
    unsigned char reserved;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
+
 static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
                                                  tKFWUM_InFirmwareInfo firmInfo)
 {
