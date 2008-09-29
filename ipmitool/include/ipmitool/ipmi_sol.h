@@ -36,7 +36,8 @@
 #include <ipmitool/ipmi.h>
 
 #define SOL_ESCAPE_CHARACTER_DEFAULT        '~'
-#define SOL_KEEPALIVE_TIMEOUT               30
+#define SOL_KEEPALIVE_TIMEOUT               15
+#define SOL_KEEPALIVE_RETRIES               3
 
 #define IPMI_SOL_SERIAL_ALERT_MASK_SUCCEED  0x08
 #define IPMI_SOL_SERIAL_ALERT_MASK_DEFERRED 0x04
@@ -66,14 +67,19 @@ struct sol_config_parameters {
  * The ACTIVATE PAYLOAD command reponse structure
  * From table 24-2 of the IPMI v2.0 spec
  */
+#ifdef PRAGMA_PACK
+#pramga pack(1)
+#endif
 struct activate_payload_rsp {
 	uint8_t auxiliary_data[4];
 	uint8_t inbound_payload_size[2];  /* LS byte first */
 	uint8_t outbound_payload_size[2]; /* LS byte first */
 	uint8_t payload_udp_port[2];      /* LS byte first */
 	uint8_t payload_vlan_number[2];   /* LS byte first */
-} __attribute__ ((packed));
-
+} ATTRIBUTE_PACKING;
+#ifdef PRAGMA_PACK
+#pramga pack(0)
+#endif
 
 int ipmi_sol_main(struct ipmi_intf *, int, char **);
 int ipmi_get_sol_info(struct ipmi_intf             * intf,
