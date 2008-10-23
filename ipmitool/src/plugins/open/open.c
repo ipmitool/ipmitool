@@ -152,7 +152,7 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 			){
 		      version_accepted = 1;
 		      lprintf(LOG_DEBUG, "Discovered PICMG Extension %d.%d", 
-		               (rsp->data[1] >> 4), (rsp->data[1] & 0x0f));
+                            (rsp->data[1] & 0x0f),(rsp->data[1] >> 4)  );
 		   }
 		}
 		
@@ -163,7 +163,7 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 			req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
 			msg_data    = 0x00;
 			req.msg.data = &msg_data; 
-			req.msg.data_len = 1;
+			req.msg.data_len = 1;   
 			msg_data = 0;
 
 		   rsp = intf->sendrecv(intf, &req);
