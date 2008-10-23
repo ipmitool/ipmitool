@@ -605,7 +605,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 	
 	printf("Watchdog Timer Use:     %s (0x%02x)\n", 
-		wdt_use_string[wdt_res->timer_use], wdt_res->timer_use);
+      wdt_use_string[(wdt_res->timer_use & 0x07 )], wdt_res->timer_use);
 	printf("Watchdog Timer Is:      %s\n", 
 		wdt_res->timer_use & 0x40 ? "Started/Running" : "Stopped");
 	printf("Watchdog Timer Actions: %s (0x%02x)\n", 
