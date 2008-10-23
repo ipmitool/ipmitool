@@ -609,7 +609,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	printf("Watchdog Timer Is:      %s\n", 
 		wdt_res->timer_use & 0x40 ? "Started/Running" : "Stopped");
 	printf("Watchdog Timer Actions: %s (0x%02x)\n", 
-		 wdt_action_string[wdt_res->timer_actions], wdt_res->timer_actions);
+		 wdt_action_string[(wdt_res->timer_actions&0x07)], wdt_res->timer_actions);
 	printf("Pre-timeout interval:   %d seconds\n", wdt_res->pre_timeout);
 	printf("Timer Expiration Flags: 0x%02x\n", wdt_res->timer_use_exp);
 	printf("Initial Countdown:      %i sec\n", 
