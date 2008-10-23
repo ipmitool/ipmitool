@@ -116,7 +116,9 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 
 	/* Check if PICMG extension is available to use the function GetDeviceLocator
 	 * to retreive i2c address PICMG hack to set right IPMB address, 
-	 * If extension is not supported, should not gives any problems
+	 * If extension is not supported, should not give any problems
+    *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
+    *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
 	 */
 	if (intf->my_addr == IPMI_BMC_SLAVE_ADDR) {
       
@@ -139,9 +141,13 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 				(rsp->data[0] == 0)
 				&&
 				(
-					(rsp->data[1] == 0x21) /* PICMG 2.1 version */
+					(rsp->data[1] == 0x02)
 					||
-					(rsp->data[1] == 0x22) /* PICMG 2.2 version */
+					(rsp->data[1] == 0x12) 
+					||
+					(rsp->data[1] == 0x22) 
+					||
+					(rsp->data[1] == 0x32) 
 				)
 			){
 		      version_accepted = 1;
