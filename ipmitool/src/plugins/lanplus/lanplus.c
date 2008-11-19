@@ -300,7 +300,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_se
 
 	ipmi_req_entries_tail = e;
 	lprintf(LOG_DEBUG+3, "added list entry seq=0x%02x cmd=0x%02x",
-		e->rq_seq, e->req.msg.cmd);
+		e->rq_seq, e->req.msg.cmd);     
 	return e;
 }
 
@@ -309,6 +309,7 @@ static struct ipmi_rq_entry *
 ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * e = ipmi_req_entries;
+
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
 		if (e == e->next)
 			return NULL;
@@ -712,13 +713,25 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 								rsp->payload.ipmi_response.cmd);
 			if (entry != NULL) {
 				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-				if (intf->target_addr != intf->my_addr &&
-					 bridgePossible) {
+				if (
+				      intf->target_addr != intf->my_addr 
+				      &&
+					   bridgePossible
+                  &&
+                  rsp->data_len 
+                  &&
+						rsp->payload.ipmi_response.cmd == 0x34
+					) 
+				{
+               /* Check completion code */
                if (rsp->data[offset-1] == 0)
                {
 					   lprintf(LOG_DEBUG, "Bridged command answer,"
-					         " waiting for next answer ");
-					   rsp = ipmi_lan_recv_packet(intf);
+					         " waiting for next answer... ");
+      				ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
+								rsp->payload.ipmi_response.cmd);
+                  ipmi_lan_poll_recv(intf);
+                  return;
 					}
 					else
 					{		
@@ -1851,13 +1864,21 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
    {
 	entry = ipmi_req_add_entry(intf, req, curr_seq);
    }
-   else 
+   else /* it's a bridge command */
    {
       unsigned char backup_cmd;
-      backup_cmd = req->msg.cmd;
-      req->msg.cmd = 0x34;
+
+      /* Add entry for cmd */
    	entry = ipmi_req_add_entry(intf, req, curr_seq);
-      req->msg.cmd = backup_cmd;
+
+      if(entry)
+      {
+         /* Add entry for bridge cmd */
+         backup_cmd = req->msg.cmd;
+         req->msg.cmd = 0x34;
+   	   entry = ipmi_req_add_entry(intf, req, curr_seq);
+         req->msg.cmd = backup_cmd;
+      }
    }   
 
 	if (entry == NULL)
