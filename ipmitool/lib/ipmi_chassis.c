@@ -363,10 +363,10 @@ ipmi_chassis_status(struct ipmi_intf * intf)
          printf("Diag Button Disable  : %s\n", (rsp->data[3] & 0x40) ? "allowed" : "not allowed");
          printf("Reset Button Disable : %s\n", (rsp->data[3] & 0x20) ? "allowed" : "not allowed");
          printf("Power Button Disable : %s\n", (rsp->data[3] & 0x10) ? "allowed" : "not allowed");
-         printf("Sleep Button Disabled: %s\n", (rsp->data[3] & 0x80) ? "true" : "false");
-         printf("Diag Button Disabled : %s\n", (rsp->data[3] & 0x40) ? "true" : "false");
-         printf("Reset Button Disabled: %s\n", (rsp->data[3] & 0x20) ? "true" : "false");
-         printf("Power Button Disabled: %s\n", (rsp->data[3] & 0x10) ? "true" : "false");
+         printf("Sleep Button Disabled: %s\n", (rsp->data[3] & 0x08) ? "true" : "false");
+         printf("Diag Button Disabled : %s\n", (rsp->data[3] & 0x04) ? "true" : "false");
+         printf("Reset Button Disabled: %s\n", (rsp->data[3] & 0x02) ? "true" : "false");
+         printf("Power Button Disabled: %s\n", (rsp->data[3] & 0x01) ? "true" : "false");
       }
         }
 
