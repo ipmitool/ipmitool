@@ -272,6 +272,7 @@ typedef enum IPMI_OEM {
      IPMI_OEM_PICMG      = 12634,
      IPMI_OEM_RARITAN    = 13742,
      IPMI_OEM_KONTRON    = 15000,
+     IPMI_OEM_PPS        = 16394,
      IPMI_OEM_AMI        = 20974,
      IPMI_OEM_NOKIA_SIEMENS_NETWORKS = 28458
 } IPMI_OEM;
