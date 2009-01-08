@@ -575,25 +575,38 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 							 "bridge command response");
 					}
 					/* bridged command: lose extra header */
-					if (rsp->payload.ipmi_response.cmd == 0x34) {
-						if (rsp->data_len == 38) {
+					if (rsp->payload.ipmi_response.netfn == 7 &&
+						rsp->payload.ipmi_response.cmd == 0x34) {
+						if (rsp->data_len - x - 1 == 0) {
 							rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
 							if (rsp && !rsp->ccode &&
 								intf->transit_addr != intf->my_addr &&
 								intf->transit_addr != 0 &&
-							    (rsp->data[34] >> 2) == entry->rq_seq) {
+							    (rsp->data[x - 3] >> 2) == entry->rq_seq) {
 								/* double bridging: remove the Send Message prologue */
-								memmove(rsp->data + 29, rsp->data + 36,
-									rsp->data_len - 36);
-								rsp->data[28] -= 8;
+								memmove(rsp->data + x - 7, rsp->data + x,
+									rsp->data_len - x - 1);
+								rsp->data[x - 8] -= 8;
 								rsp->data_len -= 8;
-								entry->rq_seq = rsp->data[34] >> 2;
+								entry->rq_seq = rsp->data[x - 3] >> 2;
 							}
 							entry->req.msg.cmd = entry->req.msg.target_cmd;
 							if (rsp == NULL) {
 							    ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
 							}
 							continue;
+						} else {
+						    /* The bridged answer data are inside the incoming packet */
+						    char bridge_cnt =
+							1 + (intf->transit_addr != intf->my_addr && intf->transit_addr != 0);
+						    memmove(rsp->data + x - 7,
+							    rsp->data + x + 7 * (bridge_cnt - 1), 
+							    rsp->data_len - (x + 7 * (bridge_cnt - 1)));
+						    rsp->data[x - 8] -= 8 * bridge_cnt;
+						    rsp->data_len -= 8 * bridge_cnt;
+						    entry->rq_seq = rsp->data[x - 3] >> 2;
+						    entry->req.msg.cmd = entry->req.msg.target_cmd;
+						    continue;
 						}
 					} else {
 						//x += sizeof(rsp->payload.ipmi_response);
