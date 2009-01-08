@@ -31,6 +31,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h> /* for strtoul, to parse hexadecimal values  */
 #include <math.h>
 #define __USE_XOPEN /* glibc2 needs this for strptime */
 #include <time.h>
@@ -1987,7 +1988,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 
 	for (; argc != 0; argc--)
 	{
-		id = atoi(argv[argc-1]);
+		id = (uint16_t) strtoul(argv[argc-1], NULL, 0);
 		msg_data[2] = id & 0xff;
 		msg_data[3] = id >> 8;
 
