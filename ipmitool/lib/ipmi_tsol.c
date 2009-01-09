@@ -392,7 +392,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int read_only = 0, rows = 0, cols = 0;
 	int port = IPMI_TSOL_DEF_PORT;
 
-	if (strlen(intf->name) == 3 && strncmp(intf->name, "lan", 3) != 0) {
+	if (strlen(intf->name) < 3 || strncmp(intf->name, "lan", 3) != 0) {
 		lprintf(LOG_ERR, "Error: Tyan SOL is only available over lan interface");
 		return -1;
 	}

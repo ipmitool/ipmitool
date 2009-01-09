@@ -1846,6 +1846,12 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		uint8_t userid = 1;
 		int enable = -1;
 
+		if (argc == 1 || argc > 4)
+		{
+			print_sol_usage();
+			return -1;
+		}
+
 		if (!strncmp(argv[1], "enable", 6))
 		{
 			enable = 1;
@@ -1864,7 +1870,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			channel = (uint8_t)strtol(argv[2], NULL, 0);
 		}
-		if (argc >= 4)
+		if (argc == 4)
 		{
 			userid = (uint8_t)strtol(argv[3], NULL, 0);
 		}
@@ -1912,13 +1918,21 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
  	else if (!strncmp(argv[0], "activate", 8)) {
 
-		if (argc > 1) {
-			if (!strncmp(argv[1], "usesolkeepalive", 11))
+		if (argc > 2) {
+			print_sol_usage();
+			return -1;
+		}
+
+		if (argc == 2) {
+			if (!strncmp(argv[1], "usesolkeepalive", 15))
 				_use_sol_for_keepalive = 1;
 			else if (!strncmp(argv[1], "nokeepalive", 11))
 				_disable_keepalive = 1;
+			else {
+				print_sol_usage();
+				return -1;
+			}
 		}
-
 		retval = ipmi_sol_activate(intf, 0, 0);
 	}
 
