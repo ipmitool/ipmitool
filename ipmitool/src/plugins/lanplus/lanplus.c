@@ -321,7 +321,7 @@ ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 static void
 ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 {
-	struct ipmi_rq_entry * p, * e;
+	struct ipmi_rq_entry * p, * e, * saved_next_entry;
 
 	e = p = ipmi_req_entries;
 
@@ -332,13 +332,16 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 	if (e) {
 		lprintf(LOG_DEBUG+3, "removed list entry seq=0x%02x cmd=0x%02x",
 			seq, cmd);
+		saved_next_entry = e->next;
 		p->next = (p->next == e->next) ? NULL : e->next;
+		/* If entry being removed is first in list, fix up list head */
 		if (ipmi_req_entries == e) {
 			if (ipmi_req_entries != p)
 				ipmi_req_entries = p;
 			else
-				ipmi_req_entries = NULL;
+				ipmi_req_entries = saved_next_entry;
 		}
+		/* If entry being removed is last in list, fix up list tail */
 		if (ipmi_req_entries_tail == e) {
 			if (ipmi_req_entries_tail != p)
 				ipmi_req_entries_tail = p;
