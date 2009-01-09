@@ -143,6 +143,51 @@ ipmi_sol_payload_access(struct ipmi_intf * intf,
 	return -1;
 }
 
+int
+ipmi_sol_payload_access_status(struct ipmi_intf * intf,
+				uint8_t channel,
+				uint8_t userid)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	uint8_t data[2];
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn    = IPMI_NETFN_APP;
+	req.msg.cmd      = IPMI_GET_USER_PAYLOAD_ACCESS;
+	req.msg.data     = data;
+	req.msg.data_len = sizeof(data);
+
+	data[0] = channel & 0xf;	/* channel */
+	data[1] = userid & 0x3f;	/* user id */
+	rsp = intf->sendrecv(intf, &req);
+
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: Unexpected data length (%d) received",
+			rsp->data_len);
+		return -1;
+	}
+
+	switch(rsp->ccode) {
+		case 0x00:
+			if (rsp->data_len != 4) {
+				lprintf(LOG_ERR, "Error parsing SOL payload status for user %d on channel %d",
+					userid, channel);
+				return -1;
+			}
+
+			printf("User %d on channel %d is %sabled\n",
+				userid, channel, (rsp->data[0] & 0x02) ? "en":"dis");
+			return 0;
+
+		default:
+			lprintf(LOG_ERR, "Error getting SOL payload status for user %d on channel %d: %s",
+				userid, channel, 
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+	}
+}
+
 
 /*
  * ipmi_get_sol_info
@@ -1771,7 +1816,7 @@ print_sol_usage(void)
 {
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
-	lprintf(LOG_NOTICE, "              payload <enable|disable> [channel] [userid]");
+	lprintf(LOG_NOTICE, "              payload <enable|disable|status> [channel] [userid]");
 	lprintf(LOG_NOTICE, "              activate [<usesolforkeepalive|nokeepalive>]");
 	lprintf(LOG_NOTICE, "              deactivate");
 	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
@@ -1852,15 +1897,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		if (!strncmp(argv[1], "enable", 6))
-		{
-			enable = 1;
-		}
-		else if (!strncmp(argv[1], "disable", 7))
-		{
-			enable = 0;
-		}
-		else
+		if (argc == 1 || argc > 4)
 		{
 			print_sol_usage();
 			return -1;
@@ -1873,6 +1910,24 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc == 4)
 		{
 			userid = (uint8_t)strtol(argv[3], NULL, 0);
+		}
+
+		if (!strncmp(argv[1], "enable", 6))
+		{
+			enable = 1;
+		}
+		else if (!strncmp(argv[1], "disable", 7))
+		{
+			enable = 0;
+		}
+		else if (!strncmp(argv[1], "status", 6))
+		{
+			return ipmi_sol_payload_access_status(intf, channel, userid);
+		}
+		else
+		{
+			print_sol_usage();
+			return -1;
 		}
 
 		retval = ipmi_sol_payload_access(intf, channel, userid, enable);
