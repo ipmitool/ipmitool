@@ -4001,6 +4001,12 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 		}
 
 		/* write sdr entry */
+		if (!sdrr->raw) {
+			lprintf(LOG_ERR, "Error: raw data is null (length=%d)",
+								sdrr->length);
+			rc = -1;
+			break;
+		}
 		r = fwrite(sdrr->raw, 1, sdrr->length, fp);
 		if (r != sdrr->length) {
 			lprintf(LOG_ERR, "Error writing %d record bytes "
