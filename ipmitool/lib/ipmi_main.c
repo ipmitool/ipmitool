@@ -73,7 +73,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:O:"
+# define OPTION_STRING	"I:hVvcgsEKao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -235,6 +235,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
 	lprintf(LOG_NOTICE, "       -P password    Remote session password");
 	lprintf(LOG_NOTICE, "       -E             Read password from IPMI_PASSWORD environment variable");
+	lprintf(LOG_NOTICE, "       -K             Read kgkey from IPMI_KGKEY environment variable");
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
@@ -384,6 +385,21 @@ ipmi_main(int argc, char ** argv,
 			if (kgkey == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
+			}
+			break;
+		case 'K':
+			if ((tmp = getenv("IPMI_KGKEY")))
+			{
+				if (kgkey)
+					free(kgkey);
+				kgkey = strdup(tmp);
+				if (kgkey == NULL) {
+					lprintf(LOG_ERR, "%s: malloc failure", progname);
+					goto out_free;
+				}
+			}
+			else {
+				lprintf(LOG_WARN, "Unable to read kgkey from environment");
 			}
 			break;
 		case 'U':
