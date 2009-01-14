@@ -441,13 +441,14 @@ ipmi_mc_get_guid(struct ipmi_intf * intf)
 		memset(&guid, 0, sizeof(struct ipmi_guid));
 		memcpy(&guid, rsp->data, rsp->data_len);
 
+		/* Kipp - changed order of last field (node) to follow specification */
 		printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
 		       guid.time_low, guid.time_mid, guid.time_hi_and_version,
 		       guid.clock_seq_hi_variant << 8 | guid.clock_seq_low,
-		       guid.node[5], guid.node[4], guid.node[3],
-		       guid.node[2], guid.node[1], guid.node[0]);
+		       guid.node[0], guid.node[1], guid.node[2],
+		       guid.node[3], guid.node[4], guid.node[5]);
 
-		s = (time_t)BSWAP_32(guid.time_low);
+		s = (time_t)guid.time_low; /* Kipp - removed the BSWAP_32, it was not needed here */
 		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
 		printf("Timestamp    : %s\n", tbuf);
 	}
