@@ -73,7 +73,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:O:"
+# define OPTION_STRING	"I:hVvcgsEKao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:y:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -230,6 +230,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -e char        Set SOL escape character");
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 	lprintf(LOG_NOTICE, "       -k key         Use Kg key for IPMIv2 authentication");
+	lprintf(LOG_NOTICE, "       -y hex_key     Use hexadecimal-encoded Kg key for IPMIv2 authentication");
 	lprintf(LOG_NOTICE, "       -L level       Remote session privilege level [default=ADMINISTRATOR]");
 	lprintf(LOG_NOTICE, "                      Append a '+' to use name/privilege lookup in RAKP1");
 	lprintf(LOG_NOTICE, "       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM");
@@ -253,6 +254,67 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 		ipmi_cmd_print(cmdlist);
 }
 
+/* ipmi_parse_hex - convert hexadecimal numbers to ascii string
+ *                  Input string must be composed of two-characer hexadecimal numbers.
+ *                  There is no separator between the numbers. Each number results in one character
+ *                  of the converted string.
+ *
+ *                  Example: ipmi_parse_hex("50415353574F5244") returns 'PASSWORD'
+ *
+ * @param str:  input string. It must contain only even number of '0'-'9','a'-'f' and 'A-F' characters.
+ * @returns converted ascii string
+ * @returns NULL on error
+ */
+static unsigned char *
+ipmi_parse_hex(const char *str)
+{
+	const char * p;
+	unsigned char * out, *q;
+	unsigned char b = 0;
+	int shift = 4;
+
+	if (strlen(str) == 0)
+		return NULL;
+
+	if (strlen(str) % 2 != 0) {
+		lprintf(LOG_ERR, "Number of hex_kg characters is not even");
+		return NULL;
+	}
+
+	if (strlen(str) > (IPMI_KG_BUFFER_SIZE-1)*2) {
+		lprintf(LOG_ERR, "Kg key is too long");
+		return NULL;
+	}
+
+	out = calloc(IPMI_KG_BUFFER_SIZE, sizeof(unsigned char));
+	if (out == NULL) {
+		lprintf(LOG_ERR, "malloc failure");
+		return NULL;
+	}
+
+	for (p = str, q = out; *p; p++) {
+		if (!isxdigit(*p)) {
+			lprintf(LOG_ERR, "Kg_hex is not hexadecimal number");
+			free(out);
+			return NULL;
+		}
+		
+		if (*p < 'A') /* it must be 0-9 */
+			b = *p - '0';
+		else /* it's A-F or a-f */
+			b = (*p | 0x20) - 'a' + 10; /* convert to lowercase and to 10-15 */
+
+		*q = *q + b << shift;
+		if (shift)
+			shift = 0;
+		else {
+			shift = 4;
+			q++;
+		}
+    }
+
+	return out;
+}
 
 /* ipmi_parse_options  -  helper function to handle parsing command line options
  *
@@ -288,7 +350,7 @@ ipmi_main(int argc, char ** argv,
 	char * progname = NULL;
 	char * oemtype  = NULL;
 	char * sdrcache = NULL;
-	char * kgkey    = NULL;
+	unsigned char * kgkey = NULL;
 	char * seloem   = NULL;
 	int port = 0;
 	int devnum = 0;
@@ -400,6 +462,12 @@ ipmi_main(int argc, char ** argv,
 			}
 			else {
 				lprintf(LOG_WARN, "Unable to read kgkey from environment");
+			}
+			break;
+		case 'y':
+			kgkey = ipmi_parse_hex(optarg);
+			if (kgkey == NULL) {
+				goto out_free;
 			}
 			break;
 		case 'U':

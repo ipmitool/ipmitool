@@ -27,6 +27,7 @@ ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
          [\fB\-O\fR <\fIsel oem\fP>]
          [\fB\-C\fR <\fIciphersuite\fP>]
          [\fB\-K\fR|\fB\-k\fR <\fIkg_key\fP>]
+         [\fB\-y\fR <\fIhex_kg_key\fP>]
          [\fB\-e\fR <\fIesc_char\fP>]
          <\fIcommand\fP>
 .SH "DESCRIPTION"
@@ -64,6 +65,13 @@ is to use \fI~\fP but this can conflict with ssh sessions.
 \fB\-k\fR <\fIkey\fP>
 Use supplied Kg key for IPMIv2 authentication.  The default is not to
 use any Kg key.
+.TP
+\fB\-y\fR <\fIhex key\fP>
+Use supplied Kg key for IPMIv2 authentication. The key is expected in
+hexadecimal format and can be used to specify keys with non-printable
+characters. E.g. '-k PASSWORD' and '-y 50415353574F5244' are
+equivalent.
+The default is not to use any Kg key.
 .TP 
 \fB\-C\fR <\fIciphersuite\fP>
 The remote server authentication, integrity, and encryption algorithms
