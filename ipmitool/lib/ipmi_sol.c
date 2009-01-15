@@ -1817,7 +1817,7 @@ print_sol_usage(void)
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
 	lprintf(LOG_NOTICE, "              payload <enable|disable|status> [channel] [userid]");
-	lprintf(LOG_NOTICE, "              activate [<usesolforkeepalive|nokeepalive>]");
+	lprintf(LOG_NOTICE, "              activate [<usesolkeepalive|nokeepalive>]");
 	lprintf(LOG_NOTICE, "              deactivate");
 	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
 }
