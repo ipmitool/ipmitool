@@ -633,6 +633,42 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
 
 
 /*
+ * Small function to validate that user-supplied SOL
+ * configuration parameter values we store in uint8_t
+ * data type falls within valid range.  With minval
+ * and maxval parameters we can use the same function
+ * to validate parameters that have different ranges
+ * of values.
+ *
+ * function will return -1 if value is not valid, or
+ * will return 0 if valid.
+ */
+int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
+					const char *name,
+					int base,
+					uint8_t minval,
+					uint8_t maxval,
+					uint8_t *out_value)
+{
+	char *end;
+	long val = strtol(strval, &end, base);
+
+	if ((val < minval)
+			|| (val > maxval)
+			|| (*end != '\0')) {
+		lprintf(LOG_ERR, "Invalid value %s for parameter %s",
+			strval, name);
+		lprintf(LOG_ERR, "Valid values are %d-%d", minval, maxval);
+		return -1;
+	}
+	else {
+		*out_value = val;
+		return 0;
+	}
+}
+
+
+/*
  * ipmi_sol_set_param
  *
  * Set the specified Serial Over LAN value to the specified
@@ -829,7 +865,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
-		data[2] = (uint8_t)strtol(value, NULL, 0);
+
+		/* validate user-supplied input */
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 1, 255, &data[2]))
+			return -1;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -852,7 +891,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
-		data[3] = (uint8_t)strtol(value, NULL, 0);
+
+		/* validate user-supplied input */
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 255, &data[3]))
+			return -1;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -875,7 +917,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_SOL_RETRY;
-		data[2] = (uint8_t)strtol(value, NULL, 0) & 0x07;
+
+		/* validate user input, 7 is max value */
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 7, &data[2]))
+			return -1;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))
@@ -898,7 +943,10 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 
 		req.msg.data_len = 4;
 		data[1] = SOL_PARAMETER_SOL_RETRY;
-		data[3] = (uint8_t)strtol(value, NULL, 0);
+
+		/* validate user-supplied input */
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 255, &data[3]))
+			return -1;
 
 		/* We need other values to complete the request */
 		if (ipmi_get_sol_info(intf, channel, &params))

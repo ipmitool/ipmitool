@@ -81,6 +81,24 @@ struct activate_payload_rsp {
 #pramga pack(0)
 #endif
 
+/*
+ * Small function to validate that user-supplied SOL
+ * configuration parameter values we store in uint8_t
+ * data type falls within valid range.  With minval
+ * and maxval parameters we can use the same function
+ * to validate parameters that have different ranges
+ * of values.
+ *
+ * function will return -1 if value is not valid, or
+ * will return 0 if valid.
+ */
+int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
+					const char *name,
+					int base,
+					uint8_t minval,
+					uint8_t maxval,
+					uint8_t *out_value);
+
 int ipmi_sol_main(struct ipmi_intf *, int, char **);
 int ipmi_get_sol_info(struct ipmi_intf             * intf,
 					  uint8_t                  channel,
