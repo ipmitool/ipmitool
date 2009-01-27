@@ -50,10 +50,13 @@ static
 struct ipmi_rs *
 ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 				  uint8_t sensor,
-				  uint8_t threshold, uint8_t setting)
+				  uint8_t threshold, uint8_t setting,
+				  uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
 	static struct sensor_set_thresh_rq set_thresh_rq;
+	struct ipmi_rs *rsp;
+	uint8_t save_addr;
 
 	memset(&set_thresh_rq, 0, sizeof (set_thresh_rq));
 	set_thresh_rq.sensor_num = sensor;
@@ -73,13 +76,18 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 	else
 		return NULL;
 
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
+
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = SET_SENSOR_THRESHOLDS;
 	req.msg.data = (uint8_t *) & set_thresh_rq;
 	req.msg.data_len = sizeof (set_thresh_rq);
 
-	return intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
 }
 
 static int
@@ -234,7 +242,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	/*
 	 * Get sensor thresholds
 	 */
-	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num);
+	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num,
+				sensor->keys.owner_id, sensor->keys.lun);
 	if (rsp == NULL)
 		thresh_available = 0;
 
@@ -384,13 +393,17 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 							   sensor_num,
 							   sensor->sensor.type,
 							   sensor->event_type,
-							   ANALOG_SENSOR);
+							   ANALOG_SENSOR,
+							   sensor->keys.owner_id,
+							   sensor->keys.lun);
 			ipmi_sdr_print_sensor_event_enable(intf,
 							   sensor->keys.
 							   sensor_num,
 							   sensor->sensor.type,
 							   sensor->event_type,
-							   ANALOG_SENSOR);
+							   ANALOG_SENSOR,
+							   sensor->keys.owner_id,
+							   sensor->keys.lun);
 
 			printf("\n");
 		}
@@ -556,11 +569,13 @@ static const struct valstr threshold_vals[] = {
 
 static int
 __ipmi_sensor_set_threshold(struct ipmi_intf *intf,
-			    uint8_t num, uint8_t mask, uint8_t setting)
+			    uint8_t num, uint8_t mask, uint8_t setting,
+			    uint8_t target, uint8_t lun)
 {
 	struct ipmi_rs *rsp;
 
-	rsp = ipmi_sensor_set_sensor_thresholds(intf, num, mask, setting);
+	rsp = ipmi_sensor_set_sensor_thresholds(intf, num, mask, setting,
+				  target, lun);
 
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error setting threshold");
@@ -685,7 +700,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting1));
+						  (sdr->record.full, setting1),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 
 		settingMask = UPPER_CRIT_SPECIFIED;
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
@@ -695,7 +712,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting2));
+						  (sdr->record.full, setting2),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 
 		settingMask = UPPER_NON_RECOV_SPECIFIED;
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
@@ -705,7 +724,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting3));
+						  (sdr->record.full, setting3),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 	} else if (allLower) {
 		settingMask = LOWER_NON_RECOV_SPECIFIED;
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
@@ -715,7 +736,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting1));
+						  (sdr->record.full, setting1),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 
 		settingMask = LOWER_CRIT_SPECIFIED;
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
@@ -725,7 +748,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting2));
+						  (sdr->record.full, setting2),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 
 		settingMask = LOWER_NON_CRIT_SPECIFIED;
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
@@ -735,7 +760,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting3));
+						  (sdr->record.full, setting3),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 	} else {
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
 		       sdr->record.full->id_string,
@@ -745,7 +772,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.full->keys.
 						  sensor_num, settingMask,
 						  sdr_convert_sensor_value_to_raw
-						  (sdr->record.full, setting1));
+						  (sdr->record.full, setting1),
+						  sdr->record.full->keys.owner_id,
+						  sdr->record.full->keys.lun);
 	}
 
 	return ret;

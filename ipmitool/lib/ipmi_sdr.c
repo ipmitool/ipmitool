@@ -364,13 +364,21 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
  *
  * @intf:	ipmi interface
  * @sensor:	sensor number
+ * @target:	sensor owner ID
+ * @lun:	sensor lun
  *
  * returns pointer to ipmi response
  */
 struct ipmi_rs *
-ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor)
+ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
+					uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	uint8_t save_addr;
+
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -378,21 +386,31 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor)
 	req.msg.data = &sensor;
 	req.msg.data_len = sizeof (sensor);
 
-	return intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
 }
 
 /* ipmi_sdr_get_sensor_hysteresis  -  return hysteresis for sensor
  *
  * @intf:	ipmi interface
  * @sensor:	sensor number
+ * @target:	sensor owner ID
+ * @lun:	sensor lun
  *
  * returns pointer to ipmi response
  */
 struct ipmi_rs *
-ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor)
+ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
+					uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
+	struct ipmi_rs *rsp;
+	uint8_t save_addr;
+
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
 
 	rqdata[0] = sensor;
 	rqdata[1] = 0xff;	/* reserved */
@@ -403,7 +421,9 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor)
 	req.msg.data = rqdata;
 	req.msg.data_len = 2;
 
-	return intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
 }
 
 /* ipmi_sdr_get_sensor_reading  -  retrieve a raw sensor reading
@@ -444,8 +464,8 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
 
-	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
-		return ipmi_sdr_get_sensor_reading(intf, sensor);
+//	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
+//		return ipmi_sdr_get_sensor_reading(intf, sensor);
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
@@ -465,13 +485,21 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
  *
  * @intf:	ipmi interface
  * @sensor:	sensor id
+ * @target:	sensor owner ID
+ * @lun:	sensor lun
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
-ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor)
+ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
+				 uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	uint8_t save_addr;
+
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -479,20 +507,30 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor)
 	req.msg.data = &sensor;
 	req.msg.data_len = 1;
 
-	return intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
 }
 
 /* ipmi_sdr_get_sensor_event_enable  -  retrieve sensor event enables
  *
  * @intf:	ipmi interface
  * @sensor:	sensor id
+ * @target:	sensor owner ID
+ * @lun:	sensor lun
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
-ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor)
+ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
+				 uint8_t target, uint8_t lun)
 {
 	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	uint8_t save_addr;
+
+	save_addr = intf->target_addr;
+	intf->target_addr = target;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -500,7 +538,9 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor)
 	req.msg.data = &sensor;
 	req.msg.data_len = 1;
 
-	return intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	intf->target_addr = save_addr;
+	return rsp;
 }
 
 /* ipmi_sdr_get_sensor_type_desc  -  Get sensor type descriptor
@@ -745,7 +785,8 @@ int
 ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 				   uint8_t sensor_num,
 				   uint8_t sensor_type,
-				   uint8_t event_type, int numeric_fmt)
+				   uint8_t event_type, int numeric_fmt,
+				   uint8_t target, uint8_t lun)
 {
 	struct ipmi_rs *rsp;
 	int i;
@@ -768,7 +809,8 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 		{0x00, NULL},
 	};
 
-	rsp = ipmi_sdr_get_sensor_event_status(intf, sensor_num);
+	rsp = ipmi_sdr_get_sensor_event_status(intf, sensor_num,
+						target, lun);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG,
@@ -955,7 +997,8 @@ int
 ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 				   uint8_t sensor_num,
 				   uint8_t sensor_type,
-				   uint8_t event_type, int numeric_fmt)
+				   uint8_t event_type, int numeric_fmt,
+				   uint8_t target, uint8_t lun)
 {
 	struct ipmi_rs *rsp;
 	int i;
@@ -978,7 +1021,8 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 		{0x00, NULL},
 	};
 
-	rsp = ipmi_sdr_get_sensor_event_enable(intf, sensor_num);
+	rsp = ipmi_sdr_get_sensor_event_enable(intf, sensor_num,
+						target, lun);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG,
@@ -1089,9 +1133,13 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	int i = 0, validread = 1, do_unit = 1;
 	double val = 0.0, creading = 0.0;
 	struct ipmi_rs *rsp;
+	uint8_t target, lun;
 
 	if (sensor == NULL)
 		return -1;
+
+	target = sensor->keys.owner_id;
+	lun = sensor->keys.lun;
 
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
@@ -1328,12 +1376,16 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
-						   DISCRETE_SENSOR);
+						   DISCRETE_SENSOR,
+						   target,
+						   lun);
 		ipmi_sdr_print_sensor_event_enable(intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
-						   DISCRETE_SENSOR);
+						   DISCRETE_SENSOR,
+						   target,
+						   lun);
 		printf("\n");
 
 		return 0;	/* done */
@@ -1502,12 +1554,16 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	ipmi_sdr_print_sensor_event_status(intf,
 					   sensor->keys.sensor_num,
 					   sensor->sensor.type,
-					   sensor->event_type, ANALOG_SENSOR);
+					   sensor->event_type, ANALOG_SENSOR,
+					   target,
+					   lun);
 
 	ipmi_sdr_print_sensor_event_enable(intf,
 					   sensor->keys.sensor_num,
 					   sensor->sensor.type,
-					   sensor->event_type, ANALOG_SENSOR);
+					   sensor->event_type, ANALOG_SENSOR,
+					   target,
+					   lun);
 
 	printf("\n");
 	return 0;
@@ -1654,9 +1710,13 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp;
 	char desc[17];
 	int validread = 1;
+	uint8_t target, lun;
 
 	if (sensor == NULL)
 		return -1;
+
+	target = sensor->keys.owner_id;
+	lun = sensor->keys.lun;
 
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
@@ -1721,12 +1781,16 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
-						   DISCRETE_SENSOR);
+						   DISCRETE_SENSOR,
+						   target,
+						   lun);
 		ipmi_sdr_print_sensor_event_enable(intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
-						   DISCRETE_SENSOR);
+						   DISCRETE_SENSOR,
+						   target,
+						   lun);
 		printf("\n");
 	} else {
 		int dostate = 1;
@@ -2837,6 +2901,7 @@ ipmi_sdr_list_empty(struct ipmi_intf *intf)
 /* ipmi_sdr_find_sdr_bynumtype  -  lookup SDR entry by number/type
  *
  * @intf:	ipmi interface
+ * @gen_id:	sensor owner ID/LUN - SEL generator ID
  * @num:	sensor number to search for
  * @type:	sensor type to search for
  *
@@ -2844,7 +2909,7 @@ ipmi_sdr_list_empty(struct ipmi_intf *intf)
  * returns NULL on error
  */
 struct sdr_record_list *
-ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
+ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint16_t gen_id, uint8_t num, uint8_t type)
 {
 	struct sdr_get_rs *header;
 	struct sdr_record_list *e;
@@ -2863,16 +2928,19 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
 		switch (e->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 			if (e->record.full->keys.sensor_num == num &&
+			    e->record.full->keys.owner_id == (gen_id & 0x00ff) &&
 			    e->record.full->sensor.type == type)
 				return e;
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
 			if (e->record.compact->keys.sensor_num == num &&
+			    e->record.compact->keys.owner_id == (gen_id & 0x00ff) &&
 			    e->record.compact->sensor.type == type)
 				return e;
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			if (e->record.eventonly->keys.sensor_num == num &&
+			    e->record.eventonly->keys.owner_id == (gen_id & 0x00ff) &&
 			    e->record.eventonly->sensor_type == type)
 				return e;
 			break;
@@ -2902,6 +2970,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
 			sdrr->record.full =
 			    (struct sdr_record_full_sensor *) rec;
 			if (sdrr->record.full->keys.sensor_num == num
+			    && sdrr->record.full->keys.owner_id == (gen_id & 0x00ff)
 			    && sdrr->record.full->sensor.type == type)
 				found = 1;
 			break;
@@ -2909,6 +2978,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
 			sdrr->record.compact =
 			    (struct sdr_record_compact_sensor *) rec;
 			if (sdrr->record.compact->keys.sensor_num == num
+			    && sdrr->record.compact->keys.owner_id == (gen_id & 0x00ff)
 			    && sdrr->record.compact->sensor.type == type)
 				found = 1;
 			break;
@@ -2916,6 +2986,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint8_t num, uint8_t type)
 			sdrr->record.eventonly =
 			    (struct sdr_record_eventonly_sensor *) rec;
 			if (sdrr->record.eventonly->keys.sensor_num == num
+			    && sdrr->record.eventonly->keys.owner_id == (gen_id & 0x00ff)
 			    && sdrr->record.eventonly->sensor_type == type)
 				found = 1;
 			break;

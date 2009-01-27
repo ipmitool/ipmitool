@@ -822,9 +822,11 @@ struct ipmi_rs *ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf,
 						 uint8_t target,
 						 uint8_t lun);
 struct ipmi_rs *ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf,
-					       uint8_t sensor);
+					       uint8_t sensor,
+					       uint8_t target, uint8_t lun);
 struct ipmi_rs *ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf,
-					       uint8_t sensor);
+					       uint8_t sensor,
+					       uint8_t target, uint8_t lun);
 const char *ipmi_sdr_get_sensor_type_desc(const uint8_t type);
 int ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
                              uint16_t * reserve_id);
@@ -848,7 +850,7 @@ int ipmi_sdr_print_sensor_entity_assoc(struct ipmi_intf *intf,
 struct sdr_record_list *ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf,
 						   struct entity_id *entity);
 struct sdr_record_list *ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf,
-						    uint8_t num, uint8_t type);
+					uint16_t gen_id, uint8_t num, uint8_t type);
 struct sdr_record_list *ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf,
 						       uint8_t type);
 struct sdr_record_list *ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf,
@@ -867,9 +869,11 @@ void ipmi_sdr_print_discrete_state_mini(const char *separator,
 					uint8_t state1, uint8_t state2);
 int ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 				       uint8_t sensor_num, uint8_t sensor_type,
-				       uint8_t event_type, int numeric_fmt);
+				       uint8_t event_type, int numeric_fmt,
+				       uint8_t target, uint8_t lun);
 int ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 				       uint8_t sensor_num, uint8_t sensor_type,
-				       uint8_t event_type, int numeric_fmt);
+				       uint8_t event_type, int numeric_fmt,
+				       uint8_t target, uint8_t lun);
 
 #endif				/* IPMI_SDR_H */

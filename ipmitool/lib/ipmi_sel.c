@@ -933,7 +933,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	int data_count;
 
 	if (sel_extended && (evt->record_type < 0xc0))
-		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
+		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.gen_id, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
 
 
 	if (!evt)
@@ -1245,6 +1245,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 		return;
 	
 	sdr = ipmi_sdr_find_sdr_bynumtype(intf,
+					  evt->sel_type.standard_type.gen_id,
 					  evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
 	if (sdr == NULL) {
@@ -2053,7 +2054,7 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		/* lookup SDR entry based on sensor number and type */
 		ipmi_sel_print_extended_entry_verbose(intf, &evt);
 
-		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sel_type.standard_type.sensor_num, evt.sel_type.standard_type.sensor_type);
+		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sel_type.standard_type.gen_id, evt.sel_type.standard_type.sensor_num, evt.sel_type.standard_type.sensor_type);
 		if (sdr == NULL) {
 			continue;
 		}

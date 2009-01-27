@@ -212,7 +212,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 
 	ipmi_get_event_desc(intf, evt, &desc);
 
-	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.sensor_num,
+	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.gen_id, evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
 
 	if (sdr == NULL) {

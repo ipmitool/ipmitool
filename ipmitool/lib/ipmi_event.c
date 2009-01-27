@@ -241,6 +241,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 	struct sdr_record_list * sdr;
 	struct platform_event_msg emsg;
 	int off;
+	uint8_t target, lun;
 
 	if (id == NULL) {
 		lprintf(LOG_ERR, "No sensor ID supplied");
@@ -276,6 +277,8 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		emsg.sensor_type   = sdr->record.full->sensor.type;
 		emsg.sensor_num    = sdr->record.full->keys.sensor_num;
 		emsg.event_type    = sdr->record.full->event_type;
+		target    = sdr->record.full->keys.owner_id;
+		lun    = sdr->record.full->keys.lun;
 		break;
 
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
@@ -283,6 +286,8 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		emsg.sensor_type = sdr->record.compact->sensor.type;
 		emsg.sensor_num  = sdr->record.compact->keys.sensor_num;
 		emsg.event_type  = sdr->record.compact->event_type;
+		target    = sdr->record.compact->keys.owner_id;
+		lun    = sdr->record.compact->keys.lun;
 		break;
 
 	default:
@@ -347,14 +352,16 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 			return -1;
 		}
 
-		rsp = ipmi_sdr_get_sensor_thresholds(intf, emsg.sensor_num);
+		rsp = ipmi_sdr_get_sensor_thresholds(intf, emsg.sensor_num,
+							target, lun);
 
 		if (rsp != NULL && rsp->ccode == 0) {
 
 			/* threshold reading */
 			emsg.event_data[2] = rsp->data[(emsg.event_data[0] / 2) + 1];
 
-			rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num);
+			rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num,
+								target, lun);
 			if (rsp != NULL && rsp->ccode == 0)
 				off = dir ? rsp->data[0] : rsp->data[1];
 			if (off <= 0)
