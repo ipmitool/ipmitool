@@ -145,6 +145,7 @@ struct ipmi_rq_entry {
 	uint8_t rq_seq;
 	uint8_t *msg_data;
 	int msg_len;
+	int bridging_level;
 	struct ipmi_rq_entry *next;
 };
 

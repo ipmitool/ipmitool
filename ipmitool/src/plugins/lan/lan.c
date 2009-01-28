@@ -572,44 +572,36 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			if (entry) {
 				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
 				if ((intf->target_addr != our_address) && bridge_possible) {
-					if ((rsp->data_len) &&
+					if ((rsp->data_len) && (rsp->payload.ipmi_response.netfn == 7) &&
 					    (rsp->payload.ipmi_response.cmd != 0x34)) {
-						printbuf(&rsp->data[x], rsp->data_len-x,
-							 "bridge command response");
+						if (verbose > 2)
+							printbuf(&rsp->data[x], rsp->data_len-x,
+								 "bridge command response");
 					}
 					/* bridged command: lose extra header */
-					if (rsp->payload.ipmi_response.netfn == 7 &&
-						rsp->payload.ipmi_response.cmd == 0x34) {
+					if (entry->bridging_level &&
+					    rsp->payload.ipmi_response.netfn == 7 &&
+					    rsp->payload.ipmi_response.cmd == 0x34) {
+						entry->bridging_level--;
 						if (rsp->data_len - x - 1 == 0) {
 							rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
-							if (rsp && !rsp->ccode &&
-								intf->transit_addr != intf->my_addr &&
-								intf->transit_addr != 0 &&
-							    (rsp->data[x - 3] >> 2) == entry->rq_seq) {
-								/* double bridging: remove the Send Message prologue */
-								memmove(rsp->data + x - 7, rsp->data + x,
-									rsp->data_len - x - 1);
-								rsp->data[x - 8] -= 8;
-								rsp->data_len -= 8;
-								entry->rq_seq = rsp->data[x - 3] >> 2;
-							}
-							entry->req.msg.cmd = entry->req.msg.target_cmd;
+							if (!entry->bridging_level)
+								entry->req.msg.cmd = entry->req.msg.target_cmd;
 							if (rsp == NULL) {
-							    ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
+								ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
 							}
 							continue;
 						} else {
-						    /* The bridged answer data are inside the incoming packet */
-						    char bridge_cnt =
-							1 + (intf->transit_addr != intf->my_addr && intf->transit_addr != 0);
-						    memmove(rsp->data + x - 7,
-							    rsp->data + x + 7 * (bridge_cnt - 1), 
-							    rsp->data_len - (x + 7 * (bridge_cnt - 1)));
-						    rsp->data[x - 8] -= 8 * bridge_cnt;
-						    rsp->data_len -= 8 * bridge_cnt;
-						    entry->rq_seq = rsp->data[x - 3] >> 2;
-						    entry->req.msg.cmd = entry->req.msg.target_cmd;
-						    continue;
+							/* The bridged answer data are inside the incoming packet */
+							memmove(rsp->data + x - 7,
+								rsp->data + x, 
+								rsp->data_len - x - 1);
+							rsp->data[x - 8] -= 8;
+							rsp->data_len -= 8;
+							entry->rq_seq = rsp->data[x - 3] >> 2;
+							if (!entry->bridging_level)
+								entry->req.msg.cmd = entry->req.msg.target_cmd;
+							continue;
 						}
 					} else {
 						//x += sizeof(rsp->payload.ipmi_response);
@@ -688,7 +680,6 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_session * s = intf->session;
 	static int curr_seq = 0;
 	uint8_t our_address = intf->my_addr;
-	uint8_t bridge_request = 0;
 
 	if (our_address == 0)
 		our_address = IPMI_BMC_SLAVE_ADDR;
@@ -735,11 +726,12 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	/* message length */
 	if ((intf->target_addr == our_address) || !bridge_possible) {
+		entry->bridging_level = 0;
 		msg[len++] = req->msg.data_len + 7;
 		cs = mp = len;
 	} else {
 		/* bridged request: encapsulate w/in Send Message */
-		bridge_request = 1;
+		entry->bridging_level = 1;
 		msg[len++] = req->msg.data_len + 15 +
 		  (intf->transit_addr != intf->my_addr && intf->transit_addr != 0 ? 8 : 0);
 		cs = mp = len;
@@ -757,6 +749,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		if (intf->transit_addr == intf->my_addr || intf->transit_addr == 0) {
 		        msg[len++] = (0x40|intf->target_channel); /* Track request*/
 		} else {
+		        entry->bridging_level++;
                		msg[len++] = (0x40|intf->transit_channel); /* Track request*/
 			cs = len;
 			msg[len++] = intf->transit_addr;
@@ -779,7 +772,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 	cs = len;
 
-	if (!bridge_request)
+	if (!entry->bridging_level)
 		msg[len++] = IPMI_REMOTE_SWID;
 	else  /* Bridged message */
 		msg[len++] = intf->my_addr;
@@ -813,7 +806,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	msg[len++] = ipmi_csum(msg+cs, tmp);
 
 	/* bridged request: 2nd checksum */
-	if (bridge_request) {
+	if (entry->bridging_level) {
 		if (intf->transit_addr != intf->my_addr && intf->transit_addr != 0) {
 			tmp = len - cs3;
 			msg[len++] = ipmi_csum(msg+cs3, tmp);
