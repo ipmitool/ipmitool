@@ -2743,14 +2743,21 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
+		    sdr_max_read_len = sdr_rq.length - 1;
+		    if (sdr_max_read_len > 0) {
+			/* no response may happen if requests are bridged
+			   and too many bytes are requested */
+			continue;
+		    } else {
 			free(data);
 			return NULL;
+		    }
 		}
 
 		switch (rsp->ccode) {
 		case 0xca:
 			/* read too many bytes at once */
-			sdr_max_read_len = (sdr_max_read_len >> 1) - 1;
+			sdr_max_read_len = sdr_rq.length - 1;
 			continue;
 		case 0xc5:
 			/* lost reservation */
@@ -4036,6 +4043,11 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 		sdrr->type = header->type;
 		sdrr->length = header->length;
 		sdrr->raw = ipmi_sdr_get_record(intf, header, itr);
+
+		if (sdrr->raw == NULL) {
+		    lprintf(LOG_ERR, "ipmitool: cannot obtain SDR record %04x", header->id);
+		    return -1;
+		}
 
 		if (sdr_list_head == NULL)
 			sdr_list_head = sdrr;
