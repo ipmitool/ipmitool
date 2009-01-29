@@ -46,6 +46,57 @@ extern int verbose;
 #define SCANNING_DISABLED       0x40
 #define READING_UNAVAILABLE	0x20
 
+// static
+int
+ipmi_sensor_get_sensor_reading_factors(
+	struct ipmi_intf * intf, 
+	struct sdr_record_full_sensor * sensor, 
+	uint8_t reading)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	uint8_t req_data[2];
+
+	char id[17];
+
+	if (intf == NULL || sensor == NULL)
+		return -1;
+
+	memset(id, 0, sizeof(id));
+	memcpy(id, sensor->id_string, 16);
+
+	req_data[0] = sensor->keys.sensor_num;
+	req_data[1] = reading;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd   = GET_SENSOR_FACTORS;
+	req.msg.data  = req_data;
+	req.msg.data_len = sizeof(req_data);
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error updating reading factor for sensor %s (#%02x)",
+			id, sensor->keys.sensor_num);
+		return -1;
+	} else if (rsp->ccode) {
+		return -1;
+	} else {
+		/* Update SDR copy with updated Reading Factors for this reading */
+		/* Note: 
+		 * The Format of the returned data is exactly as in the SDR definition (Little Endian Format), 
+		 * therefore we can use raw copy operation here. 
+		 * Note: rsp->data[0] would point to the next valid entry in the sampling table
+		 */
+		 // BUGBUG: uses 'hardcoded' length information from SDR Definition
+		memcpy(&sensor->mtol, &rsp->data[1], sizeof(sensor->mtol));
+		memcpy(&sensor->bacc, &rsp->data[3], sizeof(sensor->bacc));
+		return 0;
+	}
+
+}
+
 static
 struct ipmi_rs *
 ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
@@ -188,11 +239,6 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	memset(id, 0, sizeof (id));
 	memcpy(id, sensor->id_string, 16);
 
-	/* only handle linear and linearized sensors (for now) */
-	if (sensor->linearization >= SDR_SENSOR_L_NONLINEAR) {
-		printf("sensor %s non-linear!\n", id);
-		return -1;
-	}
 
 	/*
 	 * Get current reading
@@ -210,6 +256,15 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	} else if (!(rsp->data[1] & SCANNING_DISABLED)) {
 		validread = 0;
 	} else {
+
+		/* Non linear sensors might provide updated reading factors */
+		if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR && sensor->linearization<=0x7F) {
+			if (ipmi_sensor_get_sensor_reading_factors(intf, sensor, rsp->data[0]) < 0){
+				printf("sensor %s non-linear!\n", id);
+				return -1;
+			}
+		}
+
 		/* convert RAW reading into units */
 		val = (rsp->data[0] > 0)
 		    ? sdr_convert_sensor_reading(sensor, rsp->data[0])

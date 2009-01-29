@@ -1144,12 +1144,6 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
-	/* only handle linear sensors and linearized sensors (for now) */
-	if (sensor->linearization >= SDR_SENSOR_L_NONLINEAR) {
-		printf("sensor %s non-linear!\n", desc);
-		return -1;
-	}
-
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
 		sensor->keys.owner_id, sensor->keys.lun);
@@ -1179,14 +1173,24 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			validread = 0;
 			if (rsp->data[0] != 0) { 	 
 				/* we might still get a valid reading */ 	 
+				if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR && sensor->linearization<=0x7F)
+					ipmi_sensor_get_sensor_reading_factors(intf, sensor, rsp->data[0]);
 				val = sdr_convert_sensor_reading(sensor, 	 
 					rsp->data[0]); 	 
 				if (val != 0.0) 	 
 					validread = 1; 	 
 			}
 		} else if (rsp->data[0] != 0) {
+			/* Non linear sensors might provide updated reading factors */
+			if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR && sensor->linearization<=0x7F) {
+				if (ipmi_sensor_get_sensor_reading_factors(intf, sensor, rsp->data[0]) < 0){
+					validread = 0;
+				}
+			}
 			/* convert RAW reading into units */
-			val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
+			if (rsp->data[0] != 0) {
+				val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
+			}
 		}
 	}
 
