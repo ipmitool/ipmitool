@@ -75,6 +75,7 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_main.h>
 
+#define WARNING_THRESHOLD	80
 #define DEFAULT_PIDFILE		_PATH_VARRUN "ipmievd.pid"
 char pidfile[64];
 
@@ -83,6 +84,8 @@ int verbose = 0;
 int csv_output = 0;
 uint16_t selwatch_count = 0;	/* number of entries in the SEL */
 uint16_t selwatch_lastid = 0;	/* current last entry in the SEL */
+int selwatch_pctused = 0;	/* current percent usage in the SEL */
+int selwatch_overflow = 0;	/* SEL overflow */
 int selwatch_timeout = 10;	/* default to 10 seconds */
 
 /* event interface definition */
@@ -97,6 +100,13 @@ struct ipmi_event_intf {
 	void (*log)(struct ipmi_event_intf * eintf, struct sel_event_record * evt);
 	struct ipmi_intf * intf;
 };
+
+/* Data from SEL we are interested in */
+typedef struct sel_data {
+	uint16_t entries;
+	int pctused;
+	int overflow;
+} sel_data;
 
 static void log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt);
 
@@ -182,6 +192,20 @@ ipmi_event_intf_load(char * name)
 
 	return NULL;
 }
+
+static int
+compute_pctfull(uint16_t entries, uint16_t freespace)
+{
+	int pctfull = 0;
+
+	if (entries) {
+		entries *= 16;
+		freespace += entries;
+		pctfull = (int)(100 * ( (double)entries / (double)freespace ));
+	}
+	return pctfull;
+}
+
 
 static void
 log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
@@ -459,11 +483,12 @@ openipmi_wait(struct ipmi_event_intf * eintf)
 /*************************************************************************/
 /**                         SEL Watch Functions                         **/
 /*************************************************************************/
-static uint16_t
-selwatch_get_count(struct ipmi_intf * intf)
+static int
+selwatch_get_data(struct ipmi_intf * intf, struct sel_data *data)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	uint16_t freespace;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -480,8 +505,17 @@ selwatch_get_count(struct ipmi_intf * intf)
 		return 0;
 	}
 
-	lprintf(LOG_DEBUG, "SEL count is %d", buf2short(rsp->data+1));
-	return buf2short(rsp->data+1);
+	freespace = buf2short(rsp->data + 3);
+	data->entries  = buf2short(rsp->data + 1);
+	data->pctused  = compute_pctfull (data->entries, freespace);
+    data->overflow = rsp->data[13] & 0x80;
+
+	lprintf(LOG_DEBUG, "SEL count is %d", data->entries);
+	lprintf(LOG_DEBUG, "SEL freespace is %d", freespace);
+	lprintf(LOG_DEBUG, "SEL Percent Used: %d%%\n", data->pctused);
+	lprintf(LOG_DEBUG, "SEL Overflow: %s", data->overflow ? "true" : "false");
+
+	return 1;
 }
 
 static uint16_t
@@ -521,14 +555,29 @@ selwatch_get_lastid(struct ipmi_intf * intf)
 static int
 selwatch_setup(struct ipmi_event_intf * eintf)
 {
-	/* save current sel record count */
-	selwatch_count = selwatch_get_count(eintf->intf);
-	lprintf(LOG_DEBUG, "Current SEL count is %d", selwatch_count);
+	struct sel_data data;
 
-	/* save current last record ID */
-	selwatch_lastid = selwatch_get_lastid(eintf->intf);
-	lprintf(LOG_DEBUG, "Current SEL lastid is %04x", selwatch_lastid);
+	/* save current sel record count */	
+	if (selwatch_get_data(eintf->intf, &data)) {
+		selwatch_count = data.entries;
+		selwatch_pctused = data.pctused;
+		selwatch_overflow = data.overflow;
+		lprintf(LOG_DEBUG, "Current SEL count is %d", selwatch_count);
+		/* save current last record ID */
+		selwatch_lastid = selwatch_get_lastid(eintf->intf);
+		lprintf(LOG_DEBUG, "Current SEL lastid is %04x", selwatch_lastid);
+		/* display alert/warning immediatly as startup if relevant */
+		if (selwatch_pctused >= WARNING_THRESHOLD) {
+			lprintf(LOG_WARNING, "SEL buffer used at %d%%, please consider clearing the SEL buffer", selwatch_pctused);
+		}
+		if (selwatch_overflow) {
+			lprintf(LOG_ALERT, "SEL buffer overflow, no SEL message can be logged until the SEL buffer is cleared");
+		}
+		
+		return 1;
+	}
 
+	lprintf(LOG_ERR, "Unable to retrieve SEL data");
 	return 0;
 }
 
@@ -541,13 +590,29 @@ static int
 selwatch_check(struct ipmi_event_intf * eintf)
 {
 	uint16_t old_count = selwatch_count;
-	selwatch_count = selwatch_get_count(eintf->intf);
-	if (selwatch_count == 0) {
-		lprintf(LOG_DEBUG, "SEL count is 0 (old=%d), resetting lastid to 0", old_count);
-		selwatch_lastid = 0;
-	} else if (selwatch_count < old_count) {
-		selwatch_lastid = selwatch_get_lastid(eintf->intf);
-		lprintf(LOG_DEBUG, "SEL count lowered, new SEL lastid is %04x", selwatch_lastid);
+	int old_pctused = selwatch_pctused;
+	int old_overflow = selwatch_overflow;
+	struct sel_data data;
+
+	if (selwatch_get_data(eintf->intf, &data)) {
+		selwatch_count = data.entries;
+		selwatch_pctused = data.pctused;
+		selwatch_overflow = data.overflow;
+		if (old_overflow && !selwatch_overflow) {
+			lprintf(LOG_NOTICE, "SEL overflow is cleared");
+		} else if (!old_overflow && selwatch_overflow) {
+			lprintf(LOG_ALERT, "SEL buffer overflow, no new SEL message will be logged until the SEL buffer is cleared");
+		}
+		if ((selwatch_pctused >= WARNING_THRESHOLD) && (selwatch_pctused > old_pctused)) {
+			lprintf(LOG_WARNING, "SEL buffer is %d%% full, please consider clearing the SEL buffer", selwatch_pctused);
+		}		
+		if (selwatch_count == 0) {
+			lprintf(LOG_DEBUG, "SEL count is 0 (old=%d), resetting lastid to 0", old_count);
+			selwatch_lastid = 0;
+		} else if (selwatch_count < old_count) {
+			selwatch_lastid = selwatch_get_lastid(eintf->intf);
+			lprintf(LOG_DEBUG, "SEL count lowered, new SEL lastid is %04x", selwatch_lastid);
+		}
 	}
 	return (selwatch_count > old_count);
 }
