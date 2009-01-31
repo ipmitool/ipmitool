@@ -4073,7 +4073,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 		uint8_t h[5];
 
 		/* build and write sdr header */
-		h[0] = sdrr->id & 0xff;
+		h[0] = sdrr->id & 0xff;   // LS Byte first
 		h[1] = (sdrr->id >> 8) & 0xff;
 		h[2] = sdrr->version;
 		h[3] = sdrr->type;

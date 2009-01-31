@@ -352,7 +352,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
       rc = -1;
       break;
     }
-    sdrr->id = (binHdr[0] << 8) | binHdr[1];
+    sdrr->id = (binHdr[1] << 8) | binHdr[0];  // LS Byte first
     sdrr->version = binHdr[2];
     sdrr->type = binHdr[3];
     sdrr->length = binHdr[4];
