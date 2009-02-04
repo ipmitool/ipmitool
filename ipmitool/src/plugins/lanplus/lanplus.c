@@ -1356,7 +1356,7 @@ void getIpmiPayloadWireRep(
 	else {
 		bridgedRequest = 1;
 
-		if(intf->transit_addr != ourAddress)
+		if(intf->transit_addr != ourAddress && intf->transit_addr != 0)
 		{
 			bridgedRequest++;
 		}
