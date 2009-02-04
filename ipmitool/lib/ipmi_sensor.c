@@ -214,7 +214,7 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 												      rsp->data[3]);
 				printf("\n");
          } else {
-	   printf(" READ ERROR: Device Not Present\n\n");
+	   printf(" Unable to read sensor: Device Not Present\n\n");
 	 }
 	   
 	   }
@@ -299,7 +299,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	 */
 	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num,
 				sensor->keys.owner_id, sensor->keys.lun);
-	if (rsp == NULL)
+	if ((rsp == NULL) || (rsp->ccode > 0))
 		thresh_available = 0;
 
 	if (csv_output) {
@@ -438,9 +438,11 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 					else
 						printf
 						    (" Upper Non-Recoverable : na\n");
+				} else {
+					printf(" Sensor Threshold Settings not available\n");
 				}
 			} else {
-			  printf(" READ ERROR: Device Not Present\n\n");
+	   		  printf(" Unable to read sensor: Device Not Present\n\n");
 			}
 
 			ipmi_sdr_print_sensor_event_status(intf,
@@ -552,7 +554,7 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 												      rsp->data[3]);
             printf("\n");
          } else {
-	   printf(" READ ERROR: Device Not Present\n\n");
+	   printf(" Unable to read sensor: Device Not Present\n\n");
 	 }
 
 		}
