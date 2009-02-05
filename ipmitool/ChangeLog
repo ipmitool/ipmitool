@@ -1,3 +1,52 @@
+version 1.8.11-beta released 2009-02-06
+	* Fix new GCC compilation issues in regards to Packing
+	* Fix Tracker bug #1642710 - ipmi_kcs_drv being loaded/unloaded
+		for 2.4 kernel instead of ipmi_si_drv driver module
+	* New -y option added to allow specification of kg keys with
+		non-printable characters
+	* New -K option added to allow kgkey settings via environmental
+		variable IPMI_KGKEY
+	* Generic device support added for EEPROM with SDR Type 10h (gendev)
+	* Fix to lan-bridging for a double-bridging crash and to fix
+		an issue with bridging multiple concurrent requests and
+		erroneous handling of raw Send Message
+	* Lanplus fix for commands like 'sensor list' without the -t option
+		causing wrong double bridged requests of a sensor is located
+		on another satellite controller
+	* Fix lan and lanplus request list entry removal bugs
+	* Fix non-working issue when trying to send a bridge message with
+		Cipher 3
+	* Change bridge message handling to reuse command ipmi_lan_poll_recv
+	* Added PICMG 2.0 and 2.3 support
+	* Fix PICMG (ATCA) extension verification and reversal of BCD encoded
+		values for "major" and "minor" fields
+	* Add IANA support for Pigeon Point
+	* Add OEM SW/FW Record identification
+	* Fix to include I2C and LUN addresses so sensors are correctly managed
+	* Patch ID 1990560 to get readings from non-linear analog sensors
+	* Add support for SOL payload status command
+	* SOL set parameter range checking added
+	* Fixed SOL activate options usage 
+	* Fixed crashes when parsing 'sol payload' and 'tsol' cmds (#216967)
+	* Added retries to SOL keepalive
+	* Fixed wrong mask values for Front Panel disable/enable status
+	* Add support to access fru internal use area
+	* Add support for new PICMG 3.0 R3.0 (March 24, 2008) to allow
+		blocks of data within the FRU storage area to be write
+		protected.
+	* Fix node reporting in GUID; Tracker bug #2339675
+	* Fix watchdog use/action print strings
+	* Fix endian bug in SDR add from file; Tracker bug #2075258
+	* Fix crash when dumping SDRs in a file and there's an error
+		getting an SDR; improve algorithm for optimal packet size
+	* Fix occasional SDR dump segfault; #1793076
+	* Allow ipmitool sel delete to accept hex list entry numbers
+	* Fix SEL total space reporting.
+	* Fix for garbage sensor threshold values reported when none 
+		returned.  Tracker Bug #863748
+	* ipmievd change to Monitor %used in SEL buffer and log warnings when
+		the buffer is 80% and 100% full
+
 version 1.8.10 released 2008-08-08
 	* Added support for BULL IANA number.
 	* Fixed contrib build so the oem_ibm_sel_map file gets included in 
