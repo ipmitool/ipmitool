@@ -5,7 +5,7 @@ echo "Setting up OpenIPMI driver..."
 # load the ipmi modules
 modprobe ipmi_msghandler
 modprobe ipmi_devintf
-if ! modprobe ipmi_kcs_drv ; then
+if ! modprobe ipmi_si_drv ; then
 	modprobe ipmi_si # try new module name
 fi
 

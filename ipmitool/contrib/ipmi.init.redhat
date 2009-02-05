@@ -38,7 +38,7 @@ start() {
 	    # module if that fails.
 	    if ! /sbin/modprobe ipmi_si >/dev/null 2>&1
 	    then
-		/sbin/modprobe ipmi_kcs_drv || RETVAL=1
+		/sbin/modprobe ipmi_si_drv || RETVAL=1
 	    fi
 	fi
 
@@ -173,7 +173,7 @@ remove () {
 	then
 	    # Try removing both 2.4 and 2.6 modules.
 	    /sbin/rmmod ipmi_si 2>/dev/null
-	    /sbin/rmmod ipmi_kcs_drv 2>/dev/null
+	    /sbin/rmmod ipmi_si_drv 2>/dev/null
 	    /sbin/rmmod ipmi_devintf
 	    /sbin/rmmod ipmi_msghandler
 	else
