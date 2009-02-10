@@ -298,7 +298,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	   fru_data = malloc(fru->size + 1);
 	   if (fru_data == NULL) {
 		   lprintf(LOG_ERR, " Out of memory!");
-		   return;
+		   return NULL;
 	   }
 
 	   memset(fru_data, 0, fru->size + 1);
@@ -355,10 +355,10 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
    // Common header
    bloc_count = 0;
-
+   
    p_bloc[bloc_count].start= 0;
    p_bloc[bloc_count].size = 8;
-   strcpy(p_bloc[bloc_count].blocId, "Common Header Section");
+   strcpy((char *)p_bloc[bloc_count].blocId, "Common Header Section");
    bloc_count ++;
 
    // Internal
@@ -366,7 +366,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
    {
       p_bloc[bloc_count].start = (header.offset.internal * 8);
       p_bloc[bloc_count].size = 0; // Will be fillup later
-      strcpy(p_bloc[bloc_count].blocId, "Internal Use Section");
+      strcpy((char *)p_bloc[bloc_count].blocId, "Internal Use Section");
       bloc_count ++;
    }
    // Chassis
@@ -374,7 +374,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
    {
       p_bloc[bloc_count].start = (header.offset.chassis * 8);
       p_bloc[bloc_count].size = 0; // Will be fillup later
-      strcpy(p_bloc[bloc_count].blocId, "Chassis Section");
+      strcpy((char *)p_bloc[bloc_count].blocId, "Chassis Section");
       bloc_count ++;
    }
    // Board
@@ -382,7 +382,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
    {
       p_bloc[bloc_count].start = (header.offset.board * 8);
       p_bloc[bloc_count].size = 0; // Will be fillup later
-      strcpy(p_bloc[bloc_count].blocId, "Board Section");
+      strcpy((char *)p_bloc[bloc_count].blocId, "Board Section");
       bloc_count ++;
    }
    // Product
@@ -390,7 +390,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
    {
       p_bloc[bloc_count].start = (header.offset.product * 8);
       p_bloc[bloc_count].size = 0; // Will be fillup later
-      strcpy(p_bloc[bloc_count].blocId, "Product Section");
+      strcpy((char *)p_bloc[bloc_count].blocId, "Product Section");
       bloc_count ++;
    }
 
@@ -409,7 +409,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
          p_bloc[bloc_count].start = i;
          p_bloc[bloc_count].size  = h->len + sizeof (struct fru_multirec_header);
-         sprintf(p_bloc[bloc_count].blocId, "Multi-Rec Aread: Type %i", h->type);
+         sprintf((char *)p_bloc[bloc_count].blocId, "Multi-Rec Aread: Type %i", h->type);
          bloc_count ++;
          /*printf("Bloc Start: %i\n", i);
          printf("Bloc Size : %i\n", h->len);
@@ -427,7 +427,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
          // Bloc for remaining space
          p_bloc[bloc_count].start = i;
          p_bloc[bloc_count].size  = (fru->size - i);
-         sprintf(p_bloc[bloc_count].blocId, "Unused space");     
+         sprintf((char *)p_bloc[bloc_count].blocId, "Unused space");     
          bloc_count ++;
        }
      
@@ -1226,13 +1226,13 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
 	uint8_t * fru_data;
-	uint32_t fru_len, i, j, toff;
+	uint32_t fru_len, i;
 	struct fru_multirec_header * h;
 	struct fru_multirec_powersupply * ps;
 	struct fru_multirec_dcoutput * dc;
 	struct fru_multirec_dcload * dl;
 	uint16_t peak_capacity;
-	uint8_t peak_hold_up_time, bn;
+	uint8_t peak_hold_up_time;
 	uint32_t last_off, len;
 
 	i = last_off = offset;
@@ -1567,8 +1567,6 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 				int blockstart;
 				uint8_t blockCount;
 				uint8_t blockIndex=0;
-				unsigned long blockCrc = 0;
-				unsigned int  blockLen = 0;
 
 				unsigned int matchInstance = 0;
 				unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
@@ -1579,14 +1577,13 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 				for(blockIndex=0;blockIndex<blockCount;blockIndex++){
 					tOemKontronInformationRecord *recordData;
 					uint8_t nameLen;
-					uint8_t fieldLength;
 
 					blockstart = offset;
 
 					nameLen = ( fru_data[offset++] &= 0x3F );
 
-					if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],
-					fru_data+offset,nameLen)&& (matchInstance == instance)){
+					if(!strncmp((char *)argv[OEM_KONTRON_NAME_ARG_POS],
+					(const char *)(fru_data+offset),nameLen)&& (matchInstance == instance)){
 
 						printf ("Found : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
 						offset+=nameLen;
@@ -1610,8 +1607,8 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 						matchInstance++;
 						hasChanged = TRUE;
 					}
-					else if(!strncmp(argv[OEM_KONTRON_NAME_ARG_POS],fru_data+offset,
-						  nameLen)){
+					else if(!strncmp((char *)argv[OEM_KONTRON_NAME_ARG_POS],
+					      (const char *)(fru_data+offset), nameLen)){
 						printf ("Skipped : %s\n",argv[OEM_KONTRON_NAME_ARG_POS]);
 						matchInstance++;
 						offset+=nameLen;
@@ -1923,7 +1920,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
          }
             printf("\n");
 
-         for (offset; offset < off + length; offset += sizeof(struct fru_picmgext_link_desc)) {
+         for (; offset < off + length; offset += sizeof(struct fru_picmgext_link_desc)) {
 
             /* to solve little endian /big endian problem */
             unsigned long data =    (fru_data[offset+0])
@@ -2039,7 +2036,6 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 
       case FRU_AMC_CURRENT:
       {
-         unsigned char recVersion;
          unsigned char current;
          printf("    FRU_AMC_CURRENT\n");
 
@@ -2083,7 +2079,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
          {
             uint16_t index;
 
-            for(offset; offset < off + length; )
+            for(; offset < off + length; )
             {
                struct fru_picmgext_carrier_p2p_record * h =
                   (struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
@@ -2177,7 +2173,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					offset += sizeof(struct fru_picmgext_amc_channel_desc_record);
 				}
 
-				for ( offset; offset < off + length;)
+				for ( ; offset < off + length;)
 				{
 					struct fru_picmgext_amc_link_desc_record * l =
 						(struct fru_picmgext_amc_link_desc_record *) &fru_data[offset];
@@ -2435,7 +2431,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
                                      (feature&1)?"Source":"Receiver");
                printf("            Family:  0x%02x  - AccLVL: 0x%02x\n", family, accuracy);
                printf("            FRQ: %-9d - min: %-9d - max: %-9d\n",
-                              freq, min_freq, max_freq);
+                              (int)freq, (int)min_freq, (int)max_freq);
             }
             printf("\n");
 			}
@@ -2869,10 +2865,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 	uint16_t retStatus = 0;
 	uint32_t offFruMultiRec;
 	uint32_t fruMultiRecSize = 0;
-	uint32_t offFileMultiRec = 0;
-	uint32_t fileMultiRecSize = 0;
 	struct fru_info fruInfo;
-	uint8_t *buf = NULL;
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, id, &fruInfo,
 								 &offFruMultiRec,
 								 &fruMultiRecSize);
@@ -2936,7 +2929,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 		fru_data = malloc(fru.size + 1);
 		if (fru_data == NULL) {
 			lprintf(LOG_ERR, " Out of memory!");
-			return;
+			return -1;
 		}
 		memset(fru_data, 0, fru.size + 1);
 
@@ -3487,7 +3480,9 @@ ipmi_fru_info_internal_use(struct ipmi_intf * intf, uint8_t id)
    else
    {
 		lprintf(LOG_ERR, "Cannot access internal use area");
+      return -1;
    }
+   return 0;
 }
 
 
@@ -3547,7 +3542,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
                {
                   lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
                   free(frubuf);
-                  return;
+                  return -1;
                }
                fclose(pFile);
             }
@@ -3562,6 +3557,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
    {
 		lprintf(LOG_ERR, "Cannot access internal use area");
    }
+   return 0;
 }
 
 /* ipmi_fru_write_internal_use	-	print internal use are in hex or file
@@ -3646,6 +3642,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
    {
 		lprintf(LOG_ERR, "Cannot access internal use area");
    }
+   return 0;
 }
 
 
@@ -3843,9 +3840,9 @@ f_type, uint8_t f_index, char *f_string)
 	struct fru_info fru;
 	struct fru_header header;
 	uint8_t msg_data[4];
-	uint8_t sn_size, checksum,prev_lun;
-	int ret = 0, i = 0;
-	uint8_t	*fru_data, *fru_area;
+	uint8_t checksum;
+	int i = 0;
+	uint8_t	*fru_data, *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, header_offset;
 
@@ -3966,17 +3963,17 @@ f_type, uint8_t f_index, char *f_string)
 	/*Seek to field index */
 	for( i=0; i<f_index; i++ )
 	{
-		  fru_area = get_fru_area_str(fru_data, &fru_field_offset);
+		  fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
-	if ( strlen(fru_area) == 0 ) {
+	if ( strlen((const char *)fru_area) == 0 ) {
 		printf("Field not found!\n");
 		return -1;
 	}
 		/* Get original field string */
 	fru_field_offset_tmp = fru_field_offset;
-	fru_area = get_fru_area_str(fru_data, &fru_field_offset);
+	fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 
-	if ( strlen(fru_area) == strlen(f_string) )
+	if ( strlen((const char *)fru_area) == strlen((const char *)f_string) )
 	{
 			printf("Updating Field...\n");
 			memcpy(fru_data + fru_field_offset_tmp + 1,
