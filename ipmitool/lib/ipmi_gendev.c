@@ -48,6 +48,7 @@
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_raw.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
