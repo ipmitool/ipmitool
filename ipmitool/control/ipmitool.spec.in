@@ -61,7 +61,7 @@ fi
 
 
 %changelog
-* Fri Feb 06 2009 <pere@hungry.com>  1.8.11-beta
+* Wed Feb 25 2009 <pere@hungry.com>  1.8.11-1
 - Fix new GCC compilation issues in regards to Packing
 - Fix Tracker bug #1642710 - ipmi_kcs_drv being loaded/unloaded
   for 2.4 kernel instead of ipmi_si_drv driver module

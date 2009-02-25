@@ -1,4 +1,4 @@
-version (1.8.11-beta) unstable; urgency=low
+version (1.8.11) unstable; urgency=low
   * Fix new GCC compilation issues in regards to Packing
   * Fix Tracker bug #1642710 - ipmi_kcs_drv being loaded/unloaded
        for 2.4 kernel instead of ipmi_si_drv driver module
@@ -47,7 +47,7 @@ version (1.8.11-beta) unstable; urgency=low
   * ipmievd change to Monitor %used in SEL buffer and log warnings when
        the buffer is 80% and 100% full
 
- -- Petter Reinholdtsen <pere@debian.org>  Fri,  6 Feb 2009 09:44:31 +0200
+ -- Petter Reinholdtsen <pere@debian.org>  Wed, 25 Feb 2009 09:44:31 +0200
 
 ipmitool (1.8.10) unstable; urgency=low
 

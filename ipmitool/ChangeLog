@@ -1,4 +1,4 @@
-version 1.8.11-beta released 2009-02-06
+version 1.8.11 released 2009-02-25
 	* Fix new GCC compilation issues in regards to Packing
 	* Fix Tracker bug #1642710 - ipmi_kcs_drv being loaded/unloaded
 		for 2.4 kernel instead of ipmi_si_drv driver module
