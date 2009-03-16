@@ -26,7 +26,7 @@ ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
          [\fB\-o\fR <\fIoemtype\fP>]
          [\fB\-O\fR <\fIsel oem\fP>]
          [\fB\-C\fR <\fIciphersuite\fP>]
-         [\fB\-K\fR|\fB\-k\fR <\fIkg_key\fP>]
+         [\fB\-Y\fR|[\fB\-K\fR|\fB\-k\fR <\fIkg_key\fP>]
          [\fB\-y\fR <\fIhex_kg_key\fP>]
          [\fB\-e\fR <\fIesc_char\fP>]
          <\fIcommand\fP>
@@ -62,6 +62,9 @@ This is not available with all commands.
 Use supplied character for SOL session escape character.  The default
 is to use \fI~\fP but this can conflict with ssh sessions.
 .TP
+\fB\-K\fR
+Read Kg key from IPMI_KGKEY environment variable.
+.TP
 \fB\-k\fR <\fIkey\fP>
 Use supplied Kg key for IPMIv2 authentication.  The default is not to
 use any Kg key.
@@ -72,6 +75,9 @@ hexadecimal format and can be used to specify keys with non-printable
 characters. E.g. '-k PASSWORD' and '-y 50415353574F5244' are
 equivalent.
 The default is not to use any Kg key.
+.TP
+\fB\-Y\fR
+Prompt for the Kg key for IPMIv2 authentication.
 .TP 
 \fB\-C\fR <\fIciphersuite\fP>
 The remote server authentication, integrity, and encryption algorithms

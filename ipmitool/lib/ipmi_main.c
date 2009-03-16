@@ -73,7 +73,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:y:O:"
+# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:y:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -227,6 +227,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
+	lprintf(LOG_NOTICE, "       -Y             Prompt for the Kg key for IPMIv2 authentication");
 	lprintf(LOG_NOTICE, "       -e char        Set SOL escape character");
 	lprintf(LOG_NOTICE, "       -C ciphersuite Cipher suite to be used by lanplus interface");
 	lprintf(LOG_NOTICE, "       -k key         Use Kg key for IPMIv2 authentication");
@@ -468,6 +469,22 @@ ipmi_main(int argc, char ** argv,
 			kgkey = ipmi_parse_hex(optarg);
 			if (kgkey == NULL) {
 				goto out_free;
+			}
+			break;
+		case 'Y':
+#ifdef HAVE_GETPASSPHRASE
+			tmp = getpassphrase("Key: ");
+#else
+			tmp = getpass("Key: ");
+#endif
+			if (tmp != NULL) {
+				if (kgkey)
+					free(kgkey);
+				kgkey = strdup(tmp);
+				if (kgkey == NULL) {
+					lprintf(LOG_ERR, "%s: malloc failure", progname);
+					goto out_free;
+				}
 			}
 			break;
 		case 'U':
