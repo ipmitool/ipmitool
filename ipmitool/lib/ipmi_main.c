@@ -90,6 +90,7 @@ extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 
+static struct ipmi_intf * ipmi_main_intf = NULL;
 
 /* ipmi_password_file_read  -  Open file and read password from it
  *
@@ -254,6 +255,24 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	if (cmdlist != NULL)
 		ipmi_cmd_print(cmdlist);
 }
+/* ipmi_catch_sigint  -  Handle the interrupt signal (Ctrl-C), close the
+ *                       interface, and exit ipmitool with error (-1)
+ *
+ *                       This insures that the IOL session gets freed
+ *                       for other callers.
+ * 
+ * returns -1
+ */
+void ipmi_catch_sigint()
+{
+   if (ipmi_main_intf != NULL)
+   {
+      printf("\r\nSIGN INT: Close Interface %s\r\n",ipmi_main_intf->desc);
+      ipmi_main_intf->close(ipmi_main_intf);
+   }
+   exit(-1);
+
+}
 
 /* ipmi_parse_hex - convert hexadecimal numbers to ascii string
  *                  Input string must be composed of two-characer hexadecimal numbers.
@@ -332,7 +351,6 @@ ipmi_main(int argc, char ** argv,
 	  struct ipmi_cmd * cmdlist,
 	  struct ipmi_intf_support * intflist)
 {
-	struct ipmi_intf * intf = NULL;
 	struct ipmi_intf_support * sup;
 	int privlvl = 0;
 	uint8_t target_addr = 0;
@@ -363,6 +381,7 @@ ipmi_main(int argc, char ** argv,
 	/* save program name */
 	progname = strrchr(argv[0], '/');
 	progname = ((progname == NULL) ? argv[0] : progname+1);
+	signal(SIGINT, ipmi_catch_sigint);
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
@@ -655,8 +674,8 @@ ipmi_main(int argc, char ** argv,
 	}
 
 	/* load interface */
-	intf = ipmi_intf_load(intfname);
-	if (intf == NULL) {
+	ipmi_main_intf = ipmi_intf_load(intfname);
+	if (ipmi_main_intf == NULL) {
 		lprintf(LOG_ERR, "Error loading interface %s", intfname);
 		goto out_free;
 	}
@@ -666,65 +685,65 @@ ipmi_main(int argc, char ** argv,
 
 	/* run OEM setup if found */
 	if (oemtype != NULL &&
-	    ipmi_oem_setup(intf, oemtype) < 0) {
+	    ipmi_oem_setup(ipmi_main_intf, oemtype) < 0) {
 		lprintf(LOG_ERR, "OEM setup for \"%s\" failed", oemtype);
 		goto out_free;
 	}
 
 	/* set session variables */
 	if (hostname != NULL)
-		ipmi_intf_session_set_hostname(intf, hostname);
+		ipmi_intf_session_set_hostname(ipmi_main_intf, hostname);
 	if (username != NULL)
-		ipmi_intf_session_set_username(intf, username);
+		ipmi_intf_session_set_username(ipmi_main_intf, username);
 	if (password != NULL)
-		ipmi_intf_session_set_password(intf, password);
+		ipmi_intf_session_set_password(ipmi_main_intf, password);
 	if (kgkey != NULL)
-		ipmi_intf_session_set_kgkey(intf, kgkey);
+		ipmi_intf_session_set_kgkey(ipmi_main_intf, kgkey);
 	if (port > 0)
-		ipmi_intf_session_set_port(intf, port);
+		ipmi_intf_session_set_port(ipmi_main_intf, port);
 	if (authtype >= 0)
-		ipmi_intf_session_set_authtype(intf, (uint8_t)authtype);
+		ipmi_intf_session_set_authtype(ipmi_main_intf, (uint8_t)authtype);
 	if (privlvl > 0)
-		ipmi_intf_session_set_privlvl(intf, (uint8_t)privlvl);
+		ipmi_intf_session_set_privlvl(ipmi_main_intf, (uint8_t)privlvl);
 	else
-		ipmi_intf_session_set_privlvl(intf,
+		ipmi_intf_session_set_privlvl(ipmi_main_intf,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
 
-	ipmi_intf_session_set_lookupbit(intf, lookupbit);
-	ipmi_intf_session_set_sol_escape_char(intf, sol_escape_char);
-	ipmi_intf_session_set_cipher_suite_id(intf, cipher_suite_id);
+	ipmi_intf_session_set_lookupbit(ipmi_main_intf, lookupbit);
+	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
+	ipmi_intf_session_set_cipher_suite_id(ipmi_main_intf, cipher_suite_id);
 
 	/* setup destination lun if given */
-	intf->target_lun = target_lun ;
+	ipmi_main_intf->target_lun = target_lun ;
 
 	/* setup destination channel if given */
-	intf->target_channel = target_channel ;
+	ipmi_main_intf->target_channel = target_channel ;
 
-	intf->devnum = devnum;
+	ipmi_main_intf->devnum = devnum;
 
 	/* setup IPMB local and target address if given */
-	intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
+	ipmi_main_intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
 	if (target_addr > 0) {
 		/* need to open the interface first */
-		if (intf->open != NULL)
-			intf->open(intf);
-		intf->target_addr = target_addr;
+		if (ipmi_main_intf->open != NULL)
+			ipmi_main_intf->open(ipmi_main_intf);
+		ipmi_main_intf->target_addr = target_addr;
 
       if (transit_addr > 0) {
-         intf->transit_addr    = transit_addr;
-         intf->transit_channel = transit_channel;
+         ipmi_main_intf->transit_addr    = transit_addr;
+         ipmi_main_intf->transit_channel = transit_channel;
       }
       else
       {
-         intf->transit_addr = intf->my_addr;
+         ipmi_main_intf->transit_addr = ipmi_main_intf->my_addr;
       }
 		/* must be admin level to do this over lan */
-		ipmi_intf_session_set_privlvl(intf, IPMI_SESSION_PRIV_ADMIN);
+		ipmi_intf_session_set_privlvl(ipmi_main_intf, IPMI_SESSION_PRIV_ADMIN);
 	}
 
 	/* parse local SDR cache if given */
 	if (sdrcache != NULL) {
-		ipmi_sdr_list_cache_fromfile(intf, sdrcache);
+		ipmi_sdr_list_cache_fromfile(ipmi_main_intf, sdrcache);
 	}
 
 	/* Parse SEL OEM file if given */
@@ -732,20 +751,21 @@ ipmi_main(int argc, char ** argv,
 		ipmi_sel_oem_init(seloem);
 	}
 
-	intf->cmdlist = cmdlist;
+	ipmi_main_intf->cmdlist = cmdlist;
 
 	/* now we finally run the command */
 	if (argc-optind > 0)
-		rc = ipmi_cmd_run(intf, argv[optind], argc-optind-1, &(argv[optind+1]));
+		rc = ipmi_cmd_run(ipmi_main_intf, argv[optind], argc-optind-1, 
+                        &(argv[optind+1]));
 	else
-		rc = ipmi_cmd_run(intf, NULL, 0, NULL);
+		rc = ipmi_cmd_run(ipmi_main_intf, NULL, 0, NULL);
 
 	/* clean repository caches */
-	ipmi_cleanup(intf);
+	ipmi_cleanup(ipmi_main_intf);
 
 	/* call interface close function if available */
-	if (intf->opened > 0 && intf->close != NULL)
-		intf->close(intf);
+	if (ipmi_main_intf->opened > 0 && ipmi_main_intf->close != NULL)
+		ipmi_main_intf->close(ipmi_main_intf);
 
  out_free:
 	log_halt();
