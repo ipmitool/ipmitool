@@ -107,6 +107,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5004, "AT8020" },
    { IPMI_OEM_KONTRON,5006, "AT8030 IPMC" },
    { IPMI_OEM_KONTRON,2025, "AT8030 MMC" },
+   { IPMI_OEM_KONTRON,5007, "AT8050" },
    { IPMI_OEM_KONTRON,5301, "AT8400" },
    { IPMI_OEM_KONTRON,5303, "AT8901" },
 
