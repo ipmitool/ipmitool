@@ -3925,21 +3925,21 @@ f_type, uint8_t f_index, char *f_string)
 	/* Setup offset from the field type */
 
 	/* Chassis type field */
-	if (f_type == 0x63) {
+	if (f_type == 'c' ) {
 		header_offset = (header.offset.chassis * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
 		fru_field_offset = (header.offset.chassis * 8) + 3;
 		fru_section_len = *(fru_data + header_offset + 1) * 8;
 	}
 	/* Board type field */
-	else if (f_type == 0x62) {
+	else if (f_type == 'b' ) {
 		header_offset = (header.offset.board * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
 		fru_field_offset = (header.offset.board * 8) + 6;
 		fru_section_len = *(fru_data + header_offset + 1) * 8;
 	}
 	/* Product type field */
-	else if (f_type == 0x70) {
+	else if (f_type == 'p' ) {
 		header_offset = (header.offset.product * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
 		fru_field_offset = (header.offset.product * 8) + 3;
@@ -3965,7 +3965,7 @@ f_type, uint8_t f_index, char *f_string)
 	{
 		  fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
-	if ( strlen((const char *)fru_area) == 0 ) {
+	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
 		printf("Field not found!\n");
 		return -1;
 	}
@@ -3973,9 +3973,14 @@ f_type, uint8_t f_index, char *f_string)
 	fru_field_offset_tmp = fru_field_offset;
 	fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 
+   if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) {
+      printf("Field not found!\n");
+      return -1;
+   }
+
 	if ( strlen((const char *)fru_area) == strlen((const char *)f_string) )
 	{
-			printf("Updating Field...\n");
+			printf("Updating Field '%s' with '%s' ...\n", fru_area, f_string );
 			memcpy(fru_data + fru_field_offset_tmp + 1,
 									f_string, strlen(f_string));
 
@@ -3999,7 +4004,9 @@ f_type, uint8_t f_index, char *f_string)
 			}
 	}
 	else {
-			printf("String size are not equal.\n");
+			printf("Can not replace '%s' with '%s'.\n", fru_area, f_string );
+			printf("String size are not equal (needs %d bytes).\n", 
+                   strlen((const char *)fru_area) );
 			free(fru_data);
 			return -1;
 	}
