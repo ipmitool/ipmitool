@@ -227,6 +227,7 @@ Commands:
         set          Set runtime variable for shell and exec
         echo         Used to echo lines to stdout in scripts
         ekanalyzer   run FRU-Ekeying analyzer using FRU files
+        ime          Upgrade/Query Intel ME firmware
 
 ipmitool chassis help
 .br 
@@ -825,6 +826,33 @@ and an AMC module or between 2 AMC modules
 
 Display both matched result and unmatched results of Ekeying match between two
 cards or two modules.
+.RE
+.RE
+.TP 
+\fIime\fP
+.RS
+.TP 
+\fIhelp\fP
+.br 
+
+Print usage information
+.TP 
+\fIinfo\fP
+
+Displays information about the Manageability Engine (ME)
+.TP 
+\fIupdate\fP <\fBfile\fR>
+.br
+
+Upgrade the ME firmware with the specified image file
+.br
+\fBWARNING\fR You MUST use a supported image provided by your board vendor
+.br
+.TP
+\fIrollback\fP
+
+Perform manual rollback of the ME firmware
+
 .RE
 .RE
 .TP 
