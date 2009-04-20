@@ -120,6 +120,24 @@
 *    work anymore
 *  - Incremented version to 1.04
 *
+*  2009-03-25
+*  - Fix the case where ipmitool loses the iol connection during the upload
+*    block process.  Once IPMITool was successfully sent the first byte,
+*    IPMITool will not resize the block size.
+*
+*  2009-03-26
+*  - Fix the problem when we try to upgrade specific component and the component
+*     is already updated, IPMITool sends a "prepare action"  but IPMITool skips
+*     the upload firmware block process. 
+*     So, if we specify a specific component, we want to force to upload this 
+*     specific component.
+*  - Incremented version to 1.05
+*
+* 2009-04-20
+*  - Reworked previous update, when 'component' is specified, the other 
+*    components are now skipped.
+*  - Incremented version to 1.06
+*
 * ===========================================================================
 * TODO
 * ===========================================================================
@@ -136,7 +154,7 @@ extern int verbose;
  */
 #define HPMFWUPG_VERSION_MAJOR    1
 #define HPMFWUPG_VERSION_MINOR    0
-#define HPMFWUPG_VERSION_SUBMINOR 4
+#define HPMFWUPG_VERSION_SUBMINOR 6
 
 /*
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -948,6 +966,7 @@ struct HpmfwupgFirmwareImage
 #endif
 struct HpmfwupgUpgradeCtx
 {
+   struct HpmfwupgComponentBitMask compUpdateMask;
    unsigned int   imageSize;
    unsigned char* pImageData;
    unsigned char  componentId;
@@ -978,12 +997,12 @@ typedef enum eHpmfwupgActionType
 /*
  *  Options added for user to check the version and to view both the FILE and TARGET Version
  */
-#define VERSIONCHECK_MODE                       0x01
-#define VIEW_MODE                               0x02
-#define DEBUG_MODE                              0x04
-#define FORCE_MODE_ALL                          0x08
-#define FORCE_MODE_COMPONENT                    0x10
-#define FORCE_MODE                              (FORCE_MODE_ALL|FORCE_MODE_COMPONENT)
+#define VERSIONCHECK_MODE             0x01
+#define VIEW_MODE                     0x02
+#define DEBUG_MODE                    0x04
+#define FORCE_MODE_ALL                0x08
+#define FORCE_MODE_COMPONENT          0x10
+#define FORCE_MODE                    (FORCE_MODE_ALL|FORCE_MODE_COMPONENT)
 
 typedef struct _VERSIONINFO
 {
@@ -1060,7 +1079,7 @@ static struct ipmi_rs *  HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq 
 
 static int HpmFwupgActionUploadFirmware
 (
-   struct HpmfwupgComponentBitMask components,
+   struct HpmfwupgComponentBitMask components, 
    struct HpmfwupgUpgradeCtx* pFwupgCtx,
    unsigned char** pImagePtr,
    int componentToUpload,
@@ -1457,11 +1476,14 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
       }
       else
       {
-          rc = HpmfwupgPreUpgradeCheck(intf, &fwupgCtx,componentToUpload,0);
-          if (rc == HPMFWUPG_SUCCESS )
-          {
-              rc = HpmfwupgUpgradeStage(intf, &fwupgCtx,componentToUpload,option);
-          }
+          rc = HpmfwupgPreUpgradeCheck(intf, &fwupgCtx,componentToUpload,option);
+			 if (rc == HPMFWUPG_SUCCESS )
+			 {
+				 if( verbose ) {
+					 printf("Component update mask : 0x%02x\n", fwupgCtx.compUpdateMask.ComponentBits.byte);
+				 }
+				 rc = HpmfwupgUpgradeStage(intf, &fwupgCtx,componentToUpload,option);
+			 }
       }
 
       if ( rc != HPMFWUPG_SUCCESS )
@@ -1876,11 +1898,13 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* p
 
                /* Save component ID on which the upload is done */
                componentIdByte = pActionRecord->components.ComponentBits.byte;
+
                while ((componentIdByte>>=1)!=0)
                {
                     componentId++;
                }
                pFwupgCtx->componentId = componentId;
+
                pFwImage = (struct HpmfwupgFirmwareImage*)(pImagePtr +
                               sizeof(struct HpmfwupgActionRecord));
 
@@ -1905,33 +1929,71 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* p
               }
               pVersionInfo->skipUpgrade = FALSE;
 
-              if (   (pVersionInfo->imageMajor == pVersionInfo->targetMajor)
-                  && (pVersionInfo->imageMinor == pVersionInfo->targetMinor))
+				  if (option & FORCE_MODE_ALL)
+				  {
+					  /* user has given all to upload all the components on the command line */
+					  if(verbose) {
+						  lprintf(LOG_NOTICE,"Forcing ALL components");
+					  }
+				  }		
+				  else if( option & FORCE_MODE_COMPONENT )
+				  {
+					  if( componentToUpload != componentId )
+					  {
+                    if(verbose) {
+                       lprintf(LOG_NOTICE,"Forcing component %d skip", componentId);
+                    }
+						  /* user has given the component Id to upload on the command line */
+						  pVersionInfo->skipUpgrade = TRUE;
+					  }
+					  else if(verbose)
+					  {
+						  lprintf(LOG_NOTICE,"Forcing component %d update", componentId);
+						  /* user has given the component Id to upload on the command line */
+					  }
+				  }
+				  else 
+				  {	
+					  if 
+					  ( 
+						  (pVersionInfo->imageMajor == pVersionInfo->targetMajor)
+						  && 
+						  (pVersionInfo->imageMinor == pVersionInfo->targetMinor))
+					  {
+						  if (pVersionInfo->rollbackSupported)
+						  {
+							  /*If the Image Versions are same as Target Versions then check for the
+								* rollback version*/
+							  if 
+							  (
+								  (pVersionInfo->imageMajor == pVersionInfo->rollbackMajor)
+								  && 
+								  (pVersionInfo->imageMinor == pVersionInfo->rollbackMinor)
+							  )
+							  {
+								  /* This indicates that the Rollback version is also same as
+									* Image version -- So now we must skip it */
+								  pVersionInfo->skipUpgrade = TRUE;
+							  }
+							  mode |= ROLLBACK_VER;
+						  }
+						  else
+						  {
+							  pVersionInfo->skipUpgrade = TRUE;
+						  }
+					  }
+                 lprintf(LOG_NOTICE,"Component %d: %s", componentId , (pVersionInfo->skipUpgrade?"skipped":"to update"));
+				  }	
+              if( pVersionInfo->skipUpgrade == FALSE )
               {
-                  if (pVersionInfo->rollbackSupported)
-                  {
-                      /*If the Image Versions are same as Target Versions then check for the
-                       * rollback version*/
-                      if (   (pVersionInfo->imageMajor == pVersionInfo->rollbackMajor)
-                          && (pVersionInfo->imageMinor == pVersionInfo->rollbackMinor))
-                      {
-                          /* This indicates that the Rollback version is also same as
-                           * Image version -- So now we must skip it */
-                           pVersionInfo->skipUpgrade = TRUE;
-                      }
-                      mode |= ROLLBACK_VER;
-                  }
-                  else
-                  {
-                      pVersionInfo->skipUpgrade = TRUE;
-                  }
+                 pFwupgCtx->compUpdateMask.ComponentBits.byte |= 1<<componentId;
               }
-               if (option & VIEW_MODE)
-               {
-                    HpmDisplayVersion(mode,pVersionInfo);
-                    printf("\n");
-                }
-               pImagePtr = pData + firmwareLength;
+              if (option & VIEW_MODE)
+              {
+                 HpmDisplayVersion(mode,pVersionInfo);
+                 printf("\n");
+              } 
+              pImagePtr = pData + firmwareLength;
             }
             break;
             default:
@@ -1968,7 +2030,6 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
 {
    struct HpmfwupgImageHeader* pImageHeader = (struct HpmfwupgImageHeader*)
                                                          pFwupgCtx->pImageData;
-   struct HpmfwupgComponentBitMask componentToUploadMsk;
    struct HpmfwupgActionRecord* pActionRecord;
 
    int              rc = HPMFWUPG_SUCCESS;
@@ -2015,7 +2076,7 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                /* Send prepare components command */
                struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
 
-               initUpgActionCmd.req.componentsMask = pActionRecord->components;
+               initUpgActionCmd.req.componentsMask = pFwupgCtx->compUpdateMask;
                /* Action is prepare components */
                initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_BACKUP;
                rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
@@ -2028,12 +2089,14 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                int componentId;
                /* Make sure every components specified by this action
                   supports the prepare components */
-               componentToUploadMsk.ComponentBits.byte = 0x00;
+
+               /* Component 'filtering' is done in PreUpdateCheck() and pFwupgCtx is set accordiongly */
+       
                for ( componentId = HPMFWUPG_COMPONENT_ID_0;
                      componentId < HPMFWUPG_COMPONENT_ID_MAX;
                      componentId++ )
                {
-                  if ( (1 << componentId & pActionRecord->components.ComponentBits.byte) )
+                  if ( (1 << componentId & pFwupgCtx->compUpdateMask.ComponentBits.byte) )
                   {
                      if ( pFwupgCtx->genCompProp[componentId].GeneralCompProperties.bitfield.preparationSupport == 0 )
                      {
@@ -2041,37 +2104,20 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
                         rc = HPMFWUPG_ERROR;
                         break;
                      }
-                    if (!gVersionInfo[componentId].skipUpgrade)
-                    {
-                        /* If the component needs not to be skipped then you need to
-                         * add it in componentToUploadMsk */
-                        componentToUploadMsk.ComponentBits.byte |= 1<<componentId;
-                    }
                   }
-               }
-               if (option & FORCE_MODE_COMPONENT)
-               {
-                   /* user has given the component Id to upload on the command line */
-                   componentToUploadMsk.ComponentBits.byte =
-                            1<<componentToUpload;
-               }
-               if (option & FORCE_MODE_ALL)
-               {
-                   /* user has given all to upload all the components on the command line */
-                   componentToUploadMsk.ComponentBits.byte =
-                            pActionRecord->components.ComponentBits.byte;
                }
 
                if ( rc == HPMFWUPG_SUCCESS )
                {
-                  if ( componentToUploadMsk.ComponentBits.byte != 0x00 )
+                  if ( pFwupgCtx->compUpdateMask.ComponentBits.byte != 0x00 )
                   {
                      /* Send prepare components command */
                      struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
-                     initUpgActionCmd.req.componentsMask = componentToUploadMsk;
+                     initUpgActionCmd.req.componentsMask = pFwupgCtx->compUpdateMask;
                      /* Action is prepare components */
                      initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_PREPARE;
                      rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
+                                         
                   }
                   pImagePtr += sizeof(struct HpmfwupgActionRecord);
                }
@@ -2130,7 +2176,7 @@ static int HpmFwupgActionUploadFirmware
    time_t           start,end;
 
    int            rc = HPMFWUPG_SUCCESS;
-   int            skip = FALSE;
+   int            skip = TRUE;
    unsigned char* pData, *pDataInitial;
    unsigned char  count;
    unsigned int   totalSent = 0;
@@ -2171,39 +2217,30 @@ static int HpmFwupgActionUploadFirmware
    firmwareLength |= (pFwImage->length[3] << 24) & 0xff000000;
 
    mode = TARGET_VER | IMAGE_VER;
+
    if (pVersionInfo->rollbackSupported)
    {
-       mode |= ROLLBACK_VER;
-   }
+		 mode |= ROLLBACK_VER;
+	}
 
-   if ((option & DEBUG_MODE))
-   {
-       printf("\n\n Comp ID : %d  [%-20s]\n",pVersionInfo->componentId,pFwImage->desc);
-   }
-   else
-   {
-       HpmDisplayVersion(mode,pVersionInfo);
-   }
+	if ((option & DEBUG_MODE))
+	{
+		 printf("\n\n Comp ID : %d	 [%-20s]\n",pVersionInfo->componentId,pFwImage->desc);
+	}
+	else
+	{
+		 HpmDisplayVersion(mode,pVersionInfo);
+	}
 
-   if
-   (
-      (
-         (pVersionInfo->skipUpgrade)
-         ||
-         (
-            /* We will skip if the user has given some components in command line "component 2" */
-            (!(1<<componentToUpload & components.ComponentBits.byte))
-            &&
-            (componentToUpload != DEFAULT_COMPONENT_UPLOAD)
-         )
-      )
-      &&
-      ((option & FORCE_MODE_ALL) != FORCE_MODE_ALL)
-   )
-   {
-      skip = TRUE;
-   }
-
+	if( (1 << componentId) & pFwupgCtx->compUpdateMask.ComponentBits.byte)
+	{
+		if( verbose ) {
+			lprintf(LOG_NOTICE,"Do not skip %d" , componentId);
+		}
+		skip = FALSE;
+	}
+	
+ 
    if(!skip)
    {
       /* Initialize parameters */
@@ -2488,6 +2525,7 @@ int HpmfwupgGetBufferFromFile(char* imageFilename, struct HpmfwupgUpgradeCtx* pF
       fseek(pImageFile, 0, SEEK_END);
       pFwupgCtx->imageSize  = ftell(pImageFile);
       pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
+      pFwupgCtx->compUpdateMask.ComponentBits.byte = 0;
       rewind(pImageFile);
       if ( pFwupgCtx->pImageData != NULL )
       {
@@ -3024,7 +3062,7 @@ int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, struct HpmfwupgGetUpgradeSt
       if ( rsp->ccode == 0x00 )
       {
          memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetUpgradeStatusResp));
-         if ( verbose )
+         if ( verbose > 1 )
          {
             lprintf(LOG_NOTICE,"Upgrade status:");
             lprintf(LOG_NOTICE," Command in progress:          %x", pCtx->resp.cmdInProcess);
@@ -3316,9 +3354,10 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 
    do
    {
+      static unsigned char isValidSize = FALSE;
       rsp = intf->sendrecv(intf, &req);
 
-      if( rsp == NULL )
+      if( ( rsp == NULL ) && (!isValidSize) )
       {
          #define HPM_LAN_PACKET_RESIZE_LIMIT 6
          if(strstr(intf->name,"lan")!= NULL) /* also covers lanplus */
@@ -3459,6 +3498,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
         }
         #endif
         retry = 0;
+        isValidSize = TRUE;
      }
    }while( retry );
    return rsp;
@@ -3621,6 +3661,11 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
                 option &= ~(VERSIONCHECK_MODE);
                 option &= ~(VIEW_MODE);
                 option |= FORCE_MODE_COMPONENT;
+
+                if( verbose ) {
+                   lprintf(LOG_NOTICE,"Component Id %d provided",componentId );
+                }
+
                 /* Error Checking */
                 if (componentId >= HPMFWUPG_COMPONENT_ID_MAX)
                 {
