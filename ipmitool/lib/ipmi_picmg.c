@@ -34,6 +34,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_fru.h>		/* for access to link descriptor defines */
+#include <ipmitool/ipmi_strings.h>
 #include <ipmitool/log.h>
 
 #define PICMG_EXTENSION_ATCA_MAJOR_VERSION  2
@@ -997,7 +998,8 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 	msg_data[1] = atoi(argv[0]);				/* FRU-ID	  */
 	msg_data[2] = atoi(argv[1]);				/* control option  */
 
-	printf("0: 0x%02x   1: 0x%02x\n\r", msg_data[1], msg_data[2]);
+	printf("FRU Device Id: %d FRU Control Option: %s\n\r", msg_data[1],  \
+				val2str( msg_data[2], picmg_frucontrol_vals));
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -1009,9 +1011,9 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 	if (rsp->ccode) {
 		printf("frucontrol: returned CC code 0x%02x\n", rsp->ccode);
 		return -1;
+	} else {
+      printf("frucontrol: ok\n");
 	}
-
-
 
 	return 0;
 }
@@ -1169,17 +1171,15 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		else {
 			printf("usage: frucontrol <FRU-ID> <OPTION>\n");
 			printf("   OPTION:\n");
-			printf("      0x00      - Cold Reset\n");
-			printf("      0x01      - Warm Reset\n");
-			printf("      0x02      - Graceful Reboot\n");
-			printf("      0x03      - Issue Diagnostic Interrupt\n");
-			printf("      0x04      - Quiesce [AMC only]\n");
-			printf("      0x05-0xFF - Cold Reset\n");
+			printf("      0      - Cold Reset\n");
+			printf("      1      - Warm Reset\n");
+			printf("      2      - Graceful Reboot\n");
+			printf("      3      - Issue Diagnostic Interrupt\n");
+			printf("      4      - Quiesce [AMC only]\n");
+			printf("      5-255  - Reserved\n");
 
 			return -1;
 		}
-
-		printf("frucontrol\n\r");
 	}
 
 	/* fru activation command */
@@ -1509,7 +1509,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					printf("            0x1-0x14 : Power level\n");
 					printf("            0xFF :     do not change\n");
 					printf("\n");
-					printf("   <present-desired> 0: do not change present levelsﬂn");
+					printf("   <present-desired> 0: do not change present levels\n");
 					printf("                     1: copy desired to present level\n");
 
 					return -1;
