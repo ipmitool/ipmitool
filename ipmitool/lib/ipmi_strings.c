@@ -408,3 +408,12 @@ const struct valstr ipmi_encryption_algorithms[] = {
 	{ IPMI_CRYPT_XRC4_40,     "xrc4_40"     },
 	{ 0x00, NULL }
 };
+
+const struct valstr picmg_frucontrol_vals[] = {
+	{ 0, "Cold Reset" },
+	{ 1, "Warm Reset"  },
+	{ 2, "Graceful Reboot" },
+	{ 3, "Issue Diagnostic Interrupt" },
+	{ 4, "Quiesce" },
+	{ 5, NULL },
+};
