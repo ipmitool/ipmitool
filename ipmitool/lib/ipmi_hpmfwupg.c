@@ -3357,9 +3357,10 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
       static unsigned char isValidSize = FALSE;
       rsp = intf->sendrecv(intf, &req);
 
-      if( ( rsp == NULL ) && (!isValidSize) )
+      if( ( rsp == NULL ) )
       {
          #define HPM_LAN_PACKET_RESIZE_LIMIT 6
+
          if(strstr(intf->name,"lan")!= NULL) /* also covers lanplus */
          {
             static int errorCount=0;
@@ -3376,6 +3377,8 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
                &&
                errorCount < HPM_LAN_PACKET_RESIZE_LIMIT
+               && 
+               (!isValidSize) 
             )
             {
                lprintf(LOG_DEBUG,"HPM: upload firmware block API called");
