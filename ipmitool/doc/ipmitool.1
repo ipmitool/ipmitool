@@ -1167,7 +1167,156 @@ where all commands and command sub-functions are enabled.
 
 .RE
 
-.TP 
+.TP
+\fIfwum\fP
+.RS
+Update IPMC using Kontron OEM Firmware Update Manager.
+.TP
+\fIinfo\fR
+.br
+Show information about current firmware.
+
+.TP
+\fIstatus\fR
+.br
+Show status of each firmware bank present in the hardware.
+
+.TP
+\fIdownload\fP <\fBfilename\fR>
+.br
+
+Download specified firmware.
+
+.TP
+\fIupgrade\fP [\fBfilename\fR]
+.br
+
+Install firmware upgrade. If the filename is specified, the file is downloaded
+first, otherwise the last firmware downloaded is used.
+
+.TP
+\fIrollback\fP
+.br
+
+Ask IPMC to rollback to previous version.
+
+.TP
+\fItracelog\fP
+.br
+
+Show firmware upgrade log.
+
+.RE
+
+.TP
+\fIhpm\fP
+.RS
+PICMG HPM.1 Upgrade Agent
+.TP
+\fIcheck\fR
+.br
+Check the target information.
+
+.TP
+\fIcheck\fP <\fBfilename\fR>
+.br
+Display both the existing target version and image version on the screen.
+
+.TP
+\fIdownload\fP <\fBfilename\fR>
+.br
+
+Download specified firmware.
+
+.TP
+\fIupgrade\fP <\fBfilename\fR> [\fBall\fR] [\fBcomponent <x>\fR] [\fBactivate\fR]
+.br
+Upgrade the firmware using a valid HPM.1 image file. If no option is specified,
+the firmware versions are checked first and the firmware is upgraded only if they
+are different.
+
+.RS
+.TP
+\fIall\fR
+.br
+Upgrade all components even if the firmware versions are the same
+(use this only after using "check" command).
+
+.TP
+\fIcomponent\fP <\fBx\fR>
+.br
+Upgrade only given component from the given file.
+.br
+component 0 - BOOT
+.br
+component 1 - RTK
+
+.TP
+\fIactivate\fR
+.br
+Activate new firmware right away.
+
+.RE
+
+.TP
+\fIactivate\fR
+.br
+
+Activate the newly uploaded firmware.
+
+.TP
+\fItargetcap\fR
+.br
+
+Get the target upgrade capabilities.
+
+.TP
+\fIcompprop\fP <\fBid\fR> <\fBselect\fR>
+.br
+Get the specified component properties. Valid component \fBid\fR: 0-7.
+\fBSelect\fR can be one of following:
+.br
+0 - General properties
+.br
+1 - Current firmware version
+.br
+2 - Description string
+.br
+3 - Rollback firmware version
+.br
+4 - Deferred firmware version
+
+.TP
+\fIabort\fR
+.br
+
+Abort the on-going firmware upgrade.
+
+.TP
+\fIupgstatus\fR
+.br
+Show status of the last long duration command.
+
+.TP
+\fIrollback\fR
+.br
+Perform manual rollback on the IPM Controller firmware.
+
+.TP
+\fIrollbackstatus\fR
+.br
+
+Show the rollback status.
+
+.TP
+\fIselftestresult\fR
+.br
+
+Query the self test results.
+
+.RE
+
+.TP
 \fIi2c\fP <\fBi2caddr\fR> <\fBread bytes\fR> [<\fBwrite data\fR>]
 .br 
 
