@@ -102,16 +102,7 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	if (intf->my_addr != 0) {
-		unsigned int a = intf->my_addr;
-		if (ioctl(intf->fd, IPMICTL_SET_MY_ADDRESS_CMD, &a) < 0) {
-			lperror(LOG_ERR, "Could not set IPMB address");
-			return -1;
-		}
 
-		lprintf(LOG_DEBUG, "Set IPMB address to 0x%x",
-			intf->my_addr);
-	}
 	intf->opened = 1;
 
 	/* Check if PICMG extension is available to use the function GetDeviceLocator
@@ -179,6 +170,15 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
       }
 	}
 
+	if (intf->my_addr != 0) {
+		unsigned int a = intf->my_addr;
+		if (ioctl(intf->fd, IPMICTL_SET_MY_ADDRESS_CMD, &a) < 0) {
+			lperror(LOG_ERR, "Could not set IPMB address");
+			return -1;
+		}
+		lprintf(LOG_DEBUG, "Set IPMB address to 0x%x",
+			intf->my_addr);
+	}
 	return intf->fd;
 }
 
@@ -233,7 +233,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		ipmb_addr.slave_addr = intf->target_addr;
       ipmb_addr.lun = req->msg.lun;
 		lprintf(LOG_DEBUG, "Sending request to "
-			"IPMB target @ 0x%x", intf->target_addr);
+			"IPMB target @ 0x%x (from 0x%x)", intf->target_addr,intf->my_addr);
 #ifdef ENABLE_INTF_OPEN_DUAL_BRIDGE
       if(intf->transit_addr != 0 &&
 	    intf->transit_addr != intf->my_addr) {
