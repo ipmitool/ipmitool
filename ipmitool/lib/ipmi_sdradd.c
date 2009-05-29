@@ -62,7 +62,9 @@ struct sdr_add_rq {
   uint8_t data[1];      /* SDR record data */
 } __attribute__ ((packed));
 
-static int sdr_max_write_len = 24;
+/* This was formerly initialized to 24, reduced this to 19 so the overall
+   message fits into the recommended 32-byte limit */
+static int sdr_max_write_len = 19;
 
 static int
 partial_send(struct ipmi_intf *intf, struct ipmi_rq *req, uint16_t *id)
