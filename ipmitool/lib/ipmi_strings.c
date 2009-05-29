@@ -94,6 +94,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5504, "AM4300 AdvancedMC" },
    { IPMI_OEM_KONTRON,5507, "AM4301 AdvancedMC" },
    { IPMI_OEM_KONTRON,5508, "AM4330 AdvancedMC" },
+   { IPMI_OEM_KONTRON,5520, "KTC5520/EATX" },
    { IPMI_OEM_KONTRON,5703, "RTM8020" },
    { IPMI_OEM_KONTRON,5704, "RTM8030" },
    { IPMI_OEM_KONTRON,6000, "CP6000" },
