@@ -97,7 +97,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
 		/* system interface, need extra generator ID */
 		req.msg.data_len = 8;
-		rqdata[0] = 0x20;
+		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
 		memcpy(rqdata+1, emsg, sizeof(struct platform_event_msg));
 	}
 	else {
@@ -509,7 +509,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	chmed = ipmi_current_channel_medium(intf);
 	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
 		/* system interface, need extra generator ID */
-		rqdata[0] = 0x20;
+		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
 		req.msg.data_len = 8;
 	}
 
