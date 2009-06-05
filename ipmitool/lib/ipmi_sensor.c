@@ -266,9 +266,9 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 		}
 
 		/* convert RAW reading into units */
-		val = (rsp->data[0] > 0)
-		    ? sdr_convert_sensor_reading(sensor, rsp->data[0])
-		    : 0;
+      /* a raw reading of 0 is perfectly valid, and might be converted to a positive or
+         negative value, as any other raw values */
+		val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
 		status = (char *) ipmi_sdr_get_status(sensor, rsp->data[2]);
 	}
 
