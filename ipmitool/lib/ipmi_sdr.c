@@ -1180,7 +1180,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 				if (val != 0.0) 	 
 					validread = 1; 	 
 			}
-		} else if (rsp->data[0] != 0) {
+		} else {
 			/* Non linear sensors might provide updated reading factors */
 			if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR && sensor->linearization<=0x7F) {
 				if (ipmi_sensor_get_sensor_reading_factors(intf, sensor, rsp->data[0]) < 0){
@@ -1188,9 +1188,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 				}
 			}
 			/* convert RAW reading into units */
-			if (rsp->data[0] != 0) {
 				val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
-			}
 		}
 	}
 
