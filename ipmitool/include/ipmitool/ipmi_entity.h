@@ -33,6 +33,9 @@
 #ifndef IPMI_ENTITY_H
 #define IPMI_ENTITY_H
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct entity_id {
 	uint8_t	id;			/* physical entity id */
 #if WORDS_BIGENDIAN
@@ -42,6 +45,9 @@ struct entity_id {
 	uint8_t	instance    : 7;	/* instance number */
 	uint8_t	logical     : 1;	/* physical/logical */
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 #endif /* IPMI_ENTITY_H */

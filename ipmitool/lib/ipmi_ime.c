@@ -127,6 +127,9 @@ typedef enum tImeUpdateType
 } tImeUpdateType;
 
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 typedef struct sImeStatus {
    uint8_t image_status;
    tImeStateEnum update_state;
@@ -135,13 +138,21 @@ typedef struct sImeStatus {
    uint8_t update_type;
    uint8_t dependent_flag;
    uint8_t free_area_size[4];
-} __attribute__ ((packed)) tImeStatus ;
+} ATTRIBUTE_PACKING tImeStatus ;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 typedef struct sImeCaps {
    uint8_t area_supported;
    uint8_t special_caps;
-} __attribute__ ((packed)) tImeCaps ;
-
+} ATTRIBUTE_PACKING tImeCaps ;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 static void ImePrintUsage(void);

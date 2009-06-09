@@ -67,6 +67,9 @@ struct user_access_rsp {
 	uint8_t __reserved3      : 2;
 #endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 #if WORDS_BIGENDIAN
 	uint8_t __reserved4             : 1;
 	uint8_t no_callin_access        : 1;
@@ -80,7 +83,10 @@ struct user_access_rsp {
 	uint8_t no_callin_access        : 1;
 	uint8_t __reserved4             : 1;
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 

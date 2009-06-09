@@ -50,6 +50,9 @@ typedef enum {
 	P_ABLE,
 } flg_e;
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_table_entry {
 #define PEF_CONFIG_ENABLED 0x80
 #define PEF_CONFIG_PRECONFIGURED 0x40
@@ -90,7 +93,10 @@ struct pef_table_entry {
 	uint8_t event_data_3_AND_mask;
 	uint8_t event_data_3_compare_1;
 	uint8_t event_data_3_compare_2;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 struct desc_map {						/* maps a description to a value/mask */
 	const char *desc;
@@ -324,6 +330,9 @@ pef_b2s_generic_ER[] __attribute__((unused)) = {
 #define PEF_B2S_GENERIC_ER_ENTRIES \
 			(sizeof(pef_b2s_generic_ER) / sizeof(pef_b2s_generic_ER[0]))
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_policy_entry {
 #define PEF_POLICY_ID_MASK 0xf0
 #define PEF_POLICY_ID_SHIFT 4
@@ -341,7 +350,10 @@ struct pef_policy_entry {
 	uint8_t chan_dest;
 #define PEF_POLICY_EVENT_SPECIFIC 0x80
 	uint8_t alert_string_key;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 static struct bit_desc_map
 pef_b2s_policies __attribute__((unused)) = {
@@ -384,6 +396,9 @@ BIT_DESC_MAP_LIST,
 	{NULL}
 }	};
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_selector {
 #define PEF_CFGPARM_ID_REVISION_ONLY_MASK 0x80
 #define PEF_CFGPARM_ID_SET_IN_PROGRESS 0
@@ -403,21 +418,36 @@ struct pef_cfgparm_selector {
 	uint8_t id;
 	uint8_t set;
 	uint8_t block;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_set_in_progress {
 #define PEF_SET_IN_PROGRESS_COMMIT_WRITE 0x02 
 #define PEF_SET_IN_PROGRESS 0x01
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_control {
 #define PEF_CONTROL_ENABLE_ALERT_STARTUP_DELAY 0x08
 #define PEF_CONTROL_ENABLE_STARTUP_DELAY 0x04
 #define PEF_CONTROL_ENABLE_EVENT_MESSAGES 0x02
 #define PEF_CONTROL_ENABLE 0x01
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 static struct bit_desc_map
 pef_b2s_control __attribute__((unused)) = {
@@ -429,6 +459,9 @@ BIT_DESC_MAP_ALL,
 	{NULL}
 }	};
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_action {
 #define PEF_ACTION_ENABLE_DIAGNOSTIC_INTERRUPT 0x20
 #define PEF_ACTION_ENABLE_OEM 0x10
@@ -437,54 +470,114 @@ struct pef_cfgparm_action {
 #define PEF_ACTION_ENABLE_POWER_DOWN 0x02
 #define PEF_ACTION_ENABLE_ALERT 0x01
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_startup_delay {
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_alert_startup_delay {
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_filter_table_size {
 #define PEF_FILTER_TABLE_SIZE_MASK 0x7f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_filter_table_entry {
 #define PEF_FILTER_TABLE_ID_MASK 0x7f
 	uint8_t data1;
 	struct pef_table_entry entry;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_filter_table_data_1 {
 	uint8_t data1;
 	uint8_t data2;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_policy_table_size {
 #define PEF_POLICY_TABLE_SIZE_MASK 0x7f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_policy_table_entry {
 #define PEF_POLICY_TABLE_ID_MASK 0x7f
 	uint8_t data1;
 	struct pef_policy_entry entry;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_system_guid {
 #define PEF_SYSTEM_GUID_USED_IN_PET 0x01
 	uint8_t data1;
 	uint8_t guid[16];
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_alert_string_table_size {
 #define PEF_ALERT_STRING_TABLE_SIZE_MASK 0x7f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_alert_string_keys {
 #define PEF_ALERT_STRING_ID_MASK 0x7f
 	uint8_t data1;
@@ -492,16 +585,27 @@ struct pef_cfgparm_alert_string_keys {
 	uint8_t data2;
 #define PEF_ALERT_STRING_SET_ID_MASK 0x7f
 	uint8_t data3;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_cfgparm_alert_string_table_entry {
 	uint8_t id;
 	uint8_t blockno;
 	uint8_t block[16];
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 /* PEF - LAN */
-
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_lan_cfgparm_selector {
 #define PEF_LAN_CFGPARM_CH_REVISION_ONLY_MASK 0x80
 #define PEF_LAN_CFGPARM_CH_MASK 0x0f
@@ -513,13 +617,25 @@ struct pef_lan_cfgparm_selector {
 	uint8_t id;
 	uint8_t set;
 	uint8_t block;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_lan_cfgparm_dest_size {
 #define PEF_LAN_DEST_TABLE_SIZE_MASK 0x0f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_lan_cfgparm_dest_type {
 #define PEF_LAN_DEST_TYPE_ID_MASK 0x0f
 	uint8_t dest;
@@ -532,7 +648,10 @@ struct pef_lan_cfgparm_dest_type {
 	uint8_t alert_timeout;
 #define PEF_LAN_RETRIES_MASK 0x07
 	uint8_t retries;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 static struct bit_desc_map
 pef_b2s_lan_desttype __attribute__((unused)) = {
@@ -544,6 +663,9 @@ BIT_DESC_MAP_LIST,
 	{NULL}
 }	};
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_lan_cfgparm_dest_info {
 #define PEF_LAN_DEST_MASK 0x0f
 	uint8_t dest;
@@ -555,10 +677,15 @@ struct pef_lan_cfgparm_dest_info {
 	uint8_t gateway;
 	uint8_t ip[4];
 	uint8_t mac[6];
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 /* PEF - Serial/PPP */
-
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_selector {
 #define PEF_SERIAL_CFGPARM_CH_REVISION_ONLY_MASK 0x80
 #define PEF_SERIAL_CFGPARM_CH_MASK 0x0f
@@ -573,13 +700,25 @@ struct pef_serial_cfgparm_selector {
 	uint8_t id;
 	uint8_t set;
 	uint8_t block;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_dest_size {
 #define PEF_SERIAL_DEST_TABLE_SIZE_MASK 0x0f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_dest_info {
 #define PEF_SERIAL_DEST_MASK 0x0f
 	uint8_t dest;
@@ -608,7 +747,10 @@ struct pef_serial_cfgparm_dest_info {
 #define PEF_SERIAL_CALLBACK_IPADDR_ID_SHIFT 4
 #define PEF_SERIAL_CALLBACK_ACCT_ID_MASK 0xf0
 	uint8_t data5;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 static struct bit_desc_map
 pef_b2s_serial_desttype __attribute__((unused)) = {
@@ -623,31 +765,58 @@ BIT_DESC_MAP_LIST,
 	{NULL}
 }	};
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_dial_string_count {
 #define PEF_SERIAL_DIAL_STRING_COUNT_MASK 0x0f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_dial_string {
 #define PEF_SERIAL_DIAL_STRING_MASK 0x0f
 	uint8_t data1;
 	uint8_t data2;
 	uint8_t data3;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_tap_acct_count {
 #define PEF_SERIAL_TAP_ACCT_COUNT_MASK 0x0f
 	uint8_t data1;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_tap_acct_info {
 	uint8_t data1;
 #define PEF_SERIAL_TAP_ACCT_INFO_DIAL_STRING_ID_MASK 0xf0
 #define PEF_SERIAL_TAP_ACCT_INFO_DIAL_STRING_ID_SHIFT 4
 #define PEF_SERIAL_TAP_ACCT_INFO_SVC_SETTINGS_ID_MASK 0x0f
 	uint8_t data2;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct pef_serial_cfgparm_tap_svc_settings {
 	uint8_t data1;
 #define PEF_SERIAL_TAP_CONFIRMATION_ACK_AFTER_ETX 0x0
@@ -658,7 +827,10 @@ struct pef_serial_cfgparm_tap_svc_settings {
 	uint8_t escape_mask[4];
 	uint8_t timeout_parms[3];
 	uint8_t retry_parms[2];
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 static struct bit_desc_map
 pef_b2s_tap_svc_confirm __attribute__((unused)) = {
@@ -685,7 +857,7 @@ BIT_DESC_MAP_LIST,
 		struct pef_cfgparm_alert_string_table_size;
 		struct pef_cfgparm_alert_string_keys;
 		struct pef_cfgparm_alert_string_table_entry;
-	} __attribute__ ((packed));
+	} ATTRIBUTE_PACKING;
 
 	struct pef_lan_config_parms {							/* LAN */
 		struct pef_lan_cfgparm_set_in_progress;
@@ -708,7 +880,7 @@ BIT_DESC_MAP_LIST,
 		struct pef_lan_cfgparm_destination_count;
 		struct pef_lan_cfgparm_destination_type;
 		struct pef_lan_cfgparm_destination_ipaddr;
-	} __attribute__ ((packed));
+	} ATTRIBUTE_PACKING;
 
 	struct pef_serial_config_parms {						/* Serial/PPP */
 		struct pef_serial_cfgparm_set_in_progress;
@@ -760,7 +932,7 @@ BIT_DESC_MAP_LIST,
 		struct pef_serial_cfgparm_ppp_udp_proxy_xmit_bufsize;
 		struct pef_serial_cfgparm_ppp_udp_proxy_recv_bufsize;
 		struct pef_serial_cfgparm_ppp_remote_console_ipaddr;
-	} __attribute__ ((packed));
+	} ATTRIBUTE_PACKING;
 #endif
 
 #define IPMI_CMD_GET_PEF_CAPABILITIES 0x10

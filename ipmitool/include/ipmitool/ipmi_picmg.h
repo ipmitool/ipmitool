@@ -53,11 +53,17 @@
 #define PICMG_PMC                                  0x08
 #define PICMG_RTM                                  0x09
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct picmg_set_fru_activation_cmd {
    unsigned char  picmg_id;      /* always 0*/
    unsigned char  fru_id;        /* threshold setting mask */
    unsigned char  fru_state;     /* fru activation/deactivation */
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 /* the LED color capabilities */
 static const char* led_color_str[] __attribute__((unused)) = {

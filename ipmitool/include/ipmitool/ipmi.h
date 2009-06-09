@@ -41,6 +41,9 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_cc.h>
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #define IPMI_BUF_SIZE 1024
 

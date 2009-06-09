@@ -54,6 +54,9 @@
  * The Get Authentication Capabilities response structure
  * From table 22-15 of the IPMI v2.0 spec
  */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct get_channel_auth_cap_rsp {
 	uint8_t channel_number;
 #if WORDS_BIGENDIAN
@@ -93,7 +96,10 @@ struct get_channel_auth_cap_rsp {
 #endif
 	uint8_t oem_id[3];    /* IANA enterprise number for auth type */
 	uint8_t oem_aux_data; /* Additional OEM specific data for oem auths */
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 
@@ -101,6 +107,9 @@ struct get_channel_auth_cap_rsp {
  * The Get Channel Info response structure
  * From table 22-29 of the IPMI v2.0 spec
  */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct get_channel_info_rsp {
 #if WORDS_BIGENDIAN
 	uint8_t __reserved1       : 4; 
@@ -132,7 +141,10 @@ struct get_channel_info_rsp {
 #endif
 	uint8_t vendor_id[3]; /* For OEM that specified the protocol */
 	uint8_t aux_info[2];  /* Not used*/
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 
@@ -140,6 +152,9 @@ struct get_channel_info_rsp {
  * The Get Channel Access response structure
  * From table 22-28 of the IPMI v2.0 spec
  */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct get_channel_access_rsp {
 #if WORDS_BIGENDIAN
 	uint8_t __reserved1        : 2;
@@ -161,9 +176,14 @@ struct get_channel_access_rsp {
 	uint8_t channel_priv_limit : 4; /* Channel privilege level limit */
 	uint8_t __reserved2        : 4;
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
-
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct get_user_access_rsp {
 #if WORDS_BIGENDIAN
 	uint8_t __reserved1        : 2;
@@ -190,8 +210,14 @@ struct get_user_access_rsp {
 	uint8_t callin_callback    : 1;
 	uint8_t __reserved4        : 1;
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct set_user_access_data {
 #if WORDS_BIGENDIAN
 	uint8_t change_bits        : 1;
@@ -218,7 +244,10 @@ struct set_user_access_data {
 	uint8_t session_limit      : 4;
 	uint8_t __reserved3        : 4;
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 uint8_t ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel);
 uint8_t ipmi_current_channel_medium(struct ipmi_intf * intf);

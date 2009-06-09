@@ -1398,7 +1398,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 				}
 				/* FIXME: Add OEM record support here */
 				else{
-					printf("	 OEM (0x%s) Record\n", val2str( iana,	ipmi_oem_info));
+					printf("	 OEM (%s) Record\n", val2str( iana,	ipmi_oem_info));
 				}
 			}
 			break;

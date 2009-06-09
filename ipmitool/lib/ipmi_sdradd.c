@@ -52,6 +52,9 @@
 
 #define ADD_PARTIAL_SDR 0x25
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct sdr_add_rq {
   uint16_t reserve_id;  /* reservation ID */
   uint16_t id;          /* record ID */
@@ -60,7 +63,10 @@ struct sdr_add_rq {
 #define PARTIAL_ADD (0)
 #define LAST_RECORD (1)
   uint8_t data[1];      /* SDR record data */
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 /* This was formerly initialized to 24, reduced this to 19 so the overall
    message fits into the recommended 32-byte limit */

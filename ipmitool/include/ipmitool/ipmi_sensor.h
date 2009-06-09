@@ -65,6 +65,9 @@
 #define STATE_13_ASSERTED  0x20
 #define STATE_14_ASSERTED  0x40
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct sensor_set_thresh_rq {
 	uint8_t	sensor_num;     	/* sensor # */
 	uint8_t	set_mask;       	/* threshold setting mask */
@@ -74,7 +77,10 @@ struct sensor_set_thresh_rq {
 	uint8_t	upper_non_crit;	        /* new upper non critical threshold*/
 	uint8_t	upper_crit;	        /* new upper critical threshold*/
 	uint8_t	upper_non_recov;	/* new upper non recoverable threshold*/
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 int ipmi_sensor_main(struct ipmi_intf *, int, char **);

@@ -52,6 +52,9 @@ int ipmi_mc_main(struct ipmi_intf *, int, char **);
  * Response data from IPM Get Device ID Command (IPMI rev 1.5, section 17.1)
  * The following really apply to any IPM device, not just BMCs...
  */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct ipm_devid_rsp {
 	uint8_t device_id;
 	uint8_t device_revision;
@@ -62,7 +65,10 @@ struct ipm_devid_rsp {
 	uint8_t manufacturer_id[3];
 	uint8_t product_id[2];
 	uint8_t aux_fw_rev[4];
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 #define IPM_DEV_DEVICE_ID_SDR_MASK     (0x80)	/* 1 = provides SDRs      */
 #define IPM_DEV_DEVICE_ID_REV_MASK     (0x0F)	/* BCD-enoded             */
@@ -83,10 +89,16 @@ struct ipm_devid_rsp {
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct ipm_selftest_rsp {
 	unsigned char code;
 	unsigned char test;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 #define IPM_SFT_CODE_OK			0x55
 #define IPM_SFT_CODE_NOT_IMPLEMENTED	0x56
@@ -103,6 +115,9 @@ struct ipm_selftest_rsp {
 #define IPM_SELFTEST_FW_BOOTBLOCK	0x02
 #define IPM_SELFTEST_FW_CORRUPTED	0x01
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct ipm_get_watchdog_rsp {
 	unsigned char timer_use;
 	unsigned char timer_actions;
@@ -112,7 +127,10 @@ struct ipm_get_watchdog_rsp {
 	unsigned char initial_countdown_msb;
 	unsigned char present_countdown_lsb;
 	unsigned char present_countdown_msb;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 #define IPM_WATCHDOG_RESET_ERROR	0x80
 

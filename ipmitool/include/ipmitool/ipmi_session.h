@@ -43,6 +43,9 @@
 /*
  * From table 22.25 of the IPMIv2 specification
  */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct get_session_info_rsp
 {
 	uint8_t session_handle;
@@ -116,7 +119,10 @@ struct get_session_info_rsp
 			uint16_t console_port;        /* LSBF */
 		} modem_data;
 	} channel_data;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 
 

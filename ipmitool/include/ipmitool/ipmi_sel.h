@@ -57,12 +57,18 @@ enum {
 	IPMI_EVENT_CLASS_OEM,
 };
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct sel_get_rq {
 	uint16_t	reserve_id;
 	uint16_t	record_id;
 	uint8_t	offset;
 	uint8_t	length;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 struct standard_spec_sel_rec{
 	uint32_t	timestamp;
@@ -95,6 +101,9 @@ struct oem_nots_spec_sel_rec{
 	uint8_t oem_defined[SEL_OEM_NOTS_DATA_LEN];
 };
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct sel_event_record {
 	uint16_t	record_id;
 	uint8_t	record_type;
@@ -103,7 +112,10 @@ struct sel_event_record {
 		struct oem_ts_spec_sel_rec oem_ts_type;
 		struct oem_nots_spec_sel_rec oem_nots_type;
 	} sel_type;
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 struct ipmi_event_sensor_types {
 	uint8_t	code;
