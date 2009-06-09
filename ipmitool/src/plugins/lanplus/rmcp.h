@@ -64,12 +64,18 @@ static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
 };
 
 /* RMCP message header */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct rmcp_hdr {
 	uint8_t ver;
 	uint8_t __reserved;
 	uint8_t seq;
 	uint8_t class;
-} __attribute__((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 int handle_rmcp(struct ipmi_intf * intf, uint8_t * data, int data_len);
 

@@ -64,14 +64,23 @@ static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
 	{ 0,			NULL }
 };
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 /* RMCP message header */
 struct rmcp_hdr {
 	uint8_t ver;
 	uint8_t __reserved;
 	uint8_t seq;
 	uint8_t class;
-} __attribute__((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct rmcp_pong {
 	struct rmcp_hdr rmcp;
 	struct asf_hdr asf;
@@ -80,7 +89,10 @@ struct rmcp_pong {
 	uint8_t sup_entities;
 	uint8_t sup_interact;
 	uint8_t reserved[6];
-} __attribute__((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 int handle_rmcp(struct ipmi_intf * intf, uint8_t * data, int data_len);
 

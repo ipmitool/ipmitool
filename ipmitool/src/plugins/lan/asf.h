@@ -56,13 +56,19 @@ static const struct valstr asf_type_vals[] __attribute__((unused)) = {
 };
 
 /* ASF message header */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct asf_hdr {
 	uint32_t	iana;
 	uint8_t		type;
 	uint8_t		tag;
 	uint8_t		__reserved;
 	uint8_t		len;
-} __attribute__((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 int handle_asf(struct ipmi_intf * intf, uint8_t * data, int data_len);
 
