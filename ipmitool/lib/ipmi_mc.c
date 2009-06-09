@@ -61,6 +61,7 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
+	if( !intf->opened )
 	intf->open(intf);
 
 	memset(&req, 0, sizeof(req));
@@ -82,6 +83,9 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	return 0;
 }
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct bmc_enables_data {
 #if WORDS_BIGENDIAN
 	uint8_t oem2		: 1;
@@ -102,7 +106,10 @@ struct bmc_enables_data {
 	uint8_t oem1		: 1;
 	uint8_t oem2		: 1;
 #endif
-} __attribute__ ((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 struct bitfield_data {
 	const char * name;
@@ -396,6 +403,9 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct ipmi_guid {
 	uint32_t  time_low;	/* timestamp low field */
 	uint16_t  time_mid;	/* timestamp middle field */
@@ -403,7 +413,10 @@ struct ipmi_guid {
 	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
 	uint8_t   clock_seq_low; /* clock sequence low field */
 	uint8_t   node[6];	/* node */
-} __attribute__((packed));
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
 
 /* ipmi_mc_get_guid  -  print this MC GUID
  *
