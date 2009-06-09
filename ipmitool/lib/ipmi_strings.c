@@ -97,6 +97,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5520, "KTC5520/EATX" },
    { IPMI_OEM_KONTRON,5703, "RTM8020" },
    { IPMI_OEM_KONTRON,5704, "RTM8030" },
+   { IPMI_OEM_KONTRON,5705, "RTM8050" },
    { IPMI_OEM_KONTRON,6000, "CP6000" },
    { IPMI_OEM_KONTRON,6006, "DT-64" },
    { IPMI_OEM_KONTRON,6010, "CP6010" },
@@ -125,9 +126,22 @@ const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
    { IPMI_OEM_KONTRON , 0xC6 , "OEM POST Value Sensor" },
    { IPMI_OEM_KONTRON , 0xC7 , "OEM FWUM Status" },
    { IPMI_OEM_KONTRON , 0xC8 , "OEM Switch Mngt Software Status" },
+   { IPMI_OEM_KONTRON , 0xC9 , "OEM OEM Diagnostic Status" },
+   { IPMI_OEM_KONTRON , 0xCA , "OEM Component Firmware Upgrade" },
+   { IPMI_OEM_KONTRON , 0xCB , "OEM FRU Over Current" },
+   { IPMI_OEM_KONTRON , 0xCC , "OEM FRU Sensor Error" },
+   { IPMI_OEM_KONTRON , 0xCD , "OEM FRU Power Denied" },
+   { IPMI_OEM_KONTRON , 0xCE , "OEM Reserved" },
+   { IPMI_OEM_KONTRON , 0xCF , "OEM Board Reset" },
+   { IPMI_OEM_KONTRON , 0xD0 , "OEM Clock Resource Control" },
+   { IPMI_OEM_KONTRON , 0xD1 , "OEM Power State" },
+   { IPMI_OEM_KONTRON , 0xD2 , "OEM FRU Mngt Power Failure" },
+   { IPMI_OEM_KONTRON , 0xD3 , "OEM Jumper Status" },
+   { IPMI_OEM_KONTRON , 0xF2 , "OEM RTM Module Hotswap" },
 
    { IPMI_OEM_PICMG   , 0xF0 , "PICMG FRU Hotswap" },
    { IPMI_OEM_PICMG   , 0xF1 , "PICMG IPMB0 Link State" },
+   { IPMI_OEM_PICMG   , 0xF2 , "PICMG Module Hotswap" },
 
    { 0xffff,            0x00,  NULL }
 };
@@ -373,6 +387,7 @@ const struct valstr completion_code_vals[] = {
 	{ 0xd3, "Destination unavailable" },
 	{ 0xd4, "Insufficient privilege level" },
 	{ 0xd5, "Command not supported in present state" },
+	{ 0xd6, "Cannot execute command, command disabled" },
 	{ 0xff, "Unspecified error" },
 	{ 0x00, NULL }
 };
