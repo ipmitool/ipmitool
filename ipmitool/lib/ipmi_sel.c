@@ -956,11 +956,18 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	if (evt->record_type < 0xe0)
 	{
 		if ((evt->sel_type.standard_type.timestamp < 0x20000000)||(evt->sel_type.oem_ts_type.timestamp <  0x20000000)){
-			printf("Pre-Init Time-stamp");
+			printf(" Pre-Init "); 
+
 			if (csv_output)
-				printf(",,");
+				printf(",");
 			else
-				printf("   | ");
+				printf(" |");
+
+			printf("%010d", evt->sel_type.standard_type.timestamp );
+			if (csv_output)
+				printf(",");
+			else
+				printf("| ");
 		}
 		else {
 			if (evt->record_type < 0xc0)
