@@ -141,7 +141,9 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   while (i < len) {
     int data_len = 0;
 
-    if (len - i < sdr_max_write_len) {
+   /* JMA - Add = here since it was not setting the bit when lenght was fitting
+      boundary.  This was causing some sensors to be rejected from SDRR */
+    if (len - i <= sdr_max_write_len) {
       /* last crunch */
       data_len = len - i;
       sdr_rq->in_progress = LAST_RECORD;
