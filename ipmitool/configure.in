@@ -83,7 +83,7 @@ solaris*)
 	enable_intf_bmc=no
 	enable_ipmishell=no
 	;;
-*darwin*)
+*darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
 	enable_intf_imb=no
 	enable_intf_open=no
