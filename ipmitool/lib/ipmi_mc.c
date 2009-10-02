@@ -357,7 +357,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 		devid->device_id);
 	printf("Device Revision           : %i\n",
 		devid->device_revision & IPM_DEV_DEVICE_ID_REV_MASK);
-	printf("Firmware Revision         : %u.%x\n",
+	printf("Firmware Revision         : %u.%02x\n",
 		devid->fw_rev1 & IPM_DEV_FWREV1_MAJOR_MASK,
 		devid->fw_rev2);
 	printf("IPMI Version              : %x.%x\n",
