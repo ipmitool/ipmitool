@@ -48,7 +48,9 @@
 
 #ifdef HAVE_PATHS_H
 # include <paths.h>
-#else
+#endif
+
+#ifndef _PATH_VARRUN 
 # define _PATH_VARRUN "/var/run/"
 #endif
 
