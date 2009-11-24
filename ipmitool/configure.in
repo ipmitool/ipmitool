@@ -256,7 +256,7 @@ dnl Determine if you got the right FreeIPMI version
                            0,
                            NULL,
                            0);
-    ], ac_free_version_0_3_0=yes,ac_free_version_0_3_0=no)
+    ], ac_free_version_0_3_0=yes, ac_free_version_0_3_0=no)
     AC_MSG_RESULT($ac_free_version_0_3_0)
     AC_MSG_CHECKING([for libfreeipmi version 0.4.0])
     AC_TRY_COMPILE([
@@ -275,7 +275,7 @@ dnl Determine if you got the right FreeIPMI version
                           0,
                           NULL,
                           0);
-    ], ac_free_version_0_4_0=yes,ac_free_version_0_4_0=no)
+    ], ac_free_version_0_4_0=yes, ac_free_version_0_4_0=no)
     AC_MSG_RESULT($ac_free_version_0_4_0)
     AC_MSG_CHECKING([for libfreeipmi version 0.5.0])
     AC_TRY_COMPILE([
@@ -295,7 +295,7 @@ dnl Determine if you got the right FreeIPMI version
                           NULL,
                           0,
                           0);
-    ], ac_free_version_0_5_0=yes,ac_free_version_0_5_0=no)
+    ], ac_free_version_0_5_0=yes, ac_free_version_0_5_0=no)
     AC_MSG_RESULT($ac_free_version_0_5_0)
 
     AC_MSG_CHECKING([for libfreeipmi version 0.6.0])
@@ -314,7 +314,7 @@ dnl Determine if you got the right FreeIPMI version
                               NULL,
                               0,
                               0);
-    ], ac_free_version_0_6_0=yes,ac_free_version_0_6_0=no)
+    ], ac_free_version_0_6_0=yes, ac_free_version_0_6_0=no)
     AC_MSG_RESULT($ac_free_version_0_6_0)
 
     if test "x$ac_free_version_0_3_0" = "xyes" \
@@ -340,6 +340,10 @@ dnl Determine if you got the right FreeIPMI version
     else
        enable_intf_free=no
     fi
+
+    AC_CHECK_LIB(freeipmi,
+	         ipmi_cmd_raw_ipmb, 
+		 AC_DEFINE(IPMI_INTF_FREE_BRIDGING, [1], [Define to 1 to enable FreeIPMI Bridging Support.]))
 fi
 
 dnl look for termios header file

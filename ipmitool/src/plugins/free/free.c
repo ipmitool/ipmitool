@@ -61,6 +61,8 @@ extern int verbose;
 
 static int ipmi_free_open(struct ipmi_intf * intf)
 {
+        int kcs_ret = -1, ssif_ret = -1;
+
         if (getuid() != 0) {
                 fprintf(stderr, "Permission denied, must be root\n");
                 return -1;
@@ -199,7 +201,7 @@ static void ipmi_free_close(struct ipmi_intf * intf)
 
 static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
-        u_int8_t lun = 0;
+        u_int8_t lun = req->msg.lun;
         u_int8_t cmd = req->msg.cmd;
         u_int8_t netfn = req->msg.netfn;
         u_int8_t rq_buf[IPMI_BUF_SIZE];
@@ -232,25 +234,65 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
         if (req->msg.data)
                memcpy(rq_buf + 1, req->msg.data, req->msg.data_len);
 
-        if ((rs_len = ipmi_cmd_raw(dev,
-                                   lun, 
-                                   netfn,                    
-                                   rq_buf, 
-                                   req->msg.data_len + 1,
-                                   rs_buf, 
-                                   rs_buf_len)) < 0) {
+        if (intf->target_addr != 0
+            && intf->target_addr != IPMI_BMC_SLAVE_ADDR) {
+#if IPMI_INTF_FREE_BRIDGING
+                if ((rs_len = ipmi_cmd_raw_ipmb(dev,
+                                                intf->target_channel,
+                                                intf->target_addr,
+                                                lun, 
+                                                netfn,                    
+                                                rq_buf, 
+                                                req->msg.data_len + 1,
+                                                rs_buf, 
+                                                rs_buf_len)) < 0) {
+			if (verbose > 3)
+                      	        fprintf(stderr,
+                                	"ipmi_cmd_raw_ipmb: %s\n",
+                                	ipmi_ctx_strerror(ipmi_ctx_errnum(dev)));
+			/* Compared to FreeIPMI, user is expected to input
+			 * the target channel on the command line, it is not automatically
+			 * discovered.  So that is the likely cause of an error.
+			 *
+			 * Instead of returning an error, return a bad response so output
+			 * of ipmitool commands looks like other interfaces
+			 */
+			rs_len = 2;
+			rs_buf[0] = 0;
+			rs_buf[0] = 0xC1; /* invalid command */
+                }
+#else  /* !IPMI_INTF_FREE_BRIDGING */
+                if (verbose > 3)
+                        fprintf(stderr, "sensor bridging not supported in this driver version");
+		/* instead of returning an error, return a bad response so output
+	 	 * of ipmitool commands looks like other interfaces
+		 */
+		rs_len = 2;
+		rs_buf[0] = 0;
+		rs_buf[0] = 0xC1; /* invalid command */
+#endif  /* !IPMI_INTF_FREE_BRIDGING */
+        }
+        else {
+                if ((rs_len = ipmi_cmd_raw(dev,
+                                           lun, 
+                                           netfn,                    
+                                           rq_buf, 
+                                           req->msg.data_len + 1,
+                                           rs_buf, 
+                                           rs_buf_len)) < 0) {
 #if IPMI_INTF_FREE_0_3_0
-                perror("ipmi_cmd_raw");
+                        perror("ipmi_cmd_raw");
 #elif IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
-                fprintf(stderr,
-                        "ipmi_cmd_raw: %s\n",
-                        ipmi_device_strerror(ipmi_device_errnum(dev)));
+                        fprintf(stderr,
+                                "ipmi_cmd_raw: %s\n",
+                                ipmi_device_strerror(ipmi_device_errnum(dev)));
 #elif IPMI_INTF_FREE_0_6_0
-                fprintf(stderr,
-                        "ipmi_cmd_raw: %s\n",
-                        ipmi_ctx_strerror(ipmi_ctx_errnum(dev)));
+                        fprintf(stderr,
+                                "ipmi_cmd_raw: %s\n",
+                                ipmi_ctx_strerror(ipmi_ctx_errnum(dev)));
 #endif
-                return NULL;
+                        return NULL;
+                }
         }
 
         memset(&rsp, 0, sizeof(struct ipmi_rs));
