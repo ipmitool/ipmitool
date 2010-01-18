@@ -589,7 +589,10 @@ static const char * chassis_type_desc[] __attribute__((unused)) = {
 	    "Docking Station", "All in One", "Sub Notebook",
 	    "Space-saving", "Lunch Box", "Main Server Chassis",
 	    "Expansion Chassis", "SubChassis", "Bus Expansion Chassis",
-	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis"};
+	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis",
+	    "Sealed-case PC", "Multi-system Chassis", "CompactPCI",
+	    "AdvancedTCA", "Blade", "Blade Enclosure"
+};
 
 int ipmi_fru_main(struct ipmi_intf *intf, int argc, char **argv);
 int ipmi_fru_print(struct ipmi_intf *intf, struct sdr_record_fru_locator *fru);
