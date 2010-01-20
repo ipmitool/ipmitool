@@ -882,6 +882,9 @@ uint8_t *ipmi_sdr_get_record(struct ipmi_intf *intf, struct sdr_get_rs *header,
 			     struct ipmi_sdr_iterator *i);
 void ipmi_sdr_end(struct ipmi_intf *intf, struct ipmi_sdr_iterator *i);
 int ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type);
+
+int ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id, 
+                                      uint8_t type,uint8_t * raw);
 int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf *intf,

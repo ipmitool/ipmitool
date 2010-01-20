@@ -1172,12 +1172,12 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			/* Sensor Scanning Disabled */
 			validread = 0;
 			if (rsp->data[0] != 0) { 	 
-				/* we might still get a valid reading */ 	 
+				/* we might still get a valid reading , but even 0 might be a valid reading */
 				if (sensor->linearization>=SDR_SENSOR_L_NONLINEAR && sensor->linearization<=0x7F)
 					ipmi_sensor_get_sensor_reading_factors(intf, sensor, rsp->data[0]);
 				val = sdr_convert_sensor_reading(sensor, 	 
 					rsp->data[0]); 	 
-				if (val != 0.0) 	 
+				if (val != 0.0) /* .. an 0.0 might as well be valid */ 	 
 					validread = 1; 	 
 			}
 		} else {
@@ -1187,8 +1187,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 					validread = 0;
 				}
 			}
-			/* convert RAW reading into units */
-				val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
+			/* convert RAW reading into units */			
+         val = sdr_convert_sensor_reading(sensor, rsp->data[0]);
 		}
 	}
 
@@ -2280,6 +2280,64 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
 	return rc;
 }
 
+/* ipmi_sdr_print_name_from_rawentry  -  Print SDR name  from raw data
+ *
+ * @intf:	ipmi interface
+ * @type:	sensor type
+ * @raw:	raw sensor data
+ *
+ * returns 0 on success
+ * returns -1 on error
+ */
+int
+ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id, 
+                                  uint8_t type,uint8_t * raw)
+{
+   union {
+      struct sdr_record_full_sensor *full;
+      struct sdr_record_compact_sensor *compact;
+      struct sdr_record_eventonly_sensor *eventonly;
+      struct sdr_record_generic_locator *genloc;
+      struct sdr_record_fru_locator *fruloc;
+      struct sdr_record_mc_locator *mcloc;
+      struct sdr_record_entity_assoc *entassoc;
+      struct sdr_record_oem *oem;
+   } record;
+
+   int rc =0;
+   char desc[17];
+   memset(desc, ' ', sizeof (desc));
+
+   switch ( type) {
+      case SDR_RECORD_TYPE_FULL_SENSOR:
+      record.full = (struct sdr_record_full_sensor *) raw;
+      snprintf(desc, (record.full->id_code & 0x1f) +1, "%s",
+               (const char *)record.full->id_string);
+      break;
+      case SDR_RECORD_TYPE_COMPACT_SENSOR:
+      record.compact = (struct sdr_record_compact_sensor *) raw	;
+      snprintf(desc, (record.compact->id_code & 0x1f)  +1, "%s",
+               (const char *)record.compact->id_string);
+      break;
+      case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+      record.eventonly  = (struct sdr_record_eventonly_sensor *) raw ;
+      snprintf(desc, (record.eventonly->id_code & 0x1f)  +1, "%s",
+               (const char *)record.eventonly->id_string);
+      break;            
+      case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+      record.mcloc  = (struct sdr_record_mc_locator *) raw ;
+      snprintf(desc, (record.mcloc->id_code & 0x1f)  +1, "%s",
+               (const char *)record.mcloc->id_string);		
+      break;
+      default:
+      rc = -1;
+      break;
+   }   
+
+      lprintf(LOG_INFO, "ID: 0x%04x , NAME: %-16s", id, desc);
+   return rc;
+}
+
 /* ipmi_sdr_print_rawentry  -  Print SDR entry from raw data
  *
  * @intf:	ipmi interface
@@ -2453,6 +2511,7 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (rec == NULL) {
+			lprintf(LOG_ERR, "ipmitool: ipmi_sdr_get_record() failed");
 			rc = -1;
 			continue;
 		}
@@ -2499,6 +2558,8 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 			free(rec);
 			continue;
 		}
+
+                lprintf(LOG_DEBUG, "SDR record ID   : 0x%04x", sdrr->id);
 
 		if (type == header->type || type == 0xff ||
 		    (type == 0xfe &&
@@ -2656,6 +2717,17 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 
 		lprintf(LOG_DEBUG, "SDR free space: %d", sdr_info.free);
 		lprintf(LOG_DEBUG, "SDR records   : %d", sdr_info.count);
+
+		/* Build SDRR if there is no record in repository */
+		if( sdr_info.count == 0 ) {
+		   lprintf(LOG_DEBUG, "Rebuilding SDRR...");
+
+		   if( ipmi_sdr_add_from_sensors( intf, 0 ) != 0 ) {
+		      lprintf(LOG_ERR, "Could not build SDRR!");
+		      free(itr);
+		      return NULL;
+		   }
+		}
 	} else {
 		struct sdr_device_info_rs sdr_info;
 		/* get device sdr info */
@@ -4326,6 +4398,9 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR,
 			"                     sensors       Creates the SDR repository for the current configuration");
 		lprintf(LOG_ERR,
+			"                     nosat        Creates the SDR repository for the current configuration, without satellite scan");
+
+		lprintf(LOG_ERR,
 			"                     file <file>   Load SDR repository from a file");
 	} else if (strncmp(argv[0], "list", 4) == 0
 		   || strncmp(argv[0], "elist", 5) == 0) {
@@ -4382,6 +4457,8 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = -1;
 		} else if (strncmp(argv[1], "sensors", 7) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
+		} else if (strncmp(argv[1], "nosats", 6) == 0) {
+			rc = ipmi_sdr_add_from_sensors(intf, 0);
 		} else if (strncmp(argv[1], "file", 4) == 0) {
 			if (argc < 3) {
 				lprintf(LOG_ERR, "sdr fill: Missing filename");

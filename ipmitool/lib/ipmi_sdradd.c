@@ -101,11 +101,15 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   int rc = 0;
 
   /* actually no SDR to program */
-  if (len < 1 || !sdrr->raw)
+  if (len < 1 || !sdrr->raw) {
+    lprintf(LOG_ERR, "ipmitool: bad record , skipped");
     return 0;
+  }
 
-  if (ipmi_sdr_get_reservation(intf, 0, &reserve_id))
+  if (ipmi_sdr_get_reservation(intf, 0, &reserve_id)) {
+    lprintf(LOG_ERR, "ipmitool: reservation failed");
     return -1;
+  }
 
   sdr_rq = (struct sdr_add_rq *)malloc(sizeof(*sdr_rq) + sdr_max_write_len);
   if (sdr_rq == NULL) {
@@ -131,6 +135,7 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   req.msg.data_len = 5 + sizeof(*sdr_rq) - 1;
 
   if (partial_send(intf, &req, &id)) {
+     lprintf(LOG_ERR, "ipmitool: partial send error");
     free(sdr_rq);
     return -1;
   }
@@ -139,11 +144,8 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
 
   /* sdr entry */
   while (i < len) {
-    int data_len = 0;
-
-   /* JMA - Add = here since it was not setting the bit when lenght was fitting
-      boundary.  This was causing some sensors to be rejected from SDRR */
-    if (len - i <= sdr_max_write_len) {
+     int data_len = 0;
+     if ( (len - i) <= sdr_max_write_len) {
       /* last crunch */
       data_len = len - i;
       sdr_rq->in_progress = LAST_RECORD;
@@ -157,11 +159,13 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
     req.msg.data_len = data_len + sizeof(*sdr_rq) - 1;
 
     if ((rc = partial_send(intf, &req, &id)) != 0) {
+       lprintf(LOG_ERR, "ipmitool: partial add failed");
       break;
     }
 
     i += data_len;
   }
+
   free(sdr_rq);
   return rc;
 }
@@ -248,11 +252,13 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
       return -1;
     }
     memset(sdrr, 0, sizeof (struct sdr_record_list));
+   
     sdrr->id = header->id;
     sdrr->version = header->version;
     sdrr->type = header->type;
     sdrr->length = header->length;
     sdrr->raw = ipmi_sdr_get_record(intf, header, itr);
+    (void)ipmi_sdr_print_name_from_rawentry(intf,  sdrr->id, sdrr->type,sdrr->raw);
 
     /* put in the record queue */
     if (queue->head == NULL)
@@ -276,6 +282,8 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
 
   /* generate list of records for this target */
   intf->target_addr = from_addr;
+
+  /* initialize iterator */
   itr = ipmi_sdr_start(intf, use_builtin);
   if (itr == 0)
     return 0;
@@ -283,6 +291,7 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
   printf("Load SDRs from 0x%x\n", from_addr);
   rc = sdrr_get_records(intf, itr, &sdrr_queue);
   ipmi_sdr_end(intf, itr);
+  /* ... */
 
   /* write the SDRs to the destination SDR Repository */
   intf->target_addr = to_addr;
@@ -314,13 +323,15 @@ ipmi_sdr_add_from_sensors(struct ipmi_intf *intf, int maxslot)
   rc = sdr_copy_to_sdrr(intf, 1, myaddr, myaddr);
 
   /* Now fill the SDRR with remote sensors */
-  for (i = 0, slave_addr = 0xB0; i < maxslot; i++, slave_addr += 2) {
-    /* Hole in the PICMG 2.9 mapping */
-    if (slave_addr == 0xC2) slave_addr += 2;
-    if(sdr_copy_to_sdrr(intf, 0, slave_addr, myaddr) < 0)
-    {
-      rc = -1;
-    }
+  if( maxslot != 0 ) {
+     for (i = 0, slave_addr = 0xB0; i < maxslot; i++, slave_addr += 2) {
+        /* Hole in the PICMG 2.9 mapping */
+        if (slave_addr == 0xC2) slave_addr += 2;
+        if(sdr_copy_to_sdrr(intf, 0, slave_addr, myaddr) < 0)
+        {
+           rc = -1;
+        }
+     }
   }
   return rc;
 }
