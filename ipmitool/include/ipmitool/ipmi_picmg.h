@@ -8,6 +8,11 @@
 
 #include <ipmitool/ipmi.h>
 
+/* PICMG version */
+#define PICMG_CPCI_MAJOR_VERSION                   1
+#define PICMG_ATCA_MAJOR_VERSION                   2
+#define PICMG_AMC_MAJOR_VERSION                    4
+
 /* PICMG commands */
 #define PICMG_GET_PICMG_PROPERTIES_CMD             0x00
 #define PICMG_GET_ADDRESS_INFO_CMD                 0x01
@@ -64,6 +69,27 @@ struct picmg_set_fru_activation_cmd {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
+
+typedef enum picmg_busres_board_cmd_types {
+	PICMG_BUSRES_BOARD_CMD_QUERY =0,
+	PICMG_BUSRES_BOARD_CMD_RELEASE,
+	PICMG_BUSRES_BOARD_CMD_FORCE,
+	PICMG_BUSRES_BOARD_CMD_BUS_FREE
+} t_picmg_busres_board_cmd_types ;
+
+typedef enum picmg_busres_shmc_cmd_types {
+	PICMG_BUSRES_SHMC_CMD_REQUEST =0,
+	PICMG_BUSRES_SHMC_CMD_RELINQUISH,
+	PICMG_BUSRES_SHMC_CMD_NOTIFY
+} t_picmg_busres_shmc_cmd_types ;
+
+typedef enum picmg_busres_resource_id {
+	PICMG_BUSRES_METAL_TEST_BUS_1=0,
+	PICMG_BUSRES_METAL_TEST_BUS_2,
+	PICMG_BUSRES_SYNC_CLOCK_GROUP_1,
+	PICMG_BUSRES_SYNC_CLOCK_GROUP_2,
+	PICMG_BUSRES_SYNC_CLOCK_GROUP_3
+} t_picmg_busres_resource_id;
 
 /* the LED color capabilities */
 static const char* led_color_str[] __attribute__((unused)) = {
