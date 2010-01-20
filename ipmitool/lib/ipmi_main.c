@@ -67,6 +67,7 @@
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
+#include <ipmitool/ipmi_picmg.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -242,6 +243,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
+	lprintf(LOG_NOTICE, "       -M address     Set transit local address for bridge request(dual bridge)");
 	lprintf(LOG_NOTICE, "       -B channel     Set transit channel for bridged request (dual bridge)");
 	lprintf(LOG_NOTICE, "       -T address     Set transit address for bridge request (dual bridge)");
 	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
@@ -355,6 +357,7 @@ ipmi_main(int argc, char ** argv,
 	int privlvl = 0;
 	uint8_t target_addr = 0;
 	uint8_t target_channel = 0;
+
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
@@ -721,9 +724,72 @@ ipmi_main(int argc, char ** argv,
 
 	ipmi_main_intf->devnum = devnum;
 
-	/* setup IPMB local and target address if given */
-	ipmi_main_intf->my_addr = my_addr ? : IPMI_BMC_SLAVE_ADDR;
-	if (target_addr > 0) {
+	/* setup IPMB local and target address if given */ 
+   if( my_addr ) {
+      ipmi_main_intf->my_addr = my_addr;
+   }
+   else {
+
+	/* Check if PICMG extension is available to use the function GetDeviceLocator
+	 * to retreive i2c address PICMG hack to set right IPMB address, 
+	 * If extension is not supported, should not give any problems
+    *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
+    *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
+	 */      
+      /* First, check if PICMG extension is available and supported */
+      struct ipmi_rq req;
+      struct ipmi_rs *rsp;
+      char msg_data;
+      unsigned char version_accepted = 0;
+
+		lprintf(LOG_INFO, "Running PICMG GetDeviceLocator" );
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_PICMG;
+		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;             
+		msg_data    = 0x00;                                       
+		req.msg.data = &msg_data; 
+		req.msg.data_len = 1;
+		msg_data = 0;
+
+		rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
+		if (rsp && !rsp->ccode) {
+			if
+			(  
+				(rsp->data[0] == 0)
+				&&
+            ((rsp->data[1] & 0x0F ) == PICMG_ATCA_MAJOR_VERSION )
+			){
+		      version_accepted = 1;
+		      lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d", 
+                            (rsp->data[1] & 0x0f),(rsp->data[1] >> 4)  );
+		   }
+		}
+		
+		if(version_accepted == 1){
+			lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
+			memset(&req, 0, sizeof(req));
+			req.msg.netfn = IPMI_NETFN_PICMG;
+			req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
+			msg_data    = 0x00;
+			req.msg.data = &msg_data; 
+			req.msg.data_len = 1;   
+			msg_data = 0;
+
+		   rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
+		   if (rsp && !rsp->ccode) {            
+            ipmi_main_intf->my_addr = rsp->data[2];
+            ipmi_main_intf->target_addr = ipmi_main_intf->my_addr;
+			   lprintf(LOG_INFO, "Discovered IPMB address = 0x%x", ipmi_main_intf->my_addr);
+		   }
+      }
+      else{
+         lprintf(LOG_INFO, 
+                  "No PICMG Extenstion discovered, keeping IPMB address 0x20");
+      }
+	}
+
+
+	if ( target_addr > 0  && (target_addr != my_addr) ) {
 		/* need to open the interface first */
 		if (ipmi_main_intf->open != NULL)
 			ipmi_main_intf->open(ipmi_main_intf);

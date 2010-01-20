@@ -44,7 +44,6 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
-#include <ipmitool/ipmi_picmg.h>
 
 #if defined(HAVE_CONFIG_H)
 # include <config.h>
@@ -68,9 +67,7 @@ static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
 {
 	int i = 0;
-	struct ipmi_rq req;
-	struct ipmi_rs *rsp;
-	char msg_data;
+
 	char ipmi_dev[16];
 	char ipmi_devfs[16];
 	char ipmi_devfs2[16];
@@ -101,84 +98,21 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 		lperror(LOG_ERR, "Could not enable event receiver");
 		return -1;
 	}
-
-
+ 
 	intf->opened = 1;
 
-	/* Check if PICMG extension is available to use the function GetDeviceLocator
-	 * to retreive i2c address PICMG hack to set right IPMB address, 
-	 * If extension is not supported, should not give any problems
-    *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
-    *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
-	 */
-	if (intf->my_addr == IPMI_BMC_SLAVE_ADDR) {
-      
-      /* First, check if PICMG extension is available and supported */
-      unsigned char version_accepted = 0;
-
-		lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
-		memset(&req, 0, sizeof(req));
-		req.msg.netfn = IPMI_NETFN_PICMG;
-		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;             
-		msg_data    = 0x00;                                       
-		req.msg.data = &msg_data; 
-		req.msg.data_len = 1;
-		msg_data = 0;
-
-		rsp = intf->sendrecv(intf, &req);
-		if (rsp && !rsp->ccode) {
-			if
-			(  
-				(rsp->data[0] == 0)
-				&&
-				(
-					(rsp->data[1] == 0x02)
-					||
-					(rsp->data[1] == 0x12) 
-					||
-					(rsp->data[1] == 0x22) 
-					||
-					(rsp->data[1] == 0x32) 
-				)
-			){
-		      version_accepted = 1;
-		      lprintf(LOG_DEBUG, "Discovered PICMG Extension %d.%d", 
-                            (rsp->data[1] & 0x0f),(rsp->data[1] >> 4)  );
-		   }
-		}
-		
-		if(version_accepted == 1){
-			lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
-			memset(&req, 0, sizeof(req));
-			req.msg.netfn = IPMI_NETFN_PICMG;
-			req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
-			msg_data    = 0x00;
-			req.msg.data = &msg_data; 
-			req.msg.data_len = 1;   
-			msg_data = 0;
-
-		   rsp = intf->sendrecv(intf, &req);
-		   if (rsp && !rsp->ccode) {
-			   intf->my_addr = rsp->data[2];
-			   intf->target_addr = intf->my_addr;
-			   lprintf(LOG_DEBUG, "Discovered IPMB address = 0x%x", intf->my_addr);
-		   }
-      }
-      else{
-         lprintf(LOG_DEBUG, 
-                  "No PICMG Extenstion discovered, keeping IPMB address 0x20");
-      }
-	}
-
+   /* This is never set to 0, the default is IPMI_BMC_SLAVE_ADDR */
 	if (intf->my_addr != 0) {
 		unsigned int a = intf->my_addr;
 		if (ioctl(intf->fd, IPMICTL_SET_MY_ADDRESS_CMD, &a) < 0) {
 			lperror(LOG_ERR, "Could not set IPMB address");
 			return -1;
 		}
+
 		lprintf(LOG_DEBUG, "Set IPMB address to 0x%x",
-			intf->my_addr);
+			intf->my_addr );
 	}
+
 	return intf->fd;
 }
 
@@ -211,8 +145,13 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	static int curr_seq = 0;
 	fd_set rset;
 
+	uint8_t * data = NULL;
+	int data_len = 0;
+
+
 	if (intf == NULL || req == NULL)
 		return NULL;
+
 	if (intf->opened == 0 && intf->open != NULL)
 		if (intf->open(intf) < 0)
 			return NULL;
@@ -231,56 +170,130 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	    intf->target_addr != intf->my_addr) {
 		/* use IPMB address if needed */
 		ipmb_addr.slave_addr = intf->target_addr;
-      ipmb_addr.lun = req->msg.lun;
+		ipmb_addr.lun = req->msg.lun;
 		lprintf(LOG_DEBUG, "Sending request to "
 			"IPMB target @ 0x%x (from 0x%x)", intf->target_addr,intf->my_addr);
-#ifdef ENABLE_INTF_OPEN_DUAL_BRIDGE
-      if(intf->transit_addr != 0 &&
-	    intf->transit_addr != intf->my_addr) {
-         ipmb_addr.transit_slave_addr = intf->transit_addr;
-         lprintf(LOG_DEBUG, "Sending through transit "
-			   "IPMB target @ 0x%x", intf->transit_addr);
-      }
-#endif
+
+		if(intf->transit_addr != 0 && intf->transit_addr != intf->my_addr) { 
+		   uint8_t index = 0;
+      
+		   lprintf(LOG_DEBUG, "Encapsulating data sent to "
+			   "end target [0x%02x,0x%02x] using transit [0x%02x,0x%02x] from 0x%x ",
+			   (0x40 | intf->target_channel),
+			   intf->target_addr,
+			   intf->transit_channel,
+			   intf->transit_addr,
+			   intf->my_addr
+			   );      
+
+		   /* Convert Message to 'Send Message' */
+		   /* Supplied req : req , internal req : _req  */
+
+		   if (verbose > 4) {
+		      fprintf(stderr, "Converting message:\n");
+		      fprintf(stderr, "  netfn     = 0x%x\n",  req->msg.netfn );
+		      fprintf(stderr, "  cmd       = 0x%x\n", req->msg.cmd);
+		      if (recv.msg.data && recv.msg.data_len) {
+			 fprintf(stderr, "  data_len  = %d\n", req->msg.data_len);
+			 fprintf(stderr, "  data      = %s\n",
+				 buf2str(req->msg.data,req->msg.data_len));
+		      }
+		   }
+
+		   /* Modify target address to use 'transit' instead */
+		   ipmb_addr.slave_addr = intf->transit_addr;
+		   ipmb_addr.channel    = intf->transit_channel;
+
+		   /* FIXME backup "My address" */
+		   data_len = req->msg.data_len + 8;
+		   data = malloc(data_len);
+		   if (data == NULL) {
+		      lprintf(LOG_ERR, "ipmitool: malloc failure");
+		      return NULL;
+		   }
+
+		   memset(data, 0, data_len);
+
+		   data[index++] = (0x40|intf->target_channel);
+		   data[index++] = intf->target_addr;
+		   data[index++] = (  req->msg.netfn << 2 ) |  req->msg.lun ;
+		   data[index++] = ipmi_csum(data+1, 2);
+		   data[index++] = 0xFF;    /* normally 0x20 , overwritten by IPMC  */
+		   data[index++] = ( (0)  << 2) | 0 ;           /* FIXME */
+		   data[index++] = req->msg.cmd;
+		   memcpy( (data+index) , req->msg.data, req->msg.data_len);
+		   index += req->msg.data_len;
+		   data[index++] = ipmi_csum( (data+4),(req->msg.data_len + 3)  );
+          
+		   if (verbose > 4) {
+		      fprintf(stderr, "Encapsulated message:\n");
+		      fprintf(stderr, "  netfn     = 0x%x\n", IPMI_NETFN_APP  );
+		      fprintf(stderr, "  cmd       = 0x%x\n", 0x34 );
+		      if (data && data_len) {
+			 fprintf(stderr, "  data_len  = %d\n", data_len);
+			 fprintf(stderr, "  data      = %s\n",
+				 buf2str(data,data_len));
+		      }
+		   }
+		}
 		_req.addr = (unsigned char *) &ipmb_addr;
 		_req.addr_len = sizeof(ipmb_addr);
 	} else {
-		/* otherwise use system interface */
-		lprintf(LOG_DEBUG+2, "Sending request to "
-			"System Interface");
-		bmc_addr.lun = req->msg.lun;
-		_req.addr = (unsigned char *) &bmc_addr;
-		_req.addr_len = sizeof(bmc_addr);
+	   /* otherwise use system interface */
+	   lprintf(LOG_DEBUG+2, "Sending request to "
+		   "System Interface");
+	   bmc_addr.lun = req->msg.lun;
+	   _req.addr = (unsigned char *) &bmc_addr;
+	   _req.addr_len = sizeof(bmc_addr);
 	}
 
 	_req.msgid = curr_seq++;
-	_req.msg.netfn = req->msg.netfn;
-	_req.msg.cmd = req->msg.cmd;
-	_req.msg.data = req->msg.data;
-	_req.msg.data_len = req->msg.data_len;
 
+	/* In case of a bridge request */
+	if( data != NULL && data_len != 0 ) {
+	   _req.msg.data = data;
+	   _req.msg.data_len = data_len;
+	   _req.msg.netfn = IPMI_NETFN_APP;
+	   _req.msg.cmd   = 0x34;
+
+	} else {
+	   _req.msg.data = req->msg.data;
+	   _req.msg.data_len = req->msg.data_len;
+	   _req.msg.netfn = req->msg.netfn;
+	   _req.msg.cmd = req->msg.cmd;
+	}
+   
 	if (ioctl(intf->fd, IPMICTL_SEND_COMMAND, &_req) < 0) {
-		lperror(LOG_ERR, "Unable to send command");
-		return NULL;
+	   lperror(LOG_ERR, "Unable to send command");
+	   if (data != NULL)
+	      free(data);
+	   return NULL;
 	}
 
 	/*
 	 * wait for and retrieve response
 	 */
 
-	if (intf->noanswer)
-		return NULL;
+	if (intf->noanswer) {
+	   if (data != NULL)
+	      free(data);
+	   return NULL;
+	}
 
 	FD_ZERO(&rset);
 	FD_SET(intf->fd, &rset);
 
 	if (select(intf->fd+1, &rset, NULL, NULL, NULL) < 0) {
-		lperror(LOG_ERR, "I/O Error");
-		return NULL;
+	   lperror(LOG_ERR, "I/O Error");
+	   if (data != NULL)
+	      free(data);
+	   return NULL;
 	}
 	if (FD_ISSET(intf->fd, &rset) == 0) {
-		lprintf(LOG_ERR, "No data available");
-		return NULL;
+	   lprintf(LOG_ERR, "No data available");
+	   if (data != NULL)
+	      free(data);
+	   return NULL;
 	}
 
 	recv.addr = (unsigned char *) &addr;
@@ -290,23 +303,56 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	/* get data */
 	if (ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv) < 0) {
-		lperror(LOG_ERR, "Error receiving message");
-		if (errno != EMSGSIZE)
-			return NULL;
+	   lperror(LOG_ERR, "Error receiving message");
+	   if (errno != EMSGSIZE) {
+	      if (data != NULL)
+		 free(data);
+	      return NULL;
+	   }
 	}
 
 	if (verbose > 4) {
-		fprintf(stderr, "Got message:");
-		fprintf(stderr, "  type      = %d\n", recv.recv_type);
-		fprintf(stderr, "  channel   = 0x%x\n", addr.channel);
-		fprintf(stderr, "  msgid     = %ld\n", recv.msgid);
-		fprintf(stderr, "  netfn     = 0x%x\n", recv.msg.netfn);
-		fprintf(stderr, "  cmd       = 0x%x\n", recv.msg.cmd);
-		if (recv.msg.data && recv.msg.data_len) {
-			fprintf(stderr, "  data_len  = %d\n", recv.msg.data_len);
-			fprintf(stderr, "  data      = %s\n",
-				buf2str(recv.msg.data, recv.msg.data_len));
-		}
+	   fprintf(stderr, "Got message:");
+	   fprintf(stderr, "  type      = %d\n", recv.recv_type);
+	   fprintf(stderr, "  channel   = 0x%x\n", addr.channel);
+	   fprintf(stderr, "  msgid     = %ld\n", recv.msgid);
+	   fprintf(stderr, "  netfn     = 0x%x\n", recv.msg.netfn);
+	   fprintf(stderr, "  cmd       = 0x%x\n", recv.msg.cmd);
+	   if (recv.msg.data && recv.msg.data_len) {
+	      fprintf(stderr, "  data_len  = %d\n", recv.msg.data_len);
+	      fprintf(stderr, "  data      = %s\n",
+		      buf2str(recv.msg.data, recv.msg.data_len));
+	   }
+	}
+
+	if(intf->transit_addr != 0 && intf->transit_addr != intf->my_addr) {
+	   uint8_t index = 0;
+     
+	   /* ipmb_addr.transit_slave_addr = intf->transit_addr; */
+	   lprintf(LOG_DEBUG, "Decapsulating data received from transit "
+		   "IPMB target @ 0x%x", intf->transit_addr);
+
+	   /* comp code */
+	   /* Check data */
+
+	   if( recv.msg.data[0] == 0 ) {
+	      recv.msg.netfn = recv.msg.data[2] >> 2;
+	      recv.msg.cmd   = recv.msg.data[6];
+
+	      recv.msg.data = memmove(recv.msg.data ,recv.msg.data+7 , recv.msg.data_len - 7);
+	      recv.msg.data_len -=8;
+       
+	      if (verbose > 4) {   
+		 fprintf(stderr, "Decapsulated  message:\n");
+		 fprintf(stderr, "  netfn     = 0x%x\n",   recv.msg.netfn );
+		 fprintf(stderr, "  cmd       = 0x%x\n",  recv.msg.cmd);
+		 if (recv.msg.data && recv.msg.data_len) {
+		    fprintf(stderr, "  data_len  = %d\n",  recv.msg.data_len);
+		    fprintf(stderr, "  data      = %s\n",
+			    buf2str(recv.msg.data,recv.msg.data_len));
+		 }
+	      }
+	   }
 	}
 
 	/* save completion code */
@@ -315,9 +361,12 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	/* save response data for caller */
 	if (rsp.ccode == 0 && rsp.data_len > 0) {
-		memmove(rsp.data, rsp.data + 1, rsp.data_len);
-		rsp.data[recv.msg.data_len] = 0;
+	   memmove(rsp.data, rsp.data + 1, rsp.data_len);
+	   rsp.data[recv.msg.data_len] = 0;
 	}
+
+	if (data != NULL)
+	   free(data);
 
 	return &rsp;
 }

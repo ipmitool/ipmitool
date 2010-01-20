@@ -131,6 +131,109 @@ no problems.  The IPMIv1.5 interface will attempt to use OpenSSL for MD5
 hash function at compile time but if that is not found it will use an
 internal library.
 
+IPMB Dual Bridging in  IPMITOOL
+-------------------------------
+
+IPMI offers a standard messaging interface.
+
+The following concepts are related to this messaging interface:
+
+Channel type     : Communication channel type (SMS/KCS, IPMB, LAN) 
+Channel number   : Channel descritor
+Requester        : Address of the requester
+Responder        : Address of the responder
+NetFN            : The logical function  for the request/response.
+Command          : The command number 
+Sequence         : An ID identifiying the request/response pair
+Message tracking : The ability to match request/response pair.
+
+When a communication is issued through any of the channels, an application 
+formats a request and expect a response. 
+
+Direct Command
+--------------
+The simplest form of communication is a "direct command" using SMS/KCS
+
+Example:
+ ipmitool raw 6 4
+  55 00
+
+This send raw command 4 (selftest) from netfn 6(application) to KCS, the driver 
+takes care of 'message tracking' and provides the answer.
+
+Hopefuly, the application also includes a "human readable" instance of the API:
+ ipmitool mc selftest
+ Selftest: passed
+
+Bridged Command
+---------------
+One slightly more complicated communication mode is the so-called 
+"bridged command" using IPMB. 
+
+Example:
+ ipmitool -m 0x94 -t 0x9a raw 6 4
+ 55 00
+ 
+ or
+ 
+ ipmitool -m 0x94 -t 0x9a mc selftest
+ Selftest: passed
+ 
+
+This still sends the same command  4 (selftest) from netfn 6(application) to 
+the target. However, to do so, the command is encapsulated (by the driver) and
+sent using the command 0x34 (send message) from netfn 6(application) to KCS. 
+Then KCS is polled by the driver until a message has been received, then the
+driver uses command 0x33 (get message). The driver also tracks the message 
+and makes sure the response matches the request. Then it decapsultates the
+message and gives the response back to the application.
+
+Dual Bridged Command
+--------------------
+Things get a little more ugly when the application needs to reach a management
+controller sitting on an interface (or channel) not directly connected to the 
+BMC/IPMC. In the case the application must encapsulate its message itself and 
+request the IPMC to deal with message tracking itself.
+
+Its been working well with IPMITOOL on the LAN interface with:
+ ipmitool -H <ip> -U <user> -P <password> -B 0 -T 0x8a  -m 0x20 -t 0x7a -b 7  
+    mc selftest
+
+However, trying to dual bridge commands locally with :
+ ipmitool -B 0 -T 0x9a -m 0x94 -t 0x7a -b 7 mc selftest didn't work 
+ (it returned the same data as  ipmitool -m 0x20 -t 0x7a -b 7 mc selftest )
+ 
+The reason was that the "openipmi" interface pluging didn't 
+encapsulate/decapsulate the message and didn't even detect the intent
+to double bridge the request.
+
+ ./src/ipmitool -B 0 -T 0x8a -m 0x94 -t 0x7a -b 7 mc selftest
+ 
+-B    0  : transit channel for first bridge level (channel 0: IPMB-0) 
+-T 0x8a  : transit destination address (remote IPMC address)
+-m 0x94  : source address (local IPMC address on IPMB-0)
+-t 0x7a  : remote target (AMC IPMB-L address)
+-b    7  : remote channel (channel 7: IPMB-L)
+
+The transit source address (remote IPMC address on remote channel) is 
+automatically assigned by the remote IPMC.
+
+Payload Size Limit
+------------------
+Vecause some commands return a lot of data (fru read/get sdr) and because 2 
+levels of encapsulation are used, some command will fail.
+
+For instance this works.
+
+ipmitool -H <ip> -U <user> -P <password>  -B 0 -T 0x8a  -m 0x94 -t 0x7a -b 7 
+    mc selftest
+
+but this does not:
+    
+ipmitool -H <ip> -U <user> -P <password>  -B 0 -T 0x8a  -m 0x94 -t 0x7a -b 7 
+    fru print.
+
+
 
 Usage
 =====
