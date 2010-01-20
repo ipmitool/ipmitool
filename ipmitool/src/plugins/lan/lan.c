@@ -757,7 +757,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			tmp = len - cs;
 			msg[len++] = ipmi_csum(msg+cs, tmp);
 			cs3 = len;
-			msg[len++] = IPMI_BMC_SLAVE_ADDR;
+			msg[len++] = intf->my_addr;
 			msg[len++] = curr_seq << 2;
 			msg[len++] = 0x34;			/* Send Message rqst */
 			msg[len++] = (0x40|intf->target_channel); /* Track request */
@@ -774,14 +774,15 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	if (!entry->bridging_level)
 		msg[len++] = IPMI_REMOTE_SWID;
-	else  /* Bridged message */
+   /* Bridged message */ 
+	else if (entry->bridging_level) 
 		msg[len++] = intf->my_addr;
-
+   
 	entry->rq_seq = curr_seq++;
 	msg[len++] = entry->rq_seq << 2;
 	msg[len++] = req->msg.cmd;
 
-	lprintf(LOG_DEBUG+1, ">> IPMI Request Session Header");
+	lprintf(LOG_DEBUG+1, ">> IPMI Request Session Header (level %d)", entry->bridging_level);
 	lprintf(LOG_DEBUG+1, ">>   Authtype   : %s",
 	       val2str(s->authtype, ipmi_authtype_session_vals));
 	lprintf(LOG_DEBUG+1, ">>   Sequence   : 0x%08lx", (long)s->in_seq);
