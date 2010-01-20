@@ -154,7 +154,7 @@ extern int verbose;
  */
 #define HPMFWUPG_VERSION_MAJOR    1
 #define HPMFWUPG_VERSION_MINOR    0
-#define HPMFWUPG_VERSION_SUBMINOR 6
+#define HPMFWUPG_VERSION_SUBMINOR 8
 
 /*
  *  HPM.1 FIRMWARE UPGRADE COMMANDS (part of PICMG)
@@ -1982,7 +1982,9 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* p
 							  pVersionInfo->skipUpgrade = TRUE;
 						  }
 					  }
-                 lprintf(LOG_NOTICE,"Component %d: %s", componentId , (pVersionInfo->skipUpgrade?"skipped":"to update"));
+		if ( verbose ) {
+			lprintf(LOG_NOTICE,"Component %d: %s", componentId , (pVersionInfo->skipUpgrade?"skipped":"to update"));
+		}
 				  }	
               if( pVersionInfo->skipUpgrade == FALSE )
               {
@@ -2329,10 +2331,14 @@ static int HpmFwupgActionUploadFirmware
                if ( strstr(intf->name,"lan") != NULL )
                {
                   bufLength -= (unsigned char)8;
+		  lprintf(LOG_INFO,"Trying reduced buffer length: %d",
+			  bufLength);
                }
                else
                {
                   bufLength -= (unsigned char)1;
+		  lprintf(LOG_INFO,"Trying reduced buffer length: %d",
+			  bufLength);
                }
                rc = HPMFWUPG_SUCCESS;
             }
@@ -3501,7 +3507,20 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
         }
         #endif
         retry = 0;
-        isValidSize = TRUE;
+	
+	if
+	(
+	 req.msg.netfn == IPMI_NETFN_PICMG
+	 &&
+	 req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
+	 &&
+	 (!isValidSize) 
+	)
+	{
+	   lprintf(LOG_INFO,"Buffer length is now considered valid" );
+
+	   isValidSize = TRUE;
+	}
      }
    }while( retry );
    return rsp;
