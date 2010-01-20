@@ -113,7 +113,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5301, "AT8400" },
    { IPMI_OEM_KONTRON,5303, "AT8901" },
 
-   { 0xffff        , 0xffff , NULL },
+   { 0xffffff        , 0xffff , NULL },
  };
 
 const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
@@ -143,7 +143,7 @@ const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
    { IPMI_OEM_PICMG   , 0xF1 , "PICMG IPMB0 Link State" },
    { IPMI_OEM_PICMG   , 0xF2 , "PICMG Module Hotswap" },
 
-   { 0xffff,            0x00,  NULL }
+   { 0xffffff,            0x00,  NULL }
 };
 
 const struct valstr ipmi_netfn_vals[] = {
@@ -432,4 +432,129 @@ const struct valstr picmg_frucontrol_vals[] = {
 	{ 3, "Issue Diagnostic Interrupt" },
 	{ 4, "Quiesce" },
 	{ 5, NULL },
+};
+
+const struct valstr picmg_clk_family_vals[] = {
+	{ 0x00, "Unspecified" },
+	{ 0x01, "SONET/SDH/PDH" },
+	{ 0x02, "Reserved for PCI Express" },
+	{ 0x03, "Reserved" }, /* from 03h to C8h */
+	{ 0xC9, "Vendor defined clock family" }, /* from C9h to FFh */
+	{ 0x00, NULL },
+};
+
+const struct oemvalstr picmg_clk_accuracy_vals[] = {
+	{ 0x01, 10, "PRS" },
+	{ 0x01, 20, "STU" },
+	{ 0x01, 30, "ST2" },
+	{ 0x01, 40, "TNC" },
+	{ 0x01, 50, "ST3E" },
+	{ 0x01, 60, "ST3" },
+	{ 0x01, 70, "SMC" },
+	{ 0x01, 80, "ST4" },
+	{ 0x01, 90, "DUS" },
+   { 0x02, 0xE0, "PCI Express Generation 2" },
+   { 0x02, 0xF0, "PCI Express Generation 1" },
+   { 0xffffff, 0x00,  NULL }
+};
+
+const struct oemvalstr picmg_clk_resource_vals[] = {
+	{ 0x0, 0, "On-Carrier Device 0" },
+	{ 0x0, 1, "On-Carrier Device 1" },
+	{ 0x1, 1, "AMC Site 1 - A1" },
+	{ 0x1, 2, "AMC Site 1 - A2" },
+	{ 0x1, 3, "AMC Site 1 - A3" },
+	{ 0x1, 4, "AMC Site 1 - A4" },
+	{ 0x1, 5, "AMC Site 1 - B1" },
+	{ 0x1, 6, "AMC Site 1 - B2" },
+	{ 0x1, 7, "AMC Site 1 - B3" },
+	{ 0x1, 8, "AMC Site 1 - B4" },
+   { 0x2, 0, "ATCA Backplane" },
+   { 0xffffff, 0x00,  NULL }
+};
+
+const struct oemvalstr picmg_clk_id_vals[] = {
+	{ 0x0, 0, "Clock 0" },
+	{ 0x0, 1, "Clock 1" },
+	{ 0x0, 2, "Clock 2" },
+	{ 0x0, 3, "Clock 3" },
+	{ 0x0, 4, "Clock 4" },
+	{ 0x0, 5, "Clock 5" },
+	{ 0x0, 6, "Clock 6" },
+	{ 0x0, 7, "Clock 7" },
+	{ 0x0, 8, "Clock 8" },
+	{ 0x0, 9, "Clock 9" },
+	{ 0x0, 10, "Clock 10" },
+	{ 0x0, 11, "Clock 11" },
+	{ 0x0, 12, "Clock 12" },
+	{ 0x0, 13, "Clock 13" },
+	{ 0x0, 14, "Clock 14" },
+	{ 0x0, 15, "Clock 15" },
+	{ 0x1, 1, "TCLKA" },
+	{ 0x1, 2, "TCLKB" },
+	{ 0x1, 3, "TCLKC" },
+	{ 0x1, 4, "TCLKD" },
+	{ 0x1, 5, "FLCKA" },
+   { 0x2, 1, "CLK1A" },
+   { 0x2, 2, "CLK1A" },
+   { 0x2, 3, "CLK1A" },
+   { 0x2, 4, "CLK1A" },
+   { 0x2, 5, "CLK1A" },
+   { 0x2, 6, "CLK1A" },
+   { 0x2, 7, "CLK1A" },
+   { 0x2, 8, "CLK1A" },
+   { 0x2, 9, "CLK1A" },
+   { 0xffffff, 0x00,  NULL }
+};
+
+const struct valstr picmg_busres_id_vals[] = {
+   { 0x0, "Metallic Test Bus pair #1" },
+   { 0x1, "Metallic Test Bus pair #2" },
+   { 0x2, "Synch clock group 1 (CLK1)" },
+   { 0x3, "Synch clock group 2 (CLK2)" },
+   { 0x4, "Synch clock group 3 (CLK3)" },
+	{ 0x5, NULL }
+};
+const struct valstr picmg_busres_board_cmd_vals[] = {
+  { 0x0, "Query" },
+  { 0x1, "Release" },
+  { 0x2, "Force" },
+  { 0x3, "Bus Free" },
+  { 0x4, NULL }
+};
+
+const struct valstr picmg_busres_shmc_cmd_vals[] = {
+  { 0x0, "Request" },
+  { 0x1, "Relinquish" },
+  { 0x2, "Notify" },
+  { 0x3, NULL }
+};
+
+const struct oemvalstr picmg_busres_board_status_vals[] = {
+ { 0x0, 0x0, "In control" },
+ { 0x0, 0x1, "No control" },
+ { 0x1, 0x0, "Ack" },
+ { 0x1, 0x1, "Refused" },
+ { 0x1, 0x2, "No control" },
+ { 0x2, 0x0, "Ack" },
+ { 0x2, 0x1, "No control" },
+ { 0x3, 0x0, "Accept" },
+ { 0x3, 0x1, "Not Needed" },
+ { 0xffffff, 0x00,  NULL }
+};
+
+const struct oemvalstr picmg_busres_shmc_status_vals[] = {
+ { 0x0, 0x0, "Grant" },
+ { 0x0, 0x1, "Busy" },
+ { 0x0, 0x2, "Defer" },
+ { 0x0, 0x3, "Deny" },
+
+ { 0x1, 0x0, "Ack" },
+ { 0x1, 0x1, "Error" },
+
+ { 0x2, 0x0, "Ack" },
+ { 0x2, 0x1, "Error" },
+ { 0x2, 0x2, "Deny" },
+
+ { 0xffffff, 0x00,  NULL }
 };

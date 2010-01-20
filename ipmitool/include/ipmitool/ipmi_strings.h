@@ -54,6 +54,16 @@ extern const struct valstr ipmi_encryption_algorithms[];
 extern const struct valstr ipmi_oem_info[];
 
 extern const struct valstr picmg_frucontrol_vals[];
+extern const struct valstr picmg_clk_family_vals[];
+extern const struct oemvalstr picmg_clk_accuracy_vals[];
+extern const struct oemvalstr picmg_clk_resource_vals[];
+extern const struct oemvalstr picmg_clk_id_vals[];
+
+extern const struct valstr picmg_busres_id_vals[];
+extern const struct valstr picmg_busres_board_cmd_vals[];
+extern const struct valstr picmg_busres_shmc_cmd_vals[];
+extern const struct oemvalstr picmg_busres_board_status_vals[];
+extern const struct oemvalstr picmg_busres_shmc_status_vals[];
 
 /* these are similar, expect that the lookup takes the IANA number
    as first parameter */
