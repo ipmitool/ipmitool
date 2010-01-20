@@ -130,7 +130,7 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 	static char un_str[32];
 	int i;
 
-	for (i = 0; vs[i].oem != 0x00 &&  vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str != NULL; i++) {
       /* FIXME: for now on we assume PICMG capability on all IANAs */
       if
       ( 

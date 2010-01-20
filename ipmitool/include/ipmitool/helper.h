@@ -57,7 +57,7 @@ struct valstr {
 	const char * str;
 };
 struct oemvalstr {
-	uint16_t oem;
+	uint32_t oem;
    uint16_t val;
 	const char * str;
 };
