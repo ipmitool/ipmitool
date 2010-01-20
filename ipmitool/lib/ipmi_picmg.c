@@ -54,8 +54,21 @@
 #define PICMG_EKEY_AMC_MAX_CHANNEL  16
 #define PICMG_EKEY_AMC_MAX_DEVICE   15 /* 4 bits */
 
+
+typedef enum picmg_bused_resource_mode {
+	PICMG_BUSED_RESOURCE_SUMMARY,
+} t_picmg_bused_resource_mode ;
+
+
+typedef enum picmg_card_type {
+	PICMG_CARD_TYPE_CPCI,
+	PICMG_CARD_TYPE_ATCA,
+	PICMG_CARD_TYPE_AMC,
+	PICMG_CARD_TYPE_RESERVED
+} t_picmg_card_type ;
+
 /* This is the version of the PICMG Extenstion */
-static unsigned char PicmgExtMajorVersion;
+static t_picmg_card_type PicmgCardType = PICMG_CARD_TYPE_RESERVED;
 
 void
 ipmi_picmg_help (void)
@@ -81,7 +94,11 @@ ipmi_picmg_help (void)
 	printf(" power get            - get power level info\n");
 	printf(" power set            - set power level\n");
 	printf(" clk get              - get clk state\n");
+	printf(" clk getdenied        - get all(up to 16) denied[disabled] clock descriptions\n");
+	printf(" clk getgranted       - get all(up to 16) granted[enabled] clock descriptions\n");
+	printf(" clk getall           - get all(up to 16) clock descriptions\n");
 	printf(" clk set              - set clk state\n");
+	printf(" busres summary       - display brief bused resource status info \n");
 }
 
 
@@ -182,6 +199,7 @@ ipmi_picmg_getaddr(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_properties(struct ipmi_intf * intf, int show )
 {
+	unsigned char PicmgExtMajorVersion;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char msg_data;
@@ -212,6 +230,16 @@ ipmi_picmg_properties(struct ipmi_intf * intf, int show )
       to know how to format some commands */
 	PicmgExtMajorVersion = rsp->data[1]&0x0f;
 
+	if( PicmgExtMajorVersion == PICMG_CPCI_MAJOR_VERSION  ) { 
+		PicmgCardType = PICMG_CARD_TYPE_CPCI;
+   }
+	else if(  PicmgExtMajorVersion == PICMG_ATCA_MAJOR_VERSION) {
+		PicmgCardType = PICMG_CARD_TYPE_ATCA;
+   }
+	else if(  PicmgExtMajorVersion == PICMG_AMC_MAJOR_VERSION) {
+		PicmgCardType = PICMG_CARD_TYPE_AMC;
+   }
+    
 	return 0;
 }
 
@@ -527,7 +555,7 @@ ipmi_picmg_amc_portstate_get(struct ipmi_intf * intf,int device,int channel,
 	req.msg.data	  = msg_data;
 
 	/* FIXME : add check for AMC or carrier device */
-	if(device == -1 || PicmgExtMajorVersion != 2){
+	if(device == -1 || PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 		req.msg.data_len = 2;	/* for amc only channel */
 	}else{
 		req.msg.data_len = 3;	/* for carrier channel and device */
@@ -596,7 +624,7 @@ ipmi_picmg_amc_portstate_get(struct ipmi_intf * intf,int device,int channel,
 					)
 				)
 				{
-					if(device == -1 || PicmgExtMajorVersion != 2){
+					if(device == -1 || PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						printf("   Link device :         AMC\n");
 					}else{
                   printf("   Link device :         0x%02x\n", device );
@@ -980,6 +1008,60 @@ ipmi_picmg_set_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
+ipmi_picmg_bused_resource(struct ipmi_intf * intf, t_picmg_bused_resource_mode mode)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	unsigned char msg_data[6];
+	memset(&req, 0, sizeof(req));
+
+   int status = 0;
+   switch ( mode ) {
+      case PICMG_BUSED_RESOURCE_SUMMARY:
+      {
+         t_picmg_busres_resource_id resource;
+         t_picmg_busres_board_cmd_types cmd =PICMG_BUSRES_BOARD_CMD_QUERY;
+
+         req.msg.netfn	  = IPMI_NETFN_PICMG;
+         req.msg.cmd	     = PICMG_BUSED_RESOURCE_CMD;
+         req.msg.data	  = msg_data;
+         req.msg.data_len = 3;
+
+         /* IF BOARD
+            query for all resources
+         */
+         for( resource=PICMG_BUSRES_METAL_TEST_BUS_1;resource<=PICMG_BUSRES_SYNC_CLOCK_GROUP_3;resource+=(t_picmg_busres_resource_id)1 ) {
+            msg_data[0] = 0x00;					/* PICMG identifier */
+            msg_data[1] = (unsigned char) cmd;
+            msg_data[2] = (unsigned char) resource;
+            rsp = intf->sendrecv(intf, &req);
+
+            if (!rsp) {
+               printf("bused resource control: no response\n");
+               return -1;
+            }
+
+            if (rsp->ccode) {
+               printf("bused resource control: returned CC code 0x%02x\n", rsp->ccode);
+               return -1;
+            } else {
+               printf("Resource 0x%02x '%-26s' : 0x%02x [%s] \n" , 
+                       resource, val2str(resource,picmg_busres_id_vals),
+                       rsp->data[1], oemval2str(cmd,rsp->data[1],
+                      picmg_busres_board_status_vals));
+            }
+         }
+      }
+      break;
+      default :
+      break;
+   }
+
+   return status;
+}
+
+int
 ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_rs * rsp;
@@ -1015,12 +1097,14 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
       printf("frucontrol: ok\n");
 	}
 
+
+
 	return 0;
 }
 
 
 int
-ipmi_picmg_clk_get(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_clk_get(struct ipmi_intf * intf, int clk_id,int clk_res,int mode)
 {
 	int i;
 	struct ipmi_rs * rsp;
@@ -1036,14 +1120,15 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.netfn = IPMI_NETFN_PICMG;
 	req.msg.cmd   = PICMG_AMC_GET_CLK_STATE_CMD;
 	req.msg.data  = msg_data;
-	req.msg.data_len = 2;
 
 	msg_data[0] = 0x00;									/* PICMG identifier	 */
-	msg_data[1] = atoi(argv[0]);						/* clk id				 */
+	msg_data[1] = clk_id;
 
-	if(argc>2){
-		msg_data[2] = atoi(argv[1]);					/* resource id			 */
-		req.msg.data_len = 3;
+	if(clk_res == -1 || PicmgCardType != PICMG_CARD_TYPE_ATCA ){
+		req.msg.data_len = 2;	/* for amc only channel */
+	}else{
+		req.msg.data_len = 3;	/* for carrier channel and device */
+      msg_data[2] = clk_res;
 	}
 
 	rsp = intf->sendrecv(intf, &req);
@@ -1053,31 +1138,68 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	if (rsp->ccode) {
+	if (rsp->ccode && (mode == PICMG_EKEY_MODE_QUERY) ) {
 		printf("returned CC code 0x%02x\n", rsp->ccode);
 		return -1;
 	}
 
-	enabled	 = (rsp->data[1]&0x8)!=0;
-	direction = (rsp->data[1]&0x4)!=0;
+	if (rsp->ccode == 0 ) {
+		enabled	 = (rsp->data[1]&0x8)!=0;
+		direction = (rsp->data[1]&0x4)!=0;
 
-	printf("CLK setting: 0x%02x\n", rsp->data[1]);
-	printf(" - state:     %s\n", (enabled)?"enabled":"disabled");
-	printf(" - direction: %s\n", (direction)?"Source":"Receiver");
-	printf(" - PLL ctrl:  0x%x\n", rsp->data[1]&0x3);
+		if
+		( 
+			mode == PICMG_EKEY_MODE_QUERY
+ 			||
+ 			mode == PICMG_EKEY_MODE_PRINT_ALL
+ 			||
+ 			(
+ 				mode == PICMG_EKEY_MODE_PRINT_DISABLED
+ 				&&
+ 				enabled == 0
+ 			)
+ 			||
+ 			(
+ 				mode == PICMG_EKEY_MODE_PRINT_ENABLED
+ 				&&
+ 				enabled == 1
+         )	
+		) {
+			if( PicmgCardType != PICMG_CARD_TYPE_AMC ) {
+				printf("CLK resource id   : %3d [ %s ]\n", clk_res ,
+					oemval2str( ((clk_res>>6)&0x03), (clk_res&0x0F),
+														picmg_clk_resource_vals));				
+			} else {
+				printf("CLK resource id   : N/A [ AMC Module ]\n");
+				clk_res = 0x40; /* Set */
+			} 
+         printf("CLK id            : %3d [ %s ]\n", clk_id,
+					oemval2str( ((clk_res>>6)&0x03), clk_id ,
+														picmg_clk_id_vals));				
 
-   if(enabled){
-      unsigned long freq = 0;
-      freq = (  rsp->data[5] <<  0
-              | rsp->data[6] <<  8
-              | rsp->data[7] << 16
-              | rsp->data[8] << 24 );
-      printf("  - Index:  %d\n", rsp->data[2]);
-      printf("  - Family: %d\n", rsp->data[3]);
-      printf("  - AccLVL: %d\n", rsp->data[4]);
-      printf("  - Freq:   %d\n", freq);
-   }
 
+			printf("CLK setting       : 0x%02x\n", rsp->data[1]);
+			printf(" - state:     %s\n", (enabled)?"enabled":"disabled");
+			printf(" - direction: %s\n", (direction)?"Source":"Receiver");
+			printf(" - PLL ctrl:  0x%x\n", rsp->data[1]&0x3);
+
+		   if(enabled){
+		      unsigned long freq = 0;
+		      freq = (  rsp->data[5] <<  0
+		              | rsp->data[6] <<  8
+		              | rsp->data[7] << 16
+		              | rsp->data[8] << 24 );
+		      printf("  - Index:  %3d\n", rsp->data[2]);
+		      printf("  - Family: %3d [ %s ] \n", rsp->data[3], 
+						val2str( rsp->data[3], picmg_clk_family_vals));
+		      printf("  - AccLVL: %3d [ %s ] \n", rsp->data[4], 
+						oemval2str( rsp->data[3], rsp->data[4],
+											picmg_clk_accuracy_vals));
+		
+		      printf("  - Freq:   %d\n", freq);
+		   }
+		}
+	}
 	return 0;
 }
 
@@ -1097,7 +1219,6 @@ ipmi_picmg_clk_set(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.netfn = IPMI_NETFN_PICMG;
 	req.msg.cmd	  = PICMG_AMC_SET_CLK_STATE_CMD;
 	req.msg.data  = msg_data;
-	req.msg.data_len = 11;
 
 	msg_data[0] = 0x00;									/* PICMG identifier	 */
 	msg_data[1] = strtoul(argv[0], NULL,0);				/* clk id				 */
@@ -1112,12 +1233,25 @@ ipmi_picmg_clk_set(struct ipmi_intf * intf, int argc, char ** argv)
 	msg_data[8] = (freq >>16)& 0xFF;		/* freq					 */
 	msg_data[9] = (freq >>24)& 0xFF;		/* freq					 */
 
-	msg_data[10] = strtoul(argv[6	], NULL,0);	/* resource id			 */
+	req.msg.data_len = 10;
+   if( PicmgCardType == PICMG_CARD_TYPE_ATCA  )
+   {
+      if( argc > 7)
+      {
+         req.msg.data_len = 11;
+         msg_data[10] = strtoul(argv[6], NULL,0);	/* resource id			 */
+      }
+      else
+      {
+         printf("missing resource id for atca board\n");
+         return -1;
+      }
+   }
 
 #if 1
 printf("## ID:      %d\n", msg_data[1]);
 printf("## index:   %d\n", msg_data[2]);
-printf("## setting: 0x02x\n", msg_data[3]);
+printf("## setting: 0x%02x\n", msg_data[3]);
 printf("## family:  %d\n", msg_data[4]);
 printf("## acc:     %d\n", msg_data[5]);
 printf("## freq:    %d\n", freq );
@@ -1162,7 +1296,15 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "addrinfo", 8)) {
 		rc = ipmi_picmg_getaddr(intf, argc-1, &argv[1]);
 	}
-
+	else if (!strncmp(argv[0], "busres", 6)) {
+		if (argc > 1) {
+			if (!strncmp(argv[1], "summary", 7)) {
+				ipmi_picmg_bused_resource(intf, PICMG_BUSED_RESOURCE_SUMMARY );
+			}
+		} else {
+				printf("usage: busres summary\n");
+      }
+	}
 	/* fru control command */
 	else if (!strncmp(argv[0], "frucontrol", 10)) {
 		if (argc > 2) {
@@ -1180,6 +1322,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 
 			return -1;
 		}
+
 	}
 
 	/* fru activation command */
@@ -1279,7 +1422,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					channel   = atoi(argv[3]);
 					lprintf(LOG_DEBUG,"PICMG: requesting interface %d",iface);
 					lprintf(LOG_DEBUG,"PICMG: requesting channel %d",channel);
-	
+
 					rc = ipmi_picmg_portstate_get(intf,iface,channel,
 					            PICMG_EKEY_MODE_QUERY );
 				}
@@ -1305,7 +1448,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						lprintf(LOG_DEBUG,"PICMG: group %d",group);
 						lprintf(LOG_DEBUG,"PICMG: enable %d",enable);
 
-						rc = ipmi_picmg_portstate_set(intf, interface, 
+						rc = ipmi_picmg_portstate_set(intf, interface,
 						    channel, port, type, typeext  ,group ,enable);
 					}
 					else {
@@ -1333,7 +1476,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 
 				if(!strncmp(argv[1], "getall", 6)){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
-					if( PicmgExtMajorVersion != 2){
+					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
 					}
 					for(device=0;device<=maxDevice;device++){
@@ -1345,7 +1488,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				else if(!strncmp(argv[1], "getgranted", 10)){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
-					if( PicmgExtMajorVersion != 2){
+					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
 					}
 					for(device=0;device<=maxDevice;device++){
@@ -1357,7 +1500,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				else if(!strncmp(argv[1], "getdenied", 9)){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
-					if( PicmgExtMajorVersion != 2){
+					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
 					}
 					for(device=0;device<=maxDevice;device++){
@@ -1528,15 +1671,53 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	else if (!strncmp(argv[0], "clk", 3)) {
 		if (argc > 1) {
 			if (!strncmp(argv[1], "get", 3)) {
-				if (argc > 2) {
-					unsigned char clk_id;
-					unsigned char clk_res;
+				int clk_id;
+				int clk_res = -1;            
+				int max_res = 15;
 
-					rc = ipmi_picmg_clk_get(intf, argc-1, &(argv[2]));
+				if( PicmgCardType == PICMG_CARD_TYPE_AMC ) {
+					max_res = 0;
+				}
+
+				if(!strncmp(argv[1], "getall", 6)) {
+					if( verbose ) { printf("Getting all clock state\n") ;}	
+					for(clk_res=0;clk_res<=max_res;clk_res++) {
+						for(clk_id=0;clk_id<=15;clk_id++) {
+								rc = ipmi_picmg_clk_get(intf,clk_id,clk_res,
+								        PICMG_EKEY_MODE_PRINT_ALL);
+						}
+					}
+				}
+				else if(!strncmp(argv[1], "getdenied", 6)) {
+					if( verbose ) { printf("Getting disabled clocks\n") ;}	
+					for(clk_res=0;clk_res<=max_res;clk_res++) {
+						for(clk_id=0;clk_id<=15;clk_id++) {
+								rc = ipmi_picmg_clk_get(intf,clk_id,clk_res,
+								        PICMG_EKEY_MODE_PRINT_DISABLED);
+						}
+					}
+				}
+				else if(!strncmp(argv[1], "getgranted", 6)) {
+					if( verbose ) { printf("Getting enabled clocks\n") ;}	
+					for(clk_res=0;clk_res<=max_res;clk_res++) {
+						for(clk_id=0;clk_id<=15;clk_id++) {
+								rc = ipmi_picmg_clk_get(intf,clk_id,clk_res,
+								        PICMG_EKEY_MODE_PRINT_ENABLED);
+						}
+					}
+				}
+				else if (argc > 2) {
+					clk_id = atoi(argv[2]);
+					if (argc > 3) {
+						clk_res = atoi(argv[3]);
+					}
+
+					rc = ipmi_picmg_clk_get(intf, clk_id, clk_res,
+							PICMG_EKEY_MODE_QUERY );
 				}
 				else {
-					printf("clk get <CLK-ID> [<DEV-ID>]\n");
-
+					printf("clk get ");
+					printf("<CLK-ID> [<DEV-ID>] |getall|getgranted|getdenied\n");
 					return -1;
 				}
 			}
@@ -1551,12 +1732,12 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 				}
 			}
 			else {
-				printf("<set>|<get>\n");
+				printf("<set>|<get>|<getall>|<getgranted>|<getdenied>\n");
 				return -1;
 			}
 		}
 		else {
-			printf("<set>|<get>\n");
+			printf("<set>|<get>|<getall>|<getgranted>|<getdenied>\n");
 			return -1;
 		}
 	}
