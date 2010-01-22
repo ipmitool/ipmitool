@@ -194,7 +194,7 @@ struct sdr_record_mask {
 			uint16_t assert_event;	/* assertion event mask */
 			uint16_t deassert_event;	/* de-assertion event mask */
 			uint16_t read;	/* discrete reading mask */
-		} discrete;
+		} ATTRIBUTE_PACKING discrete;
 		struct {
 #if WORDS_BIGENDIAN
 			uint16_t reserved:1;
@@ -288,7 +288,7 @@ struct sdr_record_mask {
 					uint16_t unr:1;
 					uint16_t reserved:2;
 #endif
-				} set;
+				} ATTRIBUTE_PACKING set;
 				struct {
 #if WORDS_BIGENDIAN			/* readable threshold mask */
 					/* padding upper 8 bits */
@@ -310,10 +310,10 @@ struct sdr_record_mask {
 					uint16_t reserved:2;
 					uint16_t settable:8;
 #endif
-				} read;
-			};
-		} threshold;
-	} type;
+				} ATTRIBUTE_PACKING read;
+			} ATTRIBUTE_PACKING;
+		} ATTRIBUTE_PACKING threshold;
+	} ATTRIBUTE_PACKING type;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -335,7 +335,7 @@ struct sdr_record_compact_sensor {
 		uint8_t channel:4;	/* channel number */
 #endif
 		uint8_t sensor_num;	/* unique sensor number */
-	} keys;
+	} ATTRIBUTE_PACKING keys;
 
 	struct entity_id entity;
 
@@ -360,7 +360,7 @@ struct sdr_record_compact_sensor {
 			uint8_t scanning:1;
 			uint8_t __reserved:1;
 #endif
-		} init;
+		} ATTRIBUTE_PACKING init;
 		struct {
 #if WORDS_BIGENDIAN
 			uint8_t ignore:1;
@@ -375,9 +375,9 @@ struct sdr_record_compact_sensor {
 			uint8_t rearm:1;
 			uint8_t ignore:1;
 #endif
-		} capabilities;
+		} ATTRIBUTE_PACKING capabilities;
 		uint8_t type;	/* sensor type */
-	} sensor;
+	} ATTRIBUTE_PACKING sensor;
 
 	uint8_t event_type;	/* event/reading type code */
 
@@ -398,8 +398,8 @@ struct sdr_record_compact_sensor {
 		struct {
 			uint8_t base;
 			uint8_t modifier;
-		} type;
-	} unit;
+		} ATTRIBUTE_PACKING type;
+	} ATTRIBUTE_PACKING unit;
 
 	struct {
 #if WORDS_BIGENDIAN
@@ -418,14 +418,14 @@ struct sdr_record_compact_sensor {
 		uint8_t mod_offset:7;
 		uint8_t entity_inst:1;
 #endif
-	} share;
+	} ATTRIBUTE_PACKING share;
 
 	struct {
 		struct {
 			uint8_t positive;
 			uint8_t negative;
-		} hysteresis;
-	} threshold;
+		} ATTRIBUTE_PACKING hysteresis;
+	} ATTRIBUTE_PACKING threshold;
 
 	uint8_t __reserved[3];
 	uint8_t oem;		/* reserved for OEM use */
@@ -452,7 +452,7 @@ struct sdr_record_eventonly_sensor {
 		uint8_t channel:4;	/* channel number */
 #endif
 		uint8_t sensor_num;	/* unique sensor number */
-	} keys;
+	} ATTRIBUTE_PACKING keys;
 
 	struct entity_id entity;
 
@@ -476,7 +476,7 @@ struct sdr_record_eventonly_sensor {
 		uint8_t mod_offset:7;
 		uint8_t entity_inst:1;
 #endif
-	} share;
+	} ATTRIBUTE_PACKING share;
 
 	uint8_t __reserved;
 	uint8_t oem;		/* reserved for OEM use */
@@ -504,7 +504,7 @@ struct sdr_record_full_sensor {
 		uint8_t channel:4;	/* channel number */
 #endif
 		uint8_t sensor_num;	/* unique sensor number */
-	} keys;
+	} ATTRIBUTE_PACKING keys;
 
 	struct entity_id entity;
 
@@ -529,7 +529,7 @@ struct sdr_record_full_sensor {
 			uint8_t scanning:1;
 			uint8_t __reserved:1;
 #endif
-		} init;
+		} ATTRIBUTE_PACKING init;
 		struct {
 #if WORDS_BIGENDIAN
 			uint8_t ignore:1;
@@ -544,9 +544,9 @@ struct sdr_record_full_sensor {
 			uint8_t rearm:1;
 			uint8_t ignore:1;
 #endif
-		} capabilities;
+		} ATTRIBUTE_PACKING capabilities;
 		uint8_t type;
-	} sensor;
+	} ATTRIBUTE_PACKING sensor;
 
 	uint8_t event_type;	/* event/reading type code */
 
@@ -567,8 +567,8 @@ struct sdr_record_full_sensor {
 		struct {
 			uint8_t base;
 			uint8_t modifier;
-		} type;
-	} unit;
+		} ATTRIBUTE_PACKING type;
+	} ATTRIBUTE_PACKING unit;
 
 #define SDR_SENSOR_L_LINEAR     0x00
 #define SDR_SENSOR_L_LN         0x01
@@ -600,7 +600,7 @@ struct sdr_record_full_sensor {
 		uint8_t normal_min:1;	/* normal min field specified */
 		uint8_t __reserved:5;
 #endif
-	} analog_flag;
+	} ATTRIBUTE_PACKING analog_flag;
 
 	uint8_t nominal_read;	/* nominal reading, raw value */
 	uint8_t normal_max;	/* normal maximum, raw value */
@@ -613,17 +613,17 @@ struct sdr_record_full_sensor {
 			uint8_t non_recover;
 			uint8_t critical;
 			uint8_t non_critical;
-		} upper;
+		} ATTRIBUTE_PACKING upper;
 		struct {
 			uint8_t non_recover;
 			uint8_t critical;
 			uint8_t non_critical;
-		} lower;
+		} ATTRIBUTE_PACKING lower;
 		struct {
 			uint8_t positive;
 			uint8_t negative;
-		} hysteresis;
-	} threshold;
+		} ATTRIBUTE_PACKING hysteresis;
+	} ATTRIBUTE_PACKING threshold;
 	uint8_t __reserved[2];
 	uint8_t oem;		/* reserved for OEM use */
 	uint8_t id_code;	/* sensor ID string type/length code */
@@ -811,6 +811,9 @@ struct ipmi_sdr_iterator {
 	int use_built_in;
 };
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
 struct sdr_record_list {
 	uint16_t id;
 	uint8_t version;
@@ -827,8 +830,12 @@ struct sdr_record_list {
 		struct sdr_record_mc_locator *mcloc;
 		struct sdr_record_entity_assoc *entassoc;
 		struct sdr_record_oem *oem;
-	} record;
-};
+	} ATTRIBUTE_PACKING  record;
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+
 
 /* unit description codes (IPMI v1.5 section 37.16) */
 #define UNIT_MAX	0x90
