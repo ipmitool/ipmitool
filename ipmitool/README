@@ -139,7 +139,7 @@ IPMI offers a standard messaging interface.
 The following concepts are related to this messaging interface:
 
 Channel type     : Communication channel type (SMS/KCS, IPMB, LAN) 
-Channel number   : Channel descritor
+Channel number   : Channel descriptor
 Requester        : Address of the requester
 Responder        : Address of the responder
 NetFN            : The logical function  for the request/response.
@@ -161,7 +161,7 @@ Example:
 This send raw command 4 (selftest) from netfn 6(application) to KCS, the driver 
 takes care of 'message tracking' and provides the answer.
 
-Hopefuly, the application also includes a "human readable" instance of the API:
+Hopefully, the application also includes a "human readable" instance of the API:
  ipmitool mc selftest
  Selftest: passed
 
@@ -220,7 +220,7 @@ automatically assigned by the remote IPMC.
 
 Payload Size Limit
 ------------------
-Vecause some commands return a lot of data (fru read/get sdr) and because 2 
+Because some commands return a lot of data (fru read/get sdr) and because 2 
 levels of encapsulation are used, some command will fail.
 
 For instance this works.
