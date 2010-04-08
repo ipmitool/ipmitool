@@ -440,7 +440,7 @@ get_kontron_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 		}
 	}
 
-	return "Unsupported event";
+	return NULL;
 }
 
 char *
