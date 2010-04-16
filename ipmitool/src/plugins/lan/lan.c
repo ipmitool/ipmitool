@@ -105,7 +105,7 @@ struct ipmi_intf ipmi_lan_intf = {
 };
 
 static struct ipmi_rq_entry *
-ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
+ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_seq)
 {
 	struct ipmi_rq_entry * e;
 
@@ -119,6 +119,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req)
 	memcpy(&e->req, req, sizeof(struct ipmi_rq));
 
 	e->intf = intf;
+	e->rq_seq = req_seq;
 
 	if (ipmi_req_entries == NULL)
 		ipmi_req_entries = e;
@@ -664,7 +665,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
  * +--------------------+
  */
 static struct ipmi_rq_entry *
-ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
+ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 {
 	struct rmcp_hdr rmcp = {
 		.ver		= RMCP_VERSION_1,
@@ -684,10 +685,13 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	if (our_address == 0)
 		our_address = IPMI_BMC_SLAVE_ADDR;
 
+	if (isRetry == 0)
+		curr_seq++;
+
 	if (curr_seq >= 64)
 		curr_seq = 0;
 
-	entry = ipmi_req_add_entry(intf, req);
+	entry = ipmi_req_add_entry(intf, req, curr_seq);
 	if (entry == NULL)
 		return NULL;
 
@@ -778,7 +782,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	else if (entry->bridging_level) 
 		msg[len++] = intf->my_addr;
    
-	entry->rq_seq = curr_seq++;
+	entry->rq_seq = curr_seq;
 	msg[len++] = entry->rq_seq << 2;
 	msg[len++] = req->msg.cmd;
 
@@ -852,6 +856,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_rq_entry * entry;
 	struct ipmi_rs * rsp = NULL;
 	int try = 0;
+	int isRetry = 0;
 
 	lprintf(LOG_DEBUG, "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
 		intf->opened, intf->open);
@@ -866,7 +871,9 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	for (;;) {
-		entry = ipmi_lan_build_cmd(intf, req);
+		isRetry = ( try > 0 ) ? 1 : 0;
+
+		entry = ipmi_lan_build_cmd(intf, req, isRetry);
 		if (entry == NULL) {
 			lprintf(LOG_ERR, "Aborting send command, unable to build");
 			return NULL;
@@ -889,6 +896,14 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		usleep(100);
 
 		rsp = ipmi_lan_poll_recv(intf);
+
+		/* Duplicate Request ccode most likely indicates a response to
+		   a previous retry. Ignore and keep polling. */
+		if((rsp != NULL) && (rsp->ccode == 0xcf)) {
+			rsp = NULL;
+			rsp = ipmi_lan_poll_recv(intf);
+		}
+		
 		if (rsp)
 			break;
 
