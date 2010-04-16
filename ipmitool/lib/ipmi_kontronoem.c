@@ -151,6 +151,42 @@ static void ipmi_kontron_help(void)
    printf("Kontron Commands:  setsn setmfgdate nextboot\n");
 }   
 
+
+int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size)
+{
+   struct ipmi_rs *rsp;
+   struct ipmi_rq req;
+   uint8_t msg_data[2];
+   int i;
+   
+   memset(msg_data, 0, sizeof(msg_data));
+   msg_data[0] = 0x0e;   // Currently running interface
+   msg_data[1] = size;
+   
+   memset(&req, 0, sizeof(req));
+   req.msg.netfn = 0x3E; /* OEM NetFn */
+   req.msg.cmd = 0x82;   /* Set Channel Buffer Length - OEM */
+   req.msg.data = msg_data;
+   req.msg.data_len = 2;
+   
+   req.msg.lun = 0x00;
+      
+   rsp = intf->sendrecv(intf, &req);
+   if (rsp == NULL) 
+   {
+      printf("Cannot send large buffer command\n");
+      return(-1);
+   }
+   if (rsp->ccode > 0) 
+   {
+      printf("Invalid length for the selected interface (%s)\n", 
+               val2str(rsp->ccode, completion_code_vals));
+      return(-1);
+   }
+   return 0;
+}
+
+
 /* ipmi_fru_set_serial_number -  Set the Serial Number in FRU
  *
  * @intf:		ipmi interface
