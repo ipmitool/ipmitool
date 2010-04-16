@@ -175,6 +175,7 @@ struct ipmi_intf {
 	uint8_t target_channel;
 	uint32_t transit_addr;
 	uint8_t transit_channel;
+	uint8_t channel_buf_size;
 
 	uint8_t devnum;
 
