@@ -595,7 +595,7 @@ struct HpmfwupgInitiateUpgradeActionCtx
  *  UPLOAD FIRMWARE BLOCK DEFINITIONS
  */
 
-#define HPMFWUPG_SEND_DATA_COUNT_MAX   32
+#define HPMFWUPG_SEND_DATA_COUNT_MAX   128
 #define HPMFWUPG_SEND_DATA_COUNT_KCS   30
 #define HPMFWUPG_SEND_DATA_COUNT_LAN   25
 #define HPMFWUPG_SEND_DATA_COUNT_IPMB  26
@@ -2242,43 +2242,50 @@ static int HpmFwupgActionUploadFirmware
 		skip = FALSE;
 	}
 	
- 
    if(!skip)
    {
       /* Initialize parameters */
       uploadCmd.req.blockNumber = 0;
 
-      /* Find max buffer length according the connection parameters */
-      if ( strstr(intf->name,"lan") != NULL )
+      /* Check if we receive size in parameters */
+      if(intf->channel_buf_size != 0)
       {
-         bufLength = HPMFWUPG_SEND_DATA_COUNT_LAN - 2;
-         if ( intf->transit_addr != intf->my_addr && intf->transit_addr != 0 )
-             bufLength -= 8;
+          bufLength = intf->channel_buf_size - 9; /* Plan for overhead */
       }
       else
       {
-         if
-         (
-            strstr(intf->name,"open") != NULL
-            &&
-            (
-               intf->target_addr ==  intf->my_addr
-            )
-         )
-         {
-            bufLength = HPMFWUPG_SEND_DATA_COUNT_KCS - 2;
-         }
-         else
-         {
-            if ( intf->target_channel == 7 )
-            {
-               bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMBL;
-            }
-            else
-            {
-               bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMB;
-            }
-         }
+        /* Find max buffer length according the connection parameters */
+        if ( strstr(intf->name,"lan") != NULL )
+        {
+           bufLength = HPMFWUPG_SEND_DATA_COUNT_LAN - 2;
+           if ( intf->transit_addr != intf->my_addr && intf->transit_addr != 0 )
+               bufLength -= 8;
+        }
+        else
+        {
+           if
+           (
+              strstr(intf->name,"open") != NULL
+              &&
+              (
+                 intf->target_addr ==  intf->my_addr
+              )
+           )
+           {
+              bufLength = HPMFWUPG_SEND_DATA_COUNT_KCS - 2;
+           }
+           else
+           {
+              if ( intf->target_channel == 7 )
+              {
+                 bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMBL;
+              }
+              else
+              {
+                 bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMB;
+              }
+           }
+        }
       }
 
       /* Send Initiate Upgrade Action */
@@ -2304,6 +2311,7 @@ static int HpmFwupgActionUploadFirmware
       totalSent = 0x00;
       displayFWLength= firmwareLength;
       time(&start);
+
       while ( (pData < (pDataTemp+lengthOfBlock)) && (rc == HPMFWUPG_SUCCESS) )
       {
          if ( (pData+bufLength) <= (pDataTemp+lengthOfBlock) )
@@ -2331,14 +2339,12 @@ static int HpmFwupgActionUploadFirmware
                if ( strstr(intf->name,"lan") != NULL )
                {
                   bufLength -= (unsigned char)8;
-		  lprintf(LOG_INFO,"Trying reduced buffer length: %d",
-			  bufLength);
+                  lprintf(LOG_INFO,"Trying reduced buffer length: %d", bufLength);
                }
                else
                {
                   bufLength -= (unsigned char)1;
-		  lprintf(LOG_INFO,"Trying reduced buffer length: %d",
-			  bufLength);
+                  lprintf(LOG_INFO,"Trying reduced buffer length: %d", bufLength);
                }
                rc = HPMFWUPG_SUCCESS;
             }
@@ -2914,11 +2920,7 @@ int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf, struct HpmfwupgUploadFir
       {
          rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
       }
-      /*
-       * If we get 0xcc here this is probably because we send an invalid sequence
-       * number (Packet sent twice). Continue as if we had no error.
-       */
-      else if ( (rsp->ccode != 0x00) && (rsp->ccode != 0xcc) )
+      else if (rsp->ccode != 0x00) 
       {
          /*
           * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
@@ -3431,7 +3433,6 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                lprintf(LOG_DEBUG,"HPM: upg/rollback status firmware API called");
                lprintf(LOG_DEBUG,"HPM: try to re-open IOL session");
 
-               if ( intf->target_addr ==  intf->my_addr )
                {
                   /* force session re-open */
                   intf->opened              = 0;
