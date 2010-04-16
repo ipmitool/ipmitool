@@ -74,7 +74,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:S:l:b:B:e:k:y:O:"
+# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -226,6 +226,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -p port        Remote RMCP port [default=623]");
 	lprintf(LOG_NOTICE, "       -U username    Remote session username");
 	lprintf(LOG_NOTICE, "       -f file        Read remote session password from file");
+	lprintf(LOG_NOTICE, "       -z size        Change Size of Communication Channel (OEM)");
 	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
@@ -361,7 +362,9 @@ ipmi_main(int argc, char ** argv,
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
-	uint8_t my_addr = 0;
+	uint8_t my_addr = 0x20;
+	uint8_t my_long_packet_size=0;
+	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
 	int authtype = -1;
 	char * tmp = NULL;
@@ -624,6 +627,9 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
+		case 'z':	
+			my_long_packet_size = (uint8_t)strtol(optarg, NULL, 0);
+			break;
 #endif
 		default:
 			ipmi_option_usage(progname, cmdlist, intflist);
@@ -817,6 +823,18 @@ ipmi_main(int argc, char ** argv,
 		ipmi_sel_oem_init(seloem);
 	}
 
+	/* Enable Big Buffer when requested */
+	ipmi_main_intf->channel_buf_size = 0;
+	if( my_long_packet_size != 0 )
+	{
+		printf("Setting large buffer to %i\n", my_long_packet_size);
+		if(ipmi_kontronoem_set_large_buffer( ipmi_main_intf, my_long_packet_size ) == 0)
+		{
+			my_long_packet_set = 1;
+			ipmi_main_intf->channel_buf_size = my_long_packet_size;
+		}
+	}
+
 	ipmi_main_intf->cmdlist = cmdlist;
 
 	/* now we finally run the command */
@@ -825,6 +843,13 @@ ipmi_main(int argc, char ** argv,
                         &(argv[optind+1]));
 	else
 		rc = ipmi_cmd_run(ipmi_main_intf, NULL, 0, NULL);
+
+	if(my_long_packet_set == 1) 
+	{
+		/* Restore defaults */
+		ipmi_kontronoem_set_large_buffer( ipmi_main_intf, 0 );
+	}
+
 
 	/* clean repository caches */
 	ipmi_cleanup(ipmi_main_intf);
