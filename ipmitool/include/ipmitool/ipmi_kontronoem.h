@@ -41,5 +41,6 @@
 
 
 int ipmi_kontronoem_main(struct ipmi_intf *, int, char **);
+int ipmi_kontronoem_set_large_buffer(struct ipmi_intf *, unsigned char size);
 
 #endif /* IPMI_KONTRONOEM_H */
