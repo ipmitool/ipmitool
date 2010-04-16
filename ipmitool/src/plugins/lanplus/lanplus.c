@@ -645,8 +645,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		 * 7) An Invalid packet (one that doesn't match a request)
 		 * -------------------------------------------------------------------
 		 */
-		read_session_data(rsp, &offset, intf->session);
 
+		read_session_data(rsp, &offset, intf->session);
 
 		if (lanplus_has_valid_auth_code(rsp, intf->session) == 0)
 		{
@@ -714,17 +714,23 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			/* Are we expecting this packet? */
 			entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
 								rsp->payload.ipmi_response.cmd);
+
 			if (entry != NULL) {
 				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
 				if (
 				      intf->target_addr != intf->my_addr 
 				      &&
-					   bridgePossible
-                  &&
-                  rsp->data_len 
-                  &&
-						rsp->payload.ipmi_response.cmd == 0x34
-					) 
+					  bridgePossible
+                      &&
+                      rsp->data_len 
+                      &&
+					  rsp->payload.ipmi_response.cmd == 0x34
+					  &&
+					  rsp->payload.ipmi_response.netfn == 0x06
+					  &&
+					  rsp->payload.ipmi_response.rs_lun == 0
+
+				   ) 
 				{
                /* Check completion code */
                if (rsp->data[offset-1] == 0)
@@ -752,6 +758,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 							"bridge command response");
 					}
 				}
+
 				ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
 								rsp->payload.ipmi_response.cmd);
 			} else {
@@ -1843,7 +1850,8 @@ ipmi_lanplus_build_v2x_msg(
 static struct ipmi_rq_entry *
 ipmi_lanplus_build_v2x_ipmi_cmd(
 								struct ipmi_intf * intf,
-								struct ipmi_rq * req)
+								struct ipmi_rq * req,
+								int isRetry)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_rq_entry * entry;
@@ -1856,7 +1864,8 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	 */
 	static uint8_t curr_seq = 0;
 
-	curr_seq += 1;
+	if( isRetry == 0 )
+		curr_seq += 1;
 
 	if (curr_seq >= 64)
 		curr_seq = 0;
@@ -2092,9 +2101,10 @@ ipmi_lanplus_send_payload(
 		return NULL;
 
 	while (try < session->retry) {
-		ltime = time(NULL);
+		//ltime = time(NULL);
 
 		if (xmit) {
+			ltime = time(NULL);
 
 			if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
 			{
@@ -2134,8 +2144,10 @@ ipmi_lanplus_send_payload(
 				}
 				else
 				{
+					int isRetry = ( try > 0 ? 1 : 0 );
+
 					lprintf(LOG_DEBUG+1, "BUILDING A v2 COMMAND");
-					entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request);
+					entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request, isRetry);
 				}
 
 				if (entry == NULL) {
@@ -2269,6 +2281,15 @@ ipmi_lanplus_send_payload(
 		else
 		{
 			rsp = ipmi_lan_poll_recv(intf);
+
+			/* Duplicate Request ccode most likely indicates a response to
+			   a previous retry. Ignore and keep polling. */
+			if ((rsp != NULL) && (rsp->ccode == 0xcf))
+			{
+				rsp = NULL;
+				rsp = ipmi_lan_poll_recv(intf);
+			}
+
 			if (rsp)
 				break;
 		}
