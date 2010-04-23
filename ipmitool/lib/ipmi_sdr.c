@@ -4402,6 +4402,10 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 
 		lprintf(LOG_ERR,
 			"                     file <file>   Load SDR repository from a file");
+		lprintf(LOG_ERR,
+			"                     range <range> Load SDR repository from a provided list or range");
+		lprintf(LOG_ERR,
+			"                                    - Use , for list or - for range (Ex.: 0x28,0x32,0x40-0x44) ");
 	} else if (strncmp(argv[0], "list", 4) == 0
 		   || strncmp(argv[0], "elist", 5) == 0) {
 
@@ -4454,6 +4458,7 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		if (argc <= 1) {
 			lprintf(LOG_ERR, "usage: sdr fill sensors");
 			lprintf(LOG_ERR, "usage: sdr fill file <filename>");
+			lprintf(LOG_ERR, "usage: sdr fill range <, and - separated> ");
 			rc = -1;
 		} else if (strncmp(argv[1], "sensors", 7) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
@@ -4465,6 +4470,13 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 				rc = -1;
 			} else {
 				rc = ipmi_sdr_add_from_file(intf, argv[2]);
+			}
+		} else if (strncmp(argv[1], "range", 4) == 0) {
+			if (argc < 3) {
+				lprintf(LOG_ERR, "sdr range: Missing range - Use , for list or - for range (Ex.: 0x28,0x32,0x40-0x44)");
+				rc = -1;
+			} else {
+				rc = ipmi_sdr_add_from_list(intf, argv[2]);
 			}
 		}
 	} else {
