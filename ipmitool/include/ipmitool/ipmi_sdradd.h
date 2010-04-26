@@ -40,4 +40,7 @@ ipmi_sdr_add_from_sensors(struct ipmi_intf *intf, int maxslot);
 int
 ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile);
 
+int
+ipmi_sdr_add_from_list(struct ipmi_intf *intf, const char *rangeList);
+
 #endif /* IPMI_SDRADD_H */
