@@ -104,7 +104,7 @@ void log_init(const char * name, int isdaemon, int verbose)
 	if (logpriv)
 		return;
 
-	logpriv = malloc(sizeof(*logpriv));
+	logpriv = malloc(sizeof(struct logpriv_s));
 	if (!logpriv)
 		return;
 
