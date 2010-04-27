@@ -379,7 +379,7 @@ ipmi_main(int argc, char ** argv,
 	char * seloem   = NULL;
 	int port = 0;
 	int devnum = 0;
-	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
+	int cipher_suite_id = 1; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
 	int rc = -1;
 	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
