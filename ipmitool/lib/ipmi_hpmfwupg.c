@@ -60,6 +60,7 @@
 * Frederic.Lelievre@ca.kontron.com
 * Francois.Isabelle@ca.kontron.com
 * Jean-Michel.Audet@ca.kontron.com
+* MarieJosee.Blais@ca.kontron.com
 *
 *****************************************************************************
 *
@@ -1006,16 +1007,19 @@ typedef enum eHpmfwupgActionType
 
 typedef struct _VERSIONINFO
 {
-    int componentId;
-    int targetMajor;
-    int targetMinor;
-    int rollbackMajor;
-    int rollbackMinor;
-    int imageMajor;
-    int imageMinor;
-    int coldResetRequired;
-    int rollbackSupported;
-    int skipUpgrade;
+    unsigned char componentId;
+    unsigned char targetMajor;
+    unsigned char targetMinor;
+    unsigned char targetAux[4];
+    unsigned char rollbackMajor;
+    unsigned char rollbackMinor;
+    unsigned char rollbackAux[4];
+    unsigned char imageMajor;
+    unsigned char imageMinor;
+    unsigned char imageAux[4];
+    unsigned char coldResetRequired;
+    unsigned char rollbackSupported;
+    unsigned char skipUpgrade;
     char descString[15];
 }VERSIONINFO, *PVERSIONINFO;
 
@@ -1130,10 +1134,10 @@ void HpmDisplayLine(char *s, int n)
 void HpmDisplayUpgradeHeader(int option)
 {
     printf("\n");
-    HpmDisplayLine("-",79 );
-    printf("|ID | Name      |    Versions           |    Upload Progress  | Upload| Image |\n");
-    printf("|   |           | Active| Backup| File  |0%%       50%%     100%%| Time  | Size  |\n");
-    printf("|---|-----------|-------|-------|-------||----+----+----+----||-------|-------|\n");
+    HpmDisplayLine("-",78 );
+    printf("|ID | Name      |                     Versions                        |  %%   |\n");
+    printf("|   |           |      Active     |      Backup     |      File       |      |\n");
+    printf("|---|-----------|-----------------|-----------------|-----------------|------|\n");    
 }
 
 /****************************************************************************
@@ -1151,27 +1155,25 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
     static int old_percent=1;
     if (skip)
     {
-        printf("|       Skip        || --.-- | ----- |\n");
+        printf(" Skip |\n");
         return;
     }
     fflush(stdout);
 
     percent = ((float)totalSent/displayFWLength)*100;
-    if (((percent % 5) == 0))
+    if (percent != old_percent)
     {
-        if (percent != old_percent)
-        {
-            if ( percent == 0 ) printf("|");
-            else if (percent == 100) printf("|");
-                 else printf(".");
-            old_percent = percent;
-        }
+        if ( percent == 0 ) printf("  0 %% |");
+        else if (percent == 100) printf("\b\b\b\b\b\b\b100 %% |\n");
+        else printf("\b\b\b\b\b\b\b%3d %% |", percent);
+           old_percent = percent;
     }
 
     if (totalSent== displayFWLength)
     {
         /* Display the time taken to complete the upgrade */
-        printf("| %02d.%02d | %05x |\n",timeElapsed/60,timeElapsed%60,totalSent);
+        printf("|   | Upload Time: %02d.%02d          | Image Size: %05x                        |\n",
+         timeElapsed/60,timeElapsed%60,totalSent);
     }
 }
 
@@ -1184,20 +1186,19 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
 *****************************************************************************/
 int HpmDisplayVersionHeader(int mode)
 {
-
    if ( mode & IMAGE_VER)
    {
-        HpmDisplayLine("-",41 );
-        printf("|ID | Name      |        Versions       |\n");
-        printf("|   |           | Active| Backup| File  |\n");
-        HpmDisplayLine("-",41 );
+        HpmDisplayLine("-",71 );
+        printf("|ID | Name      |                     Versions                        |\n");
+        printf("|   |           |     Active      |     Backup      |      File       |\n");
+        HpmDisplayLine("-",71 );
    }
    else
    {
-        HpmDisplayLine("-",33 );
-        printf("|ID | Name      |    Versions   |\n");
-        printf("|   |           | Active| Backup|\n");
-        HpmDisplayLine("-",33 );
+        HpmDisplayLine("-",53 );
+        printf("|ID | Name      |             Versions              |\n");
+        printf("|   |           |     Active      |     Backup      |\n");
+        HpmDisplayLine("-",53 );
    }
 }
 
@@ -1227,29 +1228,48 @@ int HpmDisplayVersion(int mode,VERSIONINFO *pVersion)
       if (mode & TARGET_VER)
       {
               if (pVersion->targetMajor == 0xFF && pVersion->targetMinor == 0xFF)
-                printf(" --.-- |");
+                printf(" ---.-- -------- |");
               else
-                printf("%3d.%02x |",pVersion->targetMajor,pVersion->targetMinor);
+                printf(" %3d.%02x %02X%02X%02X%02X |",
+                 pVersion->targetMajor,
+                 pVersion->targetMinor,
+                 pVersion->targetAux[0],
+                 pVersion->targetAux[1],
+                 pVersion->targetAux[2],
+                 pVersion->targetAux[3]
+                 );
 
               if (mode & ROLLBACK_VER)
               {
                     if (pVersion->rollbackMajor == 0xFF && pVersion->rollbackMinor == 0xFF)
-                        printf(" --.-- |");
+                        printf(" ---.-- -------- |");
                     else
-                        printf("%3d.%02x |",pVersion->rollbackMajor,pVersion->rollbackMinor);
+                        printf(" %3d.%02x %02X%02X%02X%02X |",
+                         pVersion->rollbackMajor,
+                         pVersion->rollbackMinor,
+                         pVersion->rollbackAux[0],
+                         pVersion->rollbackAux[1],
+                 	     pVersion->rollbackAux[2],
+                 	     pVersion->rollbackAux[3]);
               }
               else
               {
-                    printf(" --.-- |");
+                    printf(" ---.-- -------- |");
               }
       }
 
       if (mode & IMAGE_VER)
       {
               if (pVersion->imageMajor == 0xFF && pVersion->imageMinor == 0xFF)
-                printf(" --.-- |");
+                printf(" ---.-- |");
               else
-                printf("%3d.%02x |",pVersion->imageMajor,pVersion->imageMinor);
+                printf(" %3d.%02x %02X%02X%02X%02X |",
+                 pVersion->imageMajor,
+                 pVersion->imageMinor,
+                 pVersion->imageAux[0],
+                 pVersion->imageAux[1],
+                 pVersion->imageAux[2],
+                 pVersion->imageAux[3]);
       }
 }
 
@@ -1348,6 +1368,14 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
                 currentVersionResp.currentVersion[0];
             gVersionInfo[componentId].targetMinor = getCompProp.resp.Response.
                 currentVersionResp.currentVersion[1];
+            gVersionInfo[componentId].targetAux[0] = getCompProp.resp.Response.
+                currentVersionResp.currentVersion[2];
+            gVersionInfo[componentId].targetAux[1] = getCompProp.resp.Response.
+                currentVersionResp.currentVersion[3];
+            gVersionInfo[componentId].targetAux[2] = getCompProp.resp.Response.
+                currentVersionResp.currentVersion[4];
+            gVersionInfo[componentId].targetAux[3] = getCompProp.resp.Response.
+                currentVersionResp.currentVersion[5];                
             mode = TARGET_VER;
 
             if (gVersionInfo[componentId].rollbackSupported)
@@ -1362,6 +1390,14 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
                       .Response.rollbackFwVersionResp.rollbackFwVersion[0];
                     gVersionInfo[componentId].rollbackMinor = getCompProp.resp
                       .Response.rollbackFwVersionResp.rollbackFwVersion[1];
+                    gVersionInfo[componentId].rollbackAux[0] = getCompProp.resp.Response.
+                     rollbackFwVersionResp.rollbackFwVersion[2];
+                    gVersionInfo[componentId].rollbackAux[1] = getCompProp.resp.Response.
+                     rollbackFwVersionResp.rollbackFwVersion[3];
+                    gVersionInfo[componentId].rollbackAux[2] = getCompProp.resp.Response.
+                     rollbackFwVersionResp.rollbackFwVersion[4];
+                    gVersionInfo[componentId].rollbackAux[3] = getCompProp.resp.Response.
+                     rollbackFwVersionResp.rollbackFwVersion[5];
                 }
                 mode |= ROLLBACK_VER;
             }
@@ -1384,7 +1420,7 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
 
     if (option & VIEW_MODE)
     {
-        HpmDisplayLine("-",33 );
+        HpmDisplayLine("-",53 );
         if (flagColdReset)
         {
             fflush(stdout);
@@ -1918,8 +1954,12 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* p
 
               pVersionInfo = &gVersionInfo[componentId];
 
-              pVersionInfo->imageMajor  = pFwImage->version[0];
-              pVersionInfo->imageMinor  = pFwImage->version[1];
+              pVersionInfo->imageMajor   = pFwImage->version[0];
+              pVersionInfo->imageMinor   = pFwImage->version[1];
+              pVersionInfo->imageAux[0]  = pFwImage->version[2];
+              pVersionInfo->imageAux[1]  = pFwImage->version[3];
+              pVersionInfo->imageAux[2]  = pFwImage->version[4];
+              pVersionInfo->imageAux[3]  = pFwImage->version[5];
 
               mode = TARGET_VER | IMAGE_VER;
 
@@ -2007,7 +2047,7 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* p
    }
    if (option & VIEW_MODE)
    {
-        HpmDisplayLine("-",41);
+        HpmDisplayLine("-",71);
        if (flagColdReset)
        {
            fflush(stdout);
@@ -2148,7 +2188,7 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
       }
    }
 
-   HpmDisplayLine("-",79);
+   HpmDisplayLine("-",78);
 
    if (flagColdReset)
    {
@@ -2241,7 +2281,7 @@ static int HpmFwupgActionUploadFirmware
 		}
 		skip = FALSE;
 	}
-	
+
    if(!skip)
    {
       /* Initialize parameters */
