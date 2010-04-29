@@ -386,8 +386,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 				       status ? : "");
 
 				if (thresh_available) {
-					if (rsp->
-					    data[0] & LOWER_NON_RECOV_SPECIFIED)
+					if (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED)
 						printf
 						    (" Lower Non-Recoverable : %.3f\n",
 						     sdr_convert_sensor_reading
@@ -403,8 +402,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 					else
 						printf
 						    (" Lower Critical        : na\n");
-					if (rsp->
-					    data[0] & LOWER_NON_CRIT_SPECIFIED)
+					if (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)
 						printf
 						    (" Lower Non-Critical    : %.3f\n",
 						     sdr_convert_sensor_reading
@@ -412,8 +410,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 					else
 						printf
 						    (" Lower Non-Critical    : na\n");
-					if (rsp->
-					    data[0] & UPPER_NON_CRIT_SPECIFIED)
+					if (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)
 						printf
 						    (" Upper Non-Critical    : %.3f\n",
 						     sdr_convert_sensor_reading
@@ -429,8 +426,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 					else
 						printf
 						    (" Upper Critical        : na\n");
-					if (rsp->
-					    data[0] & UPPER_NON_RECOV_SPECIFIED)
+					if (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED)
 						printf
 						    (" Upper Non-Recoverable : %.3f\n",
 						     sdr_convert_sensor_reading
@@ -438,6 +434,28 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 					else
 						printf
 						    (" Upper Non-Recoverable : na\n");
+
+					if (
+							sensor->threshold.hysteresis.positive == 0x00
+							|| 
+							sensor->threshold.hysteresis.positive == 0xff
+				       )
+						printf(" Positive Hysteresis   : Unspecified\n");
+					else
+						printf(" Positive Hysteresis   : %.3f\n", 
+									sdr_convert_sensor_hysterisis
+										(sensor,sensor->threshold.hysteresis.positive));
+
+					if (
+							sensor->threshold.hysteresis.negative == 0x00
+							|| 
+							sensor->threshold.hysteresis.negative == 0xff
+					   )
+						printf(" Negative Hysteresis   : Unspecified\n");
+					else
+						printf(" Negative Hysteresis   : %.3f\n", 
+									sdr_convert_sensor_hysterisis
+										(sensor,sensor->threshold.hysteresis.negative));
 				} else {
 					printf(" Sensor Threshold Settings not available\n");
 				}
