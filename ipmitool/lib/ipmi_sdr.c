@@ -1388,6 +1388,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 						   DISCRETE_SENSOR,
 						   target,
 						   lun);
+		printf(" OEM                   : %X\n",
+		       sensor->oem);
 		printf("\n");
 
 		return 0;	/* done */
@@ -1793,6 +1795,8 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 						   DISCRETE_SENSOR,
 						   target,
 						   lun);
+		printf(" OEM                   : %X\n",
+		       sensor->oem);
 		printf("\n");
 	} else {
 		int dostate = 1;
