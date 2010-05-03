@@ -191,7 +191,10 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 	struct ipmi_rs * rsp = intf->sendrecv(intf, req);
 	if (!rsp)
 		return(NULL);
-	if (rsp->ccode) {
+	if (rsp->ccode == 0x80)	{
+		return(NULL);   /* Do not output error, just unsupported parameters */
+	}
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, " **Error %x in '%s' command",
 			rsp ? rsp->ccode : 0, txt);
 		return(NULL);
@@ -803,6 +806,7 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	if (!rsp)
 		return;
 	pcap = (struct pef_capabilities *)rsp->data;
+
 	ipmi_pef_print_1xd("Version", pcap->version);
 	ipmi_pef_print_dec("PEF table size", pcap->tblsize);
 	ipmi_pef_print_dec("Alert policy table size", tbl_size);
