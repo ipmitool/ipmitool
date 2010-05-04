@@ -117,19 +117,19 @@ ipmi_password_file_read(char * filename)
 	fp = ipmi_open_file_read((const char *)filename);
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Unable to open password file %s",
-			filename);
+				filename);
 		return NULL;
 	}
 
 	/* read in id */
 	if (fgets(pass, 16, fp) == NULL) {
 		lprintf(LOG_ERR, "Unable to read password from file %s",
-			filename);
+				filename);
 		fclose(fp);
 		return NULL;
 	}
 
- 	/* remove trailing whitespace */
+	/* remove trailing whitespace */
 	l = strcspn(pass, " \r\n\t");
 	if (l > 0) {
 		pass[l] = '\0';
@@ -321,7 +321,7 @@ ipmi_parse_hex(const char *str)
 			free(out);
 			return NULL;
 		}
-		
+
 		if (*p < 'A') /* it must be 0-9 */
 			b = *p - '0';
 		else /* it's A-F or a-f */
@@ -334,7 +334,7 @@ ipmi_parse_hex(const char *str)
 			shift = 4;
 			q++;
 		}
-    }
+	}
 
 	return out;
 }
@@ -351,8 +351,8 @@ ipmi_parse_hex(const char *str)
  */
 int
 ipmi_main(int argc, char ** argv,
-	  struct ipmi_cmd * cmdlist,
-	  struct ipmi_intf_support * intflist)
+		struct ipmi_cmd * cmdlist,
+		struct ipmi_intf_support * intflist)
 {
 	struct ipmi_intf_support * sup;
 	int privlvl = 0;
@@ -402,8 +402,8 @@ ipmi_main(int argc, char ** argv,
 				found = 0;
 				for (sup=intflist; sup->name != NULL; sup++) {
 					if (strncmp(sup->name, intfname, strlen(intfname)) == 0 &&
-					    strncmp(sup->name, intfname, strlen(sup->name)) == 0 &&
-					    sup->supported == 1)
+							strncmp(sup->name, intfname, strlen(sup->name)) == 0 &&
+							sup->supported == 1)
 						found = 1;
 				}
 				if (!found) {
@@ -450,7 +450,7 @@ ipmi_main(int argc, char ** argv,
 			password = ipmi_password_file_read(optarg);
 			if (password == NULL)
 				lprintf(LOG_ERR, "Unable to read password "
-					"from file %s", optarg);
+						"from file %s", optarg);
 			break;
 		case 'a':
 #ifdef HAVE_GETPASSPHRASE
@@ -534,7 +534,7 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			if (strncmp(oemtype, "list", 4) == 0 ||
-			    strncmp(oemtype, "help", 4) == 0) {
+					strncmp(oemtype, "help", 4) == 0) {
 				ipmi_oem_print();
 				goto out_free;
 			}
@@ -639,7 +639,7 @@ ipmi_main(int argc, char ** argv,
 
 	/* check for command before doing anything */
 	if (argc-optind > 0 &&
-	    strncmp(argv[optind], "help", 4) == 0) {
+			strncmp(argv[optind], "help", 4) == 0) {
 		ipmi_cmd_print(cmdlist);
 		rc = 0;
 		goto out_free;
@@ -654,7 +654,7 @@ ipmi_main(int argc, char ** argv,
 	 * then prompt the user.
 	 */
 	if (hostname != NULL && password == NULL &&
-	    (authtype != IPMI_SESSION_AUTHTYPE_NONE || authtype < 0)) {
+			(authtype != IPMI_SESSION_AUTHTYPE_NONE || authtype < 0)) {
 #ifdef HAVE_GETPASSPHRASE
 		tmp = getpassphrase("Password: ");
 #else
@@ -850,7 +850,6 @@ ipmi_main(int argc, char ** argv,
 		ipmi_kontronoem_set_large_buffer( ipmi_main_intf, 0 );
 	}
 
-
 	/* clean repository caches */
 	ipmi_cleanup(ipmi_main_intf);
 
@@ -858,7 +857,7 @@ ipmi_main(int argc, char ** argv,
 	if (ipmi_main_intf->opened > 0 && ipmi_main_intf->close != NULL)
 		ipmi_main_intf->close(ipmi_main_intf);
 
- out_free:
+	out_free:
 	log_halt();
 
 	if (intfname != NULL)

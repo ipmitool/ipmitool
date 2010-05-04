@@ -366,13 +366,13 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	printf("Manufacturer ID           : %lu\n",
 		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
    printf("Manufacturer Name         : %s\n",
-            val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id), 
+            val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id),
             ipmi_oem_info) );
 
 	printf("Product ID                : %u (0x%02x%02x)\n",
 		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
- 
+
 	product=oemval2str(IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id),
 							 (devid->product_id[1]<<8)+devid->product_id[0],
 							 ipmi_oem_product_info);
@@ -403,9 +403,12 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
+/* Structure follow the IPMI V.2 Rev 1.0
+ * See Table 20-10 */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
+
 struct ipmi_guid {
 	uint32_t  time_low;	/* timestamp low field */
 	uint16_t  time_mid;	/* timestamp middle field */
@@ -490,7 +493,7 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		lprintf(LOG_ERR, "No response from devices\n"); 
+		lprintf(LOG_ERR, "No response from devices\n");
 		return -1;
 	}
 
@@ -591,14 +594,14 @@ const char *wdt_action_string[8] = {
 	"Reserved",
 	"Reserved"
 };
- 
+
 static int
 ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipm_get_watchdog_rsp * wdt_res;
-	
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = BMC_GET_WATCHDOG_TIMER;
@@ -615,7 +618,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	
+
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 	
 	printf("Watchdog Timer Use:     %s (0x%02x)\n", 
@@ -631,8 +634,8 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	printf("Present Countdown:      %i sec\n", 
 	    (((wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb)) / 10);
 	
-	
-	return 0;	
+
+	return 0;
 }
 
 /* ipmi_mc_shutoff_watchdog
@@ -648,7 +651,7 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	unsigned char msg_data[6];
-	
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd   = BMC_SET_WATCHDOG_TIMER;
@@ -658,15 +661,15 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 	/*
 	 * The only set cmd we're allowing is to shut off the timer.
 	 * Turning on the timer should be the job of the ipmi watchdog driver.
-	 * See 'modinfo ipmi_watchdog' for more info. (NOTE: the reset 
+	 * See 'modinfo ipmi_watchdog' for more info. (NOTE: the reset
 	 * command will restart the timer if it's already been initialized.)
 	 *
 	 * Out-of-band watchdog set commands can still be sent via the raw
 	 * command interface but this is a very dangerous thing to do since
 	 * a periodic "poke"/reset over a network is unreliable.  This is
-	 * not a recommended way to use the IPMI watchdog commands. 
+	 * not a recommended way to use the IPMI watchdog commands.
 	 */
-	
+
 	msg_data[0] = IPM_WATCHDOG_SMS_OS;
 	msg_data[1] = IPM_WATCHDOG_NO_ACTION;
 	msg_data[2] = 0x00;  // pretimeout interval
@@ -685,9 +688,9 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-		
+
 	lprintf(LOG_ERR, "Watchdog Timer Shutoff successful -- timer stopped");
-	return 0;	
+	return 0;
 }
 
 
@@ -703,7 +706,7 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd   = BMC_RESET_WATCHDOG_TIMER;
@@ -717,14 +720,14 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Reset Watchdog Timer command failed: %s",
-			(rsp->ccode == IPM_WATCHDOG_RESET_ERROR) ? 
+			(rsp->ccode == IPM_WATCHDOG_RESET_ERROR) ?
 				"Attempt to reset unitialized watchdog" :
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-		
+
 	lprintf(LOG_ERR, "IPMI Watchdog Timer Reset -  countdown restarted!");
-	return 0;	
+	return 0;
 }
 
 /* ipmi_mc_main  -  top-level handler for MC functions
@@ -740,7 +743,7 @@ int
 ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
-	
+
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
 		printf_mc_usage();
 	}
@@ -775,7 +778,7 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (!strncmp(argv[0], "watchdog", 8)) {
 		if (argc < 2 || strncmp(argv[1], "help", 4) == 0) {
-			print_watchdog_usage(); 
+			print_watchdog_usage();
 		}
 		else if (strncmp(argv[1], "get", 3) == 0) {
 			rc = ipmi_mc_get_watchdog(intf);
@@ -787,7 +790,7 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_mc_rst_watchdog(intf);
 		}
 		else {
-			print_watchdog_usage(); 
+			print_watchdog_usage();
 		}
 	}
 	else {
