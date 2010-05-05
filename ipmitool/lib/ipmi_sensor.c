@@ -570,6 +570,12 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 												      sensor->event_type,
 												      rsp->data[2],
 												      rsp->data[3]);
+            printf(" Raw Data: %X", rsp->data[1]);
+            if(rsp->data_len > 2)
+            	printf(" %X", rsp->data[2]);
+            if(rsp->data_len > 3)
+            	printf(" %X", rsp->data[3]);
+            printf("\n");
             printf("\n");
          } else {
 	   printf(" Unable to read sensor: Device Not Present\n\n");
