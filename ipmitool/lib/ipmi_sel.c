@@ -1255,8 +1255,9 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 					  evt->sel_type.standard_type.gen_id,
 					  evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
-	if (sdr == NULL) {
-		ipmi_sel_print_std_entry_verbose(intf, evt);
+	if (sdr == NULL) 
+	{
+	    ipmi_sel_print_std_entry_verbose(intf, evt);
 		return;
 	}
 
@@ -1385,9 +1386,10 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 	} else if (evt->sel_type.standard_type.event_type >= 0x2 && evt->sel_type.standard_type.event_type <= 0xc) {
 		/* Generic Discrete */
 	} else if (evt->sel_type.standard_type.event_type == 0x6f) {
+
 		/* Sensor-Specific Discrete */
-		if (evt->sel_type.standard_type.sensor_type == 0xC &&
-		    evt->sel_type.standard_type.sensor_num  == 0 &&
+		if (evt->sel_type.standard_type.sensor_type == 0xC &&		   
+		    evt->sel_type.standard_type.sensor_num  == 0 &&			 /**** THIS LOOK TO BE OEM ****/
 		    (evt->sel_type.standard_type.event_data[0] & 0x30) == 0x20)
 		{
 			/* break down memory ECC reporting if we can */
@@ -1395,10 +1397,18 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       evt->sel_type.standard_type.event_data[2] & 0x0f,
 			       (evt->sel_type.standard_type.event_data[2] & 0xf0) >> 4);
 		}
-		else
+		else if(
+				evt->sel_type.standard_type.sensor_type == 0x2b &&   /* Version change */
+				evt->sel_type.standard_type.event_data[0] == 0xC1	 /* Data in Data 2 */
+			   )
+			    
+		{
+			//evt->sel_type.standard_type.event_data[1]
+		}
+		else 
 		{
 			/* FIXME : Add sensor specific discrete types */
-			printf(" Event Interpretation Missing\n");
+			printf(" Event Interpretation  : Missing\n");
 		}
 	} else if (evt->sel_type.standard_type.event_type >= 0x70 && evt->sel_type.standard_type.event_type <= 0x7f) {
 		/* OEM */
