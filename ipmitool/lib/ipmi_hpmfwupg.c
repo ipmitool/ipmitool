@@ -206,7 +206,7 @@ extern int verbose;
 static int errorCount;
 
 #define HPMFWUPG_IS_RETRYABLE(error)                                          \
-((((error==0x83)||(error==0x82)) && (errorCount++<RETRY_COUNT_MAX))?TRUE:FALSE)
+((((error==0x83)||(error==0x82)||(error==0x80)) && (errorCount++<RETRY_COUNT_MAX))?TRUE:FALSE)
 #else
 #define HPMFWUPG_IS_RETRYABLE(error) FALSE
 #endif
@@ -596,7 +596,7 @@ struct HpmfwupgInitiateUpgradeActionCtx
  *  UPLOAD FIRMWARE BLOCK DEFINITIONS
  */
 
-#define HPMFWUPG_SEND_DATA_COUNT_MAX   128
+#define HPMFWUPG_SEND_DATA_COUNT_MAX   256
 #define HPMFWUPG_SEND_DATA_COUNT_KCS   30
 #define HPMFWUPG_SEND_DATA_COUNT_LAN   25
 #define HPMFWUPG_SEND_DATA_COUNT_IPMB  26
@@ -3580,25 +3580,47 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
    if ( pFwupgCtx != NULL )
    {
       upgradeTimeout = pFwupgCtx->targetCap.upgradeTimeout*5;
+      if ( verbose )
+          printf("Use File Upgrade Capabilities: %i seconds\n", upgradeTimeout);
    }
    else
    {
-      upgradeTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
+      /* Try to retreive from Caps */
+      struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
+      
+      if(HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd) != HPMFWUPG_SUCCESS)
+      {
+          upgradeTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
+
+          if ( verbose )
+              printf("Use default timeout: %i seconds\n", upgradeTimeout);
+      }
+      else
+      {
+          upgradeTimeout = (targetCapCmd.resp.upgradeTimeout * 5);
+          if ( verbose )
+              printf("Use Command Upgrade Capabilities Timeout: %i seconds\n", upgradeTimeout);
+      }
    }
 
-   /* Poll upgrade status until completion or timeout*/
-   timeoutSec1 = time(NULL);
-   timeoutSec2 = time(NULL);
-   rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
-
-   while((upgStatusCmd.resp.lastCmdCompCode == HPMFWUPG_COMMAND_IN_PROGRESS ) &&
-         (timeoutSec2 - timeoutSec1 < upgradeTimeout ) &&
-         (rc == HPMFWUPG_SUCCESS) )
+   if(rc == HPMFWUPG_SUCCESS)
    {
-      /* Must wait at least 100 ms between status requests */
-      usleep(100000);
+      /* Poll upgrade status until completion or timeout*/
+      timeoutSec1 = time(NULL);
       timeoutSec2 = time(NULL);
       rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
+   }
+
+   while(
+         (upgStatusCmd.resp.lastCmdCompCode == HPMFWUPG_COMMAND_IN_PROGRESS ) &&
+         (timeoutSec2 - timeoutSec1 < upgradeTimeout ) &&
+         (rc == HPMFWUPG_SUCCESS) 
+        )
+   {
+      /* Must wait at least 1000 ms between status requests */
+      usleep(1000000);
+      rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
+      //printf("Get Status: %x - %x = %x _ %x [%x]\n", timeoutSec2, timeoutSec1,(timeoutSec2 - timeoutSec1),upgradeTimeout, rc); 
    }
 
    if ( upgStatusCmd.resp.lastCmdCompCode != 0x00 )
