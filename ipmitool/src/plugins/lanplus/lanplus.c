@@ -2288,7 +2288,7 @@ ipmi_lanplus_send_payload(
 
 			/* Duplicate Request ccode most likely indicates a response to
 			   a previous retry. Ignore and keep polling. */
-			if ((rsp != NULL) && (rsp->ccode == 0xcf))
+			while ((rsp != NULL) && (rsp->ccode == 0xcf))
 			{
 				rsp = NULL;
 				rsp = ipmi_lan_poll_recv(intf);
