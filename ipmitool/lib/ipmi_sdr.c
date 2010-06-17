@@ -1613,7 +1613,8 @@ ipmi_sdr_print_discrete_state_mini(const char *separator,
 	}
 
 	for (; evt->type != NULL; evt++) {
-		if (evt->code != typ)
+		if ((evt->code != typ) ||
+			(evt->data != 0xFF))
 			continue;
 
 		if (evt->offset > 7) {
