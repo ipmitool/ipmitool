@@ -3174,6 +3174,7 @@ int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf, struct HpmfwupgManual
          struct HpmfwupgQueryRollbackStatusCtx resCmd;
          printf("Waiting firmware rollback...");
          fflush(stdout);
+
          rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, pFwupgCtx);
       }
       else if ( rsp->ccode != 0x00 )
@@ -3196,7 +3197,7 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
    int    rc = HPMFWUPG_SUCCESS;
    struct ipmi_rs * rsp;
    struct ipmi_rq   req;
-   unsigned char rollbackTimeout = 0;
+   unsigned int rollbackTimeout = 0;
    unsigned int  timeoutSec1, timeoutSec2;
 
    pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
@@ -3216,7 +3217,18 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
    }
    else
    {
-      rollbackTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
+      struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
+      verbose--;
+      rc = HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd);
+      verbose++;
+      if ( rc == HPMFWUPG_SUCCESS )
+      {
+         rollbackTimeout = targetCapCmd.resp.rollbackTimeout *5;
+      }
+      else
+      {
+         rollbackTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
+      }
    }
 
    /* Poll rollback status until completion or timeout */
@@ -3374,8 +3386,8 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
                                  struct HpmfwupgUpgradeCtx* pFwupgCtx )
 {
    struct ipmi_rs * rsp;
-   unsigned char inaccessTimeout = 0, inaccessTimeoutCounter = 0;
-   unsigned char upgradeTimeout  = 0, upgradeTimeoutCounter  = 0;
+   unsigned int inaccessTimeout = 0, inaccessTimeoutCounter = 0;
+   unsigned int upgradeTimeout  = 0, upgradeTimeoutCounter  = 0;
    unsigned int  timeoutSec1, timeoutSec2;
    unsigned char retry = 0;
 
@@ -3570,7 +3582,7 @@ struct ipmi_rs * HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwupgCtx)
 {
    int rc = HPMFWUPG_SUCCESS;
-   unsigned char upgradeTimeout = 0;
+   unsigned int upgradeTimeout = 0;
    unsigned int  timeoutSec1, timeoutSec2;
    struct HpmfwupgGetUpgradeStatusCtx upgStatusCmd;
 
