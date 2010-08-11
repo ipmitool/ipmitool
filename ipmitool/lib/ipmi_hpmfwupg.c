@@ -265,8 +265,8 @@ struct HpmfwupgComponentBitMask
          unsigned char component6 : 1;
          unsigned char component7 : 1;
          #endif
-      }bitField;
-   }ComponentBits;
+      }ATTRIBUTE_PACKING bitField;
+   }ATTRIBUTE_PACKING ComponentBits;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -326,8 +326,8 @@ struct HpmfwupgGetTargetUpgCapabilitiesResp
          unsigned char autRollbackOverride : 1;
          unsigned char fwUpgUndesirable    : 1;
          #endif
-      }bitField;
-   }GlobalCapabilities;
+      }ATTRIBUTE_PACKING bitField;
+   }ATTRIBUTE_PACKING GlobalCapabilities;
    unsigned char upgradeTimeout;
    unsigned char selftestTimeout;
    unsigned char rollbackTimeout;
@@ -404,8 +404,8 @@ struct HpmfwupgGetGeneralPropResp
          unsigned char payloadColdReset   : 1;
          unsigned char reserved           : 2;
          #endif
-      }bitfield;
-   }GeneralCompProperties;
+      }ATTRIBUTE_PACKING bitfield;
+   }ATTRIBUTE_PACKING GeneralCompProperties;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -488,7 +488,7 @@ struct HpmfwupgGetComponentPropertiesResp
       struct HpmfwupgGetRollbackFwVersionResp rollbackFwVersionResp;
       struct HpmfwupgGetDeferredFwVersionResp deferredFwVersionResp;
       struct HpmfwupgGetOemProperties         oemProperties;
-   }Response;
+   }ATTRIBUTE_PACKING Response;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -916,9 +916,9 @@ struct HpmfwupgImageHeader
       unsigned char autRollback     : 1;
  		unsigned char imageSelfTest   : 1;
  	 	#endif
- 	 }	bitField;
+ 	 } ATTRIBUTE_PACKING bitField;
 	 unsigned char byte;
-  }imageCapabilities;
+  }ATTRIBUTE_PACKING imageCapabilities;
   struct HpmfwupgComponentBitMask components;
   unsigned char  selfTestTimeout;
   unsigned char  rollbackTimeout;
@@ -2290,7 +2290,14 @@ static int HpmFwupgActionUploadFirmware
       /* Check if we receive size in parameters */
       if(intf->channel_buf_size != 0)
       {
-          bufLength = intf->channel_buf_size - 9; /* Plan for overhead */
+         if (intf->target_addr ==  intf->my_addr)
+         {
+            bufLength = intf->channel_buf_size - 9; /* Plan for overhead */
+         }
+         else
+         {
+            bufLength = intf->channel_buf_size - 11; /* Plan for overhead */
+         }
       }
       else
       {
@@ -2351,6 +2358,7 @@ static int HpmFwupgActionUploadFirmware
       totalSent = 0x00;
       displayFWLength= firmwareLength;
       time(&start);
+
 
       while ( (pData < (pDataTemp+lengthOfBlock)) && (rc == HPMFWUPG_SUCCESS) )
       {
@@ -2689,7 +2697,7 @@ int HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
             lprintf(LOG_NOTICE,"Upgrade timeout.........[%d sec] ", pCtx->resp.upgradeTimeout*5);
             lprintf(LOG_NOTICE,"Self test timeout.......[%d sec] ", pCtx->resp.selftestTimeout*5);
             lprintf(LOG_NOTICE,"Rollback timeout........[%d sec] ", pCtx->resp.rollbackTimeout*5);
-            lprintf(LOG_NOTICE,"Inaccessibility timeout.[%d sec] \n", pCtx->resp.rollbackTimeout*5);
+            lprintf(LOG_NOTICE,"Inaccessibility timeout.[%d sec] \n", pCtx->resp.inaccessTimeout*5);
          }
       }
       else
@@ -3174,7 +3182,6 @@ int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf, struct HpmfwupgManual
          struct HpmfwupgQueryRollbackStatusCtx resCmd;
          printf("Waiting firmware rollback...");
          fflush(stdout);
-
          rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, pFwupgCtx);
       }
       else if ( rsp->ccode != 0x00 )
@@ -3255,7 +3262,8 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
       timeoutSec2 = time(NULL);
 
    }while( rsp &&
-          (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) &&
+          ((rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) ||
+           (rsp->ccode == IPMI_CC_TIMEOUT)) &&
           (timeoutSec2 - timeoutSec1 < rollbackTimeout ) );
 
    if ( rsp )
