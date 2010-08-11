@@ -69,6 +69,9 @@ static void ipmi_kontron_nextboot_help(void);
 static int ipmi_kontron_nextboot_set(struct ipmi_intf * intf,
                                      int argc, char **argv);
 
+static int ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf * intf,
+                                                 unsigned char channel,
+                                                 unsigned char size);
 
 int
 ipmi_kontronoem_main(struct ipmi_intf * intf, int argc, char ** argv)
@@ -154,13 +157,74 @@ static void ipmi_kontron_help(void)
 
 int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size)
 {
+   uint8_t error_occurs = 0;
+   uint32_t prev_target_addr = intf->target_addr ;
+
+   if ( intf->target_addr > 0  && (intf->target_addr != intf->my_addr) )
+   {
+      intf->target_addr = intf->my_addr;
+
+       printf("Set local big buffer\r\n");
+       if(ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, size ) == 0)
+       {
+          printf("Set local big buffer:success\r\n");
+       }
+       else
+       {
+          error_occurs = 1;
+       }
+
+       if (error_occurs == 0)
+       {
+          if(ipmi_kontronoem_send_set_large_buffer( intf, 0x00, size ) == 0)
+          {
+             printf("IPMB was set\r\n");
+          }
+          else
+          {
+             /* Revert back the previous set large buffer */
+             error_occurs = 1;
+             ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, 0 );
+          }
+       }
+
+      /* Restore target address */
+       intf->target_addr = prev_target_addr;
+   }
+
+   if (error_occurs == 0)
+   {
+      if(ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, size ) == 0)
+      {
+         printf("Set remote big buffer\r\n");
+      }
+      else
+      {
+         if ( intf->target_addr > 0  && (intf->target_addr != intf->my_addr) )
+         {
+            /* Error occurs revert back the previous set large buffer*/
+            intf->target_addr = intf->my_addr;
+
+            ipmi_kontronoem_send_set_large_buffer( intf, 0x00, 0 );
+            ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, 0 );
+
+            intf->target_addr = prev_target_addr;
+         }
+      }
+   }
+   return error_occurs;
+}
+
+
+int ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf * intf, unsigned char channel,unsigned char size)
+{
    struct ipmi_rs *rsp;
    struct ipmi_rq req;
    uint8_t msg_data[2];
    int i;
    
    memset(msg_data, 0, sizeof(msg_data));
-   msg_data[0] = 0x0e;   // Currently running interface
+   msg_data[0] = channel/*0x0e*/;   // Currently running interface
    msg_data[1] = size;
    
    memset(&req, 0, sizeof(req));
