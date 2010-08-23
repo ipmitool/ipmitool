@@ -76,6 +76,11 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
 
 static int ipmi_fru_set_field_string(struct ipmi_intf * intf, unsigned
 						char fruId, uint8_t f_type, uint8_t f_index, char *f_string);
+static int
+ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId, 
+                                  struct fru_info fru, struct fru_header header, 
+                                  uint8_t f_type, uint8_t f_index, char *f_string);
+
 static void
 fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset);
@@ -90,8 +95,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
  *
  * returns pointer to FRU area string
  */
-char *
-get_fru_area_str(uint8_t * data, uint32_t * offset)
+char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
 	char * str;
@@ -483,7 +487,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	uint16_t off=0,  tmp, finish;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t msg_data[25];
+	uint8_t msg_data[256];
 	uint8_t writeLength;
    uint16_t num_bloc;
 
@@ -507,6 +511,12 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	if (fru->access && fru_data_rqst_size > 16)
 #endif
 	  fru_data_rqst_size = 16;
+
+    /* Check if we receive size in parameters */
+    if(intf->channel_buf_size != 0)
+    {
+       fru_data_rqst_size = intf->channel_buf_size - 5; /* Plan for overhead */
+    }
 
 	do {
       /* Temp init end_bloc to the end, if not found */
@@ -539,9 +549,9 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
       }
 
 		tmp = end_bloc - (doffset+off); /* bytes remaining for the bloc */
-		if (tmp > 16) {
-			memcpy(&msg_data[3], pFrubuf + soffset + off, 16);
-			req.msg.data_len = 16 + 3;
+		if (tmp > fru_data_rqst_size) {
+			memcpy(&msg_data[3], pFrubuf + soffset + off, fru_data_rqst_size);
+			req.msg.data_len = fru_data_rqst_size + 3;
 		}
 		else {
 			memcpy(&msg_data[3], pFrubuf + soffset + off, (uint8_t)tmp);
@@ -558,10 +568,9 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
                         found_bloc, fru_bloc[found_bloc].blocId);
       }
 
-
 		writeLength = req.msg.data_len-3;
 
-		rsp = intf->sendrecv(intf, &req);
+        rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
 			break;
 		}
@@ -731,6 +740,15 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	if (fru->access && fru_data_rqst_size > 16)
 #endif
 		fru_data_rqst_size = 16;
+
+
+    /* Check if we receive size in parameters */
+    if(intf->channel_buf_size != 0)
+    {
+       fru_data_rqst_size = intf->channel_buf_size - 9; /* Plan for overhead */
+    }
+
+
 	do {
 		tmp = fru->access ? off >> 1 : off;
 		msg_data[0] = id;
@@ -4190,13 +4208,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	return rc;
 }
-/* ipmi_fru_set_field_string -  Set a field string to a new value, Need to be the same size
+/* ipmi_fru_set_field_string -  Set a field string to a new value, Need to be the same size.  If
+ *                              size if not equal, the function ipmi_fru_set_field_string_rebuild
+ *                              will be called.
  *
- * @intf:		ipmi interface
- * @id:		fru id
- * @f_type:		 Type of the Field : c=Chassis b=Board p=Product
- * @f_index:	  findex of the field, zero indexed.
- * @f_string:		NULL terminated string
+ * @intf:	    ipmi interface
+ * @id:		    fru id
+ * @f_type:		Type of the Field : c=Chassis b=Board p=Product
+ * @f_index:	findex of the field, zero indexed.
+ * @f_string:	NULL terminated string
  *
  * returns -1 on error
  * returns 1 if successful
@@ -4238,8 +4258,8 @@ f_type, uint8_t f_index, char *f_string)
 			val2str(rsp->ccode, completion_code_vals));
 		return(-1);
 	}
-	printf("OK\n");
-	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+
+    fru.size = (rsp->data[1] << 8) | rsp->data[0];
 	fru.access = rsp->data[2] & 0x1;
 
 	if (fru.size < 1) {
@@ -4381,12 +4401,398 @@ f_type, uint8_t f_index, char *f_string)
 			}
 	}
 	else {
-			printf("Can not replace '%s' with '%s'.\n", fru_area, f_string );
-			printf("String size are not equal (needs %d bytes).\n", 
-                   strlen((const char *)fru_area) );
-			free(fru_data);
-			return -1;
+            free(fru_data); /* Free data, will be rebuild in function */
+
+            printf("String size are not equal, resizing fru to fit new string\n");
+
+            if( 
+                 ipmi_fru_set_field_string_rebuild(intf,fruId,fru,header,f_type,f_index,f_string)
+              )
+            {
+                return -1;
+            }
 	}
 	free(fru_data);
+	return 1;
+}
+
+/* 
+   This function can update a string within of the following section when the size is not equal:
+ 
+   Chassis
+   Product
+   Board
+*/
+/* ipmi_fru_set_field_string_rebuild -  Set a field string to a new value, When size are not
+ *                                      the same size.
+ *
+ *  This function can update a string within of the following section when the size is not equal:
+ *
+ *      - Chassis
+ *      - Product
+ *      - Board
+ *
+ * @intf:	  ipmi interface
+ * @fruId:	  fru id
+ * @fru:      info about fru
+ * @header:   contain the header of the FRU
+ * @f_type:	  Type of the Field : c=Chassis b=Board p=Product
+ * @f_index:  findex of the field, zero indexed.
+ * @f_string: NULL terminated string
+ *
+ * returns -1 on error
+ * returns 1 if successful
+ */
+ 
+#define DBG_RESIZE_FRU
+static int
+ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId, 
+                                  struct fru_info fru, struct fru_header header, 
+                                  uint8_t f_type, uint8_t f_index, char *f_string)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+
+	uint8_t msg_data[4];
+	uint8_t checksum;
+	int i = 0;
+	uint8_t	*fru_data_old, *fru_data_new, *fru_area = NULL;
+	uint32_t fru_field_offset, fru_field_offset_tmp;
+	uint32_t fru_section_len, old_section_len, header_offset;
+    uint32_t chassis_offset, board_offset, product_offset;
+    uint32_t chassis_len, board_len, product_len;
+    int      num_byte_change = 0, padding_len = 0;
+    uint32_t counter;
+    unsigned char cksum;
+
+	fru_data_old = malloc( fru.size );
+    fru_data_new = malloc( fru.size );
+
+	if( fru_data_old == NULL || fru_data_new == NULL )
+	{
+		printf("Out of memory!\n");
+		return(-1);
+	}
+
+    /*************************
+      1) Read ALL FRU */
+    printf("Read All FRU area\n"); 
+    printf("Fru Size       : %lu bytes\n", fru.size); 
+
+    /* Read current fru data */
+    read_fru_area(intf ,&fru, fruId, 0, fru.size , fru_data_old);
+
+    #ifdef DBG_RESIZE_FRU
+    printf("Copy to new FRU\n"); 
+    #endif
+
+    /*************************
+      2) Copy all FRU to new FRU */
+    memcpy(fru_data_new, fru_data_old, fru.size);
+
+    /* Build location of all modifiable components */
+    chassis_offset = (header.offset.chassis * 8);
+    board_offset   = (header.offset.board   * 8);
+    product_offset = (header.offset.product * 8);
+
+    /* Retreive length of all modifiable components */
+    chassis_len    =  *(fru_data_old + chassis_offset + 1) * 8;
+    board_len      =  *(fru_data_old + board_offset   + 1) * 8;
+    product_len    =  *(fru_data_old + product_offset + 1) * 8;
+
+    /* Chassis type field */
+	if (f_type == 'c' ) 
+    {
+		header_offset    = chassis_offset;
+		fru_field_offset = chassis_offset + 3;
+		fru_section_len  = chassis_len;
+	}
+	/* Board type field */
+	else if (f_type == 'b' ) 
+    {
+		header_offset    = board_offset;
+		fru_field_offset = board_offset + 6;
+		fru_section_len  = board_len;
+	}
+	/* Product type field */
+	else if (f_type == 'p' ) 
+    {
+		header_offset    = product_offset;
+		fru_field_offset = product_offset + 3;
+		fru_section_len  = product_len;
+	}
+	else
+	{
+        printf("Wrong field type.");
+		return -1;
+	}
+
+    /* Keep length for future old section display */
+    old_section_len = fru_section_len; 
+
+    /*************************
+      3) Seek to field index */
+	for( i=0; i<f_index; i++ )
+	{
+        fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
+	}
+
+	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
+		printf("Field not found (1)!\n");
+		return -1;
+	}
+
+    /* Get original field string */
+	fru_field_offset_tmp = fru_field_offset;
+	fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
+    if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) 
+    {
+      printf("Field not found! (2)\n");
+      return -1;
+    }
+
+    if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) 
+    {
+        printf("Field not found! (3)\n");
+        return -1;
+    }
+
+    #ifdef DBG_RESIZE_FRU
+    printf("Section Length: %lu\n", fru_section_len);
+    #endif
+
+    /*************************
+      4) Check number of padding bytes and bytes changed */
+    for(counter = 2; counter < fru_section_len; counter ++)
+    {
+       if(*(fru_data_old + (header_offset + fru_section_len - counter)) == 0)
+          padding_len ++;
+       else
+          break;
+    }
+    num_byte_change = strlen(f_string) - strlen(fru_area);
+
+    #ifdef DBG_RESIZE_FRU
+    printf("Padding Length: %u\n", padding_len);
+    printf("NumByte Change: %i\n", num_byte_change);
+    printf("Start SecChnge: %x\n", *(fru_data_old + fru_field_offset_tmp));
+    printf("End SecChnge  : %x\n", *(fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1));
+
+    printf("Start Section : %x\n", *(fru_data_old + header_offset));
+    printf("End Sec wo Pad: %x\n", *(fru_data_old + header_offset + fru_section_len - 2 - padding_len));
+    printf("End Section   : %x\n", *(fru_data_old + header_offset + fru_section_len - 1));
+    #endif
+
+    /* Calculate New Padding Length */ 
+    padding_len -= num_byte_change;
+    
+    #ifdef DBG_RESIZE_FRU
+    printf("New Padding Length: %i\n", padding_len);
+    #endif
+
+    /*************************
+      5) Check if section must be resize.  This occur when padding length is not between 0 and 7 */
+    if( (padding_len < 0) || (padding_len >= 8))
+    {
+        uint32_t remaining_offset = ((header.offset.product * 8) + product_len);
+        int change_size_by_8;
+
+        if(padding_len >= 8)
+        {
+            /* Section must be set smaller */
+            change_size_by_8 = ((padding_len) / 8) * (-1);
+        }
+        else
+        {
+            /* Section must be set bigger */
+            change_size_by_8 = 1 + (((padding_len+1) / 8) * (-1));
+        }
+
+        /* Recalculate padding and section length base on the section changes */
+        fru_section_len += (change_size_by_8 * 8);
+        padding_len     += (change_size_by_8 * 8);
+
+        #ifdef DBG_RESIZE_FRU
+        printf("change_size_by_8: %i\n", change_size_by_8);
+        printf("New Padding Length: %i\n", padding_len);
+        printf("change_size_by_8: %i\n", change_size_by_8);
+        printf("header.offset.board: %i\n", header.offset.board);
+        #endif
+
+        /* Must move sections */
+        /* Section that can be modified are as follow
+           Chassis
+           Board
+           product */
+
+        /* Chassis type field */
+        if (f_type == 'c' ) 
+        {
+            printf("Moving Section Chassis, from %i to %i\n", 
+                        ((header.offset.board) * 8),
+                        ((header.offset.board + change_size_by_8) * 8)
+                  ); 
+            memcpy( 
+                     (fru_data_new + ((header.offset.board + change_size_by_8) * 8)),
+                     (fru_data_old + (header.offset.board) * 8),
+                     board_len
+                  );
+            header.offset.board   += change_size_by_8;
+        }
+        /* Board type field */
+        if ((f_type == 'c' ) || (f_type == 'b' ))
+        {
+            printf("Moving Section Product, from %i to %i\n", 
+                        ((header.offset.product) * 8),
+                        ((header.offset.product + change_size_by_8) * 8)
+                  ); 
+            memcpy( 
+                     (fru_data_new + ((header.offset.product + change_size_by_8) * 8)),
+                     (fru_data_old + (header.offset.product) * 8),
+                     product_len
+                  );
+            header.offset.product += change_size_by_8;
+        }
+
+        /* Adjust length of the section */
+        if (f_type == 'c') 
+        {
+            *(fru_data_old + chassis_offset + 1) += change_size_by_8;
+        }
+        else if( f_type == 'b')
+        {
+            *(fru_data_new + board_offset + 1)   += change_size_by_8;
+        }
+        else if( f_type == 'p')
+        {
+            *(fru_data_new + product_offset + 1) += change_size_by_8;
+        }
+
+        /* Rebuild Header checksum */
+        {
+            unsigned char * pfru_header = (unsigned char *) &header;
+            header.checksum = 0;
+            for(counter = 0; counter < (sizeof(struct fru_header) -1); counter ++)
+            {
+                header.checksum += pfru_header[counter];
+            }
+            header.checksum = (0 - header.checksum);
+            memcpy(fru_data_new, pfru_header, sizeof(struct fru_header));
+        }
+
+        /* Move remaining sections in 1 copy */
+        printf("Moving Remaining Bytes (Multi-Rec , etc..), from %i to %i\n", 
+                    remaining_offset,
+                    ((header.offset.product + change_size_by_8) * 8) + product_len
+              ); 
+        memcpy( 
+                fru_data_new + ((header.offset.product + change_size_by_8) * 8) + product_len,
+                fru_data_old + remaining_offset,
+                fru.size - (((header.offset.product + change_size_by_8) * 8) + product_len)
+              );
+
+    }
+
+    /* Update only if it's fits padding length as defined in the spec, otherwise, it's an internal
+       error */
+    /*************************
+      6) Update Field and sections */
+    if( (padding_len >=0) && (padding_len < 8))
+    {
+        /* Do not requires any change in other section */
+
+        /* Change field length */
+        printf("Updating Field : '%s' with '%s' ... (Length from '%x' to '%x')\n", 
+            fru_area, f_string, *(fru_data_old + fru_field_offset_tmp), (0xc0 + strlen(f_string)));
+        *(fru_data_new + fru_field_offset_tmp) = (0xc0 + strlen(f_string));
+        memcpy(fru_data_new + fru_field_offset_tmp + 1, f_string, strlen(f_string));
+
+        /* Copy remaing bytes in section */
+        #ifdef DBG_RESIZE_FRU
+        printf("Copying remaining of sections: %lu \n",
+                 (
+                 (fru_data_old + header_offset + fru_section_len - 1) 
+                 - 
+                 (fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1) 
+                ));
+        #endif
+
+        memcpy( 
+                (fru_data_new + fru_field_offset_tmp + 1 + strlen(f_string)), 
+                (fru_data_old + fru_field_offset_tmp + 1 + strlen(fru_area)), 
+                (
+                 (fru_data_old + header_offset + fru_section_len - 1) 
+                 - 
+                 (fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1) 
+                )
+              );
+        
+
+        /* Add Padding if required */
+        for(counter = 0; counter < padding_len; counter ++)
+        {
+            *(fru_data_new + header_offset + fru_section_len - 1 - padding_len+ counter) = 0;
+        }
+
+        /* Calculate New Checksum */
+        cksum = 0;
+        for( counter = 0; counter <fru_section_len-1; counter ++ )
+        {
+            cksum += *(fru_data_new + header_offset + counter);
+        }
+        *(fru_data_new + header_offset + fru_section_len - 1) = (0 - cksum);
+
+        #ifdef DBG_RESIZE_FRU
+        printf("Calculate New Checksum: %x\n", (0 - cksum));
+        #endif
+
+        /****** ENABLE to show section modified before and after ********/
+        #if 0
+        printf("Section: ");
+        for( counter = 0; counter <old_section_len; counter ++ )
+        {
+            if((counter %16) == 0)
+            {
+                 printf("\n");
+            }
+            printf( "%02X ", *(fru_data_old + header_offset + counter) );
+        }
+        printf("\n");
+
+        printf("Section: ");
+        for( counter = 0; counter <fru_section_len; counter ++ )
+        {
+            if((counter %16) == 0)
+            {
+                 printf("\n");
+            }
+            printf( "%02X ", *(fru_data_new + header_offset + counter) );
+        }
+        printf("\n");
+        #endif
+    }
+    else
+    {
+        printf( "Internal error, padding length %i (must be from 0 to 7) ", padding_len );
+        free(fru_data_old);
+        free(fru_data_new);
+        return -1;
+    }
+
+    /*************************
+      7) Finally, write new FRU */
+    printf("Writing new FRU.\n");
+    if( write_fru_area( intf, &fru, fruId, 0, 0, fru.size, fru_data_new ) < 0 )
+    {
+        printf("Write to FRU data failed.\n");
+        free(fru_data_old);
+        free(fru_data_new);
+        return -1;
+    }
+
+    printf("Done.\n");
+          
+    free(fru_data_old);
+    free(fru_data_new);
 	return 1;
 }
