@@ -61,6 +61,7 @@
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_hpmfwupg.h>
+#include <ipmitool/ipmi_delloem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_ime.h>
 
@@ -106,6 +107,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},
 	{ ipmi_fwum_main,    "fwum",	"Update IPMC using Kontron OEM Firmware Update Manager" },
 	{ ipmi_firewall_main,"firewall","Configure Firmware Firewall" },
+	{ ipmi_delloem_main, "delloem", "OEM Commands for Dell systems" },
 #ifdef HAVE_READLINE
 	{ ipmi_shell_main,   "shell",   "Launch interactive IPMI shell" },
 #endif
