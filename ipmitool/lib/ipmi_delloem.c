@@ -166,6 +166,11 @@ static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id,
                        struct fru_header header, struct fru_info fru);
 static void ipmi_powermonitor_usage(void);
 
+static int ipmi_getsesmask(int, char **);
+static int IsSetLEDSupported(void);
+static void ipmi_setled_usage(void);
+static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc, char ** argv);
+static int ipmi_setled_state (struct ipmi_intf * intf, int b, int d, int f, int state);
 
 /*****************************************************************
 * Function Name:       ipmi_delloem_main
@@ -208,7 +213,12 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
     else if (IsLANSupported() && strncmp(argv[current_arg], "lan\0", 4) == 0) 
     {
         ipmi_delloem_lan_main (intf,argc,argv);
-    }       
+    }
+    /* SetLED support */
+    else if (IsSetLEDSupported() && strncmp(argv[current_arg], "setled\0", 7) == 0)
+    {
+        ipmi_delloem_setled_main (intf,argc,argv);
+    }
     /*Powermanagement report processing*/
     else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) 
     {
@@ -243,7 +253,9 @@ static void usage(void)
         lprintf(LOG_NOTICE, "    lcd"); 
     lprintf(LOG_NOTICE, "    mac");         
     if (IsLANSupported())
-        lprintf(LOG_NOTICE, "    lan");         
+        lprintf(LOG_NOTICE, "    lan");
+    if (IsSetLEDSupported())
+	lprintf(LOG_NOTICE,    "    setled");         
     lprintf(LOG_NOTICE, "    powermonitor");        
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "For help on individual commands type:");
@@ -4220,6 +4232,180 @@ ipmi_powermonitor_usage(void)
 
 }
 
+/**********************************************************************
+* Function Name: ipmi_setled_usage
+*
+* Description:  This function prints help message for setled command
+* Input:
+* Output:
+*
+* Return:
+*
+***********************************************************************/
+static void
+ipmi_setled_usage(void)
+{
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "   setled <b:d.f> <state..>");
+    lprintf(LOG_NOTICE, "      Set backplane LED state");
+    lprintf(LOG_NOTICE, "      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
+    lprintf(LOG_NOTICE, "      state = fail|identify|off");
+    lprintf(LOG_NOTICE, "");
+}
 
+static int
+IsSetLEDSupported(void)
+{
+    return 0;		/* NOTYET */
+}
 
+/*****************************************************************
+* Function Name:    ipmi_setled_state
+*
+* Description:      This function updates the LED on the backplane
+* Input:            intf         - ipmi interface
+*		    bdf	 	 - PCI Address of drive
+*		    state	 - SES Flags state of drive
+* Output:           
+*
+* Return:          
+*
+******************************************************************/
+static int
+ipmi_setled_state (struct ipmi_intf * intf, int b, int d, int f, int state)
+{
+    struct ipmi_rs * rsp = NULL;
+    struct ipmi_rq req = {0};
+    uint8_t data[8];
 
+    req.msg.netfn = DELL_OEM_NETFN;
+    req.msg.lun = 0;
+    req.msg.cmd = 0x28;
+    req.msg.data_len = 8;
+    req.msg.data = data;
+    data[0] = 0xFF;		// bay id
+    data[1] = 0xFF;		// drive slot number
+    data[2] = b;		// bus
+    data[3] = d;		// device
+    data[4] = f;		// function
+    data[5] = 0xFF;		// slot/carrier type
+    data[6] = state & 0xFF;	// drive state
+    data[7] = state >> 8;
+
+    rsp = intf->sendrecv(intf, &req);
+
+    if (rsp == NULL)
+    {
+        lprintf(LOG_ERR, " Error issuing setled command .\n");
+        return -1;
+    }
+    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    {
+        lprintf(LOG_ERR, "  Error issuing setled command: Command not supported on this system.");
+        return -1;
+    }
+    else if (rsp->ccode != 0)
+    {
+        lprintf(LOG_ERR, "  Error issuing setled command: %s",
+            val2str(rsp->ccode, completion_code_vals));
+        return -1;
+    }
+
+    if (verbose > 1)
+    {
+        printf("SetLED data               : %x %x %x %x %x\n\n",
+            rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3], 
+            rsp->data[4]        );
+
+    }
+    return 0;
+}
+
+/*****************************************************************
+* Function Name:    ipmi_getsesmask
+*
+* Description:      This function calculates bits in SES drive update
+* Return:           Mask set with bits for SES backplane update
+*
+******************************************************************/
+static int ipmi_getsesmask(int argc, char **argv)
+{
+	int mask = 0;
+	int idx;
+	
+	while (current_arg < argc) {
+		if (!strcmp(argv[current_arg], "present"))
+			mask |= (1L << 0);
+		if (!strcmp(argv[current_arg], "online"))
+			mask |= (1L << 1);
+		if (!strcmp(argv[current_arg], "hotspare"))
+			mask |= (1L << 2);
+		if (!strcmp(argv[current_arg], "identify"))
+			mask |= (1L << 3);
+		if (!strcmp(argv[current_arg], "rebuilding"))
+			mask |= (1L << 4);
+		if (!strcmp(argv[current_arg], "fault"))
+			mask |= (1L << 5);
+		if (!strcmp(argv[current_arg], "predict"))
+			mask |= (1L << 6);
+		if (!strcmp(argv[current_arg], "critical"))
+			mask |= (1L << 9);
+		if (!strcmp(argv[current_arg], "failed"))
+			mask |= (1L << 10);
+		current_arg++;
+	}
+	return mask;
+}
+
+/*****************************************************************
+* Function Name:       ipmi_delloem_setled_main
+*
+* Description:         This function processes the delloem setled command
+* Input:               intf    - ipmi interface
+                       argc    - no of arguments
+                       argv    - argument string array
+* Output:        
+*
+* Return:              return code     0 - success
+*                         -1 - failure
+*
+******************************************************************/
+static int
+ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+    int rc = 0;
+    int n, b,d,f, mask;
+
+    current_arg++;
+    if (argc < current_arg) 
+    {
+        usage();
+        return -1;
+    }
+
+    /* ipmitool delloem setled info*/
+    if (argc == 1) 
+    {
+        ipmi_setled_usage();
+	return 0;
+    }
+    else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
+        /* We have bus/dev/function of drive */
+	current_arg++;
+	
+	mask = ipmi_getsesmask(argc, argv);
+	rc = ipmi_setled_state (intf, b, d, f, mask);
+    }
+    else if (sscanf(argv[current_arg], "%x:%x.%x", &b,&d,&f) == 3) {
+        /* We have bus/dev/function of drive */
+	current_arg++;
+	
+	mask = ipmi_getsesmask(argc, argv);
+	rc = ipmi_setled_state (intf, b, d, f, mask);
+    }
+    else {
+	ipmi_setled_usage();
+	return -1;
+    }
+    return rc;
+}
