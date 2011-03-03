@@ -464,8 +464,8 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
 
-//	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
-//		return ipmi_sdr_get_sensor_reading(intf, sensor);
+	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
+		return ipmi_sdr_get_sensor_reading(intf, sensor);
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
@@ -1143,6 +1143,8 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
+
+	printf("ipmi_sdr_print_sensor_full\n");
 
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
