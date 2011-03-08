@@ -111,6 +111,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 	/* bits 6:7 contain format */
 	typecode = ((data[off] & 0xC0) >> 6);
 
+	// printf("Typecode:%i\n", typecode);
 	/* bits 0:5 contain length */
 	len = data[off++];
 	len &= 0x3f;
@@ -4352,28 +4353,16 @@ f_type, uint8_t f_index, char *f_string)
 	f_index= f_index - 0x30;
 
 	/*Seek to field index */
-	for( i=0; i<f_index; i++ )
+	for( i=0; i<=f_index; i++ )
 	{
-		  fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
+		fru_field_offset_tmp = fru_field_offset;
+		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
 
 	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
-		printf("Field not found!\n");
+		printf("Field not found !\n");
 		return -1;
 	}
-		/* Get original field string */
-	fru_field_offset_tmp = fru_field_offset;
-	fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
-   if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) {
-      printf("Field not found!\n");
-      return -1;
-   }
-
-
-   if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) {
-      printf("Field not found!\n");
-      return -1;
-   }
 
 	if ( strlen((const char *)fru_area) == strlen((const char *)f_string) )
 	{
@@ -4534,8 +4523,9 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
     /*************************
       3) Seek to field index */
-	for( i=0; i<f_index; i++ )
+	for( i=0; i<=f_index; i++ )
 	{
+		fru_field_offset_tmp = fru_field_offset;
         fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
 	}
 
@@ -4544,20 +4534,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		return -1;
 	}
 
-    /* Get original field string */
-	fru_field_offset_tmp = fru_field_offset;
-	fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
-    if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) 
-    {
-      printf("Field not found! (2)\n");
-      return -1;
-    }
-
-    if ( (fru_area == NULL ) || strlen((const char *)fru_area) == 0 ) 
-    {
-        printf("Field not found! (3)\n");
-        return -1;
-    }
 
     #ifdef DBG_RESIZE_FRU
     printf("Section Length: %lu\n", fru_section_len);
