@@ -4460,12 +4460,13 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, old_section_len, header_offset;
     uint32_t chassis_offset, board_offset, product_offset;
-    uint32_t chassis_len, board_len, product_len;
+    uint32_t chassis_len, board_len, product_len, product_len_new;
     int      num_byte_change = 0, padding_len = 0;
     uint32_t counter;
     unsigned char cksum;
 
-	fru_data_old = malloc( fru.size );
+	fru_data_old = calloc( fru.size, sizeof(uint8_t) );
+
     fru_data_new = malloc( fru.size );
 
 	if( fru_data_old == NULL || fru_data_new == NULL )
@@ -4495,10 +4496,11 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
     board_offset   = (header.offset.board   * 8);
     product_offset = (header.offset.product * 8);
 
-    /* Retreive length of all modifiable components */
+    /* Retrieve length of all modifiable components */
     chassis_len    =  *(fru_data_old + chassis_offset + 1) * 8;
     board_len      =  *(fru_data_old + board_offset   + 1) * 8;
     product_len    =  *(fru_data_old + product_offset + 1) * 8;
+    product_len_new = product_len;
 
     /* Chassis type field */
 	if (f_type == 'c' ) 
@@ -4657,7 +4659,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
         /* Adjust length of the section */
         if (f_type == 'c') 
         {
-            *(fru_data_old + chassis_offset + 1) += change_size_by_8;
+            *(fru_data_new + chassis_offset + 1) += change_size_by_8;
         }
         else if( f_type == 'b')
         {
@@ -4666,6 +4668,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
         else if( f_type == 'p')
         {
             *(fru_data_new + product_offset + 1) += change_size_by_8;
+            product_len_new = *(fru_data_new + product_offset + 1) * 8;
         }
 
         /* Rebuild Header checksum */
@@ -4683,14 +4686,24 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
         /* Move remaining sections in 1 copy */
         printf("Moving Remaining Bytes (Multi-Rec , etc..), from %i to %i\n", 
                     remaining_offset,
-                    ((header.offset.product + change_size_by_8) * 8) + product_len
-              ); 
-        memcpy( 
-                fru_data_new + ((header.offset.product + change_size_by_8) * 8) + product_len,
-                fru_data_old + remaining_offset,
-                fru.size - (((header.offset.product + change_size_by_8) * 8) + product_len)
+                    ((header.offset.product) * 8) + product_len_new
               );
-
+        if(((header.offset.product * 8) + product_len_new - remaining_offset) < 0)
+        {
+            memcpy(
+                    fru_data_new + (header.offset.product * 8) + product_len_new,
+                    fru_data_old + remaining_offset,
+                    fru.size - remaining_offset
+                  );
+        }
+        else
+        {
+           memcpy(
+                fru_data_new + (header.offset.product * 8) + product_len_new,
+                fru_data_old + remaining_offset,
+                fru.size - ((header.offset.product * 8) + product_len_new)
+              );
+        }
     }
 
     /* Update only if it's fits padding length as defined in the spec, otherwise, it's an internal
