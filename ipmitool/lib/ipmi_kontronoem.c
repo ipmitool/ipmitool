@@ -196,7 +196,7 @@ int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size
    {
       if(ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, size ) == 0)
       {
-         printf("Set remote big buffer\r\n");
+         //printf("Set remote big buffer\r\n");
       }
       else
       {
@@ -205,7 +205,7 @@ int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size
             /* Error occurs revert back the previous set large buffer*/
             intf->target_addr = intf->my_addr;
 
-            ipmi_kontronoem_send_set_large_buffer( intf, 0x00, 0 );
+            //ipmi_kontronoem_send_set_large_buffer( intf, 0x00, 0 );
             ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, 0 );
 
             intf->target_addr = prev_target_addr;
@@ -243,8 +243,8 @@ int ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf * intf, unsigned char
    }
    if (rsp->ccode > 0) 
    {
-      printf("Invalid length for the selected interface (%s)\n", 
-               val2str(rsp->ccode, completion_code_vals));
+      printf("Invalid length for the selected interface (%s) %d\n", 
+               val2str(rsp->ccode, completion_code_vals), rsp->ccode);
       return(-1);
    }
    return 0;

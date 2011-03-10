@@ -3262,8 +3262,7 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
       timeoutSec2 = time(NULL);
 
    }while( rsp &&
-          ((rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) ||
-           (rsp->ccode == IPMI_CC_TIMEOUT)) &&
+          (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) &&
           (timeoutSec2 - timeoutSec1 < rollbackTimeout ) );
 
    if ( rsp )
@@ -3599,7 +3598,7 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
     */
    if ( pFwupgCtx != NULL )
    {
-      upgradeTimeout = pFwupgCtx->targetCap.upgradeTimeout*5;
+      upgradeTimeout = (unsigned int)(pFwupgCtx->targetCap.upgradeTimeout*5);
       if ( verbose )
           printf("Use File Upgrade Capabilities: %i seconds\n", upgradeTimeout);
    }
@@ -3617,7 +3616,7 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
       }
       else
       {
-          upgradeTimeout = (targetCapCmd.resp.upgradeTimeout * 5);
+          upgradeTimeout = (unsigned int)(targetCapCmd.resp.upgradeTimeout * 5);
           if ( verbose )
               printf("Use Command Upgrade Capabilities Timeout: %i seconds\n", upgradeTimeout);
       }
@@ -3632,15 +3631,17 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
    }
 
    while(
-         (upgStatusCmd.resp.lastCmdCompCode == HPMFWUPG_COMMAND_IN_PROGRESS ) &&
-         (timeoutSec2 - timeoutSec1 < upgradeTimeout ) &&
-         (rc == HPMFWUPG_SUCCESS) 
+         //With KCS: Cover the case where we sometime receive d5 (on the first get status) from the ipmi driver.
+         (upgStatusCmd.resp.lastCmdCompCode != 0x00 ) && 
+         ((timeoutSec2 - timeoutSec1) < upgradeTimeout ) &&
+         (rc == HPMFWUPG_SUCCESS)
         )
    {
       /* Must wait at least 1000 ms between status requests */
       usleep(1000000);
+      timeoutSec2 = time(NULL);
       rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
-      //printf("Get Status: %x - %x = %x _ %x [%x]\n", timeoutSec2, timeoutSec1,(timeoutSec2 - timeoutSec1),upgradeTimeout, rc); 
+      //printf("Get Status: %x - %x = %x _ %x [%x]\n", timeoutSec2, timeoutSec1,(timeoutSec2 - timeoutSec1),upgradeTimeout, rc);
    }
 
    if ( upgStatusCmd.resp.lastCmdCompCode != 0x00 )
