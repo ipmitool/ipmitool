@@ -3262,7 +3262,8 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
       timeoutSec2 = time(NULL);
 
    }while( rsp &&
-          (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) &&
+          ((rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) ||
+           (rsp->ccode == IPMI_CC_TIMEOUT)) &&
           (timeoutSec2 - timeoutSec1 < rollbackTimeout ) );
 
    if ( rsp )
