@@ -80,7 +80,7 @@ static int current_arg =0;
 uint8_t iDRAC_FLAG=0;
 LCD_MODE lcd_mode;
 static uint8_t LcdSupported=0;
-
+static uint8_t SetLEDSupported=0;
 
 volatile uint8_t IMC_Type = IMC_IDRAC_10G;
 
@@ -167,10 +167,12 @@ static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id,
 static void ipmi_powermonitor_usage(void);
 
 static int ipmi_getsesmask(int, char **);
+static int CheckSetLEDSupport(struct ipmi_intf * intf);
 static int IsSetLEDSupported(void);
 static void ipmi_setled_usage(void);
 static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc, char ** argv);
-static int ipmi_setled_state (struct ipmi_intf * intf, int b, int d, int f, int state);
+static int ipmi_setled_state (struct ipmi_intf * intf, int bayId, int slotId, int state);
+static int ipmi_getdrivemap (struct ipmi_intf * intf, int b, int d, int f, int *bayId, int *slotId);
 
 /*****************************************************************
 * Function Name:       ipmi_delloem_main
@@ -193,6 +195,7 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 
     ipmi_idracvalidator_command(intf);
     CheckLCDSupport (intf);
+    CheckSetLEDSupport (intf);
 
     if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) 
     {
@@ -4249,14 +4252,110 @@ ipmi_setled_usage(void)
     lprintf(LOG_NOTICE, "   setled <b:d.f> <state..>");
     lprintf(LOG_NOTICE, "      Set backplane LED state");
     lprintf(LOG_NOTICE, "      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
-    lprintf(LOG_NOTICE, "      state = fail|identify|off");
+    lprintf(LOG_NOTICE, "      state = present|online|hotspare|identify|rebuilding|");
+    lprintf(LOG_NOTICE, "              fault|predict|critical|failed");
     lprintf(LOG_NOTICE, "");
 }
 
 static int
 IsSetLEDSupported(void)
 {
-    return 0;		/* NOTYET */
+    return SetLEDSupported;
+}
+
+static int
+CheckSetLEDSupport(struct ipmi_intf * intf)
+{
+    struct ipmi_rs * rsp = NULL;
+    struct ipmi_rq req = {0};
+    uint8_t data[4];
+
+    SetLEDSupported = 0;
+    req.msg.netfn = DELL_OEM_NETFN;
+    req.msg.lun = 0;
+    req.msg.cmd = 0xD5; 		/* Storage */
+    req.msg.data_len = 10;
+    req.msg.data = data;
+
+    memset(data, 0, sizeof(data));
+    data[0] = 0x01;                        // get
+    data[1] = 0x00;			   // subcmd:get firmware version
+    data[2] = 0x08;                        // length lsb
+    data[3] = 0x00;			   // length msb
+    data[4] = 0x00;			   // offset lsb
+    data[5] = 0x00;			   // offset msb
+    data[6] = 0x00;			   // bay id
+    data[7] = 0x00;		
+    data[8] = 0x00;
+    data[9] = 0x00;
+
+    rsp = intf->sendrecv(intf, &req);
+    if (rsp == NULL || rsp->ccode != 0)
+    {
+        return;
+    }
+    SetLEDSupported = 1;
+}
+
+/*****************************************************************
+* Function Name:    ipmi_getdrivemap
+*
+* Description:      This function returns mapping of BDF to Bay:Slot
+* Input:            intf         - ipmi interface
+*		    bdf	 	 - PCI Address of drive
+*		    *bay	 - Returns bay ID
+		    *slot	 - Returns slot ID
+* Output:           
+*
+* Return:          
+*
+******************************************************************/
+static int
+ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay, int *slot)
+{
+    struct ipmi_rs * rsp = NULL;
+    struct ipmi_rq req = {0};
+    uint8_t data[8];
+
+    /* Get mapping of BDF to bay:slot */
+    req.msg.netfn = DELL_OEM_NETFN;
+    req.msg.lun = 0;
+    req.msg.cmd = 0xD5;
+    req.msg.data_len = 8;
+    req.msg.data = data;
+
+    memset(data, 0, sizeof(data));
+    data[0] = 0x01;		// get
+    data[1] = 0x07;		// storage map
+    data[2] = 0x06;		// length lsb
+    data[3] = 0x00;		// length msb
+    data[4] = 0x00;		// offset lsb
+    data[5] = 0x00;		// offset msb
+    data[6] = b;		// bus
+    data[7] = (d << 3) + f;	// devfn
+
+    rsp = intf->sendrecv(intf, &req);
+
+    if (rsp == NULL)
+    {
+        lprintf(LOG_ERR, " Error issuing getdrivemap command.\n");
+        return -1;
+    }
+    else if (rsp->ccode != 0)
+    {
+        lprintf(LOG_ERR, "  Error issuing getdrivemap command: %s",
+            val2str(rsp->ccode, completion_code_vals));
+        return -1;
+    }
+
+    *bay = rsp->data[7];
+    *slot = rsp->data[8];
+    if (*bay == 0xFF || *slot == 0xFF)
+    {
+	lprintf(LOG_ERR, "Error could not get drive bay:slot mapping");
+	return -1;
+    }
+    return 0;
 }
 
 /*****************************************************************
@@ -4272,36 +4371,38 @@ IsSetLEDSupported(void)
 *
 ******************************************************************/
 static int
-ipmi_setled_state (struct ipmi_intf * intf, int b, int d, int f, int state)
+ipmi_setled_state (struct ipmi_intf * intf, int bayId, int slotId, int state)
 {
     struct ipmi_rs * rsp = NULL;
     struct ipmi_rq req = {0};
-    uint8_t data[8];
+    uint8_t data[20];
 
+    /* Issue Drive Status Update to bay:slot */
     req.msg.netfn = DELL_OEM_NETFN;
     req.msg.lun = 0;
-    req.msg.cmd = 0x28;
-    req.msg.data_len = 8;
+    req.msg.cmd = 0xD5;
+    req.msg.data_len = 20;
     req.msg.data = data;
-    data[0] = 0xFF;		// bay id
-    data[1] = 0xFF;		// drive slot number
-    data[2] = b;		// bus
-    data[3] = d;		// device
-    data[4] = f;		// function
-    data[5] = 0xFF;		// slot/carrier type
-    data[6] = state & 0xFF;	// drive state
-    data[7] = state >> 8;
+
+    memset(data, 0, sizeof(data));
+    data[0] = 0x00;		// set
+    data[1] = 0x04;		// set drive status
+    data[2] = 0x0e;		// length lsb
+    data[3] = 0x00;		// length msb
+    data[4] = 0x00;		// offset lsb
+    data[5] = 0x00;		// offset msb
+    data[6] = 0x0e;		// length lsb
+    data[7] = 0x00;		// length msb
+    data[8] = bayId;		// bayid
+    data[9] = slotId;		// slotid
+    data[10] = state & 0xff;	// state LSB
+    data[11] = state >> 8;	// state MSB;
 
     rsp = intf->sendrecv(intf, &req);
 
     if (rsp == NULL)
     {
-        lprintf(LOG_ERR, " Error issuing setled command .\n");
-        return -1;
-    }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
-    {
-        lprintf(LOG_ERR, "  Error issuing setled command: Command not supported on this system.");
+        lprintf(LOG_ERR, " Error issuing setled command.\n");
         return -1;
     }
     else if (rsp->ccode != 0)
@@ -4309,14 +4410,6 @@ ipmi_setled_state (struct ipmi_intf * intf, int b, int d, int f, int state)
         lprintf(LOG_ERR, "  Error issuing setled command: %s",
             val2str(rsp->ccode, completion_code_vals));
         return -1;
-    }
-
-    if (verbose > 1)
-    {
-        printf("SetLED data               : %x %x %x %x %x\n\n",
-            rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4]        );
-
     }
     return 0;
 }
@@ -4375,6 +4468,10 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
     int rc = 0;
     int n, b,d,f, mask;
+    int bayId, slotId;
+
+    bayId = 0xFF;
+    slotId = 0xFF;
 
     current_arg++;
     if (argc < current_arg) 
@@ -4392,20 +4489,23 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
     else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
         /* We have bus/dev/function of drive */
 	current_arg++;
-	
-	mask = ipmi_getsesmask(argc, argv);
-	rc = ipmi_setled_state (intf, b, d, f, mask);
+    	ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId);
     }
     else if (sscanf(argv[current_arg], "%x:%x.%x", &b,&d,&f) == 3) {
         /* We have bus/dev/function of drive */
 	current_arg++;
-	
-	mask = ipmi_getsesmask(argc, argv);
-	rc = ipmi_setled_state (intf, b, d, f, mask);
     }
     else {
 	ipmi_setled_usage();
 	return -1;
     }
-    return rc;
+    /* Get mask of SES flags */	
+    mask = ipmi_getsesmask(argc, argv);
+
+    /* Get drive mapping */
+    if (ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId))
+	return -1;
+
+    /* Set drive LEDs */
+    return ipmi_setled_state (intf, bayId, slotId, mask);
 }
