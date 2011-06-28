@@ -239,8 +239,9 @@ struct ipmi_rs {
 #define IPMI_NETFN_APP			0x6
 #define IPMI_NETFN_FIRMWARE		0x8
 #define IPMI_NETFN_STORAGE		0xa
-#define IPMI_NETFN_TRANSPORT		0xc
+#define IPMI_NETFN_TRANSPORT	0xc
 #define IPMI_NETFN_PICMG		0x2C
+#define IPMI_NETFN_DCGRP		0x2C
 #define IPMI_NETFN_ISOL			0x34
 #define IPMI_NETFN_TSOL			0x30
 

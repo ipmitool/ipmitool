@@ -64,6 +64,7 @@
 #include <ipmitool/ipmi_delloem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_ime.h>
+#include <ipmitool/ipmi_dcmi.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -102,6 +103,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_user_main,    "user",    "Configure Management Controller users" },
 	{ ipmi_channel_main, "channel", "Configure Management Controller channels" },
 	{ ipmi_session_main, "session", "Print session information" },
+    { ipmi_dcmi_main,    "dcmi",    "Data Center Management Interface"},
 	{ ipmi_sunoem_main,  "sunoem",  "OEM Commands for Sun servers" },
 	{ ipmi_kontronoem_main, "kontronoem", "OEM Commands for Kontron devices"},
 	{ ipmi_picmg_main,   "picmg",   "Run a PICMG/ATCA extended cmd"},

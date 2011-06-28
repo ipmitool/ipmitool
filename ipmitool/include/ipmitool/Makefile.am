@@ -38,4 +38,5 @@ noinst_HEADERS = log.h bswap.h helper.h ipmi.h ipmi_cc.h ipmi_intf.h \
 	ipmi_oem.h ipmi_isol.h ipmi_sunoem.h ipmi_picmg.h \
 	ipmi_fwum.h ipmi_main.h ipmi_tsol.h ipmi_firewall.h \
 	ipmi_kontronoem.h ipmi_ekanalyzer.h ipmi_gendev.h ipmi_ime.h \
-	ipmi_delloem.h
+	ipmi_delloem.h ipmi_dcmi.h
+
