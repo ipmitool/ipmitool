@@ -194,8 +194,9 @@ const struct dcmi_cmd dcmi_pwrmgmt_set_usage_vals[] = {
 
 /* power management/set action commands */
 const struct dcmi_cmd dcmi_pwrmgmt_action_vals[] = {
-    { 0x01, "power_off", "" },
-    { 0x11, "sel_logging", ""  },
+    { 0x00, "No Action", "" },
+    { 0x01, "Hard Power Off & Log Event to SEL", "" },
+    { 0x11, "Log Event to SEL", ""  },
     { 0xFF, NULL, NULL      }
 };
 
@@ -1412,12 +1413,16 @@ struct ipmi_rs * ipmi_dcmi_pwr_glimit(struct ipmi_intf * intf)
 static int ipmi_dcmi_pwr_prnt_glimit(struct ipmi_intf * intf) {
 
     struct ipmi_rs * rsp;
+    uint8_t realCc = 0xff;
 
     rsp = ipmi_dcmi_pwr_glimit(intf);
 
     /* rsp can be a null so check response before any operation on it to avoid sig segv */
     if (rsp != NULL)
+    {
+        realCc = rsp->ccode;
         GOOD_PWR_GLIMIT_CCODE(rsp->ccode);
+    }
 
     if(chk_rsp(rsp))
         return -1;
@@ -1428,11 +1433,13 @@ static int ipmi_dcmi_pwr_prnt_glimit(struct ipmi_intf * intf) {
     struct power_limit val;
     memcpy(&val, rsp->data, sizeof (val));
        
-    printf("\n    Exception actions: %s\n",
+    printf("\n    Current Limit State: %s\n",
+        (realCc == 0) ? "Power Limit Active" : "No Active Power Limit" );
+    printf("    Exception actions:   %s\n",
         val2str2(val.action, dcmi_pwrmgmt_action_vals));
-    printf("    Power Limit:       %i Watts\n", val.limit);
-    printf("    Correction time:   %i milliseconds\n", val.correction);
-    printf("    Sampling period:   %i seconds\n", val.sample);
+    printf("    Power Limit:         %i Watts\n", val.limit);
+    printf("    Correction time:     %i milliseconds\n", val.correction);
+    printf("    Sampling period:     %i seconds\n", val.sample);
     printf("\n");
     return 0;
 }
@@ -1461,6 +1468,7 @@ static int ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
     
     rsp = ipmi_dcmi_pwr_glimit(intf); /* get the power limit settings */
 
+    #if 0
     {
         unsigned char counter = 0;
         printf("DATA (%d): ", rsp->data_len);
@@ -1470,6 +1478,7 @@ static int ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
         }
         printf("\n");
     }
+    #endif
 
     /* rsp can be a null so check response before any operation on it to avoid sig segv */
     if (rsp != NULL)
