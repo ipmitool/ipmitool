@@ -70,7 +70,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define IPMI_DELL_IDRAC_VALIDATOR           0xDD    
 #define IPMI_DELL_POWER_CAP_STATUS          0xBA   
+#define IPMI_DELL_AVG_POWER_CONSMP_HST 	0xEB
+#define IPMI_DELL_PEAK_POWER_CONSMP_HST 0xEC
+#define SYSTEM_BOARD_SYSTEM_LEVEL_SENSOR_NUM 0x98
 
+#define	IDRAC_11G					1
+#define	IDRAC_12G					2
 #define btuphr              0x01
 #define watt                0x00
 #define IPMI_DELL_POWER_CAP 0xEA
@@ -176,6 +181,8 @@ typedef struct _lcd_mode
 #define IMC_IDRAC_11G_MODULAR       (uint8_t) (0x0B)
 #define IMC_UNUSED                  (uint8_t) (0x0C)
 #define IMC_MASER_LITE_BMC          (uint8_t) (0x0D)
+#define IMC_IDRAC_12G_MONOLITHIC 	(uint8_t) (0x10)
+#define IMC_IDRAC_12G_MODULAR 		(uint8_t) (0x11)
 
 
 
@@ -216,9 +223,17 @@ typedef struct
 
 #define TOTAL_N0_NICS_INDEX         (uint8_t)(0x1)
 
+
+// 12g supported 
+#define SET_NIC_SELECTION_12G_CMD       (uint8_t)(0x28)
+#define GET_NIC_SELECTION_12G_CMD       (uint8_t)(0x29)
+
+// 11g supported 
 #define SET_NIC_SELECTION_CMD       (uint8_t)(0x24)
 #define GET_NIC_SELECTION_CMD       (uint8_t)(0x25)
 #define GET_ACTIVE_NIC_CMD          (uint8_t)(0xc1)
+#define POWER_EFFICENCY_CMD     		(uint8_t)(0xc0)
+#define SERVER_POWER_CONSUMPTION_CMD   	(uint8_t)(0x8F)
 
 #define POWER_SUPPLY_INFO           (uint8_t)(0xb0)
 #define IPMI_ENTITY_ID_POWER_SUPPLY (uint8_t)(0x0a)
@@ -229,6 +244,8 @@ typedef struct
 #define CLEAR_PWRMGMT_INFO_CMD	    (uint8_t)(0x9D)
 #define GET_PWR_HEADROOM_CMD	    (uint8_t)(0xBB)
 #define GET_PWR_CONSUMPTION_CMD	    (uint8_t)(0xB3)
+#define	GET_FRONT_PANEL_INFO_CMD		(uint8_t)0xb5
+
 
 typedef struct _ipmi_power_monitor
 {
@@ -240,6 +257,23 @@ typedef struct _ipmi_power_monitor
     uint32_t        wattPeakTime;
     uint16_t        wattReading;
 } __attribute__ ((packed)) IPMI_POWER_MONITOR;
+
+
+#define MAX_POWER_FW_VERSION 8
+
+typedef struct _ipmi_power_supply_infoo
+{
+	/*No param_rev it is not a System Information Command */
+	uint16_t ratedWatts;
+	uint16_t ratedAmps;
+	uint16_t ratedVolts;
+	uint32_t vendorid;
+    uint8_t FrimwareVersion[MAX_POWER_FW_VERSION];
+	uint8_t  Powersupplytype;
+	uint16_t ratedDCWatts;
+	uint16_t Resv;	
+                          
+} __attribute__ ((packed)) IPMI_POWER_SUPPLY_INFO;
 
 
 typedef struct ipmi_power_consumption_data
@@ -312,7 +346,7 @@ typedef struct _SensorReadingType
     uint8_t sensorFlags;
     uint16_t sensorState;
 }SensorReadingType;
-
+uint16_t compareinputwattage(IPMI_POWER_SUPPLY_INFO* powersupplyinfo, uint16_t inputwattage);
 int ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv);
 
 #endif /*IPMI_DELLOEM_H*/

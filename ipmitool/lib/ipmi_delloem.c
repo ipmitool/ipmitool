@@ -31,6 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 * <deepaganesh_paulraj@dell.com>
 *
 * This code implements a dell OEM proprietary commands.
+* This Code is edited and Implemented the License feature for Delloem
+* Author Harsha S <Harsha_S1@dell.com>
 */
 
 #include <stdlib.h>
@@ -68,13 +70,43 @@ POSSIBILITY OF SUCH DAMAGE.
 /*--------------time header-----------------*/
 #include <time.h>
 
-#define DELL_OEM_NETFN             (uint8_t)(0x30)
+#define DELL_OEM_NETFN        (uint8_t)(0x30)
 #define GET_IDRAC_VIRTUAL_MAC      (uint8_t)(0xC9)
+// 11g Support Macros
 #define INVALID -1
 #define SHARED 0
 #define SHARED_WITH_FAILOVER_LOM2 1
 #define DEDICATED 2
 #define SHARED_WITH_FAILOVER_ALL_LOMS 3
+char AciveLOM_String [5] [10] =	{"dedicated","LOM1","LOM2","LOM3","LOM4" };
+#define	INVALID -1
+
+// 11g Support Strings for nic selection
+char NIC_Selection_Mode_String [4] [50] =	{	"shared",  
+												"shared with failover lom2",
+												"dedicated",
+												"shared with Failover all loms"
+											};
+
+// 11g Support Macros
+#define SHARED 0
+#define SHARED_WITH_FAILOVER_LOM2 1
+#define DEDICATED 2
+#define SHARED_WITH_FAILOVER_ALL_LOMS 3
+
+// 12g Support Strings for nic selection
+char NIC_Selection_Mode_String_12g[] [50] =	{	
+												"dedicated",
+												"shared with lom1",  
+												"shared with lom2",
+												"shared with lom3",
+												"shared with lom4",
+												"shared with failover lom1",
+												"shared with failover lom2",
+												"shared with failover lom3",
+												"shared with failover lom4",
+												"shared with failover all loms"
+											};
 
 static int current_arg =0;
 uint8_t iDRAC_FLAG=0;
@@ -92,6 +124,7 @@ uint8_t PowercapstatusFlag=0;
 
 static void usage(void);
 
+/* LCD Function prototypes */
 static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** argv);
 static int ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,char* lcdstring,
                         uint8_t max_length,uint8_t field_type);
@@ -120,6 +153,7 @@ static int ipmi_lcd_configure (struct ipmi_intf * intf, int command,
                     int8_t line_number, char * text);
 static void ipmi_lcd_usage(void);
 
+/* MAC Function prototypes */
 static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** argv);
 static int make_int(const char *str, int *value);
 static void InitEmbeddedNICMacAddressValues ();
@@ -130,6 +164,7 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum);
 static int ipmi_macinfo (struct ipmi_intf* intf, uint8_t NicNum);
 static void ipmi_mac_usage(void);
 
+/* LAN Function prototypes */
 static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** argv);
 static int IsLANSupported ();
 static int get_nic_selection_mode (int current_arg, char ** argv);
@@ -137,7 +172,9 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
 static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf);
 static int ipmi_lan_get_active_nic (struct ipmi_intf* intf);
 static void ipmi_lan_usage(void);
+static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_selection);
 
+/* POwer monitor Function prototypes */
 static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, char ** argv);
 static void ipmi_time_to_str(time_t rawTime, char* strTime);
 static int ipmi_get_sensor_reading(struct ipmi_intf *intf ,
@@ -299,7 +336,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
     }
     else if (strncmp(argv[current_arg], "info\0", 5) == 0) 
     {
-        if(iDRAC_FLAG==1)            
+		if((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )            
             rc = ipmi_lcd_get_info_wh(intf);
         else
             rc = ipmi_lcd_get_info(intf);
@@ -326,7 +363,9 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
             current_arg++;
             if (argc <= current_arg) {usage();return -1;}
         }
-        if ((strncmp(argv[current_arg], "mode\0", 5) == 0)&&(iDRAC_FLAG==1)) 
+
+
+		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )) 
         {
             current_arg++;
             if (argc <= current_arg) 
@@ -400,7 +439,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
                 ipmi_lcd_usage();
             }
         }
-        else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13)== 0) &&(iDRAC_FLAG==1) )
+		else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13)== 0) &&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) ) )
         {
 
             current_arg++;
@@ -435,7 +474,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
                 ipmi_lcd_usage();
             }
         }
-        else if( (strncmp(argv[current_arg], "errordisplay\0", 13) == 0)&&(iDRAC_FLAG==1)) 
+		else if( (strncmp(argv[current_arg], "errordisplay\0", 13) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )) 
         {
 
             current_arg++;
@@ -600,7 +639,7 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
     for (ii = 0; ii < 4; ii++)
     {
         int bytes_to_copy;
-
+		memset (&req,0,sizeof(req));
         req.msg.netfn = IPMI_NETFN_APP;
         req.msg.lun = 0;
         req.msg.cmd = IPMI_GET_SYS_INFO;
@@ -669,6 +708,7 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
     struct ipmi_rq req = {0};
     uint8_t data[4];
 
+	memset (&req,0,sizeof(req));
     req.msg.netfn = IPMI_NETFN_APP;
     req.msg.lun = 0;
     req.msg.cmd = IPMI_GET_SYS_INFO;
@@ -687,10 +727,14 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
         /*lprintf(LOG_ERR, " Error getting IMC type: %s",
         val2str(rsp->ccode, completion_code_vals));  */
         return -1;
-    }
-    if( (0x0A == rsp->data[10]) || (0x0D ==rsp->data[10]) )
+	}
+	if( (IMC_IDRAC_11G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_11G_MODULAR ==rsp->data[10]) )
     {
-        iDRAC_FLAG=1;
+		iDRAC_FLAG=IDRAC_11G;
+    }
+	else if( (IMC_IDRAC_12G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_12G_MODULAR==rsp->data[10]) )
+    {
+		iDRAC_FLAG=IDRAC_12G;
     }
     else
     {
@@ -1773,17 +1817,21 @@ ipmi_lcd_usage(void)
         lprintf(LOG_NOTICE, "   lcd set {none}|{default}|{custom <text>}");
         lprintf(LOG_NOTICE, "      Set LCD text displayed during non-fault conditions");
     }
-    else if(iDRAC_FLAG==1)
+    else if( (iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )
     {
         lprintf(LOG_NOTICE, "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
+		lprintf(LOG_NOTICE, "      Allows you to set the LCD mode and user-defined string.");
         lprintf(LOG_NOTICE, "");
         lprintf(LOG_NOTICE, "   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
         lprintf(LOG_NOTICE, "   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
         lprintf(LOG_NOTICE, "   {systemwatt }|{assettag}|{userdefined}<text>");
-        lprintf(LOG_NOTICE, "");
+		lprintf(LOG_NOTICE, "	   Allows you to set the LCD display mode to any of the preceding parameters");
+		lprintf(LOG_NOTICE, "");
         lprintf(LOG_NOTICE, "   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
+		lprintf(LOG_NOTICE, "      Allows you to set the unit for the system ambient temperature mode.");		
         lprintf(LOG_NOTICE, "");
         lprintf(LOG_NOTICE, "   lcd set errordisplay {sel}|{simple}");
+		lprintf(LOG_NOTICE, "      Allows you to set the error display.");				
     }
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lcd info");
@@ -1928,7 +1976,7 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
         input_length = 0;
         msg_data[input_length++] = 1; /*Get*/
 
-        req.msg.netfn = DELL_OEM_NETFN;
+      	req.msg.netfn = DELL_OEM_NETFN;
         req.msg.lun = 0;                
         req.msg.cmd = GET_IDRAC_VIRTUAL_MAC;
         req.msg.data = msg_data;
@@ -2026,6 +2074,10 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 
         if (IMC_IDRAC_10G == IMC_Type)
             printf ("\n\rDRAC MAC Address ");
+		else if ((IMC_IDRAC_11G_MODULAR == IMC_Type) || (IMC_IDRAC_11G_MONOLITHIC== IMC_Type))
+			printf ("\n\riDRAC6 MAC Address ");
+		else if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type))		
+			printf ("\n\riDRAC7 MAC Address ");
         else
             printf ("\n\riDRAC6 MAC Address ");
 
@@ -2293,7 +2345,8 @@ static int ipmi_macinfo (struct ipmi_intf* intf, uint8_t NicNum)
     {
         return ipmi_macinfo_10g (intf,NicNum);
     }
-    else if (IMC_IDRAC_11G_MODULAR == IMC_Type || IMC_IDRAC_11G_MONOLITHIC== IMC_Type ) 
+	else if ((IMC_IDRAC_11G_MODULAR == IMC_Type || IMC_IDRAC_11G_MONOLITHIC== IMC_Type )  ||
+			(IMC_IDRAC_12G_MODULAR == IMC_Type || IMC_IDRAC_12G_MONOLITHIC== IMC_Type ) )
     {
         return ipmi_macinfo_11g (intf,NicNum);
     }
@@ -2347,6 +2400,7 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
     int rc = 0;
 
     int nic_selection = 0;
+	char nic_set[2] = {0};
     current_arg++;
     if (argv[current_arg] == NULL)
     {
@@ -2361,6 +2415,18 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
             ipmi_lan_usage();
             return -1;
         }
+		if(iDRAC_FLAG == IDRAC_12G) {
+			nic_selection = get_nic_selection_mode_12g(intf,current_arg,argv,nic_set);
+			if (INVALID == nic_selection)
+			{
+				ipmi_lan_usage();
+				return -1;
+			}				
+		
+			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
+		}
+		else
+		{
         nic_selection = get_nic_selection_mode(current_arg,argv);
 
 
@@ -2370,6 +2436,7 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
             return -1;
         }                               
         rc = ipmi_lan_set_nic_selection(intf,nic_selection);
+		}		
         return 0;                       
     }
     else if (strncmp(argv[current_arg], "get\0", 4) == 0)
@@ -2405,16 +2472,135 @@ static int IsLANSupported ()
     return 1;
 }
 
-char NIC_Selection_Mode_String [4] [50] =     {       "shared",  
-"shared with failover lom2",
-"dedicated",
-"shared with Failover all loms"
-};
 
+int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** argv, char *nic_set)
+{
+	int nic_selection_mode = 0;
+	int failover = 0;
 
-char AciveLOM_String [5] [10] =       {"dedicated","LOM1","LOM2","LOM3","LOM4" };
+	// First get the current settings.
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
 
+	uint8_t msg_data[30];
+	uint8_t input_length=0;
+	
+	input_length = 0;
+		
+   	req.msg.netfn = DELL_OEM_NETFN;
+   	req.msg.lun = 0;		
+	
+  	req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
 
+  	req.msg.data = msg_data;
+  	req.msg.data_len = input_length;
+  
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error in getting nic selection");
+		return -1;
+	}
+	else if (rsp->ccode > 0) 
+	{
+		lprintf(LOG_ERR, " Error in getting nic selection (%s) \n",
+		  val2str(rsp->ccode, completion_code_vals) );
+	  	return -1;
+	}
+	
+	nic_set[0] = rsp->data[0];
+	nic_set[1] = rsp->data[1];
+
+	
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
+	{
+		nic_set[0] = 1;
+		return 0;
+	}
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7)) 
+	{
+		
+	}
+	else
+		return INVALID;
+	
+	current_arg++;	
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "with\0", 5)) 
+	{
+	}	
+	else
+		return INVALID;		
+	
+	current_arg++;	
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "failover\0", 9)) 
+	{
+		failover = 1;
+	}	
+	if(failover)
+		current_arg++;	
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom1\0", 5)) 
+	{
+		if(failover) {
+			nic_set[1] = 2;
+		}	
+		else {
+			nic_set[0] = 2;
+		}	
+		return 0;
+	}
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5)) 
+	{
+		if(failover) {		
+			nic_set[1] = 3;
+		}	
+		else {
+			nic_set[0] = 3;
+		}	
+		return 0;
+	}
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom3\0", 5)) 
+	{
+		if(failover) {	
+			nic_set[1] = 4;
+		}	
+		else {
+			nic_set[0] = 4;
+		}	
+		return 0;
+	} 
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom4\0", 5)) 
+	{
+		if(failover) {	
+			nic_set[1] = 5;
+		}	
+		else {
+			nic_set[0] = 5;
+		}	
+		return 0;
+	}	
+	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "none\0", 5)) 
+	{
+		if(failover) {	
+			nic_set[1] = 0;
+		}	
+		return 0;
+	}	
+	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "all\0", 4)) 
+	{
+	}	
+	else
+		return INVALID;	
+	
+	current_arg++;	
+	if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5)) 
+	{
+		nic_set[1] = 6;
+		return 0;
+	}	
+
+	return INVALID;
+	
+}
 
 
 static int get_nic_selection_mode (int current_arg, char ** argv)
@@ -2461,7 +2647,44 @@ static int get_nic_selection_mode (int current_arg, char ** argv)
     }       
 
     return INVALID;
+	
+}
 
+
+static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_selection)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	uint8_t msg_data[30];
+	uint8_t input_length=0;
+
+	input_length = 0;
+		
+	msg_data[input_length++] = nic_selection[0]; 
+	msg_data[input_length++] = nic_selection[1]; 
+
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;		
+	req.msg.cmd = SET_NIC_SELECTION_12G_CMD;
+	req.msg.data = msg_data;
+	req.msg.data_len = input_length;
+  
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error in setting nic selection");
+		return -1;
+	}
+	else if (rsp->ccode > 0) 
+	{
+		lprintf(LOG_ERR, " Error in setting nic selection (%s) \n",
+		  val2str(rsp->ccode, completion_code_vals) );
+		return -1;
+	}
+	printf("configured successfully");
+
+	return 0;
 }
 
 
@@ -2478,7 +2701,7 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
 
     msg_data[input_length++] = nic_selection; 
 
-    req.msg.netfn = DELL_OEM_NETFN;
+   	req.msg.netfn = DELL_OEM_NETFN;
     req.msg.lun = 0;                
     req.msg.cmd = SET_NIC_SELECTION_CMD;
     req.msg.data = msg_data;
@@ -2504,6 +2727,7 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
 static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 {
     uint8_t nic_selection=-1;
+	uint8_t nic_selection_failover = 0;
 
     struct ipmi_rs * rsp;
     struct ipmi_rq req;
@@ -2514,8 +2738,11 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 
     input_length = 0;
 
-    req.msg.netfn = DELL_OEM_NETFN;
+   	req.msg.netfn = DELL_OEM_NETFN;
     req.msg.lun = 0;                
+	if(iDRAC_FLAG == IDRAC_12G)
+	  	req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
+	else  	
     req.msg.cmd = GET_NIC_SELECTION_CMD;
     req.msg.data = msg_data;
     req.msg.data_len = input_length;
@@ -2534,7 +2761,33 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
     }
     nic_selection = rsp->data[0];
 
+	if(iDRAC_FLAG == IDRAC_12G)
+	{		
+		
+		nic_selection_failover = rsp->data[1];
+		if ((nic_selection < 6) && (nic_selection > 0) && (nic_selection_failover < 7))
+		{
+			if(nic_selection == 1) {
+				printf ("\n%s",NIC_Selection_Mode_String_12g[nic_selection-1]);
+			} else if(nic_selection) {
+				printf ("\nShared LOM   :  %s",NIC_Selection_Mode_String_12g[nic_selection-1]);
+				if(nic_selection_failover  == 0)
+					printf ("\nFailover LOM :  None");
+				else if(nic_selection_failover   >= 2 && nic_selection_failover   <= 6)
+					printf ("\nFailover LOM :  %s",NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
+			}
+				
+		} 
+		else
+		{
+			lprintf(LOG_ERR, " Error Outof bond Value received (%d) (%d) \n",nic_selection,nic_selection_failover);
+		  	return -1;	  	
+		}
+	}
+	else
+	{
     printf ("\n%s",NIC_Selection_Mode_String[nic_selection]);
+	}
 
     return 0;
 }      
@@ -2556,7 +2809,7 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
     msg_data[input_length++] = 0; /*Reserved*/
     msg_data[input_length++] = 0; /*Reserved*/        
 
-    req.msg.netfn = DELL_OEM_NETFN;
+   	req.msg.netfn = DELL_OEM_NETFN;
     req.msg.lun = 0;                
     req.msg.cmd = GET_ACTIVE_NIC_CMD;
     req.msg.data = msg_data;
@@ -2587,10 +2840,27 @@ ipmi_lan_usage(void)
 {
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan set <Mode> ");
-    lprintf(LOG_NOTICE, "      sets the NIC Selection Mode (dedicated, shared, shared with failover lom2, shared with Failover all loms).");
+	if(iDRAC_FLAG == IDRAC_12G) {
+		lprintf(LOG_NOTICE, "      sets the NIC Selection Mode :");
+		lprintf(LOG_NOTICE, "      	dedicated, shared with lom1, shared with lom2,shared with lom3,shared ");
+		lprintf(LOG_NOTICE, "		with lom4,shared with failover lom1,shared with failover lom2,shared ");
+		lprintf(LOG_NOTICE, "		with failover lom3,shared with failover lom4,shared with Failover all ");
+		lprintf(LOG_NOTICE, "		loms, shared with Failover None).");
+	} else {
+	    lprintf(LOG_NOTICE, "      sets the NIC Selection Mode (dedicated, shared, shared with failover lom2, ");	
+	    lprintf(LOG_NOTICE, "      			shared with Failover all loms).");
+	}
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan get ");
-    lprintf(LOG_NOTICE, "      returns the current NIC Selection Mode (dedicated, shared, shared with failover lom2, shared with Failover all loms).");
+	if(iDRAC_FLAG == IDRAC_12G) {
+		lprintf(LOG_NOTICE, "      returns the current NIC Selection Mode (dedicated, shared with lom1, shared ");
+		lprintf(LOG_NOTICE, "		with lom2, shared with lom3, shared with lom4,shared with failover lom1,");
+		lprintf(LOG_NOTICE, "		shared with failover lom2,shared with failover lom3,shared with failover ");
+		lprintf(LOG_NOTICE, "		lom4,shared with Failover all loms,shared with Failover None).");
+	}else {
+		lprintf(LOG_NOTICE, "      returns the current NIC Selection Mode (dedicated, shared, shared with failover");
+		lprintf(LOG_NOTICE, "      			lom2, shared with Failover all loms).");
+	}
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan get active");
     lprintf(LOG_NOTICE, "      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");       
@@ -2733,6 +3003,11 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
             ipmi_powermonitor_usage();
             return -1;
         }
+		if (strchr(argv[current_arg], '.'))
+		{
+			lprintf(LOG_ERR, " Cap value in Watts, Btu/hr or percent should be whole number");
+			return -1;
+		}
         make_int(argv[current_arg],&val);
         current_arg++;
         if (argv[current_arg] == NULL)
@@ -2914,7 +3189,8 @@ ipmi_set_power_capstatus_command (struct ipmi_intf * intf,uint8_t val)
     struct ipmi_rs * rsp = NULL;
     struct ipmi_rq req = {0};
     uint8_t data[2];
-    ipmi_get_power_capstatus_command(intf);
+	if(ipmi_get_power_capstatus_command(intf) < 0)
+		return -1;
 
     if (PowercapSetable_flag!=1)
     {
@@ -3143,6 +3419,7 @@ ipmi_powermgmt_clear(struct ipmi_intf* intf,uint8_t clearValue)
             val2str(rsp->ccode, completion_code_vals));
         return -1;
     }
+	return 0;
 
 }
 
@@ -3234,14 +3511,14 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
         peakpowerheadroombtuphr=watt_to_btuphr_conversion(powerheadroom.peakheadroom);
         instantpowerhearoom= watt_to_btuphr_conversion(powerheadroom.instheadroom);
 
-        printf ("System Instantaneous Headroom : %d BTU/hr\n",instantpowerhearoom);
-        printf ("System Peak Headroom          : %d BTU/hr\n",peakpowerheadroombtuphr);
-    }
-    else
-    {
-        printf ("System Instantaneous Headroom : %d W\n",powerheadroom.instheadroom);
-        printf ("System Peak Headroom          : %d W\n",powerheadroom.peakheadroom);
-    }
+        printf ("System Instantaneous Headroom : %ld BTU/hr\n",instantpowerhearoom);
+		printf ("System Peak Headroom          : %ld BTU/hr\n",peakpowerheadroombtuphr);
+	}
+	else
+	{
+        printf ("System Instantaneous Headroom : %ld W\n",powerheadroom.instheadroom);
+		printf ("System Peak Headroom          : %ld W\n",powerheadroom.peakheadroom);
+	}
 
     return 0;
 }
@@ -3733,35 +4010,35 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 
             printf ("Average Power Consumption  ");         
             tempbtuphrconv=(avgpower.lastminutepower);
-            printf ("%4d W          ",tempbtuphrconv);
-            tempbtuphrconv=(avgpower.lasthourpower);
-            printf ("%4d W        ",tempbtuphrconv);
-            tempbtuphrconv=(avgpower.lastdaypower);
-            printf ("%4d W       ",tempbtuphrconv);
-            tempbtuphrconv=(avgpower.lastweakpower);
-            printf ("%4d W   \n\r",tempbtuphrconv);
+			printf ("%4ld W          ",tempbtuphrconv);
+			tempbtuphrconv=(avgpower.lasthourpower);
+			printf ("%4ld W        ",tempbtuphrconv);
+			tempbtuphrconv=(avgpower.lastdaypower);
+			printf ("%4ld W       ",tempbtuphrconv);
+			tempbtuphrconv=(avgpower.lastweakpower);
+			printf ("%4ld W   \n\r",tempbtuphrconv);
 
-            printf ("Max Power Consumption      ");         
-            tempbtuphrconv=(stPeakpower.lastminutepower);
-            printf ("%4d W          ",tempbtuphrconv);
-            tempbtuphrconv=(stPeakpower.lasthourpower);
-            printf ("%4d W        ",tempbtuphrconv);
-            tempbtuphrconv=(stPeakpower.lastdaypower);
-            printf ("%4d W       ",tempbtuphrconv);
-            tempbtuphrconv=(stPeakpower.lastweakpower);
-            printf ("%4d W   \n\r",tempbtuphrconv);
+		printf ("Max Power Consumption      ");		
+			tempbtuphrconv=(stPeakpower.lastminutepower);
+			printf ("%4ld W          ",tempbtuphrconv);
+			tempbtuphrconv=(stPeakpower.lasthourpower);
+			printf ("%4ld W        ",tempbtuphrconv);
+			tempbtuphrconv=(stPeakpower.lastdaypower);
+			printf ("%4ld W       ",tempbtuphrconv);
+			tempbtuphrconv=(stPeakpower.lastweakpower);
+			printf ("%4ld W   \n\r",tempbtuphrconv);
 
-            printf ("Min Power Consumption      ");         
-            tempbtuphrconv=(stMinpower.lastminutepower);
-            printf ("%4d W          ",tempbtuphrconv);
-            tempbtuphrconv=(stMinpower.lasthourpower);
-            printf ("%4d W        ",tempbtuphrconv);
-            tempbtuphrconv=(stMinpower.lastdaypower);
-            printf ("%4d W       ",tempbtuphrconv);
-            tempbtuphrconv=(stMinpower.lastweakpower);
-            printf ("%4d W   \n\r\n\r",tempbtuphrconv);
-        }               
-
+		printf ("Min Power Consumption      ");		
+			tempbtuphrconv=(stMinpower.lastminutepower);
+			printf ("%4ld W          ",tempbtuphrconv);
+			tempbtuphrconv=(stMinpower.lasthourpower);
+			printf ("%4ld W        ",tempbtuphrconv);
+			tempbtuphrconv=(stMinpower.lastdaypower);
+			printf ("%4ld W       ",tempbtuphrconv);
+			tempbtuphrconv=(stMinpower.lastweakpower);
+		   	printf ("%4ld W   \n\r\n\r",tempbtuphrconv);
+		}		
+		
         lastminutepeakpower=stPeakpower.lastminutepowertime;
         lasthourpeakpower=stPeakpower.lasthourpowertime;
         lastdaypeakpower=stPeakpower.lastdaypowertime;
@@ -3794,6 +4071,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
         printf ("Last Week       : %s",timestr);        
 
     }
+	return rc;
 
 }
 
@@ -3893,6 +4171,7 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
     int rc;
     IPMI_POWER_CAP ipmipowercap;
 
+	memset(&ipmipowercap,0,sizeof(ipmipowercap));
     rc=ipmi_get_power_cap(intf,&ipmipowercap);
 
 
@@ -3900,16 +4179,16 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
     {
         if (unit ==btuphr){
             tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
-            printf ("Maximum power: %d  BTU/hr\n",tempbtuphrconv);
-            tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
-            printf ("Minimum power: %d  BTU/hr\n",tempbtuphrconv);
-            tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.PowerCap);
-            printf ("Power cap    : %d  BTU/hr\n",tempbtuphrconv);
-        }else{
-
-            printf ("Maximum power: %d Watt\n",ipmipowercap.MaximumPowerConsmp);
-            printf ("Minimum power: %d Watt\n",ipmipowercap.MinimumPowerConsmp);
-            printf ("Power cap    : %d Watt\n",ipmipowercap.PowerCap);
+			printf ("Maximum power: %ld  BTU/hr\n",tempbtuphrconv);
+			tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
+			printf ("Minimum power: %ld  BTU/hr\n",tempbtuphrconv);
+			tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.PowerCap);
+			printf ("Power cap    : %ld  BTU/hr\n",tempbtuphrconv);
+		}else{
+		
+			printf ("Maximum power: %ld Watt\n",ipmipowercap.MaximumPowerConsmp);
+			printf ("Minimum power: %ld Watt\n",ipmipowercap.MinimumPowerConsmp);
+			printf ("Power cap    : %ld Watt\n",ipmipowercap.PowerCap);
         }
     }
     return rc;
@@ -3936,10 +4215,11 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     uint64_t maxpowerbtuphr;
     uint64_t maxpowerbtuphr1;
     uint64_t minpowerbtuphr;
-    int rc;
-    IPMI_POWER_CAP ipmipowercap;
+	IPMI_POWER_CAP ipmipowercap;
 
-    ipmi_get_power_capstatus_command(intf);
+	if(ipmi_get_power_capstatus_command(intf) < 0)
+		return -1;	// Adding the failed condition check
+
     if (PowercapSetable_flag!=1)
     {
         lprintf(LOG_ERR, " Can not set powercap on this system");
@@ -4051,7 +4331,7 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     }
     else if(unit ==percent)
     {
-        if((val <1)||(val>100))
+       	if((val <0)||(val>100))
         {
             lprintf(LOG_ERR, " Cap value is out of boundary conditon it should be between 0  - 100");
             return -1;
@@ -4187,6 +4467,7 @@ static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id,
 
     memcpy(&header, rsp->data + 1, 8);
 
+	return 0;
 
 
 }
