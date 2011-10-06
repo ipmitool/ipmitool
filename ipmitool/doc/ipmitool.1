@@ -225,7 +225,7 @@ Commands:
         shell        Launch interactive IPMI shell
         exec         Run list of commands from file
         set          Set runtime variable for shell and exec
-	delloem      Manage Dell OEM Extensions
+        delloem      Manage Dell OEM Extensions.
         echo         Used to echo lines to stdout in scripts
         ekanalyzer   run FRU-Ekeying analyzer using FRU files
         ime          Upgrade/Query Intel ME firmware
@@ -867,12 +867,26 @@ Perform manual rollback of the ME firmware
 
 The delloem commands provide information on Dell-specific features.
 .TP
+\fIsetled {b:d.f} {state..}\fP
+.RS
+.br
+
+Sets the drive backplane LEDs for a device.
+.br
+{b:d.f} = PCI Address of device (eg. 06:00.0)
+.br
+{state} = one or more of the following:
+.RS
+\fIonline | present | hotspare | identify | rebuilding | fault | predict | critical | failed\fP
+.br
+.RE
+.RE
+
+.TP
 \fIlcd\fP 
 .RS
 .br
-\fBset {mode}\fR|
-.br
-\fB{lcdqualifier}\fR|\fB{errordisplay}\fR
+\fIset {mode}\fP|\fI{lcdqualifier}\fP|\fI{errordisplay}\fP
 .RS
 .br
 
@@ -882,47 +896,38 @@ Allows you to set the LCD mode and user-defined string.
 \fIlcd set mode\fP
 .RS
 .br
-\fB{none}\fR|\fB{modelname}\fR|
+\fI{none}\fP|\fI{modelname}\fP|\fI{ipv4address}\fP|\fI{macaddress}\fP|
 .br
-\fB{ipv4address}\fR|\fB{macaddress}\fR|
+\fI{systemname}\fP|\fI{servicetag}\fP|\fI{ipv6address}\fP|
 .br
-\fB{systemname}\fR|\fB{servicetag}\fR|
+\fI{ambienttemp}\fP|\fI{systemwatt}\fP|\fI{assettag}\fP|
 .br
-\fB{ipv6address}\fR|\fB{ambienttemp}\fR|
-.br
-\fB{systemwatt}\fR|\fB{assettag}\fR|
-.br
-\fB{userdefined}<text>\fR
-.RS
+\fI{userdefined}<text>\fP
 .br
 
 Allows you to set the LCD display mode to any of the preceding parameters.
-.RE
+
 .RE
 .TP
 \fIlcd set lcdqualifier\fP
 .RS
 .br
-\fB{watt}\fR|\fB{btuphr}\fR|
+\fI{watt}\fP|\fI{btuphr}\fP|
 .br
-\fB{celsius}\fR|\fB{fahrenheit}\fR
-.RS
+\fI{celsius}\fP|\fI{fahrenheit}\fP
 .br
 
 Allows you to set the unit for the system ambient temperature mode.
-.RE
+
 .RE
 .TP
 \fIlcd set errordisplay\fP
 .RS
 .br
-\fB{sel}\fR|\fB{simple}\fR
-.RS
+\fI{sel}\fP|\fI{simple}\fP
 .br
 
 Allows you to set the error display.
-.RE
-.RE
 .RE
 .TP
 \fIlcd info\fP
@@ -934,12 +939,10 @@ Displays the LCD screen information.
 .TP
 \fIlcd set vkvm\fP
 .RS
-\fB{active}\fR|\fB{inactive}\fR
-.RS
+\fI{active}\fP|\fI{inactive}\fP
 .br
 
 Allows you to set the vKVM status to active or inactive. When it is active and session is in progress, a message appears on LCD.
-.RE
 .RE
 .TP
 \fIlcd status\fP
@@ -947,6 +950,7 @@ Allows you to set the vKVM status to active or inactive. When it is active and s
 .br
 
 Displays the LCD status for vKVM display active or inactive and Front Panel access mode (viewandmodify, view-only or disabled).
+.RE
 .RE
 .TP
 \fImac\fP
@@ -956,47 +960,52 @@ Displays the LCD status for vKVM display active or inactive and Front Panel acce
 Displays the information about the system NICs.
 .TP
 \fImac list\fP
-.RS
 .br
 
 Displays the NIC MAC address and status of all NICs. It also displays the DRAC/iDRAC MAC address.
-.RE
+
 .TP
 \fImac get\fP
 .RS
-\fB<NIC number>\fR
-.RS
+\fI<NIC number>\fP
 .br
 
 Displays the selected NICs MAC address and status.
 .RE
 .RE
-.RE
+.TP
+\fIlan\fP
+.RS
+.br 
+Displays the information of Lan.
+
 .TP
 \fIlan set\fP
 .RS
-\fB<Mode>\fR
+\fI<Mode>\fP
 .br
 
-Sets the NIC selection mode (dedicated, shared, shared with failover LOM2, shared with failover all LOMs).
+Sets the NIC selection mode (dedicated, shared with lom1, shared with lom2,shared with lom3,shared with lom4,shared with failover lom1,shared with failover lom2,shared with failover lom3,shared with failover lom4,shared with Failover all loms, shared with Failover None).
 .RE
 .TP
 \fIlan get\fP
 .br
 
-Returns the current NIC selection mode (dedicated, shared, shared with failover LOM2, shared with failover all LOMs).
+Returns the current NIC selection mode (dedicated, shared with lom1, shared with lom2, shared with lom3, shared with lom4,shared with failover lom1, shared with failover lom2,shared with failover lom3,shared with failover lom4,shared with Failover all loms,shared with Failover None).
+
 .TP
 \fIlan get active\fP
 .br
 
 Returns the current active NIC (dedicated, LOM1, LOM2, LOM3 or LOM4).
+.RE
 .TP
 \fIpowermonitor\fP
 .RS
 .br
 
 Displays power tracking statistics.
-.RE
+
 .TP
 \fIpowermonitor clear cumulativepower\fP
 .RS
@@ -1014,48 +1023,35 @@ Reset peak power reading.
 .TP
 \fIpowermonitor powerconsumption\fP
 .RS
-\fB<watt>\fR|\fB<btuphr>\fR
-.RS
+\fI<watt>\fP|\fI<btuphr>\fP
 .br
-
 Displays the power consumption in watt or btuphr.
-.RE
 .RE
 .TP
 \fIpowermonitor powerconsumptionhistory\fP
 .RS
-\fB<watt>\fR|\fB<btuphr>\fR
-.RS
+\fI<watt>\fP|\fI<btuphr>\fP
 .br
-
 Displays the power consumption history in watt or btuphr.
-.RE
 .RE
 .TP
 \fIpowermonitor getpowerbudget\fP
 .RS
-\fB<watt>\fR|\fB<btuphr>\fR
-.RS
+\fI<watt>\fP|\fI<btuphr>\fP
 .br
-
 Displays the power cap in watt or btuphr.
-.RE
 .RE
 .TP
 \fIpowermonitor setpowerbudget\fP
 .RS
-\fB<val>\fR\fB<watt|btuphr|percent>\fR
-.RS
+\fI<val>\fP\fI<watt\fP|\fIbtuphr\fP|\fIpercent>\fP
 .br
-
 Allows you to set the  power cap in watt, BTU/hr or percentage.
-.RE
 .RE
 .TP
 \fIpowermonitor enablepowercap\fP
 .RS
 .br
-
 Enables set power cap.
 .RE
 .TP
@@ -1066,7 +1062,35 @@ Enables set power cap.
 Disables set power cap.
 .RE
 .RE
+.RE
 
+.RS
+.br
+.TP
+\fIwindbg\fP
+.RS
+.br
+\fIwindbg start\fP
+.RS
+.br
+Starts the windbg session (Cold Reset & SOL Activation)
+.RE
+\fIwindbg end\fP
+.RS
+.br
+Ends the windbg session (SOL Deactivation)
+
+.RE
+.RE
+.TP
+\fIvFlash info Card\fP
+.RS
+.br
+
+Shows Extended SD Card information
+.RE
+.RE
+.TP
 .TP 
 \fIevent\fP
 .RS

@@ -76,6 +76,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define	IDRAC_11G					1
 #define	IDRAC_12G					2
+// Return Error code for license
+#define	LICENSE_NOT_SUPPORTED		0x6F
+#define	VFL_NOT_LICENSED			0x33
 #define btuphr              0x01
 #define watt                0x00
 #define IPMI_DELL_POWER_CAP 0xEA
@@ -95,6 +98,8 @@ typedef struct _tag_ipmi_dell_lcd_caps
 #define IPMI_DELL_LCD_STRING1_SIZE      14
 #define IPMI_DELL_LCD_STRINGN_SIZE      16
 
+/* vFlash subcommands */
+#define IPMI_GET_EXT_SD_CARD_INFO 0xA4
 
 
 typedef struct _tag_ipmi_dell_lcd_string
@@ -338,6 +343,20 @@ typedef struct _power_headroom
     uint16_t instheadroom;
     uint16_t peakheadroom;
 } __attribute__ ((packed)) POWER_HEADROOM;
+
+struct vFlashstr {
+	uint8_t val;
+	const char * str;
+};
+typedef struct ipmi_vFlash_extended_info
+{
+	uint8_t  vflashcompcode;
+	uint8_t  sdcardstatus;
+	uint32_t sdcardsize;
+	uint32_t sdcardavailsize;
+	uint8_t  bootpartion;
+	uint8_t  Resv;
+} __attribute__ ((packed)) IPMI_DELL_SDCARD_INFO;
 
 
 typedef struct _SensorReadingType

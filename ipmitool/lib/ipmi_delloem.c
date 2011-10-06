@@ -117,6 +117,14 @@ static uint8_t SetLEDSupported=0;
 volatile uint8_t IMC_Type = IMC_IDRAC_10G;
 
 
+const struct vFlashstr vFlash_completion_code_vals[] = {
+	{0x00, "SUCCESS"},
+	{0x01, "NO_SD_CARD"},
+	{0x63, "UNKNOWN_ERROR"},
+	{0x00, NULL}
+};
+
+
 POWER_HEADROOM powerheadroom;
 
 uint8_t PowercapSetable_flag=0;
@@ -203,6 +211,16 @@ static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id,
                        struct fru_header header, struct fru_info fru);
 static void ipmi_powermonitor_usage(void);
 
+/* vFlash Function prototypes */
+static int ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int argc, char ** argv);
+const char * get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs);
+static int ipmi_get_sd_card_info(struct ipmi_intf* intf);
+static int ipmi_delloem_vFlash_process(struct ipmi_intf* intf, int current_arg, char ** argv);
+static void ipmi_vFlash_usage(void);
+
+
+/* LED Function prototypes */
+
 static int ipmi_getsesmask(int, char **);
 static int CheckSetLEDSupport(struct ipmi_intf * intf);
 static int IsSetLEDSupported(void);
@@ -263,7 +281,12 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
     else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) 
     {
         ipmi_delloem_powermonitor_main (intf,argc,argv);
-    }       
+    }
+	/* vFlash Support */	
+	else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0)
+	{
+        ipmi_delloem_vFlash_main (intf,argc,argv);	
+	}
     else
     {
         usage();
@@ -297,6 +320,7 @@ static void usage(void)
     if (IsSetLEDSupported())
 	lprintf(LOG_NOTICE,    "    setled");         
     lprintf(LOG_NOTICE, "    powermonitor");        
+	lprintf(LOG_NOTICE, "    vFlash");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "For help on individual commands type:");
     lprintf(LOG_NOTICE, "delloem <command> help");
@@ -2676,6 +2700,11 @@ static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_
 		lprintf(LOG_ERR, " Error in setting nic selection");
 		return -1;
 	}
+	// Check license only for setting the dedicated nic.
+	else if( (nic_selection[0] == 1) && ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} 
 	else if (rsp->ccode > 0) 
 	{
 		lprintf(LOG_ERR, " Error in setting nic selection (%s) \n",
@@ -3158,7 +3187,10 @@ ipmi_get_power_capstatus_command (struct ipmi_intf * intf)
     rsp = intf->sendrecv(intf, &req);
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error getting powercap status");
-        return -1;
+		return -1;
+	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	// Return Error as unlicensed
     } else if (rsp->ccode > 0) {
         lprintf(LOG_ERR, " Error getting powercap statusr: %s",
             val2str(rsp->ccode, completion_code_vals));
@@ -3210,6 +3242,9 @@ ipmi_set_power_capstatus_command (struct ipmi_intf * intf,uint8_t val)
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error setting powercap status");
         return -1;
+	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	//return unlicensed Error code
     } else if (rsp->ccode > 0) {
         lprintf(LOG_ERR, " Error setting powercap statusr: %s",
             val2str(rsp->ccode, completion_code_vals));
@@ -3301,7 +3336,11 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
         lprintf(LOG_ERR, " Error getting power management information.\n");
         return -1;
     } 
-    if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
+
+	if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
         lprintf(LOG_ERR, " Error getting power management information: Command not supported on this system.");
         return -1;
     }else if (rsp->ccode != 0) {
@@ -3411,6 +3450,9 @@ ipmi_powermgmt_clear(struct ipmi_intf* intf,uint8_t clearValue)
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error clearing power values.\n");
         return -1;
+} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
     } else if (rsp->ccode == 0xc1) {
         lprintf(LOG_ERR, " Error clearing power values, command not supported on this system.\n");
         return -1;
@@ -3490,6 +3532,9 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error getting power headroom status");
         return -1;
+} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
     } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)){
         lprintf(LOG_ERR, " Error getting power headroom status: Command not supported on this system ");
         return -1;
@@ -3647,6 +3692,9 @@ static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf* intf,
         lprintf(LOG_ERR, " Error getting instantaneous power consumption data .\n");
 
         return -1;
+	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
     } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting instantaneous power consumption data: Command not supported on this system.");
         return -1;
@@ -3770,7 +3818,10 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
         lprintf(LOG_ERR, " Error getting average power consumption history data .\n");
         return -1;
     } 
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	else if((iDRAC_FLAG == IDRAC_12G) &&  (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting average power consumption  history data: Command not supported on this system.");
         return -1;
@@ -3830,7 +3881,10 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
         return -1;
@@ -3893,7 +3947,10 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	else if((iDRAC_FLAG == IDRAC_12G) &&  (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
         return -1;
@@ -4120,6 +4177,9 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
         }
         return -1;
 
+	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
     } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
 
         lprintf(LOG_ERR, "  Error getting power cap: Command not supported on this system.");
@@ -4255,8 +4315,12 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
                 rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
         }
         return -1;
-
-    }
+			
+	}
+	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} 
     else if (rsp->ccode == 0xc1) 
     {
 
@@ -4366,6 +4430,10 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
         lprintf(LOG_ERR, " Error setting power cap");
         return -1;
     }
+	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	} 
     else if (rsp->ccode > 0) 
     {
         lprintf(LOG_ERR, " Error setting power cap: %s",
@@ -4514,6 +4582,221 @@ ipmi_powermonitor_usage(void)
     lprintf(LOG_NOTICE, "      To disable set power cap");
     lprintf(LOG_NOTICE, "");
 
+}
+/*****************************************************************
+* Function Name:	   ipmi_delloem_vFlash_main
+*
+* Description:		   This function processes the delloem vFlash command
+* Input:			   intf    - ipmi interface
+					   argc    - no of arguments
+					   argv    - argument string array
+* Output:		 
+*
+* Return:			   return code	   0 - success
+*						  -1 - failure
+*
+******************************************************************/
+
+static int ipmi_delloem_vFlash_main (struct ipmi_intf * intf, int argc, char ** argv)
+{
+	int rc = 0;
+
+	current_arg++;
+	rc = ipmi_delloem_vFlash_process(intf, current_arg, argv);
+}
+
+
+
+/*****************************************************************
+* Function Name: 	get_vFlash_compcode_str
+*
+* Description: 	This function maps the vFlash completion code
+* 		to a string
+* Input : vFlash completion code and static array of codes vs strings
+* Output: - 		
+* Return: returns the mapped string		
+*
+******************************************************************/
+const char * 
+get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs)
+{
+	static char un_str[32];
+	int i;
+
+	for (i = 0; vs[i].str != NULL; i++) {
+		if (vs[i].val == vflashcompcode)
+			return vs[i].str;
+	}
+
+	memset(un_str, 0, 32);
+	snprintf(un_str, 32, "Unknown (0x%02X)", vflashcompcode);
+
+	return un_str;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_get_sd_card_info
+*
+* Description: This function prints the vFlash Extended SD card info
+* Input : ipmi interface
+* Output: prints the sd card extended info		
+* Return: 0 - success -1 - failure
+*
+******************************************************************/
+static int
+ipmi_get_sd_card_info(struct ipmi_intf* intf) {
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	uint8_t msg_data[2];
+	uint8_t input_length=0;
+	uint8_t cardstatus=0x00;
+
+	IPMI_DELL_SDCARD_INFO * sdcardinfoblock;
+
+	input_length = 2;
+	msg_data[0] = msg_data[1] = 0x00;
+
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_EXT_SD_CARD_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = input_length;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error in getting SD Card Extended Information");
+		return -1;
+	}
+	else if (rsp->ccode > 0) 
+	{
+		lprintf(LOG_ERR, " Error in getting SD Card Extended Information (%s) \n",
+				val2str(rsp->ccode, completion_code_vals) );
+		return -1;
+	}
+
+	sdcardinfoblock = (IPMI_DELL_SDCARD_INFO *) (void *) rsp->data;
+
+	if( (iDRAC_FLAG == IDRAC_12G) && (sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED))
+	{
+		printf("FM001 : A required license is missing or expired\n");
+		return -1;	
+	}
+	else if (sdcardinfoblock->vflashcompcode != 0x00)
+	{
+		lprintf(LOG_ERR, " Error in getting SD Card Extended Information (%s) \n", get_vFlash_compcode_str(sdcardinfoblock->vflashcompcode,
+					vFlash_completion_code_vals));
+		return -1;
+	}
+
+	if (!(sdcardinfoblock->sdcardstatus & 0x04))
+	{
+		lprintf(LOG_ERR, " vFlash SD card is unavailable, please insert the card\n of size 256MB or greater\n");
+		return 0;
+	}
+
+	printf("vFlash SD Card Properties\n");
+	printf("SD Card size       : %8dMB\n",sdcardinfoblock->sdcardsize);
+	printf("Available size     : %8dMB\n",sdcardinfoblock->sdcardavailsize);
+	printf("Initialized        : %10s\n", (sdcardinfoblock->sdcardstatus & 0x80) ?
+			"Yes" : "No");
+	printf("Licensed           : %10s\n", (sdcardinfoblock->sdcardstatus & 0x40) ?
+			"Yes" : "No");
+	printf("Attached           : %10s\n", (sdcardinfoblock->sdcardstatus & 0x20) ?
+			"Yes" : "No");
+	printf("Enabled            : %10s\n", (sdcardinfoblock->sdcardstatus & 0x10) ?
+			"Yes" : "No");
+	printf("Write Protected    : %10s\n", (sdcardinfoblock->sdcardstatus & 0x08) ?
+			"Yes" : "No");
+	cardstatus = sdcardinfoblock->sdcardstatus & 0x03;
+	printf("Health             : %10s\n", ((0x00 == cardstatus
+		) ? "OK" : ((cardstatus == 0x03) ? 
+			"Undefined" : ((cardstatus == 0x02) ? 
+				"Critical" : "Warning"))));
+	printf("Bootable partition : %10d\n",sdcardinfoblock->bootpartion);
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_delloem_vFlash_process
+*
+* Description: 	This function processes the args for vFlash subcmd
+* Input : intf - ipmi interface, arg index, argv array
+* Output: prints help or error with help
+* Return: 0 - Success -1 - failure
+*
+******************************************************************/
+static int
+ipmi_delloem_vFlash_process(struct ipmi_intf* intf, int current_arg, char ** argv) {
+	int rc;
+
+	if (strncmp(intf->name,"wmi\0",4) &&
+		strncmp(intf->name, "open\0",5))
+	{
+		lprintf(LOG_ERR, " vFlash support is enabled only for wmi and open interface.\n Its not enabled for lan and lanplus interface.");
+		return -1;
+	}
+
+	if (argv[current_arg] == NULL)
+	{
+		ipmi_vFlash_usage();
+		return -1;
+	}
+	else if (!strncmp(argv[current_arg], "info\0", 5))
+	{
+		current_arg++;
+		if (argv[current_arg] == NULL)
+		{
+			ipmi_vFlash_usage();
+			return -1;
+		}
+		else if (strncmp(argv[current_arg], "Card\0", 5) == 0)
+		{
+			current_arg++;
+			if (argv[current_arg] != NULL)
+			{
+				ipmi_vFlash_usage();
+				return -1;
+			}
+			rc = ipmi_get_sd_card_info(intf);
+			return rc;
+		}
+		else /* TBD: many sub commands are present */
+		{
+			ipmi_vFlash_usage();
+			return -1;
+		}
+	}
+	/* TBD other vFlash subcommands */
+	else if (!strncmp(argv[current_arg], "help\0", 5))
+	{
+		ipmi_vFlash_usage();
+		return 0;
+	}
+	else
+	{
+		ipmi_vFlash_usage();
+		return -1;
+	}
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_vFlash_usage
+*
+* Description: 	This function displays the usage for using vFlash
+* Input : void
+* Output: prints help		
+* Return: void	
+*
+******************************************************************/
+static void
+ipmi_vFlash_usage(void)
+{
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   vFlash info Card");
+	lprintf(LOG_NOTICE, "      Shows Extended SD Card information");
+	lprintf(LOG_NOTICE, "");
 }
 
 /**********************************************************************
