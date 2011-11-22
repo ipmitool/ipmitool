@@ -691,10 +691,31 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 	if (curr_seq >= 64)
 		curr_seq = 0;
 
-	entry = ipmi_req_add_entry(intf, req, curr_seq);
-	if (entry == NULL)
-		return NULL;
-
+	// Bug in the existing code where it keeps on adding same command/seq pair 
+	// in the lookup entry list.
+	// Check if we have cmd,seq pair already in our list. As we are not changing 
+	// the seq number we have to re-use the node which has existing
+	// command and sequence number. If we add then we will have redundant node with
+	// same cmd,seq pair
+	entry = ipmi_req_lookup_entry(curr_seq, req->msg.cmd);
+	if (entry)
+	{
+		// This indicates that we have already same command and seq in list
+		// No need to add once again and we will re-use the existing node.
+		// Only thing we have to do is clear the msg_data as we create
+		// a new one below in the code for it.
+		if (entry->msg_data)
+			free(entry->msg_data);
+	}
+	else
+	{
+		// We dont have this request in the list so we can add it 
+		// to the list
+		entry = ipmi_req_add_entry(intf, req, curr_seq);
+		if (entry == NULL)
+			return NULL;
+	}
+ 
 	len = req->msg.data_len + 29;
 	if (s->active && s->authtype)
 		len += 16;
@@ -914,6 +935,30 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		}
 	}
 
+	// We need to cleanup the existing entries from the list. Because if we 
+	// keep it and then when we send the new command and if the response is for
+	// old command it still matches it and then returns success.
+	// This is the corner case where the remote controller responds very slowly.
+	//
+	// Example: We have to send command 23 and 2d.
+	// If we send command,seq as 23,10 and if we dont get any response it will 
+	// retry 4 times with 23,10 and then come out here and indicate that there is no
+	// reponse from the remote controller and will send the next command for 
+	// ie 2d,11. And if the BMC is slow to respond and returns 23,10 then it 
+	// will match it in the list and will take response of command 23 as response 
+	// for command 2d and return success. So ideally when retries are done and 
+	// are out of this function we should be clearing the list to be safe so that
+	// we dont match the old response with new request.
+	//          [23, 10] --> BMC
+	//          [23, 10] --> BMC
+	//          [23, 10] --> BMC
+	//          [23, 10] --> BMC
+	//          [2D, 11] --> BMC
+	//                   <-- [23, 10]
+	//  here if we maintain 23,10 in the list then it will get matched and consider
+	//  23 response as response for 2D.   
+	ipmi_req_clear_entries();
+ 
 	return rsp;
 }
 
