@@ -74,7 +74,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:"
+# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:"
 #else
 # define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
 #endif
@@ -250,6 +250,8 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
 	lprintf(LOG_NOTICE, "       -o oemtype     Setup for OEM (use 'list' to see available OEM types)");
 	lprintf(LOG_NOTICE, "       -O seloem      Use file for OEM SEL event descriptions");
+	lprintf(LOG_NOTICE, "       -N seconds     Specify timeout for lan [default=2] / lanplus [default=1] interface");
+	lprintf(LOG_NOTICE, "       -R retry       Set the number of retries for lan/lanplus interface [default=4]");
 #endif
 	lprintf(LOG_NOTICE, "");
 
@@ -363,9 +365,11 @@ ipmi_main(int argc, char ** argv,
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
 	uint8_t my_addr = 0x20;
-	uint8_t my_long_packet_size=0;
+	uint16_t my_long_packet_size=0;
 	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
+	uint8_t retry = 0;
+	uint8_t timeout = 0;
 	int authtype = -1;
 	char * tmp = NULL;
 	char * hostname = NULL;
@@ -630,6 +634,13 @@ ipmi_main(int argc, char ** argv,
 		case 'z':	
 			my_long_packet_size = (uint8_t)strtol(optarg, NULL, 0);
 			break;
+		/* Retry and Timeout */
+		case 'R':
+			retry = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+		case 'N':
+			timeout = (uint8_t)strtol(optarg, NULL, 0); 
+			break;			
 #endif
 		default:
 			ipmi_option_usage(progname, cmdlist, intflist);
@@ -717,6 +728,11 @@ ipmi_main(int argc, char ** argv,
 	else
 		ipmi_intf_session_set_privlvl(ipmi_main_intf,
 		      IPMI_SESSION_PRIV_ADMIN);	/* default */
+	/* Adding retry and timeout for interface that support it */
+	if (retry > 0)
+		ipmi_intf_session_set_retry(ipmi_main_intf, (uint8_t)retry);
+	if (timeout > 0)
+		ipmi_intf_session_set_timeout(ipmi_main_intf, (uint8_t)timeout);
 
 	ipmi_intf_session_set_lookupbit(ipmi_main_intf, lookupbit);
 	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
