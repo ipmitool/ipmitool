@@ -73,13 +73,13 @@ uint16_t buf2short(uint8_t * buf)
 
 const char * buf2str(uint8_t * buf, int len)
 {
-	static char str[1024];
+	static char str[2049];
 	int i;
 
 	if (len <= 0 || len > 1024)
 		return NULL;
 
-	memset(str, 0, 1024);
+	memset(str, 0, 2049);
 
 	for (i=0; i<len; i++)
 		sprintf(str+i+i, "%2.2x", buf[i]);
