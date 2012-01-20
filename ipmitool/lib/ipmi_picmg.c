@@ -1634,7 +1634,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				else {
 					printf("power get <FRU-ID> <type>\n");
-					printf("   <type>   0 : steady state powert draw levels\n");
+					printf("   <type>   0 : steady state power draw levels\n");
 					printf("            1 : desired steady state draw levels\n");
 					printf("            2 : early power draw levels\n");
 					printf("            3 : desired early levels\n");
