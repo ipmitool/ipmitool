@@ -1140,8 +1140,6 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
             memset(&flags[0], 0, sizeof(flags));
             token = strtok_r(argv[2] + 8, ",", &saveptr);
             while (token != NULL) {
-               int i;
-
                if (strcmp(token, "help") == 0) {
                   optionError = 1;
                   break;
