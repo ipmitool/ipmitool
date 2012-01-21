@@ -272,7 +272,7 @@ void ipmi_catch_sigint()
 {
    if (ipmi_main_intf != NULL)
    {
-      printf("\r\nSIGN INT: Close Interface %s\r\n",ipmi_main_intf->desc);
+      printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
       ipmi_main_intf->close(ipmi_main_intf);
    }
    exit(-1);
