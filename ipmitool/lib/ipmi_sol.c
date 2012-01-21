@@ -1226,15 +1226,15 @@ static void
 printSolEscapeSequences(struct ipmi_intf * intf)
 {
 	printf(
-		   "%c?\r\n\
-	Supported escape sequences:\r\n\
-	%c.  - terminate connection\r\n\
-	%c^Z - suspend ipmitool\r\n\
-	%c^X - suspend ipmitool, but don't restore tty on restart\r\n\
-	%cB  - send break\r\n\
-	%c?  - this message\r\n\
-	%c%c  - send the escape character by typing it twice\r\n\
-	(Note that escapes are only recognized immediately after newline.)\r\n",
+		   "%c?\n\
+	Supported escape sequences:\n\
+	%c.  - terminate connection\n\
+	%c^Z - suspend ipmitool\n\
+	%c^X - suspend ipmitool, but don't restore tty on restart\n\
+	%cB  - send break\n\
+	%c?  - this message\n\
+	%c%c  - send the escape character by typing it twice\n\
+	(Note that escapes are only recognized immediately after newline.)\n",
 		   intf->session->sol_escape_char,
 		   intf->session->sol_escape_char,
 		   intf->session->sol_escape_char,
@@ -1373,25 +1373,25 @@ processSolUserInput(
 			 */
 			switch (ch) {
 			case '.':
-				printf("%c. [terminated ipmitool]\r\n",
+				printf("%c. [terminated ipmitool]\n",
 				       intf->session->sol_escape_char);
 				retval = 1;
 				break;
 
 			case 'Z' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n",
+				printf("%c^Z [suspend ipmitool]\n",
 				       intf->session->sol_escape_char);
 				suspendSelf(1); /* Restore tty back to raw */
 				continue;
 
 			case 'X' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n",
+				printf("%c^Z [suspend ipmitool]\n",
 				       intf->session->sol_escape_char);
 				suspendSelf(0); /* Don't restore to raw mode */
 				continue;
 
 			case 'B':
-				printf("%cB [send break]\r\n",
+				printf("%cB [send break]\n",
 				       intf->session->sol_escape_char);
 				sendBreak(intf);
 				continue;
@@ -1829,7 +1829,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 		}
 	}
 
-	printf("[SOL Session operational.  Use %c? for help]\r\n",
+	printf("[SOL Session operational.  Use %c? for help]\n",
 	       intf->session->sol_escape_char);
 
 	if(looptest == 1)
