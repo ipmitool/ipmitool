@@ -184,12 +184,12 @@ static void
 print_escape_seq(struct ipmi_intf *intf)
 {
 	lprintf(LOG_NOTICE,
-		"       %c.  - terminate connection\r\n"
-		"       %c^Z - suspend ipmitool\r\n"
-		"       %c^X - suspend ipmitool, but don't restore tty on restart\r\n"
-		"       %c?  - this message\r\n"
-		"       %c%c  - send the escape character by typing it twice\r\n"
-		"       (Note that escapes are only recognized immediately after newline.)\r",
+		"       %c.  - terminate connection\n"
+		"       %c^Z - suspend ipmitool\n"
+		"       %c^X - suspend ipmitool, but don't restore tty on restart\n"
+		"       %c?  - this message\n"
+		"       %c%c  - send the escape character by typing it twice\n"
+		"       (Note that escapes are only recognized immediately after newline.)",
 		intf->session->sol_escape_char,
 		intf->session->sol_escape_char,
 		intf->session->sol_escape_char,
@@ -288,24 +288,24 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 
 			switch (in_buff[i]) {
 			case '.':
-				printf("%c. [terminated ipmitool]\r\n",
+				printf("%c. [terminated ipmitool]\n",
 				       intf->session->sol_escape_char);
 				return -1;
 
 			case 'Z' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n",
+				printf("%c^Z [suspend ipmitool]\n",
 				       intf->session->sol_escape_char);
 				suspend_self(1); /* Restore tty back to raw */
 				break;
 
 			case 'X' - 64:
-				printf("%c^X [suspend ipmitool]\r\n",
+				printf("%c^X [suspend ipmitool]\n",
 				       intf->session->sol_escape_char);
 				suspend_self(0); /* Don't restore to raw mode */
 				break;
 
 			case '?':
-				printf("%c? [ipmitool help]\r\n",
+				printf("%c? [ipmitool help]\n",
 				       intf->session->sol_escape_char);
 				print_escape_seq(intf);
 				break;
@@ -469,7 +469,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 
-	printf("[Starting %sSOL with receiving address %s:%d]\r\n",
+	printf("[Starting %sSOL with receiving address %s:%d]\n",
 	       read_only ? "Read-only " : "", recvip, port);
 
 	set_terminal_size(rows, cols);
@@ -485,7 +485,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
                 return -1;
         }
 
-	printf("[SOL Session operational.  Use %c? for help]\r\n",
+	printf("[SOL Session operational.  Use %c? for help]\n",
 	       intf->session->sol_escape_char);
 
 	gettimeofday(&_start_keepalive, 0);
