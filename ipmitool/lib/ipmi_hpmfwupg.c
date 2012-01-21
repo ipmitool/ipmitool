@@ -2447,11 +2447,11 @@ static int HpmFwupgActionUploadFirmware
             if ( option & DEBUG_MODE)
             {
                 fflush(stdout);
-                printf(" Blk Num : %02x        Bytes : %05x \r",
+                printf(" Blk Num : %02x        Bytes : %05x ",
                                 uploadCmd.req.blockNumber,totalSent);
                 if (imageOffset || blockLength)
                 {
-                   printf("\n\r--> ImgOff : %x BlkLen : %x\n",imageOffset,blockLength);
+                   printf("\n--> ImgOff : %x BlkLen : %x\n",imageOffset,blockLength);
                 }
                 if (displayFWLength == totalSent)
                 {
