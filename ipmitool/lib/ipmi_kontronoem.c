@@ -164,10 +164,10 @@ int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size
    {
       intf->target_addr = intf->my_addr;
 
-       printf("Set local big buffer\r\n");
+       printf("Set local big buffer\n");
        if(ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, size ) == 0)
        {
-          printf("Set local big buffer:success\r\n");
+          printf("Set local big buffer:success\n");
        }
        else
        {
@@ -178,7 +178,7 @@ int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size
        {
           if(ipmi_kontronoem_send_set_large_buffer( intf, 0x00, size ) == 0)
           {
-             printf("IPMB was set\r\n");
+             printf("IPMB was set\n");
           }
           else
           {
@@ -196,7 +196,7 @@ int ipmi_kontronoem_set_large_buffer(struct ipmi_intf * intf, unsigned char size
    {
       if(ipmi_kontronoem_send_set_large_buffer( intf, 0x0e, size ) == 0)
       {
-         //printf("Set remote big buffer\r\n");
+         //printf("Set remote big buffer\n");
       }
       else
       {
