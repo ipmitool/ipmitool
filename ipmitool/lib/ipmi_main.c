@@ -204,6 +204,7 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 		cmd = intf->cmdlist;
 		if (strncmp(cmd->name, "default", 7) == 0)
 			return cmd->func(intf, argc+1, argv-1);
+
 		lprintf(LOG_ERR, "Invalid command: %s", name);
 		ipmi_cmd_print(intf->cmdlist);
 		return -1;
@@ -270,13 +271,11 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
  */
 void ipmi_catch_sigint()
 {
-   if (ipmi_main_intf != NULL)
-   {
-      printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
-      ipmi_main_intf->close(ipmi_main_intf);
-   }
-   exit(-1);
-
+	if (ipmi_main_intf != NULL) {
+		printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
+		ipmi_main_intf->close(ipmi_main_intf);
+	}
+	exit(-1);
 }
 
 /* ipmi_parse_hex - convert hexadecimal numbers to ascii string
@@ -480,8 +479,7 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'K':
-			if ((tmp = getenv("IPMI_KGKEY")))
-			{
+			if ((tmp = getenv("IPMI_KGKEY"))) {
 				if (kgkey)
 					free(kgkey);
 				kgkey = strdup(tmp);
@@ -489,8 +487,7 @@ ipmi_main(int argc, char ** argv,
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
-			}
-			else {
+			} else {
 				lprintf(LOG_WARN, "Unable to read kgkey from environment");
 			}
 			break;
@@ -565,8 +562,7 @@ ipmi_main(int argc, char ** argv,
 			memset(optarg, 'X', i);
 			break;
 		case 'E':
-			if ((tmp = getenv("IPMITOOL_PASSWORD")))
-			{
+			if ((tmp = getenv("IPMITOOL_PASSWORD"))) {
 				if (password)
 					free(password);
 				password = strdup(tmp);
@@ -575,8 +571,7 @@ ipmi_main(int argc, char ** argv,
 					goto out_free;
 				}
 			}
-			else if ((tmp = getenv("IPMI_PASSWORD")))
-			{
+			else if ((tmp = getenv("IPMI_PASSWORD"))) {
 				if (password)
 					free(password);
 				password = strdup(tmp);
@@ -631,7 +626,7 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
-		case 'z':	
+		case 'z':
 			my_long_packet_size = (uint8_t)strtol(optarg, NULL, 0);
 			break;
 		/* Retry and Timeout */
@@ -639,8 +634,8 @@ ipmi_main(int argc, char ** argv,
 			retry = (uint8_t)strtol(optarg, NULL, 0);
 			break;
 		case 'N':
-			timeout = (uint8_t)strtol(optarg, NULL, 0); 
-			break;			
+			timeout = (uint8_t)strtol(optarg, NULL, 0);
+			break;
 #endif
 		default:
 			ipmi_option_usage(progname, cmdlist, intflist);
@@ -727,7 +722,7 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_privlvl(ipmi_main_intf, (uint8_t)privlvl);
 	else
 		ipmi_intf_session_set_privlvl(ipmi_main_intf,
-		      IPMI_SESSION_PRIV_ADMIN);	/* default */
+				IPMI_SESSION_PRIV_ADMIN);	/* default */
 	/* Adding retry and timeout for interface that support it */
 	if (retry > 0)
 		ipmi_intf_session_set_retry(ipmi_main_intf, (uint8_t)retry);
@@ -746,85 +741,79 @@ ipmi_main(int argc, char ** argv,
 
 	ipmi_main_intf->devnum = devnum;
 
-	/* setup IPMB local and target address if given */ 
-   if( my_addr ) {
-      ipmi_main_intf->my_addr = my_addr;
-   }
-   else {
+	/* setup IPMB local and target address if given */
+	if (my_addr) {
+		ipmi_main_intf->my_addr = my_addr;
+	} else {
+		/* Check if PICMG extension is available to use the function 
+		 * GetDeviceLocator to retreive i2c address PICMG hack to set 
+		 * right IPMB address, If extension is not supported, should 
+		 * not give any problems
+		 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
+		 *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
+		 */
 
-	/* Check if PICMG extension is available to use the function GetDeviceLocator
-	 * to retreive i2c address PICMG hack to set right IPMB address, 
-	 * If extension is not supported, should not give any problems
-    *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
-    *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
-	 */      
-      /* First, check if PICMG extension is available and supported */
-      struct ipmi_rq req;
-      struct ipmi_rs *rsp;
-      char msg_data;
-      unsigned char version_accepted = 0;
+		/* First, check if PICMG extension is available and supported */
+		struct ipmi_rq req;
+		struct ipmi_rs *rsp;
+		char msg_data;
+		unsigned char version_accepted = 0;
 
 		lprintf(LOG_INFO, "Running PICMG GetDeviceLocator" );
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_PICMG;
-		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;             
-		msg_data    = 0x00;                                       
-		req.msg.data = &msg_data; 
+		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;
+		msg_data    = 0x00;
+		req.msg.data = &msg_data;
 		req.msg.data_len = 1;
 		msg_data = 0;
 
 		rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
 		if (rsp && !rsp->ccode) {
-			if
-			(  
-				(rsp->data[0] == 0)
-				&&
-            ((rsp->data[1] & 0x0F ) == PICMG_ATCA_MAJOR_VERSION )
-			){
-		      version_accepted = 1;
-		      lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d", 
-                            (rsp->data[1] & 0x0f),(rsp->data[1] >> 4)  );
-		   }
+			if ( (rsp->data[0] == 0) &&
+					((rsp->data[1] & 0x0F) == PICMG_ATCA_MAJOR_VERSION) )	{
+				version_accepted = 1;
+				lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d",
+						(rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
+			}
 		}
 		
-		if(version_accepted == 1){
-			lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator" );
+		if (version_accepted == 1) {
+			lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator");
 			memset(&req, 0, sizeof(req));
 			req.msg.netfn = IPMI_NETFN_PICMG;
 			req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
 			msg_data    = 0x00;
-			req.msg.data = &msg_data; 
-			req.msg.data_len = 1;   
+			req.msg.data = &msg_data;
+			req.msg.data_len = 1;
 			msg_data = 0;
 
-		   rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
-		   if (rsp && !rsp->ccode) {            
-            ipmi_main_intf->my_addr = rsp->data[2];
-            ipmi_main_intf->target_addr = ipmi_main_intf->my_addr;
-			   lprintf(LOG_INFO, "Discovered IPMB address = 0x%x", ipmi_main_intf->my_addr);
-		   }
-      }
-      else{
-         lprintf(LOG_INFO, 
-                  "No PICMG Extenstion discovered, keeping IPMB address 0x20");
-      }
+			rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
+			if (rsp && !rsp->ccode) {
+				ipmi_main_intf->my_addr = rsp->data[2];
+				ipmi_main_intf->target_addr = ipmi_main_intf->my_addr;
+				lprintf(LOG_INFO, "Discovered IPMB address = 0x%x",
+						ipmi_main_intf->my_addr);
+			}
+		} else {
+			lprintf(LOG_INFO,
+					"No PICMG Extenstion discovered, keeping IPMB address 0x20");
+		}
 	}
-
 
 	if ( target_addr > 0  && (target_addr != my_addr) ) {
 		/* need to open the interface first */
 		if (ipmi_main_intf->open != NULL)
 			ipmi_main_intf->open(ipmi_main_intf);
+
 		ipmi_main_intf->target_addr = target_addr;
 
-      if (transit_addr > 0) {
-         ipmi_main_intf->transit_addr    = transit_addr;
-         ipmi_main_intf->transit_channel = transit_channel;
-      }
-      else
-      {
-         ipmi_main_intf->transit_addr = ipmi_main_intf->my_addr;
-      }
+		if (transit_addr > 0) {
+			ipmi_main_intf->transit_addr    = transit_addr;
+			ipmi_main_intf->transit_channel = transit_channel;
+		} else {
+			ipmi_main_intf->transit_addr = ipmi_main_intf->my_addr;
+		}
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(ipmi_main_intf, IPMI_SESSION_PRIV_ADMIN);
 	}
@@ -841,10 +830,9 @@ ipmi_main(int argc, char ** argv,
 
 	/* Enable Big Buffer when requested */
 	ipmi_main_intf->channel_buf_size = 0;
-	if( my_long_packet_size != 0 )
-	{
+	if ( my_long_packet_size != 0 ) {
 		printf("Setting large buffer to %i\n", my_long_packet_size);
-		if(ipmi_kontronoem_set_large_buffer( ipmi_main_intf, my_long_packet_size ) == 0)
+		if (ipmi_kontronoem_set_large_buffer( ipmi_main_intf, my_long_packet_size ) == 0)
 		{
 			my_long_packet_set = 1;
 			ipmi_main_intf->channel_buf_size = my_long_packet_size;
@@ -855,13 +843,12 @@ ipmi_main(int argc, char ** argv,
 
 	/* now we finally run the command */
 	if (argc-optind > 0)
-		rc = ipmi_cmd_run(ipmi_main_intf, argv[optind], argc-optind-1, 
-                        &(argv[optind+1]));
+		rc = ipmi_cmd_run(ipmi_main_intf, argv[optind], argc-optind-1,
+				&(argv[optind+1]));
 	else
 		rc = ipmi_cmd_run(ipmi_main_intf, NULL, 0, NULL);
 
-	if(my_long_packet_set == 1) 
-	{
+	if (my_long_packet_set == 1) {
 		/* Restore defaults */
 		ipmi_kontronoem_set_large_buffer( ipmi_main_intf, 0 );
 	}
