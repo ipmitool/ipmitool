@@ -365,15 +365,15 @@ static void
 printiSolEscapeSequences(void)
 {
 	printf(
-		   "%c?\r\n\
-	Supported escape sequences:\r\n\
-	%c.  - terminate connection\r\n\
-	%c^Z - suspend ipmitool\r\n\
-	%c^X - suspend ipmitool, but don't restore tty on restart\r\n\
-	%cB  - send break\r\n\
-	%c?  - this message\r\n\
-	%c%c  - send the escape character by typing it twice\r\n\
-	(Note that escapes are only recognized immediately after newline.)\r\n",
+		   "%c?\n\
+	Supported escape sequences:\n\
+	%c.  - terminate connection\n\
+	%c^Z - suspend ipmitool\n\
+	%c^X - suspend ipmitool, but don't restore tty on restart\n\
+	%cB  - send break\n\
+	%c?  - this message\n\
+	%c%c  - send the escape character by typing it twice\n\
+	(Note that escapes are only recognized immediately after newline.)\n",
 		   ISOL_ESCAPE_CHARACTER,
 		   ISOL_ESCAPE_CHARACTER,
 		   ISOL_ESCAPE_CHARACTER,
@@ -484,21 +484,21 @@ processiSolUserInput(struct ipmi_intf * intf,
 			 */
 			switch (ch) {
 			case '.':
-				printf("%c. [terminated ipmitool]\r\n", ISOL_ESCAPE_CHARACTER);
+				printf("%c. [terminated ipmitool]\n", ISOL_ESCAPE_CHARACTER);
 				retval = 1;
 				break;
 			case 'Z' - 64:
-				printf("%c^Z [suspend ipmitool]\r\n", ISOL_ESCAPE_CHARACTER);
+				printf("%c^Z [suspend ipmitool]\n", ISOL_ESCAPE_CHARACTER);
 				suspendSelf(1); /* Restore tty back to raw */
 				continue;
 
 			case 'X' - 64:
-				printf("%c^X [suspend ipmitool]\r\n", ISOL_ESCAPE_CHARACTER);
+				printf("%c^X [suspend ipmitool]\n", ISOL_ESCAPE_CHARACTER);
 				suspendSelf(0); /* Don't restore to raw mode */
 				continue;
 
 			case 'B':
-				printf("%cb [send break]\r\n", ISOL_ESCAPE_CHARACTER);
+				printf("%cb [send break]\n", ISOL_ESCAPE_CHARACTER);
 				sendBreak(intf);
 				continue;
 
@@ -752,7 +752,7 @@ ipmi_isol_activate(struct ipmi_intf * intf)
 	/* response contain 4 additional bytes : 80 01 32 ff
 	   Don't know what to use them for yet... */
 
-	printf("[SOL Session operational.  Use %c? for help]\r\n",
+	printf("[SOL Session operational.  Use %c? for help]\n",
 	       ISOL_ESCAPE_CHARACTER);
 
 	/*
