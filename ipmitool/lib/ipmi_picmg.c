@@ -752,8 +752,8 @@ ipmi_picmg_get_led_properties(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	printf("General Status LED Properties:  0x%2x\n\r", rsp->data[1] );
-	printf("App. Specific  LED Count:       0x%2x\n\r", rsp->data[2] );
+	printf("General Status LED Properties:  0x%2x\n", rsp->data[1] );
+	printf("App. Specific  LED Count:       0x%2x\n", rsp->data[2] );
 
 	return 0;
 }
@@ -797,11 +797,11 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
 			printf("%s, ", led_color_str[ i ]);
 		}
 	}
-	printf("\n\r");
+	printf("\n");
 
-	printf("Default LED Color in\n\r");
-	printf("      LOCAL control:  %s\n\r", led_color_str[ rsp->data[2] ] );
-	printf("      OVERRIDE state: %s\n\r", led_color_str[ rsp->data[3] ] );
+	printf("Default LED Color in\n");
+	printf("      LOCAL control:  %s\n", led_color_str[ rsp->data[2] ] );
+	printf("      OVERRIDE state: %s\n", led_color_str[ rsp->data[3] ] );
 
 	return 0;
 }
@@ -840,49 +840,49 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 
 	printf("LED states:						  %x	", rsp->data[1] );
 	if (rsp->data[1] == 0x1)
-		printf("[LOCAL CONTROL]\n\r");
+		printf("[LOCAL CONTROL]\n");
 	else if (rsp->data[1] == 0x2)
-		printf("[OVERRIDE]\n\r");
+		printf("[OVERRIDE]\n");
 	else if (rsp->data[1] == 0x4)
-		printf("[LAMPTEST]\n\r");
+		printf("[LAMPTEST]\n");
 	else
-		printf("\n\r");
+		printf("\n");
 
 	printf("  Local Control function:     %x  ", rsp->data[2] );
 	if (rsp->data[2] == 0x0)
-		printf("[OFF]\n\r");
+		printf("[OFF]\n");
 	else if (rsp->data[2] == 0xff)
-		printf("[ON]\n\r");
+		printf("[ON]\n");
 	else
-		printf("[BLINKING]\n\r");
+		printf("[BLINKING]\n");
 
-	printf("  Local Control On-Duration:  %x\n\r", rsp->data[3] );
-	printf("  Local Control Color:        %x  [%s]\n\r", rsp->data[4], led_color_str[ rsp->data[4] ]);
+	printf("  Local Control On-Duration:  %x\n", rsp->data[3] );
+	printf("  Local Control Color:        %x  [%s]\n", rsp->data[4], led_color_str[ rsp->data[4] ]);
 
 	/* override state or lamp test */
 	if (rsp->data[1] == 0x02) {
 		printf("  Override function:     %x  ", rsp->data[5] );
 		if (rsp->data[2] == 0x0)
-			printf("[OFF]\n\r");
+			printf("[OFF]\n");
 		else if (rsp->data[2] == 0xff)
-			printf("[ON]\n\r");
+			printf("[ON]\n");
 		else
-			printf("[BLINKING]\n\r");
+			printf("[BLINKING]\n");
 
-		printf("  Override On-Duration:  %x\n\r", rsp->data[6] );
-		printf("  Override Color:        %x  [%s]\n\r", rsp->data[7], led_color_str[ rsp->data[7] ]);
+		printf("  Override On-Duration:  %x\n", rsp->data[6] );
+		printf("  Override Color:        %x  [%s]\n", rsp->data[7], led_color_str[ rsp->data[7] ]);
 
 	}else if (rsp->data[1] == 0x06) {
 		printf("  Override function:     %x  ", rsp->data[5] );
 		if (rsp->data[2] == 0x0)
-			printf("[OFF]\n\r");
+			printf("[OFF]\n");
 		else if (rsp->data[2] == 0xff)
-			printf("[ON]\n\r");
+			printf("[ON]\n");
 		else
-			printf("[BLINKING]\n\r");
-		printf("  Override On-Duration:  %x\n\r", rsp->data[6] );
-		printf("  Override Color:        %x  [%s]\n\r", rsp->data[7], led_color_str[ rsp->data[7] ]);
-		printf("  Lamp test duration:    %x\n\r", rsp->data[8] );
+			printf("[BLINKING]\n");
+		printf("  Override On-Duration:  %x\n", rsp->data[6] );
+		printf("  Override Color:        %x  [%s]\n", rsp->data[7], led_color_str[ rsp->data[7] ]);
+		printf("  Lamp test duration:    %x\n", rsp->data[8] );
 	}
 
 	return 0;
@@ -1080,7 +1080,7 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 	msg_data[1] = atoi(argv[0]);				/* FRU-ID	  */
 	msg_data[2] = atoi(argv[1]);				/* control option  */
 
-	printf("FRU Device Id: %d FRU Control Option: %s\n\r", msg_data[1],  \
+	printf("FRU Device Id: %d FRU Control Option: %s\n", msg_data[1],  \
 				val2str( msg_data[2], picmg_frucontrol_vals));
 
 	rsp = intf->sendrecv(intf, &req);
