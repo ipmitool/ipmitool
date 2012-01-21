@@ -1568,14 +1568,14 @@ static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
 		/* the 'OEM' field is already checked in caller */
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
 			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
-				printf("usage: fru get <id> <oem>\r\n");
+				printf("usage: fru get <id> <oem>\n");
 				badParams = TRUE;
 				return;
 			}
 		}
 		if( argc<GET_OEM_KONTRON_COMPLETE_ARG_COUNT ){
-			printf("usage: oem <iana> <recordid>\r\n");
-			printf("usage: oem 15000 3\r\n");
+			printf("usage: oem <iana> <recordid>\n");
+			printf("usage: oem 15000 3\n");
 			badParams = TRUE;
 			return;
 		}
@@ -1682,15 +1682,15 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 		/* the 'OEM' field is already checked in caller */
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
 			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
-				printf("usage: fru edit <id> <oem> <args...>\r\n");
+				printf("usage: fru edit <id> <oem> <args...>\n");
 				badParams = TRUE;
 				return hasChanged;
 			}
 		}
 		if( argc<EDIT_OEM_KONTRON_COMPLETE_ARG_COUNT ){
-			printf("usage: oem <iana> <recordid> <format> <args...>\r\n");
+			printf("usage: oem <iana> <recordid> <format> <args...>\n");
 			printf("usage: oem 15000 3 0 <name> <instance> <field1>"\
-					" <field2> <field3> <crc32>\r\n");
+					" <field2> <field3> <crc32>\n");
 			badParams = TRUE;
 			return hasChanged;
 		}
@@ -1699,7 +1699,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 			for(i=OEM_KONTRON_VERSION_ARG_POS;i<=OEM_KONTRON_CRC32_ARG_POS;i++){
 				if( (strlen(argv[i]) != OEM_KONTRON_FIELD_SIZE) &&
 					(strlen(argv[i]) != OEM_KONTRON_VERSION_FIELD_SIZE)) {
-					printf("error: version fields must have %d characters\r\n",
+					printf("error: version fields must have %d characters\n",
 										OEM_KONTRON_FIELD_SIZE);
 					badParams = TRUE;
 					return hasChanged;
