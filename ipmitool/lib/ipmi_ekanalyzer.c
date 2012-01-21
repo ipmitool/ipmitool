@@ -361,11 +361,11 @@ static void
 ipmi_ekanalyzer_usage( void )
 {
    char * help_message =
-"Ekeying analyzer tool version 1.00                                        \r\n\
-ekanalyzer Commands:                                                       \r\n\
-      print    [carrier | power | all] <oc=filename1> <b1=filename2>...    \r\n\
-      frushow  <b2=filename>                                               \r\n\
-      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...    \r\n\
+"Ekeying analyzer tool version 1.00                                        \n\
+ekanalyzer Commands:                                                       \n\
+      print    [carrier | power | all] <oc=filename1> <b1=filename2>...    \n\
+      frushow  <b2=filename>                                               \n\
+      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...    \n\
 ";
    printf("%s",help_message);
    fflush(stdout);
