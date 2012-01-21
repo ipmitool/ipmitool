@@ -729,7 +729,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
             saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
             if(verbose)
             {
-               printf("IOL payload size           : %d\r\n"  ,
+               printf("IOL payload size           : %d\n"  ,
                                                   saveFirmwareInfo.bufferSize);
             }
          }
@@ -747,7 +747,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
             saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
             if(verbose)
             {
-               printf("IPMB payload size          : %d\r\n"  , 
+               printf("IPMB payload size          : %d\n"  , 
                                                    saveFirmwareInfo.bufferSize);
             }
          }
@@ -756,7 +756,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          	saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
             if(verbose)
             {
-               printf("SMI payload size           : %d\r\n", 
+               printf("SMI payload size           : %d\n", 
                                                   saveFirmwareInfo.bufferSize);
             }
          }
