@@ -737,14 +737,14 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 		FILE *fp;
 		struct stat st1;
 
-		ipmi_start_daemon(eintf->intf);
-
 		if (lstat(pidfile, &st1) == 0) {
-			/* already exists, erase first */
-			if (unlink(pidfile) != 0) {
-				lprintf(LOG_WARN, "Unable to erase pidfile");
-			}
+				/* PID file already exists -> exit. */
+				lprintf(LOG_ERR, "PID file '%s' already exists.\n", pidfile);
+				lprintf(LOG_ERR, "Perhaps another instance is already running.\n");
+				return (-1);
 		}
+
+		ipmi_start_daemon(eintf->intf);
 
 		umask(022);
 		fp = ipmi_open_file_write(pidfile);
