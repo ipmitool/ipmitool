@@ -746,6 +746,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 			}
 		}
 
+		umask(022);
 		fp = ipmi_open_file_write(pidfile);
 		if (fp != NULL) {
 			fprintf(fp, "%d\n", (int)getpid());
