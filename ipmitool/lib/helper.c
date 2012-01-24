@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>  /* For TIOCNOTTY */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -143,6 +144,132 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 
 	return un_str;
 }
+
+/* str2long - safely convert string to int64_t
+ *
+ * @str: source string to convert from
+ * @lng_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2long(const char * str, int64_t * lng_ptr)
+{
+	char * end_ptr = 0;
+	if (!str || !lng_ptr)
+		return (-1);
+
+	*lng_ptr = 0;
+	errno = 0;
+	*lng_ptr = strtol(str, &end_ptr, 0);
+
+	if (end_ptr != '\0')
+		return (-2);
+
+	if (errno != 0)
+		return (-3);
+	
+	return 0;
+} /* str2long(...) */
+
+/* str2ulong - safely convert string to uint64_t
+ *
+ * @str: source string to convert from
+ * @ulng_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2ulong(const char * str, uint64_t * ulng_ptr)
+{
+	char * end_ptr = 0;
+	if (!str || !ulng_ptr)
+		return (-1);
+
+	*ulng_ptr = 0;
+	errno = 0;
+	*ulng_ptr = strtoul(str, &end_ptr, 0);
+
+	if (end_ptr != '\0')
+		return (-2);
+
+	if (errno != 0)
+		return (-3);
+
+	return 0;
+} /* str2ulong(...) */
+
+/* str2int - safely convert string to int32_t
+ *
+ * @str: source string to convert from
+ * @int_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2int(const char * str, int32_t * int_ptr)
+{
+	int rc = 0;
+	int64_t arg_long = 0;
+	if ( (rc = str2long(str, &arg_long)) != 0 ) {
+		*int_ptr = 0;
+		return rc;
+	}
+
+	if (arg_long < INT32_MIN || arg_long > INT32_MAX)
+		return (-3);
+
+	*int_ptr = (int32_t)arg_long;
+	return 0;
+} /* str2int(...) */
+
+/* str2short - safely convert string to int16_t
+ *
+ * @str: source string to convert from
+ * @shrt_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2short(const char * str, int16_t * shrt_ptr)
+{
+	int rc = (-3);
+	int64_t arg_long = 0;
+	if ( (rc = str2long(str, &arg_long)) != 0 ) {
+		*shrt_ptr = 0;
+		return rc;
+	}
+
+	if (arg_long < INT16_MIN || arg_long > INT16_MAX)
+		return (-3);
+
+	*shrt_ptr = (int16_t)arg_long;
+	return 0;
+} /* str2short(...) */
+
+/* str2uchar - safely convert string to uint8
+ *
+ * @str: source string to convert from
+ * @uchr_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) or (-3) if conversion fails
+ */
+int str2uchar(const char * str, uint8_t * uchr_ptr)
+{
+	int rc = (-3);
+	int64_t arg_long = 0;
+	if ( (rc = str2ulong(str, &arg_long)) != 0 ) {
+		*uchr_ptr = 0;
+		return rc;
+	}
+
+	if (arg_long > UINT8_MAX)
+		return (-3);
+
+	*uchr_ptr = (uint8_t)arg_long;
+	return 0;
+} /* str2uchar(...) */
 
 uint16_t str2val(const char *str, const struct valstr *vs)
 {
