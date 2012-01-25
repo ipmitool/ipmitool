@@ -247,6 +247,30 @@ int str2short(const char * str, int16_t * shrt_ptr)
 	return 0;
 } /* str2short(...) */
 
+/* str2ushort - safely convert string to uint16_t
+ *
+ * @str: source string to convert from
+ * @ushrt_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2ushort(const char * str, uint16_t * ushrt_ptr)
+{
+	int rc = (-3);
+	uint64_t arg_ulong = 0;
+	if ( (rc = str2ulong(str, &arg_ulong)) != 0 ) {
+		*ushrt_ptr = 0;
+		return rc;
+	}
+
+	if (arg_ulong > UINT16_MAX)
+		return (-3);
+
+	*ushrt_ptr = (uint16_t)arg_ulong;
+	return 0;
+} /* str2ushort(...) */
+
 /* str2uchar - safely convert string to uint8
  *
  * @str: source string to convert from
