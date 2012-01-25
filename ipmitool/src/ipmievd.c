@@ -715,7 +715,11 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 				daemon = 0;
 		}
 		else if (strncasecmp(argv[i], "timeout=", 8) == 0) {
-			selwatch_timeout = strtoul(argv[i]+8, NULL, 0);
+			if ( (str2int(argv[i]+8, &selwatch_timeout) != 0) || 
+					selwatch_timeout < 0) {
+				lprintf(LOG_ERR, "Invalid input given or out of range for time-out.");
+				return (-1);
+			}
 		}
 		else if (strncasecmp(argv[i], "pidfile=", 8) == 0) {
 			memset(pidfile, 0, 64);
