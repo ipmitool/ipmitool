@@ -748,10 +748,17 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 		umask(022);
 		fp = ipmi_open_file_write(pidfile);
-		if (fp != NULL) {
-			fprintf(fp, "%d\n", (int)getpid());
-			fclose(fp);
+		if (fp == NULL) {
+			/* Failed to get fp on PID file -> exit. */
+			log_halt();
+			log_init("ipmievd", daemon, verbose);
+			lprintf(LOG_ERR,
+					"Failed to open PID file '%s' for writing. Check file permission.\n",
+					pidfile);
+			exit(EXIT_FAILURE);
 		}
+		fprintf(fp, "%d\n", (int)getpid());
+		fclose(fp);
 	}
 
 	/* register signal handler for cleanup */
