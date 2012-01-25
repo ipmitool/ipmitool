@@ -426,13 +426,45 @@ ipmi_main(int argc, char ** argv,
 			goto out_free;
 			break;
 		case 'd':
-			devnum = atoi(optarg);
+			if (str2int(optarg, &devnum) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-d'.");
+				rc = -1;
+				goto out_free;
+			}
+			/* Check if device number is -gt 0; I couldn't find limit for
+			 * kernels > 2.6, thus right side is unlimited.
+			 */
+			if (devnum < 0) {
+				lprintf(LOG_ERR, "Device number %i is out of range.", devnum);
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'p':
-			port = atoi(optarg);
+			if (str2int(optarg, &port) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-p'.");
+				rc = -1;
+				goto out_free;
+			}
+			/* Check if port is -gt 0 && port is -lt 65535 */
+			if (port < 0 || port > 65535) {
+				lprintf(LOG_ERR, "Port number %i is out of range.", port);
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'C':
-			cipher_suite_id = atoi(optarg);
+			if (str2int(optarg, &cipher_suite_id) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-C'.");
+				rc = -1;
+				goto out_free;
+			}
+			/* add check Cipher is -gt 0 */
+			if (cipher_suite_id < 0) {
+				lprintf(LOG_ERR, "Cipher suite ID %i is invalid.", cipher_suite_id);
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'v':
 			verbose++;
