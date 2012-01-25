@@ -744,8 +744,8 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 		if (lstat(pidfile, &st1) == 0) {
 				/* PID file already exists -> exit. */
-				lprintf(LOG_ERR, "PID file '%s' already exists.\n", pidfile);
-				lprintf(LOG_ERR, "Perhaps another instance is already running.\n");
+				lprintf(LOG_ERR, "PID file '%s' already exists.", pidfile);
+				lprintf(LOG_ERR, "Perhaps another instance is already running.");
 				return (-1);
 		}
 
@@ -758,7 +758,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 			log_halt();
 			log_init("ipmievd", daemon, verbose);
 			lprintf(LOG_ERR,
-					"Failed to open PID file '%s' for writing. Check file permission.\n",
+					"Failed to open PID file '%s' for writing. Check file permission.",
 					pidfile);
 			exit(EXIT_FAILURE);
 		}
