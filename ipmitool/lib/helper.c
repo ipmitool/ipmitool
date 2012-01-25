@@ -282,16 +282,16 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr)
 int str2uchar(const char * str, uint8_t * uchr_ptr)
 {
 	int rc = (-3);
-	int64_t arg_long = 0;
-	if ( (rc = str2ulong(str, &arg_long)) != 0 ) {
+	int64_t arg_ulong = 0;
+	if ( (rc = str2ulong(str, &arg_ulong)) != 0 ) {
 		*uchr_ptr = 0;
 		return rc;
 	}
 
-	if (arg_long > UINT8_MAX)
+	if (arg_ulong > UINT8_MAX)
 		return (-3);
 
-	*uchr_ptr = (uint8_t)arg_long;
+	*uchr_ptr = (uint8_t)arg_ulong;
 	return 0;
 } /* str2uchar(...) */
 
