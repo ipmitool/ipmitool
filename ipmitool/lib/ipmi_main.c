@@ -631,22 +631,46 @@ ipmi_main(int argc, char ** argv,
 			authtype = str2val(optarg, ipmi_authtype_session_vals);
 			break;
 		case 't':
-			target_addr = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &target_addr) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-t'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'b':
-			target_channel = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &target_channel) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-b'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'T':
-			transit_addr = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &transit_addr) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-T'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'B':
-			transit_channel = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &transit_channel) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-B'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'l':
-			target_lun = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &target_lun) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-l'.");
+				rc = 1;
+				goto out_free;
+			}
 			break;
 		case 'm':
-			my_addr = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uchar(optarg, &my_addr) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-m'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'e':
 			sol_escape_char = optarg[0];
@@ -659,7 +683,11 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'z':
-			my_long_packet_size = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2ushort(optarg, &my_long_packet_size) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-z'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		/* Retry and Timeout */
 		case 'R':
