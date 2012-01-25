@@ -667,6 +667,7 @@ selwatch_wait(struct ipmi_event_intf * eintf)
 		}
 		sleep(selwatch_timeout);
 	}
+	return 0;
 }
 /*************************************************************************/
 
