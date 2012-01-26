@@ -123,6 +123,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 {
    struct ipmi_rq req;
    struct ipmi_rs * rsp;
+   int rc = (-3);
 
    struct {
       uint8_t interval;
@@ -138,8 +139,16 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
          identify_data.interval = 0;
          identify_data.force_on = 1;
       } else {
-         identify_data.interval = (uint8_t)atoi(arg);
+         identify_data.interval = 0;
          identify_data.force_on = 0;
+         if ( (rc = str2uchar(arg, &identify_data.interval)) != 0) {
+            if (rc == (-2)) {
+                lprintf(LOG_ERR, "Invalid interval given.");
+            } else {
+                lprintf(LOG_ERR, "Given interval is too big.");
+            }
+            return (-1);
+         }
       }
       req.msg.data = (uint8_t *)&identify_data;
       /* The Force Identify On byte is optional and not
@@ -483,14 +492,20 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
    struct ipmi_rs * rsp;
    struct ipmi_rq req;
    uint8_t msg_data[3];
-   unsigned char param_id;
+   uint8_t param_id = 0;
 
    if (arg == NULL)
       return -1;
 
+   if (str2uchar(arg, &param_id) != 0) {
+      lprintf(LOG_ERR, "Invalid parameter '%s' given instead of bootparam.",
+           arg);
+      return (-1);
+   }
+
    memset(msg_data, 0, 3);
 
-   msg_data[0] = (uint8_t)atoi(arg) & 0x7f;
+   msg_data[0] = param_id & 0x7f;
    msg_data[1] = 0;
    msg_data[2] = 0;
 
@@ -514,6 +529,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
    if (verbose > 2)
       printbuf(rsp->data, rsp->data_len, "Boot Option");
 
+   param_id = 0;
    param_id = (rsp->data[1] & 0x7f);
 
    printf("Boot parameter version: %d\n", rsp->data[0]);
