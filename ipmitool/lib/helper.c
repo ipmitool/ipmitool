@@ -163,7 +163,7 @@ int str2long(const char * str, int64_t * lng_ptr)
 	errno = 0;
 	*lng_ptr = strtol(str, &end_ptr, 0);
 
-	if (end_ptr != '\0')
+	if (*end_ptr != '\0')
 		return (-2);
 
 	if (errno != 0)
@@ -190,7 +190,7 @@ int str2ulong(const char * str, uint64_t * ulng_ptr)
 	errno = 0;
 	*ulng_ptr = strtoul(str, &end_ptr, 0);
 
-	if (end_ptr != '\0')
+	if (*end_ptr != '\0')
 		return (-2);
 
 	if (errno != 0)
