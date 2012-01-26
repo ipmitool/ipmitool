@@ -68,7 +68,9 @@ const char * oemval2str(uint32_t oem,uint16_t val, const struct oemvalstr * vs);
 int str2long(const char * str, int64_t * lng_ptr);
 int str2ulong(const char * str, uint64_t * ulng_ptr);
 int str2int(const char * str, int32_t * int_ptr);
+int str2uint(const char * str, uint32_t * uint_ptr)
 int str2short(const char * str, int16_t * shrt_ptr);
+int str2ushort(const char * str, uint16_t * ushrt_ptr)
 int str2uchar(const char * str, uint8_t * uchr_ptr);
 
 uint16_t str2val(const char * str, const struct valstr * vs);
