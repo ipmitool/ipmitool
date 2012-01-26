@@ -367,8 +367,8 @@ ipmi_main(int argc, char ** argv,
 	uint16_t my_long_packet_size=0;
 	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
-	uint8_t retry = 0;
-	uint8_t timeout = 0;
+	int retry = 0;
+	uint32_t timeout = 0;
 	int authtype = -1;
 	char * tmp = NULL;
 	char * hostname = NULL;
@@ -691,10 +691,18 @@ ipmi_main(int argc, char ** argv,
 			break;
 		/* Retry and Timeout */
 		case 'R':
-			retry = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2int(optarg, &retry) != 0 || retry < 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-R'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'N':
-			timeout = (uint8_t)strtol(optarg, NULL, 0);
+			if (str2uint(optarg, &timeout) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-N'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 #endif
 		default:
@@ -785,9 +793,9 @@ ipmi_main(int argc, char ** argv,
 				IPMI_SESSION_PRIV_ADMIN);	/* default */
 	/* Adding retry and timeout for interface that support it */
 	if (retry > 0)
-		ipmi_intf_session_set_retry(ipmi_main_intf, (uint8_t)retry);
+		ipmi_intf_session_set_retry(ipmi_main_intf, retry);
 	if (timeout > 0)
-		ipmi_intf_session_set_timeout(ipmi_main_intf, (uint8_t)timeout);
+		ipmi_intf_session_set_timeout(ipmi_main_intf, timeout);
 
 	ipmi_intf_session_set_lookupbit(ipmi_main_intf, lookupbit);
 	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
