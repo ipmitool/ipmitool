@@ -223,6 +223,30 @@ int str2int(const char * str, int32_t * int_ptr)
 	return 0;
 } /* str2int(...) */
 
+/* str2uint - safely convert string to uint32_t
+ *
+ * @str: source string to convert from
+ * @uint_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2uint(const char * str, uint32_t * uint_ptr)
+{
+	int rc = 0;
+	uint64_t arg_ulong = 0;
+	if ( (rc = str2ulong(str, &arg_ulong)) != 0) {
+		*uint_ptr = 0;
+		return rc;
+	}
+
+	if (arg_ulong > UINT32_MAX)
+		return (-3);
+
+	*uint_ptr = (uint32_t)arg_ulong;
+	return 0;
+} /* str2uint(...) */
+
 /* str2short - safely convert string to int16_t
  *
  * @str: source string to convert from
