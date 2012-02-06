@@ -366,19 +366,23 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
  * @sensor:	sensor number
  * @target:	sensor owner ID
  * @lun:	sensor lun
+ * @channel:	channel number
  *
  * returns pointer to ipmi response
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
-					uint8_t target, uint8_t lun)
+					uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
+	uint8_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
+	save_channel = intf->target_channel;
+	intf->target_channel = channel;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -388,6 +392,7 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 
 	rsp = intf->sendrecv(intf, &req);
 	intf->target_addr = save_addr;
+	intf->target_channel = save_channel;
 	return rsp;
 }
 
@@ -397,20 +402,24 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
  * @sensor:	sensor number
  * @target:	sensor owner ID
  * @lun:	sensor lun
+ * @channel:	channel number
  *
  * returns pointer to ipmi response
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
-					uint8_t target, uint8_t lun)
+					uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
+	uint8_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
+	save_channel = intf->target_channel;
+	intf->target_channel = channel;
 
 	rqdata[0] = sensor;
 	rqdata[1] = 0xff;	/* reserved */
@@ -423,6 +432,7 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
 
 	rsp = intf->sendrecv(intf, &req);
 	intf->target_addr = save_addr;
+	intf->target_channel = save_channel;
 	return rsp;
 }
 
@@ -452,23 +462,27 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf *intf, uint8_t sensor)
  * @intf:	ipmi interface
  * @sensor:	sensor id
  * @target:	IPMB target address
- * @lun:        sensor lun
+ * @lun:	sensor lun
+ * @channel:	channel number
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
-				 uint8_t target, uint8_t lun)
+				 uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
+	uint8_t save_channel;
 
 	if ((strncmp(intf->name, "ipmb", 4)) != 0) 
 		return ipmi_sdr_get_sensor_reading(intf, sensor);
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
+	save_channel = intf->target_channel;
+	intf->target_channel = channel;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -478,6 +492,7 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 
 	rsp = intf->sendrecv(intf, &req);
 	intf->target_addr = save_addr;
+	intf->target_channel = save_channel;
 	return rsp;
 }
 
@@ -487,19 +502,23 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
  * @sensor:	sensor id
  * @target:	sensor owner ID
  * @lun:	sensor lun
+ * @channel:	channel number
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
-				 uint8_t target, uint8_t lun)
+				 uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
+	uint8_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
+	save_channel = intf->target_channel;
+	intf->target_channel = channel;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -509,6 +528,7 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
 
 	rsp = intf->sendrecv(intf, &req);
 	intf->target_addr = save_addr;
+	intf->target_channel = save_channel;
 	return rsp;
 }
 
@@ -518,19 +538,23 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
  * @sensor:	sensor id
  * @target:	sensor owner ID
  * @lun:	sensor lun
+ * @channel:	channel number
  *
  * returns ipmi response structure
  */
 struct ipmi_rs *
 ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
-				 uint8_t target, uint8_t lun)
+				 uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	uint8_t save_addr;
+	uint8_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
+	save_channel = intf->target_channel;
+	intf->target_channel = channel;
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -540,6 +564,7 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 
 	rsp = intf->sendrecv(intf, &req);
 	intf->target_addr = save_addr;
+	intf->target_channel = save_channel;
 	return rsp;
 }
 
@@ -786,7 +811,7 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 				   uint8_t sensor_num,
 				   uint8_t sensor_type,
 				   uint8_t event_type, int numeric_fmt,
-				   uint8_t target, uint8_t lun)
+				   uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rs *rsp;
 	int i;
@@ -810,7 +835,7 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 	};
 
 	rsp = ipmi_sdr_get_sensor_event_status(intf, sensor_num,
-						target, lun);
+						target, lun, channel);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG,
@@ -998,7 +1023,7 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 				   uint8_t sensor_num,
 				   uint8_t sensor_type,
 				   uint8_t event_type, int numeric_fmt,
-				   uint8_t target, uint8_t lun)
+				   uint8_t target, uint8_t lun, uint8_t channel)
 {
 	struct ipmi_rs *rsp;
 	int i;
@@ -1022,7 +1047,7 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 	};
 
 	rsp = ipmi_sdr_get_sensor_event_enable(intf, sensor_num,
-						target, lun);
+						target, lun, channel);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG,
@@ -1133,13 +1158,14 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	int i = 0, validread = 1, do_unit = 1;
 	double val = 0.0, creading = 0.0;
 	struct ipmi_rs *rsp;
-	uint8_t target, lun;
+	uint8_t target, lun, channel;
 
 	if (sensor == NULL)
 		return -1;
 
 	target = sensor->keys.owner_id;
 	lun = sensor->keys.lun;
+	channel = sensor->keys.channel;
 
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
@@ -1148,7 +1174,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
-		sensor->keys.owner_id, sensor->keys.lun);
+		sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
 
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
@@ -1382,14 +1408,16 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 						   sensor->event_type,
 						   DISCRETE_SENSOR,
 						   target,
-						   lun);
+						   lun,
+						   channel);
 		ipmi_sdr_print_sensor_event_enable(intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
 						   DISCRETE_SENSOR,
 						   target,
-						   lun);
+						   lun,
+						   channel);
 		printf(" OEM                   : %X\n",
 		       sensor->oem);
 		printf("\n");
@@ -1562,14 +1590,14 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 					   sensor->sensor.type,
 					   sensor->event_type, ANALOG_SENSOR,
 					   target,
-					   lun);
+					   lun, channel);
 
 	ipmi_sdr_print_sensor_event_enable(intf,
 					   sensor->keys.sensor_num,
 					   sensor->sensor.type,
 					   sensor->event_type, ANALOG_SENSOR,
 					   target,
-					   lun);
+					   lun, channel);
 
 	printf("\n");
 	return 0;
@@ -1718,20 +1746,21 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp;
 	char desc[17];
 	int validread = 1;
-	uint8_t target, lun;
+	uint8_t target, lun, channel;
 
 	if (sensor == NULL)
 		return -1;
 
 	target = sensor->keys.owner_id;
 	lun = sensor->keys.lun;
+	channel = sensor->keys.channel;
 
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
-		sensor->keys.owner_id, sensor->keys.lun);
+		sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
 	if (rsp == NULL) {
 		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
 			desc, sensor->keys.sensor_num);
@@ -1791,14 +1820,16 @@ ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
 						   sensor->event_type,
 						   DISCRETE_SENSOR,
 						   target,
-						   lun);
+						   lun,
+						   channel);
 		ipmi_sdr_print_sensor_event_enable(intf,
 						   sensor->keys.sensor_num,
 						   sensor->sensor.type,
 						   sensor->event_type,
 						   DISCRETE_SENSOR,
 						   target,
-						   lun);
+						   lun,
+						   channel);
 		printf(" OEM                   : %X\n",
 		       sensor->oem);
 		printf("\n");

@@ -163,7 +163,8 @@ ipmi_sensor_print_full_discrete(struct ipmi_intf *intf,
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
 					       sensor->keys.owner_id,
-					       sensor->keys.lun);
+					       sensor->keys.lun,
+					       sensor->keys.channel);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -246,7 +247,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
 					       sensor->keys.owner_id,
-					       sensor->keys.lun);
+					       sensor->keys.lun,
+					       sensor->keys.channel);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -298,7 +300,7 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	 * Get sensor thresholds
 	 */
 	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num,
-				sensor->keys.owner_id, sensor->keys.lun);
+				sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
 	if ((rsp == NULL) || (rsp->ccode > 0))
 		thresh_available = 0;
 
@@ -470,7 +472,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 							   sensor->event_type,
 							   ANALOG_SENSOR,
 							   sensor->keys.owner_id,
-							   sensor->keys.lun);
+							   sensor->keys.lun,
+							   sensor->keys.channel);
 			ipmi_sdr_print_sensor_event_enable(intf,
 							   sensor->keys.
 							   sensor_num,
@@ -478,7 +481,8 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 							   sensor->event_type,
 							   ANALOG_SENSOR,
 							   sensor->keys.owner_id,
-							   sensor->keys.lun);
+							   sensor->keys.lun,
+							   sensor->keys.channel);
 
 			printf("\n");
 		}
@@ -519,7 +523,8 @@ ipmi_sensor_print_compact(struct ipmi_intf *intf,
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 					       sensor->keys.sensor_num,
 					       sensor->keys.owner_id,
-					       sensor->keys.lun);
+					       sensor->keys.lun,
+					       sensor->keys.channel);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
 			id, sensor->keys.sensor_num);
@@ -893,7 +898,8 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 			rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
 							       sdr->record.full->keys.sensor_num,
 							       sdr->record.full->keys.owner_id,
-							       sdr->record.full->keys.lun);
+							       sdr->record.full->keys.lun,
+							       sdr->record.full->keys.channel);
 			if (rsp == NULL) {
 				lprintf(LOG_ERR, "Error reading sensor \"%s\"", argv[i]);
 				rc = -1;

@@ -3610,7 +3610,8 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
     rsp = ipmi_sdr_get_sensor_thresholds(intf,
         sdr->record.full->keys.sensor_num,
         sdr->record.full->keys.owner_id,
-        sdr->record.full->keys.lun);
+        sdr->record.full->keys.lun,
+        sdr->record.full->keys.channel);
 
     if (rsp != NULL && rsp->ccode == 0)
     {   
