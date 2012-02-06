@@ -400,7 +400,12 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 				if (argc >= 3)
 				{
 					session_request_type = IPMI_SESSION_REQUEST_BY_ID;
-					id_or_handle = strtol(argv[2], NULL, 16);
+					if (str2uint(argv[2], &id_or_handle) != 0) {
+						lprintf(LOG_ERR, "HEX number expected, but '%s' given.",
+								argv[2]);
+						printf_session_usage();
+						retval = -1;
+					}
 				}
 				else
 				{
@@ -414,7 +419,12 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 				if (argc >= 3)
 				{
 					session_request_type = IPMI_SESSION_REQUEST_BY_HANDLE;
-					id_or_handle = strtol(argv[2], NULL, 16);
+					if (str2uint(argv[2], &id_or_handle) != 0) {
+						lprintf(LOG_ERR, "HEX number expected, bud '%s' given.",
+								argv[2]);
+						printf_session_usage();
+						retval = -1;
+					}
 				}
 				else
 				{
