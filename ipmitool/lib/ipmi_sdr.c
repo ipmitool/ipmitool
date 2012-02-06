@@ -1170,8 +1170,6 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	memset(desc, 0, sizeof (desc));
 	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
 
-	printf("ipmi_sdr_print_sensor_full\n");
-
 	/* get sensor reading */
 	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
 		sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
