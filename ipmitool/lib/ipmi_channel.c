@@ -438,7 +438,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 static int
 ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	uint8_t channel, userid;
+	uint8_t channel, privilege_limit, userid;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
@@ -455,7 +455,7 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[0]);
 		return (-1);
 	}
-	if (str2uint(argv[1], &userid) != 0) {
+	if (str2uchar(argv[1], &userid) != 0) {
 		lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
 		return (-1);
 	}
@@ -506,10 +506,11 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 			set_access.ipmi_messaging = strncmp (argv[i]+5, "off", 3);
 		}
 		else if (strncmp(argv[i], "privilege=", 10) == 0) {
-			if (str2uchar(argv[i]+10, &set_access.privilege_limit) != 0) {
+			if (str2uchar(argv[i]+10, &privilege_limit) != 0) {
 				lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[i]+10);
 				return (-1);
 			}
+			set_access.privilege_limit = privilege_limit;
 		}
 		else {
 			printf ("Invalid option: %s\n", argv [i]);
