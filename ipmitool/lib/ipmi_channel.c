@@ -171,7 +171,7 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 			   auth_cap.oem_aux_data);
 	}
 
-    return 0;
+	return 0;
 }
 
 
@@ -446,10 +446,10 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	struct set_user_access_data set_access;
 	int i;
 
-        if ((argc < 3) || (strncmp(argv[0], "help", 4) == 0)) {
+	if ((argc < 3) || (strncmp(argv[0], "help", 4) == 0)) {
 		printf_channel_usage();
-                return 0;
-        }
+		return 0;
+	}
 
 	channel = (uint8_t)strtol(argv[0], NULL, 0);
 	userid = (uint8_t)strtol(argv[1], NULL, 0);
@@ -593,9 +593,9 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 	if (rsp->data_len >= 1)
 		channel = rsp->data[0];
 		
-   while ((rsp->data_len > 1) && (rsp->data_len == 17) && (list_index < 0x3F))
+	while ((rsp->data_len > 1) && (rsp->data_len == 17) && (list_index < 0x3F))
 	{
-   	//
+		//
 		// We got back cipher suite data -- store it.
 		//printf("copying data to offset %d\n", offset);
 		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
@@ -620,15 +620,15 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 		}
 	}
 
-   /* Copy last chunk */
-   if(rsp->data_len > 1)
-   {
-      //
-	   // We got back cipher suite data -- store it.
-	   //printf("copying data to offset %d\n", offset);
-	   //printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
-	   memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
-	   offset += rsp->data_len - 1;
+	/* Copy last chunk */
+	if(rsp->data_len > 1)
+	{
+		//
+		// We got back cipher suite data -- store it.
+		//printf("copying data to offset %d\n", offset);
+		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
+		offset += rsp->data_len - 1;
 	}
 
 	//
