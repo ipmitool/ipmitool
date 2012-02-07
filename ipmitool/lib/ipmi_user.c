@@ -538,7 +538,13 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 2)
-			channel = (uint8_t)strtol(argv[1], NULL, 0);
+		{
+			if (str2uchar(argv[1], &channel) != 0)
+			{
+				lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
+				return (-1);
+			}
+		}
 		else
 		{
 			print_user_usage();
@@ -559,7 +565,13 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
 		else if (argc == 2)
-			channel = (uint8_t)strtol(argv[1], NULL, 0);
+		{
+			if (str2uchar(argv[1], &channel) != 0)
+			{
+				lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
+				return (-1);
+			}
+		}
 		else
 		{
 			print_user_usage();
@@ -583,15 +595,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			char * password = NULL;
 			int password_length = atoi(argv[2]);
-			uint8_t user_id = (uint8_t)strtol(argv[1],
-							  NULL,
-							  0);
-			if (user_id == 0)
+			uint8_t user_id = 0;
+			if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
 			{
-				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
-				return -1;
+				lprintf(LOG_ERR, "Invalid user ID: %s", argv[1]);
+				return (-1);
 			}
-
 
 			if (argc == 3)
 			{
@@ -642,15 +651,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		    (strncmp("password", argv[1], 8) == 0))
 		{
 			char * password = NULL;
-			uint8_t user_id = (uint8_t)strtol(argv[2],
-							  NULL,
-							  0);
-			if (user_id == 0)
+			uint8_t user_id = 0;
+			if (str2uchar(argv[2], &user_id) != 0 || user_id == 0)
 			{
-				lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
-				return -1;
+				lprintf(LOG_ERR, "Invalid user ID: %s", argv[2]);
+				return (-1);
 			}
-
 
 			if (argc == 3)
 			{
@@ -715,17 +721,18 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else if ((argc >= 2) &&
 			 (strncmp("name", argv[1], 4) == 0))
 		{
+			uint8_t user_id = 0;
 			if (argc != 4)
 			{
 				print_user_usage();
 				return -1;
 			}
-
-			retval = ipmi_user_set_username(intf,
-							(uint8_t)strtol(argv[2],
-									NULL,
-									0),
-							argv[3]);
+			if (str2uchar(argv[2], &user_id) != 0)
+			{
+				lprintf(LOG_ERR, "Invalid user ID: %s", argv[2]);
+				return (-1);
+			}
+			retval = ipmi_user_set_username(intf, user_id, argv[3]);
 		}
 		else
 		{
@@ -745,21 +752,28 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_user_usage();
 			return -1;
 		}
+
 		if (argc == 4)
 		{
-			channel = (uint8_t)strtol(argv[3], NULL, 0);
+			if (str2uchar(argv[3], &channel) != 0) 
+			{
+				lprintf(LOG_ERR, "Invalid channel: %s", argv[3]);
+				return (-1);
+			}
 			channel = (channel & 0x0f);
 		}
-
-		user_id = (uint8_t)strtol(argv[1], NULL, 0);
-
-		priv_level = (uint8_t)strtol(argv[2], NULL, 0);
+		
+		if (str2uchar(argv[2], &priv_level) != 0)
+		{
+			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[2]);
+			return (-1);
+		}
 		priv_level = (priv_level & 0x0f);
 
-		if (user_id == 0)
+		if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
 		{
-			lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
-			return -1;
+			lprintf(LOG_ERR, "Invalid user ID: %s", argv[1]);
+			return (-1);
 		}
 
 		retval = ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
@@ -783,15 +797,11 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		user_id = (uint8_t)strtol(argv[1],
-					  NULL,
-					  0);
-		if (user_id == 0)
+		if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
 		{
-			lprintf(LOG_ERR, "Invalid user ID: %d", user_id);
-			return -1;
+			lprintf(LOG_ERR, "Invalid user ID: %s", user_id);
+			return (-1);
 		}
-
 
 		operation = (strncmp(argv[0], "disable", 7) == 0) ?
 			IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
