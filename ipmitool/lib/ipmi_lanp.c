@@ -2025,13 +2025,13 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed");
-		return 0;
+		return (-1);
 	}
 
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
-		return 0;
+		return (-1);
 	}
 
 	if (verbose > 1) {
@@ -2111,13 +2111,13 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed");
-		return 0;
+		return (-1);
 	}
 
 	if (rsp->ccode > 0) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
-		return 0;
+		return (-1);
 	}
 
 	return rc;
