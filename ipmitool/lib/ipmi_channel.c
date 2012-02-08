@@ -762,7 +762,7 @@ ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Get Channel Info command failed");
-		return -1;
+		return 0;
 	}
 	if (rsp->ccode > 0) {
 		if (rsp->ccode == 0xcc)
