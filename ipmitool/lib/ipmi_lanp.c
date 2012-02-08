@@ -83,22 +83,22 @@ is_lan_channel(struct ipmi_intf * intf, uint8_t chan)
 /* find_lan_channel - Find first channel that is LAN
  *
  * return channel number if successful
- * return -1 if no lan channel found
+ * return 0 if no lan channel found, which is not a valid LAN channel
  *
  * @intf:    ipmi interface handle
  * @start:   channel number to start searching from
  */
-static int
-find_lan_channel(struct ipmi_intf * intf, int start)
+static uint8_t
+find_lan_channel(struct ipmi_intf * intf, uint8_t start)
 {
-	uint8_t chan;
+	uint8_t chan = 0;
 
 	for (chan = start; chan < IPMI_CHANNEL_NUMBER_MAX; chan++) {
-		if (is_lan_channel(intf, chan)) {
+		if (!is_lan_channel(intf, chan)) {
 			return chan;
 		}
 	}
-	return -1;
+	return 0;
 }
 
 /* get_lan_param_select - Query BMC for LAN parameter data
