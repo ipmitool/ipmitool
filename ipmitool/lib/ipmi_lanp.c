@@ -2151,14 +2151,12 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc == 0) {
 		print_lan_usage();
 		return (-1);
-	}
-	
-	if (strncmp(argv[0], "help", 4)) {
+	} else if (strncmp(argv[0], "help", 4) == 0) {
 		print_lan_usage();
 		return 0;
-	}
-
-	if (strncmp(argv[0], "printconf", 9) || strncmp(argv[0], "print", 5)) {
+	} else if (strncmp(argv[0], "printconf", 9) == 0 ||
+			strncmp(argv[0], "print", 5) == 0) 
+	{
 		if (argc > 2) {
 			print_lan_usage();
 			return (-1);
