@@ -2090,23 +2090,13 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 static int
 ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 {
-	uint8_t medium;
 	int rc = 0;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
 
-	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
-		lprintf(LOG_ERR, "Invalid Channel %d", chan);
-		return -1;
-	}
-
-	/* find type of channel and only accept 802.3 LAN */
-	medium = ipmi_get_channel_medium(intf, chan);
-	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
-	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
-		lprintf(LOG_ERR, "Channel %d (%s) is not a LAN channel",
-			chan, val2str(medium, ipmi_channel_medium_vals), medium);
+	if (!is_lan_channel(intf, chan)) {
+		lprintf(LOG_ERR, "Channel %d is not a LAN channel", chan);
 		return -1;
 	}
 
