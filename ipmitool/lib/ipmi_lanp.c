@@ -1381,8 +1381,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* set channel access mode */
 	else if (strncmp(argv[1], "access", 6) == 0) {
-		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 3) {
 			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			return 0;
 		}
 		else if (strncmp(argv[2], "on", 2) == 0) {
 			rc = ipmi_set_channel_access(intf, chan, 1);
@@ -1392,62 +1397,99 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else {
 			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			return (-1);
 		}
 	}
 	/* set ARP control */
 	else if (strncmp(argv[1], "arp", 3) == 0) {
-		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 3) {
 			lprintf(LOG_NOTICE,
 				"lan set <channel> arp respond <on|off>\n"
 				"lan set <channel> arp generate <on|off>\n"
 				"lan set <channel> arp interval <seconds>\n\n"
 				"example: lan set 7 arp gratuitous off\n");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE,
+				"lan set <channel> arp respond <on|off>\n"
+				"lan set <channel> arp generate <on|off>\n"
+				"lan set <channel> arp interval <seconds>\n\n"
+				"example: lan set 7 arp gratuitous off\n");
+			return 0;
 		}
 		else if (strncmp(argv[2], "interval", 8) == 0) {
 			rc = lan_set_arp_interval(intf, chan, (uint8_t *)argv[3]);
 		}
 		else if (strncmp(argv[2], "generate", 8) == 0) {
-			if (argc < 4)
+			if (argc < 4) {
 				lprintf(LOG_NOTICE, "lan set <channel> arp generate <on|off>");
+				return (-1);
+			}
 			else if (strncmp(argv[3], "on", 2) == 0)
 				rc = lan_set_arp_generate(intf, chan, 1);
 			else if (strncmp(argv[3], "off", 3) == 0)
 				rc = lan_set_arp_generate(intf, chan, 0);
-			else
+			else {
 				lprintf(LOG_NOTICE, "lan set <channel> arp generate <on|off>");
+				return (-1);
+			}
 		}
 		else if (strncmp(argv[2], "respond", 7) == 0) {
-			if (argc < 4)
+			if (argc < 4) {
 				lprintf(LOG_NOTICE, "lan set <channel> arp respond <on|off>");
+				return (-1);
+			}
 			else if (strncmp(argv[3], "on", 2) == 0)
 				rc = lan_set_arp_respond(intf, chan, 1);
 			else if (strncmp(argv[3], "off", 3) == 0)
 				rc = lan_set_arp_respond(intf, chan, 0);
-			else
+			else {
 				lprintf(LOG_NOTICE, "lan set <channel> arp respond <on|off>");
+				return (-1);
+			}
 		}
 		else {
 			lprintf(LOG_NOTICE,
 				"lan set <channel> arp respond <on|off>\n"
 				"lan set <channel> arp generate <on|off>\n"
 				"lan set <channel> arp interval <seconds>\n");
+			return (-1);
 		}
 	}
 	/* set authentication types */
 	else if (strncmp(argv[1], "auth", 4) == 0) {
-		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 3) {
 			lprintf(LOG_NOTICE,
 				"lan set <channel> auth <level> <type,type,...>\n"
 				"  level = CALLBACK, USER, OPERATOR, ADMIN\n"
 				"  types = NONE, MD2, MD5, PASSWORD, OEM\n"
 				"example: lan set 7 auth ADMIN PASSWORD,MD5\n");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE,
+				"lan set <channel> auth <level> <type,type,...>\n"
+				"  level = CALLBACK, USER, OPERATOR, ADMIN\n"
+				"  types = NONE, MD2, MD5, PASSWORD, OEM\n"
+				"example: lan set 7 auth ADMIN PASSWORD,MD5\n");
+			return 0;
 		} else {
 			rc = ipmi_lan_set_auth(intf, chan, argv[2], argv[3]);
 		}
 	}
 	/* ip address source */
 	else if (strncmp(argv[1], "ipsrc", 5) == 0) {
-		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 3) {
+			lprintf(LOG_NOTICE,
+				"lan set <channel> ipsrc <source>\n"
+				"  none   = unspecified\n"
+				"  static = static address (manually configured)\n"
+				"  dhcp   = address obtained by BMC running DHCP\n"
+				"  bios   = address loaded by BIOS or system software\n");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
 			lprintf(LOG_NOTICE,
 				"lan set <channel> ipsrc <source>\n"
 				"  none   = unspecified\n"
@@ -1482,8 +1524,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* snmp community string */
 	else if (strncmp(argv[1], "snmp", 4) == 0) {
-		if (argc < 3 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 3) {
 			lprintf(LOG_NOTICE, "lan set <channel> snmp <community string>");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE, "lan set <channel> snmp <community string>");
+			return 0;
 		} else {
 			memcpy(data, argv[2], __min(strlen(argv[2]), 18));
 			printf("Setting LAN %s to %s\n",
@@ -1538,8 +1585,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* default gateway settings */
 	else if (strncmp(argv[1], "defgw", 5) == 0) {
-		if (argc < 4 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 4) {
 			lprintf(LOG_NOTICE, "LAN set default gateway Commands: ipaddr, macaddr");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE, "LAN set default gateway Commands: ipaddr, macaddr");
+			return 0;
 		}
 		else if ((strncmp(argv[2], "ipaddr", 5) == 0) &&
 			 (get_cmdline_ipaddr(argv[3], data) == 0)) {
@@ -1562,8 +1614,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* backup gateway settings */
 	else if (strncmp(argv[1], "bakgw", 5) == 0) {
-		if (argc < 4 || (strncmp(argv[2], "help", 4) == 0)) {
+		if (argc < 4) {
 			lprintf(LOG_NOTICE, "LAN set backup gateway commands: ipaddr, macaddr");
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			lprintf(LOG_NOTICE, "LAN set backup gateway commands: ipaddr, macaddr");
+			return 0;
 		}
 		else if ((strncmp(argv[2], "ipaddr", 5) == 0) &&
 			 (get_cmdline_ipaddr(argv[3], data) == 0)) {
@@ -1585,8 +1642,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (strncasecmp(argv[1], "vlan", 4) == 0) {
-		if (argc < 4 || strncmp(argv[2], "help", 4) == 0) {
+		if (argc < 4) {
 			ipmi_lan_set_vlan_usage();
+			return (-1);
+		}
+		else if (strncmp(argv[2], "help", 4) == 0) {
+			ipmi_lan_set_vlan_usage();
+			return 0;
 		}
 		else if (strncasecmp(argv[2], "id", 2) == 0) {
 			if (strncasecmp(argv[3], "off", 3) == 0) {
@@ -1601,12 +1663,14 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else {
 			ipmi_lan_set_vlan_usage();
+			return (-1);
 		}
 	}
 	/* set PEF alerting on or off */
 	else if (strncasecmp(argv[1], "alert", 5) == 0) {
 		if (argc < 3) {
 			lprintf(LOG_NOTICE, "LAN set alert must be 'on' or 'off'");
+			return (-1);
 		}
 		else if (strncasecmp(argv[2], "on", 2) == 0 ||
 			 strncasecmp(argv[2], "enable", 6) == 0) {
@@ -1620,13 +1684,23 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else {
 			lprintf(LOG_NOTICE, "LAN set alert must be 'on' or 'off'");
+			return 0;
 		}
 	}
 	/* RMCP+ cipher suite privilege levels */
 	else if (strncmp(argv[1], "cipher_privs", 12) == 0)
 	{
-		if ((argc != 3)                        ||
-		    (strncmp(argv[2], "help", 4) == 0) ||
+		if (argc != 3) {
+			lprintf(LOG_NOTICE, "lan set <channel> cipher_privs XXXXXXXXXXXXXXX");
+			lprintf(LOG_NOTICE, "    X = Cipher Suite Unused");
+			lprintf(LOG_NOTICE, "    c = CALLBACK");
+			lprintf(LOG_NOTICE, "    u = USER");
+			lprintf(LOG_NOTICE, "    o = OPERATOR");
+			lprintf(LOG_NOTICE, "    a = ADMIN");
+			lprintf(LOG_NOTICE, "    O = OEM\n");
+			return (-1);
+		}
+		else if ((strncmp(argv[2], "help", 4) == 0) ||
 		    get_cmdline_cipher_suite_priv_data(argv[2], data))
 		{
 			lprintf(LOG_NOTICE, "lan set <channel> cipher_privs XXXXXXXXXXXXXXX");
@@ -1636,6 +1710,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "    o = OPERATOR");
 			lprintf(LOG_NOTICE, "    a = ADMIN");
 			lprintf(LOG_NOTICE, "    O = OEM\n");
+			return 0;
 		}
 		else
 		{
@@ -1644,6 +1719,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else {
 		ipmi_lan_set_usage();
+		return (-1);
 	}
 
 	return rc;
@@ -1783,7 +1859,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 
 	if (argc < 2) {
 		ipmi_lan_alert_set_usage();
-		return 0;
+		return (-1);
 	}
 
 	if (strncmp(argv[0], "help", 4) == 0 ||
@@ -1931,8 +2007,12 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t alert;
 	uint8_t channel = 1;
 
-	if (argc < 1 ||
-	    strncasecmp(argv[0], "help", 4) == 0) {
+	if (argc < 1) {
+		ipmi_lan_alert_print_usage();
+		ipmi_lan_alert_set_usage();
+		return (-1);
+	}
+	else if (strncasecmp(argv[0], "help", 4) == 0) {
 		ipmi_lan_alert_print_usage();
 		ipmi_lan_alert_set_usage();
 		return 0;
@@ -1979,7 +2059,11 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 
 	/* alert set <channel> <alert> [option] */
 	if (strncasecmp(argv[0], "set", 3) == 0) {
-		if (argc < 5 || strncasecmp(argv[1], "help", 4) == 0) {
+		if (argc < 5) {
+			ipmi_lan_alert_set_usage();
+			return (-1);
+		}
+		else if (strncasecmp(argv[1], "help", 4) == 0) {
 			ipmi_lan_alert_set_usage();
 			return 0;
 		}
