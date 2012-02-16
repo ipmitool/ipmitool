@@ -64,30 +64,44 @@ static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
 /* ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
+ * @pct:	units are a percentage
  * @type:	unit type
  * @base:	base
  * @modifier:	modifier
  *
  * returns pointer to static string
  */
-char *
-ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier)
+const char *
+ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifier)
 {
 	static char unitstr[16];
-
+	/*
+	 * By default, if units are supposed to be percent, we will pre-pend
+	 * the percent string  to the textual representation of the units.
+	 */
+	char *pctstr = pct ? "% " : "";
 	memset(unitstr, 0, sizeof (unitstr));
 	switch (type) {
 	case 2:
-		snprintf(unitstr, sizeof (unitstr), "%s * %s",
-			 unit_desc[base], unit_desc[modifier]);
+		snprintf(unitstr, sizeof (unitstr), "%s%s * %s",
+			 pctstr, unit_desc[base], unit_desc[modifier]);
 		break;
 	case 1:
-		snprintf(unitstr, sizeof (unitstr), "%s/%s",
-			 unit_desc[base], unit_desc[modifier]);
+		snprintf(unitstr, sizeof (unitstr), "%s%s/%s",
+			 pctstr, unit_desc[base], unit_desc[modifier]);
 		break;
 	case 0:
 	default:
-		snprintf(unitstr, sizeof (unitstr), "%s", unit_desc[base]);
+		/*
+		 * Display the text "percent" only when the Base unit is
+		 * "unspecified" and the caller specified to print percent.
+		 */
+		if (base == 0 && pct) {
+			snprintf(unitstr, sizeof(unitstr), "percent");
+		} else {
+			snprintf(unitstr, sizeof (unitstr), "%s%s", 
+				pctstr, unit_desc[base]);
+		}
 		break;
 	}
 
@@ -1154,8 +1168,9 @@ int
 ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 			   struct sdr_record_full_sensor *sensor)
 {
-	char sval[16], unitstr[16], desc[17];
-	int i = 0, validread = 1, do_unit = 1;
+	const char *unitstr = NULL;
+	char sval[16], desc[17];
+	int i = 0, validread = 1;
 	double val = 0.0, creading = 0.0;
 	struct ipmi_rs *rsp;
 	uint8_t target, lun, channel;
@@ -1219,25 +1234,11 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 	}
 
 	/* determine units with possible modifiers */
-	if (do_unit && validread) {
-		memset(unitstr, 0, sizeof (unitstr));
-		switch (sensor->unit.modifier) {
-		case 2:
-			i += snprintf(unitstr, sizeof (unitstr), "%s * %s",
-				      unit_desc[sensor->unit.type.base],
-				      unit_desc[sensor->unit.type.modifier]);
-			break;
-		case 1:
-			i += snprintf(unitstr, sizeof (unitstr), "%s/%s",
-				      unit_desc[sensor->unit.type.base],
-				      unit_desc[sensor->unit.type.modifier]);
-			break;
-		case 0:
-		default:
-			i += snprintf(unitstr, sizeof (unitstr), "%s",
-				      unit_desc[sensor->unit.type.base]);
-			break;
-		}
+	if (validread) {
+		unitstr = ipmi_sdr_get_unit_string(sensor->unit.pct,
+						   sensor->unit.modifier,
+						   sensor->unit.type.base,
+						   sensor->unit.type.modifier);
 	}
 
 	/*
@@ -1252,7 +1253,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 		if (validread) {
 			printf("%.*f,", (val == (int) val) ? 0 : 3, val);
-			printf("%s,%s", do_unit ? unitstr : "",
+			printf("%s,%s", unitstr,
 			       ipmi_sdr_get_status(sensor, rsp->data[2]));
 		} else {
 			printf(",,ns");
@@ -1310,8 +1311,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 		if (validread)
 			i += snprintf(sval, sizeof (sval), "%.*f %s",
-				      (val == (int) val) ? 0 : 2, val,
-				      do_unit ? unitstr : "");
+				      (val == (int) val) ? 0 : 2, val, unitstr);
 		else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 			i += snprintf(sval, sizeof (sval), "disabled ");
 		else
@@ -1344,8 +1344,7 @@ ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
 
 		if (validread)
 			i += snprintf(sval, sizeof (sval), "%.*f %s",
-				      (val == (int) val) ? 0 : 2, val,
-				      do_unit ? unitstr : "");
+				      (val == (int) val) ? 0 : 2, val, unitstr);
 		else if (rsp && IS_SCANNING_DISABLED(rsp->data[1]))
 			i += snprintf(sval, sizeof (sval), "Disabled");
 		else

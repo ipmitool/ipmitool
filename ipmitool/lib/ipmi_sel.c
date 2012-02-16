@@ -1124,7 +1124,8 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		       ((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
 		       (threshold_reading==(int)threshold_reading) ? 0 : 2,
 		       threshold_reading,
-		       ipmi_sdr_get_unit_string(sdr->record.full->unit.modifier,
+		       ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
+						sdr->record.full->unit.modifier,
 						sdr->record.full->unit.type.base,
 						sdr->record.full->unit.type.modifier));
 	}
@@ -1311,25 +1312,10 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       sdr_convert_sensor_reading(sdr->record.full,
 							  evt->sel_type.standard_type.event_data[1]));
 			/* determine units with possible modifiers */
-			switch (sdr->record.full->unit.modifier) {
-			case 2:
-				printf(" %s * %s\n",
-				      unit_desc[sdr->record.full->unit.type.base],
-				      unit_desc[sdr->record.full->unit.type.modifier]);
-				break;
-			case 1:
-				printf(" %s/%s\n",
-				      unit_desc[sdr->record.full->unit.type.base],
-				      unit_desc[sdr->record.full->unit.type.modifier]);
-				break;
-			case 0:
-				printf(" %s\n",
-				       unit_desc[sdr->record.full->unit.type.base]);
-				break;
-			default:
-				printf("\n");
-				break;
-			}
+			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
+								 sdr->record.full->unit.modifier,
+								 sdr->record.full->unit.type.base,
+								 sdr->record.full->unit.type.modifier));
 			break;
 		case 2:
 			/* oem code in byte 2 */
@@ -1352,25 +1338,10 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       sdr_convert_sensor_reading(sdr->record.full,
 							  evt->sel_type.standard_type.event_data[2]));
 			/* determine units with possible modifiers */
-			switch (sdr->record.full->unit.modifier) {
-			case 2:
-				printf(" %s * %s\n",
-				      unit_desc[sdr->record.full->unit.type.base],
-				      unit_desc[sdr->record.full->unit.type.modifier]);
-				break;
-			case 1:
-				printf(" %s/%s\n",
-				      unit_desc[sdr->record.full->unit.type.base],
-				      unit_desc[sdr->record.full->unit.type.modifier]);
-				break;
-			case 0:
-				printf(" %s\n",
-				       unit_desc[sdr->record.full->unit.type.base]);
-				break;
-			default:
-				printf("\n");
-				break;
-			}
+			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
+								 sdr->record.full->unit.modifier,
+								 sdr->record.full->unit.type.base,
+								 sdr->record.full->unit.type.modifier));
 			break;
 		case 2:
 			/* OEM code in byte 3 */

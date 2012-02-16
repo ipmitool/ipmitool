@@ -896,7 +896,8 @@ int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf *intf,
 			     struct sdr_record_list *entry);
-char *ipmi_sdr_get_unit_string(uint8_t type, uint8_t base, uint8_t modifier);
+const char *ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, 
+				      uint8_t base, uint8_t modifier);
 const char *ipmi_sdr_get_status(struct sdr_record_full_sensor *sensor,
 				uint8_t stat);
 double sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor,

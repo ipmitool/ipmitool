@@ -228,8 +228,9 @@ static int
 ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 			      struct sdr_record_full_sensor *sensor)
 {
-	char unitstr[16], id[17];
-	int i = 0, validread = 1, thresh_available = 1;
+	const char *unitstr = NULL;
+	char id[17];
+	int validread = 1, thresh_available = 1;
 	double val = 0.0;
 	struct ipmi_rs *rsp;
 	char *status = NULL;
@@ -277,25 +278,10 @@ ipmi_sensor_print_full_analog(struct ipmi_intf *intf,
 	/*
 	 * Figure out units
 	 */
-	memset(unitstr, 0, sizeof (unitstr));
-	switch (sensor->unit.modifier) {
-	case 2:
-		i += snprintf(unitstr, sizeof (unitstr), "%s * %s",
-			      unit_desc[sensor->unit.type.base],
-			      unit_desc[sensor->unit.type.modifier]);
-		break;
-	case 1:
-		i += snprintf(unitstr, sizeof (unitstr), "%s/%s",
-			      unit_desc[sensor->unit.type.base],
-			      unit_desc[sensor->unit.type.modifier]);
-		break;
-	case 0:
-	default:
-		i += snprintf(unitstr, sizeof (unitstr), "%s",
-			      unit_desc[sensor->unit.type.base]);
-		break;
-	}
-
+	unitstr = ipmi_sdr_get_unit_string(sensor->unit.pct,
+					   sensor->unit.modifier,
+					   sensor->unit.type.base,
+					   sensor->unit.type.modifier);
 	/*
 	 * Get sensor thresholds
 	 */

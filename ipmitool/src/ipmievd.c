@@ -284,7 +284,8 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 				((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
 				(threshold_reading==(int)threshold_reading) ? 0 : 2,
 				threshold_reading,
-				ipmi_sdr_get_unit_string(sdr->record.full->unit.modifier,
+				ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
+							 sdr->record.full->unit.modifier,
 							 sdr->record.full->unit.type.base,
 							 sdr->record.full->unit.type.modifier));
 		}
