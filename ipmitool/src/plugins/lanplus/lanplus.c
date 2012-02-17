@@ -717,47 +717,36 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 
 			if (entry != NULL) {
 				lprintf(LOG_DEBUG+2, "IPMI Request Match found");
-				if (
-				      intf->target_addr != intf->my_addr 
-				      &&
-					  bridgePossible
-                      &&
-                      rsp->data_len 
-                      &&
-					  rsp->payload.ipmi_response.cmd == 0x34
-					  &&
-					  (
-						rsp->payload.ipmi_response.netfn == 0x06
-						||
-    					rsp->payload.ipmi_response.netfn == 0x07
-					  )
-					  &&
-					  rsp->payload.ipmi_response.rs_lun == 0
-
-				   ) 
+				if ( intf->target_addr != intf->my_addr &&
+				     bridgePossible &&
+				     rsp->data_len &&
+				     rsp->payload.ipmi_response.cmd == 0x34 &&
+				     (rsp->payload.ipmi_response.netfn == 0x06 ||
+				     rsp->payload.ipmi_response.netfn == 0x07) &&
+				     rsp->payload.ipmi_response.rs_lun == 0 )
 				{
-               /* Check completion code */
-               if (rsp->data[offset-1] == 0)
-               {
-					   lprintf(LOG_DEBUG, "Bridged command answer,"
-					         " waiting for next answer... ");
-      				ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
-								rsp->payload.ipmi_response.cmd);
-                  ipmi_lan_poll_recv(intf);
-                  return;
+					/* Check completion code */
+					if (rsp->data[offset-1] == 0)
+					{
+						lprintf(LOG_DEBUG, "Bridged command answer,"
+						     " waiting for next answer... ");
+						ipmi_req_remove_entry(
+							rsp->payload.ipmi_response.rq_seq,
+							rsp->payload.ipmi_response.cmd);
+						return ipmi_lan_poll_recv(intf);
 					}
 					else
-					{		
-					   lprintf(LOG_DEBUG, "WARNING: Bridged "
-								"cmd ccode = 0x%02x",
-								rsp->data[offset-1]);
-               }
+					{
+						lprintf(LOG_DEBUG, "WARNING: Bridged "
+								   "cmd ccode = 0x%02x",
+								   rsp->data[offset-1]);
+					}
 
 					if (rsp->data_len &&
-						 rsp->payload.ipmi_response.cmd == 0x34) {
-                  memcpy(rsp->data, &rsp->data[offset],(rsp->data_len-offset)); 
-						printbuf(
-							&rsp->data[offset],
+					    rsp->payload.ipmi_response.cmd == 0x34) {
+						memcpy(rsp->data, &rsp->data[offset],
+							(rsp->data_len-offset));
+						printbuf( &rsp->data[offset],
 							(rsp->data_len-offset),
 							"bridge command response");
 					}
@@ -2702,6 +2691,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 
 	backupBridgePossible = bridgePossible;
 
+	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
 	bridgePossible = 0;
 
 	bmc_session_lsbf = intf->session->v2_data.bmc_id;
