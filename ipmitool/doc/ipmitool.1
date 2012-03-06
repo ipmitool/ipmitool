@@ -1798,10 +1798,10 @@ administrators are required to use a stronger cipher suite than
 normal users.
 
 The format of \fIprivlist\fR is as follows.  Each character represents
-a privilege level and the character position identifies the cipher suite
-number.  For example, the first character represents cipher suite 1
-(cipher suite 0 is reserved), the second represents cipher suite 2, and
-so on.  \fIprivlist\fR must be 15 characters in length.
+a privilege level and the character position identifies the cipher
+suite number.  For example, the first character represents cipher
+suite 0, the second represents cipher suite 1, and so on.
+\fIprivlist\fR must be 15 characters in length.
 
 Characters used in \fIprivlist\fR and their associated privilege levels are:
 
@@ -1818,7 +1818,7 @@ Characters used in \fIprivlist\fR and their associated privilege levels are:
 \fIO\fP	OEM
 .br 
 
-So, to set the maximum privilege for cipher suite 1 to USER and suite 2 to
+So, to set the maximum privilege for cipher suite 0 to USER and suite 1 to
 ADMIN, issue the following command:
 
 > ipmitool \-I \fIinterface\fR lan set \fIchannel\fR cipher_privs uaXXXXXXXXXXXXX
