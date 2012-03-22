@@ -2153,9 +2153,9 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
 
     memset(&req, 0, sizeof(req));
 
-    req.msg.netfn = APP_NETFN;
+    req.msg.netfn = IPMI_NETFN_APP;
     req.msg.lun = 0;                
-    req.msg.cmd = GET_SYSTEM_INFO_CMD;
+    req.msg.cmd = IPMI_GET_SYS_INFO;
     req.msg.data = msg_data;
 
 
@@ -2261,9 +2261,9 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
 
     memset(&req, 0, sizeof(req));
 
-    req.msg.netfn = APP_NETFN;
+    req.msg.netfn = IPMI_NETFN_APP;
     req.msg.lun = 0;              
-    req.msg.cmd = GET_SYSTEM_INFO_CMD;
+    req.msg.cmd = IPMI_GET_SYS_INFO;
     req.msg.data = msg_data;
 
 
@@ -2301,9 +2301,9 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
             msg_data[input_length++] = offset;
             msg_data[input_length++] = len;   
 
-            req.msg.netfn = APP_NETFN;
+            req.msg.netfn = IPMI_NETFN_APP;
             req.msg.lun = 0;
-            req.msg.cmd = GET_SYSTEM_INFO_CMD;
+            req.msg.cmd = IPMI_GET_SYS_INFO;
             req.msg.data = msg_data;
             req.msg.data_len = input_length;
 

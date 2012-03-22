@@ -173,10 +173,6 @@ typedef struct _lcd_mode
 #define MAX_LOM 8
 
 
-#define APP_NETFN                   (uint8_t)(0x6)
-
-
-#define GET_SYSTEM_INFO_CMD         (uint8_t)(0x59)
 #define EMB_NIC_MAC_ADDRESS_11G     (uint8_t)(0xDA)
 #define EMB_NIC_MAC_ADDRESS_9G_10G  (uint8_t)(0xCB)
 
