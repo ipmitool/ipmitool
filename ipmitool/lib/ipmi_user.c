@@ -57,7 +57,9 @@ extern int csv_output;
 #define IPMI_PASSWORD_ENABLE_USER   0x01
 #define IPMI_PASSWORD_SET_PASSWORD  0x02
 #define IPMI_PASSWORD_TEST_PASSWORD 0x03
-
+/* IPMI spec. - UID 0 reserved, 63 maximum UID that can be used */
+#define IPMI_UID_MIN 1
+#define IPMI_UID_MAX 63
 
 /*
  * ipmi_get_user_access
@@ -212,7 +214,27 @@ dump_user_access_csv(
 		       ipmi_privlvl_vals));
 }
 
-
+/* get_ipmi_user_id - convert str to uint8_t and make sure value is within UID
+ * limits
+ *
+ * @arg: string we are converting from, usually argv[]
+ * @user_id: pointer at uint8_t to store converted value.
+ * returns: 0 on success, (-1) null args or conv. err/range issue
+ */
+int
+get_ipmi_user_id(const char * arg, uint8_t * user_id)
+{
+	if (arg && user_id)
+	{
+		if ((str2uchar(arg, user_id) == 0) && *user_id >= IPMI_UID_MIN
+				&& *user_id <= IPMI_UID_MAX)
+		{
+			return 0;
+		}
+	} /* if (arg && user_id) */
+	lprintf(LOG_ERR, "User ID is limited to range <1..63>.");
+	return (-1);
+} /* get_ipmi_user_id(...) */
 
 static int
 ipmi_print_user_list(
@@ -256,7 +278,7 @@ ipmi_print_user_list(
 
 		++current_user_id;
 	} while((current_user_id <= user_access.maximum_ids) &&
-			(current_user_id <= 63)); /* Absolute maximum allowed by spec */
+			(current_user_id <= IPMI_UID_MAX)); /* Absolute maximum allowed by spec */
 
 
 	return 0;
@@ -596,11 +618,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			char * password = NULL;
 			int password_length = atoi(argv[2]);
 			uint8_t user_id = 0;
-			if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
-			{
-				lprintf(LOG_ERR, "Invalid user ID: %s", argv[1]);
+			if (get_ipmi_user_id(argv[1], &user_id))
 				return (-1);
-			}
 
 			if (argc == 3)
 			{
@@ -652,11 +671,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			char * password = NULL;
 			uint8_t user_id = 0;
-			if (str2uchar(argv[2], &user_id) != 0 || user_id == 0)
-			{
-				lprintf(LOG_ERR, "Invalid user ID: %s", argv[2]);
+			if (get_ipmi_user_id(argv[2], &user_id))
 				return (-1);
-			}
 
 			if (argc == 3)
 			{
@@ -727,11 +743,9 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				print_user_usage();
 				return -1;
 			}
-			if (str2uchar(argv[2], &user_id) != 0)
-			{
-				lprintf(LOG_ERR, "Invalid user ID: %s", argv[2]);
-				return (-1);
-			}
+			if (get_ipmi_user_id(argv[2], &user_id))
+					return (-1);
+
 			retval = ipmi_user_set_username(intf, user_id, argv[3]);
 		}
 		else
@@ -770,11 +784,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		priv_level = (priv_level & 0x0f);
 
-		if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
-		{
-			lprintf(LOG_ERR, "Invalid user ID: %s", argv[1]);
+		if (get_ipmi_user_id(argv[1], &user_id))
 			return (-1);
-		}
 
 		retval = ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
 	}
@@ -797,11 +808,8 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		if (str2uchar(argv[1], &user_id) != 0 || user_id == 0)
-		{
-			lprintf(LOG_ERR, "Invalid user ID: %s", user_id);
+		if (get_ipmi_user_id(argv[1], &user_id))
 			return (-1);
-		}
 
 		operation = (strncmp(argv[0], "disable", 7) == 0) ?
 			IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
