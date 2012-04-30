@@ -334,17 +334,23 @@ ipmi_user_set_username(
 	struct ipmi_rq	       req;
 	uint8_t	       msg_data[17];
 
+	/*
+	 * Ensure there is space for the name in the request message buffer
+	 */
+	if (strlen(name) >= sizeof(msg_data)) {
+		return -1;
+	}
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
 	req.msg.cmd	     = IPMI_SET_USER_NAME;   /* 0x45 */
 	req.msg.data     = msg_data;
-	req.msg.data_len = 17;
-
+	req.msg.data_len = sizeof(msg_data);
+	memset(msg_data, 0, sizeof(msg_data));
 
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = user_id;
-	memset(msg_data + 1, 0, 16);
-	strcpy((char *)(msg_data + 1), name);
+	strncpy((char *)(msg_data + 1), name, strlen(name));
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -421,12 +427,9 @@ ipmi_user_set_password(
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
-	uint8_t	             * msg_data;
+	uint8_t	               msg_data[22];
 
 	int password_length = (is_twenty_byte_password? 20 : 16);
-
-	msg_data = (uint8_t*)malloc(password_length + 2);
-
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;	    /* 0x06 */
@@ -745,6 +748,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (get_ipmi_user_id(argv[2], &user_id))
 					return (-1);
+
+			if (strlen(argv[3]) > 16)
+			{
+				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
+				return -1;
+			}
 
 			retval = ipmi_user_set_username(intf, user_id, argv[3]);
 		}
