@@ -732,7 +732,7 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
     struct ipmi_rq req = {0};
     uint8_t data[4];
 
-	memset (&req,0,sizeof(req));
+    memset (&req,0,sizeof(req));
     req.msg.netfn = IPMI_NETFN_APP;
     req.msg.lun = 0;
     req.msg.cmd = IPMI_GET_SYS_INFO;
@@ -1122,7 +1122,6 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
     struct ipmi_rs * rsp = NULL;
     struct ipmi_rq req = {0};
     uint8_t data[4];
-    uint8_t command = 0;
     IPMI_DELL_LCD_CAPS* lcd_caps;
     char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
     int rc;
@@ -1989,9 +1988,7 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
     uint8_t VirtualMacAddress [MACADDRESSLENGH];
     uint8_t input_length=0;
     uint8_t j;
-    uint8_t length;
     uint8_t i;
-
 
     if (0xff==NicNum || IDRAC_NIC_NUMBER==NicNum )
     {
@@ -2136,7 +2133,6 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
 
     uint8_t j;
     uint8_t i;
-    uint8_t rc;
 
     uint8_t Total_No_NICs = 0;
 
@@ -2236,11 +2232,6 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
     uint8_t maxlen;
     uint8_t loop_count;
     uint8_t i;
-    uint8_t rc;
-    uint8_t LOMStatus = 0;
-    uint8_t PlayingDead = 0;
-
-
 
     offset = 0;
     len = 8; /*eigher 8 or 16 */
@@ -2499,7 +2490,6 @@ static int IsLANSupported ()
 
 int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** argv, char *nic_set)
 {
-	int nic_selection_mode = 0;
 	int failover = 0;
 
 	// First get the current settings.
@@ -2629,7 +2619,6 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 
 static int get_nic_selection_mode (int current_arg, char ** argv)
 {
-    int nic_selection_mode = 0;
     if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
     {
         return DEDICATED;
@@ -2724,7 +2713,6 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
 
     uint8_t msg_data[30];
     uint8_t input_length=0;
-    uint8_t j;
 
     input_length = 0;
 
@@ -2763,7 +2751,6 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 
     uint8_t msg_data[30];
     uint8_t input_length=0;
-    uint8_t j;
 
     input_length = 0;
 
@@ -2830,7 +2817,6 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
 
     uint8_t msg_data[30];
     uint8_t input_length=0;
-    uint8_t j;
 
     input_length = 0;
 
@@ -3123,7 +3109,6 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf ,
     struct ipmi_rq req;
     struct ipmi_rs * rsp;
     int rc = 0;
-    uint8_t save_addr;
 
     memset(&req, 0, sizeof (req));
     req.msg.netfn = IPMI_NETFN_SE;
@@ -3294,7 +3279,6 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
     char wattPeakTime[26];
     char bmctime[26];
 
-    float cumReading;
     int ampReading;
     int wattReading;
     int ampReadingRemainder;
@@ -3371,10 +3355,7 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
 
     now = time(0);
 
-    int round;
-    int round2;
     int remainder;
-
 
     remainder = (cumReadingConv % 1000);
     cumReadingConv = cumReadingConv / 1000;
@@ -3583,16 +3564,13 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
 ******************************************************************/
 static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
 {
-    int rc = 0;
     SensorReadingType sensorReadingData;
-
-    int i;
 
     struct ipmi_rs * rsp=NULL;
     struct sdr_record_list *sdr;
     int readingbtuphr=0;
     int warning_threshbtuphr=0;
-    int failuer_thresbtuphr=0;
+    int failure_threshbtuphr=0;
     int status=0;
     int sensor_number = 0;
 
@@ -3619,7 +3597,7 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
             (sdr->record.full, sensorReadingData.sensorReading);
         warning_threshbtuphr=sdr_convert_sensor_reading
             (sdr->record.full, rsp->data[4]);
-        failuer_thresbtuphr=sdr_convert_sensor_reading
+        failure_threshbtuphr=sdr_convert_sensor_reading
             (sdr->record.full, rsp->data[5]);                                                
 
         printf ("System Board System Level\n");
@@ -3627,17 +3605,17 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
         {
             readingbtuphr= watt_to_btuphr_conversion(readingbtuphr);
             warning_threshbtuphr= watt_to_btuphr_conversion(warning_threshbtuphr);
-            failuer_thresbtuphr= watt_to_btuphr_conversion( failuer_thresbtuphr);
+            failure_threshbtuphr= watt_to_btuphr_conversion( failure_threshbtuphr);
 
             printf ("Reading                        : %d BTU/hr\n",readingbtuphr);
             printf ("Warning threshold      : %d BTU/hr\n",warning_threshbtuphr);
-            printf ("Failure threshold      : %d BTU/hr\n",failuer_thresbtuphr);
+            printf ("Failure threshold      : %d BTU/hr\n",failure_threshbtuphr);
         }
         else
         {
             printf ("Reading                        : %d W \n",readingbtuphr);              
             printf ("Warning threshold      : %d W \n",(warning_threshbtuphr));
-            printf ("Failure threshold      : %d W \n",(failuer_thresbtuphr));
+            printf ("Failure threshold      : %d W \n",(failure_threshbtuphr));
         }
     }
     else
@@ -3752,13 +3730,7 @@ static int ipmi_print_get_power_consmpt_data(struct ipmi_intf* intf,uint8_t  uni
 {
 
     int rc = 0;
-    int i;
-    uint16_t inputwattageL=0;
-    int sensorIndex = 0;
 
-    uint32_t readingbtuphr;
-    uint32_t warning_threshbtuphr;
-    uint32_t failuer_thresbtuphr;
     IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata = {0,0,0,0};
 
     printf ("\nPower consumption information\n");
@@ -4007,7 +3979,6 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
     IPMI_POWER_CONSUMP_HISTORY stPeakpower;
 
     uint64_t tempbtuphrconv;
-    uint16_t temp;
     int rc=0;
 
 
@@ -4989,7 +4960,6 @@ ipmi_setled_state (struct ipmi_intf * intf, int bayId, int slotId, int state)
 static int ipmi_getsesmask(int argc, char **argv)
 {
 	int mask = 0;
-	int idx;
 	
 	while (current_arg < argc) {
 		if (!strcmp(argv[current_arg], "present"))
@@ -5031,8 +5001,7 @@ static int ipmi_getsesmask(int argc, char **argv)
 static int
 ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-    int rc = 0;
-    int n, b,d,f, mask;
+    int b,d,f, mask;
     int bayId, slotId;
 
     bayId = 0xFF;
@@ -5073,4 +5042,54 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 
     /* Set drive LEDs */
     return ipmi_setled_state (intf, bayId, slotId, mask);
+}
+
+
+/*****************************************************************
+ * Function Name:       ipmi_getsysinfo
+ *
+ * Description:         This function processes the IPMI Get System Info command
+ * Input:               intf    - ipmi interface
+ *                      param   - Parameter # (0xC0..0xFF = OEM)
+ *                      block/set - Block/Set number of parameter
+ *                      len     - Length of buffer
+ *                      buffer  - Pointer to buffer
+ * Output:        
+ *
+ * Return:              return code     0 - success
+ *                         -1 - failure
+ *                         other = IPMI ccode
+ *
+ ******************************************************************/
+static int
+ipmi_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, int len, void *buffer)
+{
+    uint8_t data[4];
+    struct ipmi_rs *rsp = NULL;
+    struct ipmi_rq req={0};
+
+    memset(buffer, 0, len);
+    memset(data, 0, 4);
+    req.msg.netfn = IPMI_NETFN_APP;
+    req.msg.lun = 0;
+    req.msg.cmd = IPMI_GET_SYS_INFO;
+    req.msg.data_len = 4;
+    req.msg.data = data;
+    
+    data[0] = 0; // get/set
+    data[1] = param;
+    data[2] = block;
+    data[3] = set;
+
+    rsp = intf->sendrecv(intf, &req);
+    if (rsp != NULL) {
+        if (rsp->ccode == 0) {
+            if (len > rsp->data_len)
+                len = rsp->data_len;
+            if (len && buffer)
+                memcpy(buffer, rsp->data, len);
+        }
+        return rsp->ccode;
+    }
+    return -1;
 }
