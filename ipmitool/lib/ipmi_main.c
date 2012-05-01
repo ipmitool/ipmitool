@@ -546,6 +546,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'U':
+			if (strlen(optarg) > 16) {
+				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
+				goto out_free;
+			}
 			username = strdup(optarg);
 			if (username == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -755,6 +759,18 @@ ipmi_main(int argc, char ** argv,
 			goto out_free;
 		}
 	}
+
+	if (password != NULL && intfname != NULL) {
+		if (strcmp(intfname, "lan") == 0 && strlen(password) > 16) {
+			lprintf(LOG_ERR, "%s: password is longer than 16 bytes.", intfname);
+			rc = -1;
+			goto out_free;
+		} else if (strcmp(intfname, "lanplus") == 0 && strlen(password) > 20) {
+			lprintf(LOG_ERR, "%s: password is longer than 20 bytes.", intfname);
+			rc = -1;
+			goto out_free;
+		}
+	} /* if (password != NULL && intfname != NULL) */
 
 	/* load interface */
 	ipmi_main_intf = ipmi_intf_load(intfname);
