@@ -1124,10 +1124,10 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		       ((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
 		       (threshold_reading==(int)threshold_reading) ? 0 : 2,
 		       threshold_reading,
-		       ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
-						sdr->record.full->unit.modifier,
-						sdr->record.full->unit.type.base,
-						sdr->record.full->unit.type.modifier));
+		       ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
+						sdr->record.common->unit.modifier,
+						sdr->record.common->unit.type.base,
+						sdr->record.common->unit.type.modifier));
 	}
 	else if (evt->sel_type.standard_type.event_type == 0x6f) {
 		/*
@@ -1312,10 +1312,10 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       sdr_convert_sensor_reading(sdr->record.full,
 							  evt->sel_type.standard_type.event_data[1]));
 			/* determine units with possible modifiers */
-			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
-								 sdr->record.full->unit.modifier,
-								 sdr->record.full->unit.type.base,
-								 sdr->record.full->unit.type.modifier));
+			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
+								 sdr->record.common->unit.modifier,
+								 sdr->record.common->unit.type.base,
+								 sdr->record.common->unit.type.modifier));
 			break;
 		case 2:
 			/* oem code in byte 2 */
@@ -1338,10 +1338,10 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 			       sdr_convert_sensor_reading(sdr->record.full,
 							  evt->sel_type.standard_type.event_data[2]));
 			/* determine units with possible modifiers */
-			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.full->unit.pct,
-								 sdr->record.full->unit.modifier,
-								 sdr->record.full->unit.type.base,
-								 sdr->record.full->unit.type.modifier));
+			printf ("%s\n", ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
+								 sdr->record.common->unit.modifier,
+								 sdr->record.common->unit.type.base,
+								 sdr->record.common->unit.type.modifier));
 			break;
 		case 2:
 			/* OEM code in byte 3 */
@@ -2052,14 +2052,11 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		verbose = verbose ? : 1;
 		switch (sdr->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
-			ipmi_sensor_print_full(intf, sdr->record.full);
-			entity.id = sdr->record.full->entity.id;
-			entity.instance = sdr->record.full->entity.instance;
-			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			ipmi_sensor_print_compact(intf, sdr->record.compact);
-			entity.id = sdr->record.compact->entity.id;
-			entity.instance = sdr->record.compact->entity.instance;
+			ipmi_sensor_print_fc(intf, sdr->record.common,
+					     sdr->type);
+			entity.id = sdr->record.common->entity.id;
+			entity.instance = sdr->record.common->entity.instance;
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
 			ipmi_sdr_print_sensor_eventonly(intf, sdr->record.eventonly);

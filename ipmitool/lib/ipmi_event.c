@@ -273,25 +273,15 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 	switch (sdr->type)
 	{
 	case SDR_RECORD_TYPE_FULL_SENSOR:
-
-		emsg.sensor_type   = sdr->record.full->sensor.type;
-		emsg.sensor_num    = sdr->record.full->keys.sensor_num;
-		emsg.event_type    = sdr->record.full->event_type;
-		target    = sdr->record.full->keys.owner_id;
-		lun    = sdr->record.full->keys.lun;
-		channel = sdr->record.full->keys.channel;
-		break;
-
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
 
-		emsg.sensor_type = sdr->record.compact->sensor.type;
-		emsg.sensor_num  = sdr->record.compact->keys.sensor_num;
-		emsg.event_type  = sdr->record.compact->event_type;
-		target    = sdr->record.compact->keys.owner_id;
-		lun    = sdr->record.compact->keys.lun;
-		channel = sdr->record.compact->keys.channel;
+		emsg.sensor_type   = sdr->record.common->sensor.type;
+		emsg.sensor_num    = sdr->record.common->keys.sensor_num;
+		emsg.event_type    = sdr->record.common->event_type;
+		target    = sdr->record.common->keys.owner_id;
+		lun    = sdr->record.common->keys.lun;
+		channel = sdr->record.common->keys.channel;
 		break;
-
 	default:
 		lprintf(LOG_ERR, "Unknown sensor type for id '%s'", id);
 		return -1;

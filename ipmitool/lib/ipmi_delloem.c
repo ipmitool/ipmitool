@@ -3579,20 +3579,20 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
     if (NULL ==sdr)
     {
         printf ("Error : Can not access the System Level sensor data \n\n");
-        return -1;      
-    }       
+        return -1;
+    }
 
-    sensor_number = sdr->record.full->keys.sensor_num;
-    ipmi_get_sensor_reading (intf,sensor_number,&sensorReadingData);                
+    sensor_number = sdr->record.common->keys.sensor_num;
+    ipmi_get_sensor_reading (intf,sensor_number,&sensorReadingData);
 
     rsp = ipmi_sdr_get_sensor_thresholds(intf,
-        sdr->record.full->keys.sensor_num,
-        sdr->record.full->keys.owner_id,
-        sdr->record.full->keys.lun,
-        sdr->record.full->keys.channel);
+        sdr->record.common->keys.sensor_num,
+        sdr->record.common->keys.owner_id,
+        sdr->record.common->keys.lun,
+        sdr->record.common->keys.channel);
 
     if (rsp != NULL && rsp->ccode == 0)
-    {   
+    {
         readingbtuphr=sdr_convert_sensor_reading
             (sdr->record.full, sensorReadingData.sensorReading);
         warning_threshbtuphr=sdr_convert_sensor_reading

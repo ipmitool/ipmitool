@@ -746,7 +746,8 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 					    rsp->payload.ipmi_response.cmd == 0x34) {
 						memcpy(rsp->data, &rsp->data[offset],
 							(rsp->data_len-offset));
-						printbuf( &rsp->data[offset],
+						if (verbose > 2)
+							printbuf( &rsp->data[offset],
 							(rsp->data_len-offset),
 							"bridge command response");
 					}
@@ -2089,10 +2090,16 @@ ipmi_lanplus_send_payload(
 	int                   try = 0;
 	int                   xmit = 1;
 	time_t                ltime;
+	uint32_t	      timeout;
 
 	if (!intf->opened && intf->open && intf->open(intf) < 0)
 		return NULL;
 
+	/*
+	 * The session timeout is initialized in the above interface open,
+	 * so it will only be valid after the open completes.
+	 */
+	timeout = session->timeout;
 	while (try < session->retry) {
 		//ltime = time(NULL);
 
@@ -2287,20 +2294,18 @@ ipmi_lanplus_send_payload(
 				break;
 		}
 
-		xmit = ((time(NULL) - ltime) >= intf->session->timeout);
+		/* only timeout if time exceeds the timeout value */
+		xmit = ((time(NULL) - ltime) > timeout);
 
 		usleep(5000);
 
 		if (xmit) {
-			/* incremet session timeout each retry */
-			intf->session->timeout++;
+			/* increment session timeout by 1 second each retry */
+			timeout++;
 		}
 
 		try++;
 	}
-
-	/* Reset timeout after retry loop completes */
-	intf->session->timeout = IPMI_LAN_TIMEOUT;
 
 	/* IPMI messages are deleted under ipmi_lan_poll_recv() */
 	switch (payload->payload_type) {

@@ -1997,14 +1997,13 @@ static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
             rc = -1;
         }
 
-        if(header->type == SDR_RECORD_TYPE_FULL_SENSOR) {
-            r = ipmi_sensor_print_full(intf, (struct sdr_record_full_sensor *)rec);
-        }
-        else if(header->type == SDR_RECORD_TYPE_COMPACT_SENSOR) {
-            r = ipmi_sensor_print_compact(intf, (struct sdr_record_compact_sensor *)rec);
+        if((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
+           (header->type == SDR_RECORD_TYPE_COMPACT_SENSOR)) {
+            r = ipmi_sensor_print_fc(intf,
+	    	(struct sdr_record_common_sensor *)rec, header->type);
         }
         else
-            rc = -1;        
+            rc = -1;
     }
     else {
         rc = -1;    /* record id not found */

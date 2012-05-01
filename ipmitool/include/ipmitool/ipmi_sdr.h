@@ -322,7 +322,7 @@ struct sdr_record_mask {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct sdr_record_compact_sensor {
+struct sdr_record_common_sensor {
 	struct {
 		uint8_t owner_id;
 #if WORDS_BIGENDIAN
@@ -376,7 +376,7 @@ struct sdr_record_compact_sensor {
 			uint8_t ignore:1;
 #endif
 		} ATTRIBUTE_PACKING capabilities;
-		uint8_t type;	/* sensor type */
+		uint8_t type;
 	} ATTRIBUTE_PACKING sensor;
 
 	uint8_t event_type;	/* event/reading type code */
@@ -400,7 +400,21 @@ struct sdr_record_compact_sensor {
 			uint8_t modifier;
 		} ATTRIBUTE_PACKING type;
 	} ATTRIBUTE_PACKING unit;
+} ATTRIBUTE_PACKING;
 
+/* SDR Record Common Sensor header macros */
+#define IS_THRESHOLD_SENSOR(s)	((s)->event_type == 1)
+#define UNITS_ARE_DISCRETE(s)	((s)->unit.analog == 3)
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+struct sdr_record_compact_sensor {
+	struct sdr_record_common_sensor cmn;
 	struct {
 #if WORDS_BIGENDIAN
 		uint8_t __reserved:2;
@@ -492,83 +506,7 @@ struct sdr_record_eventonly_sensor {
 #pragma pack(1)
 #endif
 struct sdr_record_full_sensor {
-	struct {
-		uint8_t owner_id;
-#if WORDS_BIGENDIAN
-		uint8_t channel:4;	/* channel number */
-		uint8_t __reserved:2;
-		uint8_t lun:2;	/* sensor owner lun */
-#else
-		uint8_t lun:2;	/* sensor owner lun */
-		uint8_t __reserved:2;
-		uint8_t channel:4;	/* channel number */
-#endif
-		uint8_t sensor_num;	/* unique sensor number */
-	} ATTRIBUTE_PACKING keys;
-
-	struct entity_id entity;
-
-	struct {
-		struct {
-#if WORDS_BIGENDIAN
-			uint8_t __reserved:1;
-			uint8_t scanning:1;
-			uint8_t events:1;
-			uint8_t thresholds:1;
-			uint8_t hysteresis:1;
-			uint8_t type:1;
-			uint8_t event_gen:1;
-			uint8_t sensor_scan:1;
-#else
-			uint8_t sensor_scan:1;
-			uint8_t event_gen:1;
-			uint8_t type:1;
-			uint8_t hysteresis:1;
-			uint8_t thresholds:1;
-			uint8_t events:1;
-			uint8_t scanning:1;
-			uint8_t __reserved:1;
-#endif
-		} ATTRIBUTE_PACKING init;
-		struct {
-#if WORDS_BIGENDIAN
-			uint8_t ignore:1;
-			uint8_t rearm:1;
-			uint8_t hysteresis:2;
-			uint8_t threshold:2;
-			uint8_t event_msg:2;
-#else
-			uint8_t event_msg:2;
-			uint8_t threshold:2;
-			uint8_t hysteresis:2;
-			uint8_t rearm:1;
-			uint8_t ignore:1;
-#endif
-		} ATTRIBUTE_PACKING capabilities;
-		uint8_t type;
-	} ATTRIBUTE_PACKING sensor;
-
-	uint8_t event_type;	/* event/reading type code */
-
-	struct sdr_record_mask mask;
-
-	struct {
-#if WORDS_BIGENDIAN
-		uint8_t analog:2;
-		uint8_t rate:3;
-		uint8_t modifier:2;
-		uint8_t pct:1;
-#else
-		uint8_t pct:1;
-		uint8_t modifier:2;
-		uint8_t rate:3;
-		uint8_t analog:2;
-#endif
-		struct {
-			uint8_t base;
-			uint8_t modifier;
-		} ATTRIBUTE_PACKING type;
-	} ATTRIBUTE_PACKING unit;
+	struct sdr_record_common_sensor cmn;
 
 #define SDR_SENSOR_L_LINEAR     0x00
 #define SDR_SENSOR_L_LN         0x01
@@ -822,6 +760,7 @@ struct sdr_record_list {
 	uint8_t *raw;
 	struct sdr_record_list *next;
 	union {
+		struct sdr_record_common_sensor *common;
 		struct sdr_record_full_sensor *full;
 		struct sdr_record_compact_sensor *compact;
 		struct sdr_record_eventonly_sensor *eventonly;
@@ -896,14 +835,22 @@ int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf *intf,
 			     struct sdr_record_list *entry);
-const char *ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, 
+void ipmi_sdr_print_sensor_hysteresis(struct sdr_record_common_sensor *sensor,
+		 struct sdr_record_full_sensor   *full,
+		 uint8_t hysteresis_value,
+		 const char *hdrstr);
+const char *ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type,
 				      uint8_t base, uint8_t modifier);
-const char *ipmi_sdr_get_status(struct sdr_record_full_sensor *sensor,
-				uint8_t stat);
+const char *ipmi_sdr_get_thresh_status(struct ipmi_rs *rsp,
+				int validread, const char *invalidstr);
+const char *ipmi_sdr_get_status(int, const char *, uint8_t stat);
 double sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
 double sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
+double sdr_convert_analog_reading(struct ipmi_intf *intf,
+			    struct sdr_record_full_sensor *sensor, uint8_t read,
+			    int *convert_success);
 double sdr_convert_sensor_hysterisis(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
 uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor *sensor,
@@ -925,10 +872,6 @@ const char *ipmi_sdr_get_sensor_type_desc(const uint8_t type);
 int ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
                              uint16_t * reserve_id);
 
-int ipmi_sdr_print_sensor_full(struct ipmi_intf *intf,
-			       struct sdr_record_full_sensor *sensor);
-int ipmi_sdr_print_sensor_compact(struct ipmi_intf *intf,
-				  struct sdr_record_compact_sensor *sensor);
 int ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 				    struct sdr_record_eventonly_sensor *sensor);
 int ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf *intf,
