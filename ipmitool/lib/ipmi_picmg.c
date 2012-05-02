@@ -73,32 +73,40 @@ static t_picmg_card_type PicmgCardType = PICMG_CARD_TYPE_RESERVED;
 void
 ipmi_picmg_help (void)
 {
-	printf(" properties           - get PICMG properties\n");
-	printf(" frucontrol           - FRU control\n");
-	printf(" addrinfo             - get address information\n");
-	printf(" activate             - activate a FRU\n");
-	printf(" deactivate           - deactivate a FRU\n");
-	printf(" policy get           - get the FRU activation policy\n");
-	printf(" policy set           - set the FRU activation policy\n");
-	printf(" portstate get        - get port state \n");
-	printf(" portstate getdenied  - get all denied[disabled] port description\n");
-	printf(" portstate getgranted - get all granted[enabled] port description\n");
-	printf(" portstate getall     - get all port state description\n");
-	printf(" portstate set        - set port state \n");
-	printf(" amcportstate get     - get port state \n");
-	printf(" amcportstate set     - set port state \n");
-	printf(" led prop             - get led properties\n");
-	printf(" led cap              - get led color capabilities\n");
-	printf(" led get              - get led state\n");
-	printf(" led set              - set led state\n");
-	printf(" power get            - get power level info\n");
-	printf(" power set            - set power level\n");
-	printf(" clk get              - get clk state\n");
-	printf(" clk getdenied        - get all(up to 16) denied[disabled] clock descriptions\n");
-	printf(" clk getgranted       - get all(up to 16) granted[enabled] clock descriptions\n");
-	printf(" clk getall           - get all(up to 16) clock descriptions\n");
-	printf(" clk set              - set clk state\n");
-	printf(" busres summary       - display brief bused resource status info \n");
+	lprintf(LOG_NOTICE, "PICMG commands:");
+	lprintf(LOG_NOTICE, " properties           - get PICMG properties");
+	lprintf(LOG_NOTICE, " frucontrol           - FRU control");
+	lprintf(LOG_NOTICE, " addrinfo             - get address information");
+	lprintf(LOG_NOTICE, " activate             - activate a FRU");
+	lprintf(LOG_NOTICE, " deactivate           - deactivate a FRU");
+	lprintf(LOG_NOTICE, " policy get           - get the FRU activation policy");
+	lprintf(LOG_NOTICE, " policy set           - set the FRU activation policy");
+	lprintf(LOG_NOTICE, " portstate get        - get port state");
+	lprintf(LOG_NOTICE,
+			" portstate getdenied  - get all denied[disabled] port description");
+	lprintf(LOG_NOTICE,
+			" portstate getgranted - get all granted[enabled] port description");
+	lprintf(LOG_NOTICE,
+			" portstate getall     - get all port state description");
+	lprintf(LOG_NOTICE, " portstate set        - set port state");
+	lprintf(LOG_NOTICE, " amcportstate get     - get port state");
+	lprintf(LOG_NOTICE, " amcportstate set     - set port state");
+	lprintf(LOG_NOTICE, " led prop             - get led properties");
+	lprintf(LOG_NOTICE, " led cap              - get led color capabilities");
+	lprintf(LOG_NOTICE, " led get              - get led state");
+	lprintf(LOG_NOTICE, " led set              - set led state");
+	lprintf(LOG_NOTICE, " power get            - get power level info");
+	lprintf(LOG_NOTICE, " power set            - set power level");
+	lprintf(LOG_NOTICE, " clk get              - get clk state");
+	lprintf(LOG_NOTICE,
+			" clk getdenied        - get all(up to 16) denied[disabled] clock descriptions");
+	lprintf(LOG_NOTICE,
+			" clk getgranted       - get all(up to 16) granted[enabled] clock descriptions");
+	lprintf(LOG_NOTICE,
+			" clk getall           - get all(up to 16) clock descriptions");
+	lprintf(LOG_NOTICE, " clk set              - set clk state");
+	lprintf(LOG_NOTICE,
+			" busres summary       - display brief bused resource status info");
 }
 
 
@@ -1281,19 +1289,19 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 	int showProperties = 0;
 
+	if (argc == 0 || (!strncmp(argv[0], "help", 4))) {
+		ipmi_picmg_help();
+		return 0;
+	}
+
 	/* Get PICMG properties is called to obtain version information */
 	if (argc !=0 && !strncmp(argv[0], "properties", 10)) {
 		showProperties =1;
 	}
 	rc = ipmi_picmg_properties(intf,showProperties);
 
-	if (argc == 0 || (!strncmp(argv[0], "help", 4))) {
-		ipmi_picmg_help();
-		return 0;
-	}
-
 	/* address info command */
-	else if (!strncmp(argv[0], "addrinfo", 8)) {
+	if (!strncmp(argv[0], "addrinfo", 8)) {
 		rc = ipmi_picmg_getaddr(intf, argc-1, &argv[1]);
 	}
 	else if (!strncmp(argv[0], "busres", 6)) {
