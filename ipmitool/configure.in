@@ -469,9 +469,13 @@ if test "x$enable_ipmishell" = "xyes"; then
 	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
 	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
-	if test "x$have_curses" = "xyes" && test "x$have_readline" = "xyes"; then
-		AC_DEFINE(HAVE_READLINE, [1], [Define to 1 if readline present.])
+	if test "x$have_curses" != "xyes"; then
+		AC_MSG_ERROR([** Unable to find curses required by ipmishell.])
 	fi
+	if test "x$have_readline" != "xyes"; then
+		AC_MSG_ERROR([** Unable to find readline required by ipmishell.])
+	fi
+	AC_DEFINE(HAVE_READLINE, [1], [Define to 1 if readline present.])
 fi
 
 dnl Enable -Wall -Werror
@@ -553,6 +557,7 @@ AC_MSG_RESULT([  bmc     : $enable_intf_bmc])
 AC_MSG_RESULT([  lipmi   : $enable_intf_lipmi])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Extra tools])
-AC_MSG_RESULT([  ipmievd : yes])
+AC_MSG_RESULT([  ipmievd   : yes])
+AC_MSG_RESULT([  ipmishell : $enable_ipmishell])
 AC_MSG_RESULT([])
 
