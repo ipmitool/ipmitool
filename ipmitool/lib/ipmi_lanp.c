@@ -2230,7 +2230,7 @@ int
 ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
-	uint8_t chan = find_lan_channel(intf, 1);
+	uint8_t chan = 0;
 
 	if (argc == 0) {
 		print_lan_usage();
@@ -2238,7 +2238,11 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	} else if (strncmp(argv[0], "help", 4) == 0) {
 		print_lan_usage();
 		return 0;
-	} else if (strncmp(argv[0], "printconf", 9) == 0 ||
+	}
+
+	chan = find_lan_channel(intf, 1);
+
+	if (strncmp(argv[0], "printconf", 9) == 0 ||
 			strncmp(argv[0], "print", 5) == 0) 
 	{
 		if (argc > 2) {
