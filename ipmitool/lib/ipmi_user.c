@@ -513,14 +513,16 @@ ipmi_user_test_password(
 static void
 print_user_usage(void)
 {
-	lprintf(LOG_NOTICE, "User Commands: summary [<channel number>]");
-	lprintf(LOG_NOTICE, "		   list	   [<channel number>]");
-	lprintf(LOG_NOTICE, "		   set name	<user id> <username>");
+	lprintf(LOG_NOTICE, "User Commands:");
+	lprintf(LOG_NOTICE, "		   summary      [<channel number>]");
+	lprintf(LOG_NOTICE, "		   list         [<channel number>]");
+	lprintf(LOG_NOTICE, "		   set name     <user id> <username>");
 	lprintf(LOG_NOTICE, "		   set password <user id> [<password>]");
-	lprintf(LOG_NOTICE, "		   disable	<user id>");
-	lprintf(LOG_NOTICE, "		   enable	<user id>");
-	lprintf(LOG_NOTICE, "		   priv  	<user id> <privilege level> [<channel number>]");
-	lprintf(LOG_NOTICE, "		   test		<user id> <16|20> [<password]>\n");
+	lprintf(LOG_NOTICE, "		   disable      <user id>");
+	lprintf(LOG_NOTICE, "		   enable       <user id>");
+	lprintf(LOG_NOTICE,
+			"		   priv         <user id> <privilege level> [<channel number>]");
+	lprintf(LOG_NOTICE, "		   test         <user id> <16|20> [<password]>\n");
 }
 
 
