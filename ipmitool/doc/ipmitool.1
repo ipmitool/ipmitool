@@ -2020,6 +2020,10 @@ RAW REQ (netfn=0x0 cmd=0xf data_len=0)
 RAW RSP (5 bytes)
 .br 
 3c 72 0c 00 00
+
+\fBNote\fR that the OpenIPMI driver provided by the Linux kernel will reject the Get Message, Send Message and Read Event Message Buffer commands because it handles the message sequencing internally.
+.br
+
 .TP 
 \fIsdr\fP
 .RS
