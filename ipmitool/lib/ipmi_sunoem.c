@@ -97,20 +97,24 @@ ipmi_sunoem_usage(void)
 	lprintf(LOG_NOTICE, "      view users with 'user list' command.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "   led get <sensorid> [ledtype]");
-	lprintf(LOG_NOTICE, "      Read status of LED found in Generic Device Locator.");
+	lprintf(LOG_NOTICE,
+			"      Read status of LED found in Generic Device Locator.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "   led set <sensorid> <ledmode> [ledtype]");
-	lprintf(LOG_NOTICE, "      Set mode of LED found in Generic Device Locator.");
+	lprintf(LOG_NOTICE,
+			"      Set mode of LED found in Generic Device Locator.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "   sbled get <sensorid> [ledtype]");
-	lprintf(LOG_NOTICE, "      Read status of LED found in Generic Device Locator");
+	lprintf(LOG_NOTICE,
+			"      Read status of LED found in Generic Device Locator");
 	lprintf(LOG_NOTICE, "      for Sun Blade Modular Systems.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "   sbled set <sensorid> <ledmode> [ledtype]");
 	lprintf(LOG_NOTICE, "      Set mode of LED found in Generic Device Locator");
 	lprintf(LOG_NOTICE, "      for Sun Blade Modular Systems.");
 	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "      Use 'sdr list generic' command to get list of Generic");
+	lprintf(LOG_NOTICE,
+			"      Use 'sdr list generic' command to get list of Generic");
 	lprintf(LOG_NOTICE, "      Devices that are controllable LEDs.");
 	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE, "      Required SIS LED Mode:");
@@ -401,7 +405,8 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf,  int argc, char ** argv)
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
 		/* do all generic sensors */
-		alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
+		alist = ipmi_sdr_find_sdr_bytype(intf,
+				SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
 		for (a = alist; a != NULL; a = a->next) {
 			if (a->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
 				continue;
@@ -564,7 +569,8 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
 		/* do all generic sensors */
-		alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
+		alist = ipmi_sdr_find_sdr_bytype(intf,
+				SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
 		for (a = alist; a != NULL; a = a->next) {
 			if (a->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
 				continue;
@@ -635,12 +641,14 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf,  int argc, char ** argv)
 			/* first range set - id 1 and 2 must be equal */
 			if (assoc->entity_id_1 == assoc->entity_id_2)
 				for (i = assoc->entity_inst_1; i <= assoc->entity_inst_2; i++)
-					sunoem_led_set_byentity(intf, assoc->entity_id_1, i, ledtype, ledmode);
+					sunoem_led_set_byentity(intf, assoc->entity_id_1, i, ledtype,
+							ledmode);
 
 			/* second range set - id 3 and 4 must be equal */
 			if (assoc->entity_id_3 == assoc->entity_id_4)
 				for (i = assoc->entity_inst_3; i <= assoc->entity_inst_4; i++)
-					sunoem_led_set_byentity(intf, assoc->entity_id_3, i, ledtype, ledmode);
+					sunoem_led_set_byentity(intf, assoc->entity_id_3, i, ledtype,
+							ledmode);
 		}
 		else {
 			/*
@@ -764,7 +772,7 @@ ipmi_sunoem_sshkey_set(struct ipmi_intf * intf, uint8_t uid, char * ifile)
 int
 ipmi_sunoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int rc = 0;
+	int rc = (-1);
 
 	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
 		ipmi_sunoem_usage();
@@ -772,29 +780,24 @@ ipmi_sunoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	if (strncmp(argv[0], "fan", 3) == 0) {
-		uint8_t pct;
-		if (argc < 2) {
-			ipmi_sunoem_usage();
-			return -1;
-		}
-		else if (strncmp(argv[1], "speed", 5) == 0) {
-			if (argc < 3) {
-				ipmi_sunoem_usage();
-				return -1;
+		if (argc == 3 && strncmp(argv[1], "speed", 5) == 0) {
+			uint8_t pct = 0;
+			if (str2uchar(argv[2], &pct) != 0 || pct > 100) {
+				lprintf(LOG_ERR, "Fan speed is limited to range <0..100>.");
+				return (-1);
 			}
-			pct = (uint8_t)strtol(argv[2], NULL, 0);
 			rc = ipmi_sunoem_fan_speed(intf, pct);
 		}
 		else {
 			ipmi_sunoem_usage();
-			return -1;
+			return (-1);
 		}
 	}
-
-	if ((strncmp(argv[0], "led", 3) == 0) || (strncmp(argv[0], "sbled", 5) == 0)) {
+	else if ((strncmp(argv[0], "led", 3) == 0)
+			|| (strncmp(argv[0], "sbled", 5) == 0)) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return -1;
+			return (-1);
 		}
 		if (strncmp(argv[0], "sbled", 5) == 0) {
 			is_sbcmd = 1;
@@ -803,46 +806,49 @@ ipmi_sunoem_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (argc < 3) {
 				char * arg[] = { "all" };
 				rc = ipmi_sunoem_led_get(intf, 1, arg);
-			} else {
+			}
+			else {
 				rc = ipmi_sunoem_led_get(intf, argc-2, &(argv[2]));
 			}
 		}
 		else if (strncmp(argv[1], "set", 3) == 0) {
 			if (argc < 4) {
 				ipmi_sunoem_usage();
-				return -1;
+				return (-1);
 			}
 			rc = ipmi_sunoem_led_set(intf, argc-2, &(argv[2]));
 		}
 		else {
 			ipmi_sunoem_usage();
-			return -1;
+			return (-1);
 		}
 	}
-
-	if (strncmp(argv[0], "sshkey", 6) == 0) {
-		if (argc < 2) {
+	else if (strncmp(argv[0], "sshkey", 6) == 0) {
+		uint8_t uid = 0;
+		if (argc < 3) {
 			ipmi_sunoem_usage();
-			return -1;
+			return (-1);
 		}
-		else if (strncmp(argv[1], "del", 3) == 0) {
-			uint8_t uid;
-			if (argc < 3) {
-				ipmi_sunoem_usage();
-				return -1;
-			}
-			uid = (uint8_t)strtoul(argv[2], NULL, 0);
+
+		if (str2uchar(argv[2], &uid) != 0 || uid < 1 || uid > 63) {
+			lprintf(LOG_ERR, "User ID is limited to range <1..63>.");
+			return (-1);
+		}
+
+		if (strncmp(argv[1], "del", 3) == 0) {
 			rc = ipmi_sunoem_sshkey_del(intf, uid);
 		}
-		else if (strncmp(argv[1], "set", 3) == 0) {
-			uint8_t uid;
-			if (argc < 4) {
-				ipmi_sunoem_usage();
-				return -1;
-			}
-			uid = (uint8_t)strtoul(argv[2], NULL, 0);
+		else if (argc == 4 && strncmp(argv[1], "set", 3) == 0) {
 			rc = ipmi_sunoem_sshkey_set(intf, uid, argv[3]);
 		}
+		else {
+			ipmi_sunoem_usage();
+			return (-1);
+		}
+	}
+	else {
+		ipmi_sunoem_usage();
+		return (-1);
 	}
 
 	return rc;
