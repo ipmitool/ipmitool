@@ -259,7 +259,7 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
 			 */
 			rs_len = 2;
 			rs_buf[0] = 0;
-			rs_buf[0] = 0xC1; /* invalid command */
+			rs_buf[1] = 0xC1; /* invalid command */
                 }
 #else  /* !IPMI_INTF_FREE_BRIDGING */
                 if (verbose > 3)
@@ -269,7 +269,7 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
 		 */
 		rs_len = 2;
 		rs_buf[0] = 0;
-		rs_buf[0] = 0xC1; /* invalid command */
+		rs_buf[1] = 0xC1; /* invalid command */
 #endif  /* !IPMI_INTF_FREE_BRIDGING */
         }
         else {
