@@ -228,6 +228,7 @@ Commands:
         isol         Configure and connect Intel IPMIv1.5 Serial\-over\-LAN
         user         Configure Management Controller users
         channel      Configure Management Controller channels
+        dcmi         Data Center Management Interface
         session      Print session information
         sunoem       Manage Sun OEM Extensions
         kontronoem   Manage Kontron OEM Extensions
@@ -648,6 +649,182 @@ Force boot from CD/DVD
 .br 
 
 Force boot into BIOS setup
+
+.RE
+.RE
+.RE
+.TP 
+\fIdcmi\fP
+.RS
+.TP 
+\fIdiscover\fP
+.br 
+
+This command is used to discover supported capabilities in DCMI.
+
+.TP 
+\fIpower\fP <\fBcommand\fR>
+.br 
+
+Platform power limit command options are:
+
+.RS
+.TP 
+\fIreading\fP
+.br 
+
+Get power related readings from the system.
+.TP 
+\fIget_limit\fP
+.br 
+
+Get the configured power limits.
+.TP 
+\fIset_limit\fP  <\fBparameter\fR> <\fBvalue\fR>
+.br 
+
+Set a power limit option.
+.br
+
+.RS
+.TP
+Possible parameters/values are:
+
+.TP
+\fIaction\fP <\fBNo Action | Hard Power Off & Log Event to SEL | Log Event to SEL\fR>
+.br
+
+Exception Actions are taken as "No Action", "Hard Power Off system and log events to SEL", or "Log event to SEL only".
+.TP
+\fIlimit\fP <\fBnumber in Watts\fR>
+.br
+
+Power Limit Requested in Watts.
+.TP
+\fIcorrection\fP <\fBnumber in milliseconds\fR>
+.br
+
+Correction Time Limit in milliseconds.
+.TP
+\fIsample\fP <\fBnumber in seconds\fR>
+.br
+
+Statistics Sampling period in seconds.
+
+.RE
+.TP 
+\fIactivate\fP
+.br 
+
+Activate the set power limit.
+.TP 
+\fIdeactivate\fP
+.br 
+
+Deactivate the set power limit.
+.RE
+.TP 
+\fIsensors\fP
+.br 
+
+Prints the available DCMI sensors.
+.TP 
+\fIasset_tag\fP
+.br 
+
+Prints the platforms asset tag.
+.TP 
+\fIset_asset_tag\fP  <\fBstring\fR>
+.br 
+
+Sets the platforms asset tag
+.TP 
+\fIget_mc_id_string\fP
+.br 
+
+Get management controller identifier string.
+.TP 
+\fIset_mc_id_string\fP  <\fBstring\fR>
+.br 
+
+Set management controller identifier string.  The maximum length is 64 bytes including a null terminator.
+.TP 
+\fIthermalpolicy\fP  [<\fBget\fR | \fBset\fR>]
+.br
+
+Thermal Limit policy get/set.  
+.br
+
+.RS
+.TP
+The commands are:
+
+.TP
+\fIGet\fP  <\fBentityID\fR> <\fBinstanceID\fR>
+.br 
+
+Get Thermal Limit values.
+
+\fBentityID\fR is the physical entity that a sensor or device is associated with.   
+\fBinstanceID\fR is a particular instance of an entity.  Entity Instance can be in one of two ranges, system-relative or device-relative.  For example, a system with four processors could use an Entity Instance value of "0" to identify the first processor.  
+.TP
+\fISet\fP  <\fBentityID\fR> <\fBinstanceID\fR>
+.br 
+
+Set Thermal Limit values.  
+
+\fBentityID\fR is the physical entity that a sensor or device is associated with.   
+\fBinstanceID\fR is a particular instance of an entity.  Entity Instance can be in one of two ranges, system-relative or device-relative.  For example, a system with four processors could use an Entity Instance value of "0" to identify the first processor.  
+.RE
+.TP 
+\fIget_temp_reading\fP
+.br 
+
+Get Temperature Sensor Readings.
+.TP 
+\fIget_conf_param\fP
+.br 
+
+Get DCMI Configuration Parameters.
+.TP 
+\fIset_conf_param\fP <\fBparameters\fR>
+.br 
+
+Set DCMI Configuration Parameters.  
+.RS
+.TP
+The Configuration Parameters are:
+.TP 
+\fIactivate_dhcp\fP
+.br 
+
+Activate/restart DHCP
+.TP 
+\fIdhcp_config\fP
+.br 
+
+Discover DHCP Configuration.
+.TP 
+\fIinit\fP 
+.br 
+
+Set DHCP Initial timeout interval, in seconds.  The recommended default is four seconds.
+.TP 
+\fItimeout\fP
+.br 
+
+Set DHCP Server contact timeout interval, in seconds.  The recommended default timeout is two minutes.
+.TP 
+\fIretry\fP
+.br 
+
+Set DHCP Server contact retry interval, in seconds.  The recommended default timeout is sixty-four seconds.
+.RE
+.TP
+\fIoob_discover\fP
+.br 
+
+Ping/Pong Message for DCMI Discovery.
 
 .RE
 .RE
