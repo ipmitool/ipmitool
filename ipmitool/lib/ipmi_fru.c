@@ -35,6 +35,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>  /* IANA id strings */
 
@@ -2917,24 +2918,95 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	struct sdr_get_rs * header;
 	struct sdr_record_fru_locator * fru;
 	int rc;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct ipm_devid_rsp *devid;
+	struct sdr_record_mc_locator * mc;
+	uint8_t save_addr;
 
 	printf("FRU Device Description : Builtin FRU Device (ID 0)\n");
 	/* TODO: Figure out if FRU device 0 may show up in SDR records. */
-	rc = ipmi_fru_print(intf, NULL);
-	printf("\n");
+
+	/* Do a Get Device ID command to determine device support */
+	memset (&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get Device ID command failed");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Device ID command failed: %s",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	devid = (struct ipm_devid_rsp *) rsp->data;
+
+	/* Check the FRU inventory device bit to decide whether various */
+	/* FRU commands can be issued to FRU device #0 LUN 0		*/
+
+	if (devid->adtl_device_support & 0x08) {	/* FRU Inventory Device bit? */
+		rc = ipmi_fru_print(intf, NULL);
+		printf("\n");
+	}
 
 	if ((itr = ipmi_sdr_start(intf, 0)) == NULL)
 		return -1;
 
+	/* Walk the SDRs looking for FRU Devices and Management Controller Devices. */
+	/* For FRU devices, print the FRU from the SDR locator record.		    */
+	/* For MC devices, issue FRU commands to the satellite controller to print  */
+	/* FRU data.								    */
 	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
 	{
+		if (header->type == SDR_RECORD_TYPE_MC_DEVICE_LOCATOR ) {
+			/* Check the capabilities of the Management Controller Device */
+			mc = (struct sdr_record_mc_locator *)
+				ipmi_sdr_get_record(intf, header, itr);
+			/* Does this MC device support FRU inventory device? */
+			if (mc && (mc->dev_support & 0x08)) {	 /* FRU inventory device? */
+				/* Yes. Prepare to issue FRU commands to FRU device #0 LUN 0  */
+				/* using the slave address specified in the MC record.	      */
+
+				/* save current target address */
+				save_addr = intf->target_addr;
+
+				/* set new target address to satellite controller */
+				intf->target_addr = mc->dev_slave_addr;
+
+				printf("FRU Device Description : %-16s\n", mc->id_string);
+
+				/* print the FRU by issuing FRU commands to the satellite     */
+				/* controller.						      */
+				rc = __ipmi_fru_print(intf, 0);
+
+				printf("\n");
+
+				/* restore previous target */
+				intf->target_addr = save_addr;
+			}
+
+			if (mc)
+				free(mc);
+
+			continue;
+		}
+
 		if (header->type != SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR)
 			continue;
 
+		/* Print the FRU from the SDR locator record. */
 		fru = (struct sdr_record_fru_locator *)
 			ipmi_sdr_get_record(intf, header, itr);
-		if (fru == NULL || !fru->logical)
+		if (fru == NULL || !fru->logical) {
+			if (fru)
+				free(fru);
 			continue;
+		}
 		rc = ipmi_fru_print(intf, fru);
 		free(fru);
 	}
