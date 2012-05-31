@@ -799,30 +799,30 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
          memcpy(flags, iflags, sizeof (flags));
 
    if (arg == NULL)
-      flags[1] = 0x00;
+      flags[1] |= 0x00;
    else if (strncmp(arg, "none", 4) == 0)
-      flags[1] = 0x00;
+      flags[1] |= 0x00;
    else if (strncmp(arg, "pxe", 3) == 0 ||
        strncmp(arg, "force_pxe", 9) == 0)
-      flags[1] = 0x04;
+      flags[1] |= 0x04;
    else if (strncmp(arg, "disk", 4) == 0 ||
        strncmp(arg, "force_disk", 10) == 0)
-      flags[1] = 0x08;
+      flags[1] |= 0x08;
    else if (strncmp(arg, "safe", 4) == 0 ||
        strncmp(arg, "force_safe", 10) == 0)
-      flags[1] = 0x0c;
+      flags[1] |= 0x0c;
    else if (strncmp(arg, "diag", 4) == 0 ||
        strncmp(arg, "force_diag", 10) == 0)
-      flags[1] = 0x10;
+      flags[1] |= 0x10;
    else if (strncmp(arg, "cdrom", 5) == 0 ||
        strncmp(arg, "force_cdrom", 11) == 0)
-      flags[1] = 0x14;
+      flags[1] |= 0x14;
    else if (strncmp(arg, "floppy", 6) == 0 ||
        strncmp(arg, "force_floppy", 12) == 0)
-      flags[1] = 0x3c;
+      flags[1] |= 0x3c;
    else if (strncmp(arg, "bios", 4) == 0 ||
        strncmp(arg, "force_bios", 10) == 0)
-      flags[1] = 0x18;
+      flags[1] |= 0x18;
    else {
       lprintf(LOG_ERR, "Invalid argument: %s", arg);
       if (use_progress) {
