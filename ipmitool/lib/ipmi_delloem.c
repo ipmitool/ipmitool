@@ -248,17 +248,13 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
     int rc = 0;
 
-    ipmi_idracvalidator_command(intf);
-    CheckLCDSupport (intf);
-    CheckSetLEDSupport (intf);
-
     if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) 
     {
         usage();
         return 0;
     }
 
-    if (IsLCDSupported() && (0 ==strncmp(argv[current_arg], "lcd\0", 4)) ) 
+    if (0 ==strncmp(argv[current_arg], "lcd\0", 4))
     {
         ipmi_delloem_lcd_main (intf,argc,argv);
     }
@@ -268,12 +264,12 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
         ipmi_delloem_mac_main (intf,argc,argv);
     }
     /* lan address*/
-    else if (IsLANSupported() && strncmp(argv[current_arg], "lan\0", 4) == 0) 
+    else if (strncmp(argv[current_arg], "lan\0", 4) == 0)
     {
         ipmi_delloem_lan_main (intf,argc,argv);
     }
     /* SetLED support */
-    else if (IsSetLEDSupported() && strncmp(argv[current_arg], "setled\0", 7) == 0)
+    else if (strncmp(argv[current_arg], "setled\0", 7) == 0)
     {
         ipmi_delloem_setled_main (intf,argc,argv);
     }
@@ -312,15 +308,12 @@ static void usage(void)
     lprintf(LOG_NOTICE, "usage: delloem <command> [option...]");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "commands:");
-    if (IsLCDSupported())
-        lprintf(LOG_NOTICE, "    lcd"); 
-    lprintf(LOG_NOTICE, "    mac");         
-    if (IsLANSupported())
-        lprintf(LOG_NOTICE, "    lan");
-    if (IsSetLEDSupported())
-	lprintf(LOG_NOTICE,    "    setled");         
-    lprintf(LOG_NOTICE, "    powermonitor");        
-	lprintf(LOG_NOTICE, "    vFlash");
+    lprintf(LOG_NOTICE, "    lcd");
+    lprintf(LOG_NOTICE, "    mac");
+    lprintf(LOG_NOTICE, "    lan");
+    lprintf(LOG_NOTICE, "    setled");
+    lprintf(LOG_NOTICE, "    powermonitor");
+    lprintf(LOG_NOTICE, "    vFlash");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "For help on individual commands type:");
     lprintf(LOG_NOTICE, "delloem <command> help");
@@ -354,13 +347,20 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
 
 
     /* ipmitool delloem lcd info*/
-    if (argc == 1) 
+    if (argc == 1 || strcmp(argv[current_arg], "help") == 0)
     {
         ipmi_lcd_usage();
+        return 0;
+    }
+    CheckLCDSupport (intf);
+    ipmi_idracvalidator_command(intf);
+    if (!IsLCDSupported()) {
+        printf("lcd is not supported on this system.\n");
+        return -1;
     }
     else if (strncmp(argv[current_arg], "info\0", 5) == 0) 
     {
-		if((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )            
+	if((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )
             rc = ipmi_lcd_get_info_wh(intf);
         else
             rc = ipmi_lcd_get_info(intf);
@@ -1835,27 +1835,25 @@ static void
 ipmi_lcd_usage(void)
 {
     lprintf(LOG_NOTICE, "");
-    if(iDRAC_FLAG==0)
-    {
-        lprintf(LOG_NOTICE, "   lcd set {none}|{default}|{custom <text>}");
-        lprintf(LOG_NOTICE, "      Set LCD text displayed during non-fault conditions");
-    }
-    else if( (iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )
-    {
-        lprintf(LOG_NOTICE, "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
-		lprintf(LOG_NOTICE, "      Allows you to set the LCD mode and user-defined string.");
-        lprintf(LOG_NOTICE, "");
-        lprintf(LOG_NOTICE, "   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
-        lprintf(LOG_NOTICE, "   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
-        lprintf(LOG_NOTICE, "   {systemwatt }|{assettag}|{userdefined}<text>");
-		lprintf(LOG_NOTICE, "	   Allows you to set the LCD display mode to any of the preceding parameters");
-		lprintf(LOG_NOTICE, "");
-        lprintf(LOG_NOTICE, "   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
-		lprintf(LOG_NOTICE, "      Allows you to set the unit for the system ambient temperature mode.");		
-        lprintf(LOG_NOTICE, "");
-        lprintf(LOG_NOTICE, "   lcd set errordisplay {sel}|{simple}");
-		lprintf(LOG_NOTICE, "      Allows you to set the error display.");				
-    }
+    lprintf(LOG_NOTICE, "Generic DELL HW:");
+    lprintf(LOG_NOTICE, "   lcd set {none}|{default}|{custom <text>}");
+    lprintf(LOG_NOTICE, "      Set LCD text displayed during non-fault conditions");
+
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "iDRAC 11g or iDRAC 12g:");
+    lprintf(LOG_NOTICE, "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
+    lprintf(LOG_NOTICE, "      Allows you to set the LCD mode and user-defined string.");
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
+    lprintf(LOG_NOTICE, "   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
+    lprintf(LOG_NOTICE, "   {systemwatt }|{assettag}|{userdefined}<text>");
+    lprintf(LOG_NOTICE, "	   Allows you to set the LCD display mode to any of the preceding parameters");
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
+    lprintf(LOG_NOTICE, "      Allows you to set the unit for the system ambient temperature mode.");
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "   lcd set errordisplay {sel}|{simple}");
+    lprintf(LOG_NOTICE, "      Allows you to set the error display.");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lcd info");
     lprintf(LOG_NOTICE, "      Show LCD text that is displayed during non-fault conditions");
@@ -1894,6 +1892,12 @@ static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** arg
     int rc = 0;
 
     current_arg++;
+    if (argc > 1 && strcmp(argv[current_arg], "help") == 0)
+    {
+        ipmi_mac_usage();
+        return 0;
+    }
+    ipmi_idracvalidator_command(intf);
     if (argc == 1)
     {
         rc = ipmi_macinfo(intf, 0xff);
@@ -2417,11 +2421,17 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
     int nic_selection = 0;
 	char nic_set[2] = {0};
     current_arg++;
-    if (argv[current_arg] == NULL)
+    if (argv[current_arg] == NULL || strcmp(argv[current_arg], "help") == 0)
     {
         ipmi_lan_usage();
+        return 0;
+    }
+    ipmi_idracvalidator_command(intf);
+    if (!IsLANSupported())
+    {
+        printf("lan is not supported on this system.\n");
         return -1;
-    }               
+    }
     else if (strncmp(argv[current_arg], "set\0", 4) == 0)
     {
         current_arg++;
@@ -2476,6 +2486,7 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
     else
     {
         ipmi_lan_usage();
+        return -1;
     }
 }
 
@@ -2855,27 +2866,27 @@ ipmi_lan_usage(void)
 {
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan set <Mode> ");
-	if(iDRAC_FLAG == IDRAC_12G) {
-		lprintf(LOG_NOTICE, "      sets the NIC Selection Mode :");
-		lprintf(LOG_NOTICE, "      	dedicated, shared with lom1, shared with lom2,shared with lom3,shared ");
-		lprintf(LOG_NOTICE, "		with lom4,shared with failover lom1,shared with failover lom2,shared ");
-		lprintf(LOG_NOTICE, "		with failover lom3,shared with failover lom4,shared with Failover all ");
-		lprintf(LOG_NOTICE, "		loms, shared with Failover None).");
-	} else {
-	    lprintf(LOG_NOTICE, "      sets the NIC Selection Mode (dedicated, shared, shared with failover lom2, ");	
-	    lprintf(LOG_NOTICE, "      			shared with Failover all loms).");
-	}
+
+    lprintf(LOG_NOTICE, "      sets the NIC Selection Mode :");
+    lprintf(LOG_NOTICE, "          on iDRAC12g :");
+
+    lprintf(LOG_NOTICE, "              dedicated, shared with lom1, shared with lom2,shared with lom3,shared ");
+    lprintf(LOG_NOTICE, "              with lom4,shared with failover lom1,shared with failover lom2,shared ");
+    lprintf(LOG_NOTICE, "              with failover lom3,shared with failover lom4,shared with Failover all ");
+    lprintf(LOG_NOTICE, "              loms, shared with Failover None).");
+    lprintf(LOG_NOTICE, "          on other systems :");
+    lprintf(LOG_NOTICE, "              dedicated, shared, shared with failover lom2,");
+    lprintf(LOG_NOTICE, "              shared with Failover all loms.");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan get ");
-	if(iDRAC_FLAG == IDRAC_12G) {
-		lprintf(LOG_NOTICE, "      returns the current NIC Selection Mode (dedicated, shared with lom1, shared ");
-		lprintf(LOG_NOTICE, "		with lom2, shared with lom3, shared with lom4,shared with failover lom1,");
-		lprintf(LOG_NOTICE, "		shared with failover lom2,shared with failover lom3,shared with failover ");
-		lprintf(LOG_NOTICE, "		lom4,shared with Failover all loms,shared with Failover None).");
-	}else {
-		lprintf(LOG_NOTICE, "      returns the current NIC Selection Mode (dedicated, shared, shared with failover");
-		lprintf(LOG_NOTICE, "      			lom2, shared with Failover all loms).");
-	}
+    lprintf(LOG_NOTICE, "          on iDRAC12g :");
+    lprintf(LOG_NOTICE, "              returns the current NIC Selection Mode (dedicated, shared with lom1, shared ");
+    lprintf(LOG_NOTICE, "              with lom2, shared with lom3, shared with lom4,shared with failover lom1,");
+    lprintf(LOG_NOTICE, "              shared with failover lom2,shared with failover lom3,shared with failover ");
+    lprintf(LOG_NOTICE, "              lom4,shared with Failover all loms,shared with Failover None).");
+    lprintf(LOG_NOTICE, "          on other systems :");
+    lprintf(LOG_NOTICE, "              dedicated, shared, shared with failover,");
+    lprintf(LOG_NOTICE, "              lom2, shared with Failover all loms.");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan get active");
     lprintf(LOG_NOTICE, "      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");       
@@ -2902,6 +2913,12 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
     int rc = 0;
 
     current_arg++;
+    if (argc > 1 && strcmp(argv[current_arg], "help") == 0)
+    {
+        ipmi_powermonitor_usage();
+        return 0;
+    }
+    ipmi_idracvalidator_command(intf);
     if (argc == 1)
     {
         rc = ipmi_powermgmt(intf);
@@ -4767,12 +4784,13 @@ ipmi_delloem_vFlash_process(struct ipmi_intf* intf, int current_arg, char ** arg
 		return -1;
 	}
 
-	if (argv[current_arg] == NULL)
+	if (argv[current_arg] == NULL || strcmp(argv[current_arg], "help") == 0)
 	{
 		ipmi_vFlash_usage();
-		return -1;
+		return 0;
 	}
-	else if (!strncmp(argv[current_arg], "info\0", 5))
+        ipmi_idracvalidator_command(intf);
+	if (!strncmp(argv[current_arg], "info\0", 5))
 	{
 		current_arg++;
 		if (argv[current_arg] == NULL)
@@ -4798,11 +4816,6 @@ ipmi_delloem_vFlash_process(struct ipmi_intf* intf, int current_arg, char ** arg
 		}
 	}
 	/* TBD other vFlash subcommands */
-	else if (!strncmp(argv[current_arg], "help\0", 5))
-	{
-		ipmi_vFlash_usage();
-		return 0;
-	}
 	else
 	{
 		ipmi_vFlash_usage();
@@ -5072,10 +5085,16 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
     }
 
     /* ipmitool delloem setled info*/
-    if (argc == 1) 
+    if (argc == 1 || strcmp(argv[current_arg], "help") == 0)
     {
         ipmi_setled_usage();
-	return 0;
+        return 0;
+    }
+    CheckSetLEDSupport (intf);
+    if (!IsSetLEDSupported())
+    {
+        printf("'setled' is not supported on this system.\n");
+        return -1;
     }
     else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
         /* We have bus/dev/function of drive */
