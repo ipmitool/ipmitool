@@ -3302,7 +3302,11 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
         return -1;
     }
     bmctimeconvval=(uint32_t*)rsp->data;
+#if WORDS_BIGENDIAN
+    bmctimeconv=BSWAP_32(*bmctimeconvval);
+#else
     bmctimeconv=*bmctimeconvval;
+#endif
 
     /* get powermanagement info*/
     req.msg.netfn = DELL_OEM_NETFN;
@@ -3335,7 +3339,15 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
 
 
     pwrMonitorInfo = (IPMI_POWER_MONITOR*)rsp->data;
-
+#if WORDS_BIGENDIAN
+    cumStartTimeConv = BSWAP_32(pwrMonitorInfo->cumStartTime);
+    cumReadingConv = BSWAP_32(pwrMonitorInfo->cumReading);
+    maxPeakStartTimeConv = BSWAP_32(pwrMonitorInfo->maxPeakStartTime);
+    ampPeakTimeConv = BSWAP_32(pwrMonitorInfo->ampPeakTime);
+    ampReadingConv = BSWAP_16(pwrMonitorInfo->ampReading);
+    wattPeakTimeConv = BSWAP_32(pwrMonitorInfo->wattPeakTime);
+    wattReadingConv = BSWAP_16(pwrMonitorInfo->wattReading);
+#else
     cumStartTimeConv = pwrMonitorInfo->cumStartTime;
     cumReadingConv = pwrMonitorInfo->cumReading;
     maxPeakStartTimeConv = pwrMonitorInfo->maxPeakStartTime;
@@ -3343,6 +3355,7 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
     ampReadingConv = pwrMonitorInfo->ampReading;
     wattPeakTimeConv = pwrMonitorInfo->wattPeakTime;
     wattReadingConv = pwrMonitorInfo->wattReading;
+#endif
 
     ipmi_time_to_str(cumStartTimeConv, cumStartTime);
 
@@ -3528,6 +3541,10 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
         printf("power headroom  Data               : %x %x %x %x ",
         /*need to look into */                                                                  rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3]);
     powerheadroom= *(( POWER_HEADROOM *)rsp->data);
+#if WORDS_BIGENDIAN
+    powerheadroom.instheadroom = BSWAP_16(powerheadroom.instheadroom);
+    powerheadroom.peakheadroom = BSWAP_16(powerheadroom.peakheadroom);
+#endif
 
     printf ("Headroom\n");
     printf ("Statistic                     Reading\n");   
@@ -3685,6 +3702,11 @@ static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf* intf,
     }
 
     * instpowerconsumptiondata = * ( (IPMI_INST_POWER_CONSUMPTION_DATA*) (rsp->data));
+#if WORDS_BIGENDIAN
+    instpowerconsumptiondata->instanpowerconsumption = BSWAP_16(instpowerconsumptiondata->instanpowerconsumption);
+    instpowerconsumptiondata->instanApms = BSWAP_16(instpowerconsumptiondata->instanApms);
+    instpowerconsumptiondata->resv1 = BSWAP_16(instpowerconsumptiondata->resv1);
+#endif
 
     return 0;
 
@@ -3816,6 +3838,12 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
     }
 
     *pavgpower = *( (IPMI_AVGPOWER_CONSUMP_HISTORY*) rsp->data);
+#if WORDS_BIGENDIAN
+    pavgpower->lastminutepower = BSWAP_16(pavgpower->lastminutepower);
+    pavgpower->lasthourpower = BSWAP_16(pavgpower->lasthourpower);
+    pavgpower->lastdaypower = BSWAP_16(pavgpower->lastdaypower);
+    pavgpower->lastweakpower = BSWAP_16(pavgpower->lastweakpower);
+#endif
 
     return 0;
 }
@@ -3882,6 +3910,16 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
 
     }
     *pstPeakpower =* ((IPMI_POWER_CONSUMP_HISTORY*)rsp->data);
+#if WORDS_BIGENDIAN
+    pstPeakpower->lastminutepower = BSWAP_16(pstPeakpower->lastminutepower);
+    pstPeakpower->lasthourpower = BSWAP_16(pstPeakpower->lasthourpower);
+    pstPeakpower->lastdaypower = BSWAP_16(pstPeakpower->lastdaypower);
+    pstPeakpower->lastweakpower = BSWAP_16(pstPeakpower->lastweakpower);
+    pstPeakpower->lastminutepowertime = BSWAP_32(pstPeakpower->lastminutepowertime);
+    pstPeakpower->lasthourpowertime = BSWAP_32(pstPeakpower->lasthourpowertime);
+    pstPeakpower->lastdaypowertime = BSWAP_32(pstPeakpower->lastdaypowertime);
+    pstPeakpower->lastweekpowertime = BSWAP_32(pstPeakpower->lastweekpowertime);
+#endif
     return 0;
 }
 
@@ -3948,6 +3986,16 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
 
     }
     *pstMinpower =* ((IPMI_POWER_CONSUMP_HISTORY*)rsp->data);
+#if WORDS_BIGENDIAN
+    pstMinpower->lastminutepower = BSWAP_16(pstMinpower->lastminutepower);
+    pstMinpower->lasthourpower = BSWAP_16(pstMinpower->lasthourpower);
+    pstMinpower->lastdaypower = BSWAP_16(pstMinpower->lastdaypower);
+    pstMinpower->lastweakpower = BSWAP_16(pstMinpower->lastweakpower);
+    pstMinpower->lastminutepowertime = BSWAP_32(pstMinpower->lastminutepowertime);
+    pstMinpower->lasthourpowertime = BSWAP_32(pstMinpower->lasthourpowertime);
+    pstMinpower->lastdaypowertime = BSWAP_32(pstMinpower->lastdaypowertime);
+    pstMinpower->lastweekpowertime = BSWAP_32(pstMinpower->lastweekpowertime);
+#endif
     return 0;
 }
 
@@ -4183,6 +4231,15 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
     }
 
     * ipmipowercap = *((IPMI_POWER_CAP*)(rsp->data));
+#if WORDS_BIGENDIAN
+    ipmipowercap->PowerCap = BSWAP_16(ipmipowercap->PowerCap);
+    ipmipowercap->MaximumPowerConsmp = BSWAP_16(ipmipowercap->MaximumPowerConsmp);
+    ipmipowercap->MinimumPowerConsmp = BSWAP_16(ipmipowercap->MinimumPowerConsmp);
+    ipmipowercap->totalnumpowersupp = BSWAP_16(ipmipowercap->totalnumpowersupp);
+    ipmipowercap->AvailablePower = BSWAP_16(ipmipowercap->AvailablePower);
+    ipmipowercap->SystemThrottling = BSWAP_16(ipmipowercap->SystemThrottling);
+    ipmipowercap->Resv = BSWAP_16(ipmipowercap->Resv);
+#endif
 
     return 0;
 }
