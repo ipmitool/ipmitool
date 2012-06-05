@@ -573,6 +573,7 @@ ipmi_main(int argc, char ** argv,
 			if (strncmp(oemtype, "list", 4) == 0 ||
 					strncmp(oemtype, "help", 4) == 0) {
 				ipmi_oem_print();
+				rc = 0;
 				goto out_free;
 			}
 			break;
