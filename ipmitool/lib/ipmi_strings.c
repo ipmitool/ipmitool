@@ -204,6 +204,7 @@ const struct valstr ipmi_authtype_session_vals[] = {
 	{ IPMI_SESSION_AUTHTYPE_MD5,      "MD5" },
 	{ IPMI_SESSION_AUTHTYPE_PASSWORD, "PASSWORD" },
 	{ IPMI_SESSION_AUTHTYPE_OEM,      "OEM" },
+	{ IPMI_SESSION_AUTHTYPE_RMCP_PLUS,"RMCP+" },
 	{ 0xFF,                           NULL },
 };
 
