@@ -4861,7 +4861,7 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
 {
     struct ipmi_rs * rsp = NULL;
     struct ipmi_rq req = {0};
-    uint8_t data[4];
+    uint8_t data[10];
 
     SetLEDSupported = 0;
     req.msg.netfn = DELL_OEM_NETFN;
