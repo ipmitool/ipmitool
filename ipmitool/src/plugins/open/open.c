@@ -113,6 +113,7 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 			intf->my_addr );
 	}
 
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return intf->fd;
 }
 
@@ -125,6 +126,7 @@ ipmi_openipmi_close(struct ipmi_intf * intf)
 	}
 
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
 static struct ipmi_rs *

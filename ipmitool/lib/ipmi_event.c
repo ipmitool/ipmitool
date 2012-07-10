@@ -227,8 +227,8 @@ ipmi_event_find_offset(uint8_t code,
 static void
 print_sensor_states(uint8_t sensor_type, uint8_t event_type)
 {
-	printf("Sensor States: \n  ");
-	ipmi_sdr_print_discrete_state_mini("\n  ", sensor_type,
+	ipmi_sdr_print_discrete_state_mini(
+			"Sensor States: \n  ", "\n  ", sensor_type,
 					   event_type, 0xff, 0xff);
 	printf("\n");
 }

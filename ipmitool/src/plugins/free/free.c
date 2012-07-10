@@ -167,6 +167,7 @@ static int ipmi_free_open(struct ipmi_intf * intf)
 #endif
 
 	intf->opened = 1;
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return 0;
  cleanup:
         if (dev) {
@@ -197,6 +198,7 @@ static void ipmi_free_close(struct ipmi_intf * intf)
 #endif
         }
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
 static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)

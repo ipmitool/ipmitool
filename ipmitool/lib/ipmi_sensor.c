@@ -143,55 +143,13 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 				struct sdr_record_common_sensor *sensor,
 				uint8_t sdr_record_type)
 {
-	char id[17];
-	char *unitstr = "discrete";
-	int validread = 1;
-	uint8_t val = 0;
-	struct ipmi_rs *rsp;
-	struct sdr_record_full_sensor    *full    = NULL;
-	struct sdr_record_compact_sensor *compact = NULL;
+	const char *id;
+	struct sensor_reading *sr;
 
-	if (sensor == NULL)
+	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 3);
+
+	if (sr == NULL) {
 		return -1;
-
-	switch (sdr_record_type) {
-		case (SDR_RECORD_TYPE_FULL_SENSOR):
-			full = (struct sdr_record_full_sensor *)sensor;
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			compact = (struct sdr_record_compact_sensor *)sensor;
-			break;
-		default:
-			return -1;
-	}
-
-	memset(id, 0, sizeof (id));
-	memcpy(id, full ? full->id_string : compact->id_string, 16);
-
-	/*
-	 * Get current reading
-	 */
-	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
-					       sensor->keys.sensor_num,
-					       sensor->keys.owner_id,
-					       sensor->keys.lun,
-					       sensor->keys.channel);
-	if (rsp == NULL) {
-		/*
-		 * Why can't we just set validread equal to zero and fall
-		 * though in the same way ipmi_sdr_print_sensor_fc does?
-		 * All the cases below correctly handle validread.
-		 */
-		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
-			id, sensor->keys.sensor_num);
-		return -1;
-	} else if (rsp->ccode || IS_READING_UNAVAILABLE(rsp->data[1])) {
-		validread = 0;
-	} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
-	  	validread = 0;
-	} else {
-		/* convert RAW reading into units */
-		val = rsp->data[0];
 	}
 
 	if (csv_output) {
@@ -201,14 +159,20 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 			/* output format
 			 *   id value units status thresholds....
 			 */
-			printf("%-16s ", id);
-			if (validread) {
-				printf("| 0x%-8x | %-10s | 0x%02x%02x",
-				       val,
-				       unitstr, rsp->data[2], rsp->data[3]);
+			printf("%-16s ", sr->s_id);
+			if (sr->s_reading_valid) {
+				if (sr->s_has_analog_value) {
+					/* don't show discrete component */
+					printf("| %-10s | %-10s | %-6s",
+					       sr->s_a_str, sr->s_a_units, "ok");
+				} else {
+					printf("| 0x%-8x | %-10s | 0x%02x%02x",
+					       sr->s_reading, "discrete",
+					       sr->s_data2, sr->s_data3);
+				}
 			} else {
 				printf("| %-10s | %-10s | %-6s",
-				       "na", unitstr, "na");
+				       "na", "discrete", "na");
 			}
 			printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s",
 			       "na", "na", "na", "na", "na", "na");
@@ -216,27 +180,22 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 			printf("\n");
 		} else {
 			printf("Sensor ID              : %s (0x%x)\n",
-			       id, sensor->keys.sensor_num);
+			       sr->s_id, sensor->keys.sensor_num);
 			printf(" Entity ID             : %d.%d\n",
 			       sensor->entity.id, sensor->entity.instance);
 			printf(" Sensor Type (Discrete): %s\n",
 			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
 							     type));
-			if( validread )
+			if( sr->s_reading_valid )
 			{
+				if (sr->s_has_analog_value) {
+					printf(" Sensor Reading        : %s %s\n", sr->s_a_str, sr->s_a_units);
+				}
 				ipmi_sdr_print_discrete_state("States Asserted",
 							sensor->sensor.type,
 							sensor->event_type,
-							rsp->data[2],
-							rsp->data[3]);
-				if (compact) {
-					printf(" Raw Data: %X", rsp->data[1]);
-					if(rsp->data_len > 2)
-						printf(" %X", rsp->data[2]);
-					if(rsp->data_len > 3)
-						printf(" %X", rsp->data[3]);
-					printf("\n");
-				}
+							sr->s_data2,
+							sr->s_data3);
 				printf("\n");
 			} else {
 			   printf(" Unable to read sensor: Device Not Present\n\n");
@@ -244,7 +203,7 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 	   }
 	}
 
-	return (validread ? 0 : -1 );
+	return (sr->s_reading_valid ? 0 : -1 );
 }
 
 static void
@@ -272,100 +231,50 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 			      struct sdr_record_common_sensor *sensor,
 			      uint8_t sdr_record_type)
 {
-	const char *unitstr = NULL;
-	char id[17];
-	int validread = 1, thresh_available = 1;
-	double val = 0.0;	/* converted analog value if a valid read */
-	uint8_t get_sens_read = 0;/* discrete value if a valid read*/
+	int thresh_available = 1;
 	struct ipmi_rs *rsp;
-	const char *thresh_status = "";
-	struct sdr_record_full_sensor    *full    = NULL;
-	struct sdr_record_compact_sensor *compact = NULL;
+	struct sensor_reading *sr;
 
-	if (sensor == NULL)
+	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 3);
+
+	if (sr == NULL) {
 		return -1;
-
-	switch (sdr_record_type) {
-		case (SDR_RECORD_TYPE_FULL_SENSOR):
-			full = (struct sdr_record_full_sensor *)sensor;
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			compact = (struct sdr_record_compact_sensor *)sensor;
-			break;
-		default:
-			return -1;
 	}
 
-	memset(id, 0, sizeof (id));
-	memcpy(id, full ? full->id_string : compact->id_string, 16);
+	const char *thresh_status = ipmi_sdr_get_thresh_status(sr, "ns");
 
-	/*
-	 * Get current reading
-	 */
-	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
-					       sensor->keys.sensor_num,
-					       sensor->keys.owner_id,
-					       sensor->keys.lun,
-					       sensor->keys.channel);
-	if (rsp == NULL) {
-		/*
-		 * Why can't we just set validread equal to zero and fall
-		 * though in the same way ipmi_sdr_print_sensor_fc does?
-		 * All the cases below correctly handle validread.
-		 */
-		lprintf(LOG_ERR, "Error reading sensor %s (#%02x)",
-			id, sensor->keys.sensor_num);
-		return -1;
-	} else if (rsp->ccode || IS_READING_UNAVAILABLE(rsp->data[1])) {
-		validread = 0;
-	} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
-		validread = 0;
-	} else {
-
-		/* Store off for use later */
-		get_sens_read = rsp->data[0];
-
-		val = sdr_convert_analog_reading(intf, full, get_sens_read, &validread);
-		thresh_status = ipmi_sdr_get_thresh_status(rsp, validread, "ns");
-	}
-
-	/*
-	 * Figure out units
-	 */
-	unitstr = ipmi_sdr_get_unit_string(sensor->unit.pct,
-					   sensor->unit.modifier,
-					   sensor->unit.type.base,
-					   sensor->unit.type.modifier);
 	/*
 	 * Get sensor thresholds
 	 */
-	rsp = ipmi_sdr_get_sensor_thresholds(intf, sensor->keys.sensor_num,
-				sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
-	if ((rsp == NULL) || (rsp->ccode > 0))
+	rsp = ipmi_sdr_get_sensor_thresholds(intf,
+				sensor->keys.sensor_num, sensor->keys.owner_id,
+				sensor->keys.lun, sensor->keys.channel);
+
+	if ((rsp == NULL) || (rsp->ccode > 0) || (rsp->data_len == 0))
 		thresh_available = 0;
 
 	if (csv_output) {
-		/* NOT IPMLEMENTED */
+		/* NOT IMPLEMENTED */
 	} else {
 		if (verbose == 0) {
 			/* output format
 			 *   id value units status thresholds....
 			 */
-			printf("%-16s ", id);
-			if (validread) {
-				if (full && !UNITS_ARE_DISCRETE(sensor))
+			printf("%-16s ", sr->s_id);
+			if (sr->s_reading_valid) {
+				if (sr->s_has_analog_value)
 					printf("| %-10.3f | %-10s | %-6s",
-					       val, unitstr, thresh_status);
+					       sr->s_a_val, sr->s_a_units, thresh_status);
 				else
 					printf("| 0x%-8x | %-10s | %-6s",
-					       get_sens_read, unitstr, thresh_status);
+					       sr->s_reading, sr->s_a_units, thresh_status);
 			} else {
 				printf("| %-10s | %-10s | %-6s",
-				       "na", unitstr, "na");
+				       "na", sr->s_a_units, "na");
 			}
-			if (thresh_available && full) {
+			if (thresh_available && sr->full) {
 #define PTS(bit, dataidx) {						\
-	print_thresh_setting(full, rsp->data[0] & (bit),  		\
+	print_thresh_setting(sr->full, rsp->data[0] & (bit),  		\
 	    rsp->data[(dataidx)], "| ", "%-10.3f", "0x-8x", "%-10s");	\
 }
 				PTS(LOWER_NON_RECOV_SPECIFIED,	3);
@@ -384,7 +293,7 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 			printf("\n");
 		} else {
 			printf("Sensor ID              : %s (0x%x)\n",
-			       id, sensor->keys.sensor_num);
+			       sr->s_id, sensor->keys.sensor_num);
 
 			printf(" Entity ID             : %d.%d\n",
 			       sensor->entity.id, sensor->entity.instance);
@@ -394,32 +303,35 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 							     type));
 
 			printf(" Sensor Reading        : ");
-			if (validread) {
-				if (full) {
-					uint16_t raw_tol = __TO_TOL(full->mtol);
-					if (!UNITS_ARE_DISCRETE(sensor)) {
+			if (sr->s_reading_valid) {
+				if (sr->full) {
+					uint16_t raw_tol = __TO_TOL(sr->full->mtol);
+					if (sr->s_has_analog_value) {
 						double tol =
-						    sdr_convert_sensor_tolerance(full,
+						    sdr_convert_sensor_tolerance(sr->full,
 									       raw_tol);
 						printf("%.*f (+/- %.*f) %s\n",
-						       (val == (int) val) ? 0 : 3, val,
+						       (sr->s_a_val == (int)
+						       sr->s_a_val) ? 0 : 3,
+						       sr->s_a_val,
 						       (tol == (int) tol) ? 0 : 3, tol,
-						       unitstr);
+						       sr->s_a_units);
 					} else {
 						printf("0x%x (+/- 0x%x) %s\n",
-						       get_sens_read,
+						       sr->s_reading,
 						       raw_tol,
-						       unitstr);
+						       sr->s_a_units);
 					}
 				} else {
-					printf("0x%x %s\n", get_sens_read, unitstr);
+					printf("0x%x %s\n", sr->s_reading,
+					sr->s_a_units);
 				}
 				printf(" Status                : %s\n", thresh_status);
 
 				if (thresh_available) {
-					if (full) {
+					if (sr->full) {
 #define PTS(bit, dataidx, str) { 			\
-print_thresh_setting(full, rsp->data[0] & (bit),	\
+print_thresh_setting(sr->full, rsp->data[0] & (bit),	\
 		     rsp->data[(dataidx)], 		\
 		    (str), "%.3f\n", "0x%x\n", "%s\n"); \
 }
@@ -433,14 +345,14 @@ print_thresh_setting(full, rsp->data[0] & (bit),	\
 #undef PTS
 
 					}
-					ipmi_sdr_print_sensor_hysteresis(sensor, full,
-						full ?  full->threshold.hysteresis.positive :
-						compact->threshold.hysteresis.positive,
+					ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
+						sr->full ?  sr->full->threshold.hysteresis.positive :
+						sr->compact->threshold.hysteresis.positive,
 						"Positive Hysteresis");
 
-					ipmi_sdr_print_sensor_hysteresis(sensor, full,
-						full ?  full->threshold.hysteresis.negative :
-						compact->threshold.hysteresis.negative,
+					ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
+						sr->full ?  sr->full->threshold.hysteresis.negative :
+						sr->compact->threshold.hysteresis.negative,
 						"Negative Hysteresis");
 				} else {
 					printf(" Sensor Threshold Settings not available\n");
@@ -472,7 +384,7 @@ print_thresh_setting(full, rsp->data[0] & (bit),	\
 		}
 	}
 
-	return (validread ? 0 : -1 );
+	return (sr->s_reading_valid ? 0 : -1 );
 }
 
 int
@@ -502,7 +414,6 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 	}
 
 	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
-		int r = 0;
 		uint8_t *rec;
 
 		rec = ipmi_sdr_get_record(intf, header, itr);
@@ -514,7 +425,7 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			r = ipmi_sensor_print_fc(intf,
+			ipmi_sensor_print_fc(intf,
 						   (struct
 						    sdr_record_common_sensor *)
 						   rec,
@@ -781,9 +692,7 @@ static int
 ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct sdr_record_list *sdr;
-	struct ipmi_rs *rsp;
 	int i, rc=0;
-	double val = 0.0;
 
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
 		lprintf(LOG_NOTICE, "sensor reading <id> ... [id]");
@@ -802,48 +711,34 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 
 		switch (sdr->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
-			/* Only Threshold can return an analog reading */
-			if (!IS_THRESHOLD_SENSOR(sdr->record.common)) {
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+		{
+			struct sensor_reading *sr;
+			struct sdr_record_common_sensor	*sensor = sdr->record.common;
+			sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr->type, 3);
+
+			if (sr == NULL) {
+				rc = -1;
+				continue;
+			}
+
+			if (!sr->full)
+				continue;
+
+			if (!sr->s_reading_valid)
+				continue;
+
+			if (!sr->s_has_analog_value) {
 				lprintf(LOG_ERR, "Sensor \"%s\" is a discrete sensor!", argv[i]);
 				continue;
 			}
-			if (sdr->record.full->linearization >= SDR_SENSOR_L_NONLINEAR) {
-				lprintf(LOG_ERR, "Sensor \"%s\" non-linear!", argv[i]);
-				continue;
-			}
-			rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
-							       sdr->record.common->keys.sensor_num,
-							       sdr->record.common->keys.owner_id,
-							       sdr->record.common->keys.lun,
-							       sdr->record.common->keys.channel);
-			if (rsp == NULL) {
-				lprintf(LOG_ERR, "Error reading sensor \"%s\"", argv[i]);
-				rc = -1;
-				continue;
-			} else if (rsp->ccode > 0) {
-				continue;
-			} else if (IS_READING_UNAVAILABLE(rsp->data[1])) {
-				continue;
-			} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
-				continue;
-			} else if (rsp->data[0] > 0) {
-				/* convert RAW reading into units */
-				val = sdr_convert_sensor_reading(sdr->record.full, rsp->data[0]);
-			} else {
-				val = 0.0;
-			}
-
 			if (csv_output)
-				printf("%s,%.*f\n", argv[i],
-				       (val == (int)val) ? 0 : 3, val);
+				printf("%s,%s\n", argv[i], sr->s_a_str);
 			else
-				printf("%-16s | %.*f\n", argv[i],
-				       (val == (int)val) ? 0 : 3, val);
+				printf("%-16s | %s\n", argv[i], sr->s_a_str);
 
 			break;
-
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			break;
+		}
 		default:
 			continue;
 		}

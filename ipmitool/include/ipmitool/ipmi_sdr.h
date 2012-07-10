@@ -820,6 +820,22 @@ static const char *sensor_type_desc[] __attribute__ ((unused)) = {
 	    "Management Subsystem Health", "Battery","Session Audit",
        "Version Change","FRU State" };
 
+struct sensor_reading {
+	char		s_id[17];		/* name of the sensor */
+	struct sdr_record_full_sensor    *full;
+	struct sdr_record_compact_sensor *compact;
+	uint8_t		s_reading_valid;	/* read value valididity */
+	uint8_t		s_scanning_disabled;	/* read of value disabled */
+	uint8_t		s_reading_unavailable;	/* read value unavailable */
+	uint8_t		s_reading;		/* value which was read */
+	uint8_t		s_data2;		/* data2 value read */
+	uint8_t		s_data3;		/* data3 value read */
+	uint8_t		s_has_analog_value;	/* sensor has analog value */
+	double		s_a_val;		/* read value converted to analog */
+	char		s_a_str[16];		/* analog value as a string */
+	const char	*s_a_units;		/* analog value units string */
+};
+
 struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf,
                                          int use_builtin);
 struct sdr_get_rs *ipmi_sdr_get_next_header(struct ipmi_intf *intf,
@@ -829,7 +845,7 @@ uint8_t *ipmi_sdr_get_record(struct ipmi_intf *intf, struct sdr_get_rs *header,
 void ipmi_sdr_end(struct ipmi_intf *intf, struct ipmi_sdr_iterator *i);
 int ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type);
 
-int ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id, 
+int ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id,
                                       uint8_t type,uint8_t * raw);
 int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
@@ -841,16 +857,17 @@ void ipmi_sdr_print_sensor_hysteresis(struct sdr_record_common_sensor *sensor,
 		 const char *hdrstr);
 const char *ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type,
 				      uint8_t base, uint8_t modifier);
-const char *ipmi_sdr_get_thresh_status(struct ipmi_rs *rsp,
-				int validread, const char *invalidstr);
+struct sensor_reading *
+ipmi_sdr_read_sensor_value(struct ipmi_intf *intf,
+		struct sdr_record_common_sensor *sensor,
+		uint8_t sdr_record_type, int precision);
+const char *ipmi_sdr_get_thresh_status(struct sensor_reading *sr,
+					const char *invalidstr);
 const char *ipmi_sdr_get_status(int, const char *, uint8_t stat);
 double sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
 double sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
-double sdr_convert_analog_reading(struct ipmi_intf *intf,
-			    struct sdr_record_full_sensor *sensor, uint8_t read,
-			    int *convert_success);
 double sdr_convert_sensor_hysterisis(struct sdr_record_full_sensor *sensor,
 				  uint8_t val);
 uint8_t sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor *sensor,
@@ -901,7 +918,7 @@ int ipmi_sdr_print_info(struct ipmi_intf *intf);
 void ipmi_sdr_print_discrete_state(const char *desc, uint8_t sensor_type,
 				   uint8_t event_type, uint8_t state1,
 				   uint8_t state2);
-void ipmi_sdr_print_discrete_state_mini(const char *separator,
+void ipmi_sdr_print_discrete_state_mini(const char *header, const char *separator,
 					uint8_t sensor_type, uint8_t event_type,
 					uint8_t state1, uint8_t state2);
 int ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,

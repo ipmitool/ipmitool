@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2012 Hewlett-Packard Development Company, L.P.
+ *
+ * Based on code from
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,48 +109,67 @@ ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifi
 		}
 		break;
 	}
-
 	return unitstr;
 }
 
-/* sdr_convert_analog_reading  -  convert raw sensor reading to analog
+/* sdr_sensor_has_analog_reading  -  Determine if sensor has an analog reading
  *
- * @sensor:		sensor record
- * @raed:		raw sensor reading
- * @convert_success:	raw sensor reading
- *
- *
- * returns floating-point sensor reading and conversion status
  */
-double
-sdr_convert_analog_reading(struct ipmi_intf *intf,
-			    struct sdr_record_full_sensor *full, uint8_t read,
-			    int *convert_success)
+static int
+sdr_sensor_has_analog_reading(struct ipmi_intf *intf,
+			    struct sensor_reading *sr)
 {
-	/* Compact sensors can't return analog values so we return zero */
-	if (!full) {
-		return 0.0;
+	/* Compact sensors can't return analog values so we false */
+	if (!sr->full) {
+		return 0;
 	}
 	/*
-	 * Only Full Threshold sensors with analog readings can be converted.
-	 * If this not the case, we return zero
+	 * Per the IPMI Specification:
+	 *	Only Full Threshold sensors are identified as providing
+	 *	analog readings.
+	 *
+	 * But... HP didn't interpret this as meaning that "Only Threshold
+	 *        Sensors" can provide analog readings.  So, HP packed analog
+	 *        readings into some of their non-Threshold Sensor.   There is
+	 *	  nothing that explictly prohibits this in the spec, so if
+	 *	  an Analog reading is available in a Non-Threshod sensor and
+	 *	  there are units specified for identifying the reading then
+	 *	  we do an analog conversion even though the sensor is
+	 *	  non-Threshold.   To be safe, we provide this extension for
+	 *	  HP.
+	 *
 	 */
-	if ( !(IS_THRESHOLD_SENSOR(&full->cmn) &&
-			!UNITS_ARE_DISCRETE(&full->cmn)) ) {
-		return 0.0;
+	if ( UNITS_ARE_DISCRETE(&sr->full->cmn) ) {
+		return 0;/* Sensor specified as not having Analog Units */
+	}
+	if ( !IS_THRESHOLD_SENSOR(&sr->full->cmn) ) {
+		/* Non-Threshold Sensors are not defined as having analog */
+		/* But.. We have one with defined with Analog Units */
+		if ( (sr->full->cmn.unit.pct | sr->full->cmn.unit.modifier |
+			 sr->full->cmn.unit.type.base |
+			 sr->full->cmn.unit.type.modifier)) {
+			 /* And it does have the necessary units specs */
+			 if ( !(intf->manufacturer_id == IPMI_OEM_HP) ) {
+				/* But to be safe we only do this for HP */
+				return 0;
+			 }
+		} else {
+			return 0;
+		}
 	}
 	/*
 	 * If sensor has linearization, then we should be able to update the
 	 * reading factors and if we cannot fail the conversion.
 	 */
-	if (full->linearization >= SDR_SENSOR_L_NONLINEAR &&
-	    full->linearization <= 0x7F) {
-		if (ipmi_sensor_get_sensor_reading_factors(intf, full, read) < 0){
-			*convert_success = 0;
+	if (sr->full->linearization >= SDR_SENSOR_L_NONLINEAR &&
+	    sr->full->linearization <= 0x7F) {
+		if (ipmi_sensor_get_sensor_reading_factors(intf, sr->full, sr->s_reading) < 0){
+			sr->s_reading_valid = 0;
+			return 0;
 		}
 	}
 
-	return sdr_convert_sensor_reading(full, read);
+	return 1;
 }
 
 /* sdr_convert_sensor_reading  -  convert raw sensor reading
@@ -672,13 +694,13 @@ ipmi_sdr_get_sensor_type_desc(const uint8_t type)
  *   ns = not specified
  */
 const char *
-ipmi_sdr_get_thresh_status(struct ipmi_rs *rsp, int validread, const char *invalidstr)
+ipmi_sdr_get_thresh_status(struct sensor_reading *sr, const char *invalidstr)
 {
 	uint8_t stat;
-	if (!validread) {
+	if (!sr->s_reading_valid) {
 	    return invalidstr;
 	}
-	stat = rsp->data[2];
+	stat = sr->s_data2;
 	if (stat & SDR_SENSOR_STAT_LO_NR) {
 		if (verbose)
 			return "Lower Non-Recoverable";
@@ -938,7 +960,7 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 			sensor_num, val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-
+	/* There is an assumption here that data_len >= 1 */
 	if (IS_READING_UNAVAILABLE(rsp->data[0])) {
 		printf(" Event Status          : Unavailable\n");
 		return 0;
@@ -1315,39 +1337,152 @@ print_sensor_min_max(struct sdr_record_full_sensor *full)
 
 /* print_csv_discrete  -  print csv formatted discrete sensor
  *
- * @rsp:		response from Get Sensor Reading comand
  * @sensor:		common sensor structure
- * @validread:		validity of get sensor read command data
+ * @sr:			sensor reading
  *
  * returns void
  */
 static void
-print_csv_discrete(struct ipmi_rs *rsp,
-		   struct sdr_record_common_sensor    *sensor,
-		   int validread)
+print_csv_discrete(struct sdr_record_common_sensor    *sensor,
+		   const struct sensor_reading *sr)
 {
-	printf("%02Xh,", sensor->keys.sensor_num);
-
-	if (validread == 0 || rsp->ccode != 0) {
-		printf("ns,%d.%d,No Reading",
+	if (!sr->s_reading_valid  || sr->s_reading_unavailable) {
+		printf("%02Xh,ns,%d.%d,No Reading",
+		       sensor->keys.sensor_num,
 		       sensor->entity.id,
 		       sensor->entity.instance);
-	} else if (rsp->ccode == 0) {
-		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
-			printf("ns,%d.%d,No Reading",
-			       sensor->entity.id,
-			       sensor->entity.instance);
-		} else {
-			printf("ok,%d.%d,",
-			       sensor->entity.id,
-			       sensor->entity.instance);
-			ipmi_sdr_print_discrete_state_mini(", ",
-				sensor->sensor.type,
-				sensor->event_type,
-				rsp->data[2],
-				rsp->data[3]);
-		}
+		return;
 	}
+
+	if (sr->s_has_analog_value) {	/* Sensor has an analog value */
+		printf("%s,%s,", sr->s_a_str, sr->s_a_units);
+	} else {	/* Sensor has a discrete value */
+		printf("%02Xh,", sensor->keys.sensor_num);
+	}
+	printf("ok,%d.%d,",
+	       sensor->entity.id,
+	       sensor->entity.instance);
+	ipmi_sdr_print_discrete_state_mini(NULL, ", ",
+		sensor->sensor.type,
+		sensor->event_type,
+		sr->s_data2,
+		sr->s_data3);
+}
+
+/* ipmi_sdr_read_sensor_value  -  read sensor value
+ *
+ * @intf		Interface pointer
+ * @sensor		Common sensor component pointer
+ * @sdr_record_type	Type of sdr sensor record
+ * @precision		decimal precision for analog format conversion
+ *
+ * returns a pointer to sensor value reading data structure
+ */
+struct sensor_reading *
+ipmi_sdr_read_sensor_value(struct ipmi_intf *intf,
+		 struct sdr_record_common_sensor *sensor,
+		 uint8_t sdr_record_type, int precision)
+{
+	static struct sensor_reading sr;
+
+	if (sensor == NULL)
+		return NULL;
+
+	/* Initialize to reading valid value of zero */
+	memset(&sr, 0, sizeof(sr));
+
+	switch (sdr_record_type) {
+		int idlen;
+		case (SDR_RECORD_TYPE_FULL_SENSOR):
+			sr.full = (struct sdr_record_full_sensor *)sensor;
+			idlen = sr.full->id_code & 0x1f;
+			idlen = idlen < sizeof(sr.s_id) ?
+						idlen : sizeof(sr.s_id) - 1;
+			memcpy(sr.s_id, sr.full->id_string, idlen);
+			break;
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			sr.compact = (struct sdr_record_compact_sensor *)sensor;
+			idlen = sr.compact->id_code & 0x1f;
+			idlen = idlen < sizeof(sr.s_id) ?
+						idlen : sizeof(sr.s_id) - 1;
+			memcpy(sr.s_id, sr.compact->id_string, idlen);
+			break;
+		default:
+			return NULL;
+	}
+
+	/*
+	 * Get current reading via IPMI interface
+	 */
+	struct ipmi_rs *rsp;
+	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+					       sensor->keys.sensor_num,
+					       sensor->keys.owner_id,
+					       sensor->keys.lun,
+					       sensor->keys.channel);
+	sr.s_a_val   = 0.0;	/* init analog value to a floating point 0 */
+	sr.s_a_str[0] = '\0';	/* no converted analog value string */
+	sr.s_a_units = "";	/* no converted analog units units */
+
+
+	if (rsp == NULL) {
+		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
+			sr.s_id, sensor->keys.sensor_num);
+		return &sr;
+	}
+
+	if (rsp->ccode) {
+		if ( !((sr.full    && rsp->ccode == 0xcb) ||
+		       (sr.compact && rsp->ccode == 0xcd)) ) {
+			lprintf(LOG_DEBUG,
+				"Error reading sensor %s (#%02x): %s", sr.s_id,
+				sensor->keys.sensor_num,
+				val2str(rsp->ccode, completion_code_vals));
+		}
+		return &sr;
+	}
+
+	if (rsp->data_len < 2) {
+		/*
+		 * We must be returned both a value (data[0]), and the validity
+		 * of the value (data[1]), in order to correctly interpret
+		 * the reading.    If we don't have both of these we can't have
+		 * a valid sensor reading.
+		 */
+		lprintf(LOG_DEBUG, "Error reading sensor %s invalid len %d",
+			sr.s_id, rsp->data_len);
+		return &sr;
+	}
+
+
+	if (IS_READING_UNAVAILABLE(rsp->data[1]))
+		sr.s_reading_unavailable = 1;
+
+	if (IS_SCANNING_DISABLED(rsp->data[1])) {
+		sr.s_scanning_disabled = 1;
+		lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
+			sr.s_id, sensor->keys.sensor_num);
+		return &sr;
+	}
+	sr.s_reading_valid = 1;
+	sr.s_reading = rsp->data[0];
+	if (rsp->data_len > 2)
+		sr.s_data2   = rsp->data[2];
+	if (rsp->data_len > 3)
+		sr.s_data3   = rsp->data[3];
+	if (sdr_sensor_has_analog_reading(intf, &sr)) {
+		sr.s_has_analog_value = 1;
+		sr.s_a_val = sdr_convert_sensor_reading(sr.full, sr.s_reading);
+		/* determine units string with possible modifiers */
+		sr.s_a_units = ipmi_sdr_get_unit_string(sr.full->cmn.unit.pct,
+					   sr.full->cmn.unit.modifier,
+					   sr.full->cmn.unit.type.base,
+					   sr.full->cmn.unit.type.modifier);
+		snprintf(sr.s_a_str, sizeof(sr.s_a_str), "%.*f",
+			(sr.s_a_val == (int) sr.s_a_val) ? 0 :
+			precision, sr.s_a_val);
+	}
+	return &sr;
 }
 
 /* ipmi_sdr_print_sensor_fc  -  print full & compact SDR records
@@ -1364,88 +1499,21 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 			   struct sdr_record_common_sensor    *sensor,
 			   uint8_t sdr_record_type)
 {
-	const char *unitstr = NULL;
-	char sval[16], desc[17];
-	int i = 0, validread = 1;
-	double val = 0.0;
-	struct ipmi_rs *rsp;
+	char sval[16];
+	int i = 0;
 	uint8_t target, lun, channel;
-	struct sdr_record_full_sensor    *full    = NULL;
-	struct sdr_record_compact_sensor *compact = NULL;
+	struct sensor_reading *sr;
 
-	if (sensor == NULL)
+
+	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 2);
+
+	if (sr == NULL)
 		return -1;
-
-	switch (sdr_record_type) {
-		case (SDR_RECORD_TYPE_FULL_SENSOR):
-			full = (struct sdr_record_full_sensor *)sensor;
-			break;
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			compact = (struct sdr_record_compact_sensor *)sensor;
-			break;
-		default:
-			return -1;
-	}
 
 	target = sensor->keys.owner_id;
 	lun = sensor->keys.lun;
 	channel = sensor->keys.channel;
 
-	memset(desc, 0, sizeof (desc));
-	if (full) {
-		snprintf(desc, (full->id_code & 0x1f) + 1, "%s", full->id_string);
-	} else {
-		snprintf(desc, (compact->id_code & 0x1f) + 1, "%s", compact->id_string);
-	}
-	/* get sensor reading */
-	rsp = ipmi_sdr_get_sensor_reading_ipmb(intf, sensor->keys.sensor_num,
-		sensor->keys.owner_id, sensor->keys.lun, sensor->keys.channel);
-	if (rsp == NULL) {
-		lprintf(LOG_DEBUG, "Error reading sensor %s (#%02x)",
-			desc, sensor->keys.sensor_num);
-		validread = 0;
-	}
-	else if (rsp->ccode > 0) {
-		validread = 0;
-		if ( !((full	&& rsp->ccode == 0xcb) ||
-		       (compact	&& rsp->ccode == 0xcd)) ) {
-			lprintf(LOG_DEBUG,
-				"Error reading sensor %s (#%02x): %s", desc,
-				sensor->keys.sensor_num,
-				val2str(rsp->ccode, completion_code_vals));
-		}
-	} else {
-		if (IS_READING_UNAVAILABLE(rsp->data[1])) {
-			/* sensor reading unavailable */
-			validread = 0;
-		} else if (IS_SCANNING_DISABLED(rsp->data[1])) {
-			validread = 0;
-			/* Sensor Scanning Disabled */
-			lprintf(LOG_DEBUG, "Sensor %s (#%02x) scanning disabled",
-				desc, sensor->keys.sensor_num);
-			/*
-			 * No scanning, but when we read we got something other than 0.
-			 * Alas, someone believes that this might mean there is more
-			 * interesting information yet to be gained, so the keep digging
-			 * the hole deeper.   Beware of miss-information if you take
-			 * this path.
-			 */
-			if (rsp->data[0] != 0) {
-				val = sdr_convert_analog_reading(intf, full, rsp->data[0], &validread);
-				if (val != 0.0) /* .. an 0.0 might as well be valid */
-					validread = 1;
-			}
-		} else {
-			val = sdr_convert_analog_reading(intf, full, rsp->data[0], &validread);
-		}
-	}
-
-
-	/* determine units with possible modifiers */
-	unitstr = ipmi_sdr_get_unit_string(sensor->unit.pct,
-					   sensor->unit.modifier,
-					   sensor->unit.type.base,
-					   sensor->unit.type.modifier);
 	/*
 	 * CSV OUTPUT
 	 */
@@ -1454,22 +1522,24 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		/*
 		 * print sensor name, reading, unit, state
 		 */
-		printf("%s,", desc);
+		printf("%s,", sr->s_id);
 		if (!IS_THRESHOLD_SENSOR(sensor)) {
 			/* Discrete/Non-Threshold */
-			print_csv_discrete(rsp, sensor, validread);
+			print_csv_discrete(sensor, sr);
 			printf("\n");
 		}
 		else {
 			/* Threshold Analog & Discrete*/
-			if (validread) {
-				if (full && !UNITS_ARE_DISCRETE(&full->cmn)) {
+			if (sr->s_reading_valid) {
+				if (sr->s_has_analog_value) {
 					/* Analog/Threshold */
-					printf("%.*f,", (val == (int) val) ? 0 : 3, val);
-					printf("%s,%s", unitstr,
-					       ipmi_sdr_get_thresh_status(rsp, validread, "ns"));
+					printf("%.*f,", (sr->s_a_val ==
+					(int) sr->s_a_val) ? 0 : 3,
+					sr->s_a_val);
+					printf("%s,%s", sr->s_a_units,
+					       ipmi_sdr_get_thresh_status(sr, "ns"));
 				} else { /* Discrete/Threshold */
-					print_csv_discrete(rsp, sensor, validread);
+					print_csv_discrete(sensor, sr);
 				}
 			} else {
 				printf(",,ns");
@@ -1482,35 +1552,35 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 				       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
 								     type));
 
-				if (full) {
-					SENSOR_PRINT_CSV(full, full->analog_flag.nominal_read,
-						full->nominal_read);
-					SENSOR_PRINT_CSV(full, full->analog_flag.normal_min,
-						full->normal_min);
-					SENSOR_PRINT_CSV(full, full->analog_flag.normal_max,
-						     full->normal_max);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.unr,
-						full->threshold.upper.non_recover);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.ucr,
-						full->threshold.upper.critical);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.unc,
-						full->threshold.upper.non_critical);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.lnr,
-						full->threshold.lower.non_recover);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.lcr,
-						full->threshold.lower.critical);
-					SENSOR_PRINT_CSV(full, sensor->mask.type.threshold.read.lnc,
-						full->threshold.lower.non_critical);
+				if (sr->full) {
+					SENSOR_PRINT_CSV(sr->full, sr->full->analog_flag.nominal_read,
+						sr->full->nominal_read);
+					SENSOR_PRINT_CSV(sr->full, sr->full->analog_flag.normal_min,
+						sr->full->normal_min);
+					SENSOR_PRINT_CSV(sr->full, sr->full->analog_flag.normal_max,
+						     sr->full->normal_max);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.unr,
+						sr->full->threshold.upper.non_recover);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.ucr,
+						sr->full->threshold.upper.critical);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.unc,
+						sr->full->threshold.upper.non_critical);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.lnr,
+						sr->full->threshold.lower.non_recover);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.lcr,
+						sr->full->threshold.lower.critical);
+					SENSOR_PRINT_CSV(sr->full, sensor->mask.type.threshold.read.lnc,
+						sr->full->threshold.lower.non_critical);
 
-					if (UNITS_ARE_DISCRETE(&full->cmn)) {
-						printf("0x%02X,0x%02X", full->sensor_min, full->sensor_max);
+					if (UNITS_ARE_DISCRETE(sensor)) {
+						printf("0x%02X,0x%02X", sr->full->sensor_min, sr->full->sensor_max);
 					}
 					else {
 						printf("%.3f,%.3f",
-						       sdr_convert_sensor_reading(full,
-									      full->sensor_min),
-						       sdr_convert_sensor_reading(full,
-									      full->sensor_max));
+						       sdr_convert_sensor_reading(sr->full,
+									      sr->full->sensor_min),
+						       sdr_convert_sensor_reading(sr->full,
+									      sr->full->sensor_max));
 					}
 				} else {
 					printf(",,,,,,,,,,");
@@ -1530,48 +1600,35 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		/*
 		 * print sensor name, reading, state
 		 */
-		printf("%-16s | ", desc);
+		printf("%-16s | ", sr->s_id);
 
-		i = 0;
 		memset(sval, 0, sizeof (sval));
 
-		if (validread) {
-			if (IS_THRESHOLD_SENSOR(sensor)) {
-				/* Threshold Analog & Discrete */
-				if( full && (!UNITS_ARE_DISCRETE(sensor)) ) {
-					i += snprintf(sval, sizeof (sval), "%.*f %s",
-							      (val == (int) val) ? 0 : 2, val,
-							      unitstr);
-				} else /* Discrete */
-					 /*
-					  * N.B.  data[0] is supposed to be ignored if not
-					  *       an analog reading.  Should this be data[2]
-					  * 	  like the following non-threshold print?
-					  */
-					i += snprintf(sval, sizeof (sval), "0x%02X", rsp->data[0]);
-			}
-			else {
-				/* Discrete */
-				i += snprintf(sval, sizeof (sval), "0x%02x", rsp->data[2]);
-			}
+		if (sr->s_reading_valid) {
+			if( sr->s_has_analog_value ) {
+				snprintf(sval, sizeof (sval), "%s %s",
+						      sr->s_a_str,
+						      sr->s_a_units);
+			} else /* Discrete */
+				snprintf(sval, sizeof(sval),
+					"0x%02x", sr->s_reading);
 		}
-		else if (rsp && (rsp->ccode == 0) && IS_SCANNING_DISABLED(rsp->data[1]))
-			i += snprintf(sval, sizeof (sval), full ? "disabled "   : "Not Readable ");
+		else if (sr->s_scanning_disabled)
+			snprintf(sval, sizeof (sval), sr->full ? "disabled"   : "Not Readable");
 		else
-			i += snprintf(sval, sizeof (sval), full ? "no reading " : "Not Readable ");
+			snprintf(sval, sizeof (sval), sr->full ? "no reading" : "Not Readable");
 
 		printf("%s", sval);
 
-		i--;
-		for (; i < sizeof (sval); i++)
+		for (i = strlen(sval); i <= sizeof (sval); i++)
 			printf(" ");
 		printf(" | ");
 
 		if (IS_THRESHOLD_SENSOR(sensor)) {
-			printf("%s", ipmi_sdr_get_thresh_status(rsp, validread, "ns"));
+			printf("%s", ipmi_sdr_get_thresh_status(sr, "ns"));
 		}
 		else {
-			printf("%s", validread ? "ok" : "ns");
+			printf("%s", sr->s_reading_valid ? "ok" : "ns");
 		}
 
 		printf("\n");
@@ -1582,44 +1639,48 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		 * print sensor name, number, state, entity, reading
 		 */
 		printf("%-16s | %02Xh | ",
-		       desc, sensor->keys.sensor_num);
+		       sr->s_id, sensor->keys.sensor_num);
 
 		if (IS_THRESHOLD_SENSOR(sensor)) {
 			/* Threshold Analog & Discrete */
 			printf("%-3s | %2d.%1d | ",
-			   ipmi_sdr_get_thresh_status(rsp, validread, "ns"),
+			   ipmi_sdr_get_thresh_status(sr, "ns"),
 		           sensor->entity.id, sensor->entity.instance);
 		}
 		else {
-			/* Discrete */
+			/* Non Threshold Analog & Discrete */
 			printf("%-3s | %2d.%1d | ",
-			       (validread ? "ok" : "ns"),
+			       (sr->s_reading_valid ? "ok" : "ns"),
 			       sensor->entity.id, sensor->entity.instance);
 		}
 
-		i = 0;
 		memset(sval, 0, sizeof (sval));
 
-		if (validread) {
+		if (sr->s_reading_valid) {
 			if (IS_THRESHOLD_SENSOR(sensor) &&
-				(full && !UNITS_ARE_DISCRETE(sensor)) ) {
+				sr->s_has_analog_value ) {
 				/* Threshold Analog */
-					i += snprintf(sval, sizeof (sval), "%.*f %s",
-						      (val == (int) val) ? 0 : 2, val,
-						      unitstr);
+					snprintf(sval, sizeof (sval), "%s %s",
+						      sr->s_a_str,
+						      sr->s_a_units);
 			} else {
-				/* Discrete & Threshold/Discrete */
-				ipmi_sdr_print_discrete_state_mini(", ",
+				/* Analog & Discrete & Threshold/Discrete */
+				char *header = NULL;
+				if (sr->s_has_analog_value) { /* Sensor has an analog value */
+					printf("%s %s", sr->s_a_str, sr->s_a_units);
+					header = ", ";
+				}
+				ipmi_sdr_print_discrete_state_mini(header, ", ",
 								   sensor->sensor.type,
 								   sensor->event_type,
-								   rsp->data[2],
-								   rsp->data[3]);
+								   sr->s_data2,
+								   sr->s_data3);
 			}
 		}
-		else if (rsp && (rsp->ccode == 0) && IS_SCANNING_DISABLED(rsp->data[1]))
-			i += snprintf(sval, sizeof (sval), "Disabled");
+		else if (sr->s_scanning_disabled)
+			snprintf(sval, sizeof (sval), "Disabled");
 		else
-			i += snprintf(sval, sizeof (sval), "No Reading");
+			snprintf(sval, sizeof (sval), "No Reading");
 
 		printf("%s\n", sval);
 		return 0;	/* done */
@@ -1629,7 +1690,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 	 */
 
 	printf("Sensor ID              : %s (0x%x)\n",
-	       desc, sensor->keys.sensor_num);
+	       sr->s_id, sensor->keys.sensor_num);
 	printf(" Entity ID             : %d.%d (%s)\n",
 	       sensor->entity.id, sensor->entity.instance,
 	       val2str(sensor->entity.id, entity_id_vals));
@@ -1641,13 +1702,15 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		lprintf(LOG_DEBUG, " Event Type Code       : 0x%02x",
 			sensor->event_type);
 
-		if (compact && validread && verbose > 1)
-			printbuf(rsp->data, rsp->data_len, "COMPACT SENSOR");
-
 		printf(" Sensor Reading        : ");
-		if (validread)
-			printf("%xh\n", rsp ? rsp->data[0] : 0);
-		else if (rsp && (rsp->ccode == 0) && IS_SCANNING_DISABLED(rsp->data[1]))
+		if (sr->s_reading_valid) {
+			if (sr->s_has_analog_value) { /* Sensor has an analog value */
+				printf("%s %s\n", sr->s_a_str, sr->s_a_units);
+			} else {
+				printf("%xh\n", sr->s_reading);
+			}
+		}
+		else if (sr->s_scanning_disabled)
 			printf("Disabled\n");
 		else
 			printf("Not Reading\n");
@@ -1671,8 +1734,8 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		ipmi_sdr_print_discrete_state("States Asserted",
 					      sensor->sensor.type,
 					      sensor->event_type,
-					      rsp ? rsp->data[2] : 0,
-					      rsp ? rsp->data[3] : 0);
+					      sr->s_data2,
+					      sr->s_data3);
 		ipmi_sdr_print_sensor_mask(&sensor->mask, sensor->sensor.type,
 					   sensor->event_type, DISCRETE_SENSOR);
 		ipmi_sdr_print_sensor_event_status(intf,
@@ -1690,7 +1753,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 						   target,
 						   lun, channel);
 		printf(" OEM                   : %X\n",
-					full ? full->oem : compact->oem);
+					sr->full ? sr->full->oem : sr->compact->oem);
 		printf("\n");
 
 		return 0;	/* done */
@@ -1699,48 +1762,50 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 	       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
 
 	printf(" Sensor Reading        : ");
-	if (validread) {
-		if (full) {
-			uint16_t raw_tol = __TO_TOL(full->mtol);
-			if (UNITS_ARE_DISCRETE(&full->cmn)) {
-				printf("0x%02X (+/- 0x%02X) %s\n", rsp->data[0], raw_tol, unitstr);
+	if (sr->s_reading_valid) {
+		if (sr->full) {
+			uint16_t raw_tol = __TO_TOL(sr->full->mtol);
+			if (UNITS_ARE_DISCRETE(sensor)) {
+				printf("0x%02X (+/- 0x%02X) %s\n",
+				sr->s_reading, raw_tol, sr->s_a_units);
 			}
 			else {
-				double tol = sdr_convert_sensor_tolerance(full, raw_tol);
+				double tol = sdr_convert_sensor_tolerance(sr->full, raw_tol);
 				printf("%.*f (+/- %.*f) %s\n",
-				       (val == (int) val) ? 0 : 3,
-				       val, (tol == (int) tol) ? 0 : 3, tol, unitstr);
+				       (sr->s_a_val == (int) sr->s_a_val) ? 0 : 3,
+				       sr->s_a_val, (tol == (int) tol) ? 0 :
+				       3, tol, sr->s_a_units);
 			}
 		} else {
-			printf("0x%02X %s\n", rsp->data[0], unitstr);
+			printf("0x%02X %s\n", sr->s_reading, sr->s_a_units);
 		}
-	} else if (rsp && (rsp->ccode == 0) && IS_SCANNING_DISABLED(rsp->data[1]))
+	} else if (sr->s_scanning_disabled)
 		printf("Disabled\n");
 	else
 		printf("No Reading\n");
 
 	printf(" Status                : %s\n",
-	       ipmi_sdr_get_thresh_status(rsp, validread, "Not Available"));
+	       ipmi_sdr_get_thresh_status(sr, "Not Available"));
 
-	if(full) {
-		SENSOR_PRINT_NORMAL(full, "Nominal Reading", nominal_read);
-		SENSOR_PRINT_NORMAL(full, "Normal Minimum", normal_min);
-		SENSOR_PRINT_NORMAL(full, "Normal Maximum", normal_max);
+	if(sr->full) {
+		SENSOR_PRINT_NORMAL(sr->full, "Nominal Reading", nominal_read);
+		SENSOR_PRINT_NORMAL(sr->full, "Normal Minimum", normal_min);
+		SENSOR_PRINT_NORMAL(sr->full, "Normal Maximum", normal_max);
 
-		SENSOR_PRINT_THRESH(full, "Upper non-recoverable", upper.non_recover, unr);
-		SENSOR_PRINT_THRESH(full, "Upper critical", upper.critical, ucr);
-		SENSOR_PRINT_THRESH(full, "Upper non-critical", upper.non_critical, unc);
-		SENSOR_PRINT_THRESH(full, "Lower non-recoverable", lower.non_recover, lnr);
-		SENSOR_PRINT_THRESH(full, "Lower critical", lower.critical, lcr);
-		SENSOR_PRINT_THRESH(full, "Lower non-critical", lower.non_critical, lnc);
+		SENSOR_PRINT_THRESH(sr->full, "Upper non-recoverable", upper.non_recover, unr);
+		SENSOR_PRINT_THRESH(sr->full, "Upper critical", upper.critical, ucr);
+		SENSOR_PRINT_THRESH(sr->full, "Upper non-critical", upper.non_critical, unc);
+		SENSOR_PRINT_THRESH(sr->full, "Lower non-recoverable", lower.non_recover, lnr);
+		SENSOR_PRINT_THRESH(sr->full, "Lower critical", lower.critical, lcr);
+		SENSOR_PRINT_THRESH(sr->full, "Lower non-critical", lower.non_critical, lnc);
 	}
-	ipmi_sdr_print_sensor_hysteresis(sensor, full,
-		full->threshold.hysteresis.positive, "Positive Hysteresis");
+	ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
+		sr->full->threshold.hysteresis.positive, "Positive Hysteresis");
 
-	ipmi_sdr_print_sensor_hysteresis(sensor, full,
-		full->threshold.hysteresis.negative, "Negative Hysteresis");
+	ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
+		sr->full->threshold.hysteresis.negative, "Negative Hysteresis");
 
-	print_sensor_min_max(full);
+	print_sensor_min_max(sr->full);
 
 	printf(" Event Message Control : ");
 	switch (sensor->sensor.capabilities.event_msg) {
@@ -1866,6 +1931,8 @@ get_offset(uint8_t x)
 /* ipmi_sdr_print_discrete_state_mini  -  print list of asserted states
  *                                        for a discrete sensor
  *
+ * @header	: header string if necessary
+ * @separator	: field separator string
  * @sensor_type	: sensor type code
  * @event_type	: event type code
  * @state	: mask of asserted states
@@ -1873,7 +1940,7 @@ get_offset(uint8_t x)
  * no meaningful return value
  */
 void
-ipmi_sdr_print_discrete_state_mini(const char *separator,
+ipmi_sdr_print_discrete_state_mini(const char *header, const char *separator,
 				   uint8_t sensor_type, uint8_t event_type,
 				   uint8_t state1, uint8_t state2)
 {
@@ -1891,6 +1958,9 @@ ipmi_sdr_print_discrete_state_mini(const char *separator,
 		evt = generic_event_types;
 		typ = event_type;
 	}
+
+	if (header)
+		printf("%s", header);
 
 	for (; evt->type != NULL; evt++) {
 		if ((evt->code != typ) ||

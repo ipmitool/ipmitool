@@ -165,6 +165,7 @@ struct ipmi_intf {
 	int opened;
 	int abort;
 	int noanswer;
+	IPMI_OEM manufacturer_id;
 
 	struct ipmi_session * session;
 	struct ipmi_oem_handle * oem;

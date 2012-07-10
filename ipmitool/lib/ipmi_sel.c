@@ -281,6 +281,15 @@ ipmi_get_oem(struct ipmi_intf * intf)
 		return IPMI_OEM_UNKNOWN;
 	}	
 
+	/*
+	 * Return the cached manufacturer id if the device is open and
+	 * we got an identified OEM owner.   Otherwise just attempt to read
+	 * it.
+	 */
+	if (intf->opened && intf->manufacturer_id != IPMI_OEM_UNKNOWN) {
+		return intf->manufacturer_id;
+	}
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd   = BMC_GET_DEVICE_ID;
@@ -299,7 +308,7 @@ ipmi_get_oem(struct ipmi_intf * intf)
 
 	devid = (struct ipm_devid_rsp *) rsp->data;
 
-	lprintf(LOG_DEBUG,"Iana: 0x%ul",
+	lprintf(LOG_DEBUG,"Iana: 0x%u",
            IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
 
 	return  IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);

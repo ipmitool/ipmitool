@@ -3247,6 +3247,7 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 
 	intf->session = NULL;
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 	intf = NULL;
 }
 
@@ -3383,7 +3384,6 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 	intf->opened = 1;
 
-
 	/*
 	 *
 	 * Make sure the BMC supports IPMI v2 / RMCP+
@@ -3441,6 +3441,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (rc < 0)
 		goto fail;
 
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return intf->fd;
 
  fail:

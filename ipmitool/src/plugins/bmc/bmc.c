@@ -81,6 +81,7 @@ ipmi_bmc_close(struct ipmi_intf *intf)
 		close(intf->fd);
 
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 	intf->fd = -1;
 }
 
@@ -111,6 +112,7 @@ ipmi_bmc_open(struct ipmi_intf *intf)
 	sendrecv_fn = (method == BMC_PUTMSG_METHOD) ?
 	    ipmi_bmc_send_cmd_putmsg : ipmi_bmc_send_cmd_ioctl;
 
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return (intf->fd);
 }
 

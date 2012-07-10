@@ -57,6 +57,7 @@ static int ipmi_lipmi_open(struct ipmi_intf * intf)
 		return -1;
 	}
 	intf->opened = 1;
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return intf->fd;
 }
 
@@ -66,6 +67,7 @@ static void ipmi_lipmi_close(struct ipmi_intf * intf)
 		close(intf->fd);
 	intf->fd = -1;
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
 static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)

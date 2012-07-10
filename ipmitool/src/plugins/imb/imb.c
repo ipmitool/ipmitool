@@ -63,6 +63,7 @@ static int ipmi_imb_open(struct ipmi_intf * intf)
 	}
 		
 	intf->opened = 1;
+	intf->manufacturer_id = ipmi_get_oem(intf);
 
 	return 0;
 }
@@ -70,6 +71,7 @@ static int ipmi_imb_open(struct ipmi_intf * intf)
 static void ipmi_imb_close(struct ipmi_intf * intf)
 {
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
 static struct ipmi_rs * ipmi_imb_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)

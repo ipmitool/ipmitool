@@ -1981,6 +1981,7 @@ ipmi_lan_close(struct ipmi_intf * intf)
 	}
 
 	intf->opened = 0;
+	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 	intf = NULL;
 }
 
@@ -2057,6 +2058,7 @@ ipmi_lan_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
+	intf->manufacturer_id = ipmi_get_oem(intf);
 	return intf->fd;
 }
 
