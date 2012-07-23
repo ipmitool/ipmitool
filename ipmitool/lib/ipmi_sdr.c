@@ -1464,15 +1464,19 @@ ipmi_sdr_read_sensor_value(struct ipmi_intf *intf,
 			sr.s_id, sensor->keys.sensor_num);
 		return &sr;
 	}
-	sr.s_reading_valid = 1;
-	sr.s_reading = rsp->data[0];
+	if ( !sr.s_reading_unavailable ) {
+		sr.s_reading_valid = 1;
+		sr.s_reading = rsp->data[0];
+	}
 	if (rsp->data_len > 2)
 		sr.s_data2   = rsp->data[2];
 	if (rsp->data_len > 3)
 		sr.s_data3   = rsp->data[3];
 	if (sdr_sensor_has_analog_reading(intf, &sr)) {
 		sr.s_has_analog_value = 1;
-		sr.s_a_val = sdr_convert_sensor_reading(sr.full, sr.s_reading);
+		if (sr.s_reading_valid) {
+			sr.s_a_val = sdr_convert_sensor_reading(sr.full, sr.s_reading);
+		}
 		/* determine units string with possible modifiers */
 		sr.s_a_units = ipmi_sdr_get_unit_string(sr.full->cmn.unit.pct,
 					   sr.full->cmn.unit.modifier,
