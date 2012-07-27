@@ -844,6 +844,128 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					}
 				}
 			break;	
+
+						/* This Event is for BMC to Othe Hardware or CPU . */
+			case SENSOR_TYPE_VER_CHANGE:
+				if((0x02 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
+				{
+					if(0x02 == data2)
+					{
+						if(0x00 == data3)
+						{
+							snprintf(desc, SIZE_OF_DESC, "between BMC/iDRAC Firmware and other hardware");
+						}
+						else if(0x01 == data3)
+						{
+							snprintf(desc, SIZE_OF_DESC, "between BMC/iDRAC Firmware and CPU");
+						}
+					}
+				}
+			break;
+			/* Flex or Mac tuning OEM Decoding for the DELL. */
+			case SENSOR_TYPE_OEM_SEC_EVENT:
+				/* 0x25 - Virtual MAC sensory number - Dell OEM */
+				if(0x25 == rec->sel_type.standard_type.sensor_num)
+				{
+					if(0x01 == (data1 & MASK_LOWER_NIBBLE))
+					{
+						snprintf(desc, SIZE_OF_DESC, "Failed to program Virtual Mac Address");
+						if((data1 & OEM_CODE_IN_BYTE2)&&(data1 & OEM_CODE_IN_BYTE3))
+						{
+							snprintf(tmpdesc, SIZE_OF_DESC, " at bus:%.2x device:%.2x function:%x",
+							data3 &0x7F, (data2 >> 3) & 0x1F,
+							data2 & 0x07);
+                            strcat(desc,tmpdesc);
+						}
+					}
+					else if(0x02 == (data1 & MASK_LOWER_NIBBLE))
+					{
+						snprintf(desc, SIZE_OF_DESC, "Device option ROM failed to support link tuning or flex address");
+					}
+					else if(0x03 == (data1 & MASK_LOWER_NIBBLE))
+					{
+						snprintf(desc, SIZE_OF_DESC, "Failed to get link tuning or flex address data from BMC/iDRAC");
+					}
+				}
+			break;
+			case SENSOR_TYPE_CRIT_INTR:
+			case SENSOR_TYPE_OEM_NFATAL_ERROR:	/* Non - Fatal PCIe Express Error Decoding */
+			case SENSOR_TYPE_OEM_FATAL_ERROR:	/* Fatal IO Error Decoding */
+				/* 0x29 - QPI Linx Error Sensor Dell OEM */
+				if(0x29 == rec->sel_type.standard_type.sensor_num)
+				{
+					if((0x02 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
+					{
+						snprintf(tmpdesc, SIZE_OF_DESC, "Partner-(LinkId:%d,AgentId:%d)|",(data2 & 0xC0),(data2 & 0x30));
+						strcat(desc,tmpdesc);
+						snprintf(tmpdesc, SIZE_OF_DESC, "ReportingAgent(LinkId:%d,AgentId:%d)|",(data2 & 0x0C),(data2 & 0x03));
+						strcat(desc,tmpdesc);
+						if(0x00 == (data3 & 0xFC))
+						{
+							snprintf(tmpdesc, SIZE_OF_DESC, "LinkWidthDegraded|");
+							strcat(desc,tmpdesc);
+						}
+						if(BIT(1)& data3)
+						{
+							snprintf(tmpdesc,SIZE_OF_DESC,"PA_Type:IOH|");
+						}
+						else
+						{
+							snprintf(tmpdesc,SIZE_OF_DESC,"PA-Type:CPU|");
+						}
+						strcat(desc,tmpdesc);
+						if(BIT(0)& data3)
+						{
+							snprintf(tmpdesc,SIZE_OF_DESC,"RA-Type:IOH");
+						}
+						else
+						{
+							snprintf(tmpdesc,SIZE_OF_DESC,"RA-Type:CPU");
+						}
+						strcat(desc,tmpdesc);
+					}
+				}
+				else
+				{
+
+					if(0x02 == (data1 & MASK_LOWER_NIBBLE))
+					{
+						sprintf(desc,"%s","IO channel Check NMI");
+                    }
+					else
+					{
+						if(0x00 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc, SIZE_OF_DESC, "%s","PCIe Error |");
+						}
+						else if(0x01 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc, SIZE_OF_DESC, "%s","I/O Error |");
+						}
+						else if(0x04 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc, SIZE_OF_DESC, "%s","PCI PERR |");
+						}
+						else if(0x05 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc, SIZE_OF_DESC, "%s","PCI SERR |");
+						}
+						else
+						{
+							snprintf(desc, SIZE_OF_DESC, "%s"," ");
+						}
+						if (data3 & 0x80)
+							snprintf(tmpdesc, SIZE_OF_DESC, "Slot %d", data3 & 0x7F);
+						else
+							snprintf(tmpdesc, SIZE_OF_DESC, "PCI bus:%.2x device:%.2x function:%x",
+							data3 &0x7F, (data2 >> 3) & 0x1F,
+							data2 & 0x07);
+
+						strcat(desc,tmpdesc);
+					}
+				}
+			break;
+
 			default:
 			break;				
 		} 
