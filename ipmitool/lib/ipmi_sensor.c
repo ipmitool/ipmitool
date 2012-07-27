@@ -42,7 +42,10 @@
 #include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
-
+// Macro's for Reading the current sensor Data.
+#define SCANNING_DISABLED	0x40
+#define READING_UNAVAILABLE	0x20
+#define	INVALID_THRESHOLD	"Invalid Threshold data values. Cannot Set Threshold Data."
 // static
 int
 ipmi_sensor_get_sensor_reading_factors(
@@ -507,6 +510,9 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 	double setting1 = 0.0, setting2 = 0.0, setting3 = 0.0;
 	int allUpper = 0, allLower = 0;
 	int ret = 0;
+	struct ipmi_rs *rsp;
+	int i =0;
+	double val[10] = {0};
 
 	struct sdr_record_list *sdr;
 
@@ -673,6 +679,93 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						  sdr->record.common->keys.owner_id,
 						  sdr->record.common->keys.lun);
 	} else {
+
+	/*
+ 	 * Current implementation doesn't check for the valid setting of upper non critical and other thresholds.
+ 	 * In the below logic:
+ 	 * 	Get all the current reading of the sensor i.e. unc, uc, lc,lnc.
+ 	 * 	Validate the values given by the user.
+ 	 * 	If the values are not correct, then popup with the Error message and return.
+ 	 */
+	/*
+	 * Get current reading
+	 */
+		rsp = ipmi_sdr_get_sensor_reading_ipmb(intf,
+					       sdr->record.common->keys.sensor_num,
+					       sdr->record.common->keys.owner_id,
+					       sdr->record.common->keys.lun,sdr->record.common->keys.channel);
+		rsp = ipmi_sdr_get_sensor_thresholds(intf,
+						sdr->record.common->keys.sensor_num,
+						sdr->record.common->keys.owner_id,
+						sdr->record.common->keys.lun,
+						sdr->record.common->keys.channel);
+		if ((rsp == NULL) || (rsp->ccode > 0)) {
+			lprintf(LOG_ERR, "Sensor data record not found!");
+				return -1;
+		}
+		for(i=1;i<=6;i++) {
+			val[i] = sdr_convert_sensor_reading(sdr->record.common, rsp->data[i]);
+			if(val[i] < 0)
+				val[i] = 0;
+		}
+		/* Check for the valid Upper non recovarable Value.*/
+		if( (settingMask & UPPER_NON_RECOV_SPECIFIED) ) {
+
+			if( (rsp->data[0] & UPPER_NON_RECOV_SPECIFIED) &&
+				(( (rsp->data[0] & UPPER_CRIT_SPECIFIED) && ( setting1 <= val[5])) ||
+					( (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED) && ( setting1 <= val[4]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else if( (settingMask & UPPER_CRIT_SPECIFIED) ) { 		/* Check for the valid Upper critical Value.*/
+			if( (rsp->data[0] & UPPER_CRIT_SPECIFIED) &&
+				(((rsp->data[0] & UPPER_NON_RECOV_SPECIFIED)&& ( setting1 >= val[6])) ||
+				((rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)&&( setting1 <= val[4]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else if( (settingMask & UPPER_NON_CRIT_SPECIFIED) ) {  		/* Check for the valid Upper non critical Value.*/
+			if( (rsp->data[0] & UPPER_NON_CRIT_SPECIFIED) &&
+				(((rsp->data[0] & UPPER_NON_RECOV_SPECIFIED)&&( setting1 >= val[6])) ||
+				((rsp->data[0] & UPPER_CRIT_SPECIFIED)&&( setting1 >= val[5])) ||
+				((rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)&&( setting1 <= val[1]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else if( (settingMask & LOWER_NON_CRIT_SPECIFIED) ) {		/* Check for the valid lower non critical Value.*/
+			if( (rsp->data[0] & LOWER_NON_CRIT_SPECIFIED) &&
+				(((rsp->data[0] & LOWER_CRIT_SPECIFIED)&&( setting1 <= val[2])) ||
+				((rsp->data[0] & LOWER_NON_RECOV_SPECIFIED)&&( setting1 <= val[3]))||
+				((rsp->data[0] & UPPER_NON_CRIT_SPECIFIED)&&( setting1 >= val[4]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else if( (settingMask & LOWER_CRIT_SPECIFIED) ) {		/* Check for the valid lower critical Value.*/
+			if( (rsp->data[0] & LOWER_CRIT_SPECIFIED) &&
+				(((rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)&&( setting1 >= val[1])) ||
+				((rsp->data[0] & LOWER_NON_RECOV_SPECIFIED)&&( setting1 <= val[3]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else if( (settingMask & LOWER_NON_RECOV_SPECIFIED) ) {		/* Check for the valid lower non recovarable Value.*/
+			if( (rsp->data[0] & LOWER_NON_RECOV_SPECIFIED) &&
+				(((rsp->data[0] & LOWER_NON_CRIT_SPECIFIED)&&( setting1 >= val[1])) ||
+				((rsp->data[0] & LOWER_CRIT_SPECIFIED)&&( setting1 >= val[2]))) )
+			{
+				lprintf(LOG_ERR, INVALID_THRESHOLD);
+				return -1;
+			}
+		} else {			/* None of this Then Return with error messages.*/
+			lprintf(LOG_ERR, INVALID_THRESHOLD);
+			return -1;
+		}
+
+
 		printf("Setting sensor \"%s\" %s threshold to %.3f\n",
 		       sdr->record.full->id_string,
 		       val2str(settingMask, threshold_vals), setting1);
