@@ -73,28 +73,37 @@ POSSIBILITY OF SUCH DAMAGE.
 #define DELL_OEM_NETFN        (uint8_t)(0x30)
 #define GET_IDRAC_VIRTUAL_MAC      (uint8_t)(0xC9)
 // 11g Support Macros
-#define INVALID -1
-#define SHARED 0
-#define SHARED_WITH_FAILOVER_LOM2 1
-#define DEDICATED 2
-#define SHARED_WITH_FAILOVER_ALL_LOMS 3
-char AciveLOM_String [5] [10] =	{"dedicated","LOM1","LOM2","LOM3","LOM4" };
-#define	INVALID -1
+#define INVALID 			-1
+#define SHARED				0
+#define SHARED_WITH_FAILOVER_LOM2 	1
+#define DEDICATED 		  	2
+#define SHARED_WITH_FAILOVER_ALL_LOMS 	3
+char AciveLOM_String [6] [10] =	{"None","LOM1","LOM2","LOM3","LOM4","dedicated" };
 
-// 11g Support Strings for nic selection
-char NIC_Selection_Mode_String [4] [50] =	{	"shared",  
-												"shared with failover lom2",
-												"dedicated",
-												"shared with Failover all loms"
-											};
+/* 11g Support Strings for nic selection */
+char NIC_Selection_Mode_String [4] [50] =	{
+						"shared",
+						"shared with failover lom2",
+						"dedicated",
+						"shared with Failover all loms"
+						};
 
-// 11g Support Macros
-#define SHARED 0
-#define SHARED_WITH_FAILOVER_LOM2 1
-#define DEDICATED 2
-#define SHARED_WITH_FAILOVER_ALL_LOMS 3
+/* 11g Support Macros */
+#define SHARED 				0
+#define SHARED_WITH_FAILOVER_LOM2 	1
+#define DEDICATED 			2
+#define SHARED_WITH_FAILOVER_ALL_LOMS 	3
 
-// 12g Support Strings for nic selection
+/* 12g Support Strings for nic selection */
+#define	INVAILD_FAILOVER_MODE		-2
+#define	INVAILD_FAILOVER_MODE_SETTINGS	-3
+#define	INVAILD_SHARED_MODE		-4
+
+#define	INVAILD_FAILOVER_MODE_STRING	"ERROR: Cannot set shared with failover lom same as current shared lom.\n"
+#define	INVAILD_FAILOVER_MODE_SET	"ERROR: Cannot set shared with failover loms when NIC is set to dedicated Mode.\n"
+#define	INVAILD_SHARED_MODE_SET_STRING	"ERROR: Cannot set shared Mode for Blades.\n"
+
+
 char NIC_Selection_Mode_String_12g[] [50] =	{	
 												"dedicated",
 												"shared with lom1",  
@@ -1218,6 +1227,10 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
         {
             printf("    Setting:  IPV6 Address\n");
         }
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_ASSET_TAG) 
+		{
+			printf("    Setting:  Asset Tag\n");
+		}
         else if (lcd_mode.lcdmode == IPMI_DELL_LCD_AMBEINT_TEMP) 
         {
             printf("    Setting:  Ambient Temp\n");
@@ -2485,8 +2498,17 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
 			{
 				ipmi_lan_usage();
 				return -1;
-			}				
-		
+			} else if(INVAILD_FAILOVER_MODE == nic_selection) {
+				printf(INVAILD_FAILOVER_MODE_STRING);
+				return 0;
+			} else if(INVAILD_FAILOVER_MODE_SETTINGS == nic_selection){
+				printf(INVAILD_FAILOVER_MODE_SET);
+				return 0;
+			} else if(INVAILD_SHARED_MODE == nic_selection){
+				printf(INVAILD_SHARED_MODE_SET_STRING);
+				return 0;
+			}
+
 			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
 		}
 		else
@@ -2498,6 +2520,10 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
         {
             ipmi_lan_usage();
             return -1;
+			}
+			if(IMC_IDRAC_11G_MODULAR == IMC_Type) {
+				printf(INVAILD_SHARED_MODE_SET_STRING);
+				return 0;
         }                               
         rc = ipmi_lan_set_nic_selection(intf,nic_selection);
 		}		
@@ -2540,6 +2566,7 @@ static int IsLANSupported ()
 
 int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** argv, char *nic_set)
 {
+	int nic_selection_mode = 0;
 	int failover = 0;
 
 	// First get the current settings.
@@ -2579,6 +2606,7 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
 	{
 		nic_set[0] = 1;
+		nic_set[1] = 0;
 		return 0;
 	}
 	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7)) 
@@ -2604,47 +2632,110 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 		current_arg++;	
 	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom1\0", 5)) 
 	{
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
 		if(failover) {
+			if(nic_set[0] == 2)
+			{
+				return INVAILD_FAILOVER_MODE;
+			} else if(nic_set[0] == 1) {
+				return INVAILD_FAILOVER_MODE_SETTINGS;
+			}
 			nic_set[1] = 2;
 		}	
 		else {
+
 			nic_set[0] = 2;
+			if(nic_set[1] == 2)
+				nic_set[1] = 0;
 		}	
 		return 0;
 	}
 	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5)) 
 	{
+	
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
 		if(failover) {		
+			if(nic_set[0] == 3)
+			{
+				return INVAILD_FAILOVER_MODE;
+			} else if(nic_set[0] == 1) {
+				return INVAILD_FAILOVER_MODE_SETTINGS;
+			}
 			nic_set[1] = 3;
 		}	
 		else {
 			nic_set[0] = 3;
+			if(nic_set[1] == 3)
+				nic_set[1] = 0;
 		}	
 		return 0;
 	}
 	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom3\0", 5)) 
 	{
+
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
 		if(failover) {	
+			if(nic_set[0] == 4)
+			{
+				return INVAILD_FAILOVER_MODE;
+			} else if(nic_set[0] == 1) {
+				return INVAILD_FAILOVER_MODE_SETTINGS;
+			}
 			nic_set[1] = 4;
+
 		}	
 		else {
 			nic_set[0] = 4;
-		}	
+			if(nic_set[1] == 4)
+				nic_set[1] = 0;
+
+		}
 		return 0;
 	} 
 	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom4\0", 5)) 
 	{
+	
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
 		if(failover) {	
+			if(nic_set[0] == 5)
+			{
+				return INVAILD_FAILOVER_MODE;
+			} else if(nic_set[0] == 1) {
+				return INVAILD_FAILOVER_MODE_SETTINGS;
+			}
 			nic_set[1] = 5;
-		}	
+		}
 		else {
 			nic_set[0] = 5;
+			if(nic_set[1] == 5)
+				nic_set[1] = 0;
+
 		}	
 		return 0;
 	}	
 	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "none\0", 5)) 
 	{
+
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
 		if(failover) {	
+			if(nic_set[0] == 1) {
+				return INVAILD_FAILOVER_MODE_SETTINGS;
+			}
 			nic_set[1] = 0;
 		}	
 		return 0;
@@ -2658,6 +2749,14 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 	current_arg++;	
 	if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5)) 
 	{
+	
+		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
+		{
+			return INVAILD_SHARED_MODE;
+		}
+		if(nic_set[0] == 1) {
+			return INVAILD_FAILOVER_MODE_SETTINGS;
+		}
 		nic_set[1] = 6;
 		return 0;
 	}	
@@ -2669,6 +2768,7 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 
 static int get_nic_selection_mode (int current_arg, char ** argv)
 {
+    int nic_selection_mode = 0;
     if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
     {
         return DEDICATED;
@@ -2834,13 +2934,13 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 		if ((nic_selection < 6) && (nic_selection > 0) && (nic_selection_failover < 7))
 		{
 			if(nic_selection == 1) {
-				printf ("\n%s",NIC_Selection_Mode_String_12g[nic_selection-1]);
+				printf ("%s\n",NIC_Selection_Mode_String_12g[nic_selection-1]);
 			} else if(nic_selection) {
-				printf ("\nShared LOM   :  %s",NIC_Selection_Mode_String_12g[nic_selection-1]);
+				printf ("Shared LOM   :  %s\n",NIC_Selection_Mode_String_12g[nic_selection-1]);
 				if(nic_selection_failover  == 0)
-					printf ("\nFailover LOM :  None");
+					printf ("Failover LOM :  None\n");
 				else if(nic_selection_failover   >= 2 && nic_selection_failover   <= 6)
-					printf ("\nFailover LOM :  %s",NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
+					printf ("Failover LOM :  %s\n",NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
 			}
 				
 		} 
@@ -2852,7 +2952,7 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 	}
 	else
 	{
-    printf ("\n%s",NIC_Selection_Mode_String[nic_selection]);
+		printf ("%s\n",NIC_Selection_Mode_String[nic_selection]);
 	}
 
     return 0;
@@ -2860,7 +2960,8 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 
 static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
 {
-    uint8_t active_nic=0;
+	uint8_t active_nic=0;
+	uint8_t current_lom =0;
 
     struct ipmi_rs * rsp;
     struct ipmi_rq req;
@@ -2892,9 +2993,38 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
             val2str(rsp->ccode, completion_code_vals) );
         return -1;
     }
-    active_nic = rsp->data[0];
-    if (active_nic < 5)
-        printf ("\n%s",AciveLOM_String[active_nic]);
+
+	current_lom = rsp->data[0];
+
+    input_length = 0;
+
+	msg_data[input_length++] = 1; //Get Link status
+	msg_data[input_length++] = 0; //Reserved
+	msg_data[input_length++] = 0; //Reserved
+
+   	req.msg.netfn = DELL_OEM_NETFN;
+   	req.msg.lun = 0;
+  	req.msg.cmd = GET_ACTIVE_NIC_CMD;
+  	req.msg.data = msg_data;
+  	req.msg.data_len = input_length;
+ 
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error in getting Active LOM Status");
+		return -1;
+	}
+	else if (rsp->ccode > 0)
+	{
+		lprintf(LOG_ERR, " Error in getting Active LOM Status (%s) \n",
+		  val2str(rsp->ccode, completion_code_vals) );
+	  	return -1;
+	}
+	active_nic = rsp->data[1];
+	if (current_lom < 6 && active_nic)
+		printf ("\n%s\n",AciveLOM_String[current_lom]);
+	else
+		printf ("\n%s\n",AciveLOM_String[0]);
 
     return 0;
 }      
