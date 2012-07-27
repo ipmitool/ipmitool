@@ -88,7 +88,12 @@ struct standard_spec_sel_rec{
 #define EVENT_OFFSET_MASK         0x0f    /* event_data[0] bit mask */
 	uint8_t	event_data[3];
 };
+/* Dell Specific MACRO's */
+#define	OEM_CODE_IN_BYTE2		  0x80	  /* Dell specific OEM Byte in Byte 2 Mask */
+#define	OEM_CODE_IN_BYTE3		  0x20	  /* Dell specific OEM Byte in Byte 3 Mask */
 
+#define	SENSOR_TYPE_OEM_SEC_EVENT	0xC1
+/* End of Macro for DELL Specific */
 #define SEL_OEM_TS_DATA_LEN		6
 #define SEL_OEM_NOTS_DATA_LEN		13
 struct oem_ts_spec_sel_rec{

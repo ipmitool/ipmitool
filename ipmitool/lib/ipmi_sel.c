@@ -61,6 +61,12 @@ struct ipmi_sel_oem_msg_rec {
 
 #define SEL_BYTE(n) (n-3) /* So we can refer to byte positions in log entries (byte 3 is at index 0, etc) */
 
+// Definiation for the Decoding the SEL OEM Bytes for DELL Platfoms
+#define BIT(x)	 (1 << x)	/* Select the Bit */
+#define	SIZE_OF_DESC	128	/* Max Size of the description String to be displyed for the Each sel entry */
+#define	MAX_CARDNO_STR	32	/* Max Size of Card number string */
+#define	MAX_DIMM_STR	32	/* Max Size of DIMM string */
+#define	MAX_CARD_STR	32	/* Max Size of Card string */
 /*
  * Reads values found in message translation file.  XX is a wildcard, R means reserved.
  * Returns -1 for XX, -2 for R, -3 for non-hex (string), or positive integer from a hex value.
@@ -515,6 +521,39 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	return description;
 }
 
+/*
+ * Function 	: Decoding the SEL OEM Bytes for the DELL Platforms.
+ * Description  : The below fucntion will decode the SEL Events OEM Bytes for the Dell specific	Sensors only.
+ * The below function will append the additional information Strings/description to the normal sel desc.
+ * With this the SEL will display additional information sent via OEM Bytes of the SEL Record.
+ * NOTE		: Specific to DELL Platforms only.
+ * Returns	: 	Pointer to the char string.
+ */
+char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
+{
+	int data1, data2, data3;
+	int sensor_type;
+	char *desc = NULL;
+	char          tmpdesc[SIZE_OF_DESC];
+
+	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to Data1,data2,data3 */
+	data1 = rec->sel_type.standard_type.event_data[0];
+	data2 = rec->sel_type.standard_type.event_data[1];
+	data3 = rec->sel_type.standard_type.event_data[2];
+	/* Check for the Standard Event type == 0x6F */
+	if (0x6F == rec->sel_type.standard_type.event_type)
+		{
+		sensor_type = rec->sel_type.standard_type.sensor_type;
+		/* Allocate mem for te Description string */
+		desc = (char*)malloc(SIZE_OF_DESC);
+		if(NULL == desc)
+			return NULL;
+		memset(desc,0,SIZE_OF_DESC);
+		memset(tmpdesc,0,SIZE_OF_DESC);
+	}
+	return desc;
+}
+
 char *
 ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 {
@@ -527,6 +566,9 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 		break;
 	case IPMI_OEM_KONTRON:
 		desc =  get_kontron_evt_desc(intf, rec);
+		break;
+	case IPMI_OEM_DELL: // Dell Decoding of the OEM Bytes from SEL Record.
+		desc = get_dell_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_UNKNOWN:
 	default:
@@ -542,6 +584,8 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 {
 	uint8_t code, offset;
 	struct ipmi_event_sensor_types *evt = NULL;
+	char *sfx = NULL;	/* This will be assigned if the Platform is DELL,
+				 additional info is appended to the current Description */
 
 	if (desc == NULL)
 		return;
@@ -563,6 +607,18 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					evt = oem_kontron_event_types;
 					code = rec->sel_type.standard_type.sensor_type;
 				 break;
+				case IPMI_OEM_DELL:		/* OEM Bytes Decoding for DELLi */
+					evt = sensor_specific_types;
+					code = rec->sel_type.standard_type.sensor_type;
+				 	if ( (OEM_CODE_IN_BYTE2 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK)) ||
+					     (OEM_CODE_IN_BYTE3 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE3_SPECIFIED_MASK)) )
+				 	{
+				 		if(rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK)
+						 	evt->data = rec->sel_type.standard_type.event_data[1];
+
+						 sfx = ipmi_get_oem_desc(intf, rec);
+				 	}
+				 break;
 				 /* add your oem sensor assignation here */
 			}			
 			if( evt == NULL ){		
@@ -573,6 +629,31 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		if( evt == NULL ){
 			evt = sensor_specific_types;
 			code = rec->sel_type.standard_type.sensor_type;
+		}
+		/*
+ 		 * Check for the OEM DELL Interface based on the Dell Specific Vendor Code.
+ 		 * If its Dell Platform, do the OEM Byte decode from the SEL Records.
+ 		 * Additional information should be written by the ipmi_get_oem_desc()
+ 		 */
+		if(ipmi_get_oem(intf) == IPMI_OEM_DELL) {
+			code = rec->sel_type.standard_type.sensor_type;
+			if ( (OEM_CODE_IN_BYTE2 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK)) ||
+			     (OEM_CODE_IN_BYTE3 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE3_SPECIFIED_MASK)) )
+			{
+				if(rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK)
+					evt->data = rec->sel_type.standard_type.event_data[1];
+					 sfx = ipmi_get_oem_desc(intf, rec);
+
+			}
+			else if(SENSOR_TYPE_OEM_SEC_EVENT == rec->sel_type.standard_type.event_data[0])
+			{
+				/* 0x23 : Sensor Number.*/
+				if(0x23 == rec->sel_type.standard_type.sensor_num)
+				{
+					evt->data = rec->sel_type.standard_type.event_data[1];
+					sfx = ipmi_get_oem_desc(intf, rec);
+				}
+			}
 		}
 	} else {
 		evt = generic_event_types;
@@ -587,13 +668,23 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			 ((rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
 			  (evt->data == rec->sel_type.standard_type.event_data[1]))))
 		{
-			*desc = (char *)malloc(strlen(evt->desc) + 48);
-			if (*desc == NULL) {
+			/* Increase the Malloc size to current_size + Dellspecific description size */
+			*desc = (char *)malloc(strlen(evt->desc) + 48 + SIZE_OF_DESC);
+			if (NULL == *desc) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
 				return;
 			}
-			memset(*desc, 0, strlen(evt->desc)+48);
-			sprintf(*desc, "%s", evt->desc);
+			memset(*desc, 0, strlen(evt->desc)+ 48 + SIZE_OF_DESC);
+			/*
+ 			 * Additional info is present for the DELL Platforms.
+ 			 * Append the same to the evt->desc string.
+ 			 */
+			if (sfx) {
+				sprintf(*desc, "%s (%s)", evt->desc, sfx);
+				free(sfx);
+			} else {
+				sprintf(*desc, "%s", evt->desc);
+			}
 			return;
 		}	
 		evt++;
