@@ -534,8 +534,24 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	int data1, data2, data3;
 	int sensor_type;
 	char *desc = NULL;
-	char          tmpdesc[SIZE_OF_DESC];
 
+	unsigned char count;
+	unsigned char node;
+	unsigned char num;
+	unsigned char dimmNum;
+	unsigned char dimmsPerNode;
+	char          dimmStr[MAX_DIMM_STR];
+	char          cardStr[MAX_CARD_STR];
+	char          numStr[MAX_CARDNO_STR];
+	char          tmpdesc[SIZE_OF_DESC];
+	char*         str;
+	unsigned char incr = 0;
+	unsigned char i=0,j = 0;
+	unsigned char postCode;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	char tmpData;
+	int version;
 	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to Data1,data2,data3 */
 	data1 = rec->sel_type.standard_type.event_data[0];
 	data2 = rec->sel_type.standard_type.event_data[1];
@@ -550,6 +566,183 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 			return NULL;
 		memset(desc,0,SIZE_OF_DESC);
 		memset(tmpdesc,0,SIZE_OF_DESC);
+		switch (sensor_type) {					
+			case SENSOR_TYPE_MEMORY:	/* Memory or DIMM related OEM Sel Byte Decoding for DELL Platforms only */
+			case SENSOR_TYPE_EVT_LOG:	/* Events Logging for Memory or DIMM related OEM Sel Byte Decoding for DELL Platforms only */			
+
+				/* Get the current version of the IPMI Spec Based on that Decoding of memory info is done.*/
+				memset(&req, 0, sizeof (req));
+				req.msg.netfn = IPMI_NETFN_APP;
+				req.msg.lun = 0;
+				req.msg.cmd = BMC_GET_DEVICE_ID;
+				req.msg.data = NULL;
+				req.msg.data_len = 0;
+
+				rsp = intf->sendrecv(intf, &req);
+				if (NULL == rsp) 
+				{
+					lprintf(LOG_ERR, " Error getting system info");
+					return NULL;
+				} 
+				else if (rsp->ccode > 0)
+				{
+					lprintf(LOG_ERR, " Error getting system info: %s",
+						val2str(rsp->ccode, completion_code_vals));
+					return NULL;
+				}
+				version = rsp->data[4];
+				/* Memory DIMMS */
+				if( (data1 &  OEM_CODE_IN_BYTE2) || (data1 & OEM_CODE_IN_BYTE3 ) )
+				{
+					/* Memory Redundancy related oem bytes docoding .. */
+					if( (SENSOR_TYPE_MEMORY == sensor_type) && (0x0B == rec->sel_type.standard_type.event_type) )
+					{
+						if(0x00 == (data1 & MASK_LOWER_NIBBLE)) 
+						{
+							snprintf(desc,SIZE_OF_DESC," Redundancy Regained | ");
+						}
+						else if(0x01 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc,SIZE_OF_DESC,"Redundancy Lost | ");
+						}
+					} /* Correctable and uncorrectable ECC Error Decoding */	
+					else if(SENSOR_TYPE_MEMORY == sensor_type) 
+					{
+						if(0x00 == (data1 & MASK_LOWER_NIBBLE))
+						{
+							snprintf(desc,SIZE_OF_DESC,"Correctable ECC | ");
+						}
+						else if(0x01 == (data1 & MASK_LOWER_NIBBLE))  
+						{
+							snprintf(desc,SIZE_OF_DESC,"UnCorrectable ECC | ");
+						}
+					} /* Corr Memory log disabled */
+					else if(SENSOR_TYPE_EVT_LOG == sensor_type)
+					{
+						if(0x00 == (data1 & MASK_LOWER_NIBBLE)) 
+							snprintf(desc,SIZE_OF_DESC,"Corr Memory Log Disabled | ");
+					}
+				} 
+				else
+				{
+					if(SENSOR_TYPE_SYS_EVENT == sensor_type) 
+					{
+						if(0x02 == (data1 & MASK_LOWER_NIBBLE)) 
+							snprintf(desc,SIZE_OF_DESC,"Unknown System Hardware Failure ");
+					}
+					if(SENSOR_TYPE_EVT_LOG == sensor_type)
+					{
+						if(0x03 == (data1 & MASK_LOWER_NIBBLE)) 
+							snprintf(desc,SIZE_OF_DESC,"All Even Logging Dissabled");
+					}
+				}
+				/* 
+ 				 * Based on the above error, we need to find whcih memory slot or 
+ 				 * Card has got the Errors/Sel Generated.
+ 				 */
+				if(data1 & OEM_CODE_IN_BYTE2 ) 
+				{
+					/* Find the Card Type */
+					if((0x0F != (data2 >> 4)) && ((data2 >> 4) < 0x08))
+					{
+						tmpData = 	('A'+ (data2 >> 4));
+						if( (SENSOR_TYPE_MEMORY == sensor_type) && (0x0B == rec->sel_type.standard_type.event_type) )
+						{
+							snprintf(tmpdesc, SIZE_OF_DESC, "Bad Card %c", tmpData);								
+						}
+						else
+						{
+							snprintf(tmpdesc, SIZE_OF_DESC, "Card %c", tmpData);
+						}
+						strcat(desc, tmpdesc);
+					} /* Find the Bank Number of the DIMM */
+					if (0x0F != (data2 & MASK_LOWER_NIBBLE)) 
+					{
+						if(0x51  == version)
+						{
+							snprintf(tmpdesc, SIZE_OF_DESC, "Bank %d", ((data2 & 0x0F)+1));	
+							strcat(desc, tmpdesc);
+						}
+						else 
+						{
+							incr = (data2 & 0x0f) << 3;
+						}
+					}
+					
+				}
+				/* Find the DIMM Number of the Memory which has Generated the Fault or Sel */
+				if(data1 & OEM_CODE_IN_BYTE3 )
+				{
+					// Based on the IPMI Spec Need Identify the DIMM Details.
+					// For the SPEC 1.5 Only the DIMM Number is Valid.
+					if(0x51  == version) 
+					{
+						snprintf(tmpdesc, SIZE_OF_DESC, "DIMM %s", ('A'+ data3));
+						strcat(desc, tmpdesc);						
+					} 
+					/* For the SPEC 2.0 Decode the DIMM Number as it supports more.*/
+					else if( ((data2 >> 4) > 0x07) && (0x0F != (data2 >> 4) )) 
+					{
+						strcpy(dimmStr, " DIMM");
+						str = desc+strlen(desc);
+						dimmsPerNode = 4;
+						if(0x09 == (data2 >> 4)) dimmsPerNode = 6;
+						else if(0x0A == (data2 >> 4)) dimmsPerNode = 8;
+						else if(0x0B == (data2 >> 4)) dimmsPerNode = 9;
+						else if(0x0C == (data2 >> 4)) dimmsPerNode = 12;
+						else if(0x0D == (data2 >> 4)) dimmsPerNode = 24;	
+						else if(0x0E == (data2 >> 4)) dimmsPerNode = 3;							
+						count = 0;
+				        	for (i = 0; i < 8; i++)
+				        	{
+				        		if (BIT(i) & data3)
+				          		{
+								if(count)
+								{
+									strcat(str,",");
+									count = 0x00;
+								}
+				            		node = (incr + i)/dimmsPerNode;
+					            	dimmNum = ((incr + i)%dimmsPerNode)+1;
+					            	dimmStr[5] = node + 'A';
+					            	sprintf(tmpdesc,"%d",dimmNum);
+					            	for(j = 0; j < strlen(tmpdesc);j++)
+								dimmStr[6+j] = tmpdesc[j];
+							dimmStr[6+j] = '\0'; 
+							strcat(str,dimmStr); // final DIMM Details.
+		 			               	count++;
+					          	}
+					        }
+					} 
+					else
+					{
+					        strcpy(dimmStr, " DIMM");
+						str = desc+strlen(desc);
+					        count = 0;
+					        for (i = 0; i < 8; i++)
+					        {
+				        		if (BIT(i) & data3)
+				   			{
+						            // check if more than one DIMM, if so add a comma to the string.
+						        	sprintf(tmpdesc,"%d",(i + incr + 1));
+								if(count)
+								{
+									strcat(str,",");
+									count = 0x00;
+								}
+								for(j = 0; j < strlen(tmpdesc);j++)
+									dimmStr[5+j] = tmpdesc[j];
+								dimmStr[5+j] = '\0'; 
+							        strcat(str, dimmStr);
+							        count++;
+				          		}
+				        	}
+			        	}
+				}
+			break;
+			default:
+			break;				
+		} 
 	}
 	return desc;
 }
@@ -688,6 +881,45 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			return;
 		}	
 		evt++;
+	}
+	/* The Above while Condition was not met beacouse the below sensor type were Newly defined OEM 
+	   Secondary Events. 0xC1, 0xC2, 0xC3. */	
+    if((sfx) && (0x6F == rec->sel_type.standard_type.event_type)) 
+	{
+	    uint8_t flag = 0x00;
+	    switch(code)
+		{
+            case SENSOR_TYPE_FRM_PROG:
+                 if(0x0F == offset) 
+                     flag = 0x01;			
+                 break;            
+			case SENSOR_TYPE_OEM_SEC_EVENT:
+			     if((0x01 == offset) || (0x02 == offset) || (0x03 == offset))
+                     flag = 0x01;
+                 break;
+            case SENSOR_TYPE_OEM_NFATAL_ERROR:
+                 if((0x00 == offset) || (0x02 == offset))
+                     flag = 0x01;			
+                 break;			
+            case SENSOR_TYPE_OEM_FATAL_ERROR:		
+                 if(0x01 == offset)
+                     flag = 0x01;			
+                 break;
+            default:
+                 break;
+		}
+		if(flag)
+		{
+		    *desc = (char *)malloc( 48 + SIZE_OF_DESC);
+		    if (NULL == *desc)
+			{
+		        lprintf(LOG_ERR, "ipmitool: malloc failure");
+			    return;
+		    }
+		memset(*desc, 0, 48 + SIZE_OF_DESC);
+		sprintf(*desc, "(%s)",sfx);		
+     	}
+		free(sfx);
 	}
 }
 

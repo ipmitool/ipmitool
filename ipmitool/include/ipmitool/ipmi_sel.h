@@ -83,16 +83,29 @@ struct standard_spec_sel_rec{
 	uint8_t	event_type : 7;
 	uint8_t	event_dir  : 1;
 #endif
-#define DATA_BYTE2_SPECIFIED_MASK 0xc0    /* event_data[0] bit mask */
-#define DATA_BYTE3_SPECIFIED_MASK 0x30    /* event_data[0] bit mask */
-#define EVENT_OFFSET_MASK         0x0f    /* event_data[0] bit mask */
+#define DATA_BYTE2_SPECIFIED_MASK	0xc0    /* event_data[0] bit mask */
+#define DATA_BYTE3_SPECIFIED_MASK	0x30    /* event_data[0] bit mask */
+#define EVENT_OFFSET_MASK		0x0f    /* event_data[0] bit mask */
 	uint8_t	event_data[3];
 };
 /* Dell Specific MACRO's */
-#define	OEM_CODE_IN_BYTE2		  0x80	  /* Dell specific OEM Byte in Byte 2 Mask */
-#define	OEM_CODE_IN_BYTE3		  0x20	  /* Dell specific OEM Byte in Byte 3 Mask */
-
+#define	OEM_CODE_IN_BYTE2		0x80	  /* Dell specific OEM Byte in Byte 2 Mask */
+#define	OEM_CODE_IN_BYTE3		0x20	  /* Dell specific OEM Byte in Byte 3 Mask */
+/* MASK MACROS */
+#define	MASK_LOWER_NIBBLE		0x0F
+#define	MASK_HIGHER_NIBBLE		0xF0
+/*Senosr type Macro's */
+#define	SENSOR_TYPE_MEMORY		0x0C
+#define	SENSOR_TYPE_CRIT_INTR		0x13
+#define	SENSOR_TYPE_EVT_LOG		0x10
+#define	SENSOR_TYPE_SYS_EVENT		0x12
+#define	SENSOR_TYPE_PROCESSOR		0x07
 #define	SENSOR_TYPE_OEM_SEC_EVENT	0xC1
+#define SENSOR_TYPE_VER_CHANGE		0x2B
+#define	SENSOR_TYPE_FRM_PROG		0x0F
+#define	SENSOR_TYPE_WTDOG		0x23
+#define	SENSOR_TYPE_OEM_NFATAL_ERROR	0xC2
+#define	SENSOR_TYPE_OEM_FATAL_ERROR	0xC3
 /* End of Macro for DELL Specific */
 #define SEL_OEM_TS_DATA_LEN		6
 #define SEL_OEM_NOTS_DATA_LEN		13
