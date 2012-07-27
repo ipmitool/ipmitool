@@ -106,6 +106,7 @@ struct standard_spec_sel_rec{
 #define	SENSOR_TYPE_WTDOG		0x23
 #define	SENSOR_TYPE_OEM_NFATAL_ERROR	0xC2
 #define	SENSOR_TYPE_OEM_FATAL_ERROR	0xC3
+#define SENSOR_TYPE_TXT_CMD_ERROR	0x20
 /* End of Macro for DELL Specific */
 #define SEL_OEM_TS_DATA_LEN		6
 #define SEL_OEM_NOTS_DATA_LEN		13

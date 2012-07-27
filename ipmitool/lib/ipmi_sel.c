@@ -567,6 +567,33 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 		memset(desc,0,SIZE_OF_DESC);
 		memset(tmpdesc,0,SIZE_OF_DESC);
 		switch (sensor_type) {					
+			case SENSOR_TYPE_PROCESSOR:	/* Processor/CPU related OEM Sel Byte Decoding for DELL Platforms only */
+				if((OEM_CODE_IN_BYTE2 == (data1 & DATA_BYTE2_SPECIFIED_MASK)))
+				{
+					if(0x00 == (data1 & MASK_LOWER_NIBBLE))
+						snprintf(desc,SIZE_OF_DESC,"CPU Internal Err | ");
+					if(0x06 == (data1 & MASK_LOWER_NIBBLE))
+					{
+						snprintf(desc,SIZE_OF_DESC,"CPU Protocol Err | ");
+
+					}
+
+					/* change bit location to a number */
+					for (count= 0; count < 8; count++)
+					{
+					  if (BIT(count)& data2)
+					  {
+					    count++;
+						/* 0x0A - CPU sensor number */
+						if((0x06 == (data1 & MASK_LOWER_NIBBLE)) && (0x0A == rec->sel_type.standard_type.sensor_num)) 
+						    snprintf(desc,SIZE_OF_DESC,"FSB %d ",count);			// Which CPU Has generated the FSB
+						else
+						    snprintf(desc,SIZE_OF_DESC,"CPU %d | APIC ID %d ",count,data3);	/* Specific CPU related info */
+					    break;
+					  }
+					}
+				}
+			break;
 			case SENSOR_TYPE_MEMORY:	/* Memory or DIMM related OEM Sel Byte Decoding for DELL Platforms only */
 			case SENSOR_TYPE_EVT_LOG:	/* Events Logging for Memory or DIMM related OEM Sel Byte Decoding for DELL Platforms only */			
 
@@ -610,6 +637,56 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					{
 						if(0x00 == (data1 & MASK_LOWER_NIBBLE))
 						{
+							/* 0x1C - Memory Sensor Number */
+							if(0x1C == rec->sel_type.standard_type.sensor_num)
+							{
+								/*Add the complete information about the Memory Configs.*/
+								if((data1 &  OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3 ))
+								{
+									count = 0;
+									snprintf(desc,SIZE_OF_DESC,"CRC Error on:");
+									for(i=0;i<4;i++)
+									{
+										if((BIT(i))&(data2))
+										{
+											if(count)
+											{
+						                        str = desc+strlen(desc);
+												*str++ = ',';
+												str = '\0';
+						              					count = 0;
+											}
+											switch(i) /* Which type of memory config is present.. */
+											{
+												case 0: snprintf(tmpdesc,SIZE_OF_DESC,"South Bound Memory");
+														strcat(desc,tmpdesc);
+														count++;
+														break;
+												case 1:	snprintf(tmpdesc,SIZE_OF_DESC,"South Bound Config");
+														strcat(desc,tmpdesc);
+														count++;
+														break;
+												case 2: snprintf(tmpdesc,SIZE_OF_DESC,"North Bound memory");
+														strcat(desc,tmpdesc);
+														count++;
+														break;
+												case 3:	snprintf(tmpdesc,SIZE_OF_DESC,"North Bound memory-corr");
+														strcat(desc,tmpdesc);
+														count++;
+														break;
+												default:
+														break;
+											}
+										}
+									}
+									if(data3>=0x00 && data3<0xFF)
+									{
+										snprintf(tmpdesc,SIZE_OF_DESC,"|Failing_Channel:%d",data3);
+										strcat(desc,tmpdesc);
+									}
+								}
+								break;
+							}
 							snprintf(desc,SIZE_OF_DESC,"Correctable ECC | ");
 						}
 						else if(0x01 == (data1 & MASK_LOWER_NIBBLE))  
@@ -740,9 +817,40 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 			        	}
 				}
 			break;
+			/* Sensor In system charectorization Error Decoding.
+				Sensor type  0x20*/
+			case SENSOR_TYPE_TXT_CMD_ERROR:
+				if((0x00 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
+				{
+					switch(data3)
+					{
+						case 0x01:
+							snprintf(desc,SIZE_OF_DESC,"BIOS TXT Error");
+							break;
+						case 0x02:
+							snprintf(desc,SIZE_OF_DESC,"Processor/FIT TXT");
+							break;
+						case 0x03:
+							snprintf(desc,SIZE_OF_DESC,"BIOS ACM TXT Error");
+							break;
+						case 0x04:
+							snprintf(desc,SIZE_OF_DESC,"SINIT ACM TXT Error");
+							break;
+						case 0xff:
+							snprintf(desc,SIZE_OF_DESC,"Unrecognized TT Error12");
+							break;
+						default:
+							break;						
+					}
+				}
+			break;	
 			default:
 			break;				
 		} 
+	}
+	else
+	{
+		sensor_type = rec->sel_type.standard_type.event_type;
 	}
 	return desc;
 }
