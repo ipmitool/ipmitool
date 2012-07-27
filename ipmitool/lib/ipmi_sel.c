@@ -844,7 +844,18 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					}
 				}
 			break;	
-
+			/* OS Watch Dog Timer Sel Events */
+			case SENSOR_TYPE_WTDOG:
+				
+				if(SENSOR_TYPE_OEM_SEC_EVENT == data1)
+				{
+					if(0x04 == data2)
+					{
+						snprintf(desc,SIZE_OF_DESC,"Hard Reset|Interrupt type None,SMS/OS Timer used at expiration");
+					}
+				}	
+				
+			break;
 						/* This Event is for BMC to Othe Hardware or CPU . */
 			case SENSOR_TYPE_VER_CHANGE:
 				if((0x02 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
@@ -962,6 +973,56 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 							data2 & 0x07);
 
 						strcat(desc,tmpdesc);
+					}
+				}
+			break;
+			/* POST Fatal Errors generated from the  Server with much more info*/
+			case SENSOR_TYPE_FRM_PROG:
+				if((0x0F == (data1 & MASK_LOWER_NIBBLE))&&(data1 & OEM_CODE_IN_BYTE2))
+				{
+					switch(data2)
+					{
+						case 0x80:
+							snprintf(desc, SIZE_OF_DESC, "No memory is detected.");break;
+						case 0x81:
+							snprintf(desc,SIZE_OF_DESC, "Memory is detected but is not configurable.");break;
+						case 0x82:
+							snprintf(desc, SIZE_OF_DESC, "Memory is configured but not usable.");break;
+						case 0x83:
+							snprintf(desc, SIZE_OF_DESC, "System BIOS shadow failed.");break;
+						case 0x84:
+							snprintf(desc, SIZE_OF_DESC, "CMOS failed.");break;
+						case 0x85:
+							snprintf(desc, SIZE_OF_DESC, "DMA controller failed.");break;
+						case 0x86:
+							snprintf(desc, SIZE_OF_DESC, "Interrupt controller failed.");break;
+						case 0x87:
+							snprintf(desc, SIZE_OF_DESC, "Timer refresh failed.");break;
+						case 0x88:
+							snprintf(desc, SIZE_OF_DESC, "Programmable interval timer error.");break;
+						case 0x89:
+							snprintf(desc, SIZE_OF_DESC, "Parity error.");break;
+						case 0x8A:
+							snprintf(desc, SIZE_OF_DESC, "SIO failed.");break;
+						case 0x8B:
+							snprintf(desc, SIZE_OF_DESC, "Keyboard controller failed.");break;
+						case 0x8C:
+							snprintf(desc, SIZE_OF_DESC, "System management interrupt initialization failed.");break;
+						case 0x8D:
+							snprintf(desc, SIZE_OF_DESC, "TXT-SX Error.");break;
+						case 0xC0:
+							snprintf(desc, SIZE_OF_DESC, "Shutdown test failed.");break;
+						case 0xC1:
+							snprintf(desc, SIZE_OF_DESC, "BIOS POST memory test failed.");break;
+						case 0xC2:
+							snprintf(desc, SIZE_OF_DESC, "RAC configuration failed.");break;
+						case 0xC3:
+							snprintf(desc, SIZE_OF_DESC, "CPU configuration failed.");break;
+						case 0xC4:
+							snprintf(desc, SIZE_OF_DESC, "Incorrect memory configuration.");break;
+						case 0xFE:
+							snprintf(desc, SIZE_OF_DESC, "General failure after video.");
+							break;
 					}
 				}
 			break;
