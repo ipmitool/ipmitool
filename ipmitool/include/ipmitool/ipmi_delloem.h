@@ -182,6 +182,7 @@ typedef struct _lcd_mode
 #define IMC_IDRAC_11G_MODULAR       (uint8_t) (0x0B)
 #define IMC_UNUSED                  (uint8_t) (0x0C)
 #define IMC_MASER_LITE_BMC          (uint8_t) (0x0D)
+#define IMC_MASER_LITE_NU 			(uint8_t) (0x0E)
 #define IMC_IDRAC_12G_MONOLITHIC 	(uint8_t) (0x10)
 #define IMC_IDRAC_12G_MODULAR 		(uint8_t) (0x11)
 

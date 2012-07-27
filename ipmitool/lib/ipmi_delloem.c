@@ -752,7 +752,9 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
         val2str(rsp->ccode, completion_code_vals));  */
         return -1;
 	}
-	if( (IMC_IDRAC_11G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_11G_MODULAR ==rsp->data[10]) )
+	/* Support the 11G Monolithic, modular, Maisy and Coaster */
+	if( (IMC_IDRAC_11G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_11G_MODULAR ==rsp->data[10])  ||
+		(IMC_MASER_LITE_BMC == rsp->data[10]) || (IMC_MASER_LITE_NU ==rsp->data[10])	)
     {
 		iDRAC_FLAG=IDRAC_11G;
     }
@@ -1890,6 +1892,7 @@ ipmi_lcd_usage(void)
 static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** argv)
 {
     int rc = 0;
+	int currIdInt = -1;
 
     current_arg++;
     if (argc > 1 && strcmp(argv[current_arg], "help") == 0)
@@ -1914,12 +1917,14 @@ static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** arg
             ipmi_mac_usage();
             return -1;
         }
-        int currIdInt;
-        make_int(argv[current_arg],&currIdInt);
-        if(currIdInt>8)
+
+		if(make_int(argv[current_arg],&currIdInt) < 0) {
+			lprintf(LOG_ERR, "Invalid NIC number. The NIC number should be between 0-8\n");
+			return -1;
+		}
+		if( (currIdInt > 8) || (currIdInt < 0) )
         {
             lprintf(LOG_ERR, "Invalid NIC number. The NIC number should be between 0-8\n");
-            ipmi_mac_usage();
             return -1;
         }
         rc = ipmi_macinfo(intf, currIdInt);
@@ -2016,6 +2021,30 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
         {
             return -1;
         }
+		if( (IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type) ) {
+			// Get the Chasiss Assigned MAC Addresss	for 12g Only
+			memcpy(VirtualMacAddress,((rsp->data)+1),MACADDRESSLENGH);
+
+			for (i=0;i<MACADDRESSLENGH;i++)
+			{
+				if (0 != VirtualMacAddress [i])
+				{
+					UseVirtualMacAddress = 1;
+				}
+			}
+			// Get the Server Assigned MAC Addresss for 12g Only
+			if(!UseVirtualMacAddress) {
+				memcpy(VirtualMacAddress,((rsp->data)+1+MACADDRESSLENGH),MACADDRESSLENGH);
+
+				for (i=0;i<MACADDRESSLENGH;i++)
+				{
+					if (0 != VirtualMacAddress [i])
+					{
+						UseVirtualMacAddress = 1;
+					}
+				}
+			}
+		} else {
         memcpy(VirtualMacAddress,((rsp->data)+VIRTUAL_MAC_OFFSET),MACADDRESSLENGH);
 
         for (i=0;i<MACADDRESSLENGH;i++)
@@ -2025,10 +2054,17 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
                 UseVirtualMacAddress = 1;
             }       
         }
+		}
         if (0 == UseVirtualMacAddress)
             return -1;              
         if (IMC_IDRAC_10G == IMC_Type)
-            printf ("\nDRAC MAC Address ");
+			printf ("\nDRAC MAC Address ");
+		else if ( (IMC_IDRAC_11G_MODULAR == IMC_Type) || (IMC_IDRAC_11G_MONOLITHIC== IMC_Type) )
+			printf ("\niDRAC6 MAC Address ");
+		else if ( (IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type) )
+			printf ("\niDRAC7 MAC Address ");
+		else if ( (IMC_MASER_LITE_BMC== IMC_Type) || (IMC_MASER_LITE_NU== IMC_Type) )
+			printf ("\nBMC MAC Address ");
         else
             printf ("\niDRAC6 MAC Address ");
 
@@ -2103,6 +2139,8 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 			printf ("\niDRAC6 MAC Address ");
 		else if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type))		
 			printf ("\niDRAC7 MAC Address ");
+		else if ( (IMC_MASER_LITE_BMC== IMC_Type) || (IMC_MASER_LITE_NU== IMC_Type) )
+			printf ("\n\rBMC MAC Address ");
         else
             printf ("\niDRAC6 MAC Address ");
 
@@ -2365,7 +2403,8 @@ static int ipmi_macinfo (struct ipmi_intf* intf, uint8_t NicNum)
         return ipmi_macinfo_10g (intf,NicNum);
     }
 	else if ((IMC_IDRAC_11G_MODULAR == IMC_Type || IMC_IDRAC_11G_MONOLITHIC== IMC_Type )  ||
-			(IMC_IDRAC_12G_MODULAR == IMC_Type || IMC_IDRAC_12G_MONOLITHIC== IMC_Type ) )
+			(IMC_IDRAC_12G_MODULAR == IMC_Type || IMC_IDRAC_12G_MONOLITHIC== IMC_Type ) ||
+			(IMC_MASER_LITE_NU== IMC_Type || IMC_MASER_LITE_BMC== IMC_Type ))
     {
         return ipmi_macinfo_11g (intf,NicNum);
     }
