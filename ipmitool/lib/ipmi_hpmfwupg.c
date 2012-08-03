@@ -1103,7 +1103,7 @@ static int HpmFwupgActionUploadFirmware
 int HpmGetUserInput(char *str)
 {
     char userInput[2];
-    printf(str);
+    printf("%s", str);
     scanf("%s",userInput);
     if (toupper(userInput[0]) == 'Y')
     {
@@ -1172,7 +1172,7 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
     if (totalSent== displayFWLength)
     {
         /* Display the time taken to complete the upgrade */
-        printf("|   | Upload Time: %02d.%02d          | Image Size: %05x                        |\n",
+        printf("|   | Upload Time: %02ld.%02ld          | Image Size: %05x                        |\n",
          timeElapsed/60,timeElapsed%60,totalSent);
     }
 }
@@ -1184,7 +1184,7 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
 * Description: This function displays the information about version header
 *
 *****************************************************************************/
-int HpmDisplayVersionHeader(int mode)
+void HpmDisplayVersionHeader(int mode)
 {
    if ( mode & IMAGE_VER)
    {
@@ -1209,7 +1209,7 @@ int HpmDisplayVersionHeader(int mode)
 * Description: This function displays the version of the image and target
 *
 *****************************************************************************/
-int HpmDisplayVersion(int mode,VERSIONINFO *pVersion)
+void HpmDisplayVersion(int mode,VERSIONINFO *pVersion)
 {
       char descString[12];
       memset(&descString,0x00,12);
@@ -1299,7 +1299,7 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
     if (rc != HPMFWUPG_SUCCESS)
     {
         lprintf(LOG_NOTICE,"Verify whether the Target board is present \n");
-        return;
+        return HPMFWUPG_ERROR;
     }
 
     rc = HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd);
@@ -2455,7 +2455,7 @@ static int HpmFwupgActionUploadFirmware
                 }
                 if (displayFWLength == totalSent)
                 {
-                   printf("\n Time Taken %02d:%02d",(end-start)/60, (end-start)%60);
+                   printf("\n Time Taken %02ld:%02ld",(end-start)/60, (end-start)%60);
                    printf("\n\n");
                 }
             }
@@ -3723,7 +3723,7 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
    if ( (argc == 0) || (strcmp(argv[0], "help") == 0) )
    {
       HpmfwupgPrintUsage();
-      return;
+      return HPMFWUPG_ERROR;
     }
    if ( (strcmp(argv[0], "check") == 0) )
    {

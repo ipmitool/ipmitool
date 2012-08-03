@@ -704,7 +704,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 				return -1;
 		}
 		for(i=1;i<=6;i++) {
-			val[i] = sdr_convert_sensor_reading(sdr->record.common, rsp->data[i]);
+			val[i] = sdr_convert_sensor_reading(sdr->record.full, rsp->data[i]);
 			if(val[i] < 0)
 				val[i] = 0;
 		}

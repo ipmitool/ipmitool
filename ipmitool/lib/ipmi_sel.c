@@ -754,7 +754,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					// For the SPEC 1.5 Only the DIMM Number is Valid.
 					if(0x51  == version) 
 					{
-						snprintf(tmpdesc, SIZE_OF_DESC, "DIMM %s", ('A'+ data3));
+						snprintf(tmpdesc, SIZE_OF_DESC, "DIMM %c", ('A'+ data3));
 						strcat(desc, tmpdesc);						
 					} 
 					/* For the SPEC 2.0 Decode the DIMM Number as it supports more.*/

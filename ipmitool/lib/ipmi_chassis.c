@@ -231,10 +231,10 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
    minutes -= hours * 60;
 
    if (mins_per_count < 60) {
-       printf("POH Counter  : %li days, %li hours, %li minutes\n",
+       printf("POH Counter  : %i days, %i hours, %li minutes\n",
                days, hours, (long)minutes);
    } else {
-       printf("POH Counter  : %li days, %li hours\n", days, hours);
+       printf("POH Counter  : %i days, %i hours\n", days, hours);
    }
 
    return 0;
@@ -730,14 +730,14 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 
          printf(" Boot Initiator Info :\n");
          printf("    Channel Number : %d\n", (rsp->data[2] & 0x0f));
-         printf("    Session Id     : %08Xh\n",session_id);
+         printf("    Session Id     : %08lXh\n",session_id);
          if(timestamp != 0)
          {
-            printf("    Timestamp      : %08Xh, %s\n",timestamp,time_buf);
+            printf("    Timestamp      : %08lXh, %s\n",timestamp,time_buf);
          }
          else
          {
-            printf("    Timestamp      : %08Xh, undefined\n",timestamp);
+            printf("    Timestamp      : %08lXh, undefined\n",timestamp);
          }
 
       }

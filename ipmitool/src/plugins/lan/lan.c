@@ -47,6 +47,7 @@
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_strings.h>
@@ -79,8 +80,6 @@ static struct ipmi_rs * ipmi_lan_recv_packet(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_poll_recv(struct ipmi_intf * intf);
 static int ipmi_lan_setup(struct ipmi_intf * intf);
 static int ipmi_lan_keepalive(struct ipmi_intf * intf);
-static struct ipmi_rs * ipmi_lan_send_payload(struct ipmi_intf * intf,
- 					      struct ipmi_v2_payload * payload);
 static struct ipmi_rs * ipmi_lan_recv_sol(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_send_sol(struct ipmi_intf * intf,
 					  struct ipmi_v2_payload * payload);
@@ -1132,7 +1131,7 @@ uint8_t * ipmi_lan_build_sol_msg(struct ipmi_intf * intf,
 	msg = malloc(len);
 	if (msg == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return;
+		return NULL;
 	}
 	memset(msg, 0, len);
 
@@ -1493,7 +1492,7 @@ ack_sol_packet(struct ipmi_intf * intf,
  * Receive a SOL packet and send an ACK in response.
  *
  */
-struct ipmi_rs *
+static struct ipmi_rs *
 ipmi_lan_recv_sol(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp = ipmi_lan_poll_recv(intf);

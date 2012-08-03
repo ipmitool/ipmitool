@@ -4549,7 +4549,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	/*************************
 	1) Read ALL FRU */
 	printf("Read All FRU area\n");
-	printf("Fru Size       : %lu bytes\n", fru.size);
+	printf("Fru Size       : %u bytes\n", fru.size);
 
 	/* Read current fru data */
 	read_fru_area(intf ,&fru, fruId, 0, fru.size , fru_data_old);
@@ -4617,7 +4617,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	}
 
 	#ifdef DBG_RESIZE_FRU
-	printf("Section Length: %lu\n", fru_section_len);
+	printf("Section Length: %u\n", fru_section_len);
 	#endif
 
 	/*************************
@@ -4779,7 +4779,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 		/* Copy remaing bytes in section */
 		#ifdef DBG_RESIZE_FRU
-		printf("Copying remaining of sections: %lu \n",
+		printf("Copying remaining of sections: %u \n",
 					(
 						(fru_data_old + header_offset + fru_section_len - 1)
 						-

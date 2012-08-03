@@ -321,7 +321,7 @@ uint16_t str2val2(const char *str, const struct dcmi_cmd *vs)
     int i;
 
     if (vs == NULL || str == NULL)
-        return;
+        return 0;
     
     for (i = 0; vs[i].str != NULL; i++) {
         if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
@@ -346,7 +346,7 @@ const char * val2str2(uint16_t val, const struct dcmi_cmd *vs)
     int i;
 
     if (vs == NULL)
-        return;
+        return NULL;
     
     for (i = 0; vs[i].str != NULL; i++) {
         if (vs[i].val == val)
@@ -1089,7 +1089,7 @@ static int ipmi_dcmi_pwr_rd(struct ipmi_intf * intf) {
     printf("    Average power reading over sample period: %8d Watts\n",
         val.avg_pwr);
     printf("    IPMI timestamp:                           %s",
-        ctime(&val.time_stamp));
+        ctime((time_t *)&val.time_stamp));
     printf("    Sampling period:                          %08d Milliseconds\n",
         val.sample);
     printf("    Power reading state is:                   ");

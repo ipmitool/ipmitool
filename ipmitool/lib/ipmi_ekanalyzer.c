@@ -2420,7 +2420,7 @@ ipmi_ek_display_fru_header_detail( char * filename )
             len = (header.offset.board * FACTOR_OFFSET)
                   - (header.offset.internal * FACTOR_OFFSET);
          }
-         printf("Length: %d\n", len);
+         printf("Length: %ld\n", len);
          printf("Data dump:\n");
          while ( (len > 0) && ( !feof (input_file) ) ) {
             unsigned char data;
@@ -3071,7 +3071,7 @@ ipmi_ek_display_shelf_power_distribution_record(
       max_int = record->data[offset+0] | (record->data[offset+1]<<8);
       printf("   Max Internal Current:\t   %ld Amps\n", (max_int*10));
       offset += 2;
-      printf("   Min Expected Operating Voltage: %ld Volts\n",
+      printf("   Min Expected Operating Voltage: %d Volts\n",
                      (record->data[offset++]/2));
       entries = record->data[offset++];
       printf("   Feed to FRU count: 0x%02x\n", entries);
@@ -3846,7 +3846,7 @@ ipmi_ek_display_clock_config_record( struct ipmi_ek_multi_header * record )
                       (feature > 1) & 1,
                       (feature&1)?"Source":"Receiver");
          printf("\tFamily:  0x%02x    - AccLVL: 0x%02x\n", family, accuracy);
-         printf("\tFRQ: %-9d - min: %-9d - max: %-9d\n",
+         printf("\tFRQ: %-9ld - min: %-9ld - max: %-9ld\n",
                      freq, min_freq, max_freq);
       }
       printf("\n");
@@ -3899,7 +3899,7 @@ ipmi_ekanalyzer_fru_file2structure( char * filename,
          int record_count = 0;
 
          if ( verbose == LOG_DEBUG ){
-            printf( "start multi offset = 0x%02x\n", multi_offset );
+            printf( "start multi offset = 0x%02lx\n", multi_offset );
          }
          /*the offset value is in multiple of 8 bytes.*/
          multi_offset = multi_offset * 8;

@@ -33,7 +33,7 @@ AC_CHECK_FUNCS([alarm gethostbyname socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
 AC_CHECK_FUNCS([getpassphrase])
 
-CFLAGS="$CFLAGS -fno-strict-aliasing"
+CFLAGS="$CFLAGS -fno-strict-aliasing -Wreturn-type -Wno-unused-result -Wno-packed-bitfield-compat"
 
 AM_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"

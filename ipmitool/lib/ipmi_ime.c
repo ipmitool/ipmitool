@@ -435,7 +435,7 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
             printf("Percent: %02i,  ", shownPercent);
             time(&current);
             timeElapsedSecond = (current-start) + ((current-start)%60);
-            printf("Elapsed time %02d:%02d\r",((current-start)/60), ((current-start)%60));
+            printf("Elapsed time %02ld:%02ld\r",((current-start)/60), ((current-start)%60));
             fflush(stdout);
 
          }
@@ -484,13 +484,13 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
      )
    {
       time(&end);
-      printf("Update Completed in %02d:%02d\n",(end-start)/60, (end-start)%60);
+      printf("Update Completed in %02ld:%02ld\n",(end-start)/60, (end-start)%60);
    }
    else
    {
       time(&end);
       printf("Update Error\n");
-      printf("\nTime Taken %02d:%02d\n",(end-start)/60, (end-start)%60);
+      printf("\nTime Taken %02ld:%02ld\n",(end-start)/60, (end-start)%60);
    }
 
    return rc;
@@ -969,10 +969,12 @@ static int ImeManualRollback(struct ipmi_intf *intf)
      )
    {
       printf("Manual Rollback Succeed\n");
+      return IME_SUCCESS;
    }
    else
    {
       printf("Manual Rollback Completed With Error\n");
+      return IME_ERROR;
    }
 }
 

@@ -432,11 +432,11 @@ ipmi_picmg_portstate_get(struct ipmi_intf * intf, int interface,int channel,
 					}
 					else if (d->type >= 0x06 && d->type <= 0xef)
 					{
-						printf("Reserved\n",d->type);
+						printf("Reserved\n");
 					}
 					else if (d->type >= 0xf0 && d->type <= 0xfe)
 					{
-						printf("OEM GUID Definition\n",d->type);
+						printf("OEM GUID Definition\n");
 					}
 					else
 					{
@@ -508,7 +508,6 @@ ipmi_picmg_portstate_set(struct ipmi_intf * intf, int interface, int channel,
 	struct ipmi_rq req;
 
 	unsigned char msg_data[6];
-	struct fru_picmgext_link_desc* d;
 
 	memset(&req, 0, sizeof(req));
 
@@ -799,7 +798,7 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	printf("LED Color Capabilities: ", rsp->data[1] );
+	printf("LED Color Capabilities: ");
 	for ( i=0 ; i<8 ; i++ ) {
 		if ( rsp->data[1] & (0x01 << i) ) {
 			printf("%s, ", led_color_str[ i ]);
@@ -982,7 +981,6 @@ ipmi_picmg_get_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_set_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int i;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
@@ -1114,7 +1112,6 @@ ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
 int
 ipmi_picmg_clk_get(struct ipmi_intf * intf, int clk_id,int clk_res,int mode)
 {
-	int i;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
@@ -1204,7 +1201,7 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, int clk_id,int clk_res,int mode)
 						oemval2str( rsp->data[3], rsp->data[4],
 											picmg_clk_accuracy_vals));
 		
-		      printf("  - Freq:   %d\n", freq);
+		      printf("  - Freq:   %ld\n", freq);
 		   }
 		}
 	}
@@ -1215,7 +1212,6 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, int clk_id,int clk_res,int mode)
 int
 ipmi_picmg_clk_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int i;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
@@ -1262,7 +1258,7 @@ printf("## index:   %d\n", msg_data[2]);
 printf("## setting: 0x%02x\n", msg_data[3]);
 printf("## family:  %d\n", msg_data[4]);
 printf("## acc:     %d\n", msg_data[5]);
-printf("## freq:    %d\n", freq );
+printf("## freq:    %ld\n", freq );
 printf("## res:     %d\n", msg_data[10]);
 #endif
 

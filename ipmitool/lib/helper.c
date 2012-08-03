@@ -306,7 +306,7 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr)
 int str2uchar(const char * str, uint8_t * uchr_ptr)
 {
 	int rc = (-3);
-	int64_t arg_ulong = 0;
+	uint64_t arg_ulong = 0;
 	if ( (rc = str2ulong(str, &arg_ulong)) != 0 ) {
 		*uchr_ptr = 0;
 		return rc;

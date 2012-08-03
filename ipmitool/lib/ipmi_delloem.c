@@ -143,7 +143,7 @@ static void usage(void);
 
 /* LCD Function prototypes */
 static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** argv);
-static int ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,char* lcdstring,
+static void ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,char* lcdstring,
                         uint8_t max_length,uint8_t field_type);
 static int ipmi_idracvalidator_command (struct ipmi_intf * intf);
 static int ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf);
@@ -231,7 +231,7 @@ static void ipmi_vFlash_usage(void);
 /* LED Function prototypes */
 
 static int ipmi_getsesmask(int, char **);
-static int CheckSetLEDSupport(struct ipmi_intf * intf);
+static void CheckSetLEDSupport(struct ipmi_intf * intf);
 static int IsSetLEDSupported(void);
 static void ipmi_setled_usage(void);
 static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc, char ** argv);
@@ -636,7 +636,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         ipmi_lcd_usage();
         return -1;
     }
-
+    return rc;
 }
 
 
@@ -654,7 +654,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
 * Return:            
 *
 ******************************************************************/ 
-static int
+static void
 ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf, 
                           char* lcdstring, 
                                   uint8_t max_length, 
@@ -1946,7 +1946,7 @@ static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** arg
     {
         ipmi_mac_usage();
     }
-
+    return rc;
 }
 
 
@@ -2553,6 +2553,7 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
         ipmi_lan_usage();
         return -1;
     }
+    return rc;
 }
 
 
@@ -3249,6 +3250,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
         ipmi_powermonitor_usage();
         return -1;
     }
+    return rc;
 }
 
 
@@ -3740,13 +3742,13 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
         peakpowerheadroombtuphr=watt_to_btuphr_conversion(powerheadroom.peakheadroom);
         instantpowerhearoom= watt_to_btuphr_conversion(powerheadroom.instheadroom);
 
-        printf ("System Instantaneous Headroom : %ld BTU/hr\n",instantpowerhearoom);
-		printf ("System Peak Headroom          : %ld BTU/hr\n",peakpowerheadroombtuphr);
+        printf ("System Instantaneous Headroom : %lld BTU/hr\n",instantpowerhearoom);
+		printf ("System Peak Headroom          : %lld BTU/hr\n",peakpowerheadroombtuphr);
 	}
 	else
 	{
-        printf ("System Instantaneous Headroom : %ld W\n",powerheadroom.instheadroom);
-		printf ("System Peak Headroom          : %ld W\n",powerheadroom.peakheadroom);
+        printf ("System Instantaneous Headroom : %d W\n",powerheadroom.instheadroom);
+		printf ("System Peak Headroom          : %d W\n",powerheadroom.peakheadroom);
 	}
 
     return 0;
@@ -4239,33 +4241,33 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
         {
             printf ("Average Power Consumption  ");         
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lastminutepower);
-            printf ("%4d BTU/hr     ",tempbtuphrconv);
+            printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lasthourpower);
-            printf ("%4d BTU/hr   ",tempbtuphrconv);
+            printf ("%4lld BTU/hr   ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lastdaypower);
-            printf ("%4d BTU/hr  ",tempbtuphrconv);
+            printf ("%4lld BTU/hr  ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lastweakpower);
-            printf ("%4d BTU/hr\n",tempbtuphrconv);
+            printf ("%4lld BTU/hr\n",tempbtuphrconv);
 
             printf ("Max Power Consumption      ");         
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lastminutepower);
-            printf ("%4d BTU/hr     ",tempbtuphrconv);
+            printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lasthourpower);
-            printf ("%4d BTU/hr   ",tempbtuphrconv);
+            printf ("%4lld BTU/hr   ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lastdaypower);
-            printf ("%4d BTU/hr  ",tempbtuphrconv);
+            printf ("%4lld BTU/hr  ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lastweakpower);
-            printf ("%4d BTU/hr\n",tempbtuphrconv);
+            printf ("%4lld BTU/hr\n",tempbtuphrconv);
 
             printf ("Min Power Consumption      ");         
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lastminutepower);
-            printf ("%4d BTU/hr     ",tempbtuphrconv);
+            printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lasthourpower);
-            printf ("%4d BTU/hr   ",tempbtuphrconv);
+            printf ("%4lld BTU/hr   ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lastdaypower);
-            printf ("%4d BTU/hr  ",tempbtuphrconv);
+            printf ("%4lld BTU/hr  ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lastweakpower);
-            printf ("%4d BTU/hr\n\n",tempbtuphrconv);
+            printf ("%4lld BTU/hr\n\n",tempbtuphrconv);
 
         }
         else
@@ -4273,33 +4275,33 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 
             printf ("Average Power Consumption  ");         
             tempbtuphrconv=(avgpower.lastminutepower);
-			printf ("%4ld W          ",tempbtuphrconv);
+			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(avgpower.lasthourpower);
-			printf ("%4ld W        ",tempbtuphrconv);
+			printf ("%4lld W        ",tempbtuphrconv);
 			tempbtuphrconv=(avgpower.lastdaypower);
-			printf ("%4ld W       ",tempbtuphrconv);
+			printf ("%4lld W       ",tempbtuphrconv);
 			tempbtuphrconv=(avgpower.lastweakpower);
-			printf ("%4ld W   \n",tempbtuphrconv);
+			printf ("%4lld W   \n",tempbtuphrconv);
 
 		printf ("Max Power Consumption      ");		
 			tempbtuphrconv=(stPeakpower.lastminutepower);
-			printf ("%4ld W          ",tempbtuphrconv);
+			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(stPeakpower.lasthourpower);
-			printf ("%4ld W        ",tempbtuphrconv);
+			printf ("%4lld W        ",tempbtuphrconv);
 			tempbtuphrconv=(stPeakpower.lastdaypower);
-			printf ("%4ld W       ",tempbtuphrconv);
+			printf ("%4lld W       ",tempbtuphrconv);
 			tempbtuphrconv=(stPeakpower.lastweakpower);
-			printf ("%4ld W   \n",tempbtuphrconv);
+			printf ("%4lld W   \n",tempbtuphrconv);
 
 		printf ("Min Power Consumption      ");		
 			tempbtuphrconv=(stMinpower.lastminutepower);
-			printf ("%4ld W          ",tempbtuphrconv);
+			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(stMinpower.lasthourpower);
-			printf ("%4ld W        ",tempbtuphrconv);
+			printf ("%4lld W        ",tempbtuphrconv);
 			tempbtuphrconv=(stMinpower.lastdaypower);
-			printf ("%4ld W       ",tempbtuphrconv);
+			printf ("%4lld W       ",tempbtuphrconv);
 			tempbtuphrconv=(stMinpower.lastweakpower);
-		   	printf ("%4ld W   \n\n",tempbtuphrconv);
+		   	printf ("%4lld W   \n\n",tempbtuphrconv);
 		}		
 		
         lastminutepeakpower=stPeakpower.lastminutepowertime;
@@ -4454,16 +4456,16 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
     {
         if (unit ==btuphr){
             tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
-			printf ("Maximum power: %ld  BTU/hr\n",tempbtuphrconv);
+			printf ("Maximum power: %lld  BTU/hr\n",tempbtuphrconv);
 			tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
-			printf ("Minimum power: %ld  BTU/hr\n",tempbtuphrconv);
+			printf ("Minimum power: %lld  BTU/hr\n",tempbtuphrconv);
 			tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.PowerCap);
-			printf ("Power cap    : %ld  BTU/hr\n",tempbtuphrconv);
+			printf ("Power cap    : %lld  BTU/hr\n",tempbtuphrconv);
 		}else{
 		
-			printf ("Maximum power: %ld Watt\n",ipmipowercap.MaximumPowerConsmp);
-			printf ("Minimum power: %ld Watt\n",ipmipowercap.MinimumPowerConsmp);
-			printf ("Power cap    : %ld Watt\n",ipmipowercap.PowerCap);
+			printf ("Maximum power: %d Watt\n",ipmipowercap.MaximumPowerConsmp);
+			printf ("Minimum power: %d Watt\n",ipmipowercap.MinimumPowerConsmp);
+			printf ("Power cap    : %d Watt\n",ipmipowercap.PowerCap);
         }
     }
     return rc;
@@ -4818,6 +4820,7 @@ static int ipmi_delloem_vFlash_main (struct ipmi_intf * intf, int argc, char ** 
 
 	current_arg++;
 	rc = ipmi_delloem_vFlash_process(intf, current_arg, argv);
+	return rc;
 }
 
 
@@ -5038,7 +5041,7 @@ IsSetLEDSupported(void)
     return SetLEDSupported;
 }
 
-static int
+static void
 CheckSetLEDSupport(struct ipmi_intf * intf)
 {
     struct ipmi_rs * rsp = NULL;

@@ -323,7 +323,7 @@ ipmi_gendev_read_file(
          }
          if(counter == (eeprom_info.size))
          {
-            printf("\r%100 percent completed\n");
+            printf("\r%%100 percent completed\n");
          }
          else
          {
@@ -510,7 +510,7 @@ ipmi_gendev_write_file(
          }
          if(counter == (eeprom_info.size))
          {
-            printf("\r%100 percent completed\n");
+            printf("\r%%100 percent completed\n");
          }
          else
          {
