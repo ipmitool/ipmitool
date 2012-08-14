@@ -135,6 +135,7 @@ typedef struct _tag_ipmi_dell_lcd_stringex
 
 typedef struct _lcd_status
 {
+      char parametersel;
       char vKVM_status;
       char lock_status;
       char Resv1;
