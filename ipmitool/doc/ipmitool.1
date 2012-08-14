@@ -350,6 +350,30 @@ OEM\-Defined option #1
 .br 
 
 OEM\-Defined option #2
+
+.RE
+.TP
+\fIgetsysinfo\fP <\fBargument\fP>
+Retrieves system info from bmc for given argument.
+.br
+See \fIsetsysinfo\fP for argument definitions
+.TP
+\fIsetsysinfo\fP  <\fBargument\fP> <\fBstring\fP>
+Stores system info string to bmc for given argument
+.RS
+.TP
+Possible arguments are:
+.RS
+.TP
+\fIprimary_os_name\fP     Primary Operating System Name
+.TP
+\fIos_name\fP             Operating System Name
+.TP
+\fIsystem_name\fP         System Name of Server
+.TP
+\fIdelloem_os_version\fP Running versin of operating system
+.TP
+\fIdelloem_URL\fP        URL of BMC Webserver
 .RE
 .RE
 .TP 

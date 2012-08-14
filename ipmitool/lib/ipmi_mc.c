@@ -45,6 +45,8 @@
 
 extern int verbose;
 
+static int ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv);
+
 /* ipmi_mc_reset  -  attempt to reset an MC
  *
  * @intf:	ipmi interface
@@ -168,10 +170,17 @@ printf_mc_usage(void)
 	printf("  selftest\n");
 	printf("  getenables\n");
 	printf("  setenables <option=on|off> ...\n");
-
 	for (bf = mc_enables_bf; bf->name != NULL; bf++) {
 		printf("    %-20s  %s\n", bf->name, bf->desc);
 	}
+	printf("  getsysinfo argument\n");
+	printf("  setsysinfo argument string\n");
+	printf("    Valid arguments are:\n");
+        printf("        primary_os_name     Primary operating system name\n");
+        printf("        os_name             Operating system name\n");
+        printf("        system_name         System Name of server (vendor dependent\n");
+        printf("        delloem_os_version  Running version of operating system\n");
+        printf("        delloem_url         Url of bmc webserver\n");
 }
 
 
@@ -793,9 +802,237 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_watchdog_usage();
 		}
 	}
+	else if (!strncmp(argv[0], "getsysinfo", 10) ||
+		 !strncmp(argv[0], "setsysinfo", 10)) {
+	    rc = ipmi_sysinfo_main(intf, argc, argv);
+	}
 	else {
 		lprintf(LOG_ERR, "Invalid mc/bmc command: %s", argv[0]);
 		rc = -1;
 	}
 	return rc;
+}
+
+
+static int sysinfo_param(struct ipmi_intf *intf, const char *str, int *maxset)
+{
+    *maxset = 4;
+    if (!strcmp(str, "system_name"))
+	return IPMI_SYSINFO_HOSTNAME;
+    if (!strcmp(str, "primary_os_name"))
+	return IPMI_SYSINFO_PRIMARY_OS_NAME;
+    if (!strcmp(str, "os_name"))
+	return IPMI_SYSINFO_OS_NAME;
+
+    if (!strcmp(str, "delloem_os_version")) {
+	*maxset = 4;
+	return IPMI_SYSINFO_DELL_OS_VERSION;
+    }
+    if (!strcmp(str, "delloem_url")) {
+	*maxset = 2;
+	return IPMI_SYSINFO_DELL_URL;
+    }
+    return strtoul(str, 0, 0);
+    return -1;
+}
+
+static void ipmi_sysinfo_usage()
+{
+    lprintf(LOG_NOTICE, "usage:");
+    lprintf(LOG_NOTICE, "  getsysinfo argument");
+    lprintf(LOG_NOTICE, "    Retrieves system info from bmc for given argument");
+    lprintf(LOG_NOTICE, "  setsysinfo argument string");
+    lprintf(LOG_NOTICE, "    Stores system info string for given argument to bmc");
+    lprintf(LOG_NOTICE, "");
+    lprintf(LOG_NOTICE, "      Valid arguments are:");
+    lprintf(LOG_NOTICE, "        primary_os_name     Primary operating system name");
+    lprintf(LOG_NOTICE, "        os_name             Operating system name");
+    lprintf(LOG_NOTICE, "        system_name         System Name of server (vendor dependent");
+    lprintf(LOG_NOTICE, "        delloem_os_version  Running version of operating system");
+    lprintf(LOG_NOTICE, "        delloem_url         Url of bmc webserver");
+
+    lprintf(LOG_NOTICE, "");
+}
+
+/*****************************************************************
+ * Function Name:       ipmi_getsysinfo
+ *
+ * Description:         This function processes the IPMI Get System Info command
+ * Input:               intf    - ipmi interface
+ *                      param   - Parameter # (0xC0..0xFF = OEM)
+ *                      block/set - Block/Set number of parameter
+ *                      len     - Length of buffer
+ *                      buffer  - Pointer to buffer
+ * Output:        
+ *
+ * Return:              return code     0 - success
+ *                         -1 - failure
+ *                         other = IPMI ccode
+ *
+ ******************************************************************/
+int
+ipmi_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
+		int len, void *buffer)
+{
+    uint8_t data[4];
+    struct ipmi_rs *rsp = NULL;
+    struct ipmi_rq req={0};
+
+    memset(buffer, 0, len);
+    memset(data, 0, 4);
+    req.msg.netfn = IPMI_NETFN_APP;
+    req.msg.lun = 0;
+    req.msg.cmd = IPMI_GET_SYS_INFO;
+    req.msg.data_len = 4;
+    req.msg.data = data;
+
+    if (verbose > 1)
+	printf("getsysinfo: %.2x/%.2x/%.2x\n", param, block, set);
+    data[0] = 0; // get/set
+    data[1] = param;
+    data[2] = block;
+    data[3] = set;
+
+    // Format of get output is: 
+    //   u8 param_rev
+    //   u8 selector
+    //   u8 encoding  bit[0-3];
+    //   u8 length
+    //   u8 data0[14]
+    rsp = intf->sendrecv(intf, &req);
+    if (rsp != NULL) {
+        if (rsp->ccode == 0) {
+            if (len > rsp->data_len)
+                len = rsp->data_len;
+            if (len && buffer)
+                memcpy(buffer, rsp->data, len);
+        }
+        return rsp->ccode;
+    }
+    return -1;
+}
+
+/*****************************************************************
+ * Function Name:       ipmi_setsysinfo
+ *
+ * Description:         This function processes the IPMI Set System Info command
+ * Input:               intf    - ipmi interface
+ *                      len     - Length of buffer
+ *                      buffer  - Pointer to buffer
+ * Output:
+ *
+ * Return:              return code     0 - success
+ *                         -1 - failure
+ *                         other = IPMI ccode
+ *
+ ******************************************************************/
+int
+ipmi_setsysinfo(struct ipmi_intf * intf, int len, void *buffer)
+{
+    struct ipmi_rs *rsp = NULL;
+    struct ipmi_rq req={0};
+
+    req.msg.netfn = IPMI_NETFN_APP;
+    req.msg.lun = 0;
+    req.msg.cmd = IPMI_SET_SYS_INFO;
+    req.msg.data_len = len;
+    req.msg.data = buffer;
+    
+    // Format of set input:
+    //   u8 param rev
+    //   u8 selector
+    //   u8 data1[16]
+    rsp = intf->sendrecv(intf, &req);
+    if (rsp != NULL) {
+        return rsp->ccode;
+    }
+    return -1;
+}
+
+
+static int ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv)
+{
+    int param, isset;
+    char *str;
+    unsigned char  infostr[256];
+    unsigned char  paramdata[18];
+    int   pos, set, rc, maxset, len;
+
+    /* Is this a setsysinfo or getsysinfo */
+    isset = !strncmp(argv[0], "setsysinfo\0",11);
+
+    if (argc == 1 || strcmp(argv[1], "help") == 0 ||
+	argc < (isset ? 3 : 2)) {
+	ipmi_sysinfo_usage();
+	return 0;
+    }
+    memset(infostr, 0, sizeof(infostr));
+
+    /* Get Parameters */
+    param = sysinfo_param(intf, argv[1], &maxset);
+    if (param < 0) {
+	ipmi_sysinfo_usage();
+	return 0;
+    }
+
+    rc  = 0;
+    if (isset) {
+	str = argv[2];
+	set = pos = 0;
+	len = strlen(str);
+
+	/* first block holds 14 bytes, all others hold 16 */
+	if (((len + 2) + 15) / 16 >= maxset)
+	    len = maxset * 16 - 2;
+	do {
+	    memset(paramdata, 0, sizeof(paramdata));
+	    paramdata[0] = param;
+	    paramdata[1] = set;
+	    if (set == 0) {
+		/* First block is special case */
+		paramdata[2] = 0;   // ascii encoding
+		paramdata[3] = len; // length;
+		strncpy(paramdata+4, str+pos, IPMI_SYSINFO_SET0_SIZE);
+		pos += IPMI_SYSINFO_SET0_SIZE;
+	    } else {
+		strncpy(paramdata+2, str+pos, IPMI_SYSINFO_SETN_SIZE);
+		pos += IPMI_SYSINFO_SETN_SIZE;
+	    }
+	    rc = ipmi_setsysinfo(intf, 18, paramdata);
+	    if (rc)
+		break;
+	    set++;
+	} while (pos < len);
+    } else {
+	/* Read blocks of data */
+	pos = 0;
+	for (set=0; set<maxset; set++) {
+	    rc = ipmi_getsysinfo(intf, param, set, 0, 18, paramdata);
+	    if (rc)
+		break;
+	    if (set == 0) {
+		/* First block is special case */
+		if ((paramdata[2] & 0xF) == 0) {
+		    /* Determine max number of blocks to read */
+		    maxset = ((paramdata[3] + 2) + 15) / 16;
+		}
+		memcpy(infostr+pos, paramdata+4, IPMI_SYSINFO_SET0_SIZE);
+		pos += IPMI_SYSINFO_SET0_SIZE;
+	    } else {
+		memcpy(infostr+pos, paramdata+2, IPMI_SYSINFO_SETN_SIZE);
+		pos += IPMI_SYSINFO_SETN_SIZE;
+	    }
+	}
+	printf("%s\n", infostr);
+    }
+    if (rc < 0) {
+	lprintf(LOG_ERR, "%s %s set %d command failed", argv[0], argv[1], set);
+    } 
+    else if (rc == 0x80) {
+	lprintf(LOG_ERR, "%s %s parameter not supported", argv[0], argv[1]);
+    } 
+    else if (rc > 0) {
+	lprintf(LOG_ERR, "%s %s", argv[0], val2str(rc, completion_code_vals));
+    }
+    return rc;
 }

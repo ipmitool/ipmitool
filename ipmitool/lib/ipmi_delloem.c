@@ -216,8 +216,6 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit );
 static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowercap );
 static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit );
 static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val );
-static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id, 
-                       struct fru_header header, struct fru_info fru);
 static void ipmi_powermonitor_usage(void);
 
 /* vFlash Function prototypes */
@@ -663,45 +661,35 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
     struct ipmi_rs * rsp = NULL;
     struct ipmi_rq req = {0};
     uint8_t data[4];
-    IPMI_DELL_LCD_STRING * lcdstringblock;
+    IPMI_DELL_LCD_STRING lcdstringblock;
     int lcdstring_len = 0;
     int bytes_copied = 0;
+    int rc;
 
     int ii;
 
     for (ii = 0; ii < 4; ii++)
     {
         int bytes_to_copy;
-		memset (&req,0,sizeof(req));
-        req.msg.netfn = IPMI_NETFN_APP;
-        req.msg.lun = 0;
-        req.msg.cmd = IPMI_GET_SYS_INFO;
-        req.msg.data_len = 4;
-        req.msg.data = data;
-        data[0] = 0;                            /* get parameter*/
-        data[1] = field_type;
-        data[2] = ii;
-        data[3] = 0;
 
-
-        rsp = intf->sendrecv(intf, &req);
-        if (rsp == NULL) {
+	rc = ipmi_getsysinfo(intf, field_type, ii, 0, 
+			     sizeof(lcdstringblock),
+			     &lcdstringblock);
+        if (rc < 0) {
             lprintf(LOG_ERR, " Error getting platform model name");
-        } else if (rsp->ccode > 0) {
+        } else if (rc > 0) {
             lprintf(LOG_ERR, " Error getting platform model name: %s",
-                val2str(rsp->ccode, completion_code_vals));
+                val2str(rc, completion_code_vals));
         }
-
-        lcdstringblock = (IPMI_DELL_LCD_STRING *) (void *) rsp->data;
 
         /* first block is different - 14 bytes*/
         if (0 == ii) {
-            lcdstring_len = lcdstringblock->lcd_string.selector_0_string.length;
+            lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
 
             lcdstring_len = MIN (lcdstring_len,max_length);
 
             bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
-            memcpy (lcdstring, lcdstringblock->lcd_string.selector_0_string.data, bytes_to_copy);
+            memcpy (lcdstring, lcdstringblock.lcd_string.selector_0_string.data, bytes_to_copy);
         } else {
             int string_offset;
 
@@ -709,7 +697,7 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
             if (bytes_to_copy < 1)
                 break;
             string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE * (ii-1);
-            memcpy (lcdstring+string_offset, lcdstringblock->lcd_string.selector_n_data, bytes_to_copy);
+            memcpy (lcdstring+string_offset, lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
         }
 
 
@@ -737,37 +725,25 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
 static int
 ipmi_idracvalidator_command (struct ipmi_intf * intf)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
+    int rc;
+    uint8_t data[11];
 
-    memset (&req,0,sizeof(req));
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = IPMI_DELL_IDRAC_VALIDATOR;
-    data[2] = 2;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) {
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_IDRAC_VALIDATOR, 2, 0, sizeof(data), data);
+    if (rc < 0) {
         /*lprintf(LOG_ERR, " Error getting IMC type"); */
         return -1;
-    } else if (rsp->ccode > 0) {
+    } else if (rc > 0) {
         /*lprintf(LOG_ERR, " Error getting IMC type: %s",
         val2str(rsp->ccode, completion_code_vals));  */
         return -1;
 	}
 	/* Support the 11G Monolithic, modular, Maisy and Coaster */
-	if( (IMC_IDRAC_11G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_11G_MODULAR ==rsp->data[10])  ||
-		(IMC_MASER_LITE_BMC == rsp->data[10]) || (IMC_MASER_LITE_NU ==rsp->data[10])	)
+    if( (IMC_IDRAC_11G_MONOLITHIC == data[10]) || (IMC_IDRAC_11G_MODULAR == data[10])  ||
+	(IMC_MASER_LITE_BMC == data[10]) || (IMC_MASER_LITE_NU == data[10])	)
     {
 		iDRAC_FLAG=IDRAC_11G;
     }
-	else if( (IMC_IDRAC_12G_MONOLITHIC == rsp->data[10]) || (IMC_IDRAC_12G_MODULAR==rsp->data[10]) )
+    else if( (IMC_IDRAC_12G_MONOLITHIC == data[10]) || (IMC_IDRAC_12G_MODULAR == data[10]) )
     {
 		iDRAC_FLAG=IDRAC_12G;
     }
@@ -775,7 +751,7 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
     {
         iDRAC_FLAG=0;
     }       
-    IMC_Type = rsp->data[10];
+    IMC_Type = data[10];
     
     return 0;
 }
@@ -797,35 +773,20 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
 static int
 ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[4];
+    int rc;
 
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = IPMI_DELL_LCD_CONFIG_SELECTOR;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) {
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0, sizeof(lcd_mode), &lcd_mode);
+    if (rc < 0) {
         lprintf(LOG_ERR, " Error getting LCD configuration");
         return -1;
-    }else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)){
-
+    } else if ((rc == 0xc1)||(rc == 0xcb)){
         lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system."); 
-
-    } else if (rsp->ccode > 0) {
+    } else if (rc > 0) {
         lprintf(LOG_ERR, " Error getting LCD configuration: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
-
-    lcd_mode= *((LCD_MODE*)(rsp->data));
     return 0;
 }
 
@@ -846,40 +807,29 @@ static int
 ipmi_lcd_get_configure_command (struct ipmi_intf * intf,
                                 uint8_t *command)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[4];
+    int rc;
 
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = IPMI_DELL_LCD_CONFIG_SELECTOR;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL)
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0, sizeof(data), data);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD configuration");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system."); 
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rc > 0) 
     {
         lprintf(LOG_ERR, " Error getting LCD configuration: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
 
     /* rsp->data[0] is the rev */
-    *command = rsp->data[1];
+    *command = data[1];
 
     return 0;
 }
@@ -900,35 +850,26 @@ static int
 ipmi_lcd_set_configure_command (struct ipmi_intf * intf, int command)
 {
 #define LSCC_DATA_LEN 2
-
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[2];
+    int rc;
 
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_SET_SYS_INFO;
-    req.msg.data_len = 2;
-    req.msg.data = data;
     data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
     data[1] = command;                      /* command - custom, default, none */
 
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+    rc = ipmi_setsysinfo(intf, 2, data);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system."); 
-
     }
-    else if (rsp->ccode > 0) 
+    else if (rc > 0) 
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: %s",
-            val2str(rsp->ccode, completion_code_vals));
-
+            val2str(rc, completion_code_vals));
         return -1;
     }
 
@@ -955,17 +896,10 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
                                    uint8_t errordisp)
 {
 #define LSCC_DATA_LEN 2
-
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[13];
+    int rc;
 
     ipmi_lcd_get_configure_command_wh(intf);
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_SET_SYS_INFO;
-    req.msg.data_len = 13;
-    req.msg.data = data;
     data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
 
     if(mode!=0xFF)
@@ -1016,20 +950,21 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
     {
         data[11]=lcd_mode.error_display;
     }
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+
+    rc = ipmi_setsysinfo(intf, 13, data);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system."); 
     }
-    else if (rsp->ccode > 0) 
+    else if (rc > 0) 
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
 
         return -1;
     }
@@ -1054,49 +989,34 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
 static int
 ipmi_lcd_get_single_line_text (struct ipmi_intf * intf, char* lcdstring, uint8_t max_length)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-    IPMI_DELL_LCD_STRING * lcdstringblock;
+    IPMI_DELL_LCD_STRING lcdstringblock;
     int lcdstring_len = 0;
     int bytes_copied = 0;
-    int ii;
+    int ii, rc;
 
     for (ii = 0; ii < 4; ii++) {
         int bytes_to_copy;
 
-        req.msg.netfn = IPMI_NETFN_APP;
-        req.msg.lun = 0;
-        req.msg.cmd = IPMI_GET_SYS_INFO;
-        req.msg.data_len = 4;
-        req.msg.data = data;
-        data[0] = 0;                            /* get parameter*/
-        data[1] = IPMI_DELL_LCD_STRING_SELECTOR;
-        data[2] = ii;                           /* block selector*/
-        data[3] = 00;                           /* set selector (n/a)*/
-
-        rsp = intf->sendrecv(intf, &req);
-        if (rsp == NULL) {
+	rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STRING_SELECTOR, ii, 0, sizeof(lcdstringblock), &lcdstringblock);
+	if (rc < 0) {
             lprintf(LOG_ERR, " Error getting text data");
             return -1;
-        } else if (rsp->ccode > 0) {
+        } else if (rc > 0) {
             lprintf(LOG_ERR, " Error getting text data: %s",
-                val2str(rsp->ccode, completion_code_vals));
+                val2str(rc, completion_code_vals));
             return -1;
         }
-
-        lcdstringblock = (IPMI_DELL_LCD_STRING *) (void *) rsp->data;
 
         /* first block is different - 14 bytes*/
         if (0 == ii)
         {
-            lcdstring_len = lcdstringblock->lcd_string.selector_0_string.length;
+            lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
 
             if (lcdstring_len < 1 || lcdstring_len > max_length)
                 break;
 
             bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
-            memcpy (lcdstring, lcdstringblock->lcd_string.selector_0_string.data, bytes_to_copy);
+            memcpy (lcdstring, lcdstringblock.lcd_string.selector_0_string.data, bytes_to_copy);
         }
         else
         {
@@ -1106,7 +1026,7 @@ ipmi_lcd_get_single_line_text (struct ipmi_intf * intf, char* lcdstring, uint8_t
             if (bytes_to_copy < 1)
                 break;
             string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE * (ii-1);
-            memcpy (lcdstring+string_offset, lcdstringblock->lcd_string.selector_n_data, bytes_to_copy);
+            memcpy (lcdstring+string_offset, lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
         }
 
         bytes_copied += bytes_to_copy;
@@ -1130,13 +1050,9 @@ static int
 ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-    IPMI_DELL_LCD_CAPS* lcd_caps;
+    IPMI_DELL_LCD_CAPS lcd_caps;
     char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
     int rc;
-
 
     printf("LCD info\n");
 
@@ -1165,41 +1081,28 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
         }
         else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED) 
         {
-            req.msg.netfn = IPMI_NETFN_APP;
-            req.msg.lun = 0;
-            req.msg.cmd = IPMI_GET_SYS_INFO;
-            req.msg.data_len = 4;
-            req.msg.data = data;
-            data[0] = 0;                            /* get parameter*/
-            data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
-            data[2] = 0;                            /* set selector (n/a)*/
-            data[3] = 0;                            /* block selector (n/a)*/
-
             printf("    Setting: User defined\n");
-
-            rsp = intf->sendrecv(intf, &req);
-            if (rsp == NULL)
+	    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+            if (rc < 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities.");
                 return -1;
             }
-            else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+            else if ((rc == 0xc1)||(rc == 0xcb))
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: Command not supported on this system.");
             }
-            else if (rsp->ccode > 0) 
+            else if (rc > 0) 
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
-                    val2str(rsp->ccode, completion_code_vals));
+                    val2str(rc, completion_code_vals));
                 return -1;
             }
-
-            lcd_caps = (IPMI_DELL_LCD_CAPS *)rsp->data;
-            if (lcd_caps->number_lines > 0) 
+            if (lcd_caps.number_lines > 0) 
             {
                 memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
 
-                rc = ipmi_lcd_get_single_line_text (intf, lcdstring, lcd_caps->max_chars[0]);
+                rc = ipmi_lcd_get_single_line_text (intf, lcdstring, lcd_caps.max_chars[0]);
                 printf("    Text:    %s\n", lcdstring);
             }
             else 
@@ -1269,10 +1172,7 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 ******************************************************************/
 static int ipmi_lcd_get_info(struct ipmi_intf * intf)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-    IPMI_DELL_LCD_CAPS * lcd_caps;
+    IPMI_DELL_LCD_CAPS lcd_caps;
     uint8_t command = 0;
     char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
     int rc; 
@@ -1301,40 +1201,28 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
         }
         else if (command == IPMI_DELL_LCD_CONFIG_USER_DEFINED)
         {
-            req.msg.netfn = IPMI_NETFN_APP;
-            req.msg.lun = 0;
-            req.msg.cmd = IPMI_GET_SYS_INFO;
-            req.msg.data_len = 4;
-            req.msg.data = data;
-            data[0] = 0;                            /* get parameter */
-            data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
-            data[2] = 0;                            /* set selector (n/a) */
-            data[3] = 0;                            /* block selector (n/a) */
-
             printf("    Setting: custom\n");
 
-            rsp = intf->sendrecv(intf, &req);
-            if (rsp == NULL)
+            rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+            if (rc < 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities.");
                 return -1;
             }
-            else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+            else if ((rc == 0xc1)||(rc == 0xcb))
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: Command not supported on this system.");
             }
-            else if (rsp->ccode > 0)
+            else if (rc > 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
-                    val2str(rsp->ccode, completion_code_vals));
+                    val2str(rc, completion_code_vals));
                 return -1;
             }
-
-            lcd_caps = (IPMI_DELL_LCD_CAPS *)(void *)rsp->data;
-            if (lcd_caps->number_lines > 0)
+            if (lcd_caps.number_lines > 0)
             {
                 memset (lcdstring,0,IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
-                rc = ipmi_lcd_get_single_line_text (intf, lcdstring, lcd_caps->max_chars[0]);
+                rc = ipmi_lcd_get_single_line_text (intf, lcdstring, lcd_caps.max_chars[0]);
                 printf("    Text:    %s\n", lcdstring);
             }
             else
@@ -1360,44 +1248,25 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
 static int
 ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
+    int rc;
 
-
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;                            /* get parameter */
-    data[1] = IPMI_DELL_LCD_STATUS_SELECTOR;
-    data[2] = 0;                            /* block selector */
-    data[3] = 0;            
-    /* set selector (n/a) */
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, sizeof(*lcdstatus), lcdstatus);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD Status");
         return -1;
     }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) 
+    else if ((rc == 0xc1)||(rc == 0xcb)) 
     {
         lprintf(LOG_ERR, " Error getting LCD status: Command not supported on this system.");
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rc > 0) 
     {
         lprintf(LOG_ERR, " Error getting LCD Status: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
-
-    /*lcdstatus= (LCD_STATUS* ) rsp->data; */
-
-    lcdstatus->vKVM_status=rsp->data[1];
-    lcdstatus->lock_status=rsp->data[2];
-
     return 0;
 }
 
@@ -1427,36 +1296,13 @@ static int IsLCDSupported ()
 ******************************************************************/
 static void CheckLCDSupport(struct ipmi_intf * intf)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
+    int rc;
 
     LcdSupported = 0;
-
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;                            /* get parameter */
-    data[1] = IPMI_DELL_LCD_STATUS_SELECTOR;
-    data[2] = 0;                            /* block selector */
-    data[3] = 0;            
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
-    {
-        return;
-    }
-    else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) 
-    {
-        return;
-    }
-    else if (rsp->ccode > 0) 
-    {
-        return;
-    }
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, 0, NULL);
+    if (rc == 0) {
     LcdSupported = 1;       
-
+    }
 }
 
 /*****************************************************************
@@ -1644,8 +1490,6 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 static int 
 ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[18];
     int bytes_to_store = strlen(text);
     int bytes_stored = 0;
@@ -1667,11 +1511,6 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
                     MIN((bytes_to_store - bytes_stored), IPMI_DELL_LCD_STRING1_SIZE);
                 if (size_of_copy < 0)           /* allow 0 string length*/
                     break;
-                req.msg.netfn = IPMI_NETFN_APP;
-                req.msg.lun = 0;
-                req.msg.cmd = IPMI_SET_SYS_INFO;
-                req.msg.data_len = size_of_copy + 4; /* chars, selectors and sizes*/
-                req.msg.data = data;
                 data[0] = IPMI_DELL_LCD_STRING_SELECTOR;
                 data[1] = ii;                           /* block number to use (0)*/
                 data[2] = 0;                            /*string encoding*/
@@ -1683,24 +1522,18 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
                     MIN((bytes_to_store - bytes_stored), IPMI_DELL_LCD_STRINGN_SIZE);
                 if (size_of_copy <= 0)
                     break;
-                req.msg.netfn = IPMI_NETFN_APP;
-                req.msg.lun = 0;
-                req.msg.cmd = IPMI_SET_SYS_INFO;
-                req.msg.data_len = size_of_copy + 2;
-                req.msg.data = data;
                 data[0] = IPMI_DELL_LCD_STRING_SELECTOR;
                 data[1] = ii;                           /* block number to use (1,2,3)*/
                 memcpy (data+2, text+bytes_stored, size_of_copy);
                 bytes_stored += size_of_copy;
             }
-
-            rsp = intf->sendrecv(intf, &req);
-            if (rsp == NULL) {
+	    rc = ipmi_setsysinfo(intf, 18, data);
+            if (rc < 0) {
                 lprintf(LOG_ERR, " Error setting text data");
                 rc = -1;
-            } else if (rsp->ccode > 0) {
+            } else if (rc > 0) {
                 lprintf(LOG_ERR, " Error setting text data: %s",
-                    val2str(rsp->ccode, completion_code_vals));
+                    val2str(rc, completion_code_vals));
                 rc = -1;
             }
         }
@@ -1726,45 +1559,28 @@ static int
 ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
 {
     int rc = 0;
+    IPMI_DELL_LCD_CAPS lcd_caps;
 
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-    IPMI_DELL_LCD_CAPS * lcd_caps;
-
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;                            /* get parameter*/
-    data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
-    data[2] = 0;                            /* set selector (n/a)*/
-    data[3] = 0;                            /* block selector (n/a)*/
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD capabilities");
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
 
         return -1;
     }
 
-    lcd_caps = (IPMI_DELL_LCD_CAPS *)(void *)rsp->data;
-
-    if (lcd_caps->number_lines > 0) {
+    if (lcd_caps.number_lines > 0) {
         rc = ipmi_lcd_set_single_line_text (intf, text);
     } else {
         lprintf(LOG_ERR, "LCD does not have any lines that can be set");
         rc = -1;
     }
-
 
     return rc;
 }
@@ -2208,7 +2024,6 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
     req.msg.lun = 0;                
     req.msg.cmd = IPMI_GET_SYS_INFO;
     req.msg.data = msg_data;
-
 
     req.msg.data_len = input_length;
 
@@ -3980,52 +3795,40 @@ static int ipmi_print_get_power_consmpt_data(struct ipmi_intf* intf,uint8_t  uni
 ******************************************************************/
 static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWER_CONSUMP_HISTORY* pavgpower )
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
+    int rc;
+    uint8_t *rdata;
 
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = 0xeb;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-
-    if (rsp == NULL)
+    rc = ipmi_getsysinfo(intf, 0xeb, 0, 0, sizeof(*pavgpower), pavgpower);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting average power consumption history data .\n");
         return -1;
     } 
-	else if((iDRAC_FLAG == IDRAC_12G) &&  (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    else if((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    } else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting average power consumption  history data: Command not supported on this system.");
         return -1;
     }
-    else if (rsp->ccode != 0)
+    else if (rc != 0)
     {
         lprintf(LOG_ERR, "  Error getting average power consumption historydata: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
 
         return -1;
     }
 
     if (verbose > 1)
     {
+	rdata = (void *)pavgpower;
+
         printf("Average power consumption history  Data               :%x %x %x %x %x %x %x\n\n",
-            rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7]);
+            rdata[0], rdata[1], rdata[2], rdata[3], 
+            rdata[4], rdata[5], rdata[6], rdata[7]);
 
     }
-
-    *pavgpower = *( (IPMI_AVGPOWER_CONSUMP_HISTORY*) rsp->data);
 #if WORDS_BIGENDIAN
     pavgpower->lastminutepower = BSWAP_16(pavgpower->lastminutepower);
     pavgpower->lasthourpower = BSWAP_16(pavgpower->lasthourpower);
@@ -4048,56 +3851,44 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
 ******************************************************************/
 static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_CONSUMP_HISTORY * pstPeakpower)
 {
+    uint8_t *rdata;
+    int rc;
 
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = 0xec;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-
-    if (rsp == NULL)
+    rc = ipmi_getsysinfo(intf, 0xEC, 0, 0, sizeof(*pstPeakpower), pstPeakpower);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
         return -1;
     }
-	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+    } else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
         return -1;
     }
-    else if (rsp->ccode != 0)
+    else if (rc != 0)
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
 
     if (verbose > 1)
     {
+	rdata = (void *)pstPeakpower;
+
         printf("Peak power consmhistory  Data               : %x %x %x %x %x %x %x %x %x %x\n   %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-            rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-            rsp->data[8], rsp->data[9], rsp->data[10], rsp->data[11], 
-            rsp->data[12], rsp->data[13], rsp->data[14], rsp->data[15], 
-            rsp->data[16], rsp->data[17], rsp->data[18], rsp->data[19],  
-            rsp->data[20], rsp->data[21], rsp->data[22], rsp->data[23]
+	       rdata[0], rdata[1], rdata[2], rdata[3], 
+	       rdata[4], rdata[5], rdata[6], rdata[7], 
+	       rdata[8], rdata[9], rdata[10], rdata[11], 
+	       rdata[12], rdata[13], rdata[14], rdata[15], 
+	       rdata[16], rdata[17], rdata[18], rdata[19],  
+	       rdata[20], rdata[21], rdata[22], rdata[23]
         );
 
     }
-    *pstPeakpower =* ((IPMI_POWER_CONSUMP_HISTORY*)rsp->data);
 #if WORDS_BIGENDIAN
     pstPeakpower->lastminutepower = BSWAP_16(pstPeakpower->lastminutepower);
     pstPeakpower->lasthourpower = BSWAP_16(pstPeakpower->lasthourpower);
@@ -4124,56 +3915,43 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
 ******************************************************************/
 static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_CONSUMP_HISTORY * pstMinpower)
 {
+    uint8_t *rdata;
+    int rc;
 
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
-    uint8_t data[4];
-
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    data[0] = 0;
-    data[1] = 0xed;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-
-    if (rsp == NULL)
+    rc = ipmi_getsysinfo(intf, 0xED, 0, 0, sizeof(*pstMinpower), pstMinpower);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
         return -1;
     }
-	else if((iDRAC_FLAG == IDRAC_12G) &&  (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    else if((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
-    {
+    } else if ((rc == 0xc1)||(rc == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
         return -1;
     }
-    else if (rsp->ccode != 0)
+    else if (rc != 0)
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
 
     if (verbose > 1)
     {
+	rdata = (void *)pstMinpower;
+
         printf("Peak power consmhistory  Data               : %x %x %x %x %x %x %x %x %x %x\n   %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-            rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-            rsp->data[8], rsp->data[9], rsp->data[10], rsp->data[11], 
-            rsp->data[12], rsp->data[13], rsp->data[14], rsp->data[15], 
-            rsp->data[16], rsp->data[17], rsp->data[18], rsp->data[19],  
-            rsp->data[20], rsp->data[21], rsp->data[22], rsp->data[23]
+            rdata[0], rdata[1], rdata[2], rdata[3], 
+            rdata[4], rdata[5], rdata[6], rdata[7], 
+            rdata[8], rdata[9], rdata[10], rdata[11], 
+            rdata[12], rdata[13], rdata[14], rdata[15], 
+            rdata[16], rdata[17], rdata[18], rdata[19],  
+            rdata[20], rdata[21], rdata[22], rdata[23]
         );
 
     }
-    *pstMinpower =* ((IPMI_POWER_CONSUMP_HISTORY*)rsp->data);
 #if WORDS_BIGENDIAN
     pstMinpower->lastminutepower = BSWAP_16(pstMinpower->lastminutepower);
     pstMinpower->lasthourpower = BSWAP_16(pstMinpower->lasthourpower);
@@ -4355,70 +4133,35 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 
 static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowercap )
 {
-    struct ipmi_rs * rsp=NULL;
-    struct ipmi_rq req={0};
     uint64_t tempbtuphrconv;
-    uint8_t data[4];
+    uint8_t *rdata;
+    int rc;
 
-    /* power supply rating command*/
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-
-    data[0] = 0;
-    data[1] = IPMI_DELL_POWER_CAP;
-    data[2] = 0;
-    data[3] = 0;
-
-
-    rsp = intf->sendrecv(intf, &req);
-
-    if (rsp == NULL) {
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, sizeof(*ipmipowercap), ipmipowercap);
+    if (rc < 0) {
         lprintf(LOG_ERR, " Error getting power cap  .\n");
-        if (verbose > 1){
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-        }
         return -1;
 
-	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    } else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
-    } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
-
+    } else if ((rc == 0xc1)||(rc == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting power cap: Command not supported on this system.");
-        if (verbose > 1){
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-
-        }
         return -1;
-    } else if (rsp->ccode != 0){
+    } else if (rc != 0){
         lprintf(LOG_ERR, "  Error getting power cap: %s",
-            val2str(rsp->ccode, completion_code_vals));
-        if (verbose > 1){
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-        }
+            val2str(rc, completion_code_vals));
         return -1;
     }
     if (verbose > 1){
+	rdata = (void*)ipmipowercap;
+
         printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-            rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-            rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
+            rdata[1], rdata[2], rdata[3], 
+            rdata[4], rdata[5], rdata[6], rdata[7], 
+            rdata[8], rdata[9], rdata[10],rdata[11]);
 
     }
-
-    * ipmipowercap = *((IPMI_POWER_CAP*)(rsp->data));
 #if WORDS_BIGENDIAN
     ipmipowercap->PowerCap = BSWAP_16(ipmipowercap->PowerCap);
     ipmipowercap->MaximumPowerConsmp = BSWAP_16(ipmipowercap->MaximumPowerConsmp);
@@ -4485,9 +4228,8 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
 ******************************************************************/
 static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
 {
-    struct ipmi_rs *rsp = NULL;
-    struct ipmi_rq req={0};;
-    uint8_t data[13];
+    int rc;
+    uint8_t data[13], *rdata;
     uint16_t powercapval;
     uint64_t maxpowerbtuphr;
     uint64_t maxpowerbtuphr1;
@@ -4508,85 +4250,47 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
         return -1;
     }
 
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    memset(data, 0, 4);
-    req.msg.data = data;
-
-    data[0] = 0;
-    data[1] = IPMI_DELL_POWER_CAP;
-    data[2] = 0;
-    data[3] = 0;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+    rc = ipmi_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, sizeof(ipmipowercap), &ipmipowercap);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting power cap  .\n");
-        if (verbose > 1)
-        {
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-        }
         return -1;
-			
 	}
-	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
 	} 
-    else if (rsp->ccode == 0xc1) 
+    else if (rc == 0xc1) 
     {
-
         lprintf(LOG_ERR, "  Error getting power cap, command not supported on this system.\n");
-        if (verbose > 1){
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-
-        }
         return -1;
     }
-    else if (rsp->ccode != 0)
+    else if (rc != 0)
     {
         lprintf(LOG_ERR, "  Error getting power cap: %s",
-            val2str(rsp->ccode, completion_code_vals));
-        if (verbose > 1)
-        {
-            printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-                rsp->data[1], rsp->data[2], rsp->data[3], 
-                rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-                rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
-        }
+            val2str(rc, completion_code_vals));
         return -1;
     }
     if (verbose > 1)
     {
+	rdata = (void *)&ipmipowercap;
         printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-            rsp->data[1], rsp->data[2], rsp->data[3], 
-            rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7], 
-            rsp->data[8], rsp->data[9], rsp->data[10],rsp->data[11]);
+            rdata[1], rdata[2], rdata[3], 
+            rdata[4], rdata[5], rdata[6], rdata[7], 
+            rdata[8], rdata[9], rdata[10],rdata[11]);
 
     }
-
-    ipmipowercap.PowerCap=((rsp->data[1]<<8)+rsp->data[2]);
-    ipmipowercap.unit=rsp->data[3];
-    ipmipowercap.MaximumPowerConsmp=((rsp->data[4]<<8)+rsp->data[5]);
-    ipmipowercap.MinimumPowerConsmp=((rsp->data[6]<<8)+rsp->data[7]);
+#if WORDS_BIGENDIAN
+    ipmipowercap.PowerCap = BSWAP_16(ipmipowercap.PowerCap);
+    ipmipowercap.MaximumPowerConsump = BSWAP_16(ipmipowercap.MaximumPowerConsump);
+    ipmipowercap.MinumumPowerConsump = BSWAP_16(ipmipowercap.MinimumPowerConsump);
+    ipmipowercap.AvailablePower = BSWAP_16(ipmipowercap.AvailablePower);
+    ipmipowercap.totalnumpowersupp = BSWP_16(ipmipowercap.totalnumpowersupp);
+#endif
 
     memset(data, 0, 13);
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_SET_SYS_INFO;
-    req.msg.data_len = 13;
-    req.msg.data = data;
     data[0] = IPMI_DELL_POWER_CAP;
     powercapval=val;
-
 
     data[1] = (powercapval&0XFF);                   
     data[2] = ((powercapval&0XFF00)>>8);
@@ -4602,9 +4306,6 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     data[11]=(ipmipowercap.SystemThrottling);
     data[12]=0x00;
 
-    ipmipowercap.MaximumPowerConsmp = BSWAP_16(ipmipowercap.MaximumPowerConsmp);
-    ipmipowercap.MinimumPowerConsmp = BSWAP_16(ipmipowercap.MinimumPowerConsmp);
-    ipmipowercap.PowerCap = BSWAP_16(ipmipowercap.PowerCap);
     if(unit==btuphr)
     {
         val = btuphr_to_watt_conversion(val);
@@ -4641,120 +4342,27 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
 
         return -1;
     }
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) 
+    rc = ipmi_setsysinfo(intf, 13, data);
+    if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting power cap");
         return -1;
     }
-	else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+    else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
 		return -1;	
 	} 
-    else if (rsp->ccode > 0) 
+    else if (rc > 0) 
     {
         lprintf(LOG_ERR, " Error setting power cap: %s",
-            val2str(rsp->ccode, completion_code_vals));
+            val2str(rc, completion_code_vals));
         return -1;
     }
     if (verbose > 1)
     {
-        printf("CC for setpowercap :%d ",rsp->ccode);
+        printf("CC for setpowercap :%d ",rc);
     }
     return 0;
-}
-
-/*****************************************************************
-* Function Name:    getpowersupplyfruinfo
-*
-* Description:      This function retrieves the FRU header
-* Input:            intf    - ipmi interface
-*                   header  - watt / btuphr
-*                   fru     - FRU information
-* Output:           header  - FRU header
-* Return:           
-*
-******************************************************************/
-static int getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id, 
-                         struct fru_header header, struct fru_info fru)
-{
-    struct ipmi_rs * rsp;
-    struct ipmi_rq req;
-
-    uint8_t msg_data[4];
-
-    memset(&fru, 0, sizeof(struct fru_info));
-    memset(&header, 0, sizeof(struct fru_header));
-
-    /*
-    * get info about this FRU
-    */
-    memset(msg_data, 0, 4);
-    msg_data[0] = id;
-
-    memset(&req, 0, sizeof(req));
-    req.msg.netfn = IPMI_NETFN_STORAGE;
-    req.msg.lun = 0;
-    req.msg.cmd = GET_FRU_INFO;
-    req.msg.data = msg_data;
-    req.msg.data_len = 1;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) {
-        printf(" Device not present (No Response)\n");
-        return -1;
-    }
-    if (rsp->ccode > 0) {
-        printf(" Device not present (%s)\n",
-            val2str(rsp->ccode, completion_code_vals));
-        return -1;
-    }
-
-    fru.size = (rsp->data[1] << 8) | rsp->data[0];
-    fru.access = rsp->data[2] & 0x1;
-
-    lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
-        fru.size, fru.access ? "words" : "bytes");
-
-    if (fru.size < 1) {
-        lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
-        return -1;
-    }
-
-    /*
-    * retrieve the FRU header
-    */
-    msg_data[0] = id;
-    msg_data[1] = 0;
-    msg_data[2] = 0;
-    msg_data[3] = 8;
-
-    memset(&req, 0, sizeof(req));
-    req.msg.netfn = IPMI_NETFN_STORAGE;
-    req.msg.lun = 0;
-    req.msg.cmd = GET_FRU_DATA;
-    req.msg.data = msg_data;
-    req.msg.data_len = 4;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) {
-        printf(" Device not present (No Response)\n");
-        return 1;
-    }
-    if (rsp->ccode > 0) {
-        printf(" Device not present (%s)\n",
-            val2str(rsp->ccode, completion_code_vals));
-        return 1;
-    }
-
-    if (verbose > 1)
-        printbuf(rsp->data, rsp->data_len, "FRU DATA");
-
-    memcpy(&header, rsp->data + 1, 8);
-
-	return 0;
-
-
 }
 
 /*****************************************************************
@@ -5290,54 +4898,4 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 
     /* Set drive LEDs */
     return ipmi_setled_state (intf, bayId, slotId, mask);
-}
-
-
-/*****************************************************************
- * Function Name:       ipmi_getsysinfo
- *
- * Description:         This function processes the IPMI Get System Info command
- * Input:               intf    - ipmi interface
- *                      param   - Parameter # (0xC0..0xFF = OEM)
- *                      block/set - Block/Set number of parameter
- *                      len     - Length of buffer
- *                      buffer  - Pointer to buffer
- * Output:        
- *
- * Return:              return code     0 - success
- *                         -1 - failure
- *                         other = IPMI ccode
- *
- ******************************************************************/
-static int
-ipmi_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, int len, void *buffer)
-{
-    uint8_t data[4];
-    struct ipmi_rs *rsp = NULL;
-    struct ipmi_rq req={0};
-
-    memset(buffer, 0, len);
-    memset(data, 0, 4);
-    req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;
-    req.msg.cmd = IPMI_GET_SYS_INFO;
-    req.msg.data_len = 4;
-    req.msg.data = data;
-    
-    data[0] = 0; // get/set
-    data[1] = param;
-    data[2] = block;
-    data[3] = set;
-
-    rsp = intf->sendrecv(intf, &req);
-    if (rsp != NULL) {
-        if (rsp->ccode == 0) {
-            if (len > rsp->data_len)
-                len = rsp->data_len;
-            if (len && buffer)
-                memcpy(buffer, rsp->data, len);
-        }
-        return rsp->ccode;
-    }
-    return -1;
 }

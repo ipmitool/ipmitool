@@ -151,4 +151,20 @@ struct ipm_get_watchdog_rsp {
 #define IPM_WATCHDOG_CLEAR_BIOS_POST	0x04
 #define IPM_WATCHDOG_CLEAR_BIOS_FRB2	0x02
 
+/* IPMI 2.0 command for system information*/
+#define IPMI_SET_SYS_INFO                  0x58
+#define IPMI_GET_SYS_INFO                  0x59
+#define IPMI_SYSINFO_SET0_SIZE             14
+#define IPMI_SYSINFO_SETN_SIZE             16
+
+#define IPMI_SYSINFO_HOSTNAME		0x02
+#define IPMI_SYSINFO_PRIMARY_OS_NAME	0x03
+#define IPMI_SYSINFO_OS_NAME		0x04
+#define IPMI_SYSINFO_DELL_OS_VERSION	0xe4
+#define IPMI_SYSINFO_DELL_URL		0xde
+
+int ipmi_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
+		    int len, void *buffer);
+int ipmi_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
+
 #endif				/*IPMI_MC_H */

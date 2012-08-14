@@ -39,10 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 
-/* IPMI 2.0 command for system information*/
-#define IPMI_SET_SYS_INFO                  0x58
-#define IPMI_GET_SYS_INFO                  0x59
-
 /* Dell selector for LCD control - get and set unless specified */
 #define IPMI_DELL_LCD_STRING_SELECTOR       0xC1        /* RW get/set the user string */
 #define IPMI_DELL_LCD_CONFIG_SELECTOR       0xC2        /* RW set to user/default/none */
