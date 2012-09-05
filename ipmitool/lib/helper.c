@@ -549,10 +549,6 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 	sigset_t sighup;
 #endif
 
-	/* if we are started from init no need to become daemon */
-	if (getppid() == 1)
-		return;
-
 #ifdef SIGHUP
 	sigemptyset(&sighup);
 	sigaddset(&sighup, SIGHUP);
