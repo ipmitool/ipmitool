@@ -57,6 +57,12 @@ Prompt for the remote server password.
 \fB\-A\fR <\fIauthtype\fP>
 Specify an authentication type to use during IPMIv1.5 \fIlan\fP
 session activation.  Supported types are NONE, PASSWORD, MD2, MD5, or OEM.
+.TP
+\fB\-b\fR <\fIchannel\fP>
+Set destination channel for bridged request.
+.TP
+\fB\-B\fR <\fIchannel\fP>
+Set transit channel for bridged request (dual bridge).
 .TP 
 \fB\-c\fR
 Present output in CSV (comma separated variable) format.  
@@ -109,6 +115,9 @@ option is required for \fIlan\fP and \fIlanplus\fP interfaces.
 Selects IPMI interface to use.  Supported interfaces that are
 compiled in are visible in the usage help output.
 .TP 
+\fB\-l\fR <\fIlun\fP>
+Set destination lun for raw commands.
+.TP 
 \fB\-L\fR <\fIprivlvl\fP>
 Force session privilege level.  Can be CALLBACK, USER,
 OPERATOR, ADMINISTRATOR. Default is ADMINISTRATOR.
@@ -152,6 +161,9 @@ SDR cache from a remote system can be created with the
 .TP 
 \fB\-t\fR <\fItarget_address\fP>
 Bridge IPMI requests to the remote target address.
+.TP
+\fB\-T\fR <\fIaddress\fP>
+Set transit address for bridge request (dual bridge).
 .TP 
 \fB\-U\fR <\fIusername\fP>
 Remote server username, default is NULL user.
