@@ -2461,7 +2461,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 {
 	struct ipmi_rs     * rsp;
 	struct ipmi_rq       req;
-	struct tm            tm;
+	struct tm            tm = {0};
 	time_t               t;
 	uint32_t	     timei;
 	const char *         time_format = "%m/%d/%Y %H:%M:%S";
@@ -2480,6 +2480,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 			lprintf(LOG_ERR, "Specified time could not be parsed");
 			return -1;
 		}
+		tm.tm_isdst = (-1); /* look up DST information */
 		t = mktime(&tm);
 		if (t < 0) {
 			lprintf(LOG_ERR, "Specified time could not be parsed");
@@ -2489,13 +2490,14 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 	{
 		//modify UTC time to local time expressed in number of seconds from 1/1/70 0:0:0 1970 GMT
-		struct tm * tm_tmp;
+		struct tm * tm_tmp = {0};
 		int gt_year,gt_yday,gt_hour,lt_year,lt_yday,lt_hour;
 		int delta_hour;
 		tm_tmp=gmtime(&t);
 		gt_year=tm_tmp->tm_year;
 		gt_yday=tm_tmp->tm_yday;
 		gt_hour=tm_tmp->tm_hour;
+		memset(&tm_tmp, 0, sizeof(struct tm));
 		tm_tmp=localtime(&t);
 		lt_year=tm_tmp->tm_year;
 		lt_yday=tm_tmp->tm_yday;
