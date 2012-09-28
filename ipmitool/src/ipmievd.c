@@ -46,6 +46,10 @@
 # include <config.h>
 #endif
 
+#if defined(HAVE_SYS_IOCCOM_H)
+# include <sys/ioccom.h>
+#endif
+
 #ifdef HAVE_PATHS_H
 # include <paths.h>
 #endif

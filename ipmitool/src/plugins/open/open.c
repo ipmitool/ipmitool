@@ -49,6 +49,10 @@
 # include <config.h>
 #endif
 
+#if defined(HAVE_SYS_IOCCOM_H)
+# include <sys/ioccom.h>
+#endif
+
 #if defined(HAVE_OPENIPMI_H)
 # if defined(HAVE_LINUX_COMPILER_H)
 #  include <linux/compiler.h>
