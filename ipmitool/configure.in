@@ -61,7 +61,7 @@ solaris*)
 	LD=gld
 	AR=gar
 	# openssl libs are in /usr/sfw/lib on solaris 10
-        LIBS="$LIBS -R/usr/sfw/lib"
+	LIBS="$LIBS -R/usr/sfw/lib"
 	# disable the linux-specific interfaces
 	# and bmc on SPARC (there is no bmc driver for SPARC)
 	if [[ `mach -p` = sparc ]]; then
