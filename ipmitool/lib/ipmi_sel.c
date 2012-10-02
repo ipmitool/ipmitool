@@ -2497,7 +2497,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 		gt_year=tm_tmp->tm_year;
 		gt_yday=tm_tmp->tm_yday;
 		gt_hour=tm_tmp->tm_hour;
-		memset(&tm_tmp, 0, sizeof(struct tm));
+		memset(&*tm_tmp, 0, sizeof(struct tm));
 		tm_tmp=localtime(&t);
 		lt_year=tm_tmp->tm_year;
 		lt_yday=tm_tmp->tm_yday;
