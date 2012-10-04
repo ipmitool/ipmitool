@@ -2839,7 +2839,7 @@ int
 ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 {
 	char desc[17];
-	uint8_t save_addr;
+	uint32_t save_addr;
 	int rc = 0;
 
 	if (fru == NULL)
@@ -2922,7 +2922,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct ipm_devid_rsp *devid;
 	struct sdr_record_mc_locator * mc;
-	uint8_t save_addr;
+	uint32_t save_addr;
 
 	printf("FRU Device Description : Builtin FRU Device (ID 0)\n");
 	/* TODO: Figure out if FRU device 0 may show up in SDR records. */
