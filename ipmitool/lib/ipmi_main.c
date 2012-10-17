@@ -960,6 +960,10 @@ ipmi_main(int argc, char ** argv,
 		free(oemtype);
 	if (seloem != NULL)
 		free(seloem);
+	if (kgkey != NULL)
+		free(kgkey);
+	if (sdrcache != NULL)
+		free(sdrcache);
 
 	return rc;
 }
