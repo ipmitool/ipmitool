@@ -44,14 +44,14 @@ AC_SEARCH_LIBS([socket], [socket], [],
 		[LIBS="$LIBS -lsocket -lnsl"], [], [-lsocket])])
 
 if test "x$prefix" = "xNONE"; then
-  prefix="$ac_default_prefix"
+	prefix="$ac_default_prefix"
 fi
 
 if test "x$exec_prefix" = "xNONE"; then
-  exec_prefix="$prefix"
+	exec_prefix="$prefix"
 fi
 
-enable_all_options=yes
+xenable_all_options=yes
 
 dnl set some things so we build with GNU tools on Solaris
 case "$host_os" in
@@ -63,39 +63,39 @@ solaris*)
 	# openssl libs are in /usr/sfw/lib on solaris 10
 	LIBS="$LIBS -R/usr/sfw/lib"
 	# disable the linux-specific interfaces
-	enable_intf_bmc=yes
-	enable_intf_imb=no
-	enable_intf_open=no
-	enable_intf_lipmi=no
-	enable_ipmishell=no
-	enable_all_options=no
+	xenable_intf_bmc=yes
+	xenable_intf_imb=no
+	xenable_intf_open=no
+	xenable_intf_lipmi=no
+	xenable_ipmishell=no
+	xenable_all_options=no
 	;;
 *cygwin*)
 	# disable the linux and solaris-specific interfaces
-	enable_intf_imb=no
-	enable_intf_open=no
-	enable_intf_lipmi=no
-	enable_intf_bmc=no
-	enable_ipmishell=no
+	xenable_intf_imb=no
+	xenable_intf_open=no
+	xenable_intf_lipmi=no
+	xenable_intf_bmc=no
+	xenable_ipmishell=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
-	enable_intf_imb=no
-	enable_intf_open=no
-	enable_intf_lipmi=no
-	enable_intf_bmc=no
-	enable_ipmishell=no
+	xenable_intf_imb=no
+	xenable_intf_open=no
+	xenable_intf_lipmi=no
+	xenable_intf_bmc=no
+	xenable_ipmishell=no
 	;;
 *freebsd*)
-	enable_intf_imb=no
-	enable_intf_lipmi=no
-	enable_intf_bmc=no
+	xenable_intf_imb=no
+	xenable_intf_lipmi=no
+	xenable_intf_bmc=no
 	;;
 *netbsd*)
-	enable_intf_imb=no
-	enable_intf_lipmi=no
-	enable_intf_bmc=no
-	enable_intf_open=no
+	xenable_intf_imb=no
+	xenable_intf_lipmi=no
+	xenable_intf_bmc=no
+	xenable_intf_open=no
 	;;
 esac
 
@@ -108,74 +108,81 @@ dnl allow solaris builds to include all options
 AC_ARG_ENABLE([solaris-opt],
 	[AC_HELP_STRING([--enable-solaris-opt],
 			[enable all options for Solaris [default=no]])],
-	[], [enable_solaris_opt=no])
-if test "x$enable_all_options" = "xyes" || test "x$enable_solaris_opt" = "xyes"; then
-   AC_DEFINE(ENABLE_ALL_OPTIONS, [1], [Define to 1 to enable all command line options.])
+	[xenable_solaris_opt=$enableval],
+	[xenable_solaris_opt=no])
+if test "x$xenable_all_options" = "xyes" || test "x$xenable_solaris_opt" = "xyes"; then
+	AC_DEFINE(ENABLE_ALL_OPTIONS, [1], [Define to 1 to enable all command line options.])
 fi
 
 dnl check for OpenSSL functionality
 AC_ARG_ENABLE([internal-md5],
 	[AC_HELP_STRING([--enable-internal-md5],
 			[enable internal MD5 library [default=no]])],
-	[], [enable_internal_md5=no])
+	[xenable_internal_md5=$enableval],
+	[xenable_internal_md5=no])
 
 AC_CHECK_LIB([crypto], [EVP_aes_128_cbc],
-	[if test "x$enable_internal_md5" != "xyes"; then
+	[if test "x$xenable_internal_md5" != "xyes"; then
 	    have_crypto=yes; LIBS="$LIBS -lcrypto"
-	fi], [have_crypto=no], [-lcrypto])
+	fi],
+	[have_crypto=no], [-lcrypto])
 
 AC_CHECK_LIB([crypto], [MD5_Init],
-	[if test "x$enable_internal_md5" != "xyes"; then
+	[if test "x$xenable_internal_md5" != "xyes"; then
 	    if test "x$have_crypto" != "xyes"; then
-	    	LIBS="$LIBS -lcrypto"
-		have_md5=yes
+	        LIBS="$LIBS -lcrypto"
+	        have_md5=yes
 	    fi
 	    AC_DEFINE(HAVE_CRYPTO_MD5, [1], [Define to 1 if libcrypto supports MD5.])
-	fi], [], [-lcrypto])
+	fi],
+	[], [-lcrypto])
 
 AC_CHECK_LIB([crypto], [MD2_Init],
-	[if test "x$enable_internal_md5" != "xyes"; then
+	[if test "x$xenable_internal_md5" != "xyes"; then
 	    if test "x$have_crypto" != "xyes" && test "x$have_md5" != "xyes"; then
 	        LIBS="$LIBS -lcrypto"
 	        have_md2=yes
 	    fi
 	    AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])
-	fi], [], [-lcrypto])
+	fi],
+	[], [-lcrypto])
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
 	[AC_HELP_STRING([--enable-intf-lan],
 			[enable IPMIv1.5 LAN interface [default=yes]])],
-	[], [enable_intf_lan=yes])
-if test "x$enable_intf_lan" = "xstatic" || test "x$enable_intf_lan" = "xplugin"; then
-   enable_intf_lan=yes
+	[xenable_intf_lan=$enableval],
+	[xenable_intf_lan=yes])
+if test "x$xenable_intf_lan" = "xstatic" || test "x$xenable_intf_lan" = "xplugin"; then
+	xenable_intf_lan=yes
 fi
-if test "x$enable_intf_lan" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_LAN, [1], [Define to 1 to enable LAN IPMIv1.5 interface.])
-    AC_SUBST(INTF_LAN, [lan])
-    AC_SUBST(INTF_LAN_LIB, [libintf_lan.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lan/libintf_lan.la"
+if test "x$xenable_intf_lan" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_LAN, [1], [Define to 1 to enable LAN IPMIv1.5 interface.])
+	AC_SUBST(INTF_LAN, [lan])
+	AC_SUBST(INTF_LAN_LIB, [libintf_lan.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lan/libintf_lan.la"
 fi
 
 dnl enable IPMIv2.0 RMCP+ LAN interface
 AC_ARG_ENABLE([intf-lanplus],
 	[AC_HELP_STRING([--enable-intf-lanplus],
 			[enable IPMIv2.0 RMCP+ LAN interface [default=auto]])],
-	[if test "x$enable_intf_lanplus" != "xno" && test "x$have_crypto" != "xyes"; then
-	    echo "** The lanplus interface requires an SSL library with EVP_aes_128_cbc defined."
-	    enable_intf_lanplus=no
-	fi],
-	[enable_intf_lanplus=$have_crypto])
-if test "x$enable_intf_lanplus" = "xstatic" || test "x$enable_intf_lanplus" = "xplugin"; then
-   enable_intf_lanplus=yes
+	[xenable_intf_lanplus=$enableval],
+	[xenable_intf_lanplus=$have_crypto])
+if test "x$xenable_intf_lanplus" = "xstatic" || test "x$xenable_intf_lanplus" = "xplugin"; then
+	xenable_intf_lanplus=yes
 fi
-if test "x$enable_intf_lanplus" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_LANPLUS, [1], [Define to 1 to enable LAN+ IPMIv2 interface.])
-    AC_SUBST(INTF_LANPLUS, [lanplus])
-    AC_SUBST(INTF_LANPLUS_LIB, [libintf_lanplus.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lanplus/libintf_lanplus.la"
+if test "x$xenable_intf_lanplus" != "xno" && test "x$have_crypto" != "xyes"; then
+	echo "** The lanplus interface requires an SSL library with EVP_aes_128_cbc defined."
+	xenable_intf_lanplus=no
+fi
+if test "x$xenable_intf_lanplus" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_LANPLUS, [1], [Define to 1 to enable LAN+ IPMIv2 interface.])
+	AC_SUBST(INTF_LANPLUS, [lanplus])
+	AC_SUBST(INTF_LANPLUS_LIB, [libintf_lanplus.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lanplus/libintf_lanplus.la"
 else
-    enable_intf_lanplus=no
+	xenable_intf_lanplus=no
 fi
 
 ORIG_CPPFLAGS=$CPPFLAGS
@@ -195,18 +202,18 @@ AC_ARG_WITH([kerneldir],
 	    kernelver=`grep UTS_RELEASE ${with_kerneldir}/include/linux/version.h | \
 	        sed 's/^\#define UTS_RELEASE \"\(2\.[0-9]\)\..*/\1/'`
 	    if test "x$kernelver" = "x2.6"; then
-		CPPFLAGS="$CPPFLAGS -D__user="
-		AC_SUBST(CPPFLAGS)
+	        CPPFLAGS="$CPPFLAGS -D__user="
+	        AC_SUBST(CPPFLAGS)
 	    fi
 	fi])
 
 AH_TEMPLATE([HAVE_LINUX_COMPILER_H], [])
 AC_MSG_CHECKING([for linux/compiler.h])
 AC_PREPROC_IFELSE([#include <linux/compiler.h>],
-                   [AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
-		   [Define to 1 if you have the <linux/compiler.h> header file.])
-                    AC_MSG_RESULT([yes])],
-                   [AC_MSG_RESULT([no])])
+	[AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
+		[Define to 1 if you have the <linux/compiler.h> header file.])
+	AC_MSG_RESULT([yes])],
+	[AC_MSG_RESULT([no])])
 
 CPPFLAGS=$ORIG_CPPFLAGS
 AC_SUBST(CPPFLAGS)
@@ -226,20 +233,21 @@ AC_CHECK_HEADER([linux/ipmi.h],
 dnl look for FreeIPMI files
 AC_CHECK_LIB(freeipmi, ipmi_open_inband, [have_free=yes], [have_free=no])
 if test "x$have_free" != "xyes"; then
-     AC_CHECK_LIB(freeipmi, ipmi_ctx_open_inband, [have_free=yes], [have_free=no])
+	AC_CHECK_LIB(freeipmi, ipmi_ctx_open_inband, [have_free=yes], [have_free=no])
 fi
 AC_ARG_ENABLE([intf-free],
-        [AC_HELP_STRING([--enable-intf-free],
-                        [enable FreeIPMI IPMI interface [default=auto]])],
-        [if test "x$enable_intf_free" != "xno" && test "x$have_free" != "xyes"; then
-            echo "** Unable to build FreeIPMI interface support!"
-            enable_intf_free=no
-        fi],
-        [enable_intf_free=$have_free])
-if test "x$enable_intf_free" = "xstatic" || test "x$enable_intf_free" = "xplugin"; then
-   enable_intf_free=yes
+	[AC_HELP_STRING([--enable-intf-free],
+		[enable FreeIPMI IPMI interface [default=auto]])],
+	[xenable_intf_free=$enableval],
+	[xenable_intf_free=$have_free])
+if test "x$xenable_intf_free" = "xstatic" || test "x$xenable_intf_free" = "xplugin"; then
+	xenable_intf_free=yes
 fi
-if test "x$enable_intf_free" = "xyes"; then
+if test "x$xenable_intf_free" != "xno" && test "x$have_free" != "xyes"; then
+	echo "** Unable to build FreeIPMI interface support!"
+	xenable_intf_free=no
+fi
+if test "x$xenable_intf_free" = "xyes"; then
 dnl Determine if you got the right FreeIPMI version  
     AC_MSG_CHECKING([for libfreeipmi version 0.3.0])
     AC_TRY_COMPILE([
@@ -337,12 +345,13 @@ dnl Determine if you got the right FreeIPMI version
           AC_DEFINE(IPMI_INTF_FREE_0_6_0, [1], [Define to 1 for FreeIPMI 0.6.0.])
        fi
     else
-       enable_intf_free=no
+       xenable_intf_free=no
     fi
 
     AC_CHECK_LIB(freeipmi,
-	         ipmi_cmd_raw_ipmb, 
-		 AC_DEFINE(IPMI_INTF_FREE_BRIDGING, [1], [Define to 1 to enable FreeIPMI Bridging Support.]))
+      ipmi_cmd_raw_ipmb, 
+      AC_DEFINE(IPMI_INTF_FREE_BRIDGING, [1],
+        [Define to 1 to enable FreeIPMI Bridging Support.]))
 fi
 
 dnl look for termios header file
@@ -369,15 +378,16 @@ dnl enable Linux OpenIPMI interface
 AC_ARG_ENABLE([intf-open],
 	[AC_HELP_STRING([--enable-intf-open],
 			[enable Linux OpenIPMI interface [default=auto]])],
-	[], [enable_intf_open=yes])
-if test "x$enable_intf_open" = "xstatic" || test "x$enable_intf_open" = "xplugin"; then
-   enable_intf_open=yes
+	[xenable_intf_open=$enableval],
+	[xenable_intf_open=yes])
+if test "x$xenable_intf_open" = "xstatic" || test "x$xenable_intf_open" = "xplugin"; then
+	xenable_intf_open=yes
 fi
-if test "x$enable_intf_open" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_OPEN, [1], [Define to 1 to enable Linux OpenIPMI interface.])
-    AC_SUBST(INTF_OPEN, [open])
-    AC_SUBST(INTF_OPEN_LIB, [libintf_open.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB open/libintf_open.la"
+if test "x$xenable_intf_open" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_OPEN, [1], [Define to 1 to enable Linux OpenIPMI interface.])
+	AC_SUBST(INTF_OPEN, [open])
+	AC_SUBST(INTF_OPEN_LIB, [libintf_open.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB open/libintf_open.la"
 
 	dnl Check for dual bridge support in OpenIPMI
 	AC_MSG_CHECKING([for OpenIPMI dual bridge support])
@@ -411,15 +421,16 @@ dnl enable Intel IMB interface
 AC_ARG_ENABLE([intf-imb],
 	[AC_HELP_STRING([--enable-intf-imb],
 			[enable Intel IMB driver interface [default=auto]])],
-	[], [enable_intf_imb=yes])
-if test "x$enable_intf_imb" = "xstatic" || test "x$enable_intf_imb" = "xplugin"; then
-   enable_intf_imb=yes
+	[xenable_intf_imb=$enableval],
+	[xenable_intf_imb=yes])
+if test "x$xenable_intf_imb" = "xstatic" || test "x$xenable_intf_imb" = "xplugin"; then
+	xenable_intf_imb=yes
 fi
-if test "x$enable_intf_imb" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_IMB, [1], [Define to 1 to enable Intel IMB interface.])
-    AC_SUBST(INTF_IMB, [imb])
-    AC_SUBST(INTF_IMB_LIB, [libintf_imb.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB imb/libintf_imb.la"
+if test "x$xenable_intf_imb" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_IMB, [1], [Define to 1 to enable Intel IMB interface.])
+	AC_SUBST(INTF_IMB, [imb])
+	AC_SUBST(INTF_IMB_LIB, [libintf_imb.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB imb/libintf_imb.la"
 fi
 
 dnl enable Solaris LIPMI interface
@@ -427,34 +438,36 @@ AC_CHECK_HEADER([sys/lipmi/lipmi_intf.h], [have_lipmi=yes], [have_lipmi=no])
 AC_ARG_ENABLE([intf-lipmi],
 	[AC_HELP_STRING([--enable-intf-lipmi],
 			[enable Solaris 9 x86 IPMI interface [default=no]])],
-	[if test "x$enable_intf_lipmi" != "xno" && test "x$have_lipmi" != "xyes"; then
-	    echo "** Unable to build Solaris 9 x86 IPMI interface support!"
-	    enable_intf_lipmi=no
-	fi],
-	[enable_intf_lipmi=no])
-if test "x$enable_intf_lipmi" = "xstatic" || test "x$enable_intf_lipmi" = "xplugin"; then
-   enable_intf_lipmi=yes
+	[xenable_intf_lipmi=$enableval],
+	[xenable_intf_lipmi=no])
+if test "x$xenable_intf_lipmi" = "xstatic" || test "x$xenable_intf_lipmi" = "xplugin"; then
+	xenable_intf_lipmi=yes
 fi
-if test "x$enable_intf_lipmi" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_LIPMI, [1], [Define to 1 to enable Solaris 9 LIPMI interface.])
-    AC_SUBST(INTF_LIPMI, [lipmi])
-    AC_SUBST(INTF_LIPMI_LIB, [libintf_lipmi.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lipmi/libintf_lipmi.la"
+if test "x$xenable_intf_lipmi" != "xno" && test "x$have_lipmi" != "xyes"; then
+	echo "** Unable to build Solaris 9 x86 IPMI interface support!"
+	xenable_intf_lipmi=no
+fi
+if test "x$xenable_intf_lipmi" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_LIPMI, [1], [Define to 1 to enable Solaris 9 LIPMI interface.])
+	AC_SUBST(INTF_LIPMI, [lipmi])
+	AC_SUBST(INTF_LIPMI_LIB, [libintf_lipmi.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lipmi/libintf_lipmi.la"
 fi
 
 dnl enable Solaris BMC interface
 AC_ARG_ENABLE([intf-bmc],
 	[AC_HELP_STRING([--enable-intf-bmc],
-			[enable Solaris 10 x86 IPMI interface [default=auto]])],,
-	[enable_intf_bmc=no])
-if test "x$enable_intf_bmc" = "xstatic" || test "x$enable_intf_bmc" = "xplugin"; then
-   enable_intf_bmc=yes
+			[enable Solaris 10 x86 IPMI interface [default=auto]])],
+	[xenable_intf_bmc=$enableval],
+	[xenable_intf_bmc=no])
+if test "x$xenable_intf_bmc" = "xstatic" || test "x$xenable_intf_bmc" = "xplugin"; then
+	xenable_intf_bmc=yes
 fi
-if test "x$enable_intf_bmc" = "xyes"; then
-    AC_DEFINE(IPMI_INTF_BMC, [1], [Define to 1 to enable Solaris 10 BMC interface.])
-    AC_SUBST(INTF_BMC, [bmc])
-    AC_SUBST(INTF_BMC_LIB, [libintf_bmc.la])
-    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB bmc/libintf_bmc.la"
+if test "x$xenable_intf_bmc" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_BMC, [1], [Define to 1 to enable Solaris 10 BMC interface.])
+	AC_SUBST(INTF_BMC, [bmc])
+	AC_SUBST(INTF_BMC_LIB, [libintf_bmc.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB bmc/libintf_bmc.la"
 fi
 
 AC_SUBST(IPMITOOL_INTF_LIB)
@@ -463,8 +476,9 @@ dnl check for readline library to enable ipmi shell
 AC_ARG_ENABLE([ipmishell],
 	[AC_HELP_STRING([--enable-ipmishell],
 			[enable IPMI shell interface [default=yes]])],
-	[], [enable_ipmishell=yes])
-if test "x$enable_ipmishell" = "xyes"; then
+	[xenable_ipmishell=$enableval],
+	[xenable_ipmishell=yes])
+if test "x$xenable_ipmishell" = "xyes"; then
 	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
 	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
@@ -481,19 +495,22 @@ dnl Enable -Wall -Werror
 AC_ARG_ENABLE([buildcheck],
 	[AC_HELP_STRING([--enable-buildcheck],
 			[enable -Wall -Werror for build testing [default=no]])],
-	[if test "x$enable_buildcheck" != "xno"; then
-	    CFLAGS="$CFLAGS -Wall -Werror -Wpointer-arith -Wstrict-prototypes"
-	fi], [])
-
+	[xenable_buildcheck=$enableval],
+	[xenable_buildcheck=no])
+if test "x$xenable_buildcheck" != "xno"; then
+	CFLAGS="$CFLAGS -Wall -Werror -Wpointer-arith -Wstrict-prototypes"
+fi
 AC_SUBST(CFLAGS)
 
 dnl Enable extra file security paranoia
 AC_ARG_ENABLE([file-security],
 	[AC_HELP_STRING([--enable-file-security],
 			[enable extra security checks on files opened for read [default=no]])],
-	[if test "x$enable_file_security" != "xno"; then
-	    AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
-	fi], [])
+	[xenable_file_security=$enableval],
+	[xenable_file_security=no])
+if test "x$xenable_file_security" != "xno"; then
+	AC_DEFINE(ENABLE_FILE_SECURITY, [1], [Define to 1 for extra file security.])
+fi
 
 
 AC_TRY_RUN([
@@ -515,7 +532,8 @@ AC_TRY_RUN([
 	else
 	return(0);
 	}
-	],[],[AC_DEFINE(HAVE_PRAGMA_PACK,[1],[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
+	],[],[AC_DEFINE(HAVE_PRAGMA_PACK,[1],
+		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
 )
 
 
@@ -534,9 +552,9 @@ AC_CONFIG_FILES([Makefile
 		src/Makefile
 		src/plugins/Makefile
 		src/plugins/lan/Makefile
-                src/plugins/lanplus/Makefile
+		src/plugins/lanplus/Makefile
 		src/plugins/open/Makefile
-                src/plugins/free/Makefile
+		src/plugins/free/Makefile
 		src/plugins/imb/Makefile
 		src/plugins/bmc/Makefile
 		src/plugins/lipmi/Makefile])
@@ -547,16 +565,16 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([ipmitool $VERSION])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Interfaces])
-AC_MSG_RESULT([  lan     : $enable_intf_lan])
-AC_MSG_RESULT([  lanplus : $enable_intf_lanplus])
-AC_MSG_RESULT([  open    : $enable_intf_open])
-AC_MSG_RESULT([  free    : $enable_intf_free])
-AC_MSG_RESULT([  imb     : $enable_intf_imb])
-AC_MSG_RESULT([  bmc     : $enable_intf_bmc])
-AC_MSG_RESULT([  lipmi   : $enable_intf_lipmi])
+AC_MSG_RESULT([  lan     : $xenable_intf_lan])
+AC_MSG_RESULT([  lanplus : $xenable_intf_lanplus])
+AC_MSG_RESULT([  open    : $xenable_intf_open])
+AC_MSG_RESULT([  free    : $xenable_intf_free])
+AC_MSG_RESULT([  imb     : $xenable_intf_imb])
+AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
+AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Extra tools])
 AC_MSG_RESULT([  ipmievd   : yes])
-AC_MSG_RESULT([  ipmishell : $enable_ipmishell])
+AC_MSG_RESULT([  ipmishell : $xenable_ipmishell])
 AC_MSG_RESULT([])
 
