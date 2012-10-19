@@ -497,6 +497,11 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	t_ipmi_fru_bloc * fru_bloc = build_fru_bloc(intf, fru, id, &num_bloc);
 
+	if (fru_bloc == NULL) {
+		lprintf(LOG_ERROR, "Failed to build FRU bloc.");
+		return (-1);
+	}
+
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
 	req.msg.cmd = SET_FRU_DATA;
