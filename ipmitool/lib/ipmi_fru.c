@@ -354,6 +354,12 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	if(!p_bloc)
 	{
 		lprintf(LOG_ERR, " Unable to get memory to build Fru bloc");
+
+		if (fru_data != NULL) {
+			free(fru_data);
+			fru_data = NULL;
+		}
+
 		return NULL;
 	}
 
@@ -436,7 +442,11 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			bloc_count ++;
 		}
 
+	}
+
+	if (fru_data != NULL) {
 		free(fru_data);
+		fru_data = NULL;
 	}
 
 	/* Fill up size for first bloc */
@@ -900,7 +910,7 @@ static void
 fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
-	uint8_t * fru_data;
+	uint8_t * fru_data = NULL;
 	uint32_t fru_len, i;
 	struct fru_multirec_header * h;
 	uint32_t last_off, len;
@@ -969,7 +979,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
 	char * fru_area;
-	uint8_t * fru_data;
+	uint8_t * fru_data = NULL;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -1003,15 +1013,21 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 			chassis_type_desc[fru_data[i++]]);
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Chassis Part Number   : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Chassis Part Number   : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Chassis Serial        : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Chassis Serial        : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	/* read any extra fields */
@@ -1019,15 +1035,20 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Chassis Extra         : %s\n", fru_area);
+		if (fru_area != NULL) {
+			if (strlen(fru_area) > 0) {
+				printf(" Chassis Extra         : %s\n", fru_area);
+			}
 			free(fru_area);
+			fru_area = NULL;
 		}
 		if (i == j)
 			break;
 	}
 
-	free(fru_data);
+	if (fru_area != NULL) {
+		free(fru_data);
+	}
 }
 
 /* fru_area_print_board  -  Print FRU Board Area
@@ -1042,7 +1063,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
 	char * fru_area;
-	uint8_t * fru_data;
+	uint8_t * fru_data = NULL;
 	uint32_t fru_len, area_len, i;
 	time_t tval;
 
@@ -1080,34 +1101,48 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	i += 3;  /* skip mfg. date time */
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Mfg             : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Board Mfg             : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Product         : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Board Product         : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Serial          : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Board Serial          : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Board Part Number     : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Board Part Number     : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		if (verbose > 0)
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Board FRU ID          : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	/* read any extra fields */
@@ -1115,15 +1150,20 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Board Extra           : %s\n", fru_area);
+		if (fru_area != NULL) {
+			if (strlen(fru_area) > 0) {
+				printf(" Board Extra           : %s\n", fru_area);
+			}
 			free(fru_area);
+			fru_area = NULL;
 		}
 		if (i == j)
 			break;
 	}
 
-	free(fru_data);
+	if (fru_area != NULL) {
+		free(fru_data);
+	}
 }
 
 /* fru_area_print_product  -  Print FRU Product Area
@@ -1137,8 +1177,8 @@ static void
 fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 				uint8_t id, uint32_t offset)
 {
-	char * fru_area;
-	uint8_t * fru_data;
+	char * fru_area = NULL;
+	uint8_t * fru_data = NULL;
 	uint32_t fru_len, area_len, i;
 
 	i = offset;
@@ -1170,46 +1210,66 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	i++;  /* skip fru board language */
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Manufacturer  : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Manufacturer  : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Name          : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Name          : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Part Number   : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Part Number   : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Version       : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Version       : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Serial        : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Serial        : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		printf(" Product Asset Tag     : %s\n", fru_area);
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0) {
+			printf(" Product Asset Tag     : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL && strlen(fru_area) > 0) {
-		if (verbose > 0)
+	if (fru_area != NULL) {
+		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Product FRU ID        : %s\n", fru_area);
+		}
 		free(fru_area);
+		fru_area = NULL;
 	}
 
 	/* read any extra fields */
@@ -1217,15 +1277,20 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL && strlen(fru_area) > 0) {
-			printf(" Product Extra         : %s\n", fru_area);
+		if (fru_area != NULL) {
+			if (strlen(fru_area) > 0) {
+				printf(" Product Extra         : %s\n", fru_area);
+			}
 			free(fru_area);
+			fru_area = NULL;
 		}
 		if (i == j)
 			break;
 	}
 
-	free(fru_data);
+	if (fru_area != NULL) {
+		free(fru_data);
+	}
 }
 
 /* fru_area_print_multirec  -  Print FRU Multi Record Area
@@ -4321,11 +4386,11 @@ f_type, uint8_t f_index, char *f_string)
 	uint8_t msg_data[4];
 	uint8_t checksum;
 	int i = 0;
-	uint8_t  *fru_data, *fru_area = NULL;
+	int rc = 1;
+	uint8_t *fru_data = NULL;
+	uint8_t *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, header_offset;
-
-	fru_data = NULL;
 
 	memset(msg_data, 0, 4);
 	msg_data[0] = fruId;
@@ -4339,12 +4404,14 @@ f_type, uint8_t f_index, char *f_string)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		printf(" Device not present (No Response)\n");
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 	if (rsp->ccode > 0) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 
 	fru.size = (rsp->data[1] << 8) | rsp->data[0];
@@ -4352,7 +4419,8 @@ f_type, uint8_t f_index, char *f_string)
 
 	if (fru.size < 1) {
 		printf(" Invalid FRU size %d", fru.size);
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 	/*
 	* retrieve the FRU header
@@ -4372,13 +4440,15 @@ f_type, uint8_t f_index, char *f_string)
 	if (rsp == NULL)
 	{
 		printf(" Device not present (No Response)\n");
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 	if (rsp->ccode > 0)
 	{
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 
 	if (verbose > 1)
@@ -4390,7 +4460,8 @@ f_type, uint8_t f_index, char *f_string)
 	{
 		printf(" Unknown FRU header version 0x%02x",
 			header.version);
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 
 	fru_data = malloc( fru.size );
@@ -4398,7 +4469,8 @@ f_type, uint8_t f_index, char *f_string)
 	if( fru_data == NULL )
 	{
 		printf("Out of memory!\n");
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 
 	/* Setup offset from the field type */
@@ -4427,14 +4499,15 @@ f_type, uint8_t f_index, char *f_string)
 	else
 	{
 		printf("Wrong field type.");
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 	memset(fru_data, 0, fru.size);
 	if( read_fru_area(intf ,&fru, fruId, header_offset ,
 					fru_section_len , fru_data) < 0 )
 	{
-		free(fru_data);
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 	/* Convert index from character to decimal */
 	f_index= f_index - 0x30;
@@ -4448,7 +4521,8 @@ f_type, uint8_t f_index, char *f_string)
 
 	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
 		printf("Field not found !\n");
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_out;
 	}
 
 	if ( strlen((const char *)fru_area) == strlen((const char *)f_string) )
@@ -4472,24 +4546,28 @@ f_type, uint8_t f_index, char *f_string)
 				header_offset, fru_section_len, fru_data) < 0 )
 		{
 			printf("Write to FRU data failed.\n");
-			free(fru_data);
-			return -1;
+			rc = (-1);
+			goto ipmi_fru_set_field_string_out;
 		}
 	}
 	else {
-		free(fru_data); /* Free data, will be rebuild in function */
-
 		printf("String size are not equal, resizing fru to fit new string\n");
-
 		if(
 				ipmi_fru_set_field_string_rebuild(intf,fruId,fru,header,f_type,f_index,f_string)
 		)
 		{
-			return -1;
+			rc = (-1);
+			goto ipmi_fru_set_field_string_out;
 		}
 	}
-	free(fru_data);
-	return 1;
+
+	ipmi_fru_set_field_string_out:
+	if (fru_data != NULL)
+		free(fru_data);
+	if (fru_area != NULL)
+		free(fru_area);
+
+	return rc;
 }
 
 /*
@@ -4532,7 +4610,9 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint8_t msg_data[4];
 	uint8_t checksum;
 	int i = 0;
-	uint8_t  *fru_data_old, *fru_data_new, *fru_area = NULL;
+	uint8_t *fru_data_old = NULL;
+	uint8_t *fru_data_new = NULL;
+	uint8_t *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, old_section_len, header_offset;
 	uint32_t chassis_offset, board_offset, product_offset;
@@ -4540,6 +4620,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	int      num_byte_change = 0, padding_len = 0;
 	uint32_t counter;
 	unsigned char cksum;
+	int rc = 1;
 
 	fru_data_old = calloc( fru.size, sizeof(uint8_t) );
 
@@ -4548,7 +4629,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	if( fru_data_old == NULL || fru_data_new == NULL )
 	{
 		printf("Out of memory!\n");
-		return(-1);
+		rc = (-1);
+		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
 	/*************************
@@ -4602,7 +4684,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	else
 	{
 		printf("Wrong field type.");
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
 	/* Keep length for future old section display */
@@ -4618,7 +4701,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
 		printf("Field not found (1)!\n");
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
 	#ifdef DBG_RESIZE_FRU
@@ -4849,9 +4933,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	else
 	{
 		printf( "Internal error, padding length %i (must be from 0 to 7) ", padding_len );
-		free(fru_data_old);
-		free(fru_data_new);
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
 	/*************************
@@ -4860,14 +4943,19 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	if( write_fru_area( intf, &fru, fruId, 0, 0, fru.size, fru_data_new ) < 0 )
 	{
 		printf("Write to FRU data failed.\n");
-		free(fru_data_old);
-		free(fru_data_new);
-		return -1;
+		rc = (-1);
+		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
 	printf("Done.\n");
 
-	free(fru_data_old);
-	free(fru_data_new);
-	return 1;
+	ipmi_fru_set_field_string_rebuild_out:
+	if (fru_area != NULL)
+		free(fru_area);
+	if (fru_data_new != NULL)
+		free(fru_data_new);
+	if (fru_data_old != NULL)
+		free(fru_data_old);
+
+	return rc;
 }
