@@ -208,7 +208,6 @@ ipmi_get_sol_info(
 	req.msg.data_len = 4;
 	req.msg.data     = data;
 
-
 	/*
 	 * set in progress
 	 */
@@ -219,6 +218,11 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                          /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
 
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
@@ -227,14 +231,14 @@ ipmi_get_sol_info(
 					params->set_in_progress = rsp->data[1];
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -242,21 +246,23 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
 	 * SOL enable
 	 */
- 	memset(data, 0, sizeof(data));
+	memset(data, 0, sizeof(data));
 	data[0] = channel;                  /* channel number     */
 	data[1] = SOL_PARAMETER_SOL_ENABLE; /* parameter selector */
 	data[2] = 0x00;                     /* set selector       */
 	data[3] = 0x00;                     /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
 
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
@@ -265,14 +271,14 @@ ipmi_get_sol_info(
 					params->enabled = rsp->data[1];
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -280,9 +286,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -295,6 +298,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                             /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -304,14 +313,14 @@ ipmi_get_sol_info(
 					params->privilege_level      = rsp->data[1] & 0x0F;
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -319,9 +328,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -334,6 +340,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                             /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -342,14 +354,14 @@ ipmi_get_sol_info(
 					params->character_send_threshold   = rsp->data[2];
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -357,9 +369,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -372,6 +381,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                    /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+			    val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -380,14 +395,14 @@ ipmi_get_sol_info(
 					params->retry_interval = rsp->data[2];
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -395,9 +410,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -405,11 +417,17 @@ ipmi_get_sol_info(
 	 */
 	memset(data, 0, sizeof(data));
 	data[0] = channel;                                 /* channel number     */
- 	data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE; /* parameter selector */
- 	data[2] = 0x00;                                    /* set selector       */
+	data[1] = SOL_PARAMETER_SOL_NON_VOLATILE_BIT_RATE; /* parameter selector */
+	data[2] = 0x00;                                    /* set selector       */
 	data[3] = 0x00;                                    /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -417,14 +435,14 @@ ipmi_get_sol_info(
 					params->non_volatile_bit_rate = rsp->data[1] & 0x0F;
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -432,9 +450,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -447,6 +462,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                                /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+			    val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -454,14 +475,14 @@ ipmi_get_sol_info(
 					params->volatile_bit_rate = rsp->data[1] & 0x0F;
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported",
-				    val2str(data[1], sol_parameter_vals));
+						val2str(data[1], sol_parameter_vals));
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -469,9 +490,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -484,6 +502,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                              /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -491,14 +515,14 @@ ipmi_get_sol_info(
 					params->payload_channel = rsp->data[1];
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to 0x%02x",
-				    val2str(data[1], sol_parameter_vals), channel);
+						val2str(data[1], sol_parameter_vals), channel);
 				params->payload_channel = channel;
 				break;
 			default:
@@ -507,9 +531,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	/*
@@ -522,6 +543,12 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                           /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
+				val2str(data[1], sol_parameter_vals));
+		return (-1);
+	}
+
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
 			case 0x00:
@@ -529,19 +556,23 @@ ipmi_get_sol_info(
 					params->payload_port = (rsp->data[1]) |	(rsp->data[2] << 8);
 				} else {
 					lprintf(LOG_ERR, "Error: Unexpected data length (%d) received "
-						   "for SOL parameter '%s'",
-						   rsp->data_len,
-						   val2str(data[1], sol_parameter_vals));
+							"for SOL parameter '%s'",
+							rsp->data_len,
+							val2str(data[1], sol_parameter_vals));
 				}
 				break;
 			case 0x80:
-            if( intf->session != NULL ){
-               lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d", val2str(data[1], sol_parameter_vals), intf->session->port);
-               params->payload_port = intf->session->port;
-            } else {
-               lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - can't determine which payload port to use on NULL session" );
-               return -1;               
-            }
+				if( intf->session != NULL ) {
+					lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d",
+							val2str(data[1], sol_parameter_vals), intf->session->port);
+					params->payload_port = intf->session->port;
+				} else {
+					lprintf(LOG_ERR,
+							"Info: SOL parameter '%s' not supported - can't determine which "
+							"payload port to use on NULL session",
+							val2str(data[1], sol_parameter_vals));
+							return -1;               
+				}
 				break;
 			default:
 				lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
@@ -549,9 +580,6 @@ ipmi_get_sol_info(
 					val2str(rsp->ccode, completion_code_vals));
 				return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
-			    val2str(data[1], sol_parameter_vals));
 	}
 
 	return 0;
