@@ -4282,10 +4282,10 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     }
 #if WORDS_BIGENDIAN
     ipmipowercap.PowerCap = BSWAP_16(ipmipowercap.PowerCap);
-    ipmipowercap.MaximumPowerConsump = BSWAP_16(ipmipowercap.MaximumPowerConsump);
-    ipmipowercap.MinumumPowerConsump = BSWAP_16(ipmipowercap.MinimumPowerConsump);
+    ipmipowercap.MaximumPowerConsmp = BSWAP_16(ipmipowercap.MaximumPowerConsmp);
+    ipmipowercap.MinimumPowerConsmp = BSWAP_16(ipmipowercap.MinimumPowerConsmp);
     ipmipowercap.AvailablePower = BSWAP_16(ipmipowercap.AvailablePower);
-    ipmipowercap.totalnumpowersupp = BSWP_16(ipmipowercap.totalnumpowersupp);
+    ipmipowercap.totalnumpowersupp = BSWAP_16(ipmipowercap.totalnumpowersupp);
 #endif
 
     memset(data, 0, 13);
