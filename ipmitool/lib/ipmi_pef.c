@@ -34,6 +34,10 @@
 #include <math.h>
 #include <time.h>
 
+#if WORDS_BIGENDIAN
+# include <ipmitool/bswap.h>
+#endif
+
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>

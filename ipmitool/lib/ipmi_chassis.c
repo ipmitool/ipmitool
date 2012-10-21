@@ -35,6 +35,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#if WORDS_BIGENDIAN
+# include <ipmitool/bswap.h>
+#endif
+
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/log.h>
