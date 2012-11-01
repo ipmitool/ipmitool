@@ -476,7 +476,7 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
    struct ipmi_ek_multi_header * list_last = NULL;
 
    if ( (argc == 0) || ( (argc - 1) > MAX_FILE_NUMBER ) ){
-      lprintf(LOG_ERR, "Too few or too many argument!");
+      lprintf(LOG_ERR, "Too few or too many arguments!");
       ipmi_ekanalyzer_usage();
       rc = ERROR_STATUS;
    }
