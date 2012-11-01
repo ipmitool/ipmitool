@@ -445,7 +445,6 @@ void display_capabilities_attributes(
 static int
 ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 {
-    struct ipmi_rs *rsp;
     int rc;
 
     if (intf->opened == 0 && intf->open != NULL) {
