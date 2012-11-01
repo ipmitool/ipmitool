@@ -658,8 +658,6 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
                                   uint8_t max_length, 
                                   uint8_t field_type)
 {
-    struct ipmi_rs * rsp = NULL;
-    struct ipmi_rq req = {0};
     uint8_t data[4];
     IPMI_DELL_LCD_STRING lcdstringblock;
     int lcdstring_len = 0;
