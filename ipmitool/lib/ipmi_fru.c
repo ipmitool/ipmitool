@@ -192,6 +192,31 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 	return str;
 }
 
+/* is_fru_id - wrapper for str-2-int FRU ID conversion. Message is printed
+ * on error.
+ *
+ * @argv_ptr: source string to convert from; usually argv
+ * @fru_id_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) on error and message is printed on STDERR
+ */
+int
+is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr)
+{
+	if (!argv_ptr || !fru_id_ptr) {
+		lprintf(LOG_ERR, "is_fru_id(): invalid argument(s).");
+		return (-1);
+	}
+
+	if (str2uchar(argv_ptr, fru_id_ptr) == 0) {
+		return 0;
+	}
+	lprintf(LOG_ERR, "FRU ID '%s' is either invalid or out of range.",
+			argv_ptr);
+	return (-1);
+} /* is_fru_id(...) */
+
 
 /* build_fru_bloc  -  build fru bloc for write protection
 *
@@ -1666,7 +1691,15 @@ static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
 			uint8_t blockIndex=0;
 
 			unsigned int matchInstance = 0;
-			unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+			uint8_t instance = 0;
+			
+			if (str2uchar(argv[OEM_KONTRON_INSTANCE_ARG_POS], &instance) != 0) {
+				lprintf(LOG_ERR,
+						"Instance argument '%s' is either invalid or out of range.",
+						argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+				badParams = TRUE;
+				return;
+			}
 
 			blockCount = fru_data[offset++];
 
@@ -1747,6 +1780,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 	int offset = start;
 	int length = len;
 	int i;
+	uint8_t record_id = 0;
 	offset += sizeof(struct fru_multirec_oem_header);
 
 	if(!badParams){
@@ -1765,8 +1799,14 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 			badParams = TRUE;
 			return hasChanged;
 		}
-		if( atoi(argv[OEM_KONTRON_RECORDID_ARG_POS])
-			==   OEM_KONTRON_INFORMATION_RECORD){
+		if (str2uchar(argv[OEM_KONTRON_RECORDID_ARG_POS], &record_id) != 0) {
+			lprintf(LOG_ERR,
+					"Record ID argument '%s' is either invalid or out of range.",
+					argv[OEM_KONTRON_RECORDID_ARG_POS]);
+			badParams = TRUE;
+			return hasChanged;
+		}
+		if (record_id == OEM_KONTRON_INFORMATION_RECORD) {
 			for(i=OEM_KONTRON_VERSION_ARG_POS;i<=OEM_KONTRON_CRC32_ARG_POS;i++){
 				if( (strlen(argv[i]) != OEM_KONTRON_FIELD_SIZE) &&
 					(strlen(argv[i]) != OEM_KONTRON_VERSION_FIELD_SIZE)) {
@@ -1782,8 +1822,16 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 	if(!badParams){
 
 		if(oh->record_id == OEM_KONTRON_INFORMATION_RECORD ) {
-			uint8_t formatVersion = (uint8_t)atoi( argv[OEM_KONTRON_FORMAT_ARG_POS]);
+			uint8_t formatVersion = 0;
 			uint8_t version;
+
+			if (str2uchar(argv[OEM_KONTRON_FORMAT_ARG_POS], &formatVersion) != 0) {
+				lprintf(LOG_ERR,
+						"Format argument '%s' is either invalid or out of range.",
+						argv[OEM_KONTRON_FORMAT_ARG_POS]);
+				badParams = TRUE;
+				return hasChanged;
+			}
 
 			printf("   Kontron OEM Information Record\n");
 			version = oh->record_version;
@@ -1793,9 +1841,16 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 				uint8_t blockCount;
 				uint8_t blockIndex=0;
 
-				unsigned int matchInstance = 0;
-				unsigned int instance = atoi( argv[OEM_KONTRON_INSTANCE_ARG_POS]);
-
+				uint8_t matchInstance = 0;
+				uint8_t instance = 0;
+				
+				if (str2uchar(argv[OEM_KONTRON_INSTANCE_ARG_POS], &instance) != 0) {
+					lprintf(LOG_ERR,
+							"Instance argument '%s' is either invalid or out of range.",
+							argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+					badParams = TRUE;
+					return hasChanged;
+				}
 
 				blockCount = fru_data[offset++];
 				printf("   blockCount: %d\n",blockCount);
@@ -1863,7 +1918,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 						else if(!strncmp((char *)argv[OEM_KONTRON_NAME_ARG_POS],
 							(const char *)(fru_data+offset), nameLen)){
 							printf ("Skipped : %s  [instance %d]\n",argv[OEM_KONTRON_NAME_ARG_POS],
-									matchInstance);
+									(unsigned int)matchInstance);
 							matchInstance++;
 							offset+=nameLen;
 						}
@@ -4158,11 +4213,11 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 	return 0;
 }
 
-
 int
 ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	{
 	int rc = 0;
+	uint8_t fru_id = 0;
 
 	if (argc == 0) {
 		rc = ipmi_fru_print_all(intf);
@@ -4173,24 +4228,28 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "print", 5) == 0 ||
 		strncmp(argv[0], "list", 4) == 0) {
 		if (argc > 1) {
-			rc = __ipmi_fru_print(intf, strtol(argv[1], NULL, 0));
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
+			rc = __ipmi_fru_print(intf, fru_id);
 		} else {
 			rc = ipmi_fru_print_all(intf);
 		}
 	}
 	else if (!strncmp(argv[0], "read", 5)) {
-		uint8_t fruId=0;
 		if((argc >= 3) && (strlen(argv[2]) > 0)){
 			/* There is a file name in the parameters */
 			if(strlen(argv[2]) < 512)
 			{
-				fruId = atoi(argv[1]);
+				if (is_fru_id(argv[1], &fru_id) != 0)
+					return (-1);
+
 				strcpy(fileName, argv[2]);
 				if (verbose){
-					printf("Fru Id           : %d\n", fruId);
+					printf("Fru Id           : %d\n", fru_id);
 					printf("Fru File         : %s\n", fileName);
 				}
-				ipmi_fru_read_to_bin(intf, fileName, fruId);
+				ipmi_fru_read_to_bin(intf, fileName, fru_id);
 			}
 			else{
 				fprintf(stderr,"File name must be smaller than 512 bytes\n");
@@ -4201,18 +4260,18 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "write", 5)) {
-		uint8_t fruId = 0;
-
 		if ((argc >= 3) && (strlen(argv[2]) > 0)) {
 			/* There is a file name in the parameters */
 			if (strlen(argv[2]) < 512) {
-				fruId = atoi(argv[1]);
+				if (is_fru_id(argv[1], &fru_id) != 0)
+					return (-1);
+
 				strcpy(fileName, argv[2]);
 				if (verbose) {
-					printf("Fru Id           : %d\n", fruId);
+					printf("Fru Id           : %d\n", fru_id);
 					printf("Fru File         : %s\n", fileName);
 				}
-				ipmi_fru_write_from_bin(intf, fileName, fruId);
+				ipmi_fru_write_from_bin(intf, fileName, fru_id);
 			} else {
 				lprintf(LOG_ERR, "File name must be smaller than 512 bytes\n");
 			}
@@ -4223,13 +4282,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (!strncmp(argv[0], "upgEkey", 7)) {
 		if ((argc >= 3) && (strlen(argv[2]) > 0)) {
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
 			strcpy(fileName, argv[2]);
-			ipmi_fru_upg_ekeying(intf,fileName,atoi(argv[1]));
+			ipmi_fru_upg_ekeying(intf, fileName, fru_id);
 		} else {
 			printf("fru upgEkey <fru id> <fru file>\n");
 		}
 	}
-
 	else if (!strncmp(argv[0], "internaluse", 11)) {
 		if (
 				(argc >= 3)
@@ -4237,7 +4298,10 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				(!strncmp(argv[2], "info", 4))
 			)
 		{
-			ipmi_fru_info_internal_use(intf, atoi(argv[1]));
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
+			ipmi_fru_info_internal_use(intf, fru_id);
 		}
 		else if (
 				(argc >= 3)
@@ -4245,7 +4309,10 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				(!strncmp(argv[2], "print", 5))
 			)
 		{
-			ipmi_fru_read_internal_use(intf, atoi(argv[1]), NULL);
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
+			ipmi_fru_read_internal_use(intf, fru_id, NULL);
 		}
 		else if (
 				(argc >= 4)
@@ -4255,10 +4322,13 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				(strlen(argv[3]) > 0)
 				)
 		{
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
 			strcpy(fileName, argv[3]);
-			lprintf(LOG_DEBUG, "Fru Id           : %d", atoi(argv[1]));
+			lprintf(LOG_DEBUG, "Fru Id           : %d", fru_id);
 			lprintf(LOG_DEBUG, "Fru File         : %s", fileName);
-			ipmi_fru_read_internal_use(intf, atoi(argv[1]), fileName);
+			ipmi_fru_read_internal_use(intf, fru_id, fileName);
 		}
 		else if (
 				(argc >= 4)
@@ -4268,10 +4338,13 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				(strlen(argv[3]) > 0)
 				)
 		{
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
 			strcpy(fileName, argv[3]);
-			lprintf(LOG_DEBUG, "Fru Id           : %d", atoi(argv[1]));
+			lprintf(LOG_DEBUG, "Fru Id           : %d", fru_id);
 			lprintf(LOG_DEBUG, "Fru File         : %s", fileName);
-			ipmi_fru_write_internal_use(intf, atoi(argv[1]), fileName);
+			ipmi_fru_write_internal_use(intf, fru_id, fileName);
 		}
 		else
 		{
@@ -4292,32 +4365,31 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR,
 				"  edit <fruid> oem iana <record> <format> <args> - limited OEM support");
 		} else {
-
-			uint8_t fruId = 0;
-
 			if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-				fruId = atoi(argv[1]);
+				if (is_fru_id(argv[1], &fru_id) != 0)
+					return (-1);
+
 				if (verbose) {
-					printf("Fru Id           : %d\n", fruId);
+					printf("Fru Id           : %d\n", fru_id);
 				}
 			} else {
-				printf("Using default FRU id: %d\n", fruId);
+				printf("Using default FRU id: %d\n", fru_id);
 			}
 
 			if ((argc >= 3) && (strlen(argv[1]) > 0)) {
 				if (!strncmp(argv[2], "field", 5)){
 					if (argc == 6) {
-						ipmi_fru_set_field_string(intf, fruId,\
+						ipmi_fru_set_field_string(intf, fru_id,\
 															*argv[3], *argv[4], (char *) argv[5]);
 					}
 					else {
 						printf("fru edit [fruid] field [section] [index] [string]\n");
 					}
 				}else if (!strncmp(argv[2], "oem", 3)){
-					ipmi_fru_edit_multirec(intf,fruId, argc, argv);
+					ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
 				}
 			} else {
-				ipmi_fru_edit_multirec(intf,fruId, argc, argv);
+				ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
 			}
 
 		}
@@ -4331,23 +4403,24 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				"  get <fruid> oem iana <record> <format> <args> - limited OEM support");
 		} else {
 
-		uint8_t fruId = 0;
 
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-			fruId = atoi(argv[1]);
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
 			if (verbose) {
-				printf("Fru Id           : %d\n", fruId);
+				printf("Fru Id           : %d\n", fru_id);
 			}
 		} else {
-			printf("Using default FRU id: %d\n", fruId);
+			printf("Using default FRU id: %d\n", fru_id);
 		}
 
 		if ((argc >= 3) && (strlen(argv[1]) > 0)) {
 			if (!strncmp(argv[2], "oem", 3)){
-				ipmi_fru_get_multirec(intf,fruId, argc, argv);
+				ipmi_fru_get_multirec(intf, fru_id, argc, argv);
 			}
 		} else {
-			ipmi_fru_get_multirec(intf,fruId, argc, argv);
+			ipmi_fru_get_multirec(intf, fru_id, argc, argv);
 		}
 
 		}
