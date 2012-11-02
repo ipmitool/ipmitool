@@ -4677,9 +4677,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 											struct fru_info fru, struct fru_header header,
 											uint8_t f_type, uint8_t f_index, char *f_string)
 {
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
-
 	uint8_t msg_data[4];
 	uint8_t checksum;
 	int i = 0;
