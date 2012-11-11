@@ -454,8 +454,8 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint8_t save_addr;
-	uint8_t save_channel;
+	uint32_t save_addr;
+	uint32_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
@@ -491,8 +491,8 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
 	struct ipmi_rs *rsp;
-	uint8_t save_addr;
-	uint8_t save_channel;
+	uint32_t save_addr;
+	uint32_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
@@ -551,8 +551,8 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint8_t save_addr;
-	uint8_t save_channel;
+	uint32_t save_addr;
+	uint32_t save_channel;
 
 #if 0
 	/* Enabling this code will cause sensors with an SDR Owner ID
@@ -598,8 +598,8 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint8_t save_addr;
-	uint8_t save_channel;
+	uint32_t save_addr;
+	uint32_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
@@ -634,8 +634,8 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint8_t save_addr;
-	uint8_t save_channel;
+	uint32_t save_addr;
+	uint32_t save_channel;
 
 	save_addr = intf->target_addr;
 	intf->target_addr = target;
