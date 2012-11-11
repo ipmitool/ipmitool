@@ -360,15 +360,14 @@ static void ipmi_ek_display_clock_config_record(
 static void
 ipmi_ekanalyzer_usage( void )
 {
-   char * help_message =
-"Ekeying analyzer tool version 1.00                                        \n\
-ekanalyzer Commands:                                                       \n\
-      print    [carrier | power | all] <oc=filename1> <b1=filename2>...    \n\
-      frushow  <b2=filename>                                               \n\
-      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...    \n\
-";
-   printf("%s",help_message);
-   fflush(stdout);
+	lprintf(LOG_NOTICE, "Ekeying analyzer tool version 1.00");
+	lprintf(LOG_NOTICE, "ekanalyzer Commands:");
+	lprintf(LOG_NOTICE,
+			"      print    [carrier | power | all] <oc=filename1> <b1=filename2>...");
+	lprintf(LOG_NOTICE,
+			"      frushow  <b2=filename>");
+	lprintf(LOG_NOTICE,
+			"      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...");
 }
 
 /**************************************************************************
