@@ -4323,7 +4323,12 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 
 	if (strncmp(type, "0x", 2) == 0) {
 		/* begins with 0x so let it be entered as raw hex value */
-		sensor_type = (uint8_t) strtol(type, NULL, 0);
+		if (str2uchar(type, &sensor_type) != 1) {
+			lprintf(LOG_ERR,
+					"Given type of sensor \"%s\" is either invalid or out of range.",
+					type);
+			return (-1);
+		}
 	} else {
 		for (x = 1; x < SENSOR_TYPE_MAX; x++) {
 			if (strncasecmp(sensor_type_desc[x], type,
