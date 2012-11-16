@@ -44,6 +44,9 @@
 
 #define IPMI_I2C_MASTER_MAX_SIZE	0x40 /* 64 bytes */
 
+static int is_valid_param(const char *input_param, uint8_t *uchr_ptr,
+		const char *label);
+
 /* ipmi_master_write_read  -  Perform I2C write/read transactions
  *
  * This function performs an I2C master write-read function through
@@ -147,13 +150,20 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 
-	i2cbus  =  (uint8_t)strtoul(argv[0], NULL, 0);
-	i2caddr =  (uint8_t)strtoul(argv[1], NULL, 0);
-	if( argc >= 3 ){
-		channel	= (uint8_t)strtoul(argv[2], NULL, 0);
+	if (is_valid_param(argv[0], &i2cbus, "i2cbus") != 0)
+		return (-1);
+
+	if (is_valid_param(argv[1], &i2caddr, "i2caddr") != 0)
+		return (-1);
+
+	if (argc >= 3) {
+		if (is_valid_param(argv[2], &channel, "channel") != 0)
+			return (-1);
 	}
-	if( argc >= 4 ){
-		msize	  =  (uint8_t)strtoul(argv[3], NULL, 0);
+
+	if (argc >= 4) {
+		if (is_valid_param(argv[3], &msize, "maxread") != 0)
+			return (-1);
 	}
 
 	i2cbus = ((channel & 0xF) << 4) | ((i2cbus & 7) << 1) | 1;
@@ -221,8 +231,11 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	i2caddr = (uint8_t)strtoul(argv[i++], NULL, 0);
-	rsize = (uint8_t)strtoul(argv[i++], NULL, 0);
+	if (is_valid_param(argv[i++], &i2caddr, "i2caddr") != 0)
+		return (-1);
+
+	if (is_valid_param(argv[i++], &rsize, "read size") != 0)
+		return (-1);
 
 	if (i2caddr == 0) {
 		lprintf(LOG_ERR, "Invalid I2C address 0");
@@ -232,7 +245,11 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	memset(wdata, 0, IPMI_I2C_MASTER_MAX_SIZE);
 	for (; i < argc; i++) {
-		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
+		uint8_t val = 0;
+
+		if (is_valid_param(argv[i], &val, "parameter") != 0)
+			return (-1);
+
 		wdata[wsize] = val;
 		wsize++;
 	}
@@ -289,6 +306,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t netfn, cmd, lun;
+	uint16_t netfn_tmp = 0;
 	int i;
 	uint8_t data[256];
 
@@ -308,12 +326,20 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	ipmi_intf_session_set_retry(intf, 1);
 
 	lun = intf->target_lun;
-	netfn = str2val(argv[0], ipmi_netfn_vals);
-	if (netfn == 0xff) {
-		netfn = (uint8_t)strtol(argv[0], NULL, 0);
+	netfn_tmp = str2val(argv[0], ipmi_netfn_vals);
+	if (netfn_tmp == 0xff) {
+		if (is_valid_param(argv[0], &netfn, "netfn") != 0)
+			return (-1);
+	} else {
+		if (netfn_tmp >= UINT8_MAX) {
+			lprintf(LOG_ERR, "Given netfn \"%s\" is out of range.", argv[0]);
+			return (-1);
+		}
+		netfn = netfn_tmp;
 	}
 
-	cmd = (uint8_t)strtol(argv[1], NULL, 0);
+	if (is_valid_param(argv[1], &cmd, "command") != 0)
+		return (-1);
 
 	memset(data, 0, sizeof(data));
 	memset(&req, 0, sizeof(req));
@@ -323,7 +349,11 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data = data;
 
 	for (i=2; i<argc; i++) {
-		uint8_t val = (uint8_t)strtol(argv[i], NULL, 0);
+		uint8_t val = 0;
+
+		if (is_valid_param(argv[i], &val, "data") != 0)
+			return (-1);
+
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
 	}
@@ -362,4 +392,25 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printf("\n");
 
 	return 0;
+}
+
+/* is_valid_param - 
+ *
+ * @input_param: string to convert from
+ * @uchr_ptr: pointer where to store converted value
+ * @label: string used in error message
+ *
+ * returns   0  if parameter is valid
+ * returns (-1) if parameter is invalid/on error
+ */
+int
+is_valid_param(const char *input_param, uint8_t *uchr_ptr, const char *label) {
+	if (input_param == NULL || label == NULL) {
+		lprintf(LOG_ERROR, "ERROR: NULL pointer passed.");
+	}
+	if (str2uchar(input_param, uchr_ptr) == 0)
+		return 0;
+
+	lprintf(LOG_ERR, "Given %s \"%s\" is invalid.", label, input_param);
+	return (-1);
 }
