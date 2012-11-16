@@ -300,6 +300,18 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return 0;
 }
 
+/* ipmi_raw_help() - print 'raw' help text
+ *
+ * returns void
+ */
+void
+ipmi_raw_help()
+{
+	lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
+	print_valstr(ipmi_netfn_vals, "Network Function Codes", LOG_NOTICE);
+	lprintf(LOG_NOTICE, "(can also use raw hex values)");
+} /* ipmi_raw_help() */
+
 int
 ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -310,11 +322,14 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i;
 	uint8_t data[256];
 
-	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_NOTICE, "RAW Commands:  raw <netfn> <cmd> [data]");
-		print_valstr(ipmi_netfn_vals, "Network Function Codes", LOG_NOTICE);
-		lprintf(LOG_NOTICE, "(can also use raw hex values)");
-		return -1;
+	if (argc == 1 && strncmp(argv[0], "help", 4) == 0) {
+		ipmi_raw_help();
+		return 0;
+	}
+	else if (argc < 2) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		ipmi_raw_help();
+		return (-1);
 	}
 	else if (argc > sizeof(data))
 	{
