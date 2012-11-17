@@ -59,8 +59,6 @@
 #define LIMIT_ALL_REQUEST_SIZE 1
 #define FRU_MULTIREC_CHUNK_SIZE     (255 + sizeof(struct fru_multirec_header))
 
-static char fileName[512];
-
 extern int verbose;
 
 static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
@@ -217,6 +215,35 @@ is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr)
 	return (-1);
 } /* is_fru_id(...) */
 
+/* is_valid_filename - checks file/path supplied by user
+ *
+ * input_filename - user input string
+ *
+ * returns   0  if path is ok
+ * returns (-1) if path is NULL
+ * returns (-2) if path is too short
+ * returns (-3) if path is too long
+ */
+int
+is_valid_filename(const char *input_filename)
+{
+	if (input_filename == NULL) {
+		lprintf(LOG_ERR, "ERROR: NULL pointer passed.");
+		return (-1);
+	}
+
+	if (strlen(input_filename) < 1) {
+		lprintf(LOG_ERR, "File/path is invalid.");
+		return (-2);
+	}
+
+	if (strlen(input_filename) >= 512) {
+		lprintf(LOG_ERR, "File/path must be shorter than 512 bytes.");
+		return (-3);
+	}
+
+	return 0;
+} /* is_valid_filename() */
 
 /* build_fru_bloc  -  build fru bloc for write protection
 *
@@ -3141,6 +3168,17 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	return rc;
 }
 
+/* ipmi_fru_read_help() - print help text for 'read'
+ *
+ * returns void
+ */
+void
+ipmi_fru_read_help()
+{
+	lprintf(LOG_NOTICE, "fru read <fru id> <fru file>");
+	lprintf(LOG_NOTICE, "Note: FRU ID and file(incl. full path) must be specified.");
+	lprintf(LOG_NOTICE, "Example: ipmitool fru read 0 /root/fru.bin");
+} /* ipmi_fru_read_help() */
 
 static void
 ipmi_fru_read_to_bin(struct ipmi_intf * intf,
@@ -3265,6 +3303,31 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 	free(pFruBuf);
 }
+
+/* ipmi_fru_write_help() - print help text for 'write'
+ *
+ * retruns void
+ */
+void
+ipmi_fru_write_help()
+{
+	lprintf(LOG_NOTICE, "fru write <fru id> <fru file>");
+	lprintf(LOG_NOTICE, "Note: FRU ID and file(incl. full path) must be specified.");
+	lprintf(LOG_NOTICE, "Example: ipmitool fru write 0 /root/fru.bin");
+} /* ipmi_fru_write_help() */
+
+/* ipmi_fru_edit_help - print help text for 'fru edit' command
+ *
+ * returns void
+ */
+void
+ipmi_fru_edit_help()
+{
+	lprintf(LOG_NOTICE,
+			"fru edit <fruid> field <section> <index> <string> - edit FRU string");
+	lprintf(LOG_NOTICE,
+			"fru edit <fruid> oem iana <record> <format> <args> - limited OEM support");
+} /* ipmi_fru_edit_help() */
 
 /* ipmi_fru_edit_multirec  -  Query new values to replace original FRU content
 *
@@ -3433,6 +3496,30 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 	}
 	return 0;
 }
+
+/* ipmi_fru_get_help - print help text for 'fru get'
+ *
+ * returns void
+ */
+void
+ipmi_fru_get_help()
+{
+	lprintf(LOG_NOTICE,
+			"fru get <fruid> oem iana <record> <format> <args> - limited OEM support");
+} /* ipmi_fru_get_help() */
+
+void
+ipmi_fru_internaluse_help()
+{
+	lprintf(LOG_NOTICE,
+			"fru internaluse <fru id> info             - get internal use area size");
+	lprintf(LOG_NOTICE,
+			"fru internaluse <fru id> print            - print internal use area in hex");
+	lprintf(LOG_NOTICE,
+			"fru internaluse <fru id> read  <fru file> - read internal use area to file");
+	lprintf(LOG_NOTICE,
+			"fru internaluse <fru id> write <fru file> - write internal use area from file");
+} /* void ipmi_fru_internaluse_help() */
 
 /* ipmi_fru_get_multirec   -  Query new values to replace original FRU content
 *
@@ -3641,6 +3728,18 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 
 	return retStatus;
 }
+
+/* ipmi_fru_upgekey_help - print help text for 'upgEkey'
+ *
+ * returns void
+ */
+void
+ipmi_fru_upgekey_help()
+{
+	lprintf(LOG_NOTICE, "fru upgEkey <fru id> <fru file>");
+	lprintf(LOG_NOTICE, "Note: FRU ID and file(incl. full path) must be specified.");
+	lprintf(LOG_NOTICE, "Example: ipmitool fru upgEkey 0 /root/fru.bin");
+} /* ipmi_fru_upgekey_help() */
 
 static int
 ipmi_fru_get_multirec_size_from_file(char * pFileName,
@@ -4054,6 +4153,17 @@ ipmi_fru_info_internal_use(struct ipmi_intf * intf, uint8_t id)
 	return 0;
 }
 
+/* ipmi_fru_help - print help text for FRU subcommand
+ *
+ * returns void
+ */
+void
+ipmi_fru_help()
+{
+	lprintf(LOG_NOTICE,
+			"FRU Commands:  print read write upgEkey edit internaluse get");
+} /* ipmi_fru_help() */
+
 /* ipmi_fru_read_internal_use -  print internal use are in hex or file
 *
 * @intf:   ipmi interface
@@ -4215,19 +4325,25 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 
 int
 ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
-	{
+{
 	int rc = 0;
 	uint8_t fru_id = 0;
 
-	if (argc == 0) {
+	if (argc < 1) {
 		rc = ipmi_fru_print_all(intf);
 	}
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit internaluse");
+		ipmi_fru_help();
+		return 0;
 	}
 	else if (strncmp(argv[0], "print", 5) == 0 ||
 		strncmp(argv[0], "list", 4) == 0) {
 		if (argc > 1) {
+			if (strcmp(argv[1], "help") == 0) {
+				lprintf(LOG_NOTICE, "fru print [fru id] - print information about FRU(s)");
+				return 0;
+			}
+
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return (-1);
 
@@ -4237,198 +4353,204 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "read", 5)) {
-		if((argc >= 3) && (strlen(argv[2]) > 0)){
-			/* There is a file name in the parameters */
-			if(strlen(argv[2]) < 512)
-			{
-				if (is_fru_id(argv[1], &fru_id) != 0)
-					return (-1);
+		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+			ipmi_fru_read_help();
+			return 0;
+		} else if (argc < 3) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			ipmi_fru_read_help();
+			return (-1);
+		}
 
-				strcpy(fileName, argv[2]);
-				if (verbose){
-					printf("Fru Id           : %d\n", fru_id);
-					printf("Fru File         : %s\n", fileName);
-				}
-				ipmi_fru_read_to_bin(intf, fileName, fru_id);
-			}
-			else{
-				fprintf(stderr,"File name must be smaller than 512 bytes\n");
-			}
+		if (is_fru_id(argv[1], &fru_id) != 0)
+			return (-1);
+
+		/* There is a file name in the parameters */
+		if (is_valid_filename(argv[2]) != 0)
+				return (-1);
+
+		if (verbose) {
+			printf("FRU ID           : %d\n", fru_id);
+			printf("FRU File         : %s\n", argv[2]);
 		}
-		else{
-			printf("fru read <fru id> <fru file>\n");
-		}
+		/* TODO - rc is missing */
+		ipmi_fru_read_to_bin(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "write", 5)) {
-		if ((argc >= 3) && (strlen(argv[2]) > 0)) {
-			/* There is a file name in the parameters */
-			if (strlen(argv[2]) < 512) {
-				if (is_fru_id(argv[1], &fru_id) != 0)
-					return (-1);
-
-				strcpy(fileName, argv[2]);
-				if (verbose) {
-					printf("Fru Id           : %d\n", fru_id);
-					printf("Fru File         : %s\n", fileName);
-				}
-				ipmi_fru_write_from_bin(intf, fileName, fru_id);
-			} else {
-				lprintf(LOG_ERR, "File name must be smaller than 512 bytes\n");
-			}
-		} else {
-			lprintf(LOG_ERR, "A Fru Id and a path/file name must be specified\n");
-			lprintf(LOG_ERR, "Ex.: ipmitool fru write 0 /root/fru.bin\n");
+		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+			ipmi_fru_write_help();
+			return 0;
+		} else if (argc < 3) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			ipmi_fru_write_help();
+			return (-1);
 		}
+
+		if (is_fru_id(argv[1], &fru_id) != 0)
+			return (-1);
+
+		/* There is a file name in the parameters */
+		if (is_valid_filename(argv[2]) != 0)
+				return (-1);
+
+		if (verbose) {
+			printf("FRU ID           : %d\n", fru_id);
+			printf("FRU File         : %s\n", argv[2]);
+		}
+		/* TODO - rc is missing */
+		ipmi_fru_write_from_bin(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "upgEkey", 7)) {
-		if ((argc >= 3) && (strlen(argv[2]) > 0)) {
-			if (is_fru_id(argv[1], &fru_id) != 0)
+		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+			ipmi_fru_upgekey_help();
+			return 0;
+		} else if (argc < 3) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			ipmi_fru_upgekey_help();
+			return (-1);
+		}
+
+		if (is_fru_id(argv[1], &fru_id) != 0)
+			return (-1);
+
+		/* There is a file name in the parameters */
+		if (is_valid_filename(argv[2]) != 0)
 				return (-1);
 
-			strcpy(fileName, argv[2]);
-			ipmi_fru_upg_ekeying(intf, fileName, fru_id);
-		} else {
-			printf("fru upgEkey <fru id> <fru file>\n");
-		}
+		rc = ipmi_fru_upg_ekeying(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "internaluse", 11)) {
-		if (
-				(argc >= 3)
-				&&
-				(!strncmp(argv[2], "info", 4))
-			)
-		{
+		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+			ipmi_fru_internaluse_help();
+			return 0;
+		}
+
+		if ( (argc >= 3) && (!strncmp(argv[2], "info", 4)) ) {
+
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return (-1);
 
-			ipmi_fru_info_internal_use(intf, fru_id);
+			rc = ipmi_fru_info_internal_use(intf, fru_id);
 		}
-		else if (
-				(argc >= 3)
-				&&
-				(!strncmp(argv[2], "print", 5))
-			)
-		{
+		else if ( (argc >= 3) && (!strncmp(argv[2], "print", 5)) ) {
+
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return (-1);
 
-			ipmi_fru_read_internal_use(intf, fru_id, NULL);
+			rc = ipmi_fru_read_internal_use(intf, fru_id, NULL);
 		}
-		else if (
-				(argc >= 4)
-				&&
-				(!strncmp(argv[2], "read", 4))
-				&&
-				(strlen(argv[3]) > 0)
-				)
-		{
+		else if ( (argc >= 4) && (!strncmp(argv[2], "read", 4)) ) {
+
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return (-1);
 
-			strcpy(fileName, argv[3]);
-			lprintf(LOG_DEBUG, "Fru Id           : %d", fru_id);
-			lprintf(LOG_DEBUG, "Fru File         : %s", fileName);
-			ipmi_fru_read_internal_use(intf, fru_id, fileName);
-		}
-		else if (
-				(argc >= 4)
-				&&
-				(!strncmp(argv[2], "write", 5))
-				&&
-				(strlen(argv[3]) > 0)
-				)
-		{
-			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
-
-			strcpy(fileName, argv[3]);
-			lprintf(LOG_DEBUG, "Fru Id           : %d", fru_id);
-			lprintf(LOG_DEBUG, "Fru File         : %s", fileName);
-			ipmi_fru_write_internal_use(intf, fru_id, fileName);
-		}
-		else
-		{
-			printf("fru internaluse <fru id> info             - get internal use area size\n");
-			printf("fru internaluse <fru id> print            - print internal use area in hex\n");
-			printf("fru internaluse <fru id> read  <fru file> - read internal use area to file\n");
-			printf("fru internaluse <fru id> write <fru file> - write internal use area from file\n");
-		}
-	}
-
-	else if (!strncmp(argv[0], "edit", 4)) {
-
-		if ((argc >= 2) && (strncmp(argv[1], "help", 4) == 0)) {
-			lprintf(LOG_ERR, "edit commands:");
-			lprintf(LOG_ERR, "  edit - interactively edit records");
-			lprintf(LOG_ERR,
-				"  edit <fruid> field <section> <index> <string> - edit FRU string");
-			lprintf(LOG_ERR,
-				"  edit <fruid> oem iana <record> <format> <args> - limited OEM support");
-		} else {
-			if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-				if (is_fru_id(argv[1], &fru_id) != 0)
+			/* There is a file name in the parameters */
+			if (is_valid_filename(argv[3]) != 0)
 					return (-1);
 
-				if (verbose) {
-					printf("Fru Id           : %d\n", fru_id);
-				}
-			} else {
-				printf("Using default FRU id: %d\n", fru_id);
-			}
+			lprintf(LOG_DEBUG, "FRU ID           : %d", fru_id);
+			lprintf(LOG_DEBUG, "FRU File         : %s", argv[3]);
 
-			if ((argc >= 3) && (strlen(argv[1]) > 0)) {
-				if (!strncmp(argv[2], "field", 5)){
-					if (argc == 6) {
-						ipmi_fru_set_field_string(intf, fru_id,\
-															*argv[3], *argv[4], (char *) argv[5]);
-					}
-					else {
-						printf("fru edit [fruid] field [section] [index] [string]\n");
-					}
-				}else if (!strncmp(argv[2], "oem", 3)){
-					ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
-				}
-			} else {
-				ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
-			}
+			rc = ipmi_fru_read_internal_use(intf, fru_id, argv[3]);
+		}
+		else if ( (argc >= 4) && (!strncmp(argv[2], "write", 5)) ) {
 
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
+			/* There is a file name in the parameters */
+			if (is_valid_filename(argv[3]) != 0)
+					return (-1);
+
+			lprintf(LOG_DEBUG, "FRU ID           : %d", fru_id);
+			lprintf(LOG_DEBUG, "FRU File         : %s", argv[3]);
+
+			rc = ipmi_fru_write_internal_use(intf, fru_id, argv[3]);
+		} else {
+			lprintf(LOG_ERR,
+					"Either unknown command or not enough parameters given.");
+			ipmi_fru_internaluse_help();
+			return (-1);
 		}
 	}
-	else if (!strncmp(argv[0], "get", 4)) {
-
-		if ((argc >= 2) && (strncmp(argv[1], "help", 4) == 0)) {
-			lprintf(LOG_ERR, "get commands:");
-			lprintf(LOG_ERR, "  get - retrieve OEM records");
-			lprintf(LOG_ERR,
-				"  get <fruid> oem iana <record> <format> <args> - limited OEM support");
-		} else {
-
-
-		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
+	else if (!strncmp(argv[0], "edit", 4)) {
+		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+			ipmi_fru_edit_help();
+			return 0;
+		} else if (argc < 2) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			ipmi_fru_edit_help();
+			return (-1);
+		}
+		
+		if (argc >= 2) {
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return (-1);
 
 			if (verbose) {
-				printf("Fru Id           : %d\n", fru_id);
+				printf("FRU ID           : %d\n", fru_id);
 			}
 		} else {
-			printf("Using default FRU id: %d\n", fru_id);
+			printf("Using default FRU ID: %d\n", fru_id);
 		}
 
-		if ((argc >= 3) && (strlen(argv[1]) > 0)) {
-			if (!strncmp(argv[2], "oem", 3)){
-				ipmi_fru_get_multirec(intf, fru_id, argc, argv);
+		if (argc >= 3) {
+			if (!strncmp(argv[2], "field", 5)) {
+				if (argc != 6) {
+					lprintf(LOG_ERR, "Not enough parameters given.");
+					ipmi_fru_edit_help();
+					return (-1);
+				}
+				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], *argv[4],
+						(char *) argv[5]);
+			} else if (!strncmp(argv[2], "oem", 3)) {
+				rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
+			} else {
+				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
+				ipmi_fru_edit_help();
+				return (-1);
 			}
 		} else {
-			ipmi_fru_get_multirec(intf, fru_id, argc, argv);
+			rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
+		}
+	}
+	else if (!strncmp(argv[0], "get", 4)) {
+		if (argc >= 1 && (strncmp(argv[1], "help", 4) == 0)) {
+			ipmi_fru_get_help();
+			return 0;
+		} else if (argc < 2) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			ipmi_fru_get_help();
+			return (-1);
 		}
 
+		if (argc >= 2) {
+			if (is_fru_id(argv[1], &fru_id) != 0)
+				return (-1);
+
+			if (verbose) {
+				printf("FRU ID           : %d\n", fru_id);
+			}
+		} else {
+			printf("Using default FRU ID: %d\n", fru_id);
+		}
+
+		if (argc >= 3) {
+			if (!strncmp(argv[2], "oem", 3)) {
+				rc = ipmi_fru_get_multirec(intf, fru_id, argc, argv);
+			} else {
+				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
+				ipmi_fru_get_help();
+				return (-1);
+			}
+		} else {
+			rc = ipmi_fru_get_multirec(intf, fru_id, argc, argv);
 		}
 	}
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
-		lprintf(LOG_ERR, "FRU Commands:  print read write upgEkey edit");
-		rc = -1;
+		ipmi_fru_help();
+		return (-1);
 	}
 
 	return rc;
