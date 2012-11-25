@@ -422,6 +422,7 @@ int
 is_valid_param(const char *input_param, uint8_t *uchr_ptr, const char *label) {
 	if (input_param == NULL || label == NULL) {
 		lprintf(LOG_ERROR, "ERROR: NULL pointer passed.");
+		return (-1);
 	}
 	if (str2uchar(input_param, uchr_ptr) == 0)
 		return 0;
