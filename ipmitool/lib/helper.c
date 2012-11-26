@@ -168,7 +168,7 @@ int str2long(const char * str, int64_t * lng_ptr)
 
 	if (errno != 0)
 		return (-3);
-	
+
 	return 0;
 } /* str2long(...) */
 
@@ -572,7 +572,7 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 	pid = (pid_t) fork();
 	if (pid < 0 || pid > 0)
 		exit(0);
-	
+
 #if defined(SIGTSTP) && defined(TIOCNOTTY)
 	if (setpgid(0, getpid()) == -1)
 		exit(1);
