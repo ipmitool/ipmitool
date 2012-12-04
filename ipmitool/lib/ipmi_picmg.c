@@ -150,9 +150,13 @@ ipmi_picmg_getaddr(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp  || rsp->ccode) {
-		printf("Error getting address information CC: 0x%02x\n", rsp->ccode);
-		return -1;
+	if (!rsp) {
+		lprintf(LOG_ERR, "No valid response received.");
+		return (-1);
+	} else if (rsp->ccode) {
+		lprintf(LOG_ERR, "Error getting address information CC: 0x%02x",
+				rsp->ccode);
+		return (-1);
 	}
 
 	printf("Hardware Address : 0x%02x\n", rsp->data[1]);
