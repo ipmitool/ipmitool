@@ -4558,9 +4558,13 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 		else if (strncmp(argv[1], "generic", 7) == 0)
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
-		else
-			lprintf(LOG_ERR,
-				"usage: sdr list [all|full|compact|event|mcloc|fru|generic]");
+		else {
+			lprintf(LOG_ERR, "Invalid SDR %s command: %s", argv[0], argv[1]);
+			lprintf(LOG_NOTICE,
+				"usage: sdr %s [all|full|compact|event|mcloc|fru|generic]",
+				argv[0]);
+			return (-1);
+		}
 	} else if (strncmp(argv[0], "type", 4) == 0) {
 		sdr_extended = 1;
 		rc = ipmi_sdr_print_type(intf, argv[1]);
