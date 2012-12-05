@@ -4184,7 +4184,8 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 	       sdr_repository_info.
 	       reserve_sdr_repository_supported ? "yes" : "no");
 	printf("SDR Repository Alloc info supported : %s\n",
-	       sdr_repository_info.delete_sdr_supported ? "yes" : "no");
+	       sdr_repository_info.
+				 get_sdr_repository_allo_info_supported ? "yes" : "no");
 
 	return 0;
 }
