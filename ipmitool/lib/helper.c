@@ -211,6 +211,9 @@ int str2int(const char * str, int32_t * int_ptr)
 {
 	int rc = 0;
 	int64_t arg_long = 0;
+	if (!str || !int_ptr)
+		return (-1);
+
 	if ( (rc = str2long(str, &arg_long)) != 0 ) {
 		*int_ptr = 0;
 		return rc;
@@ -235,6 +238,9 @@ int str2uint(const char * str, uint32_t * uint_ptr)
 {
 	int rc = 0;
 	uint64_t arg_ulong = 0;
+	if (!str || !uint_ptr)
+		return (-1);
+
 	if ( (rc = str2ulong(str, &arg_ulong)) != 0) {
 		*uint_ptr = 0;
 		return rc;
@@ -259,6 +265,9 @@ int str2short(const char * str, int16_t * shrt_ptr)
 {
 	int rc = (-3);
 	int64_t arg_long = 0;
+	if (!str || !shrt_ptr)
+		return (-1);
+
 	if ( (rc = str2long(str, &arg_long)) != 0 ) {
 		*shrt_ptr = 0;
 		return rc;
@@ -283,6 +292,9 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr)
 {
 	int rc = (-3);
 	uint64_t arg_ulong = 0;
+	if (!str || !ushrt_ptr)
+		return (-1);
+
 	if ( (rc = str2ulong(str, &arg_ulong)) != 0 ) {
 		*ushrt_ptr = 0;
 		return rc;
@@ -307,6 +319,9 @@ int str2uchar(const char * str, uint8_t * uchr_ptr)
 {
 	int rc = (-3);
 	uint64_t arg_ulong = 0;
+	if (!str || !uchr_ptr)
+		return (-1);
+
 	if ( (rc = str2ulong(str, &arg_ulong)) != 0 ) {
 		*uchr_ptr = 0;
 		return rc;
