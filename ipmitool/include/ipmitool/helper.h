@@ -65,6 +65,7 @@ struct oemvalstr {
 const char * val2str(uint16_t val, const struct valstr * vs);
 const char * oemval2str(uint32_t oem,uint16_t val, const struct oemvalstr * vs);
 
+int str2double(const char * str, double * double_ptr);
 int str2long(const char * str, int64_t * lng_ptr);
 int str2ulong(const char * str, uint64_t * ulng_ptr);
 int str2int(const char * str, int32_t * int_ptr);

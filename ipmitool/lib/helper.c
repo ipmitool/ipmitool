@@ -145,6 +145,33 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 	return un_str;
 }
 
+/* str2double - safely convert string to double
+ *
+ * @str: source string to convert from
+ * @double_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) invalid input, (-3) for *flow
+ */
+int str2double(const char * str, double * double_ptr)
+{
+	char * end_ptr = 0;
+	if (!str || !double_ptr)
+		return (-1);
+
+	*double_ptr = 0;
+	errno = 0;
+	*double_ptr = strtod(str, &end_ptr);
+
+	if (*end_ptr != '\0')
+		return (-2);
+
+	if (errno != 0)
+		return (-3);
+
+	return 0;
+} /* str2double(...) */
+
 /* str2long - safely convert string to int64_t
  *
  * @str: source string to convert from
