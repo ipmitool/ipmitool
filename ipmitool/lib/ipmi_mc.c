@@ -79,6 +79,17 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	if (cmd == BMC_COLD_RESET)
 		intf->abort = 1;
 
+	if (cmd == BMC_COLD_RESET && rsp == NULL) {
+		/* This is expected. See 20.2 Cold Reset Command, p.243, IPMIv2.0 rev1.0 */
+	} else if (rsp == NULL) {
+		lprintf(LOG_ERR, "MC reset command failed.");
+		return (-1);
+	} else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "MC reset command failed: %s",
+				val2str(rsp->ccode, completion_code_vals));
+		return (-1);
+	}
+
 	printf("Sent %s reset command to MC\n",
 	       (cmd == BMC_WARM_RESET) ? "warm" : "cold");
 
