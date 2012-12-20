@@ -698,7 +698,7 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	lprintf(LOG_ERR, "Watchdog Timer Shutoff successful -- timer stopped");
+	printf("Watchdog Timer Shutoff successful -- timer stopped\n");
 	return 0;
 }
 
