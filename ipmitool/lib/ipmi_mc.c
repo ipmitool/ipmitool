@@ -735,7 +735,7 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	lprintf(LOG_ERR, "IPMI Watchdog Timer Reset -  countdown restarted!");
+	printf("IPMI Watchdog Timer Reset -  countdown restarted!\n");
 	return 0;
 }
 
