@@ -162,25 +162,28 @@ static void
 printf_mc_usage(void)
 {
 	struct bitfield_data * bf;
-	printf("MC Commands:\n");
-	printf("  reset <warm|cold>\n");
-	printf("  guid\n");
-	printf("  info\n");
-	printf("  watchdog <get|reset|off>\n");
-	printf("  selftest\n");
-	printf("  getenables\n");
-	printf("  setenables <option=on|off> ...\n");
+	lprintf(LOG_NOTICE, "MC Commands:");
+	lprintf(LOG_NOTICE, "  reset <warm|cold>");
+	lprintf(LOG_NOTICE, "  guid");
+	lprintf(LOG_NOTICE, "  info");
+	lprintf(LOG_NOTICE, "  watchdog <get|reset|off>");
+	lprintf(LOG_NOTICE, "  selftest");
+	lprintf(LOG_NOTICE, "  getenables");
+	lprintf(LOG_NOTICE, "  setenables <option=on|off> ...");
 	for (bf = mc_enables_bf; bf->name != NULL; bf++) {
-		printf("    %-20s  %s\n", bf->name, bf->desc);
+		lprintf(LOG_NOTICE, "    %-20s  %s", bf->name, bf->desc);
 	}
-	printf("  getsysinfo argument\n");
-	printf("  setsysinfo argument string\n");
-	printf("    Valid arguments are:\n");
-        printf("        primary_os_name     Primary operating system name\n");
-        printf("        os_name             Operating system name\n");
-        printf("        system_name         System Name of server (vendor dependent\n");
-        printf("        delloem_os_version  Running version of operating system\n");
-        printf("        delloem_url         Url of bmc webserver\n");
+	lprintf(LOG_NOTICE, "  getsysinfo argument");
+	lprintf(LOG_NOTICE, "  setsysinfo argument string");
+	lprintf(LOG_NOTICE, "    Valid arguments are:");
+	lprintf(LOG_NOTICE,
+			"        primary_os_name     Primary operating system name");
+	lprintf(LOG_NOTICE, "        os_name             Operating system name");
+	lprintf(LOG_NOTICE,
+			"        system_name         System Name of server (vendor dependent");
+	lprintf(LOG_NOTICE,
+			"        delloem_os_version  Running version of operating system");
+	lprintf(LOG_NOTICE, "        delloem_url         Url of bmc webserver");
 }
 
 
