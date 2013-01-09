@@ -163,8 +163,8 @@ struct ipm_get_watchdog_rsp {
 #define IPMI_SYSINFO_DELL_OS_VERSION	0xe4
 #define IPMI_SYSINFO_DELL_URL		0xde
 
-int ipmi_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
+int ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
 		    int len, void *buffer);
-int ipmi_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
+int ipmi_mc_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
 
 #endif				/*IPMI_MC_H */

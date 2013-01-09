@@ -670,9 +670,8 @@ ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,
     {
         int bytes_to_copy;
 
-	rc = ipmi_getsysinfo(intf, field_type, ii, 0, 
-			     sizeof(lcdstringblock),
-			     &lcdstringblock);
+        rc = ipmi_mc_getsysinfo(intf, field_type, ii, 0,
+            sizeof(lcdstringblock), &lcdstringblock);
         if (rc < 0) {
             lprintf(LOG_ERR, " Error getting platform model name");
         } else if (rc > 0) {
@@ -726,7 +725,8 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
     int rc;
     uint8_t data[11];
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_IDRAC_VALIDATOR, 2, 0, sizeof(data), data);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_IDRAC_VALIDATOR, 2, 0, sizeof(data),
+        data);
     if (rc < 0) {
         /*lprintf(LOG_ERR, " Error getting IMC type"); */
         return -1;
@@ -774,7 +774,8 @@ ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf)
     uint8_t data[4];
     int rc;
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0, sizeof(lcd_mode), &lcd_mode);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0,
+        sizeof(lcd_mode), &lcd_mode);
     if (rc < 0) {
         lprintf(LOG_ERR, " Error getting LCD configuration");
         return -1;
@@ -808,7 +809,8 @@ ipmi_lcd_get_configure_command (struct ipmi_intf * intf,
     uint8_t data[4];
     int rc;
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0, sizeof(data), data);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0,
+        sizeof(data), data);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD configuration");
@@ -854,7 +856,7 @@ ipmi_lcd_set_configure_command (struct ipmi_intf * intf, int command)
     data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
     data[1] = command;                      /* command - custom, default, none */
 
-    rc = ipmi_setsysinfo(intf, 2, data);
+    rc = ipmi_mc_setsysinfo(intf, 2, data);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration");
@@ -949,7 +951,7 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
         data[11]=lcd_mode.error_display;
     }
 
-    rc = ipmi_setsysinfo(intf, 13, data);
+    rc = ipmi_mc_setsysinfo(intf, 13, data);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration");
@@ -995,7 +997,8 @@ ipmi_lcd_get_single_line_text (struct ipmi_intf * intf, char* lcdstring, uint8_t
     for (ii = 0; ii < 4; ii++) {
         int bytes_to_copy;
 
-	rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STRING_SELECTOR, ii, 0, sizeof(lcdstringblock), &lcdstringblock);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STRING_SELECTOR, ii, 0,
+        sizeof(lcdstringblock), &lcdstringblock);
 	if (rc < 0) {
             lprintf(LOG_ERR, " Error getting text data");
             return -1;
@@ -1080,7 +1083,8 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
         else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED) 
         {
             printf("    Setting: User defined\n");
-	    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+            rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
+                sizeof(lcd_caps), &lcd_caps);
             if (rc < 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities.");
@@ -1201,7 +1205,8 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
         {
             printf("    Setting: custom\n");
 
-            rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+            rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
+                 sizeof(lcd_caps), &lcd_caps);
             if (rc < 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities.");
@@ -1248,7 +1253,8 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 {
     int rc;
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, sizeof(*lcdstatus), lcdstatus);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0,
+        sizeof(*lcdstatus), lcdstatus);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD Status");
@@ -1297,7 +1303,7 @@ static void CheckLCDSupport(struct ipmi_intf * intf)
     int rc;
 
     LcdSupported = 0;
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, 0, NULL);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, 0, NULL);
     if (rc == 0) {
     LcdSupported = 1;       
     }
@@ -1525,7 +1531,7 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
                 memcpy (data+2, text+bytes_stored, size_of_copy);
                 bytes_stored += size_of_copy;
             }
-	    rc = ipmi_setsysinfo(intf, 18, data);
+            rc = ipmi_mc_setsysinfo(intf, 18, data);
             if (rc < 0) {
                 lprintf(LOG_ERR, " Error setting text data");
                 rc = -1;
@@ -1559,7 +1565,8 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
     int rc = 0;
     IPMI_DELL_LCD_CAPS lcd_caps;
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0, sizeof(lcd_caps), &lcd_caps);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
+        sizeof(lcd_caps), &lcd_caps);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting LCD capabilities");
@@ -3796,7 +3803,7 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
     int rc;
     uint8_t *rdata;
 
-    rc = ipmi_getsysinfo(intf, 0xeb, 0, 0, sizeof(*pavgpower), pavgpower);
+    rc = ipmi_mc_getsysinfo(intf, 0xeb, 0, 0, sizeof(*pavgpower), pavgpower);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting average power consumption history data .\n");
@@ -3852,7 +3859,8 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
     uint8_t *rdata;
     int rc;
 
-    rc = ipmi_getsysinfo(intf, 0xEC, 0, 0, sizeof(*pstPeakpower), pstPeakpower);
+    rc = ipmi_mc_getsysinfo(intf, 0xec, 0, 0, sizeof(*pstPeakpower),
+        pstPeakpower);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
@@ -3916,7 +3924,8 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
     uint8_t *rdata;
     int rc;
 
-    rc = ipmi_getsysinfo(intf, 0xED, 0, 0, sizeof(*pstMinpower), pstMinpower);
+    rc = ipmi_mc_getsysinfo(intf, 0xed, 0, 0, sizeof(*pstMinpower),
+        pstMinpower);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
@@ -4135,7 +4144,8 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
     uint8_t *rdata;
     int rc;
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, sizeof(*ipmipowercap), ipmipowercap);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0,
+        sizeof(*ipmipowercap), ipmipowercap);
     if (rc < 0) {
         lprintf(LOG_ERR, " Error getting power cap  .\n");
         return -1;
@@ -4248,7 +4258,8 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
         return -1;
     }
 
-    rc = ipmi_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, sizeof(ipmipowercap), &ipmipowercap);
+    rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0,
+        sizeof(ipmipowercap), &ipmipowercap);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error getting power cap  .\n");
@@ -4340,7 +4351,7 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
 
         return -1;
     }
-    rc = ipmi_setsysinfo(intf, 13, data);
+    rc = ipmi_mc_setsysinfo(intf, 13, data);
     if (rc < 0)
     {
         lprintf(LOG_ERR, " Error setting power cap");
