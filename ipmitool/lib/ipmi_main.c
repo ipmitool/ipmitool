@@ -371,6 +371,7 @@ ipmi_main(int argc, char ** argv,
 	uint32_t timeout = 0;
 	int authtype = -1;
 	char * tmp = NULL;
+	char * tmpe = NULL;
 	char * hostname = NULL;
 	char * username = NULL;
 	char * password = NULL;
@@ -396,6 +397,8 @@ ipmi_main(int argc, char ** argv,
 	{
 		switch (argflag) {
 		case 'I':
+			if (intfname)
+				free(intfname);
 			intfname = strdup(optarg);
 			if (intfname == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -473,6 +476,8 @@ ipmi_main(int argc, char ** argv,
 			csv_output = 1;
 			break;
 		case 'H':
+			if (hostname)
+				free(hostname);
 			hostname = strdup(optarg);
 			if (hostname == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -488,6 +493,8 @@ ipmi_main(int argc, char ** argv,
 						"from file %s", optarg);
 			break;
 		case 'a':
+			if (tmp)
+				free(tmp);
 #ifdef HAVE_GETPASSPHRASE
 			tmp = getpassphrase("Password: ");
 #else
@@ -504,6 +511,8 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'k':
+			if (kgkey)
+				free(kgkey);
 			kgkey = strdup(optarg);
 			if (kgkey == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -511,10 +520,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'K':
-			if ((tmp = getenv("IPMI_KGKEY"))) {
+			if ((tmpe = getenv("IPMI_KGKEY"))) {
 				if (kgkey)
 					free(kgkey);
-				kgkey = strdup(tmp);
+				kgkey = strdup(tmpe);
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -524,6 +533,8 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'y':
+			if (kgkey)
+				free(kgkey);
 			kgkey = ipmi_parse_hex(optarg);
 			if (kgkey == NULL) {
 				goto out_free;
@@ -531,14 +542,14 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'Y':
 #ifdef HAVE_GETPASSPHRASE
-			tmp = getpassphrase("Key: ");
+			tmpe = getpassphrase("Key: ");
 #else
-			tmp = getpass("Key: ");
+			tmpe = getpass("Key: ");
 #endif
-			if (tmp != NULL) {
+			if (tmpe != NULL) {
 				if (kgkey)
 					free(kgkey);
-				kgkey = strdup(tmp);
+				kgkey = strdup(tmpe);
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -546,6 +557,8 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'U':
+			if (username)
+				free(username);
 			if (strlen(optarg) > 16) {
 				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
 				goto out_free;
@@ -557,6 +570,8 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'S':
+			if (sdrcache)
+				free(sdrcache);
 			sdrcache = strdup(optarg);
 			if (sdrcache == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -565,6 +580,8 @@ ipmi_main(int argc, char ** argv,
 			break;
 #ifdef ENABLE_ALL_OPTIONS
 		case 'o':
+			if (oemtype)
+				free(oemtype);
 			oemtype = strdup(optarg);
 			if (oemtype == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -579,10 +596,14 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'g':
 			/* backwards compatible oem hack */
+			if (oemtype)
+				free(oemtype);
 			oemtype = strdup("intelwv2");
 			break;
 		case 's':
 			/* backwards compatible oem hack */
+			if (oemtype)
+				free(oemtype);
 			oemtype = strdup("supermicro");
 			break;
 		case 'P':
@@ -599,19 +620,19 @@ ipmi_main(int argc, char ** argv,
 			memset(optarg, 'X', i);
 			break;
 		case 'E':
-			if ((tmp = getenv("IPMITOOL_PASSWORD"))) {
+			if ((tmpe = getenv("IPMITOOL_PASSWORD"))) {
 				if (password)
 					free(password);
-				password = strdup(tmp);
+				password = strdup(tmpe);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
 			}
-			else if ((tmp = getenv("IPMI_PASSWORD"))) {
+			else if ((tmpe = getenv("IPMI_PASSWORD"))) {
 				if (password)
 					free(password);
-				password = strdup(tmp);
+				password = strdup(tmpe);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -681,6 +702,8 @@ ipmi_main(int argc, char ** argv,
 			sol_escape_char = optarg[0];
 			break;
 		case 'O':
+			if (seloem)
+				free(seloem);
 			seloem = strdup(optarg);
 			if (seloem == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
