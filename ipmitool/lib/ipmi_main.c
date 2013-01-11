@@ -370,8 +370,8 @@ ipmi_main(int argc, char ** argv,
 	int retry = 0;
 	uint32_t timeout = 0;
 	int authtype = -1;
-	char * tmp = NULL;
-	char * tmpe = NULL;
+	char * tmp_pass = NULL;
+	char * tmp_env = NULL;
 	char * hostname = NULL;
 	char * username = NULL;
 	char * password = NULL;
@@ -493,17 +493,16 @@ ipmi_main(int argc, char ** argv,
 						"from file %s", optarg);
 			break;
 		case 'a':
-			if (tmp)
-				free(tmp);
 #ifdef HAVE_GETPASSPHRASE
-			tmp = getpassphrase("Password: ");
+			tmp_pass = getpassphrase("Password: ");
 #else
-			tmp = getpass("Password: ");
+			tmp_pass = getpass("Password: ");
 #endif
-			if (tmp != NULL) {
+			if (tmp_pass != NULL) {
 				if (password)
 					free(password);
-				password = strdup(tmp);
+				password = strdup(tmp_pass);
+				free(tmp_pass);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -520,10 +519,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'K':
-			if ((tmpe = getenv("IPMI_KGKEY"))) {
+			if ((tmp_env = getenv("IPMI_KGKEY"))) {
 				if (kgkey)
 					free(kgkey);
-				kgkey = strdup(tmpe);
+				kgkey = strdup(tmp_env);
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -542,14 +541,15 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'Y':
 #ifdef HAVE_GETPASSPHRASE
-			tmpe = getpassphrase("Key: ");
+			tmp_pass = getpassphrase("Key: ");
 #else
-			tmpe = getpass("Key: ");
+			tmp_pass = getpass("Key: ");
 #endif
-			if (tmpe != NULL) {
+			if (tmp_pass != NULL) {
 				if (kgkey)
 					free(kgkey);
-				kgkey = strdup(tmpe);
+				kgkey = strdup(tmp_pass);
+				free(tmp_pass);
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -620,19 +620,19 @@ ipmi_main(int argc, char ** argv,
 			memset(optarg, 'X', i);
 			break;
 		case 'E':
-			if ((tmpe = getenv("IPMITOOL_PASSWORD"))) {
+			if ((tmp_env = getenv("IPMITOOL_PASSWORD"))) {
 				if (password)
 					free(password);
-				password = strdup(tmpe);
+				password = strdup(tmp_env);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
 			}
-			else if ((tmpe = getenv("IPMI_PASSWORD"))) {
+			else if ((tmp_env = getenv("IPMI_PASSWORD"))) {
 				if (password)
 					free(password);
-				password = strdup(tmpe);
+				password = strdup(tmp_env);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -758,12 +758,13 @@ ipmi_main(int argc, char ** argv,
 	if (hostname != NULL && password == NULL &&
 			(authtype != IPMI_SESSION_AUTHTYPE_NONE || authtype < 0)) {
 #ifdef HAVE_GETPASSPHRASE
-		tmp = getpassphrase("Password: ");
+		tmp_pass = getpassphrase("Password: ");
 #else
-		tmp = getpass("Password: ");
+		tmp_pass = getpass("Password: ");
 #endif
-		if (tmp != NULL) {
-			password = strdup(tmp);
+		if (tmp_pass != NULL) {
+			password = strdup(tmp_pass);
+			free(tmp_pass);
 			if (password == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
