@@ -736,7 +736,10 @@ ipmi_sunoem_sshkey_set(struct ipmi_intf * intf, uint8_t uid, char * ifile)
 			i_size = SSHKEY_BLOCK_SIZE;
 
 		memset(wbuf, 0, SSHKEY_BLOCK_SIZE);
-		fseek(fp, r, SEEK_SET);
+		if (-1 == fseek(fp, r, SEEK_SET)) {
+			lprintf(LOG_ERR, "Seek error %s. %s", ifile, strerror(errno));
+			return -1;
+		}
 		count = fread(wbuf+3, 1, i_size, fp);
 		if (count != i_size) {
 			lprintf(LOG_ERR, "Unable to read %d bytes from file %s", i_size, ifile);
