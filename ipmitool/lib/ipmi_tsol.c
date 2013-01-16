@@ -446,7 +446,10 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Can't open port %d", port);
 		return -1;
 	}
-	bind(fd_socket, (struct sockaddr *)&sin, sizeof(sin));
+	if (-1 == bind(fd_socket, (struct sockaddr *)&sin, sizeof(sin))) {
+		lprintf(LOG_ERR, "Failed to bind socket.");
+		return -1;
+	}
 
 	/*
 	 * retrieve local IP address if not supplied on command line
@@ -454,17 +457,20 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (recvip == NULL) {
 		result = intf->open(intf);	/* must connect first */
 		if (result < 0)
+			close(fd_socket);
 			return -1;
 
 		mylen = sizeof(myaddr);
 		if (getsockname(intf->fd, (struct sockaddr *)&myaddr, &mylen) < 0) {
 			lperror(LOG_ERR, "getsockname failed");
+			close(fd_socket);
 			return -1;
 		}
 
 		recvip = inet_ntoa(myaddr.sin_addr);
 		if (recvip == NULL) {
 			lprintf(LOG_ERR, "Unable to find local IP address");
+			close(fd_socket);
 			return -1;
 		}
 	}
@@ -482,6 +488,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	result = ipmi_tsol_start(intf, recvip, port);
         if (result < 0) {
 		lprintf(LOG_ERR, "Error starting SOL");
+		close(fd_socket);
                 return -1;
         }
 
