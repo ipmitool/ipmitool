@@ -144,7 +144,6 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	};
 	struct ipmi_ipmb_addr ipmb_addr = {
 		addr_type:	IPMI_IPMB_ADDR_TYPE,
-		channel:	intf->target_channel & 0x0f,
 	};
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
@@ -157,6 +156,8 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	if (intf == NULL || req == NULL)
 		return NULL;
+
+	ipmb_addr.channel = intf->target_channel & 0x0f;
 
 	if (intf->opened == 0 && intf->open != NULL)
 		if (intf->open(intf) < 0)
