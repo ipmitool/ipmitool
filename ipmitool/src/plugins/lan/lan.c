@@ -206,8 +206,11 @@ get_random(void *data, int len)
 	int fd = open("/dev/urandom", O_RDONLY);
 	int rv;
 
-	if (fd < 0 || len < 0)
+	if (fd < 0)
 		return errno;
+	if (len < 0)
+		close(fd);
+		return errno; /* XXX: ORLY? */
 
 	rv = read(fd, data, len);
 
@@ -1276,6 +1279,8 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 		}
 	}
 
+	if (msg != NULL)
+		free(msg);
 	return rsp;
 }
 
