@@ -90,6 +90,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <time.h>
 
 static const int IME_SUCCESS              = 0;
@@ -893,13 +894,21 @@ static int ImeImageCtxFromFile(
       /* Get the raw data in file */
       fseek(pImageFile, 0, SEEK_END);
       pImageCtx->size  = ftell(pImageFile); 
+      if (pImageCtx->size <= 0) {
+         if (pImageCtx->size < 0)
+            lprintf(LOG_ERR, "Error seeking %s. %s\n", imageFilename, strerror(errno));
+         rc = IME_ERROR;
+         fclose(pImageFile);
+         return rc;
+      }
       pImageCtx->pData = malloc(sizeof(unsigned char)*pImageCtx->size);
       rewind(pImageFile);
 
       if ( pImageCtx->pData != NULL )
       {
-         fread(pImageCtx->pData, sizeof(unsigned char), 
-                                                   pImageCtx->size, pImageFile);
+         if (pImageCtx->size < fread(pImageCtx->pData, sizeof(unsigned char), 
+                                                   pImageCtx->size, pImageFile))
+            rc = IME_ERROR;
       }
       else
       {
