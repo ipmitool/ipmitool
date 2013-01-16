@@ -130,8 +130,8 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
    int rc = (-3);
 
    struct {
-      uint8_t interval;
-      uint8_t force_on;
+      uint8_t interval = 0;
+      uint8_t force_on = 0;
    } identify_data;
 
    memset(&req, 0, sizeof(req));
@@ -140,11 +140,8 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 
    if (arg != NULL) {
       if (strncmp(arg, "force", 5) == 0) {
-         identify_data.interval = 0;
          identify_data.force_on = 1;
       } else {
-         identify_data.interval = 0;
-         identify_data.force_on = 0;
          if ( (rc = str2uchar(arg, &identify_data.interval)) != 0) {
             if (rc == (-2)) {
                 lprintf(LOG_ERR, "Invalid interval given.");
