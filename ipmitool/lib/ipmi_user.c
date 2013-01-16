@@ -723,7 +723,11 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			else
 				password = argv[3];
 
-			if (strlen(password) > 20)
+			if (password == NULL) {
+				lprintf(LOG_ERR, "Unable to parse password argument.");
+				return -1;
+			}
+			else if (strlen(password) > 20)
 			{
 				lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
 				return -1;
