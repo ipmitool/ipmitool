@@ -719,6 +719,8 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 	if (lanplus_rand(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE))
 	{
 		lprintf(LOG_ERR, "lanplus_encrypt_payload: Error generating IV");
+		if (padded_input != NULL)
+			free(padded_input);
 		return 1;
 	}
 
