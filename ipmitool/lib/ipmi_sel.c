@@ -609,12 +609,16 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 				if (NULL == rsp) 
 				{
 					lprintf(LOG_ERR, " Error getting system info");
+					if (desc != NULL)
+						free(desc);
 					return NULL;
 				} 
 				else if (rsp->ccode > 0)
 				{
 					lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
+					if (desc != NULL)
+						free(desc);
 					return NULL;
 				}
 				version = rsp->data[4];
