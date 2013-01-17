@@ -845,7 +845,6 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 static int
 ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 {
-	struct sdr_record_list *sdr;
 	int i, v;
 	int rc = 0;
 
@@ -861,6 +860,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 
 	/* lookup by sensor name */
 	for (i = 0; i < argc; i++) {
+		struct sdr_record_list *sdr;
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
 		if (sdr == NULL) {
 			lprintf(LOG_ERR, "Sensor data record \"%s\" not found!",
@@ -875,6 +875,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 			rc = (-1);
 		}
 		verbose = v;
+		free(sdr);
 	}
 	return rc;
 }
