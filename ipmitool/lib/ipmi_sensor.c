@@ -42,6 +42,8 @@
 #include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
+void printf_sensor_get_usage();
+
 // Macro's for Reading the current sensor Data.
 #define SCANNING_DISABLED	0x40
 #define READING_UNAVAILABLE	0x20
@@ -847,55 +849,33 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 	int i, v;
 	int rc = 0;
 
-	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_NOTICE, "sensor get <id> ... [id]");
-		lprintf(LOG_NOTICE, "   id        : name of desired sensor");
-		return -1;
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		printf_sensor_get_usage();
+		return (-1);
+	} else if (strcmp(argv[0], "help") == 0) {
+		printf_sensor_get_usage();
+		return 0;
 	}
 	printf("Locating sensor record...\n");
 
 	/* lookup by sensor name */
 	for (i = 0; i < argc; i++) {
-		int r = 0;
-
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
 		if (sdr == NULL) {
 			lprintf(LOG_ERR, "Sensor data record \"%s\" not found!",
-				argv[i]);
+					argv[i]);
 			rc = -1;
 			continue;
 		}
-
 		/* need to set verbose level to 1 */
 		v = verbose;
 		verbose = 1;
-		switch (sdr->type) {
-		case SDR_RECORD_TYPE_FULL_SENSOR:
-		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			r = ipmi_sensor_print_fc(intf, sdr->record.common,
-						   sdr->type);
-			break;
-		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			r = ipmi_sdr_print_sensor_eventonly(intf,
-							    sdr->record.
-							    eventonly);
-			break;
-		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-			r = ipmi_sdr_print_sensor_fru_locator(intf,
-							      sdr->record.
-							      fruloc);
-			break;
-		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			r = ipmi_sdr_print_sensor_mc_locator(intf,
-							     sdr->record.mcloc);
-			break;
+		if (ipmi_sdr_print_listentry(intf, sdr) < 0) {
+			rc = (-1);
 		}
 		verbose = v;
-
-		/* save errors */
-		rc = (r == 0) ? rc : r;
 	}
-
 	return rc;
 }
 
@@ -922,4 +902,15 @@ ipmi_sensor_main(struct ipmi_intf *intf, int argc, char **argv)
 	}
 
 	return rc;
+}
+
+/* printf_sensor_get_usage - print usage for # ipmitool sensor get NAC;
+ *
+ * @returns: void
+ */
+void
+printf_sensor_get_usage()
+{
+	lprintf(LOG_NOTICE, "sensor get <id> ... [id]");
+	lprintf(LOG_NOTICE, "   id        : name of desired sensor");
 }
