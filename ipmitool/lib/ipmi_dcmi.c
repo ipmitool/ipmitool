@@ -1974,39 +1974,37 @@ static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
     struct sdr_get_rs *header;
     struct ipmi_sdr_iterator *itr;
     int rc = 0;
-    int r = 0;
     uint8_t *rec = NULL;
         
     itr = ipmi_sdr_start(intf, 0);
     if (itr == NULL) {
         lprintf(LOG_ERR, "Unable to open SDR for reading");
-        return -1;
+        return (-1);
     }
 
-    while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {        
-        if(header->id == rec_id)
+    while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
+        if (header->id == rec_id)
             break;
     }
 
-    if(header != NULL) {
-    /* yes, we found the SDR for this record ID, now get full record */
-        rec = ipmi_sdr_get_record(intf, header, itr);
-        if (rec == NULL) {
-            lprintf(LOG_DEBUG, "rec == NULL");
-            rc = -1;
-        }
-
-        if((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
-           (header->type == SDR_RECORD_TYPE_COMPACT_SENSOR)) {
-            r = ipmi_sensor_print_fc(intf,
-	    	(struct sdr_record_common_sensor *)rec, header->type);
-        }
-        else
-            rc = -1;
+    if (header == NULL) {
+        lprintf(LOG_DEBUG, "header == NULL");
+        ipmi_sdr_end(intf, itr);
+        return (-1);
     }
-    else {
-        rc = -1;    /* record id not found */
-    }   
+    /* yes, we found the SDR for this record ID, now get full record */
+    rec = ipmi_sdr_get_record(intf, header, itr);
+    if (rec == NULL) {
+        lprintf(LOG_DEBUG, "rec == NULL");
+        ipmi_sdr_end(intf, itr);
+        return (-1);
+    }
+    if ((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
+        (header->type == SDR_RECORD_TYPE_COMPACT_SENSOR)) {
+        rc = ipmi_sdr_print_rawentry(intf, header->type, rec, header->length);
+    } else {
+        rc = (-1);
+    }
 
     free(rec);
     ipmi_sdr_end(intf, itr);
