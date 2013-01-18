@@ -163,7 +163,7 @@ ipmi_sol_payload_access_status(struct ipmi_intf * intf,
 	rsp = intf->sendrecv(intf, &req);
 
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "No valid response received.");
+		lprintf(LOG_ERR, "Error. No valid response received.");
 		return -1;
 	}
 
