@@ -1270,7 +1270,7 @@ static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
    do
    {
    	rsp = intf->sendrecv(intf, &req);
-   }while (rsp->ccode == 0xc0); 
+   }while (rsp == NULL || rsp->ccode == 0xc0); 
 
    if (!rsp)
    {
