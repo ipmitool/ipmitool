@@ -847,6 +847,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int i, v;
 	int rc = 0;
+	struct sdr_record_list *sdr;
 
 	if (argc < 1) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
@@ -857,10 +858,8 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 		return 0;
 	}
 	printf("Locating sensor record...\n");
-
 	/* lookup by sensor name */
 	for (i = 0; i < argc; i++) {
-		struct sdr_record_list *sdr;
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
 		if (sdr == NULL) {
 			lprintf(LOG_ERR, "Sensor data record \"%s\" not found!",
@@ -875,7 +874,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 			rc = (-1);
 		}
 		verbose = v;
-		free(sdr);
+		sdr = NULL;
 	}
 	return rc;
 }
