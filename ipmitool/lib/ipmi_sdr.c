@@ -2685,6 +2685,9 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 		sdrr = malloc(sizeof (struct sdr_record_list));
 		if (sdrr == NULL) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			if (rec != NULL) {
+				free(rec);
+			}
 			break;
 		}
 		memset(sdrr, 0, sizeof (struct sdr_record_list));
@@ -2719,6 +2722,9 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3198,8 +3204,12 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint16_t gen_id, uint8_t num
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3237,6 +3247,9 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint16_t gen_id, uint8_t num
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3270,13 +3283,6 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 	struct sdr_get_rs *header;
 	struct sdr_record_list *e;
 
-	head = malloc(sizeof (struct sdr_record_list));
-	if (head == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
-	memset(head, 0, sizeof (struct sdr_record_list));
-
 	if (sdr_list_itr == NULL) {
 		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
@@ -3286,6 +3292,13 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 	}
 
 	/* check what we've already read */
+	head = malloc(sizeof (struct sdr_record_list));
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(head, 0, sizeof (struct sdr_record_list));
+
 	for (e = sdr_list_head; e != NULL; e = e->next) {
 		switch (e->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3315,8 +3328,12 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3350,6 +3367,9 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3380,13 +3400,6 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 	struct sdr_record_list *e;
 	struct sdr_record_list *head;
 
-	head = malloc(sizeof (struct sdr_record_list));
-	if (head == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
-	memset(head, 0, sizeof (struct sdr_record_list));
-
 	if (sdr_list_itr == NULL) {
 		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
@@ -3394,6 +3407,13 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 			return NULL;
 		}
 	}
+
+	head = malloc(sizeof (struct sdr_record_list));
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(head, 0, sizeof (struct sdr_record_list));
 
 	/* check what we've already read */
 	for (e = sdr_list_head; e != NULL; e = e->next) {
@@ -3459,8 +3479,12 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3520,6 +3544,9 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3550,13 +3577,6 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 	struct sdr_record_list *e;
 	struct sdr_record_list *head;
 
-	head = malloc(sizeof (struct sdr_record_list));
-	if (head == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
-	memset(head, 0, sizeof (struct sdr_record_list));
-
 	if (sdr_list_itr == NULL) {
 		sdr_list_itr = ipmi_sdr_start(intf, 0);
 		if (sdr_list_itr == NULL) {
@@ -3564,6 +3584,13 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 			return NULL;
 		}
 	}
+
+	head = malloc(sizeof (struct sdr_record_list));
+	if (head == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(head, 0, sizeof (struct sdr_record_list));
 
 	/* check what we've already read */
 	for (e = sdr_list_head; e != NULL; e = e->next)
@@ -3585,8 +3612,12 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3616,6 +3647,9 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3720,8 +3754,12 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -3786,6 +3824,9 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3878,6 +3919,9 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 		if (rec == NULL) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			ret = -1;
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			break;
 		}
 		memset(rec, 0, header.length + 1);
@@ -3888,6 +3932,12 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 				"record %04x read %d bytes, expected %d",
 				header.id, bc, header.length);
 			ret = -1;
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
+			if (rec != NULL) {
+				free(rec);
+			}
 			break;
 		}
 
@@ -3919,6 +3969,9 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -3983,8 +4036,12 @@ ipmi_sdr_list_cache(struct ipmi_intf *intf)
 		sdrr->type = header->type;
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
-		if (rec == NULL)
+		if (rec == NULL) {
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
+		}
 
 		switch (header->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
@@ -4014,6 +4071,9 @@ ipmi_sdr_list_cache(struct ipmi_intf *intf)
 			break;
 		default:
 			free(rec);
+			if (sdrr != NULL) {
+				free(sdrr);
+			}
 			continue;
 		}
 
@@ -4238,6 +4298,9 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 
 		if (sdrr->raw == NULL) {
 		    lprintf(LOG_ERR, "ipmitool: cannot obtain SDR record %04x", header->id);
+				if (sdrr != NULL) {
+					free(sdrr);
+				}
 		    return -1;
 		}
 
