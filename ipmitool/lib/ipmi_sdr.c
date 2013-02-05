@@ -1804,10 +1804,12 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		SENSOR_PRINT_THRESH(sr->full, "Lower non-critical", lower.non_critical, lnc);
 	}
 	ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
-		sr->full->threshold.hysteresis.positive, "Positive Hysteresis");
+		sr->full ? sr->full->threshold.hysteresis.positive :
+		sr->compact->threshold.hysteresis.positive, "Positive Hysteresis");
 
 	ipmi_sdr_print_sensor_hysteresis(sensor, sr->full,
-		sr->full->threshold.hysteresis.negative, "Negative Hysteresis");
+		sr->full ? sr->full->threshold.hysteresis.negative :
+		sr->compact->threshold.hysteresis.negative, "Negative Hysteresis");
 
 	print_sensor_min_max(sr->full);
 
