@@ -1048,6 +1048,7 @@ ipmi_sdr_print_sensor_mask(struct sdr_record_mask *mask,
 			   uint8_t sensor_type,
 			   uint8_t event_type, int numeric_fmt)
 {
+	/* iceblink - don't print some event status fields - CVS rev1.53 */
 	return 0;
 
 	switch (numeric_fmt) {
