@@ -1463,10 +1463,10 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
         lprintf(LOG_ERR, " Error setting LCD status");
         rc= -1;
     }
-    if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) 
+    else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) 
     {
         lprintf(LOG_ERR, " Error getting LCD status: Command not supported on this system.");
-        return -1;
+        rc = -1;
     }
     else if (rsp->ccode > 0) 
     {
