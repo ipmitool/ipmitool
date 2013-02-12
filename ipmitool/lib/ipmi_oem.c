@@ -112,9 +112,9 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 	struct ipmi_oem_handle * oem;
 	int rc = 0;
 
-	if (strncmp(oemtype, "help", 4) == 0 ||
-	    strncmp(oemtype, "list", 4) == 0 ||
-	    oemtype == NULL) {
+	if (oemtype == NULL ||
+			strncmp(oemtype, "help", 4) == 0 ||
+			strncmp(oemtype, "list", 4) == 0) {
 		ipmi_oem_print();
 		return -1;
 	}
