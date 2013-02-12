@@ -3263,7 +3263,6 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
 {
     time_t now;
     struct tm* tm;
-    char* dte;
 
     struct ipmi_rs * rsp;
     struct ipmi_rq req;
@@ -3293,7 +3292,6 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
 
     now = time(0);
     tm = gmtime(&now);
-    dte = asctime(tm);
 
     memset(&req, 0, sizeof(req));
     req.msg.netfn = IPMI_NETFN_STORAGE;
