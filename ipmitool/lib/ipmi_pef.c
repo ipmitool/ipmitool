@@ -193,18 +193,17 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 	// common IPMItool rqst/resp handling
 	*/
 	struct ipmi_rs * rsp = intf->sendrecv(intf, req);
-	if (!rsp)
+	if (!rsp) {
 		return(NULL);
-	if (rsp->ccode == 0x80)	{
+	} else if (rsp->ccode == 0x80)	{
 		return(NULL);   /* Do not output error, just unsupported parameters */
-	}
-	else if (rsp->ccode) {
-		lprintf(LOG_ERR, " **Error %x in '%s' command",
-			rsp ? rsp->ccode : 0, txt);
+	} else if (rsp->ccode) {
+		lprintf(LOG_ERR, " **Error %x in '%s' command", rsp->ccode, txt);
 		return(NULL);
 	}
-	if (verbose > 2)
+	if (verbose > 2) {
 		printbuf(rsp->data, rsp->data_len, txt);
+	}
 	return(rsp);
 }
 
