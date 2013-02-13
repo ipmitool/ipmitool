@@ -566,7 +566,11 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 		p = strchr(buf, '\0');
 		for (i=0; i<PEF_B2S_GENERIC_ER_ENTRIES; i++) {
 			if (offmask & 1) {
-				sprintf(p, ",%s", ipmi_pef_bit_desc(pef_b2s_generic_ER[t-1], i));
+				if ((t-1) >= PEF_B2S_GENERIC_ER_ENTRIES) {
+					sprintf(p, ", Unrecognized event trigger");
+				} else {
+					sprintf(p, ",%s", ipmi_pef_bit_desc(pef_b2s_generic_ER[t-1], i));
+				}
 				p = strchr(p, '\0');
 			}
 			offmask >>= 1;
