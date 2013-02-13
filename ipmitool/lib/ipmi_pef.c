@@ -667,13 +667,18 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 	*/
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	struct pef_cfgparm_policy_table_entry * ptbl, * ptmp;
+	struct pef_cfgparm_policy_table_entry * ptbl = NULL;
+	struct pef_cfgparm_policy_table_entry * ptmp = NULL;
 	uint32_t i;
 	uint8_t wrk, ch, medium, tbl_size;
 
 	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
-	if (!tbl_size)
+	if (!tbl_size) {
+		if (!ptbl) {
+			free(ptbl);
+		}
 		return;
+	}
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = IPMI_CMD_GET_CHANNEL_INFO;
@@ -796,12 +801,14 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	struct ipmi_rq req;
 	struct pef_capabilities * pcap;
 	struct pef_cfgparm_selector psel;
-	struct pef_cfgparm_policy_table_entry * ptbl;
+	struct pef_cfgparm_policy_table_entry * ptbl = NULL;
 	uint8_t * uid;
 	uint8_t actions, tbl_size;
 
-	if ((tbl_size = ipmi_pef_get_policy_table(intf, &ptbl)) > 0)
+	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
+	if (!ptbl) {
 		free(ptbl);
+	}
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
