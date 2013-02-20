@@ -130,9 +130,9 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
    int rc = (-3);
 
    struct {
-      uint8_t interval = 0;
-      uint8_t force_on = 0;
-   } identify_data;
+      uint8_t interval;
+      uint8_t force_on;
+   } identify_data = { .interval = 0, .force_on = 0 };
 
    memset(&req, 0, sizeof(req));
    req.msg.netfn = IPMI_NETFN_CHASSIS;

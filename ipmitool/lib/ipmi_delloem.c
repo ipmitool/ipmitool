@@ -667,7 +667,7 @@ ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
 		if (rc < 0) {
 			lprintf(LOG_ERR, " Error getting platform model name");
 			break;
-		} else if (rc_tmp > 0) {
+		} else if (rc > 0) {
 			lprintf(LOG_ERR, " Error getting platform model name: %s",
 					val2str(rc, completion_code_vals));
 			break;
