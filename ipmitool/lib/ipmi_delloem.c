@@ -143,8 +143,8 @@ static void usage(void);
 
 /* LCD Function prototypes */
 static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** argv);
-static void ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf,char* lcdstring,
-                        uint8_t max_length,uint8_t field_type);
+int ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
+		uint8_t max_length, uint8_t field_type);
 static int ipmi_idracvalidator_command (struct ipmi_intf * intf);
 static int ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf);
 static int ipmi_lcd_get_configure_command (struct ipmi_intf * intf,uint8_t *command);
@@ -639,72 +639,64 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
 
 
 
-/*****************************************************************
-* Function Name:      ipmi_lcd_get_platform_model_name
-*
-* Description: This function retrieves the platform model name, or any other parameter 
-*              which stores  data in the same format
-* Input:       intf         - pointer to interface
-*              max_length   - length of the platform model string
-*              field_type   - either hostname / platform model
-* Output:      lcdstring    - hostname / platform model string
-*
-* Return:            
-*
-******************************************************************/ 
-static void
-ipmi_lcd_get_platform_model_name (struct ipmi_intf * intf, 
-                          char* lcdstring, 
-                                  uint8_t max_length, 
-                                  uint8_t field_type)
+/* ipmi_lcd_get_platform_model_name - This function retrieves the platform model
+ * name, or any other parameter which stores data in the same format
+ *
+ * @intf:        pointer to interface
+ * @lcdstring:   hostname/platform model string(output)
+ * @max_length:  length of the platform model string
+ * @field_type:  either hostname/platform model
+ *
+ * returns: 0 => success, other value means error
+ */
+int
+ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
+		uint8_t max_length, uint8_t field_type)
 {
-    uint8_t data[4];
-    IPMI_DELL_LCD_STRING lcdstringblock;
-    int lcdstring_len = 0;
-    int bytes_copied = 0;
-    int rc;
+	uint8_t data[4];
+	int bytes_copied = 0;
+	int ii = 0;
+	int lcdstring_len = 0;
+	int rc = 0;
+	IPMI_DELL_LCD_STRING lcdstringblock;
 
-    int ii;
-
-    for (ii = 0; ii < 4; ii++)
-    {
-        int bytes_to_copy;
-
-        rc = ipmi_mc_getsysinfo(intf, field_type, ii, 0,
-            sizeof(lcdstringblock), &lcdstringblock);
-        if (rc < 0) {
-            lprintf(LOG_ERR, " Error getting platform model name");
-        } else if (rc > 0) {
-            lprintf(LOG_ERR, " Error getting platform model name: %s",
-                val2str(rc, completion_code_vals));
-        }
-
-        /* first block is different - 14 bytes*/
-        if (0 == ii) {
-            lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
-
-            lcdstring_len = MIN (lcdstring_len,max_length);
-
-            bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
-            memcpy (lcdstring, lcdstringblock.lcd_string.selector_0_string.data, bytes_to_copy);
-        } else {
-            int string_offset;
-
-            bytes_to_copy = MIN(lcdstring_len - bytes_copied, IPMI_DELL_LCD_STRINGN_SIZE);
-            if (bytes_to_copy < 1)
-                break;
-            string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE * (ii-1);
-            memcpy (lcdstring+string_offset, lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
-        }
-
-
-        bytes_copied += bytes_to_copy;
-
-        if (bytes_copied >= lcdstring_len)
-
-            break;
-    }
-
+	for (ii = 0; ii < 4; ii++) {
+		int bytes_to_copy;
+		rc = ipmi_mc_getsysinfo(intf, field_type, ii, 0, sizeof(lcdstringblock),
+				&lcdstringblock);
+		if (rc < 0) {
+			lprintf(LOG_ERR, " Error getting platform model name");
+			break;
+		} else if (rc_tmp > 0) {
+			lprintf(LOG_ERR, " Error getting platform model name: %s",
+					val2str(rc, completion_code_vals));
+			break;
+		}
+		/* first block is different - 14 bytes*/
+		if (ii == 0) {
+			lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
+			lcdstring_len = MIN(lcdstring_len,max_length);
+			bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
+			memcpy(lcdstring, lcdstringblock.lcd_string.selector_0_string.data,
+					bytes_to_copy);
+		} else {
+			int string_offset;
+			bytes_to_copy = MIN(lcdstring_len - bytes_copied,
+					IPMI_DELL_LCD_STRINGN_SIZE);
+			if (bytes_to_copy < 1) {
+				break;
+			}
+			string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE
+				* (ii-1);
+			memcpy(lcdstring + string_offset,
+					lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
+		}
+		bytes_copied += bytes_to_copy;
+		if (bytes_copied >= lcdstring_len) {
+			break;
+		}
+	}
+	return rc;
 }
 
 /*****************************************************************
@@ -1067,12 +1059,12 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
         {
             char text[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 
-            ipmi_lcd_get_platform_model_name(intf, text, 
-                IPMI_DELL_LCD_STRING_LENGTH_MAX,
-                IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR);
+            if (ipmi_lcd_get_platform_model_name(intf, text,
+                  IPMI_DELL_LCD_STRING_LENGTH_MAX,
+                  IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
+              return (-1);
+            }
 
-            if (text == NULL)
-                return -1;
             printf("    Setting:Model name\n");
             printf("    Line 1:  %s\n", text);
         }
@@ -1191,8 +1183,11 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
         {
             memset (lcdstring,0,IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
 
-            ipmi_lcd_get_platform_model_name(intf, lcdstring, IPMI_DELL_LCD_STRING_LENGTH_MAX,
-                IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR);
+            if (ipmi_lcd_get_platform_model_name(intf, lcdstring,
+                IPMI_DELL_LCD_STRING_LENGTH_MAX,
+                IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
+              return (-1);
+            }
 
             printf("    Setting: default\n");
             printf("    Line 1:  %s\n", lcdstring);
