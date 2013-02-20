@@ -4708,9 +4708,11 @@ f_type, uint8_t f_index, char *f_string)
 	f_index= f_index - 0x30;
 
 	/*Seek to field index */
-	for( i=0; i<=f_index; i++ )
-	{
+	for (i=0; i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
+		if (fru_area != NULL) {
+			free(fru_area);
+		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
 
@@ -4885,9 +4887,11 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	/*************************
 	3) Seek to field index */
-	for( i=0; i<=f_index; i++ )
-	{
+	for (i = 0;i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
+		if (fru_area != NULL) {
+			free(fru_area);
+		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
 	}
 
