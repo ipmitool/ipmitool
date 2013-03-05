@@ -70,7 +70,7 @@ static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, uint
 static int ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
 						uint32_t size, uint32_t offset);
 static int ipmi_fru_get_multirec_size_from_file(char * pFileName, uint32_t * pSize, uint32_t * pOffset);
-static void ipmi_fru_get_adjust_size_from_buffer(uint8_t * pBufArea, uint32_t *pSize);
+int ipmi_fru_get_adjust_size_from_buffer(uint8_t * pBufArea, uint32_t *pSize);
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
 
 static int ipmi_fru_set_field_string(struct ipmi_intf * intf, unsigned
@@ -3675,58 +3675,61 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 			char * pFileName,
 			uint8_t fruId)
 {
-	uint16_t retStatus = 0;
-	uint32_t offFruMultiRec;
+	struct fru_info fruInfo;
+	uint8_t *buf = NULL;
+	uint32_t offFruMultiRec = 0;
 	uint32_t fruMultiRecSize = 0;
 	uint32_t offFileMultiRec = 0;
 	uint32_t fileMultiRecSize = 0;
-	struct fru_info fruInfo;
-	uint8_t *buf = NULL;
-	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-							&offFruMultiRec,
-							&fruMultiRecSize);
-
+	if (pFileName == NULL) {
+		lprintf(LOG_ERR, "File expected, but none given.");
+		return (-1);
+	}
+	if (ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
+							&offFruMultiRec, &fruMultiRecSize) != 0) {
+		lprintf(LOG_ERR, "Failed to get multirec location from FRU.");
+		return (-1);
+	}
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
-
-	if (retStatus == 0) {
-		retStatus =
-			ipmi_fru_get_multirec_size_from_file(pFileName,
-							&fileMultiRecSize,
-							&offFileMultiRec);
+	if (ipmi_fru_get_multirec_size_from_file(pFileName, &fileMultiRecSize,
+				&offFileMultiRec) != 0) {
+		lprintf(LOG_ERR, "Failed to get multirec size from file '%s'.", pFileName);
+		return (-1);
 	}
-
-	if (retStatus == 0) {
-		buf = malloc(fileMultiRecSize);
-		if (buf) {
-			retStatus =
-				ipmi_fru_get_multirec_from_file(pFileName, buf,
-								fileMultiRecSize,
-								offFileMultiRec);
-
-		} else {
-			printf("Error allocating memory for multirec buffer\n");
-			retStatus = -1;
+	buf = malloc(fileMultiRecSize);
+	if (buf == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return (-1);
+	}
+	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
+				offFileMultiRec) != 0) {
+		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.", pFileName);
+		if (buf != NULL) {
+			free(buf);
 		}
+		return (-1);
 	}
-
-	if(retStatus == 0)
-	{
-		ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize);
-		if (buf)
-		write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
-					fileMultiRecSize, buf);
+	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
+		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
+		if (buf != NULL) {
+			free(buf);
+		}
+		return (-1);
 	}
-
-	if(retStatus == 0 )
-		lprintf(LOG_INFO, "Done");
-	else
-		lprintf(LOG_ERR, "Failed");
-
-	if (buf)
+	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
+				fileMultiRecSize, buf) != 0) {
+		lprintf(LOG_ERR, "Failed to write FRU area.");
+		if (buf != NULL) {
+			free(buf);
+		}
+		return (-1);
+	}
+	if (buf != NULL) {
 		free(buf);
-
-	return retStatus;
+	}
+	lprintf(LOG_INFO, "Done upgrading Ekey.");
+	return 0;
 }
 
 /* ipmi_fru_upgekey_help - print help text for 'upgEkey'
@@ -3797,55 +3800,53 @@ ipmi_fru_get_multirec_size_from_file(char * pFileName,
 	return 0;
 }
 
-static void
-ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data,
-					uint32_t *pSize)
+int
+ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data, uint32_t *pSize)
 {
 	struct fru_multirec_header * head;
-	#define CHUNK_SIZE (255 + sizeof(struct fru_multirec_header))
-	uint16_t count = 0;
-	uint16_t status = 0;
-	uint8_t counter;
+	int status = 0;
 	uint8_t checksum = 0;
-
+	uint8_t counter = 0;
+	uint16_t count = 0;
 	do {
 		checksum = 0;
 		head = (struct fru_multirec_header *) (fru_data + count);
-
-		if(verbose )
+		if (verbose) {
 			printf("Adding (");
-
-		for (counter = 0; counter < sizeof(struct fru_multirec_header);   counter++) {
-			if(verbose )
+		}
+		for (counter = 0; counter < sizeof(struct fru_multirec_header); counter++) {
+			if (verbose) {
 				printf(" %02X", *(fru_data + count + counter));
+			}
 			checksum += *(fru_data + count + counter);
-			}
-
-		if( verbose )
+		}
+		if (verbose) {
 			printf(")");
-
-		if (checksum != 0) {
-			printf("Bad checksum in Multi Records\n");
-			status = -1;
 		}
-		else if ( verbose )
+		if (checksum != 0) {
+			lprintf(LOG_ERR, "Bad checksum in Multi Records");
+			status = (-1);
+			if (verbose) {
+				printf("--> FAIL");
+			}
+		} else if (verbose) {
 			printf("--> OK");
-
+		}
 		if (verbose > 1 && checksum == 0) {
-			for(counter = 0; counter < head->len; counter++) {
-				printf(" %02X", *(fru_data + count + counter +
-													sizeof(struct fru_multirec_header)));
+			for (counter = 0; counter < head->len; counter++) {
+				printf(" %02X", *(fru_data + count + counter
+							+ sizeof(struct fru_multirec_header)));
 			}
 		}
-		if(verbose )
+		if (verbose) {
 			printf("\n");
-
+		}
 		count += head->len + sizeof (struct fru_multirec_header);
-	} while( (!(head->format & 0x80)) && (status == 0));
+	} while ((!(head->format & 0x80)) && (status == 0));
 
 	*pSize = count;
-
 	lprintf(LOG_DEBUG, "Size of multirec: %lu\n", *pSize);
+	return status;
 }
 
 static int
