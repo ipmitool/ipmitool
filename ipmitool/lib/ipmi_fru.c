@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -3850,28 +3851,40 @@ ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data, uint32_t *pSize)
 }
 
 static int
-ipmi_fru_get_multirec_from_file(char * pFileName,
-				uint8_t * pBufArea,
-				uint32_t size,
-				uint32_t offset)
+ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
+		uint32_t size, uint32_t offset)
 {
 	FILE * pFile;
 	uint32_t len = 0;
-
-	pFile = fopen(pFileName,"rb");
-	if (pFile) {
-		fseek(pFile, offset,SEEK_SET);
-		len = fread(pBufArea, size, 1, pFile);
-		fclose(pFile);
-	} else {
-		printf("Error opening file\n");
+	if (size < 0) {
+		return (-1);
 	}
+	if (pFileName == NULL) {
+		lprintf(LOG_ERR, "Invalid file name given.");
+		return (-1);
+	}
+	
+	errno = 0;
+	pFile = fopen(pFileName, "rb");
+	if (!pFile) {
+		lprintf(LOG_ERR, "Error opening file '%s': %i -> %s.", pFileName, errno,
+				strerror(errno));
+		return (-1);
+	}
+	errno = 0;
+	if (fseek(pFile, offset, SEEK_SET) != 0) {
+		lprintf(LOG_ERR, "Failed to seek in file '%s': %i -> %s.", pFileName, errno,
+				strerror(errno));
+		fclose(pFile);
+		return (-1);
+	}
+	len = fread(pBufArea, size, 1, pFile);
+	fclose(pFile);
 
 	if (len != 1) {
-		printf("Error with file %s\n", pFileName);
-		return -1;
+		lprintf(LOG_ERR, "Error in file '%s'.", pFileName);
+		return (-1);
 	}
-
 	return 0;
 }
 
