@@ -445,6 +445,11 @@ void display_capabilities_attributes(
 static int
 ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 {
+# ifndef IPMI_INTF_LANPLUS
+	lprintf(LOG_ERR,
+			"DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.");
+	return (-1);
+# else
     int rc;
 
     if (intf->opened == 0 && intf->open != NULL) {
@@ -452,11 +457,6 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
             return (int) NULL;
     }
     
-    #ifndef IPMI_INTF_LANPLUS
-    printf("Function oobDicover unavailable when lanplus (IPMI v2) is not enabled\n");
-    return -1;
-
-    #else
 
     struct ipmi_session *s;
 
@@ -520,7 +520,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 
     //Lets ping/pong
     return ipmiv2_lan_ping(intf);
-    #endif
+# endif
 }
 /*******************************************************************************
  * This is the get DCMI Capabilities function to see what the BMC supports.    *
