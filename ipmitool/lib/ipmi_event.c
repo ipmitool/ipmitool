@@ -340,7 +340,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 			 (emsg.event_dir == EVENT_DIR_DEASSERT && hilo == 1))
 			emsg.event_data[0] = (uint8_t)(str2val(state, ipmi_event_thresh_lo) & 0xf);
 		else {
-			lprintf(LOG_ERR, "Invalid Event\n");
+			lprintf(LOG_ERR, "Invalid Event");
 			return -1;
 		}
 
