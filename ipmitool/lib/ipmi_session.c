@@ -420,7 +420,7 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 				{
 					session_request_type = IPMI_SESSION_REQUEST_BY_HANDLE;
 					if (str2uint(argv[2], &id_or_handle) != 0) {
-						lprintf(LOG_ERR, "HEX number expected, bud '%s' given.",
+						lprintf(LOG_ERR, "HEX number expected, but '%s' given.",
 								argv[2]);
 						printf_session_usage();
 						retval = -1;
