@@ -346,36 +346,42 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 		rsp = ipmi_sdr_get_sensor_thresholds(intf, emsg.sensor_num,
 							target, lun, channel);
-
-		if (rsp != NULL && rsp->ccode == 0) {
-
-			/* threshold reading */
-			emsg.event_data[2] = rsp->data[(emsg.event_data[0] / 2) + 1];
-
-			rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num,
-								target, lun, channel);
-			if (rsp != NULL && rsp->ccode == 0)
-				off = dir ? rsp->data[0] : rsp->data[1];
-			if (off <= 0)
-				off = 1;
-
-			/* trigger reading */
-			if (dir) {
-				if ((emsg.event_data[2] + off) > 0xff)
-					emsg.event_data[1] = 0xff;
-				else
-					emsg.event_data[1] = emsg.event_data[2] + off;
-			}
-			else {
-				if ((emsg.event_data[2] - off) < 0)
-					emsg.event_data[1] = 0;
-				else
-					emsg.event_data[1] = emsg.event_data[2] - off;
-			}
-
-			/* trigger in byte 2, threshold in byte 3 */
-			emsg.event_data[0] |= 0x50;
+		if (rsp == NULL) {
+			lprintf(LOG_ERR,
+					"Command Get Sensor Thresholds failed: invalid response.");
+			return (-1);
+		} else if (rsp->ccode != 0) {
+			lprintf(LOG_ERR, "Command Get Sensor Thresholds failed: %s",
+					val2str(rsp->ccode, completion_code_vals));
+			return (-1);
 		}
+
+		/* threshold reading */
+		emsg.event_data[2] = rsp->data[(emsg.event_data[0] / 2) + 1];
+
+		rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num,
+							target, lun, channel);
+		if (rsp != NULL && rsp->ccode == 0)
+			off = dir ? rsp->data[0] : rsp->data[1];
+		if (off <= 0)
+			off = 1;
+
+		/* trigger reading */
+		if (dir) {
+			if ((emsg.event_data[2] + off) > 0xff)
+				emsg.event_data[1] = 0xff;
+			else
+				emsg.event_data[1] = emsg.event_data[2] + off;
+		}
+		else {
+			if ((emsg.event_data[2] - off) < 0)
+				emsg.event_data[1] = 0;
+			else
+				emsg.event_data[1] = emsg.event_data[2] - off;
+		}
+
+		/* trigger in byte 2, threshold in byte 3 */
+		emsg.event_data[0] |= 0x50;
 	}
 	break;
 
