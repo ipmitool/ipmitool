@@ -117,14 +117,23 @@ find_lan_channel(struct ipmi_intf * intf, uint8_t start)
 static struct lan_param *
 get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int select)
 {
-	struct lan_param * p;
+	struct lan_param * p = NULL;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	int i = 0;
 	uint8_t msg_data[4];
 
-	p = &ipmi_lan_params[param];
-	if (p == NULL)
+	for (i = 0; ipmi_lan_params[i].cmd != (-1); i++) {
+		if (ipmi_lan_params[i].cmd == param) {
+			p = &ipmi_lan_params[param];
+			break;
+		}
+	}
+
+	if (p == NULL) {
+		lprintf(LOG_INFO, "Get LAN Parameter failed: Unknown parameter.");
 		return NULL;
+	}
 
 	msg_data[0] = chan;
 	msg_data[1] = p->cmd;
