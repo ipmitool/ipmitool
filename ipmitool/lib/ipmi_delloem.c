@@ -172,7 +172,6 @@ static void ipmi_lcd_usage(void);
 
 /* MAC Function prototypes */
 static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** argv);
-static int make_int(const char *str, int *value);
 static void InitEmbeddedNICMacAddressValues ();
 static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum);
 static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum);
@@ -390,7 +389,13 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         {
             current_arg++;
             if (argc <= current_arg) {usage();return -1;}
-            line_number = (uint8_t)strtoul(argv[current_arg], NULL, 0);
+            if (str2uchar(argv[current_arg], &line_number) != 0)
+            {
+              lprintf(LOG_ERR,
+                  "Argument '%s' is either not a number or out of range.\n",
+                  argv[current_arg]);
+              return (-1);
+            }
             current_arg++;
             if (argc <= current_arg) {usage();return -1;}
         }
@@ -1747,7 +1752,7 @@ static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** arg
             return -1;
         }
 
-		if(make_int(argv[current_arg],&currIdInt) < 0) {
+		if(str2int(argv[current_arg],&currIdInt) != 0) {
 			lprintf(LOG_ERR, "Invalid NIC number. The NIC number should be between 0-8\n");
 			return -1;
 		}
@@ -1764,31 +1769,6 @@ static int ipmi_delloem_mac_main (struct ipmi_intf * intf, int argc, char ** arg
     }
     return rc;
 }
-
-
-/*****************************************************************
-* Function Name:     make_int
-*
-* Description:   This function convert string into integer
-* Input:         str     - decimal number string
-* Output:        value   - integer value
-* Return:                
-*
-******************************************************************/
-static int make_int(const char *str, int *value)
-{
-    char *tmp=NULL;
-    *value = strtol(str,&tmp,0);
-    if ( tmp-str != strlen(str) )
-    {
-        return -1;
-    }
-    return 0;
-}
-
-
-
-
 
 EmbeddedNICMacAddressType EmbeddedNICMacAddress;
 
@@ -3025,7 +3005,11 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
 			lprintf(LOG_ERR, " Cap value in Watts, Btu/hr or percent should be whole number");
 			return -1;
 		}
-        make_int(argv[current_arg],&val);
+        if (str2int(argv[current_arg], &val) != 0) {
+            lprintf(LOG_ERR, "Given capacity value '%s' is invalid.",
+                argv[current_arg]);
+            return (-1);
+        }
         current_arg++;
         if (argv[current_arg] == NULL)
         {       
