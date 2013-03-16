@@ -8,10 +8,10 @@ this list of conditions and the following disclaimer.
 
 - Redistributions in binary form must reproduce the above copyright notice,
 this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution. 
+and/or other materials provided with the distribution.
 - Neither the name of Dell Inc nor the names of its contributors
 may be used to endorse or promote products derived from this software 
-without specific prior written permission. 
+without specific prior written permission.
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -22,7 +22,7 @@ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
 INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE. 
+POSSIBILITY OF SUCH DAMAGE.
 
 
 ******************************************************************/
@@ -104,9 +104,9 @@ char NIC_Selection_Mode_String [4] [50] =	{
 #define	INVAILD_SHARED_MODE_SET_STRING	"ERROR: Cannot set shared Mode for Blades.\n"
 
 
-char NIC_Selection_Mode_String_12g[] [50] =	{	
+char NIC_Selection_Mode_String_12g[] [50] =	{
 												"dedicated",
-												"shared with lom1",  
+												"shared with lom1",
 												"shared with lom2",
 												"shared with lom3",
 												"shared with lom4",
@@ -164,9 +164,9 @@ static int ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock);
 static int ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text);
 static int ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number);
 static int ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode ,
-                       uint16_t lcdquallifier, uint8_t errordisp, 
+                       uint16_t lcdquallifier, uint8_t errordisp,
                        int8_t line_number, char * text);
-static int ipmi_lcd_configure (struct ipmi_intf * intf, int command, 
+static int ipmi_lcd_configure (struct ipmi_intf * intf, int command,
                     int8_t line_number, char * text);
 static void ipmi_lcd_usage(void);
 
@@ -194,7 +194,7 @@ static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_
 static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, char ** argv);
 static void ipmi_time_to_str(time_t rawTime, char* strTime);
 static int ipmi_get_sensor_reading(struct ipmi_intf *intf ,
-            unsigned char sensorNumber, 
+            unsigned char sensorNumber,
                         SensorReadingType* pSensorReadingData);
 static int ipmi_get_power_capstatus_command (struct ipmi_intf * intf);
 static int ipmi_set_power_capstatus_command (struct ipmi_intf * intf,uint8_t val);
@@ -242,7 +242,7 @@ static int ipmi_getdrivemap (struct ipmi_intf * intf, int b, int d, int f, int *
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                                      -1 - failure
@@ -254,7 +254,7 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
     int rc = 0;
 
-    if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) 
+    if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0)
     {
         usage();
         return 0;
@@ -265,7 +265,7 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
         ipmi_delloem_lcd_main (intf,argc,argv);
     }
     /* mac address*/
-    else if (strncmp(argv[current_arg], "mac\0", 4) == 0) 
+    else if (strncmp(argv[current_arg], "mac\0", 4) == 0)
     {
         ipmi_delloem_mac_main (intf,argc,argv);
     }
@@ -280,14 +280,14 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
         ipmi_delloem_setled_main (intf,argc,argv);
     }
     /*Powermanagement report processing*/
-    else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) 
+    else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0)
     {
         ipmi_delloem_powermonitor_main (intf,argc,argv);
     }
-	/* vFlash Support */	
+	/* vFlash Support */
 	else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0)
 	{
-        ipmi_delloem_vFlash_main (intf,argc,argv);	
+        ipmi_delloem_vFlash_main (intf,argc,argv);
 	}
     else
     {
@@ -301,10 +301,10 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 * Function Name:     usage
 *
 * Description:       This function prints help message for delloem command
-* Input:           
-* Output:       
+* Input:
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -333,7 +333,7 @@ static void usage(void)
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                         -1 - failure
@@ -345,7 +345,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
     int rc = 0;
 
     current_arg++;
-    if (argc < current_arg) 
+    if (argc < current_arg)
     {
         usage();
         return -1;
@@ -364,7 +364,7 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         printf("lcd is not supported on this system.\n");
         return -1;
     }
-    else if (strncmp(argv[current_arg], "info\0", 5) == 0) 
+    else if (strncmp(argv[current_arg], "info\0", 5) == 0)
     {
 	if((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )
             rc = ipmi_lcd_get_info_wh(intf);
@@ -376,16 +376,16 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         rc = ipmi_lcd_get_status(intf);
     }
     /* ipmitool delloem lcd set*/
-    else if (strncmp(argv[current_arg], "set\0", 4) == 0) 
+    else if (strncmp(argv[current_arg], "set\0", 4) == 0)
     {
         uint8_t line_number = 0;
         current_arg++;
-        if (argc <= current_arg) 
+        if (argc <= current_arg)
         {
             ipmi_lcd_usage();
             return -1;
         }
-        if (strncmp(argv[current_arg], "line\0", 5) == 0) 
+        if (strncmp(argv[current_arg], "line\0", 5) == 0)
         {
             current_arg++;
             if (argc <= current_arg) {usage();return -1;}
@@ -401,77 +401,77 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         }
 
 
-		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )) 
+		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) ))
         {
             current_arg++;
-            if (argc <= current_arg) 
-            {
-                ipmi_lcd_usage();
-                return -1;
-            }    
-            if (argv[current_arg] == NULL)  
+            if (argc <= current_arg)
             {
                 ipmi_lcd_usage();
                 return -1;
             }
-            if (strncmp(argv[current_arg], "none\0", 5) == 0) 
+            if (argv[current_arg] == NULL)
+            {
+                ipmi_lcd_usage();
+                return -1;
+            }
+            if (strncmp(argv[current_arg], "none\0", 5) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_CONFIG_NONE,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "modelname\0", 10) == 0) 
+            else if (strncmp(argv[current_arg], "modelname\0", 10) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_CONFIG_DEFAULT,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "userdefined\0", 12) == 0) 
+            else if (strncmp(argv[current_arg], "userdefined\0", 12) == 0)
             {
                 current_arg++;
-                if (argc <= current_arg) 
+                if (argc <= current_arg)
                 {
                     ipmi_lcd_usage();return -1;
                 }
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,0xFF,0XFF, line_number, argv[current_arg]);
             }
-            else if (strncmp(argv[current_arg], "ipv4address\0", 12) == 0) 
+            else if (strncmp(argv[current_arg], "ipv4address\0", 12) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_iDRAC_IPV4ADRESS  ,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "macaddress\0", 11) == 0) 
+            else if (strncmp(argv[current_arg], "macaddress\0", 11) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_IDRAC_MAC_ADDRESS,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "systemname\0", 11) == 0) 
+            else if (strncmp(argv[current_arg], "systemname\0", 11) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_OS_SYSTEM_NAME,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "servicetag\0", 11) == 0) 
+            else if (strncmp(argv[current_arg], "servicetag\0", 11) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_SERVICE_TAG, 0xFF,0XFF,0, NULL);
             }
-            else if (strncmp(argv[current_arg], "ipv6address\0", 12) == 0) 
+            else if (strncmp(argv[current_arg], "ipv6address\0", 12) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_iDRAC_IPV6ADRESS  ,0xFF,0XFF, 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "ambienttemp\0", 12) == 0) 
+            else if (strncmp(argv[current_arg], "ambienttemp\0", 12) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_AMBEINT_TEMP, 0xFF,0XFF,0, NULL);
 
             }
-            else if (strncmp(argv[current_arg], "systemwatt\0", 11) == 0) 
+            else if (strncmp(argv[current_arg], "systemwatt\0", 11) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_SYSTEM_WATTS , 0xFF,0XFF,0, NULL);
 
             }
-            else if (strncmp(argv[current_arg], "assettag\0", 9) == 0) 
+            else if (strncmp(argv[current_arg], "assettag\0", 9) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, IPMI_DELL_LCD_ASSET_TAG , 0xFF,0XFF,0, NULL);
 
             }
-            else if (strncmp(argv[current_arg], "help\0", 5) == 0) 
+            else if (strncmp(argv[current_arg], "help\0", 5) == 0)
             {
                 ipmi_lcd_usage();
             }
             else
-            {       
+            {
                 ipmi_lcd_usage();
             }
         }
@@ -479,16 +479,16 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
         {
 
             current_arg++;
-            if (argc <= current_arg) 
+            if (argc <= current_arg)
             {
                 ipmi_lcd_usage();
                 return -1;
             }
-            if (argv[current_arg] == NULL) 
+            if (argv[current_arg] == NULL)
             {
                 ipmi_lcd_usage();
                 return -1;
-            } 
+            }
 
             if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
 
@@ -506,11 +506,11 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
             }else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
                 ipmi_lcd_usage();
             }
-            else {  
+            else {
                 ipmi_lcd_usage();
             }
         }
-		else if( (strncmp(argv[current_arg], "errordisplay\0", 13) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) )) 
+		else if( (strncmp(argv[current_arg], "errordisplay\0", 13) == 0)&&((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) ))
         {
 
             current_arg++;
@@ -519,61 +519,61 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
                 ipmi_lcd_usage();
                 return -1;
             }
-            if (argv[current_arg] == NULL) 
-            { 
+            if (argv[current_arg] == NULL)
+            {
                 ipmi_lcd_usage();
                 return -1;
-            } 
+            }
 
-            if (strncmp(argv[current_arg], "sel\0", 4) == 0) 
+            if (strncmp(argv[current_arg], "sel\0", 4) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, 0xFF,0xFF,IPMI_DELL_LCD_ERROR_DISP_SEL , 0, NULL);
             }
-            else if (strncmp(argv[current_arg], "simple\0", 7) == 0) 
+            else if (strncmp(argv[current_arg], "simple\0", 7) == 0)
             {
                 rc = ipmi_lcd_configure_wh (intf, 0xFF,0xFF,IPMI_DELL_LCD_ERROR_DISP_VERBOSE , 0, NULL);
 
             }
-            else if (strncmp(argv[current_arg], "help\0", 5) == 0) 
+            else if (strncmp(argv[current_arg], "help\0", 5) == 0)
             {
                 ipmi_lcd_usage();
             }
-            else 
-            {       
+            else
+            {
                 ipmi_lcd_usage();
             }
         }
 
-        else if ((strncmp(argv[current_arg], "none\0", 5) == 0)&&(iDRAC_FLAG==0)) 
+        else if ((strncmp(argv[current_arg], "none\0", 5) == 0)&&(iDRAC_FLAG==0))
         {
             rc = ipmi_lcd_configure (intf, IPMI_DELL_LCD_CONFIG_NONE, 0, NULL);
         }
-        else if ((strncmp(argv[current_arg], "default\0", 8) == 0)&&(iDRAC_FLAG==0)) 
+        else if ((strncmp(argv[current_arg], "default\0", 8) == 0)&&(iDRAC_FLAG==0))
         {
             rc = ipmi_lcd_configure (intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0, NULL);
 
-        } 
-        else if ((strncmp(argv[current_arg], "custom\0", 7) == 0)&&(iDRAC_FLAG==0))  
+        }
+        else if ((strncmp(argv[current_arg], "custom\0", 7) == 0)&&(iDRAC_FLAG==0))
         {
             current_arg++;
-            if (argc <= current_arg) 
+            if (argc <= current_arg)
             {
                 ipmi_lcd_usage();
                 return -1;
             }
             rc = ipmi_lcd_configure (intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED, line_number, argv[current_arg]);
-        } 
+        }
 
-        else if (strncmp(argv[current_arg], "vkvm\0", 5) == 0) 
+        else if (strncmp(argv[current_arg], "vkvm\0", 5) == 0)
         {
             current_arg++;
-            if (argc <= current_arg) 
+            if (argc <= current_arg)
             {
                 ipmi_lcd_usage();
                 return -1;
             }
 
-            if (strncmp(argv[current_arg], "active\0", 7) == 0) 
+            if (strncmp(argv[current_arg], "active\0", 7) == 0)
             {
                 rc = ipmi_lcd_set_kvm (intf, 1);
             }
@@ -582,25 +582,25 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
                 rc = ipmi_lcd_set_kvm (intf, 0);
 
             }
-            else if (strncmp(argv[current_arg], "help\0", 5) == 0) 
+            else if (strncmp(argv[current_arg], "help\0", 5) == 0)
             {
                 ipmi_lcd_usage();
             }
-            else 
-            {       
+            else
+            {
                 ipmi_lcd_usage();
             }
 
         }
-        else if (strncmp(argv[current_arg], "frontpanelaccess\0", 17) == 0) 
+        else if (strncmp(argv[current_arg], "frontpanelaccess\0", 17) == 0)
         {
             current_arg++;
-            if (argc <= current_arg) 
+            if (argc <= current_arg)
             {
                 ipmi_lcd_usage();
                 return -1;
             }
-            if (strncmp(argv[current_arg], "viewandmodify\0", 14) == 0) 
+            if (strncmp(argv[current_arg], "viewandmodify\0", 14) == 0)
             {
                 rc = ipmi_lcd_set_lock (intf, 0);
             }
@@ -614,27 +614,27 @@ static int ipmi_delloem_lcd_main (struct ipmi_intf * intf, int argc, char ** arg
                 rc =  ipmi_lcd_set_lock (intf, 2);
 
             }
-            else if (strncmp(argv[current_arg], "help\0", 5) == 0) 
+            else if (strncmp(argv[current_arg], "help\0", 5) == 0)
             {
                 ipmi_lcd_usage();
             }
-            else 
-            {       
+            else
+            {
                 ipmi_lcd_usage();
             }
 
         }
-        else if( (strncmp(argv[current_arg], "help\0", 5) == 0)&&(iDRAC_FLAG==0))  
+        else if( (strncmp(argv[current_arg], "help\0", 5) == 0)&&(iDRAC_FLAG==0))
         {
             ipmi_lcd_usage();
         }
-        else 
+        else
         {
             ipmi_lcd_usage();
             return -1;
         }
-    } 
-    else 
+    }
+    else
     {
         ipmi_lcd_usage();
         return -1;
@@ -709,9 +709,9 @@ ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
 *
 * Description:      This function returns the iDRAC6 type
 * Input:            intf            - ipmi interface
-* Output:       
+* Output:
 *
-* Return:           iDRAC6 type     1 - whoville 
+* Return:           iDRAC6 type     1 - whoville
 *                                   0 - others
 *
 ******************************************************************/
@@ -745,9 +745,9 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
     else
     {
         iDRAC_FLAG=0;
-    }       
+    }
     IMC_Type = data[10];
-    
+
     return 0;
 }
 
@@ -757,14 +757,14 @@ ipmi_idracvalidator_command (struct ipmi_intf * intf)
 * Description:      This function returns current lcd configuration for Dell OEM LCD command
 * Input:            intf            - ipmi interface
 * Global:           lcd_mode - lcd mode setting
-* Output:    
+* Output:
 *
 * Return:           returns the current lcd configuration
 *                   0 = User defined
 *                   1 = Default
 *                   2 = None
 *
-******************************************************************/ 
+******************************************************************/
 static int
 ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf)
 {
@@ -777,7 +777,7 @@ ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf)
         lprintf(LOG_ERR, " Error getting LCD configuration");
         return -1;
     } else if ((rc == 0xc1)||(rc == 0xcb)){
-        lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system."); 
+        lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system.");
     } else if (rc > 0) {
         lprintf(LOG_ERR, " Error getting LCD configuration: %s",
             val2str(rc, completion_code_vals));
@@ -792,10 +792,10 @@ ipmi_lcd_get_configure_command_wh (struct ipmi_intf * intf)
 *
 * Description:   This function returns current lcd configuration for Dell OEM LCD command
 * Input:         intf            - ipmi interface
-* Output:        command         - user defined / default / none / ipv4 / mac address / 
+* Output:        command         - user defined / default / none / ipv4 / mac address /
                  system name / service tag / ipv6 / temp / system watt / asset tag
 *
-* Return:             
+* Return:
 *
 ******************************************************************/
 
@@ -815,10 +815,10 @@ ipmi_lcd_get_configure_command (struct ipmi_intf * intf,
     }
     else if ((rc == 0xc1)||(rc == 0xcb))
     {
-        lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system."); 
+        lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system.");
         return -1;
     }
-    else if (rc > 0) 
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error getting LCD configuration: %s",
             val2str(rc, completion_code_vals));
@@ -834,12 +834,12 @@ ipmi_lcd_get_configure_command (struct ipmi_intf * intf,
 /*****************************************************************
 * Function Name:    ipmi_lcd_set_configure_command
 *
-* Description:      This function updates current lcd configuration 
+* Description:      This function updates current lcd configuration
 * Input:            intf            - ipmi interface
-*                   command         - user defined / default / none / ipv4 / mac address / 
+*                   command         - user defined / default / none / ipv4 / mac address /
 *                        system name / service tag / ipv6 / temp / system watt / asset tag
 * Output:
-* Return:             
+* Return:
 *
 ******************************************************************/
 
@@ -861,9 +861,9 @@ ipmi_lcd_set_configure_command (struct ipmi_intf * intf, int command)
     }
     else if ((rc == 0xc1)||(rc == 0xcb))
     {
-        lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system."); 
+        lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system.");
     }
-    else if (rc > 0) 
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: %s",
             val2str(rc, completion_code_vals));
@@ -877,17 +877,17 @@ ipmi_lcd_set_configure_command (struct ipmi_intf * intf, int command)
 /*****************************************************************
 * Function Name:    ipmi_lcd_set_configure_command
 *
-* Description:      This function updates current lcd configuration 
+* Description:      This function updates current lcd configuration
 * Input:            intf            - ipmi interface
-*                   mode            - user defined / default / none 
+*                   mode            - user defined / default / none
 *                   lcdquallifier   - lcd quallifier id
 *                   errordisp       - error number
 * Output:
-* Return:                
+* Return:
 *
-******************************************************************/ 
+******************************************************************/
 static int
-ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf, 
+ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
                                    uint32_t  mode,
                                    uint16_t lcdquallifier,
                                    uint8_t errordisp)
@@ -932,13 +932,13 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
         }
         else if (lcdquallifier==0x02)
         {
-            data[5] =(lcd_mode.lcdquallifier)&0xFD; 
+            data[5] =(lcd_mode.lcdquallifier)&0xFD;
         }
     }
     else
     {
         data[5]=lcd_mode.lcdquallifier;
-    }   
+    }
     if(errordisp!=0xFF)
     {
         data[11]=errordisp;
@@ -956,9 +956,9 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
     }
     else if ((rc == 0xc1)||(rc == 0xcb))
     {
-        lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system."); 
+        lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system.");
     }
-    else if (rc > 0) 
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error setting LCD configuration: %s",
             val2str(rc, completion_code_vals));
@@ -974,12 +974,12 @@ ipmi_lcd_set_configure_command_wh (struct ipmi_intf * intf,
 /*****************************************************************
 * Function Name:    ipmi_lcd_get_single_line_text
 *
-* Description:    This function updates current lcd configuration 
+* Description:    This function updates current lcd configuration
 * Input:          intf            - ipmi interface
-*                 lcdstring       - new string to be updated 
+*                 lcdstring       - new string to be updated
 *                 max_length      - length of the string
 * Output:
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -1040,7 +1040,7 @@ ipmi_lcd_get_single_line_text (struct ipmi_intf * intf, char* lcdstring, uint8_t
 * Description:     This function prints current lcd configuration for whoville platform
 * Input:           intf            - ipmi interface
 * Output:
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -1054,13 +1054,13 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 
     printf("LCD info\n");
 
-    if (ipmi_lcd_get_configure_command_wh (intf) != 0) 
+    if (ipmi_lcd_get_configure_command_wh (intf) != 0)
     {
         return -1;
     }
-    else 
+    else
     {
-        if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT) 
+        if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT)
         {
             char text[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 
@@ -1073,11 +1073,11 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
             printf("    Setting:Model name\n");
             printf("    Line 1:  %s\n", text);
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_NONE) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_NONE)
         {
             printf("    Setting:   none\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED)
         {
             printf("    Setting: User defined\n");
             rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
@@ -1091,64 +1091,64 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: Command not supported on this system.");
             }
-            else if (rc > 0) 
+            else if (rc > 0)
             {
                 lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
                     val2str(rc, completion_code_vals));
                 return -1;
             }
-            if (lcd_caps.number_lines > 0) 
+            if (lcd_caps.number_lines > 0)
             {
                 memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
 
                 rc = ipmi_lcd_get_single_line_text (intf, lcdstring, lcd_caps.max_chars[0]);
                 printf("    Text:    %s\n", lcdstring);
             }
-            else 
+            else
             {
                 printf("    No lines to show\n");
             }
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV4ADRESS) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV4ADRESS)
         {
             printf("    Setting:   IPV4 Address\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_IDRAC_MAC_ADDRESS) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_IDRAC_MAC_ADDRESS)
         {
             printf("    Setting:   MAC Address\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_OS_SYSTEM_NAME) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_OS_SYSTEM_NAME)
         {
             printf("    Setting:   OS System Name\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_SERVICE_TAG) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_SERVICE_TAG)
         {
             printf("    Setting:   System Tag\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV6ADRESS) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV6ADRESS)
         {
             printf("    Setting:  IPV6 Address\n");
         }
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_ASSET_TAG) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_ASSET_TAG)
 		{
 			printf("    Setting:  Asset Tag\n");
 		}
-        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_AMBEINT_TEMP) 
+        else if (lcd_mode.lcdmode == IPMI_DELL_LCD_AMBEINT_TEMP)
         {
             printf("    Setting:  Ambient Temp\n");
             if(lcd_mode.lcdquallifier&0x02)
-                printf("    Unit:  F\n");  
+                printf("    Unit:  F\n");
             else
-                printf("    Unit:  C\n");  
+                printf("    Unit:  C\n");
         }
         else if (lcd_mode.lcdmode == IPMI_DELL_LCD_SYSTEM_WATTS)
         {
             printf("    Setting:  System Watts\n");
 
             if(lcd_mode.lcdquallifier&0x01)
-                printf("    Unit:  BTU/hr\n");  
+                printf("    Unit:  BTU/hr\n");
             else
-                printf("    Unit:  Watt\n"); 
+                printf("    Unit:  Watt\n");
 
         }
         if(lcd_mode.error_display==IPMI_DELL_LCD_ERROR_DISP_SEL)
@@ -1166,7 +1166,7 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 * Description:      This function prints current lcd configuration for platform other than whoville
 * Input:            intf            - ipmi interface
 * Output:
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_lcd_get_info(struct ipmi_intf * intf)
@@ -1174,7 +1174,7 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
     IPMI_DELL_LCD_CAPS lcd_caps;
     uint8_t command = 0;
     char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-    int rc; 
+    int rc;
 
     printf("LCD info\n");
 
@@ -1241,10 +1241,10 @@ static int ipmi_lcd_get_info(struct ipmi_intf * intf)
 /*****************************************************************
 * Function Name:    ipmi_lcd_get_status_val
 *
-* Description:      This function gets current lcd configuration 
+* Description:      This function gets current lcd configuration
 * Input:            intf            - ipmi interface
 * Output:           lcdstatus       - KVM Status & Lock Status
-* Return:           
+* Return:
 *
 ******************************************************************/
 
@@ -1260,12 +1260,12 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
         lprintf(LOG_ERR, " Error getting LCD Status");
         return -1;
     }
-    else if ((rc == 0xc1)||(rc == 0xcb)) 
+    else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, " Error getting LCD status: Command not supported on this system.");
         return -1;
     }
-    else if (rc > 0) 
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error getting LCD Status: %s",
             val2str(rc, completion_code_vals));
@@ -1279,9 +1279,9 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 * Function Name:    IsLCDSupported
 *
 * Description:   This function returns whether lcd supported or not
-* Input:              
-* Output:       
-* Return:               
+* Input:
+* Output:
+* Return:
 *
 ******************************************************************/
 static int IsLCDSupported ()
@@ -1294,8 +1294,8 @@ static int IsLCDSupported ()
 *
 * Description:  This function checks whether lcd supported or not
 * Input:        intf            - ipmi interface
-* Output:       
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 static void CheckLCDSupport(struct ipmi_intf * intf)
@@ -1305,7 +1305,7 @@ static void CheckLCDSupport(struct ipmi_intf * intf)
     LcdSupported = 0;
     rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, 0, NULL);
     if (rc == 0) {
-    LcdSupported = 1;       
+    LcdSupported = 1;
     }
 }
 
@@ -1314,8 +1314,8 @@ static void CheckLCDSupport(struct ipmi_intf * intf)
 *
 * Description:    This function prints current lcd configuration KVM Status & Lock Status
 * Input:          lcdstatus - KVM Status & Lock Status
-* Output:   
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 
@@ -1323,24 +1323,24 @@ static void ipmi_lcd_status_print( LCD_STATUS lcdstatus)
 {
     switch (lcdstatus.vKVM_status)
     {
-    case 0x00: 
+    case 0x00:
         printf("LCD KVM Status :Inactive\n");
         break;
-    case 0x01: 
+    case 0x01:
         printf("LCD KVM Status :Active\n");
         break;
     default:
         printf("LCD KVM Status :Invalid Status\n");
 
         break;
-    }                       
+    }
 
     switch (lcdstatus.lock_status)
     {
-    case 0x00: 
+    case 0x00:
         printf("LCD lock Status :View and modify\n");
         break;
-    case 0x01: 
+    case 0x01:
         printf("LCD lock Status :View only\n");
         break;
     case 0x02:
@@ -1358,7 +1358,7 @@ static void ipmi_lcd_status_print( LCD_STATUS lcdstatus)
 *
 * Description:      This function gets current lcd KVM active status & lcd access mode
 * Input:            intf            - ipmi interface
-* Output:       
+* Output:
 * Return:           -1 on error
 *                   0 if successful
 *
@@ -1381,14 +1381,14 @@ ipmi_lcd_get_status(struct ipmi_intf * intf )
 /*****************************************************************
 * Function Name:     ipmi_lcd_set_kvm
 *
-* Description:       This function sets lcd KVM active status 
+* Description:       This function sets lcd KVM active status
 * Input:             intf            - ipmi interface
 *                    status  - Inactive / Active
-* Output:    
+* Output:
 * Return:            -1 on error
 *                    0 if successful
 *
-******************************************************************/ 
+******************************************************************/
 static int
 ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 {
@@ -1429,14 +1429,14 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 /*****************************************************************
 * Function Name:   ipmi_lcd_set_lock
 *
-* Description:     This function sets lcd access mode 
+* Description:     This function sets lcd access mode
 * Input:           intf            - ipmi interface
 *                  lock    - View and modify / View only / Diabled
-* Output:        
+* Output:
 * Return:          -1 on error
 *                  0 if successful
 *
-******************************************************************/ 
+******************************************************************/
 static int
 ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 {
@@ -1463,12 +1463,12 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
         lprintf(LOG_ERR, " Error setting LCD status");
         rc= -1;
     }
-    else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) 
+    else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb))
     {
         lprintf(LOG_ERR, " Error getting LCD status: Command not supported on this system.");
         rc = -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rsp->ccode > 0)
     {
         lprintf(LOG_ERR, " Error setting LCD status: %s",
             val2str(rsp->ccode, completion_code_vals));
@@ -1485,13 +1485,13 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 * Description:    This function sets lcd line text
 * Input:          intf            - ipmi interface
 *                 text    - lcd string
-* Output:   
+* Output:
 * Return:         -1 on error
 *                 0 if successful
 *
 ******************************************************************/
 
-static int 
+static int
 ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
 {
     uint8_t data[18];
@@ -1511,7 +1511,7 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
         for (ii = 0; ii < 4; ii++) {
             /*first block, 2 bytes parms and 14 bytes data*/
             if (0 == ii) {
-                int size_of_copy =  
+                int size_of_copy =
                     MIN((bytes_to_store - bytes_stored), IPMI_DELL_LCD_STRING1_SIZE);
                 if (size_of_copy < 0)           /* allow 0 string length*/
                     break;
@@ -1522,7 +1522,7 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
                 memcpy (data+4, text+bytes_stored, size_of_copy);
                 bytes_stored += size_of_copy;
             } else {
-                int size_of_copy =  
+                int size_of_copy =
                     MIN((bytes_to_store - bytes_stored), IPMI_DELL_LCD_STRINGN_SIZE);
                 if (size_of_copy <= 0)
                     break;
@@ -1553,7 +1553,7 @@ ipmi_lcd_set_single_line_text (struct ipmi_intf * intf, char * text)
 *                  text    - lcd string
 *                  line_number- line number
 
-* Output:       
+* Output:
 * Return:          -1 on error
 *                  0 if successful
 *
@@ -1599,7 +1599,7 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
 *                  errordisp       - error number
 *                  line_number-line number
 *                  text            - lcd string
-* Output:   
+* Output:
 * Return:          -1 on error
 *                  0 if successful
 *
@@ -1607,7 +1607,7 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
 
 static int
 ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode ,
-                       uint16_t lcdquallifier, uint8_t errordisp, 
+                       uint16_t lcdquallifier, uint8_t errordisp,
                        int8_t line_number, char * text)
 {
     int rc = 0;
@@ -1634,14 +1634,14 @@ ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode ,
 *                  command- lcd command
 *                  line_number-line number
 *                  text            - lcd string
-* Output:   
+* Output:
 * Return:          -1 on error
 *                  0 if successful
 *
 ******************************************************************/
 
 static int
-ipmi_lcd_configure (struct ipmi_intf * intf, int command, 
+ipmi_lcd_configure (struct ipmi_intf * intf, int command,
                     int8_t line_number, char * text)
 {
     int rc = 0;
@@ -1660,10 +1660,10 @@ ipmi_lcd_configure (struct ipmi_intf * intf, int command,
 * Function Name:   ipmi_lcd_usage
 *
 * Description:   This function prints help message for lcd command
-* Input:               
-* Output:       
+* Input:
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -1696,7 +1696,7 @@ ipmi_lcd_usage(void)
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lcd set vkvm{active}|{inactive}");
-    lprintf(LOG_NOTICE, "           Set vKVM active and inactive, message will be displayed on lcd"); 
+    lprintf(LOG_NOTICE, "           Set vKVM active and inactive, message will be displayed on lcd");
     lprintf(LOG_NOTICE, " when vKVM is active and vKVM session is in progress");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}");
@@ -1715,7 +1715,7 @@ ipmi_lcd_usage(void)
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                         -1 - failure
@@ -1816,7 +1816,7 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
         msg_data[input_length++] = 1; /*Get*/
 
       	req.msg.netfn = DELL_OEM_NETFN;
-        req.msg.lun = 0;                
+        req.msg.lun = 0;
         req.msg.cmd = GET_IDRAC_VIRTUAL_MAC;
         req.msg.data = msg_data;
         req.msg.data_len = input_length;
@@ -1826,7 +1826,7 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
         {
             return -1;
         }
-        if (rsp->ccode > 0) 
+        if (rsp->ccode > 0)
         {
             return -1;
         }
@@ -1861,11 +1861,11 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
             if (0 != VirtualMacAddress [i])
             {
                 UseVirtualMacAddress = 1;
-            }       
+            }
         }
 		}
         if (0 == UseVirtualMacAddress)
-            return -1;              
+            return -1;
         if (IMC_IDRAC_10G == IMC_Type)
 			printf ("\nDRAC MAC Address ");
 		else if ( (IMC_IDRAC_11G_MODULAR == IMC_Type) || (IMC_IDRAC_11G_MONOLITHIC== IMC_Type) )
@@ -1881,9 +1881,9 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
             printf("%02x:",VirtualMacAddress[j]);
         printf("%02x",VirtualMacAddress[j]);
 
-        printf ("\n");        
+        printf ("\n");
 
-    }  
+    }
     return 0;
 }
 
@@ -1893,8 +1893,8 @@ static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t Ni
 *
 * Description:      This function retrieves the mac address of DRAC or iDRAC
 * Input:            NicNum
-* Output:                 
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 
@@ -1916,13 +1916,13 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 
         input_length = 0;
 
-        msg_data[input_length++] = LAN_CHANNEL_NUMBER; 
-        msg_data[input_length++] = MAC_ADDR_PARAM;  
-        msg_data[input_length++] = 0x00;                        
-        msg_data[input_length++] = 0x00;                        
+        msg_data[input_length++] = LAN_CHANNEL_NUMBER;
+        msg_data[input_length++] = MAC_ADDR_PARAM;
+        msg_data[input_length++] = 0x00;
+        msg_data[input_length++] = 0x00;
 
         req.msg.netfn = TRANSPORT_NETFN;
-        req.msg.lun = 0;                
+        req.msg.lun = 0;
         req.msg.cmd = GET_LAN_PARAM_CMD;
         req.msg.data = msg_data;
         req.msg.data_len = input_length;
@@ -1933,7 +1933,7 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
             lprintf(LOG_ERR, " Error in getting MAC Address");
             return -1;
         }
-        if (rsp->ccode > 0) 
+        if (rsp->ccode > 0)
         {
             lprintf(LOG_ERR, " Error in getting MAC Address (%s) \n",
                 val2str(rsp->ccode, completion_code_vals) );
@@ -1946,7 +1946,7 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
             printf ("\nDRAC MAC Address ");
 		else if ((IMC_IDRAC_11G_MODULAR == IMC_Type) || (IMC_IDRAC_11G_MONOLITHIC== IMC_Type))
 			printf ("\niDRAC6 MAC Address ");
-		else if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type))		
+		else if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_12G_MONOLITHIC== IMC_Type))
 			printf ("\niDRAC7 MAC Address ");
 		else if ( (IMC_MASER_LITE_BMC== IMC_Type) || (IMC_MASER_LITE_NU== IMC_Type) )
 			printf ("\n\rBMC MAC Address ");
@@ -1957,7 +1957,7 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
             printf("%02x:",iDRAC6MacAddressByte[j]);
         printf("%02x",iDRAC6MacAddressByte[j]);
 
-        printf ("\n");        
+        printf ("\n");
     }
     return 0;
 }
@@ -1969,8 +1969,8 @@ static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 * Description:      This function retrieves the mac address of LOMs
 * Input:            intf      - ipmi interface
                     NicNum    - NIC number
-* Output:               
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 
@@ -1995,13 +1995,13 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
     msg_data[input_length++] = 0x00; /* Get Parameter Command */
     msg_data[input_length++] = EMB_NIC_MAC_ADDRESS_9G_10G;  /* OEM Param */
 
-    msg_data[input_length++] = 0x00;         
-    msg_data[input_length++] = 0x00;         
+    msg_data[input_length++] = 0x00;
+    msg_data[input_length++] = 0x00;
 
     memset(&req, 0, sizeof(req));
 
     req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;                
+    req.msg.lun = 0;
     req.msg.cmd = IPMI_GET_SYS_INFO;
     req.msg.data = msg_data;
 
@@ -2025,7 +2025,7 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
         if (0xff == NicNum)
         {
             printf ("\nSystem LOMs");
-        }       
+        }
         printf("\nNIC Number\tMAC Address\n");
 
 
@@ -2037,15 +2037,15 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
         for (i=0;i<Total_No_NICs;i++)
         {
             if ((0xff==NicNum) || (i == NicNum)     )
-            {       
+            {
                 printf ("\n%d",i);
                 printf ("\t\t");
                 for (j=0;j<5;j++)
                 {
                     printf("%02x:",EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j]);
-                }       
+                }
                 printf("%02x",EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j]);
-            }               
+            }
         }
         printf ("\n");
 
@@ -2063,8 +2063,8 @@ static int ipmi_macinfo_10g (struct ipmi_intf* intf, uint8_t NicNum)
 *
 * Description:        This function retrieves the mac address of LOMs
 * Input:              intf - ipmi interface
-* Output:               
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 
@@ -2095,15 +2095,15 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
     msg_data[input_length++] = 0x00; /* Get Parameter Command */
     msg_data[input_length++] = EMB_NIC_MAC_ADDRESS_11G;      /* OEM Param */
 
-    msg_data[input_length++] = 0x00;      
-    msg_data[input_length++] = 0x00;      
-    msg_data[input_length++] = 0x00;      
-    msg_data[input_length++] = 0x00;      
+    msg_data[input_length++] = 0x00;
+    msg_data[input_length++] = 0x00;
+    msg_data[input_length++] = 0x00;
+    msg_data[input_length++] = 0x00;
 
     memset(&req, 0, sizeof(req));
 
     req.msg.netfn = IPMI_NETFN_APP;
-    req.msg.lun = 0;              
+    req.msg.lun = 0;
     req.msg.cmd = IPMI_GET_SYS_INFO;
     req.msg.data = msg_data;
 
@@ -2130,7 +2130,7 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
         if (0xff == NicNum)
         {
             printf ("\nSystem LOMs");
-        }       
+        }
         printf("\nNIC Number\tMAC Address\t\tStatus\n");
 
 
@@ -2140,7 +2140,7 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
         {
             input_length = 4;
             msg_data[input_length++] = offset;
-            msg_data[input_length++] = len;   
+            msg_data[input_length++] = len;
 
             req.msg.netfn = IPMI_NETFN_APP;
             req.msg.lun = 0;
@@ -2181,7 +2181,7 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
                 }
             }
 
-        }         
+        }
         printf ("\n");
 
     }
@@ -2190,7 +2190,7 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
 
     return 0;
 
-}     
+}
 
 
 
@@ -2199,8 +2199,8 @@ static int ipmi_macinfo_11g (struct ipmi_intf* intf, uint8_t NicNum)
 *
 * Description:     This function retrieves the mac address of LOMs
 * Input:           intf   - ipmi interface
-* Output:               
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 
@@ -2220,7 +2220,7 @@ static int ipmi_macinfo (struct ipmi_intf* intf, uint8_t NicNum)
     {
         lprintf(LOG_ERR, " Error in getting MAC Address : Not supported platform");
         return 0;
-    }       
+    }
 }
 
 
@@ -2228,10 +2228,10 @@ static int ipmi_macinfo (struct ipmi_intf* intf, uint8_t NicNum)
 * Function Name:     ipmi_mac_usage
 *
 * Description:   This function prints help message for mac command
-* Input:               
-* Output:       
+* Input:
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -2254,7 +2254,7 @@ ipmi_mac_usage(void)
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                         -1 - failure
@@ -2319,10 +2319,10 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
 			if(IMC_IDRAC_11G_MODULAR == IMC_Type) {
 				printf(INVAILD_SHARED_MODE_SET_STRING);
 				return 0;
-        }                               
+        }
         rc = ipmi_lan_set_nic_selection(intf,nic_selection);
-		}		
-        return 0;                       
+		}
+        return 0;
     }
     else if (strncmp(argv[current_arg], "get\0", 4) == 0)
     {
@@ -2332,7 +2332,7 @@ static int ipmi_delloem_lan_main (struct ipmi_intf * intf, int argc, char ** arg
             rc = ipmi_lan_get_nic_selection(intf);
             return rc;
         }
-        else if (strncmp(argv[current_arg], "active\0", 7) == 0)                
+        else if (strncmp(argv[current_arg], "active\0", 7) == 0)
         {
             rc = ipmi_lan_get_active_nic(intf);
             return rc;
@@ -2371,62 +2371,62 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
-	
+
 	input_length = 0;
-		
+
    	req.msg.netfn = DELL_OEM_NETFN;
-   	req.msg.lun = 0;		
-	
+   	req.msg.lun = 0;
+
   	req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
 
   	req.msg.data = msg_data;
-  	req.msg.data_len = input_length;
-  
+  	req.msg.data_len = input_length
+
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL)
 	{
 		lprintf(LOG_ERR, " Error in getting nic selection");
 		return -1;
 	}
-	else if (rsp->ccode > 0) 
+	else if (rsp->ccode > 0)
 	{
 		lprintf(LOG_ERR, " Error in getting nic selection (%s) \n",
 		  val2str(rsp->ccode, completion_code_vals) );
 	  	return -1;
 	}
-	
+
 	nic_set[0] = rsp->data[0];
 	nic_set[1] = rsp->data[1];
 
-	
-	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
+
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10))
 	{
 		nic_set[0] = 1;
 		nic_set[1] = 0;
 		return 0;
 	}
-	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7)) 
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7))
 	{
-		
+
 	}
 	else
 		return INVALID;
-	
-	current_arg++;	
-	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "with\0", 5)) 
+
+	current_arg++;
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "with\0", 5))
 	{
-	}	
+	}
 	else
-		return INVALID;		
-	
-	current_arg++;	
-	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "failover\0", 9)) 
+		return INVALID;
+
+	current_arg++;
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "failover\0", 9))
 	{
 		failover = 1;
-	}	
+	}
 	if(failover)
-		current_arg++;	
-	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom1\0", 5)) 
+		current_arg++;
+	if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom1\0", 5))
 	{
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
@@ -2440,23 +2440,23 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 2;
-		}	
+		}
 		else {
 
 			nic_set[0] = 2;
 			if(nic_set[1] == 2)
 				nic_set[1] = 0;
-		}	
+		}
 		return 0;
 	}
-	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5)) 
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5))
 	{
-	
+
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
 			return INVAILD_SHARED_MODE;
 		}
-		if(failover) {		
+		if(failover) {
 			if(nic_set[0] == 3)
 			{
 				return INVAILD_FAILOVER_MODE;
@@ -2464,22 +2464,22 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 3;
-		}	
+		}
 		else {
 			nic_set[0] = 3;
 			if(nic_set[1] == 3)
 				nic_set[1] = 0;
-		}	
+		}
 		return 0;
 	}
-	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom3\0", 5)) 
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom3\0", 5))
 	{
 
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
 			return INVAILD_SHARED_MODE;
 		}
-		if(failover) {	
+		if(failover) {
 			if(nic_set[0] == 4)
 			{
 				return INVAILD_FAILOVER_MODE;
@@ -2488,7 +2488,7 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 			}
 			nic_set[1] = 4;
 
-		}	
+		}
 		else {
 			nic_set[0] = 4;
 			if(nic_set[1] == 4)
@@ -2496,15 +2496,15 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 
 		}
 		return 0;
-	} 
-	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom4\0", 5)) 
+	}
+	else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom4\0", 5))
 	{
-	
+
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
 			return INVAILD_SHARED_MODE;
 		}
-		if(failover) {	
+		if(failover) {
 			if(nic_set[0] == 5)
 			{
 				return INVAILD_FAILOVER_MODE;
@@ -2518,34 +2518,34 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 			if(nic_set[1] == 5)
 				nic_set[1] = 0;
 
-		}	
+		}
 		return 0;
-	}	
-	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "none\0", 5)) 
+	}
+	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "none\0", 5))
 	{
 
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
 			return INVAILD_SHARED_MODE;
 		}
-		if(failover) {	
+		if(failover) {
 			if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 0;
-		}	
+		}
 		return 0;
-	}	
-	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "all\0", 4)) 
+	}
+	else if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "all\0", 4))
 	{
-	}	
+	}
 	else
-		return INVALID;	
-	
-	current_arg++;	
-	if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5)) 
+		return INVALID;
+
+	current_arg++;
+	if (failover && NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5))
 	{
-	
+
 		if(IMC_IDRAC_12G_MODULAR == IMC_Type)
 		{
 			return INVAILD_SHARED_MODE;
@@ -2555,58 +2555,58 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
 		}
 		nic_set[1] = 6;
 		return 0;
-	}	
+	}
 
 	return INVALID;
-	
+
 }
 
 
 static int get_nic_selection_mode (int current_arg, char ** argv)
 {
     int nic_selection_mode = 0;
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10)) 
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "dedicated\0", 10))
     {
         return DEDICATED;
     }
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7)) 
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "shared\0", 7))
     {
         if (NULL == argv[current_arg+1] )
-            return SHARED;          
+            return SHARED;
     }
-    current_arg++;  
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "with\0", 5)) 
+    current_arg++;
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "with\0", 5))
     {
-    }       
+    }
     else
-        return INVALID;         
+        return INVALID;
 
-    current_arg++;  
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "failover\0", 9)) 
+    current_arg++;
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "failover\0", 9))
     {
-    }       
+    }
     else
-        return INVALID;         
+        return INVALID;
 
-    current_arg++;  
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5)) 
+    current_arg++;
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "lom2\0", 5))
     {
         return SHARED_WITH_FAILOVER_LOM2;
-    }       
-    else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "all\0", 4)) 
+    }
+    else if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "all\0", 4))
     {
-    }       
+    }
     else
-        return INVALID; 
+        return INVALID;
 
-    current_arg++;  
-    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5)) 
+    current_arg++;
+    if (NULL!= argv[current_arg] && 0 == strncmp(argv[current_arg], "loms\0", 5))
     {
         return SHARED_WITH_FAILOVER_ALL_LOMS;
-    }       
+    }
 
     return INVALID;
-	
+
 }
 
 
@@ -2619,16 +2619,16 @@ static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_
 	uint8_t input_length=0;
 
 	input_length = 0;
-		
-	msg_data[input_length++] = nic_selection[0]; 
-	msg_data[input_length++] = nic_selection[1]; 
+
+	msg_data[input_length++] = nic_selection[0];
+	msg_data[input_length++] = nic_selection[1];
 
 	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;		
+	req.msg.lun = 0;
 	req.msg.cmd = SET_NIC_SELECTION_12G_CMD;
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
-  
+
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL)
 	{
@@ -2638,9 +2638,9 @@ static int ipmi_lan_set_nic_selection_12g (struct ipmi_intf* intf, uint8_t* nic_
 	// Check license only for setting the dedicated nic.
 	else if( (nic_selection[0] == 1) && ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
-	} 
-	else if (rsp->ccode > 0) 
+		return -1;
+	}
+	else if (rsp->ccode > 0)
 	{
 		lprintf(LOG_ERR, " Error in setting nic selection (%s) \n",
 		  val2str(rsp->ccode, completion_code_vals) );
@@ -2662,10 +2662,10 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
 
     input_length = 0;
 
-    msg_data[input_length++] = nic_selection; 
+    msg_data[input_length++] = nic_selection;
 
    	req.msg.netfn = DELL_OEM_NETFN;
-    req.msg.lun = 0;                
+    req.msg.lun = 0;
     req.msg.cmd = SET_NIC_SELECTION_CMD;
     req.msg.data = msg_data;
     req.msg.data_len = input_length;
@@ -2676,7 +2676,7 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
         lprintf(LOG_ERR, " Error in setting nic selection");
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rsp->ccode > 0)
     {
         lprintf(LOG_ERR, " Error in setting nic selection (%s) \n",
             val2str(rsp->ccode, completion_code_vals) );
@@ -2685,7 +2685,7 @@ static int ipmi_lan_set_nic_selection (struct ipmi_intf* intf, uint8_t nic_selec
     printf("configured successfully");
 
     return 0;
-}      
+}
 
 static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 {
@@ -2701,10 +2701,10 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
     input_length = 0;
 
    	req.msg.netfn = DELL_OEM_NETFN;
-    req.msg.lun = 0;                
+    req.msg.lun = 0;
 	if(iDRAC_FLAG == IDRAC_12G)
 	  	req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
-	else  	
+	else
     req.msg.cmd = GET_NIC_SELECTION_CMD;
     req.msg.data = msg_data;
     req.msg.data_len = input_length;
@@ -2715,7 +2715,7 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
         lprintf(LOG_ERR, " Error in getting nic selection");
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rsp->ccode > 0)
     {
         lprintf(LOG_ERR, " Error in getting nic selection (%s) \n",
             val2str(rsp->ccode, completion_code_vals) );
@@ -2724,8 +2724,8 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
     nic_selection = rsp->data[0];
 
 	if(iDRAC_FLAG == IDRAC_12G)
-	{		
-		
+	{
+
 		nic_selection_failover = rsp->data[1];
 		if ((nic_selection < 6) && (nic_selection > 0) && (nic_selection_failover < 7))
 		{
@@ -2738,12 +2738,12 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 				else if(nic_selection_failover   >= 2 && nic_selection_failover   <= 6)
 					printf ("Failover LOM :  %s\n",NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
 			}
-				
-		} 
+
+		}
 		else
 		{
 			lprintf(LOG_ERR, " Error Outof bond Value received (%d) (%d) \n",nic_selection,nic_selection_failover);
-		  	return -1;	  	
+		  	return -1;
 		}
 	}
 	else
@@ -2752,7 +2752,7 @@ static int ipmi_lan_get_nic_selection (struct ipmi_intf* intf)
 	}
 
     return 0;
-}      
+}
 
 static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
 {
@@ -2769,10 +2769,10 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
 
     msg_data[input_length++] = 0; /*Get Status*/
     msg_data[input_length++] = 0; /*Reserved*/
-    msg_data[input_length++] = 0; /*Reserved*/        
+    msg_data[input_length++] = 0; /*Reserved*/
 
    	req.msg.netfn = DELL_OEM_NETFN;
-    req.msg.lun = 0;                
+    req.msg.lun = 0;
     req.msg.cmd = GET_ACTIVE_NIC_CMD;
     req.msg.data = msg_data;
     req.msg.data_len = input_length;
@@ -2783,7 +2783,7 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
         lprintf(LOG_ERR, " Error in getting Active LOM Status");
         return -1;
     }
-    else if (rsp->ccode > 0) 
+    else if (rsp->ccode > 0)
     {
         lprintf(LOG_ERR, " Error in getting Active LOM Status (%s) \n",
             val2str(rsp->ccode, completion_code_vals) );
@@ -2803,7 +2803,7 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
   	req.msg.cmd = GET_ACTIVE_NIC_CMD;
   	req.msg.data = msg_data;
   	req.msg.data_len = input_length;
- 
+
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL)
 	{
@@ -2823,7 +2823,7 @@ static int ipmi_lan_get_active_nic (struct ipmi_intf* intf)
 		printf ("\n%s\n",AciveLOM_String[0]);
 
     return 0;
-}      
+}
 
 
 static void
@@ -2854,7 +2854,7 @@ ipmi_lan_usage(void)
     lprintf(LOG_NOTICE, "              lom2, shared with Failover all loms.");
     lprintf(LOG_NOTICE, "");
     lprintf(LOG_NOTICE, "   lan get active");
-    lprintf(LOG_NOTICE, "      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");       
+    lprintf(LOG_NOTICE, "      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");
     lprintf(LOG_NOTICE, "");
 
 }
@@ -2866,7 +2866,7 @@ ipmi_lan_usage(void)
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                         -1 - failure
@@ -2888,28 +2888,28 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
     {
         rc = ipmi_powermgmt(intf);
     }
-    else if (strncmp(argv[current_arg], "status\0", 7) == 0) 
+    else if (strncmp(argv[current_arg], "status\0", 7) == 0)
     {
         rc = ipmi_powermgmt(intf);
     }
 
-    else if (strncmp(argv[current_arg], "clear\0", 6) == 0) 
+    else if (strncmp(argv[current_arg], "clear\0", 6) == 0)
     {
         current_arg++;
-        if (argv[current_arg] == NULL) 
+        if (argv[current_arg] == NULL)
         {
             ipmi_powermonitor_usage();
             return -1;
         }
-        else if (strncmp(argv[current_arg], "peakpower\0", 10) == 0) 
+        else if (strncmp(argv[current_arg], "peakpower\0", 10) == 0)
         {
             rc = ipmi_powermgmt_clear(intf, 1);
         }
-        else if (strncmp(argv[current_arg], "cumulativepower\0", 16) == 0) 
+        else if (strncmp(argv[current_arg], "cumulativepower\0", 16) == 0)
         {
             rc = ipmi_powermgmt_clear(intf, 0);
         }
-        else 
+        else
         {
             ipmi_powermonitor_usage();
             return -1;
@@ -2918,7 +2918,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
     }
 
 
-    else if (strncmp(argv[current_arg], "powerconsumption\0", 17) == 0) 
+    else if (strncmp(argv[current_arg], "powerconsumption\0", 17) == 0)
     {
         current_arg++;
 
@@ -2928,12 +2928,12 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
             rc=ipmi_print_get_power_consmpt_data(intf,watt);
 
         }
-        else if (strncmp(argv[current_arg], "watt\0", 5) == 0) 
+        else if (strncmp(argv[current_arg], "watt\0", 5) == 0)
         {
 
             rc = ipmi_print_get_power_consmpt_data(intf, watt);
         }
-        else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) 
+        else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0)
         {
             rc = ipmi_print_get_power_consmpt_data(intf, btuphr);
         }
@@ -2943,7 +2943,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
             return -1;
         }
     }
-    else if (strncmp(argv[current_arg], "powerconsumptionhistory\0", 23) == 0) 
+    else if (strncmp(argv[current_arg], "powerconsumptionhistory\0", 23) == 0)
     {
         current_arg++;
         if (argv[current_arg] == NULL)
@@ -2951,7 +2951,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
             rc=ipmi_print_power_consmpt_history(intf,watt);
 
         }
-        else if (strncmp(argv[current_arg], "watt\0", 5) == 0) 
+        else if (strncmp(argv[current_arg], "watt\0", 5) == 0)
         {
             rc = ipmi_print_power_consmpt_history(intf, watt);
         }
@@ -2996,7 +2996,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
         current_arg++;
         int val;
         if (argv[current_arg] == NULL)
-        { 
+        {
             ipmi_powermonitor_usage();
             return -1;
         }
@@ -3012,7 +3012,7 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
         }
         current_arg++;
         if (argv[current_arg] == NULL)
-        {       
+        {
             ipmi_powermonitor_usage();
         }
         else if (strncmp(argv[current_arg], "watt\0", 5) == 0)
@@ -3057,10 +3057,10 @@ static int ipmi_delloem_powermonitor_main (struct ipmi_intf * intf, int argc, ch
 * Function Name:     ipmi_time_to_str
 *
 * Description:       This function converts ipmi time format into gmtime format
-* Input:             rawTime  - ipmi time format 
+* Input:             rawTime  - ipmi time format
 * Output:            strTime  - gmtime format
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -3106,7 +3106,7 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf ,
 
     if (NULL == pSensorReadingData)
         return -1;
-    memset(pSensorReadingData,0, sizeof(SensorReadingType));        
+    memset(pSensorReadingData,0, sizeof(SensorReadingType));
 
     rsp = intf->sendrecv(intf, &req);
     if (rsp == NULL) {
@@ -3136,9 +3136,9 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf ,
 * Description:     This function gets the power cap status
 * Input:           intf                 - ipmi interface
 * Global:          PowercapSetable_flag - power cap status
-* Output:                
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int
@@ -3181,9 +3181,9 @@ ipmi_get_power_capstatus_command (struct ipmi_intf * intf)
 * Description:      This function sets the power cap status
 * Input:            intf     - ipmi interface
 *                   val      - power cap status
-* Output:            
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -3233,9 +3233,9 @@ ipmi_set_power_capstatus_command (struct ipmi_intf * intf,uint8_t val)
 *
 * Description:      This function print the powermonitor details
 * Input:            intf     - ipmi interface
-* Output:              
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_powermgmt(struct ipmi_intf* intf)
@@ -3281,7 +3281,7 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error getting BMC time info.\n");
         return -1;
-    } 
+    }
     if (rsp->ccode != 0) {
         printf("Error getting power management information, return code %x\n", rsp->ccode);
         return -1;
@@ -3301,18 +3301,18 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
     req.msg.data_len = 2;
 
     memset(msg_data, 0, 2);
-    msg_data[0] = 0x07;     
+    msg_data[0] = 0x07;
     msg_data[1] = 0x01;
 
     rsp = intf->sendrecv(intf, &req);
     if (rsp == NULL) {
         lprintf(LOG_ERR, " Error getting power management information.\n");
         return -1;
-    } 
+    }
 
 	if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
 	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
         lprintf(LOG_ERR, " Error getting power management information: Command not supported on this system.");
         return -1;
@@ -3391,9 +3391,9 @@ static int ipmi_powermgmt(struct ipmi_intf* intf)
 * Description:     This function clears peakpower / cumulativepower value
 * Input:           intf           - ipmi interface
 *                  clearValue     - peakpower / cumulativepower
-* Output:          
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int
@@ -3431,7 +3431,7 @@ ipmi_powermgmt_clear(struct ipmi_intf* intf,uint8_t clearValue)
         return -1;
 } else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if (rsp->ccode == 0xc1) {
         lprintf(LOG_ERR, " Error clearing power values, command not supported on this system.\n");
         return -1;
@@ -3449,10 +3449,10 @@ ipmi_powermgmt_clear(struct ipmi_intf* intf,uint8_t clearValue)
 *
 * Description:      This function converts the power value in watt to btuphr
 * Input:            powerinwatt     - power in watt
-*                               
+*
 * Output:           power in btuphr
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static uint64_t watt_to_btuphr_conversion(uint32_t powerinwatt)
@@ -3470,10 +3470,10 @@ static uint64_t watt_to_btuphr_conversion(uint32_t powerinwatt)
 *
 * Description:      This function converts the power value in  btuphr to watt
 * Input:            powerinbtuphr   - power in btuphr
-*                              
+*
 * Output:           power in watt
 *
-* Return:                
+* Return:
 *
 ******************************************************************/
 static uint32_t btuphr_to_watt_conversion(uint64_t powerinbtuphr)
@@ -3490,9 +3490,9 @@ static uint32_t btuphr_to_watt_conversion(uint64_t powerinbtuphr)
 * Description:          This function prints the Power consumption information
 * Input:                intf    - ipmi interface
 *                       unit    - watt / btuphr
-* Output:           
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit)
@@ -3513,7 +3513,7 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
         return -1;
 } else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)){
         lprintf(LOG_ERR, " Error getting power headroom status: Command not supported on this system ");
         return -1;
@@ -3532,7 +3532,7 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
 #endif
 
     printf ("Headroom\n");
-    printf ("Statistic                     Reading\n");   
+    printf ("Statistic                     Reading\n");
 
     if(unit == btuphr)
     {
@@ -3558,10 +3558,10 @@ static int ipmi_get_power_headroom_command (struct ipmi_intf * intf,uint8_t unit
 *
 * Description:         This function updates the instant Power consumption information
 * Input:               intf - ipmi interface
-* Output:              power consumption current reading 
+* Output:              power consumption current reading
 *                      Assumption value will be in Watt.
 *
-* Return:               
+* Return:
 *
 ******************************************************************/
 static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
@@ -3600,7 +3600,7 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
         warning_threshbtuphr=sdr_convert_sensor_reading
             (sdr->record.full, rsp->data[4]);
         failure_threshbtuphr=sdr_convert_sensor_reading
-            (sdr->record.full, rsp->data[5]);                                                
+            (sdr->record.full, rsp->data[5]);
 
         printf ("System Board System Level\n");
         if (unit==btuphr)
@@ -3615,7 +3615,7 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
         }
         else
         {
-            printf ("Reading                        : %d W \n",readingbtuphr);              
+            printf ("Reading                        : %d W \n",readingbtuphr);
             printf ("Warning threshold      : %d W \n",(warning_threshbtuphr));
             printf ("Failure threshold      : %d W \n",(failure_threshbtuphr));
         }
@@ -3623,8 +3623,8 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
     else
     {
         printf ("Error : Can not access the System Level sensor data \n\n");
-        return -1;              
-    }       
+        return -1;
+    }
     return status;
 }
 
@@ -3638,7 +3638,7 @@ static int ipmi_get_power_consumption_data(struct ipmi_intf* intf,uint8_t unit)
 * Input:              intf - ipmi interface
 * Output:             instpowerconsumptiondata - instant Power consumption information
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 
@@ -3664,7 +3664,7 @@ static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf* intf,
 
     memset(msg_data, 0, 2);
 
-    msg_data[0] = 0x0A;     
+    msg_data[0] = 0x0A;
     msg_data[1] = 0x00;
 
 
@@ -3675,7 +3675,7 @@ static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf* intf,
         return -1;
 	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting instantaneous power consumption data: Command not supported on this system.");
         return -1;
@@ -3704,9 +3704,9 @@ static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf* intf,
 *
 * Description:        This function prints the instant Power consumption information
 * Input:              instpowerconsumptiondata - instant Power consumption information
-* Output:               
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static void ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata)
@@ -3727,10 +3727,10 @@ static void ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DA
 *
 * Description:       This function prints the Power consumption information
 * Input:             intf            - ipmi interface
-*                    unit            - watt / btuphr 
-* Output:               
+*                    unit            - watt / btuphr
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_print_get_power_consmpt_data(struct ipmi_intf* intf,uint8_t  unit)
@@ -3754,7 +3754,7 @@ static int ipmi_print_get_power_consmpt_data(struct ipmi_intf* intf,uint8_t  uni
     ipmi_print_get_instan_power_Amps_data(instpowerconsumptiondata);
 
 
-    rc=ipmi_get_power_headroom_command(intf,unit);      
+    rc=ipmi_get_power_headroom_command(intf,unit);
 
     if (-1 == rc)
         return rc;
@@ -3772,7 +3772,7 @@ static int ipmi_print_get_power_consmpt_data(struct ipmi_intf* intf,uint8_t  uni
 * Input:           intf            - ipmi interface
 * Output:          pavgpower- average power consumption information
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWER_CONSUMP_HISTORY* pavgpower )
@@ -3785,10 +3785,10 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
     {
         lprintf(LOG_ERR, " Error getting average power consumption history data .\n");
         return -1;
-    } 
+    }
     else if((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting average power consumption  history data: Command not supported on this system.");
@@ -3807,7 +3807,7 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
 	rdata = (void *)pavgpower;
 
         printf("Average power consumption history  Data               :%x %x %x %x %x %x %x\n\n",
-            rdata[0], rdata[1], rdata[2], rdata[3], 
+            rdata[0], rdata[1], rdata[2], rdata[3],
             rdata[4], rdata[5], rdata[6], rdata[7]);
 
     }
@@ -3828,7 +3828,7 @@ static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf* intf,IPMI_AVGPOWE
 * Input:            intf            - ipmi interface
 * Output:           pavgpower- peak power consumption information
 *
-* Return:         
+* Return:
 *
 ******************************************************************/
 static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_CONSUMP_HISTORY * pstPeakpower)
@@ -3845,7 +3845,7 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
     }
     else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rc == 0xc1)||(rc == 0xcb))
     {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
@@ -3863,11 +3863,11 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
 	rdata = (void *)pstPeakpower;
 
         printf("Peak power consmhistory  Data               : %x %x %x %x %x %x %x %x %x %x\n   %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-	       rdata[0], rdata[1], rdata[2], rdata[3], 
-	       rdata[4], rdata[5], rdata[6], rdata[7], 
-	       rdata[8], rdata[9], rdata[10], rdata[11], 
-	       rdata[12], rdata[13], rdata[14], rdata[15], 
-	       rdata[16], rdata[17], rdata[18], rdata[19],  
+	       rdata[0], rdata[1], rdata[2], rdata[3],
+	       rdata[4], rdata[5], rdata[6], rdata[7],
+	       rdata[8], rdata[9], rdata[10], rdata[11],
+	       rdata[12], rdata[13], rdata[14], rdata[15],
+	       rdata[16], rdata[17], rdata[18], rdata[19],
 	       rdata[20], rdata[21], rdata[22], rdata[23]
         );
 
@@ -3893,7 +3893,7 @@ static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_
 * Input:            intf            - ipmi interface
 * Output:           pavgpower- peak power consumption information
 *
-* Return:         
+* Return:
 *
 ******************************************************************/
 static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_CONSUMP_HISTORY * pstMinpower)
@@ -3910,7 +3910,7 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
     }
     else if((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rc == 0xc1)||(rc == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting peak power consumption history data: Command not supported on this system.");
         return -1;
@@ -3927,11 +3927,11 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
 	rdata = (void *)pstMinpower;
 
         printf("Peak power consmhistory  Data               : %x %x %x %x %x %x %x %x %x %x\n   %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-            rdata[0], rdata[1], rdata[2], rdata[3], 
-            rdata[4], rdata[5], rdata[6], rdata[7], 
-            rdata[8], rdata[9], rdata[10], rdata[11], 
-            rdata[12], rdata[13], rdata[14], rdata[15], 
-            rdata[16], rdata[17], rdata[18], rdata[19],  
+            rdata[0], rdata[1], rdata[2], rdata[3],
+            rdata[4], rdata[5], rdata[6], rdata[7],
+            rdata[8], rdata[9], rdata[10], rdata[11],
+            rdata[12], rdata[13], rdata[14], rdata[15],
+            rdata[16], rdata[17], rdata[18], rdata[19],
             rdata[20], rdata[21], rdata[22], rdata[23]
         );
 
@@ -3957,9 +3957,9 @@ static int ipmi_get_minpower_consmpt_history(struct ipmi_intf* intf,IPMI_POWER_C
 * Description:      This function print the average and peak power consumption information
 * Input:            intf      - ipmi interface
 *                   unit      - watt / btuphr
-* Output:                
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
@@ -3980,7 +3980,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
     int rc=0;
 
 
-    rc= ipmi_get_avgpower_consmpt_history(intf,&avgpower);    
+    rc= ipmi_get_avgpower_consmpt_history(intf,&avgpower);
     if (-1 == rc)
         return rc;
 
@@ -3993,7 +3993,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
         return rc;
 
 
-    if(rc==0) 
+    if(rc==0)
     {
         printf ("Power Consumption History\n\n");
         /* The fields are alligned manually changing the spaces will alter the alignment*/
@@ -4001,7 +4001,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 
         if (unit ==btuphr)
         {
-            printf ("Average Power Consumption  ");         
+            printf ("Average Power Consumption  ");
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lastminutepower);
             printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lasthourpower);
@@ -4011,7 +4011,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
             tempbtuphrconv=watt_to_btuphr_conversion(avgpower.lastweakpower);
             printf ("%4lld BTU/hr\n",tempbtuphrconv);
 
-            printf ("Max Power Consumption      ");         
+            printf ("Max Power Consumption      ");
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lastminutepower);
             printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lasthourpower);
@@ -4021,7 +4021,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
             tempbtuphrconv=watt_to_btuphr_conversion(stPeakpower.lastweakpower);
             printf ("%4lld BTU/hr\n",tempbtuphrconv);
 
-            printf ("Min Power Consumption      ");         
+            printf ("Min Power Consumption      ");
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lastminutepower);
             printf ("%4lld BTU/hr     ",tempbtuphrconv);
             tempbtuphrconv=watt_to_btuphr_conversion(stMinpower.lasthourpower);
@@ -4035,7 +4035,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
         else
         {
 
-            printf ("Average Power Consumption  ");         
+            printf ("Average Power Consumption  ");
             tempbtuphrconv=(avgpower.lastminutepower);
 			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(avgpower.lasthourpower);
@@ -4045,7 +4045,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 			tempbtuphrconv=(avgpower.lastweakpower);
 			printf ("%4lld W   \n",tempbtuphrconv);
 
-		printf ("Max Power Consumption      ");		
+		printf ("Max Power Consumption      ");
 			tempbtuphrconv=(stPeakpower.lastminutepower);
 			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(stPeakpower.lasthourpower);
@@ -4055,7 +4055,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 			tempbtuphrconv=(stPeakpower.lastweakpower);
 			printf ("%4lld W   \n",tempbtuphrconv);
 
-		printf ("Min Power Consumption      ");		
+		printf ("Min Power Consumption      ");
 			tempbtuphrconv=(stMinpower.lastminutepower);
 			printf ("%4lld W          ",tempbtuphrconv);
 			tempbtuphrconv=(stMinpower.lasthourpower);
@@ -4064,38 +4064,38 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 			printf ("%4lld W       ",tempbtuphrconv);
 			tempbtuphrconv=(stMinpower.lastweakpower);
 		   	printf ("%4lld W   \n\n",tempbtuphrconv);
-		}		
-		
+		}
+
         lastminutepeakpower=stPeakpower.lastminutepowertime;
         lasthourpeakpower=stPeakpower.lasthourpowertime;
         lastdaypeakpower=stPeakpower.lastdaypowertime;
         lastweekpeakpower=stPeakpower.lastweekpowertime;
 
         printf ("Max Power Time\n");
-        ipmi_time_to_str(lastminutepeakpower, timestr);         
+        ipmi_time_to_str(lastminutepeakpower, timestr);
         printf ("Last Minute     : %s",timestr);
-        ipmi_time_to_str(lasthourpeakpower, timestr);           
+        ipmi_time_to_str(lasthourpeakpower, timestr);
         printf ("Last Hour       : %s",timestr);
-        ipmi_time_to_str(lastdaypeakpower, timestr);            
+        ipmi_time_to_str(lastdaypeakpower, timestr);
         printf ("Last Day        : %s",timestr);
-        ipmi_time_to_str(lastweekpeakpower, timestr);           
-        printf ("Last Week       : %s",timestr);                
+        ipmi_time_to_str(lastweekpeakpower, timestr);
+        printf ("Last Week       : %s",timestr);
 
 
         lastminutepeakpower=stMinpower.lastminutepowertime;
         lasthourpeakpower=stMinpower.lasthourpowertime;
         lastdaypeakpower=stMinpower.lastdaypowertime;
-        lastweekpeakpower=stMinpower.lastweekpowertime; 
+        lastweekpeakpower=stMinpower.lastweekpowertime;
 
         printf ("Min Power Time\n");
-        ipmi_time_to_str(lastminutepeakpower, timestr);         
+        ipmi_time_to_str(lastminutepeakpower, timestr);
         printf ("Last Minute     : %s",timestr);
-        ipmi_time_to_str(lasthourpeakpower, timestr);           
+        ipmi_time_to_str(lasthourpeakpower, timestr);
         printf ("Last Hour       : %s",timestr);
-        ipmi_time_to_str(lastdaypeakpower, timestr);            
+        ipmi_time_to_str(lastdaypeakpower, timestr);
         printf ("Last Day        : %s",timestr);
-        ipmi_time_to_str(lastweekpeakpower, timestr);           
-        printf ("Last Week       : %s",timestr);        
+        ipmi_time_to_str(lastweekpeakpower, timestr);
+        printf ("Last Week       : %s",timestr);
 
     }
 	return rc;
@@ -4111,7 +4111,7 @@ static int ipmi_print_power_consmpt_history(struct ipmi_intf* intf,int unit )
 * Input:            intf         - ipmi interface
 * Output:           ipmipowercap - power cap information
 *
-* Return:          
+* Return:
 *
 ******************************************************************/
 
@@ -4129,7 +4129,7 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
 
     } else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
     } else if ((rc == 0xc1)||(rc == 0xcb)) {
         lprintf(LOG_ERR, "  Error getting power cap: Command not supported on this system.");
         return -1;
@@ -4142,8 +4142,8 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
 	rdata = (void*)ipmipowercap;
 
         printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-            rdata[1], rdata[2], rdata[3], 
-            rdata[4], rdata[5], rdata[6], rdata[7], 
+            rdata[1], rdata[2], rdata[3],
+            rdata[4], rdata[5], rdata[6], rdata[7],
             rdata[8], rdata[9], rdata[10],rdata[11]);
 
     }
@@ -4166,8 +4166,8 @@ static int ipmi_get_power_cap(struct ipmi_intf* intf,IPMI_POWER_CAP* ipmipowerca
 * Description:      This function print the power cap information
 * Input:            intf            - ipmi interface
 *                   unit            - watt / btuphr
-* Output:                
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
@@ -4180,7 +4180,7 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
     rc=ipmi_get_power_cap(intf,&ipmipowercap);
 
 
-    if (rc==0) 
+    if (rc==0)
     {
         if (unit ==btuphr){
             tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
@@ -4190,7 +4190,7 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
 			tempbtuphrconv=watt_to_btuphr_conversion(ipmipowercap.PowerCap);
 			printf ("Power cap    : %lld  BTU/hr\n",tempbtuphrconv);
 		}else{
-		
+
 			printf ("Maximum power: %d Watt\n",ipmipowercap.MaximumPowerConsmp);
 			printf ("Minimum power: %d Watt\n",ipmipowercap.MinimumPowerConsmp);
 			printf ("Power cap    : %d Watt\n",ipmipowercap.PowerCap);
@@ -4198,7 +4198,7 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
     }
     return rc;
 
-}  
+}
 
 /*****************************************************************
 * Function Name:     ipmi_set_power_cap
@@ -4207,8 +4207,8 @@ static int ipmi_print_power_cap(struct ipmi_intf* intf,uint8_t unit )
 * Input:             intf            - ipmi interface
 *                    unit            - watt / btuphr
 *                    val             - new power cap value
-* Output:          
-* Return:               
+* Output:
+* Return:
 *
 ******************************************************************/
 static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
@@ -4244,9 +4244,9 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
 	}
     else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
-	} 
-    else if (rc == 0xc1) 
+		return -1;
+	}
+    else if (rc == 0xc1)
     {
         lprintf(LOG_ERR, "  Error getting power cap, command not supported on this system.\n");
         return -1;
@@ -4261,8 +4261,8 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     {
 	rdata = (void *)&ipmipowercap;
         printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-            rdata[1], rdata[2], rdata[3], 
-            rdata[4], rdata[5], rdata[6], rdata[7], 
+            rdata[1], rdata[2], rdata[3],
+            rdata[4], rdata[5], rdata[6], rdata[7],
             rdata[8], rdata[9], rdata[10],rdata[11]);
 
     }
@@ -4278,7 +4278,7 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     data[0] = IPMI_DELL_POWER_CAP;
     powercapval=val;
 
-    data[1] = (powercapval&0XFF);                   
+    data[1] = (powercapval&0XFF);
     data[2] = ((powercapval&0XFF00)>>8);
     data[3] = unit;
 
@@ -4306,7 +4306,7 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
         }
         val =( (val*(ipmipowercap.MaximumPowerConsmp -ipmipowercap.MinimumPowerConsmp))/100)+ipmipowercap.MinimumPowerConsmp;
         lprintf(LOG_ERR, " Cap value in percentage is  %d ",val);
-        data[1] = (val&0XFF);                   
+        data[1] = (val&0XFF);
         data[2] = ((val&0XFF00)>>8);
         data[3] = watt;
     }
@@ -4336,9 +4336,9 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
     }
     else if((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
-	} 
-    else if (rc > 0) 
+		return -1;
+	}
+    else if (rc > 0)
     {
         lprintf(LOG_ERR, " Error setting power cap: %s",
             val2str(rc, completion_code_vals));
@@ -4355,10 +4355,10 @@ static int ipmi_set_power_cap(struct ipmi_intf* intf,int unit,int val )
 * Function Name:   ipmi_powermonitor_usage
 *
 * Description:     This function prints help message for powermonitor command
-* Input:              
-* Output:       
+* Input:
+* Output:
 *
-* Return:              
+* Return:
 *
 ******************************************************************/
 static void
@@ -4401,7 +4401,7 @@ ipmi_powermonitor_usage(void)
 * Input:			   intf    - ipmi interface
 					   argc    - no of arguments
 					   argv    - argument string array
-* Output:		 
+* Output:
 *
 * Return:			   return code	   0 - success
 *						  -1 - failure
@@ -4425,11 +4425,11 @@ static int ipmi_delloem_vFlash_main (struct ipmi_intf * intf, int argc, char ** 
 * Description: 	This function maps the vFlash completion code
 * 		to a string
 * Input : vFlash completion code and static array of codes vs strings
-* Output: - 		
-* Return: returns the mapped string		
+* Output: -
+* Return: returns the mapped string
 *
 ******************************************************************/
-const char * 
+const char *
 get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs)
 {
 	static char un_str[32];
@@ -4451,7 +4451,7 @@ get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs)
 *
 * Description: This function prints the vFlash Extended SD card info
 * Input : ipmi interface
-* Output: prints the sd card extended info		
+* Output: prints the sd card extended info
 * Return: 0 - success -1 - failure
 *
 ******************************************************************/
@@ -4481,7 +4481,7 @@ ipmi_get_sd_card_info(struct ipmi_intf* intf) {
 		lprintf(LOG_ERR, " Error in getting SD Card Extended Information");
 		return -1;
 	}
-	else if (rsp->ccode > 0) 
+	else if (rsp->ccode > 0)
 	{
 		lprintf(LOG_ERR, " Error in getting SD Card Extended Information (%s) \n",
 				val2str(rsp->ccode, completion_code_vals) );
@@ -4493,7 +4493,7 @@ ipmi_get_sd_card_info(struct ipmi_intf* intf) {
 	if( (iDRAC_FLAG == IDRAC_12G) && (sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED))
 	{
 		printf("FM001 : A required license is missing or expired\n");
-		return -1;	
+		return -1;
 	}
 	else if (sdcardinfoblock->vflashcompcode != 0x00)
 	{
@@ -4523,8 +4523,8 @@ ipmi_get_sd_card_info(struct ipmi_intf* intf) {
 			"Yes" : "No");
 	cardstatus = sdcardinfoblock->sdcardstatus & 0x03;
 	printf("Health             : %10s\n", ((0x00 == cardstatus
-		) ? "OK" : ((cardstatus == 0x03) ? 
-			"Undefined" : ((cardstatus == 0x02) ? 
+		) ? "OK" : ((cardstatus == 0x03) ?
+			"Undefined" : ((cardstatus == 0x02) ?
 				"Critical" : "Warning"))));
 	printf("Bootable partition : %10d\n",sdcardinfoblock->bootpartion);
 	return 0;
@@ -4594,8 +4594,8 @@ ipmi_delloem_vFlash_process(struct ipmi_intf* intf, int current_arg, char ** arg
 *
 * Description: 	This function displays the usage for using vFlash
 * Input : void
-* Output: prints help		
-* Return: void	
+* Output: prints help
+* Return: void
 *
 ******************************************************************/
 static void
@@ -4657,7 +4657,7 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
     data[4] = 0x00;			   // offset lsb
     data[5] = 0x00;			   // offset msb
     data[6] = 0x00;			   // bay id
-    data[7] = 0x00;		
+    data[7] = 0x00;
     data[8] = 0x00;
     data[9] = 0x00;
 
@@ -4677,9 +4677,9 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
 *		    bdf	 	 - PCI Address of drive
 *		    *bay	 - Returns bay ID
 		    *slot	 - Returns slot ID
-* Output:           
+* Output:
 *
-* Return:          
+* Return:
 *
 ******************************************************************/
 static int
@@ -4737,9 +4737,9 @@ ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay, int *sl
 * Input:            intf         - ipmi interface
 *		    bdf	 	 - PCI Address of drive
 *		    state	 - SES Flags state of drive
-* Output:           
+* Output:
 *
-* Return:          
+* Return:
 *
 ******************************************************************/
 static int
@@ -4796,7 +4796,7 @@ ipmi_setled_state (struct ipmi_intf * intf, int bayId, int slotId, int state)
 static int ipmi_getsesmask(int argc, char **argv)
 {
 	int mask = 0;
-	
+
 	while (current_arg < argc) {
 		if (!strcmp(argv[current_arg], "present"))
 			mask |= (1L << 0);
@@ -4828,7 +4828,7 @@ static int ipmi_getsesmask(int argc, char **argv)
 * Input:               intf    - ipmi interface
                        argc    - no of arguments
                        argv    - argument string array
-* Output:        
+* Output:
 *
 * Return:              return code     0 - success
 *                         -1 - failure
@@ -4844,7 +4844,7 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
     slotId = 0xFF;
 
     current_arg++;
-    if (argc < current_arg) 
+    if (argc < current_arg)
     {
         usage();
         return -1;
@@ -4875,7 +4875,7 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 	ipmi_setled_usage();
 	return -1;
     }
-    /* Get mask of SES flags */	
+    /* Get mask of SES flags */
     mask = ipmi_getsesmask(argc, argv);
 
     /* Get drive mapping */
