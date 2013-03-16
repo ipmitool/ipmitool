@@ -2380,7 +2380,7 @@ int get_nic_selection_mode_12g (struct ipmi_intf* intf,int current_arg, char ** 
   	req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
 
   	req.msg.data = msg_data;
-  	req.msg.data_len = input_length
+  	req.msg.data_len = input_length;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL)
