@@ -1885,6 +1885,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	    (get_cmdline_ipaddr(argv[1], temp) == 0)) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 		/* set new ipaddr */
 		memcpy(data+3, temp, 4);
@@ -1897,6 +1900,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		 (get_cmdline_macaddr(argv[1], temp) == 0)) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 		/* set new macaddr */
 		memcpy(data+7, temp, 6);
@@ -1909,6 +1915,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "gateway", 7) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 
 		if (strncasecmp(argv[1], "def", 3) == 0 ||
@@ -1932,6 +1941,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "ack", 3) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 
 		if (strncasecmp(argv[1], "on", 2) == 0 ||
@@ -1954,6 +1966,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "type", 4) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 
 		if (strncasecmp(argv[1], "pet", 3) == 0) {
@@ -1979,6 +1994,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "time", 4) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 
 		if (str2uchar(argv[1], &data[2]) != 0) {
@@ -1992,6 +2010,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "retry", 5) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
+		if (p == NULL) {
+			return (-1);
+		}
 		memcpy(data, p->data, p->data_len);
 
 		if (str2uchar(argv[1], &data[3]) != 0) {
