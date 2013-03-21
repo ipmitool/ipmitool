@@ -43,6 +43,7 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <netdb.h>
+#include <limits.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/log.h>
@@ -452,11 +453,10 @@ set_lan_param_nowait(struct ipmi_intf * intf, uint8_t chan,
 }
 
 static int
-lan_set_arp_interval(struct ipmi_intf * intf,
-		     uint8_t chan, uint8_t * ival)
+lan_set_arp_interval(struct ipmi_intf * intf, uint8_t chan, uint8_t ival)
 {
 	struct lan_param *lp;
-	uint8_t interval;
+	uint8_t interval = 0;
 	int rc = 0;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
@@ -466,7 +466,11 @@ lan_set_arp_interval(struct ipmi_intf * intf,
 		return -1;
 
 	if (ival != 0) {
-		interval = ((uint8_t)atoi((const char *)ival) * 2) - 1;
+		if (((UINT8_MAX - 1) / 2) < ival) {
+			lprintf(LOG_ERR, "Given ARP interval '%u' is too big.", ival);
+			return (-1);
+		}
+		interval = (ival * 2) - 1;
 		rc = set_lan_param(intf, chan, IPMI_LANP_GRAT_ARP, &interval, 1);
 	} else {
 		interval = lp->data[0];
@@ -1321,7 +1325,11 @@ ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 		data[1] = 0;
 	}
 	else {
-		int id = atoi(string);
+		int id = 0;
+		if (str2int(string, &id) != 0) {
+			lprintf(LOG_ERR, "Given VLAN ID '%s' is invalid.", string);
+			return (-1);
+		}
 
 		if (id < 1 || id > 4094) {
 			lprintf(LOG_NOTICE, "vlan id must be between 1 and 4094.");
@@ -1341,7 +1349,11 @@ ipmi_lan_set_vlan_priority(struct ipmi_intf * intf,  uint8_t chan, char *string)
 {
 	uint8_t data;
 	int rc;
-	int priority = atoi(string);
+	int priority = 0;
+	if (str2int(string, &priority) != 0) {
+		lprintf(LOG_ERR, "Given VLAN priority '%s' is invalid.", string);
+		return (-1);
+	}
 
 	if (priority < 0 || priority > 7) {
 		lprintf(LOG_NOTICE, "vlan priority must be between 0 and 7.");
@@ -1428,7 +1440,12 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			return 0;
 		}
 		else if (strncmp(argv[2], "interval", 8) == 0) {
-			rc = lan_set_arp_interval(intf, chan, (uint8_t *)argv[3]);
+			uint8_t interval = 0;
+			if (str2uchar(argv[3], &interval) != 0) {
+				lprintf(LOG_ERR, "Given ARP interval '%s' is invalid.", argv[3]);
+				return (-1);
+			}
+			rc = lan_set_arp_interval(intf, chan, interval);
 		}
 		else if (strncmp(argv[2], "generate", 8) == 0) {
 			if (argc < 4) {
