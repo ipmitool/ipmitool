@@ -3856,9 +3856,6 @@ ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
 {
 	FILE * pFile;
 	uint32_t len = 0;
-	if (size < 0) {
-		return (-1);
-	}
 	if (pFileName == NULL) {
 		lprintf(LOG_ERR, "Invalid file name given.");
 		return (-1);
