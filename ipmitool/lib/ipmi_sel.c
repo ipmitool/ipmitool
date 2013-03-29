@@ -1720,16 +1720,16 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		description = NULL;
 	}
 
-	if (evt->sel_type.standard_type.event_type == 0x6f) {
-		if (csv_output)
-			printf(",");
-		else
-			printf(" | ");
+	if (csv_output) {
+		printf(",");
+	} else {
+		printf(" | ");
+	}
 
-		if (evt->sel_type.standard_type.event_dir)
-			printf("Deasserted");
-		else
-			printf("Asserted");
+	if (evt->sel_type.standard_type.event_dir) {
+		printf("Deasserted");
+	} else {
+		printf("Asserted");
 	}
 
 	if (sdr != NULL && evt->sel_type.standard_type.event_type == 1) {
