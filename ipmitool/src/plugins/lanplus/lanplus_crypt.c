@@ -178,6 +178,7 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 				 &macLength);
 
 	free(buffer);
+	buffer = NULL;
 
 
 	if (verbose > 2)
@@ -310,6 +311,7 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 
 
 	free(buffer);
+	buffer = NULL;
 	assert(macLength == 20);
 	return (memcmp(bmc_mac, mac, 12) == 0);
 }
@@ -425,6 +427,7 @@ int lanplus_generate_rakp3_authcode(uint8_t                      * output_buffer
 
 	
 	free(input_buffer);
+	input_buffer = NULL;
 
 	return ret;
 }
@@ -549,6 +552,7 @@ int lanplus_generate_sik(struct ipmi_session * session)
 				 &mac_length);
 
 	free(input_buffer);
+	input_buffer = NULL;
 	assert(mac_length == 20);
 
 	/*
@@ -719,8 +723,10 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 	if (lanplus_rand(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE))
 	{
 		lprintf(LOG_ERR, "lanplus_encrypt_payload: Error generating IV");
-		if (padded_input != NULL)
+		if (padded_input != NULL) {
 			free(padded_input);
+			padded_input = NULL;
+		}
 		return 1;
 	}
 
@@ -741,6 +747,7 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
 		bytes_encrypted;
 
 	free(padded_input);
+	padded_input = NULL;
 
 	return 0;
 }
@@ -904,5 +911,6 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 	}
 
 	free(decrypted_payload);
+	decrypted_payload = NULL;
 	return (bytes_decrypted == 0);
 }

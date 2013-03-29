@@ -320,6 +320,7 @@ ipmi_parse_hex(const char *str)
 		if (!isxdigit(*p)) {
 			lprintf(LOG_ERR, "Kg_hex is not hexadecimal number");
 			free(out);
+			out = NULL;
 			return NULL;
 		}
 
@@ -397,8 +398,10 @@ ipmi_main(int argc, char ** argv,
 	{
 		switch (argflag) {
 		case 'I':
-			if (intfname)
+			if (intfname) {
 				free(intfname);
+				intfname = NULL;
+			}
 			intfname = strdup(optarg);
 			if (intfname == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -476,8 +479,10 @@ ipmi_main(int argc, char ** argv,
 			csv_output = 1;
 			break;
 		case 'H':
-			if (hostname)
+			if (hostname) {
 				free(hostname);
+				hostname = NULL;
+			}
 			hostname = strdup(optarg);
 			if (hostname == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -485,8 +490,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'f':
-			if (password)
+			if (password) {
 				free(password);
+				password = NULL;
+			}
 			password = ipmi_password_file_read(optarg);
 			if (password == NULL)
 				lprintf(LOG_ERR, "Unable to read password "
@@ -499,10 +506,13 @@ ipmi_main(int argc, char ** argv,
 			tmp_pass = getpass("Password: ");
 #endif
 			if (tmp_pass != NULL) {
-				if (password)
+				if (password) {
 					free(password);
+					password = NULL;
+				}
 				password = strdup(tmp_pass);
 				free(tmp_pass);
+				tmp_pass = NULL;
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -510,8 +520,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'k':
-			if (kgkey)
+			if (kgkey) {
 				free(kgkey);
+				kgkey = NULL;
+			}
 			kgkey = strdup(optarg);
 			if (kgkey == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -520,8 +532,10 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'K':
 			if ((tmp_env = getenv("IPMI_KGKEY"))) {
-				if (kgkey)
+				if (kgkey) {
 					free(kgkey);
+					kgkey = NULL;
+				}
 				kgkey = strdup(tmp_env);
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -532,8 +546,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'y':
-			if (kgkey)
+			if (kgkey) {
 				free(kgkey);
+				kgkey = NULL;
+			}
 			kgkey = ipmi_parse_hex(optarg);
 			if (kgkey == NULL) {
 				goto out_free;
@@ -546,10 +562,13 @@ ipmi_main(int argc, char ** argv,
 			tmp_pass = getpass("Key: ");
 #endif
 			if (tmp_pass != NULL) {
-				if (kgkey)
+				if (kgkey) {
 					free(kgkey);
+					kgkey = NULL;
+				}
 				kgkey = strdup(tmp_pass);
 				free(tmp_pass);
+				tmp_pass = NULL;
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
@@ -557,8 +576,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'U':
-			if (username)
+			if (username) {
 				free(username);
+				username = NULL;
+			}
 			if (strlen(optarg) > 16) {
 				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
 				goto out_free;
@@ -570,8 +591,10 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'S':
-			if (sdrcache)
+			if (sdrcache) {
 				free(sdrcache);
+				sdrcache = NULL;
+			}
 			sdrcache = strdup(optarg);
 			if (sdrcache == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -580,8 +603,10 @@ ipmi_main(int argc, char ** argv,
 			break;
 #ifdef ENABLE_ALL_OPTIONS
 		case 'o':
-			if (oemtype)
+			if (oemtype) {
 				free(oemtype);
+				oemtype = NULL;
+			}
 			oemtype = strdup(optarg);
 			if (oemtype == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -596,19 +621,25 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'g':
 			/* backwards compatible oem hack */
-			if (oemtype)
+			if (oemtype) {
 				free(oemtype);
+				oemtype = NULL;
+			}
 			oemtype = strdup("intelwv2");
 			break;
 		case 's':
 			/* backwards compatible oem hack */
-			if (oemtype)
+			if (oemtype) {
 				free(oemtype);
+				oemtype = NULL;
+			}
 			oemtype = strdup("supermicro");
 			break;
 		case 'P':
-			if (password)
+			if (password) {
 				free(password);
+				password = NULL;
+			}
 			password = strdup(optarg);
 			if (password == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -621,8 +652,10 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'E':
 			if ((tmp_env = getenv("IPMITOOL_PASSWORD"))) {
-				if (password)
+				if (password) {
 					free(password);
+					password = NULL;
+				}
 				password = strdup(tmp_env);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -630,8 +663,10 @@ ipmi_main(int argc, char ** argv,
 				}
 			}
 			else if ((tmp_env = getenv("IPMI_PASSWORD"))) {
-				if (password)
+				if (password) {
 					free(password);
+					password = NULL;
+				}
 				password = strdup(tmp_env);
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -702,8 +737,10 @@ ipmi_main(int argc, char ** argv,
 			sol_escape_char = optarg[0];
 			break;
 		case 'O':
-			if (seloem)
+			if (seloem) {
 				free(seloem);
+				seloem = NULL;
+			}
 			seloem = strdup(optarg);
 			if (seloem == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -765,6 +802,7 @@ ipmi_main(int argc, char ** argv,
 		if (tmp_pass != NULL) {
 			password = strdup(tmp_pass);
 			free(tmp_pass);
+			tmp_pass = NULL;
 			if (password == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
@@ -972,22 +1010,38 @@ ipmi_main(int argc, char ** argv,
 	out_free:
 	log_halt();
 
-	if (intfname != NULL)
+	if (intfname != NULL) {
 		free(intfname);
-	if (hostname != NULL)
+		intfname = NULL;
+	}
+	if (hostname != NULL) {
 		free(hostname);
-	if (username != NULL)
+		hostname = NULL;
+	}
+	if (username != NULL) {
 		free(username);
-	if (password != NULL)
+		username = NULL;
+	}
+	if (password != NULL) {
 		free(password);
-	if (oemtype != NULL)
+		password = NULL;
+	}
+	if (oemtype != NULL) {
 		free(oemtype);
-	if (seloem != NULL)
+		oemtype = NULL;
+	}
+	if (seloem != NULL) {
 		free(seloem);
-	if (kgkey != NULL)
+		seloem = NULL;
+	}
+	if (kgkey != NULL) {
 		free(kgkey);
-	if (sdrcache != NULL)
+		kgkey = NULL;
+	}
+	if (sdrcache != NULL) {
 		free(sdrcache);
+		sdrcache = NULL;
+	}
 
 	return rc;
 }

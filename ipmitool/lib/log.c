@@ -132,8 +132,10 @@ void log_halt(void)
 	if (!logpriv)
 		return;
 
-	if (logpriv->name)
+	if (logpriv->name) {
 		free(logpriv->name);
+		logpriv->name = NULL;
+	}
 
 	if (logpriv->daemon)
 		closelog();

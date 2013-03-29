@@ -881,6 +881,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "Command 0x%02x not supported on LUN/NetFn pair %02x,%02x",
 				p.command, p.lun, p.netfn);
 			free(bmc_fn_support);
+			bmc_fn_support = NULL;
 			return 0;
 		}
 		cmd =
@@ -908,6 +909,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "LUN or LUN/NetFn pair %02x,%02x not supported",
 				p.lun, p.netfn);
 			free(bmc_fn_support);
+			bmc_fn_support = NULL;
 			return 0;
 		}
 		n = p.netfn >> 1;
@@ -948,6 +950,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	free(bmc_fn_support);
+	bmc_fn_support = NULL;
 	return ret;
 }
 
@@ -997,6 +1000,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 	ret = _gather_info(intf, &p, bmc_fn_support);
 	if (ret < 0) {
 		free(bmc_fn_support);
+		bmc_fn_support = NULL;
 		return ret;
 	}
 
@@ -1037,6 +1041,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 		*/
 	}
 	free(bmc_fn_support);
+	bmc_fn_support = NULL;
 	return ret;
 }
 
@@ -1073,6 +1078,7 @@ ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 	ret = _gather_info(intf, &p, bmc_fn_support);
 	if (ret < 0) {
 		free(bmc_fn_support);
+		bmc_fn_support = NULL;
 		return ret;
 	}
 
@@ -1095,6 +1101,7 @@ ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	free(bmc_fn_support);
+	bmc_fn_support = NULL;
 	return ret;
 }
 

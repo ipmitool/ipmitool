@@ -139,6 +139,7 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   if (partial_send(intf, &req, &id)) {
      lprintf(LOG_ERR, "ipmitool: partial send error");
     free(sdr_rq);
+    sdr_rq = NULL;
     return -1;
   }
 
@@ -169,6 +170,7 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   }
 
   free(sdr_rq);
+  sdr_rq = NULL;
   return rc;
 }
 
@@ -304,6 +306,7 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
       lprintf(LOG_ERR, "Cannot add SDR ID 0x%04x to repository...", sdrr->id);
     }
     free(sdrr);
+    sdrr = NULL;
   }
   return rc;
 }
@@ -608,6 +611,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     if ((sdrr->raw = malloc(sdrr->length)) == NULL) {
       lprintf(LOG_ERR, "ipmitool: malloc failure");
       free(sdrr);
+      sdrr = NULL;
       rc = -1;
       break;
     }
@@ -615,7 +619,9 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     if (read(fd, sdrr->raw, sdrr->length) != sdrr->length) {
       lprintf(LOG_ERR, "SDR from '%s' truncated", filename);
       free(sdrr->raw);
+      sdrr->raw = NULL;
       free(sdrr);
+      sdrr = NULL;
       rc = -1;
       break;
     }
@@ -655,6 +661,7 @@ ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile)
       lprintf(LOG_ERR, "Cannot add SDR ID 0x%04x to repository...", sdrr->id);
     }
     free(sdrr);
+    sdrr = NULL;
   }
   return rc;
 }

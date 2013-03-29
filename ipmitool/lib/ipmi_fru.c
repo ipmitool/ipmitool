@@ -679,6 +679,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	} while ((doffset+off) < finish);
 
 	free(fru_bloc);
+	fru_bloc = NULL;
 
 	return ((doffset+off) >= finish);
 }
@@ -1017,6 +1018,7 @@ fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
 
 	free(fru_data);
+	fru_data = NULL;
 }
 
 
@@ -1050,12 +1052,14 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		fru_len = 8 * fru_data[i + 1];
 	if (fru_len <= 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, i, fru_len, fru_data) < 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
@@ -1101,6 +1105,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 
 	if (fru_area != NULL) {
 		free(fru_data);
+		fru_data = NULL;
 	}
 }
 
@@ -1135,12 +1140,14 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		fru_len = 8 * fru_data[i + 1];
 	if (fru_len <= 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, i, fru_len, fru_data) < 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
@@ -1216,6 +1223,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 
 	if (fru_area != NULL) {
 		free(fru_data);
+		fru_data = NULL;
 	}
 }
 
@@ -1249,12 +1257,14 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		fru_len = 8 * fru_data[i + 1];
 	if (fru_len <= 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, i, fru_len, fru_data) < 0) {
 		free(fru_data);
+		fru_data = NULL;
 		return;
 	}
 
@@ -1343,6 +1353,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 
 	if (fru_area != NULL) {
 		free(fru_data);
+		fru_data = NULL;
 	}
 }
 
@@ -1541,6 +1552,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
 
 	free(fru_data);
+	fru_data = NULL;
 }
 
 /* ipmi_fru_query_new_value  -  Query new values to replace original FRU content
@@ -1579,6 +1591,7 @@ int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 		}
 		/* &data[offset++] */
 		free(holder);
+		holder = NULL;
 		status = TRUE;
 	}
 	else{
@@ -3143,8 +3156,10 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 				intf->target_addr = save_addr;
 			}
 
-			if (mc)
+			if (mc) {
 				free(mc);
+				mc = NULL;
+			}
 
 			continue;
 		}
@@ -3156,12 +3171,15 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		fru = (struct sdr_record_fru_locator *)
 			ipmi_sdr_get_record(intf, header, itr);
 		if (fru == NULL || !fru->logical) {
-			if (fru)
+			if (fru) {
 				free(fru);
+				fru = NULL;
+			}
 			continue;
 		}
 		rc = ipmi_fru_print(intf, fru);
 		free(fru);
+		fru = NULL;
 	}
 
 	ipmi_sdr_end(intf, itr);
@@ -3236,11 +3254,13 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 		} else {
 			lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
 			free(pFruBuf);
+			pFruBuf = NULL;
 			return;
 		}
 		fclose(pFile);
 	}
 	free(pFruBuf);
+	pFruBuf = NULL;
 }
 
 static void
@@ -3303,6 +3323,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 		}
 
 	free(pFruBuf);
+	pFruBuf = NULL;
 }
 
 /* ipmi_fru_write_help() - print help text for 'write'
@@ -3494,6 +3515,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 		} while (!(h->format & 0x80) && (error != 1));
 
 		free(fru_data);
+		fru_data = NULL;
 	}
 	return 0;
 }
@@ -3667,6 +3689,7 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 		} while (!(h->format & 0x80) && (error != 1));
 
 		free(fru_data);
+		fru_data = NULL;
 	}
 	return 0;
 }
@@ -3708,6 +3731,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.", pFileName);
 		if (buf != NULL) {
 			free(buf);
+			buf = NULL;
 		}
 		return (-1);
 	}
@@ -3715,6 +3739,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
 		if (buf != NULL) {
 			free(buf);
+			buf = NULL;
 		}
 		return (-1);
 	}
@@ -3723,11 +3748,13 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Failed to write FRU area.");
 		if (buf != NULL) {
 			free(buf);
+			buf = NULL;
 		}
 		return (-1);
 	}
 	if (buf != NULL) {
 		free(buf);
+		buf = NULL;
 	}
 	lprintf(LOG_INFO, "Done upgrading Ekey.");
 	return 0;
@@ -4231,6 +4258,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
 					{
 						lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
 						free(frubuf);
+						frubuf = NULL;
 						return -1;
 					}
 					fclose(pFile);
@@ -4239,6 +4267,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
 			printf("\n");
 
 			free(frubuf);
+			frubuf = NULL;
 		}
 
 	}
@@ -4322,6 +4351,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 				}
 
 				free(frubuf);
+				frubuf = NULL;
 			}
 			fclose(fp);
 			fp = NULL;
@@ -4723,6 +4753,7 @@ f_type, uint8_t f_index, char *f_string)
 		fru_field_offset_tmp = fru_field_offset;
 		if (fru_area != NULL) {
 			free(fru_area);
+			fru_area = NULL;
 		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
@@ -4770,10 +4801,14 @@ f_type, uint8_t f_index, char *f_string)
 	}
 
 	ipmi_fru_set_field_string_out:
-	if (fru_data != NULL)
+	if (fru_data != NULL) {
 		free(fru_data);
-	if (fru_area != NULL)
+		fru_data = NULL;
+	}
+	if (fru_area != NULL) {
 		free(fru_area);
+		fru_area = NULL;
+	}
 
 	return rc;
 }
@@ -4902,6 +4937,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		fru_field_offset_tmp = fru_field_offset;
 		if (fru_area != NULL) {
 			free(fru_area);
+			fru_area = NULL;
 		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
 	}
@@ -5157,12 +5193,18 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	printf("Done.\n");
 
 	ipmi_fru_set_field_string_rebuild_out:
-	if (fru_area != NULL)
+	if (fru_area != NULL) {
 		free(fru_area);
-	if (fru_data_new != NULL)
+		fru_area = NULL;
+	}
+	if (fru_data_new != NULL) {
 		free(fru_data_new);
-	if (fru_data_old != NULL)
+		fru_data_new = NULL;
+	}
+	if (fru_data_old != NULL) {
 		free(fru_data_old);
+		fru_data_old = NULL;
+	}
 
 	return rc;
 }

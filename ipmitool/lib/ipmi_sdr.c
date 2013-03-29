@@ -2690,6 +2690,7 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			if (rec != NULL) {
 				free(rec);
+				rec = NULL;
 			}
 			break;
 		}
@@ -2725,8 +2726,10 @@ ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -2826,10 +2829,12 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		free(itr);
+		itr = NULL;
 		return NULL;
 	}
 	if (rsp->ccode > 0) {
 		free(itr);
+		itr = NULL;
 		return NULL;
 	}
 	devid = (struct ipm_devid_rsp *) rsp->data;
@@ -2844,6 +2849,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 			} else {
 				lprintf(LOG_ERR, "Error obtaining SDR info");
 				free(itr);
+				itr = NULL;
 				return NULL;
 			}
 		} else {
@@ -2863,12 +2869,14 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		if (rsp == NULL) {
 			lprintf(LOG_ERR, "Error obtaining SDR info");
 			free(itr);
+			itr = NULL;
 			return NULL;
 		}
 		if (rsp->ccode > 0) {
 			lprintf(LOG_ERR, "Error obtaining SDR info: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			free(itr);
+			itr = NULL;
 			return NULL;
 		}
 
@@ -2897,6 +2905,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		   if( ipmi_sdr_add_from_sensors( intf, 0 ) != 0 ) {
 		      lprintf(LOG_ERR, "Could not build SDRR!");
 		      free(itr);
+					itr = NULL;
 		      return NULL;
 		   }
 		}
@@ -2911,6 +2920,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		if (!rsp || !rsp->data_len || rsp->ccode) {
 			printf("Err in cmd get sensor sdr info\n");
 			free(itr);
+			itr = NULL;
 			return NULL;
 		}
 		memcpy(&sdr_info, rsp->data, sizeof (sdr_info));
@@ -2924,6 +2934,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
                                 &(itr->reservation)) < 0) {
 		lprintf(LOG_ERR, "Unable to obtain SDR reservation");
 		free(itr);
+		itr = NULL;
 		return NULL;
 	}
 
@@ -2996,6 +3007,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			continue;
 		    } else {
 			free(data);
+			data = NULL;
 			return NULL;
 		    }
 		}
@@ -3015,6 +3027,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			if (ipmi_sdr_get_reservation(intf, itr->use_built_in,
                                       &(itr->reservation)) < 0) {
 				free(data);
+				data = NULL;
 				return NULL;
 			}
 			sdr_rq.reserve_id = itr->reservation;
@@ -3024,6 +3037,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		/* special completion codes handled above */
 		if (rsp->ccode > 0 || rsp->data_len == 0) {
 			free(data);
+			data = NULL;
 			return NULL;
 		}
 
@@ -3044,8 +3058,10 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 void
 ipmi_sdr_end(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 {
-	if (itr)
+	if (itr) {
 		free(itr);
+		itr = NULL;
+	}
 }
 
 /* __sdr_list_add  -  helper function to add SDR record to list
@@ -3094,6 +3110,7 @@ __sdr_list_empty(struct sdr_record_list *head)
 	for (e = head; e != NULL; e = f) {
 		f = e->next;
 		free(e);
+		e = NULL;
 	}
 	head = NULL;
 }
@@ -3115,32 +3132,45 @@ ipmi_sdr_list_empty(struct ipmi_intf *intf)
 		switch (list->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			if (list->record.common)
+			if (list->record.common) {
 				free(list->record.common);
+				list->record.common = NULL;
+			}
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			if (list->record.eventonly)
+			if (list->record.eventonly) {
 				free(list->record.eventonly);
+				list->record.eventonly = NULL;
+			}
 			break;
 		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
-			if (list->record.genloc)
+			if (list->record.genloc) {
 				free(list->record.genloc);
+				list->record.genloc = NULL;
+			}
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-			if (list->record.fruloc)
+			if (list->record.fruloc) {
 				free(list->record.fruloc);
+				list->record.fruloc = NULL;
+			}
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			if (list->record.mcloc)
+			if (list->record.mcloc) {
 				free(list->record.mcloc);
+				list->record.mcloc = NULL;
+			}
 			break;
 		case SDR_RECORD_TYPE_ENTITY_ASSOC:
-			if (list->record.entassoc)
+			if (list->record.entassoc) {
 				free(list->record.entassoc);
+				list->record.entassoc = NULL;
+			}
 			break;
 		}
 		next = list->next;
 		free(list);
+		list = NULL;
 	}
 
 	sdr_list_head = NULL;
@@ -3210,6 +3240,7 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint16_t gen_id, uint8_t num
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3250,8 +3281,10 @@ ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf, uint16_t gen_id, uint8_t num
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3334,6 +3367,7 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3370,8 +3404,10 @@ ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3485,6 +3521,7 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3547,8 +3584,10 @@ ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf, struct entity_id *entity)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3618,6 +3657,7 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3650,8 +3690,10 @@ ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf, uint8_t type)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3760,6 +3802,7 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3827,8 +3870,10 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -3924,6 +3969,7 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 			ret = -1;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			break;
 		}
@@ -3937,9 +3983,11 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 			ret = -1;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			if (rec != NULL) {
 				free(rec);
+				rec = NULL;
 			}
 			break;
 		}
@@ -3972,8 +4020,10 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -4042,6 +4092,7 @@ ipmi_sdr_list_cache(struct ipmi_intf *intf)
 		if (rec == NULL) {
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -4074,8 +4125,10 @@ ipmi_sdr_list_cache(struct ipmi_intf *intf)
 			break;
 		default:
 			free(rec);
+			rec = NULL;
 			if (sdrr != NULL) {
 				free(sdrr);
+				sdrr = NULL;
 			}
 			continue;
 		}
@@ -4303,6 +4356,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 		    lprintf(LOG_ERR, "ipmitool: cannot obtain SDR record %04x", header->id);
 				if (sdrr != NULL) {
 					free(sdrr);
+					sdrr = NULL;
 				}
 		    return -1;
 		}

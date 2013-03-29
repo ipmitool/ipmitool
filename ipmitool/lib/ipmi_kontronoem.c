@@ -339,12 +339,14 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if (rsp == NULL) {
       printf(" Device not present (No Response)\n");
       free(sn);
+      sn = NULL;
       return -1;
    }
    if (rsp->ccode > 0) {
       printf(" Device not present (%s)\n",
          val2str(rsp->ccode, completion_code_vals));
       free(sn);
+      sn = NULL;
       return(-1);
    }
 
@@ -354,6 +356,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if (fru.size < 1) {
       printf(" Invalid FRU size %d", fru.size);
       free(sn);
+      sn = NULL;
       return -1;
    }
  
@@ -376,6 +379,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    {
       printf(" Device not present (No Response)\n");
       free(sn);
+      sn = NULL;
       return(-1);
    }
    if (rsp->ccode > 0) 
@@ -383,6 +387,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
       printf(" Device not present (%s)\n",
              val2str(rsp->ccode, completion_code_vals));
       free(sn);
+      sn = NULL;
       return(-1);
    }
 
@@ -396,6 +401,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
       printf(" Unknown FRU header version 0x%02x",
          header.version);
       free(sn);
+      sn = NULL;
       return(-1);
    }   
    
@@ -409,6 +415,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    {
       printf("Out of memory!");
       free(sn);
+      sn = NULL;
       return(-1);
    }
 
@@ -416,7 +423,9 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(read_fru_area(intf ,&fru ,0 ,(header.offset.board * 8) ,board_sec_len , fru_data) < 0)
    {
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
    
@@ -438,7 +447,9 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    {
       printf("The length of the serial number in the FRU Board Area is wrong.\n");
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
    
@@ -460,7 +471,9 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(write_fru_area(intf, &fru, 0, (header.offset.board * 8), (header.offset.board * 8), board_sec_len, fru_data) < 0)
    {
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
    
@@ -470,7 +483,9 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(read_fru_area(intf ,&fru ,0 ,(header.offset.product * 8) ,prod_sec_len , fru_data) < 0)
    {
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
    
@@ -499,7 +514,9 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(strlen(fru_area) != sn_size)
    {
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       printf("The length of the serial number in the FRU Product Area is wrong.\n");
       return(-1);
       
@@ -523,12 +540,16 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
    if(write_fru_area(intf, &fru, 0, (header.offset.product * 8), (header.offset.product * 8), prod_sec_len, fru_data) < 0)
    {
       free(sn);
+      sn = NULL;
       free(fru_data);
+      fru_data = NULL;
       return -1;
    }   
    
    free(sn);
+   sn = NULL;
    free(fru_data);
+   fru_data = NULL;
 
    return(1);
 
@@ -678,6 +699,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
    if(read_fru_area(intf ,&fru ,0 ,(header.offset.board * 8) ,board_sec_len , fru_data) < 0)
    {
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
    
@@ -698,10 +720,12 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
    if(write_fru_area(intf, &fru, 0, (header.offset.board * 8), (header.offset.board * 8), board_sec_len, fru_data) < 0)
    {
       free(fru_data);
+      fru_data = NULL;
       return(-1);
    }
 
    free(fru_data);
+   fru_data = NULL;
    return(1);
 }
 

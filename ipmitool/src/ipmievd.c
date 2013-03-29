@@ -251,6 +251,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			lprintf(LOG_NOTICE, "%s%s sensor - %s",
 				eintf->prefix, type, desc);
 			free(desc);
+			desc = NULL;
 		} else {
 			lprintf(LOG_NOTICE, "%s%s sensor %02x",
 				eintf->prefix, type,
@@ -334,8 +335,10 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		break;
 	}
 
-	if (desc)
+	if (desc) {
 		free(desc);
+		desc = NULL;
+	}
 }
 /*************************************************************************/
 

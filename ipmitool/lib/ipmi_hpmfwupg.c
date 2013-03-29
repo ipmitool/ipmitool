@@ -1469,6 +1469,7 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
       else
       {
          free(fwupgCtx.pImageData);
+         fwupgCtx.pImageData = NULL;
       }
    }
 
@@ -1489,6 +1490,7 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
       else
       {
          free(fwupgCtx.pImageData);
+         fwupgCtx.pImageData = NULL;
       }
    }
 
@@ -1525,6 +1527,7 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
       if ( rc != HPMFWUPG_SUCCESS )
       {
          free(fwupgCtx.pImageData);
+         fwupgCtx.pImageData = NULL;
       }
    }
 
@@ -1538,6 +1541,7 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
       if ( rc != HPMFWUPG_SUCCESS )
       {
          free(fwupgCtx.pImageData);
+         fwupgCtx.pImageData = NULL;
       }
    }
 
@@ -1553,6 +1557,7 @@ int HpmfwupgUpgrade(struct ipmi_intf *intf, char* imageFilename,
           lprintf(LOG_NOTICE,"\nFirmware upgrade procedure successful\n");
       }
       free(fwupgCtx.pImageData);
+      fwupgCtx.pImageData = NULL;
    }
    else
    {

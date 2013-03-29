@@ -520,7 +520,8 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
                            printf("record has been removed!\n");
                      }
                   }
-                  free (filename[type_offset]);
+                  free(filename[type_offset]);
+                  filename[type_offset] = NULL;
                }
             }
          }
@@ -639,7 +640,8 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
                }
                for (i = 0; i < (argc-1); i++){
                   if (filename[i] != NULL){
-                     free (filename[i]);
+                     free(filename[i]);
+                     filename[i] = NULL;
                   }
                }
             } /* End of ERROR_STATUS */
@@ -975,7 +977,8 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
                /*Display the current*/
                ipmi_ek_display_current_descriptor( car,
                                     cur_desc, filename[num_file] );
-               free (cur_desc);
+               free(cur_desc);
+               cur_desc = NULL;
             }
             /*Ref: AMC.0 specification, Table 3-10: Module Current Requirement*/
             else if ( list_record[num_file]->data[PICMG_ID_OFFSET]
@@ -1315,7 +1318,9 @@ static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
          }
       }
       free(amc_record1) ;
+      amc_record1 = NULL;
       free(amc_record2) ;
+      amc_record2 = NULL;
    }
    else{
       printf("No amc record is found!\n");
@@ -1528,7 +1533,8 @@ ipmi_ek_check_physical_connectivity(
          return_status = ERROR_STATUS;
       }
       if (port_desc != NULL){
-         free (port_desc);
+         free(port_desc);
+         port_desc = NULL;
       }
    }
    return return_status;
@@ -1720,8 +1726,10 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
       }
    }
 
-   free (record1.matching_result);
-   free (record2.matching_result);
+   free(record1.matching_result);
+   record1.matching_result = NULL;
+   free(record2.matching_result);
+   record2.matching_result = NULL;
 
    return result;
 }
@@ -2643,7 +2651,8 @@ ipmi_ek_display_board_info_area( FILE * input_file, char * board_type,
                            printf("-%02x", additional_data[i]);
                         }
                         printf("\n");
-                        free (additional_data);
+                        free(additional_data);
+                        additional_data = NULL;
                         (*board_length) -= size_board;
                      }
                   }
@@ -2692,7 +2701,8 @@ ipmi_ek_display_board_info_area( FILE * input_file, char * board_type,
                }
             }
             printf("\n");
-            free (data);
+            free(data);
+            data = NULL;
             (*board_length) -= size_board;
             file_offset = ftell (input_file);
          }
@@ -4016,7 +4026,8 @@ ipmi_ek_remove_record_from_list( struct ipmi_ek_multi_header * record,
       (*list_last) = record->prev;
    else
       record->next->prev = record->prev;
-   free (record);
+   free(record);
+   record = NULL;
 }
 
 

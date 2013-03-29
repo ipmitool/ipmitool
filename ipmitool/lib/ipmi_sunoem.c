@@ -180,6 +180,7 @@ __sdr_list_empty(struct sdr_record_list * head)
 	for (e = head; e != NULL; e = f) {
 		f = e->next;
 		free(e);
+		e = NULL;
 	}
 	head = NULL;
 }

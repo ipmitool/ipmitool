@@ -173,9 +173,12 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 			else
 				ipmi_req_entries_tail = NULL;
 		}
-		if (e->msg_data)
+		if (e->msg_data) {
 			free(e->msg_data);
+			e->msg_data = NULL;
+		}
 		free(e);
+		e = NULL;
 	}
 }
 
@@ -194,6 +197,7 @@ ipmi_req_clear_entries(void)
 			e = p;
 		} else {
 			free(e);
+			e = NULL;
 			break;
 		}
 	}
@@ -393,6 +397,7 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 	rv = ipmi_lan_send_packet(intf, data, len);
 
 	free(data);
+	data = NULL;
 
 	if (rv < 0) {
 		lprintf(LOG_ERR, "Unable to send IPMI presence ping packet");
@@ -706,8 +711,10 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 		// No need to add once again and we will re-use the existing node.
 		// Only thing we have to do is clear the msg_data as we create
 		// a new one below in the code for it.
-		if (entry->msg_data)
+		if (entry->msg_data) {
 			free(entry->msg_data);
+			entry->msg_data = NULL;
+		}
 	}
 	else
 	{
@@ -1067,8 +1074,10 @@ ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 	msg = ipmi_lan_build_rsp(intf, rsp, &len);
 	if (len <= 0 || msg == NULL) {
 		lprintf(LOG_ERR, "Invalid response packet");
-		if (msg != NULL)
+		if (msg != NULL) {
 			free(msg);
+			msg = NULL;
+		}
 		return -1;
 	}
 
@@ -1077,13 +1086,17 @@ ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		    intf->session->addrlen);
 	if (rv < 0) {
 		lprintf(LOG_ERR, "Packet send failed");
-		if (msg != NULL)
+		if (msg != NULL) {
 			free(msg);
+			msg = NULL;
+		}
 		return -1;
 	}
 
-	if (msg != NULL)
+	if (msg != NULL) {
 		free(msg);
+		msg = NULL;
+	}
 	return 0;
 }
 
@@ -1233,8 +1246,10 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 	msg = ipmi_lan_build_sol_msg(intf, payload, &len);
 	if (len <= 0 || msg == NULL) {
 		lprintf(LOG_ERR, "Invalid SOL payload packet");
-		if (msg != NULL)
+		if (msg != NULL) {
 			free(msg);
+			msg = NULL;
+		}
 		return NULL;
 	}
 
@@ -1279,8 +1294,10 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 		}
 	}
 
-	if (msg != NULL)
+	if (msg != NULL) {
 		free(msg);
+		msg = NULL;
+	}
 	return rsp;
 }
 

@@ -2007,6 +2007,7 @@ static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
     }
 
     free(rec);
+    rec = NULL;
     ipmi_sdr_end(intf, itr);
 
     return rc;

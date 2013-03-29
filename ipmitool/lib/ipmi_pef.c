@@ -679,6 +679,7 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 	if (!tbl_size) {
 		if (!ptbl) {
 			free(ptbl);
+			ptbl = NULL;
 		}
 		return;
 	}
@@ -734,6 +735,7 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 		}
 	}
 	free(ptbl);
+	ptbl = NULL;
 }
 
 static void
@@ -811,6 +813,7 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
 	if (!ptbl) {
 		free(ptbl);
+		ptbl = NULL;
 	}
 
 	memset(&req, 0, sizeof(req));

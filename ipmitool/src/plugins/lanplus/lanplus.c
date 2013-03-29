@@ -349,9 +349,12 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 				ipmi_req_entries_tail = NULL;
 		}
 
-		if (e->msg_data)
+		if (e->msg_data) {
 			free(e->msg_data);
+			e->msg_data = NULL;
+		}
 		free(e);
+		e = NULL;
 	}
 }
 
@@ -564,6 +567,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 	rv = ipmi_lan_send_packet(intf, data, len);
 
 	free(data);
+	data = NULL;
 
 	if (rv < 0) {
 		lprintf(LOG_ERR, "Unable to send IPMI presence ping packet");
@@ -1707,6 +1711,7 @@ ipmi_lanplus_build_v2x_msg(
 		lprintf(LOG_ERR, "unsupported payload type 0x%x",
 			payload->payload_type);
 		free(msg);
+		msg = NULL;
 		assert(0);
 		break;
 	}
@@ -2313,6 +2318,7 @@ ipmi_lanplus_send_payload(
 	case IPMI_PAYLOAD_TYPE_RAKP_1:
 	case IPMI_PAYLOAD_TYPE_RAKP_3:
 		free(msg_data);
+		msg_data = NULL;
 		break;
 	}
 
@@ -2794,6 +2800,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 		lprintf(LOG_WARNING, "Unsupported cipher suite ID : %d\n",
 				session->cipher_suite_id);
 		free(msg);
+		msg = NULL;
 		return -1;
 	}
 
@@ -2842,6 +2849,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
 	free(msg);
+	msg = NULL;
 
 	if (verbose)
 		lanplus_dump_open_session_response(rsp);
@@ -2972,6 +2980,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "ERROR generating random number "
 			"in ipmi_lanplus_rakp1");
 		free(msg);
+		msg = NULL;
 		return 1;
 	}
 	memcpy(msg + 8, session->v2_data.console_rand, 16);
@@ -3001,6 +3010,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 			"(Exceeds %d characters)",
 			IPMI_MAX_USER_NAME_LENGTH);
 		free(msg);
+		msg = NULL;
 		return 1;
 	}
 	memcpy(msg + 28, session->username, msg[27]);
@@ -3013,6 +3023,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
 	free(msg);
+	msg = NULL;
 
 	if (rsp == NULL)
 	{
@@ -3136,6 +3147,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating RAKP 3 authcode");
 			free(msg);
+			msg = NULL;
 			return 1;
 		}
 		else
@@ -3150,6 +3162,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating session integrity key");
 			free(msg);
+			msg = NULL;
 			return 1;
 		}
 		else if (lanplus_generate_k1(session))
@@ -3157,6 +3170,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
 			free(msg);
+			msg = NULL;
 			return 1;
 		}
 		else if (lanplus_generate_k2(session))
@@ -3164,6 +3178,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
 			free(msg);
+			msg = NULL;
 			return 1;
 		}
 	}
@@ -3172,6 +3187,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
 	free(msg);
+	msg = NULL;
 
 	if (session->v2_data.rakp2_return_code != IPMI_RAKP_STATUS_NO_ERRORS)
 	{
@@ -3242,8 +3258,10 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 
 	ipmi_req_clear_entries();
 
-	if (intf->session)
+	if (intf->session) {
 		free(intf->session);
+		intf->session = NULL;
+	}
 
 	intf->session = NULL;
 	intf->opened = 0;

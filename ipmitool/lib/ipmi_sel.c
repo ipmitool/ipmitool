@@ -155,10 +155,12 @@ int ipmi_sel_oem_init(const char * filename)
 				for (k=3; k<17; k++) {
 					if (sel_oem_msg[j].value[SEL_BYTE(k)] == -3) {
 						free(sel_oem_msg[j].string[SEL_BYTE(k)]);
+						sel_oem_msg[j].string[SEL_BYTE(k)] = NULL;
 					}
 				}
 			}
-			free (sel_oem_msg);
+			free(sel_oem_msg);
+			sel_oem_msg = NULL;
 			return -1;
 		}
 
@@ -609,16 +611,20 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 				if (NULL == rsp) 
 				{
 					lprintf(LOG_ERR, " Error getting system info");
-					if (desc != NULL)
+					if (desc != NULL) {
 						free(desc);
+						desc = NULL;
+					}
 					return NULL;
 				} 
 				else if (rsp->ccode > 0)
 				{
 					lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
-					if (desc != NULL)
+					if (desc != NULL) {
 						free(desc);
+						desc = NULL;
+					}
 					return NULL;
 				}
 				version = rsp->data[4];
@@ -1170,6 +1176,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			if (sfx) {
 				sprintf(*desc, "%s (%s)", evt->desc, sfx);
 				free(sfx);
+				sfx = NULL;
 			} else {
 				sprintf(*desc, "%s", evt->desc);
 			}
@@ -1215,6 +1222,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		sprintf(*desc, "(%s)",sfx);		
      	}
 		free(sfx);
+		sfx = NULL;
 	}
 }
 
@@ -1540,8 +1548,10 @@ ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt
 		evt->sel_type.standard_type.sensor_num,
 		(description != NULL) ? description : "Unknown");
 
-	if (description != NULL)
+	if (description != NULL) {
 		free(description);
+		description = NULL;
+	}
 }
 
 void
@@ -1707,6 +1717,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	if (description) {
 		printf("%s", description);
 		free(description);
+		description = NULL;
 	}
 
 	if (evt->sel_type.standard_type.event_type == 0x6f) {
@@ -1865,6 +1876,7 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	printf(" Description           : %s\n",
                description ? description : "");
         free(description);
+				description = NULL;
 
 	printf("\n");
 }
@@ -2019,6 +2031,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 	printf(" Description           : %s\n",
                description ? description : "");
         free(description);
+				description = NULL;
 
 	printf("\n");
 }
@@ -2317,6 +2330,7 @@ ipmi_sel_interpret(struct ipmi_intf * intf, unsigned long iana, const char * rea
 					}
 				}while (status == 0); /* until file is completely read */
 				free(buffer);
+				buffer = NULL;
 			}	/* if memory allocation succeeded */
 			fclose(fp);
 		} 	/* if file open succeeded */

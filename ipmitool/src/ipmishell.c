@@ -121,17 +121,20 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 	while ((pbuf = (char *)readline(RL_PROMPT)) != NULL) {
 		if (strlen(pbuf) == 0) {
 			free(pbuf);
+			pbuf = NULL;
 			continue;
 		}
 		if (strncmp(pbuf, "quit", 4) == 0 ||
 		    strncmp(pbuf, "exit", 4) == 0) {
 			free(pbuf);
+			pbuf = NULL;
 			return 0;
 		}
 		if (strncmp(pbuf, "help", 4) == 0 ||
 		    strncmp(pbuf, "?", 1) == 0) {
 			ipmi_cmd_print(intf->cmdlist);
 			free(pbuf);
+			pbuf = NULL;
 			continue;
 		}
 
@@ -201,6 +204,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 					  &(__argv[1]));
 
 		free(pbuf);
+		pbuf = NULL;
 	}
 	printf("\n");
 	return rc;
