@@ -1292,11 +1292,16 @@ output(struct ipmi_rs * rsp)
  * ipmi_sol_deactivate
  */
 static int
-ipmi_sol_deactivate(struct ipmi_intf * intf)
+ipmi_sol_deactivate(struct ipmi_intf * intf, int instance)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
 	uint8_t          data[6];
+
+	if ((instance <= 0) || (instance > 15)) {
+		lprintf(LOG_ERR, "Error: Instance must range from 1 to 15");
+		return -1;
+	}
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
@@ -1305,8 +1310,8 @@ ipmi_sol_deactivate(struct ipmi_intf * intf)
 	req.msg.data     = data;
 
 	bzero(data, sizeof(data));
-	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type              */
-	data[1] = 1;                      /* payload instance.  Guess! */
+	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type      */
+	data[1] = instance;               /* payload instance. */
 
 	/* Lots of important data */
 	data[2] = 0;
@@ -1533,7 +1538,7 @@ ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
  * ipmi_sol_red_pill
  */
 static int
-ipmi_sol_red_pill(struct ipmi_intf * intf)
+ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 {
 	char   * buffer;
 	int    numRead;
@@ -1679,7 +1684,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 	{
 		lprintf(LOG_ERR, "Error: No response to keepalive - Terminating session");
 		/* attempt to clean up anyway */
-		ipmi_sol_deactivate(intf);
+		ipmi_sol_deactivate(intf, instance);
 		exit(1);
 	}
 
@@ -1689,7 +1694,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
 		exit(1);
 	}
 	else
-		ipmi_sol_deactivate(intf);
+		ipmi_sol_deactivate(intf, instance);
 
 	return 0;
 }
@@ -1701,7 +1706,8 @@ ipmi_sol_red_pill(struct ipmi_intf * intf)
  * ipmi_sol_activate
  */
 static int
-ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
+ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
+		int instance)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
@@ -1721,6 +1727,11 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 		return -1;
 	}
 
+	if ((instance <= 0) || (instance > 15)) {
+		lprintf(LOG_ERR, "Error: Instance must range from 1 to 15");
+		return -1;
+	}
+
 
 	/*
 	 * Setup a callback so that the lanplus processing knows what
@@ -1737,7 +1748,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 	req.msg.data     = data;
 
 	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type     */
-	data[1] = 1;                      /* payload instance */
+	data[1] = instance;               /* payload instance */
 
 	/* Lots of important data.  Most is default */
 	data[2]  = bSolEncryption?     0x80 : 0;
@@ -1843,7 +1854,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 
 	if(looptest == 1)
 	{
-		ipmi_sol_deactivate(intf);
+		ipmi_sol_deactivate(intf, instance);
 		usleep(interval*1000);
 		return 0;
 	}
@@ -1854,7 +1865,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval)
 	 * 1) STDIN for user input
 	 * 2) The FD for incoming SOL packets
 	 */
-	if (ipmi_sol_red_pill(intf))
+	if (ipmi_sol_red_pill(intf, instance))
 	{
 		lprintf(LOG_ERR, "Error in SOL session");
 		return -1;
@@ -1874,9 +1885,9 @@ print_sol_usage(void)
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
 	lprintf(LOG_NOTICE, "              payload <enable|disable|status> [channel] [userid]");
-	lprintf(LOG_NOTICE, "              activate [<usesolkeepalive|nokeepalive>]");
-	lprintf(LOG_NOTICE, "              deactivate");
-	lprintf(LOG_NOTICE, "              looptest [<loop times>] [<loop interval(in ms)>]");
+	lprintf(LOG_NOTICE, "              activate [<usesolkeepalive|nokeepalive>] [instance=<number>]");
+	lprintf(LOG_NOTICE, "              deactivate [instance=<number>]");
+	lprintf(LOG_NOTICE, "              looptest [<loop times> [<loop interval(in ms)> [<instance>]]]");
 }
 
 
@@ -2029,32 +2040,50 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * Activate
 	 */
  	else if (!strncmp(argv[0], "activate", 8)) {
+		int i;
+		uint8_t instance = 1;
 
-		if (argc > 2) {
-			print_sol_usage();
-			return -1;
-		}
-
-		if (argc == 2) {
-			if (!strncmp(argv[1], "usesolkeepalive", 15))
+		for (i = 1; i < argc; i++) {
+			if (!strncmp(argv[i], "usesolkeepalive", 15)) {
 				_use_sol_for_keepalive = 1;
-			else if (!strncmp(argv[1], "nokeepalive", 11))
+			} else if (!strncmp(argv[i], "nokeepalive", 11)) {
 				_disable_keepalive = 1;
-			else {
+			} else if (!strncmp(argv[i], "instance=", 9)) {
+				if (str2uchar(argv[i] + 9, &instance) != 0) {
+					lprintf(LOG_ERR, "Given instance '%s' is invalid.", argv[i] + 9);
+					print_sol_usage();
+					return -1;
+				}
+			} else {
 				print_sol_usage();
 				return -1;
 			}
 		}
-		retval = ipmi_sol_activate(intf, 0, 0);
+		retval = ipmi_sol_activate(intf, 0, 0, instance);
 	}
 
 
 	/*
 	 * Dectivate
 	 */
-	else if (!strncmp(argv[0], "deactivate", 10))
-		retval = ipmi_sol_deactivate(intf);
+	else if (!strncmp(argv[0], "deactivate", 10)) {
+		int i;
+		uint8_t instance = 1;
 
+		for (i = 1; i < argc; i++) {
+			if (!strncmp(argv[i], "instance=", 9)) {
+				if (str2uchar(argv[i] + 9, &instance) != 0) {
+					lprintf(LOG_ERR, "Given instance '%s' is invalid.", argv[i] + 9);
+					print_sol_usage();
+					return -1;
+				}
+			} else {
+				print_sol_usage();
+				return -1;
+			}
+		}
+		retval = ipmi_sol_deactivate(intf, instance);
+	}
 
 	/*
 	 * SOL loop test: Activate and then Dectivate
@@ -2063,8 +2092,9 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	{
 		int cnt = 200;
 		int interval = 100; /* Unit is: ms */
+		uint8_t instance;
 
-		if (argc > 3)
+		if (argc > 4)
 		{
 			print_sol_usage();
 			return -1;
@@ -2074,16 +2104,23 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			cnt = strtol(argv[1], NULL, 10);
 			if(cnt <= 0) cnt = 200;
 		}
-		if (argc == 3)
+		if (argc >= 3)
 		{
 			interval = strtol(argv[2], NULL, 10);
 			if(interval < 0) interval = 0;
+		}
+		if (argc >= 4) {
+			if (str2uchar(argv[3], &instance) != 0) {
+				lprintf(LOG_ERR, "Given instance '%s' is invalid.", argv[3]);
+				print_sol_usage();
+				return -1;
+			}
 		}
 
 		while (cnt > 0)
 		{
 			printf("remain loop test counter: %d\n", cnt);
-			retval = ipmi_sol_activate(intf, 1, interval);
+			retval = ipmi_sol_activate(intf, 1, interval, instance);
 			if (retval)
 			{
 				printf("SOL looptest failed: %d\n", retval);

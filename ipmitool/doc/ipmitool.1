@@ -2586,7 +2586,7 @@ serial indiates that the BMC should use the setting used
 by the IPMI over serial channel.
 .RE
 .TP 
-\fIactivate\fP [\fIusesolkeepalive\fP | \fInokeepalive\fP]
+\fIactivate\fP [\fIusesolkeepalive\fP | \fInokeepalive\fP] [\fIinstance=<number>\fP]
 .br 
 
 Causes ipmitool to enter Serial Over LAN
@@ -2596,6 +2596,9 @@ the terminal is set to raw mode, and user input is
 sent to the serial console on the remote server.
 On exit,the the SOL payload mode is deactivated and
 the terminal is reset to its original settings.
+
+If the instance is given, it will activate using the given instance
+number.  The default is 1.
 .RS
 
 Special escape sequences are provided to control the SOL session:
@@ -2617,7 +2620,7 @@ Special escape sequences are provided to control the SOL session:
 Note that escapes are only recognized immediately after newline.
 .RE
 .TP 
-\fIdeactivate\fP
+\fIdeactivate\fP [\fIinstance=<number>\fP]
 .br 
 
 Deactivates Serial Over LAN mode on the BMC.
@@ -2625,6 +2628,9 @@ Exiting Serial Over LAN mode should automatically cause
 this command to be sent to the BMC, but in the case of an
 unintentional exit from SOL mode, this command may be
 necessary to reset the state of the BMC.
+
+If the instance is given, it will deactivate the given instance
+number.  The default is 1.
 .RE
 .TP 
 \fIspd\fP <\fBi2cbus\fR> <\fBi2caddr\fR> [<\fBchannel\fR>] [<\fmaxread\fR>]
