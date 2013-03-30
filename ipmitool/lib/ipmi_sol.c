@@ -1626,7 +1626,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 			 */
 			if (FD_ISSET(0, &read_fds))
 	 		{
-				bzero(buffer, sizeof(buffer));
+				memset(buffer, 0, buffer_size);
 				numRead = read(fileno(stdin),
 							   buffer,
 							   buffer_size);
