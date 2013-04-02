@@ -1408,7 +1408,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printf("Alloc Unit Size  : %d\n", buf2short(rsp->data + 2));
 		printf("# Free Units     : %d\n", buf2short(rsp->data + 4));
 		printf("Largest Free Blk : %d\n", buf2short(rsp->data + 6));
-		printf("Max Record Size  : %d\n", rsp->data[7]);
+		printf("Max Record Size  : %d\n", rsp->data[8]);
 	}
 	return 0;
 }
