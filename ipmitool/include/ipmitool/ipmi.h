@@ -242,6 +242,7 @@ struct ipmi_rs {
 #define IPMI_NETFN_TRANSPORT	0xc
 #define IPMI_NETFN_PICMG		0x2C
 #define IPMI_NETFN_DCGRP		0x2C
+#define IPMI_NETFN_OEM		0x2E
 #define IPMI_NETFN_ISOL			0x34
 #define IPMI_NETFN_TSOL			0x30
 
