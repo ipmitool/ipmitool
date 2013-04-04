@@ -1494,7 +1494,6 @@ InitEmbeddedNICMacAddressValues()
 }
 
 uint8_t UseVirtualMacAddress = 0;
-#define VIRTUAL_MAC_OFFSET (2)
 static int
 ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {

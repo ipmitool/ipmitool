@@ -153,6 +153,7 @@ typedef struct _lcd_mode
 } __attribute__ ((packed)) LCD_MODE;
 
 #define PARAM_REV_OFFSET                    (uint8_t)(0x1)
+#define VIRTUAL_MAC_OFFSET                  (uint8_t)(0x1)
 
 #define LOM_MACTYPE_ETHERNET 0
 #define LOM_MACTYPE_ISCSI 1
