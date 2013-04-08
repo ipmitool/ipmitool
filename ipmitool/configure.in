@@ -513,7 +513,7 @@ if test "x$xenable_file_security" != "xno"; then
 fi
 
 
-AC_TRY_RUN([
+AC_TRY_COMPILE([],[
 	#include <stdio.h>
 	
 	struct packstruct {
@@ -532,7 +532,9 @@ AC_TRY_RUN([
 	else
 	return(0);
 	}
-	],[],[AC_DEFINE(HAVE_PRAGMA_PACK,[1],
+	],
+	[],
+	[AC_DEFINE(HAVE_PRAGMA_PACK,[1],
 		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
 )
 
