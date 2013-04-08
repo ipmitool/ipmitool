@@ -377,7 +377,7 @@ ipmi_user_set_userpriv(
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	uint8_t msg_data[4];
+	uint8_t msg_data[4] = {0, 0, 0, 0};
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;         /* 0x06 */
@@ -387,7 +387,6 @@ ipmi_user_set_userpriv(
 
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = (channel   & 0x0f);
-	msg_data[0] |= 0x90;		/* enable ipmi messaging */
 	msg_data[1] = (user_id   & 0x3f);
 	msg_data[2] = (privLevel & 0x0f);
 	msg_data[3] = 0;
