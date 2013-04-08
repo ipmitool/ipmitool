@@ -3681,13 +3681,14 @@ static void HpmfwupgPrintUsage(void)
    lprintf(LOG_NOTICE,"help                    - This help menu");
    lprintf(LOG_NOTICE,"check                   - Check the target information");
    lprintf(LOG_NOTICE,"check <file>            - If the user is unsure of what update is going to be ");
-   lprintf(LOG_NOTICE,"                          This will display the existing target version and image ");
-   lprintf(LOG_NOTICE,"                          version on the screen");
+   lprintf(LOG_NOTICE,"                          This will display the existing target version and");
+   lprintf(LOG_NOTICE,"                          image version on the screen");
    lprintf(LOG_NOTICE,"upgrade <file>          - Upgrade the firmware using a valid HPM.1 image <file>");
    lprintf(LOG_NOTICE,"                          This checks the version from the file and image and ");
    lprintf(LOG_NOTICE,"                          if it differs then only updates else skips");
-   lprintf(LOG_NOTICE,"upgrade <file> all      - Updates all the components present in the file on the target board");
-   lprintf(LOG_NOTICE,"                          without skipping (use this only after using \"check\" command");
+   lprintf(LOG_NOTICE,"upgrade <file> all      - Updates all the components present in the file"); 
+   lprintf(LOG_NOTICE,"                          on the target board without skipping."); 
+   lprintf(LOG_NOTICE,"                          Use this only after using \"check\" command");
    lprintf(LOG_NOTICE,"upgrade <file> component x - Upgrade only component <x> from the given <file>");
    lprintf(LOG_NOTICE,"                          component 0 - BOOT");
    lprintf(LOG_NOTICE,"                          component 1 - RTK");
