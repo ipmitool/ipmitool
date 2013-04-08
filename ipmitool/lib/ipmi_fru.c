@@ -4395,7 +4395,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "read", 5)) {
-		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_read_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4419,7 +4419,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_fru_read_to_bin(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "write", 5)) {
-		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_write_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4443,7 +4443,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_fru_write_from_bin(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "upgEkey", 7)) {
-		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_upgekey_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4462,7 +4462,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_fru_upg_ekeying(intf, argv[2], fru_id);
 	}
 	else if (!strncmp(argv[0], "internaluse", 11)) {
-		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_internaluse_help();
 			return 0;
 		}
@@ -4516,7 +4516,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "edit", 4)) {
-		if (argc >= 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_edit_help();
 			return 0;
 		} else if (argc < 2) {
@@ -4557,7 +4557,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strncmp(argv[0], "get", 4)) {
-		if (argc >= 1 && (strncmp(argv[1], "help", 4) == 0)) {
+		if (argc > 1 && (strncmp(argv[1], "help", 4) == 0)) {
 			ipmi_fru_get_help();
 			return 0;
 		} else if (argc < 2) {
