@@ -364,7 +364,7 @@ ipmi_main(int argc, char ** argv,
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
-	uint8_t my_addr = 0x20;
+	uint8_t my_addr = 0;
 	uint16_t my_long_packet_size=0;
 	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
@@ -892,6 +892,9 @@ ipmi_main(int argc, char ** argv,
 	if (my_addr) {
 		ipmi_main_intf->my_addr = my_addr;
 	} else {
+		/* Use the default for the payload source address */
+		my_addr = 0x20;
+
 		/* Check if PICMG extension is available to use the function 
 		 * GetDeviceLocator to retreive i2c address PICMG hack to set 
 		 * right IPMB address, If extension is not supported, should 
