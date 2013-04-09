@@ -1094,8 +1094,6 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
    }
    else{
       int num_file=0;
-      int index_data = 0;
-      int first_data = 1;
       tboolean amc_file = FALSE; /*used to indicate the present of AMC file*/
       tboolean oc_file = FALSE; /*used to indicate the present of Carrier file*/
 
@@ -1141,7 +1139,6 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
             struct ipmi_ek_multi_header * pcarrier_p2p;
             int list = 0;
             int match_pair = 0;
-            tboolean match_result = FALSE;
 
             /*Create an empty list*/
             for ( list=0; list<argc; list++ ){
