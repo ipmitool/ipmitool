@@ -809,16 +809,16 @@ static const char *sensor_type_desc[] __attribute__ ((unused)) = {
 	    "Physical Security", "Platform Security", "Processor",
 	    "Power Supply", "Power Unit", "Cooling Device", "Other",
 	    "Memory", "Drive Slot / Bay", "POST Memory Resize",
-	    "System Firmwares", "Event Logging Disabled", "Watchdog",
+	    "System Firmwares", "Event Logging Disabled", "Watchdog1",
 	    "System Event", "Critical Interrupt", "Button",
 	    "Module / Board", "Microcontroller", "Add-in Card",
 	    "Chassis", "Chip Set", "Other FRU", "Cable / Interconnect",
 	    "Terminator", "System Boot Initiated", "Boot Error",
 	    "OS Boot", "OS Critical Stop", "Slot / Connector",
-	    "System ACPI Power State", "Watchdog", "Platform Alert",
+	    "System ACPI Power State", "Watchdog2", "Platform Alert",
 	    "Entity Presence", "Monitor ASIC", "LAN",
-	    "Management Subsystem Health", "Battery","Session Audit",
-       "Version Change","FRU State" };
+	    "Management Subsys Health", "Battery", "Session Audit",
+	    "Version Change", "FRU State" };
 
 struct sensor_reading {
 	char		s_id[17];		/* name of the sensor */
