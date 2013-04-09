@@ -288,7 +288,7 @@ static tboolean ipmi_ek_display_link_descriptor( int file_type,
 static void ipmi_ek_display_oem_guid(
       struct ipmi_ek_amc_p2p_connectivity_record amc_record1 );
 
-static int ipmi_ek_diplay_carrier_connectivity(
+static int ipmi_ek_display_carrier_connectivity(
       struct ipmi_ek_multi_header * record );
 
 static int ipmi_ek_display_power( int argc, char * opt,
@@ -732,7 +732,7 @@ ipmi_ekanalyzer_print( int argc, char * opt, char ** filename, int * file_type )
                      printf("From Carrier file: %s\n", filename[index_name[i]]);
                      first_data = FALSE;
                   }
-                  return_value = ipmi_ek_diplay_carrier_connectivity(
+                  return_value = ipmi_ek_display_carrier_connectivity(
                                                 list_record[i] );
                }
                else if ( list_record[i]->data[PICMG_ID_OFFSET]
@@ -796,7 +796,7 @@ ipmi_ekanalyzer_print( int argc, char * opt, char ** filename, int * file_type )
 *
 ***************************************************************************/
 static int
-ipmi_ek_diplay_carrier_connectivity( struct ipmi_ek_multi_header * record )
+ipmi_ek_display_carrier_connectivity( struct ipmi_ek_multi_header * record )
 {
    int return_value = ERROR_STATUS;
    struct fru_picmgext_carrier_p2p_record rsc_desc;
@@ -936,7 +936,7 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
                            ==
                         FRU_AMC_CARRIER_P2P
                      ){
-                        return_value = ipmi_ek_diplay_carrier_connectivity(
+                        return_value = ipmi_ek_display_carrier_connectivity(
                                                 list_record[num_file] );
                }
                else if ( list_record[num_file]->data[PICMG_ID_OFFSET]
@@ -2887,7 +2887,7 @@ ipmi_ek_display_record( struct ipmi_ek_multi_header * record,
                   ipmi_ek_display_amc_activation_record (record);
                   break;
                case FRU_AMC_CARRIER_P2P: /*0x18*/
-                  ipmi_ek_diplay_carrier_connectivity (record);
+                  ipmi_ek_display_carrier_connectivity (record);
                   break;
                case FRU_AMC_P2P: /*0x19*/
                   ipmi_ek_display_amc_p2p_record (record);
