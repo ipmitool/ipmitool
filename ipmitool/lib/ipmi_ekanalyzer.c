@@ -3031,9 +3031,10 @@ ipmi_ek_display_address_table_record( struct ipmi_ek_multi_header * record )
 
    for ( i = 0; i < entries; i++ ){
       printf("\tHWAddr: 0x%02x  - SiteNum: 0x%02x - SiteType: 0x%02x \n",
-               record->data[offset++],
-               record->data[offset++],
-               record->data[offset++]);
+               record->data[offset+0],
+               record->data[offset+1],
+               record->data[offset+2]);
+      offset += 3;
    }
 }
 
@@ -3151,24 +3152,24 @@ static void
 ipmi_ek_display_shelf_ip_connection_record(
       struct ipmi_ek_multi_header * record )
 {
-   int offset = START_DATA_OFFSET;
-   if (offset > record->header.len){
+   int ioffset = START_DATA_OFFSET;
+   if (ioffset > record->header.len) {
       printf("   Shelf Manager IP Address: %d.%d.%d.%d\n",
-            record->data[offset++], record->data[offset++],
-            record->data[offset++], record->data[offset++]
-         );
+            record->data[ioffset+0], record->data[ioffset+1],
+            record->data[ioffset+2], record->data[ioffset+3]);
+      ioffset += 4;
    }
-   if (offset > record->header.len){
+   if (ioffset > record->header.len) {
       printf("   Default Gateway Address: %d.%d.%d.%d\n",
-            record->data[offset++], record->data[offset++],
-            record->data[offset++], record->data[offset++]
-         );
+            record->data[ioffset+0], record->data[ioffset+1],
+            record->data[ioffset+2], record->data[ioffset+3]);
+      ioffset += 4;
    }
-   if (offset > record->header.len){
-      printf("   Subnet Mask: %d.%d.%d.%d\n", record->data[offset++],
-            record->data[offset++], record->data[offset++],
-            record->data[offset++]
-         );
+   if (ioffset > record->header.len) {
+      printf("   Subnet Mask: %d.%d.%d.%d\n", 
+            record->data[ioffset+0], record->data[ioffset+1],
+            record->data[ioffset+2], record->data[ioffset+3]);
+      ioffset += 4;
    }
 }
 
@@ -3194,22 +3195,22 @@ static void
 ipmi_ek_display_shelf_fan_geography_record(
       struct ipmi_ek_multi_header * record )
 {
-   int offset = START_DATA_OFFSET;
+   int ioffset = START_DATA_OFFSET;
    unsigned char fan_count = 0;
 
-   fan_count = record->data[offset];
-   offset ++;
+   fan_count = record->data[ioffset];
+   ioffset++;
    printf("   Fan-to-FRU Entry Count: 0x%02x\n", fan_count);
 
-   while ( (fan_count > 0) && (offset <= record->header.len) ){
+   while ( (fan_count > 0) && (ioffset <= record->header.len) ) {
       printf("   Fan-to-FRU Mapping Entry: {%2x%2x%2x%2x}\n",
-                  record->data[offset], record->data[offset+1],
-                  record->data[offset+2], record->data[offset+3]
+                  record->data[ioffset], record->data[ioffset+1],
+                  record->data[ioffset+2], record->data[ioffset+3]
              );
-      printf("      Hardware Address:   0x%02x\n", record->data[offset++]);
-      printf("      FRU device ID:   0x%02x\n", record->data[offset++]);
-      printf("      Site Number:   0x%02x\n", record->data[offset++]);
-      printf("      Site Type:   0x%02x\n", record->data[offset++]);
+      printf("      Hardware Address:   0x%02x\n", record->data[ioffset++]);
+      printf("      FRU device ID:   0x%02x\n", record->data[ioffset++]);
+      printf("      Site Number:   0x%02x\n", record->data[ioffset++]);
+      printf("      Site Type:   0x%02x\n", record->data[ioffset++]);
       fan_count --;
    }
 
