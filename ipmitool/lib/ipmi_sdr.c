@@ -1702,8 +1702,9 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 
 	if (!IS_THRESHOLD_SENSOR(sensor)) {
 		/* Discrete */
-		printf(" Sensor Type (Discrete): %s\n",
-		       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+		printf(" Sensor Type (Discrete): %s (0x%02x)\n",
+				ipmi_sdr_get_sensor_type_desc(sensor->sensor.type),
+				sensor->sensor.type);
 		lprintf(LOG_DEBUG, " Event Type Code       : 0x%02x",
 			sensor->event_type);
 
@@ -1763,8 +1764,9 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 
 		return 0;	/* done */
 	}
-	printf(" Sensor Type (Threshold)  : %s\n",
-	       ipmi_sdr_get_sensor_type_desc(sensor->sensor.type));
+	printf(" Sensor Type (Threshold)  : %s (0x%02x)\n",
+		ipmi_sdr_get_sensor_type_desc(sensor->sensor.type),
+		sensor->sensor.type);
 
 	printf(" Sensor Reading        : ");
 	if (sr->s_reading_valid) {
@@ -2087,8 +2089,9 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 		printf("Entity ID              : %d.%d (%s)\n",
 		       sensor->entity.id, sensor->entity.instance,
 		       val2str(sensor->entity.id, entity_id_vals));
-		printf("Sensor Type            : %s\n",
-		       ipmi_sdr_get_sensor_type_desc(sensor->sensor_type));
+		printf("Sensor Type            : %s (0x%02x)\n",
+			ipmi_sdr_get_sensor_type_desc(sensor->sensor_type),
+			sensor->sensor_type);
 		lprintf(LOG_DEBUG, "Event Type Code        : 0x%02x",
 			sensor->event_type);
 		printf("\n");
@@ -4436,8 +4439,9 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 	    strncasecmp(type, "list", 4) == 0) {
 		printf("Sensor Types:\n");
 		for (x = 1; x < SENSOR_TYPE_MAX; x += 2) {
-			printf("\t%-25s   %-25s\n",
-			       sensor_type_desc[x], sensor_type_desc[x + 1]);
+			printf("\t%-25s (0x%02x)   %-25s (0x%02x)\n",
+				sensor_type_desc[x], x,
+				sensor_type_desc[x + 1], x + 1);
 		}
 		return 0;
 	}
@@ -4462,9 +4466,9 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 		if (sensor_type != x) {
 			printf("Sensor Types:\n");
 			for (x = 1; x < SENSOR_TYPE_MAX; x += 2) {
-				printf("\t%-25s   %-25s\n",
-				       sensor_type_desc[x],
-				       sensor_type_desc[x + 1]);
+				printf("\t%-25s (0x%02x)   %-25s (0x%02x)\n",
+					sensor_type_desc[x], x,
+					sensor_type_desc[x + 1], x + 1);
 			}
 			return 0;
 		}
