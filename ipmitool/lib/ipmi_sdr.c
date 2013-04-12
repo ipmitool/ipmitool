@@ -4464,6 +4464,8 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 			}
 		}
 		if (sensor_type != x) {
+			lprintf(LOG_ERR, "Sensor Type \"%s\" not found.",
+				type);
 			printf("Sensor Types:\n");
 			for (x = 1; x < SENSOR_TYPE_MAX; x += 2) {
 				printf("\t%-25s (0x%02x)   %-25s (0x%02x)\n",
