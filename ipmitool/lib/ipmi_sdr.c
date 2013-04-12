@@ -4721,7 +4721,7 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = -1;
 		} else if (strncmp(argv[1], "sensors", 7) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
-		} else if (strncmp(argv[1], "nosat", 6) == 0) {
+		} else if (strncmp(argv[1], "nosat", 5) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 0);
 		} else if (strncmp(argv[1], "file", 4) == 0) {
 			if (argc < 3) {
