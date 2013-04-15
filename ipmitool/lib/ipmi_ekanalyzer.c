@@ -2544,51 +2544,56 @@ ipmi_ek_display_fru_header_detail( char * filename )
 *
 ***************************************************************************/
 static void
-ipmi_ek_display_chassis_info_area( FILE * input_file, long offset )
+ipmi_ek_display_chassis_info_area(FILE * input_file, long offset)
 {
-   if ( input_file != NULL ){
-      printf("%s\n", EQUAL_LINE_LIMITER);
-      printf("Chassis Info Area\n");
-      printf("%s\n", EQUAL_LINE_LIMITER);
+	unsigned char data = 0;
+	unsigned char ch_type = 0;
+	unsigned int len;
+	size_t file_offset;
 
-      fseek (input_file, offset, SEEK_SET);
-      if ( !feof(input_file) ){
-         unsigned char data = 0;
-         unsigned int len = 0;
+	if (input_file == NULL) {
+		return;
+	}
 
-         fread (&data, 1, 1, input_file);
-         printf("Format Version Number: %d\n", (data & 0x0f) );
-         if ( !feof(input_file) ){
-            fread (&len, 1, 1, input_file);
-            /* len is in factor of 8 bytes */
-            len = len * 8;
-            printf("Area Length: %d\n", len);
-            len -= 2;
-         }
-         if ( !feof(input_file) ){
-            unsigned char ch_type = 0;
-            size_t file_offset = ftell (input_file);
-            /* Chassis Type*/
-            fread (&ch_type, 1, 1, input_file);
-            printf("Chassis Type: %d\n", ch_type);
-            len --;
-            /* Chassis Part Number*/
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                                 "Chassis Part Number", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Chassis Serial */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                               "Chassis Serial Number", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Custom product info area */
-            file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "Custom", &len);
-         }
-      }
-   }
-   else{
-      lprintf(LOG_ERR, "Invalid Chassis Info Area!");
-   }
+	printf("%s\n", EQUAL_LINE_LIMITER);
+	printf("Chassis Info Area\n");
+	printf("%s\n", EQUAL_LINE_LIMITER);
+
+	fseek(input_file, offset, SEEK_SET);
+	if (feof(input_file)) {
+		lprintf(LOG_ERR, "Invalid Chassis Info Area!");
+		return;
+	}
+
+	fread(&data, 1, 1, input_file);
+	printf("Format Version Number: %d\n", (data & 0x0f));
+	if (feof(input_file)) {
+		return;
+	}
+
+	fread(&len, 1, 1, input_file);
+	/* len is in factor of 8 bytes */
+	len = len * 8;
+	printf("Area Length: %d\n", len);
+	len -= 2;
+	if (feof(input_file)) {
+		return;
+	}
+	/* Chassis Type*/
+	fread(&ch_type, 1, 1, input_file);
+	printf("Chassis Type: %d\n", ch_type);
+	len--;
+	/* Chassis Part Number*/
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Chassis Part Number", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Chassis Serial */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Chassis Serial Number", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Custom product info area */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Custom", &len);
 }
 
 /**************************************************************************
@@ -2734,70 +2739,75 @@ ipmi_ek_display_board_info_area( FILE * input_file, char * board_type,
 *
 ***************************************************************************/
 static void
-ipmi_ek_display_product_info_area( FILE * input_file, long offset )
+ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 {
-   if ( input_file != NULL ){
-      printf("%s\n", EQUAL_LINE_LIMITER);
-      printf("Product Info Area\n");
-      printf("%s\n", EQUAL_LINE_LIMITER);
+	unsigned char data = 0;
+	unsigned int len;
+	size_t file_offset = ftell(input_file);
 
-      fseek (input_file, offset, SEEK_SET);
-      if ( !feof(input_file) ){
-         unsigned char data = 0;
-         unsigned int len = 0;
+	if (input_file == NULL) {
+		return;
+	}
 
-         fread (&data, 1, 1, input_file);
-         printf("Format Version Number: %d\n", (data & 0x0f) );
-         if ( !feof(input_file) ){
-            fread (&len, 1, 1, input_file);
-            /* length is in factor of 8 bytes */
-            len = len * 8;
-            printf("Area Length: %d\n", len);
-            len -= 2; /* -1 byte of format version and -1 byte itself */
-         }
-         if ( !feof(input_file) ){
-            size_t file_offset = ftell (input_file);
+	printf("%s\n", EQUAL_LINE_LIMITER);
+	printf("Product Info Area\n");
+	printf("%s\n", EQUAL_LINE_LIMITER);
 
-            fread (&data, 1, 1, input_file);
-            printf("Language Code: %d\n", data);
-            len --;
-            /* Product Mfg */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                                    "Product Manufacture Data", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Product Name */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                                 "Product Name", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Product Part */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                                 "Product Part/Model Number", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Product Version */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                                 "Product Version", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Product Serial */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                               "Product Serial Number", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Product Asset Tag */
-            file_offset = ipmi_ek_display_board_info_area ( input_file,
-                              "Asset Tag", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* FRU file ID */
-            file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "FRU File ID", &len);
-            fseek (input_file, file_offset, SEEK_SET);
-            /* Custom product info area */
-            file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "Custom", &len);
-         }
-      }
-   }
-   else{
-      lprintf(LOG_ERR, "Invalid Product Info Area!");
-   }
+	fseek(input_file, offset, SEEK_SET);
+	if (feof(input_file)) {
+		lprintf(LOG_ERR, "Invalid Product Info Area!");
+		return;
+	}
+
+	fread(&data, 1, 1, input_file);
+	printf("Format Version Number: %d\n", (data & 0x0f));
+	if (feof(input_file)) {
+		return;
+	}
+
+	fread(&len, 1, 1, input_file);
+	/* length is in factor of 8 bytes */
+	len = len * 8;
+	printf("Area Length: %d\n", len);
+	len -= 2; /* -1 byte of format version and -1 byte itself */
+	if (feof(input_file)) {
+		return;
+	}
+
+	fread(&data, 1, 1, input_file);
+	printf("Language Code: %d\n", data);
+	len--;
+	/* Product Mfg */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Product Manufacture Data", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Product Name */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Product Name", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Product Part */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Product Part/Model Number", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Product Version */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Product Version", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Product Serial */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Product Serial Number", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Product Asset Tag */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Asset Tag", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* FRU file ID */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"FRU File ID", &len);
+	fseek(input_file, file_offset, SEEK_SET);
+	/* Custom product info area */
+	file_offset = ipmi_ek_display_board_info_area(input_file,
+			"Custom", &len);
 }
 
 /**************************************************************************
@@ -3880,77 +3890,75 @@ ipmi_ek_display_clock_config_record( struct ipmi_ek_multi_header * record )
 *
 ***************************************************************************/
 static int
-ipmi_ekanalyzer_fru_file2structure( char * filename,
-      struct ipmi_ek_multi_header ** list_head,
-      struct ipmi_ek_multi_header ** list_record,
-      struct ipmi_ek_multi_header ** list_last )
+ipmi_ekanalyzer_fru_file2structure(char * filename,
+		struct ipmi_ek_multi_header ** list_head,
+		struct ipmi_ek_multi_header ** list_record,
+		struct ipmi_ek_multi_header ** list_last)
 {
-   int return_status = ERROR_STATUS;
-   FILE * input_file;
+	int return_status = ERROR_STATUS;
+	FILE * input_file;
+	unsigned char last_record = 0;
+	long multi_offset = 0;
+	int record_count = 0;
 
+	input_file = fopen(filename, "r");
+	if (input_file == NULL) {
+		lprintf(LOG_ERR, "File: '%s' is not found", filename);
+		return ERROR_STATUS;
+	}
 
-   input_file = fopen ( filename, "r");
-   if ( input_file == NULL ){
-      lprintf(LOG_ERR, "File: '%s' is not found", filename);
-      return_status = ERROR_STATUS;
-   }
-   else{
-      long multi_offset = 0;
-      fseek ( input_file, START_DATA_OFFSET, SEEK_SET );
-      fread ( &multi_offset, 1, 1, input_file );
-      if ( multi_offset <= 0 ){
-         lprintf(LOG_NOTICE, "There is no multi record in the file %s\n",
-                     filename);
-      }
-      else{
-         int record_count = 0;
+	fseek(input_file, START_DATA_OFFSET, SEEK_SET);
+	fread(&multi_offset, 1, 1, input_file);
+	if (multi_offset < 1) {
+		lprintf(LOG_NOTICE, "There is no multi record in the file %s\n",
+				filename);
+		fclose(input_file);
+		return OK_STATUS;
+	}
+	/* the offset value is in multiple of 8 bytes. */
+	multi_offset = multi_offset * 8;
+	if (verbose == LOG_DEBUG) {
+		printf("start multi offset = 0x%02lx\n", multi_offset);
+	}
+	fseek(input_file, multi_offset, SEEK_SET);
+	while (!feof(input_file)) {
+		*list_record = malloc(sizeof(struct ipmi_ek_multi_header));
+		fread(&(*list_record)->header, START_DATA_OFFSET, 1, input_file);
+		if ((*list_record)->header.len == 0) {
+			record_count++;
+			continue;
+		}
+		(*list_record)->data = malloc((*list_record)->header.len);
+		if ((*list_record)->data == NULL) {
+			lprintf(LOG_ERR, "Failed to allocation memory size %d\n",
+					(*list_record)->header.len);
+			record_count++;
+			continue;
+		}
 
-         if ( verbose == LOG_DEBUG ){
-            printf( "start multi offset = 0x%02lx\n", multi_offset );
-         }
-         /*the offset value is in multiple of 8 bytes.*/
-         multi_offset = multi_offset * 8;
-         fseek ( input_file, multi_offset, SEEK_SET );
-         while ( !feof( input_file ) ){
-            *list_record = malloc ( sizeof (struct ipmi_ek_multi_header) );
-            fread ( &(*list_record)->header, START_DATA_OFFSET, 1, input_file);
-            if ( (*list_record)->header.len > 0 ){
-               (*list_record)->data =
-                      malloc ((*list_record)->header.len);
-               if ( (*list_record)->data == NULL ){
-                  lprintf(LOG_ERR, "Lack of memory");
-               }
-               else{
-                  unsigned char last_record = 0;
-
-                  fread ( (*list_record)->data,
-                           ((*list_record)->header.len), 1, input_file);
-                  if ( verbose > 0 )
-                     printf("Record %d has length = %02x\n", record_count,
-                               (*list_record)->header.len);
-                  if ( verbose > 1 ){
-                     int i;
-                     printf("%02x\t", (*list_record)->header.type);
-                     for ( i = 0; i < ( (*list_record)->header.len ); i++ ){
-                        printf("%02x\t", (*list_record)->data[i]);
-                     }
-                     printf("\n");
-                  }
-                  ipmi_ek_add_record2list ( list_record, list_head, list_last );
-                  /*mask the 8th bits to see if it is the last record*/
-                  last_record = ((*list_record)->header.format) & 0x80;
-                  if ( last_record ){
-                     break;
-                  }
-               }
-            }
-            record_count++;
-         }
-      }
-      fclose( input_file );
-      return_status = OK_STATUS;
-   }
-   return return_status;
+		fread((*list_record)->data, ((*list_record)->header.len), 1, 
+				input_file);
+		if (verbose > 0) {
+			printf("Record %d has length = %02x\n", record_count,
+					(*list_record)->header.len);
+		}
+		if (verbose > 1) {
+			int i;
+			printf("%02x\t", (*list_record)->header.type);
+			for (i = 0; i < ((*list_record)->header.len); i++) {
+				printf("%02x\t", (*list_record)->data[i]);
+			}
+			printf("\n");
+		}
+		ipmi_ek_add_record2list(list_record, list_head, list_last);
+		/* mask the 8th bits to see if it is the last record */
+		last_record = ((*list_record)->header.format) & 0x80;
+		if (last_record) {
+			break;
+		}
+		record_count++;
+	}
+	return return_status;
 }
 
 
