@@ -67,6 +67,8 @@ static struct sdr_record_list *sdr_list_head = NULL;
 static struct sdr_record_list *sdr_list_tail = NULL;
 static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
+void printf_sdr_usage();
+
 /* ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
  * @pct:	units are a percentage
@@ -4612,49 +4614,7 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc == 0)
 		return ipmi_sdr_print_sdr(intf, 0xfe);
 	else if (strncmp(argv[0], "help", 4) == 0) {
-		lprintf(LOG_ERR,
-			"SDR Commands:  list | elist [all|full|compact|event|mcloc|fru|generic]");
-		lprintf(LOG_ERR,
-			"                     all           All SDR Records");
-		lprintf(LOG_ERR,
-			"                     full          Full Sensor Record");
-		lprintf(LOG_ERR,
-			"                     compact       Compact Sensor Record");
-		lprintf(LOG_ERR,
-			"                     event         Event-Only Sensor Record");
-		lprintf(LOG_ERR,
-			"                     mcloc         Management Controller Locator Record");
-		lprintf(LOG_ERR,
-			"                     fru           FRU Locator Record");
-		lprintf(LOG_ERR,
-			"                     generic       Generic Device Locator Record");
-		lprintf(LOG_ERR, "               type [sensor type]");
-		lprintf(LOG_ERR,
-			"                     list          Get a list of available sensor types");
-		lprintf(LOG_ERR,
-			"                     get           Retrieve the state of a specified sensor");
-
-		lprintf(LOG_ERR, "               info");
-		lprintf(LOG_ERR,
-			"                     Display information about the repository itself");
-		lprintf(LOG_ERR, "               entity <id>[.<instance>]");
-		lprintf(LOG_ERR,
-			"                     Display all sensors associated with an entity");
-		lprintf(LOG_ERR, "               dump <file>");
-		lprintf(LOG_ERR,
-			"                     Dump raw SDR data to a file");
-		lprintf(LOG_ERR, "               fill");
-		lprintf(LOG_ERR,
-			"                     sensors       Creates the SDR repository for the current configuration");
-		lprintf(LOG_ERR,
-			"                     nosat        Creates the SDR repository for the current configuration, without satellite scan");
-
-		lprintf(LOG_ERR,
-			"                     file <file>   Load SDR repository from a file");
-		lprintf(LOG_ERR,
-			"                     range <range> Load SDR repository from a provided list or range");
-		lprintf(LOG_ERR,
-			"                                    - Use , for list or - for range (Ex.: 0x28,0x32,0x40-0x44) ");
+		printf_sdr_usage();
 	} else if (strncmp(argv[0], "list", 4) == 0
 		   || strncmp(argv[0], "elist", 5) == 0) {
 
@@ -4692,7 +4652,9 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 			return 0;
 		}
 		else {
-			lprintf(LOG_ERR, "Invalid SDR %s command: %s", argv[0], argv[1]);
+			lprintf(LOG_ERR,
+				"Invalid SDR %s command: %s",
+				argv[0], argv[1]);
 			lprintf(LOG_NOTICE,
 				"usage: sdr %s [all|full|compact|event|mcloc|fru|generic]",
 				argv[0]);
@@ -4709,34 +4671,49 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 	} else if (strncmp(argv[0], "get", 3) == 0) {
 		rc = ipmi_sdr_print_entry_byid(intf, argc - 1, &argv[1]);
 	} else if (strncmp(argv[0], "dump", 4) == 0) {
-		if (argc < 2)
-			lprintf(LOG_ERR, "usage: sdr dump <filename>");
-		else
-			rc = ipmi_sdr_dump_bin(intf, argv[1]);
+		if (argc < 2) {
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			lprintf(LOG_NOTICE, "usage: sdr dump <file>");
+			return (-1);
+		}
+		rc = ipmi_sdr_dump_bin(intf, argv[1]);
 	} else if (strncmp(argv[0], "fill", 4) == 0) {
 		if (argc <= 1) {
-			lprintf(LOG_ERR, "usage: sdr fill sensors");
-			lprintf(LOG_ERR, "usage: sdr fill file <filename>");
-			lprintf(LOG_ERR, "usage: sdr fill range <, and - separated> ");
-			rc = -1;
+			lprintf(LOG_ERR, "Not enough parameters given.");
+			lprintf(LOG_NOTICE, "usage: sdr fill sensors");
+			lprintf(LOG_NOTICE, "usage: sdr fill file <file>");
+			lprintf(LOG_NOTICE, "usage: sdr fill range <range>");
+			return (-1);
 		} else if (strncmp(argv[1], "sensors", 7) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
 		} else if (strncmp(argv[1], "nosat", 5) == 0) {
 			rc = ipmi_sdr_add_from_sensors(intf, 0);
 		} else if (strncmp(argv[1], "file", 4) == 0) {
 			if (argc < 3) {
-				lprintf(LOG_ERR, "sdr fill: Missing filename");
-				rc = -1;
-			} else {
-				rc = ipmi_sdr_add_from_file(intf, argv[2]);
+				lprintf(LOG_ERR,
+					"Not enough parameters given.");
+				lprintf(LOG_NOTICE,
+					"usage: sdr fill file <file>");
+				return (-1);
 			}
+			rc = ipmi_sdr_add_from_file(intf, argv[2]);
 		} else if (strncmp(argv[1], "range", 4) == 0) {
 			if (argc < 3) {
-				lprintf(LOG_ERR, "sdr range: Missing range - Use , for list or - for range (Ex.: 0x28,0x32,0x40-0x44)");
-				rc = -1;
-			} else {
-				rc = ipmi_sdr_add_from_list(intf, argv[2]);
+				lprintf(LOG_ERR,
+					"Not enough parameters given.");
+				lprintf(LOG_NOTICE,
+					"usage: sdr fill range <range>");
+				return (-1);
 			}
+			rc = ipmi_sdr_add_from_list(intf, argv[2]);
+		} else {
+		    lprintf(LOG_ERR,
+			    "Invalid SDR %s command: %s",
+			    argv[0], argv[1]);
+		    lprintf(LOG_NOTICE,
+			    "usage: sdr %s <sensors|nosat|file|range> [options]",
+			    argv[0]);
+		    return (-1);
 		}
 	} else {
 		lprintf(LOG_ERR, "Invalid SDR command: %s", argv[0]);
@@ -4744,4 +4721,71 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 	}
 
 	return rc;
+}
+
+void
+printf_sdr_usage()
+{
+	lprintf(LOG_NOTICE,
+"usage: sdr <command> [options]");
+	lprintf(LOG_NOTICE,
+"               list | elist [option]");
+	lprintf(LOG_NOTICE,
+"                     all           All SDR Records");
+	lprintf(LOG_NOTICE,
+"                     full          Full Sensor Record");
+	lprintf(LOG_NOTICE,
+"                     compact       Compact Sensor Record");
+	lprintf(LOG_NOTICE,
+"                     event         Event-Only Sensor Record");
+	lprintf(LOG_NOTICE,
+"                     mcloc         Management Controller Locator Record");
+	lprintf(LOG_NOTICE,
+"                     fru           FRU Locator Record");
+	lprintf(LOG_NOTICE,
+"                     generic       Generic Device Locator Record\n");
+	lprintf(LOG_NOTICE,
+"               type [option]");
+	lprintf(LOG_NOTICE,
+"                     <Sensor_Type> Retrieve the state of specified sensor.");
+	lprintf(LOG_NOTICE,
+"                                   Sensor_Type can be specified either as");
+	lprintf(LOG_NOTICE,
+"                                   a string or a hex value.");
+	lprintf(LOG_NOTICE,
+"                     list          Get a list of available sensor types\n");
+	lprintf(LOG_NOTICE,
+"               get <Sensor_ID>");
+	lprintf(LOG_NOTICE,
+"                     Retrieve state of the first sensor matched by Sensor_ID\n");
+	lprintf(LOG_NOTICE,
+"               info");
+	lprintf(LOG_NOTICE,
+"                     Display information about the repository itself\n");
+	lprintf(LOG_NOTICE,
+"               entity <Entity_ID>[.<Instance_ID>]");
+	lprintf(LOG_NOTICE,
+"                     Display all sensors associated with an entity\n");
+	lprintf(LOG_NOTICE,
+"               dump <file>");
+	lprintf(LOG_NOTICE,
+"                     Dump raw SDR data to a file\n");
+	lprintf(LOG_NOTICE,
+"               fill <option>");
+	lprintf(LOG_NOTICE,
+"                     sensors       Creates the SDR repository for the current");
+	lprintf(LOG_NOTICE,
+"                                   configuration");
+	lprintf(LOG_NOTICE,
+"                     nosat         Creates the SDR repository for the current");
+	lprintf(LOG_NOTICE,
+"                                   configuration, without satellite scan");
+	lprintf(LOG_NOTICE,
+"                     file <file>   Load SDR repository from a file");
+	lprintf(LOG_NOTICE,
+"                     range <range> Load SDR repository from a provided list");
+	lprintf(LOG_NOTICE,
+"                                   or range. Use ',' for list or '-' for");
+	lprintf(LOG_NOTICE,
+"                                   range, eg. 0x28,0x32,0x40-0x44");
 }
