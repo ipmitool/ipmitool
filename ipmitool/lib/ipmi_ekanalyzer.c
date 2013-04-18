@@ -803,7 +803,7 @@ ipmi_ek_display_carrier_connectivity( struct ipmi_ek_multi_header * record )
 {
    int return_value = ERROR_STATUS;
    struct fru_picmgext_carrier_p2p_record rsc_desc;
-   struct fru_picmgext_carrier_p2p_descriptor port_desc;
+   struct fru_picmgext_carrier_p2p_descriptor *port_desc;
 
    if ( record == NULL ){
       lprintf(LOG_ERR, "P2P connectivity record is invalid\n");
@@ -848,20 +848,32 @@ ipmi_ek_display_carrier_connectivity( struct ipmi_ek_multi_header * record )
                         (rsc_desc.resource_id & 0x0f));
          }
          while ( rsc_desc.p2p_count > 0 ){
-            memcpy ( &port_desc, &record->data[offset],
-                     sizeof ( struct fru_picmgext_carrier_p2p_descriptor ) );
-            offset += sizeof ( struct fru_picmgext_carrier_p2p_descriptor );
-            if ( (port_desc.remote_resource_id & AMC_MODULE) == AMC_MODULE ){
-               printf("\tPort %d =====> %s, Port %d\n", port_desc.local_port,
-                        val2str( (port_desc.remote_resource_id & 0x0f),
-                        ipmi_ekanalyzer_module_type), port_desc.remote_port );
-            }
-            else{
-               printf("\tPort %d =====> On Carrier Device ID %d, Port %d\n",
-                     port_desc.local_port,(port_desc.remote_resource_id & 0x0f),
-                     port_desc.remote_port );
-            }
-            rsc_desc.p2p_count--;
+		unsigned char data[3];
+#ifndef WORDS_BIGENDIAN
+		data[0] = record->data[offset+0];
+		data[1] = record->data[offset+1];
+		data[2] = record->data[offset+2];
+#else
+		data[0] = record->data[offset+2];
+		data[1] = record->data[offset+1];
+		data[2] = record->data[offset+0];
+#endif
+		port_desc = (struct fru_picmgext_carrier_p2p_descriptor*)data;
+		offset += sizeof (struct fru_picmgext_carrier_p2p_descriptor);
+		if ((port_desc->remote_resource_id & AMC_MODULE) == AMC_MODULE) {
+			printf("\tPort %d =====> %s, Port %d\n",
+				port_desc->local_port,
+				val2str( (port_desc->remote_resource_id & 0x0f),
+					ipmi_ekanalyzer_module_type),
+				port_desc->remote_port);
+		}
+		else {
+			printf("\tPort %d =====> On Carrier Device ID %d, Port %d\n",
+				port_desc->local_port,
+				(port_desc->remote_resource_id & 0x0f),
+				port_desc->remote_port);
+		}
+		rsc_desc.p2p_count--;
          }
       }
       return_value = OK_STATUS;
