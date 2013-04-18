@@ -2550,6 +2550,7 @@ static void
 ipmi_ek_display_chassis_info_area(FILE * input_file, long offset)
 {
 	unsigned char data = 0;
+	unsigned char ch_len = 0;
 	unsigned char ch_type = 0;
 	unsigned int len;
 	size_t file_offset;
@@ -2573,10 +2574,12 @@ ipmi_ek_display_chassis_info_area(FILE * input_file, long offset)
 	if (feof(input_file)) {
 		return;
 	}
-
-	fread(&len, 1, 1, input_file);
+	/* Have to read this into a char or else
+	 * it ends up byte swapped on big endian machines
+	 */
+	fread(&ch_len, 1, 1, input_file);
 	/* len is in factor of 8 bytes */
-	len = len * 8;
+	len = ch_len * 8;
 	printf("Area Length: %d\n", len);
 	len -= 2;
 	if (feof(input_file)) {
@@ -2748,6 +2751,7 @@ out:
 static void
 ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 {
+	unsigned char ch_len = 0;
 	unsigned char data = 0;
 	unsigned int len;
 	size_t file_offset = ftell(input_file);
@@ -2771,10 +2775,12 @@ ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 	if (feof(input_file)) {
 		return;
 	}
-
-	fread(&len, 1, 1, input_file);
+	/* Have to read this into a char or else
+	 * it ends up byte swapped on big endian machines
+	 */
+	fread(&ch_len, 1, 1, input_file);
 	/* length is in factor of 8 bytes */
-	len = len * 8;
+	len = ch_len * 8;
 	printf("Area Length: %d\n", len);
 	len -= 2; /* -1 byte of format version and -1 byte itself */
 	if (feof(input_file)) {
@@ -3904,8 +3910,9 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 {
 	int return_status = ERROR_STATUS;
 	FILE * input_file;
+	char data;
 	unsigned char last_record = 0;
-	long multi_offset = 0;
+	int multi_offset = 0;
 	int record_count = 0;
 
 	input_file = fopen(filename, "r");
@@ -3915,15 +3922,15 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 	}
 
 	fseek(input_file, START_DATA_OFFSET, SEEK_SET);
-	fread(&multi_offset, 1, 1, input_file);
-	if (multi_offset < 1) {
+	fread(&data, 1, 1, input_file);
+	if (data < 1) {
 		lprintf(LOG_NOTICE, "There is no multi record in the file %s\n",
 				filename);
 		fclose(input_file);
 		return OK_STATUS;
 	}
 	/* the offset value is in multiple of 8 bytes. */
-	multi_offset = multi_offset * 8;
+	multi_offset = data * 8;
 	if (verbose == LOG_DEBUG) {
 		printf("start multi offset = 0x%02lx\n", multi_offset);
 	}
