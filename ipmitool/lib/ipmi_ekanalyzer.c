@@ -42,6 +42,9 @@
 #include <string.h>
 #include <time.h>
 
+#define NO_MORE_INFO_FIELD         0xc1
+#define TYPE_CODE 0xc0 /*Language code*/
+
 /*****************************************************************
 * CONSTANT
 *****************************************************************/
@@ -2619,103 +2622,107 @@ ipmi_ek_display_chassis_info_area(FILE * input_file, long offset)
 *
 ***************************************************************************/
 static size_t
-ipmi_ek_display_board_info_area( FILE * input_file, char * board_type,
-      unsigned int * board_length )
+ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
+		unsigned int * board_length)
 {
-   size_t file_offset = ftell (input_file);
-   unsigned char len = 0;
-   /* Board length*/
-   if ( !feof(input_file) ){
-      fread ( &len, 1, 1, input_file );
-      (*board_length)--;
-   }
-   /* Board Data */
-   if ( !feof(input_file) ){
-      unsigned int size_board = 0;
-
-      /*Bit 5:0 of Board Mfg type represent legnth*/
-      size_board = (len & 0x3f);
-      if (size_board > 0){
-         if ( strncmp( board_type, "Custom", 6 ) == 0 ){
-            #define NO_MORE_INFO_FIELD         0xc1
-            while ( !feof(input_file) && (board_length > 0) ){
-               if (len != NO_MORE_INFO_FIELD){
-                  printf("Additional Custom Mfg. length: 0x%02x\n", len);
-                  if ( (size_board > 0) && (size_board < (*board_length)) ){
-                     unsigned char * additional_data = NULL;
-                     int i=0;
-                     additional_data = malloc (size_board);
-                     if (additional_data != NULL){
-                        fread ( additional_data, size_board, 1, input_file );
-                        printf("Additional Custom Mfg. Data: %02x",
-                                       additional_data[0]);
-                        for ( i =1; i<size_board; i++){
-                           printf("-%02x", additional_data[i]);
-                        }
-                        printf("\n");
-                        free(additional_data);
-                        additional_data = NULL;
-                        (*board_length) -= size_board;
-                     }
-                  }
-                  else{
-                     printf("No Additional Custom Mfg. %d\n", *board_length);
-                     board_length = 0;
-                  }
-               }
-               else{
-                  unsigned char padding;
-                  /*take the rest of data in the area minus 1 byte of checksum*/
-                  printf("Additional Custom Mfg. length: 0x%02x\n", len);
-                  padding = (*board_length) - 1;
-                  /*we reach the end of the record, so its length is set to 0*/
-                  board_length = 0;
-                  if ( ( padding > 0 ) && ( !feof(input_file) ) ){
-                     printf("Unused space: %d (bytes)\n", padding);
-                     fseek (input_file, padding, SEEK_CUR);
-                  }
-                  if ( !feof(input_file) ){
-                     unsigned char checksum = 0;
-                     fread ( &checksum, 1, 1, input_file );
-                     printf("Checksum: 0x%02x\n", checksum);
-
-                  }
-               }
-            }
-         }
-         else{
-            unsigned char * data;
-            unsigned int i=0;
-            #define TYPE_CODE 0xc0 /*Language code*/
-
-            data = malloc (size_board);
-            fread ( data, size_board, 1, input_file );
-            printf("%s type: 0x%02x\n", board_type, len);
-            printf("%s: ", board_type);
-            for ( i = 0; i < size_board; i++ ){
-               if ( (len & TYPE_CODE) == TYPE_CODE ){
-                  printf("%c", data[i]);
-               }
-               /*other than language code (binary, BCD, ASCII 6 bit...) is not
-               * supported */
-               else{
-                  printf("%02x", data[i]);
-               }
-            }
-            printf("\n");
-            free(data);
-            data = NULL;
-            (*board_length) -= size_board;
-            file_offset = ftell (input_file);
-         }
-      }
-      else{
-         printf("%s: None\n", board_type);
-         file_offset = ftell (input_file);
-      }
-   }
-
-   return file_offset;
+	size_t file_offset;
+	unsigned char len = 0;
+	unsigned int size_board = 0;
+	if (input_file == NULL || board_type == NULL
+			|| board_length == NULL) {
+		return (size_t)(-1);
+	}
+	file_offset = ftell(input_file);
+	/* Board length */
+	if (!feof(input_file)) {
+		fread(&len, 1, 1, input_file);
+		(*board_length)--;
+	}
+	/* Board Data */
+	if (feof(input_file)) {
+		printf("No Board Data found!\n");
+		goto out;
+	}
+	/* Bit 5:0 of Board Mfg type represent legnth */
+	size_board = (len & 0x3f);
+	if (size_board == 0) {
+		printf("%s: None\n", board_type);
+		goto out;
+	}
+	if (strncmp(board_type, "Custom", 6 ) != 0) {
+		unsigned char *data;
+		unsigned int i = 0;
+		data = malloc(size_board);
+		if (data == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			return (size_t)(-1);
+		}
+		fread(data, size_board, 1, input_file);
+		printf("%s type: 0x%02x\n", board_type, len);
+		printf("%s: ", board_type);
+		for (i = 0; i < size_board; i++) {
+			if ((len & TYPE_CODE) == TYPE_CODE) {
+				printf("%c", data[i]);
+			} else {
+				/* other than language code (binary, BCD,
+				 * ASCII 6 bit...) is not supported
+				 */
+				printf("%02x", data[i]);
+			}
+		}
+		printf("\n");
+		free(data);
+		(*board_length) -= size_board;
+		goto out;
+	}
+	while (!feof(input_file)) {
+		if (len == NO_MORE_INFO_FIELD) {
+			unsigned char padding;
+			/* take the rest of data in the area minus 1 byte of 
+			 * checksum
+			 */
+			printf("Additional Custom Mfg. length: 0x%02x\n", len);
+			padding = (*board_length) - 1;
+			if ((padding > 0) && (!feof(input_file))) {
+				printf("Unused space: %d (bytes)\n", padding);
+				fseek(input_file, padding, SEEK_CUR);
+			}
+			if (!feof(input_file)) {
+				unsigned char checksum = 0;
+				fread(&checksum, 1, 1, input_file);
+				printf("Checksum: 0x%02x\n", checksum);
+			}
+			goto out;
+		}
+		printf("Additional Custom Mfg. length: 0x%02x\n", len);
+		if ((size_board > 0) && (size_board < (*board_length))) {
+			unsigned char * additional_data = NULL;
+			unsigned int i = 0;
+			additional_data = malloc(size_board);
+			if (additional_data == NULL) {
+				lprintf(LOG_ERR, "ipmitool: malloc failure");
+				return (size_t)(-1);
+			}
+				
+			fread(additional_data, size_board, 1, input_file);
+			printf("Additional Custom Mfg. Data: %02x",
+					additional_data[0]);
+			for (i = 1; i < size_board; i++) {
+				printf("-%02x", additional_data[i]);
+			}
+			printf("\n");
+			free(additional_data);
+			(*board_length) -= size_board;
+		}
+		else {
+			printf("No Additional Custom Mfg. %d\n", *board_length);
+			goto out;
+		}
+	}
+ 
+out:
+	file_offset = ftell(input_file);
+	return file_offset;
 }
 
 /**************************************************************************
