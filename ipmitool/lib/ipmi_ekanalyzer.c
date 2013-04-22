@@ -2221,96 +2221,95 @@ ipmi_ek_display_oem_guid(
 *
 ***************************************************************************/
 static int
-ipmi_ek_create_amc_p2p_record( struct ipmi_ek_multi_header * record,
-   struct ipmi_ek_amc_p2p_connectivity_record * amc_record )
+ipmi_ek_create_amc_p2p_record(struct ipmi_ek_multi_header * record,
+		struct ipmi_ek_amc_p2p_connectivity_record * amc_record)
 {
-   int return_status = OK_STATUS;
-   int index_data = START_DATA_OFFSET;
+	int index_data = START_DATA_OFFSET;
+	int return_status = OK_STATUS;
 
-   amc_record->guid_count = record->data[index_data++];
-   if ( amc_record->guid_count > 0){
-      int index_oem = 0;
-      amc_record->oem_guid = malloc (amc_record->guid_count * \
-                                 sizeof(struct fru_picmgext_guid) );
-      for (index_oem = 0; index_oem < amc_record->guid_count; index_oem++){
-         memcpy ( &amc_record->oem_guid[index_oem].guid,
-                  &record->data[index_data],
-                  SIZE_OF_GUID );
-         index_data += (int)SIZE_OF_GUID;
-      }
-      amc_record->rsc_id = record->data[index_data++];
-      amc_record->ch_count = record->data[index_data++];
-      /*Calculate link descriptor count*/
-      amc_record->link_desc_count = ( (record->header.len) - 8 -
-                                       (SIZE_OF_GUID*amc_record->guid_count) -
-                                       (FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
-                                        amc_record->ch_count)
-                                    )/5 ;
-   }
-   else{
-      amc_record->rsc_id = record->data[index_data++];
-      amc_record->ch_count = record->data[index_data++];
-      /*Calculate link descriptor count see spec AMC.0 for detail*/
-      amc_record->link_desc_count = ( (record->header.len) - 8 -
-                                      (FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
-                                       amc_record->ch_count )
-                                    ) / 5;
-   }
+	amc_record->guid_count = record->data[index_data++];
+	if (amc_record->guid_count > 0) {
+		int index_oem = 0;
+		amc_record->oem_guid = malloc(amc_record->guid_count * \
+				sizeof(struct fru_picmgext_guid));
+		for (index_oem = 0; index_oem < amc_record->guid_count;
+				index_oem++) {
+			memcpy(&amc_record->oem_guid[index_oem].guid,
+					&record->data[index_data],
+					SIZE_OF_GUID);
+			index_data += (int)SIZE_OF_GUID;
+		}
+		amc_record->rsc_id = record->data[index_data++];
+		amc_record->ch_count = record->data[index_data++];
+		/* Calculate link descriptor count */
+		amc_record->link_desc_count = ((record->header.len) - 8 -
+				(SIZE_OF_GUID*amc_record->guid_count) -
+				(FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
+				amc_record->ch_count)) / 5 ;
+	} else {
+		amc_record->rsc_id = record->data[index_data++];
+		amc_record->ch_count = record->data[index_data++];
+		/* Calculate link descriptor count see spec AMC.0 for detail */
+		amc_record->link_desc_count = ((record->header.len) - 8 -
+				(FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
+				amc_record->ch_count)) / 5;
+	}
 
-   if (amc_record->ch_count > 0){
-      int ch_index = 0;
-      amc_record->ch_desc = malloc ( (amc_record->ch_count) * \
-                           sizeof(struct fru_picmgext_amc_channel_desc_record));
-      for (ch_index = 0; ch_index < amc_record->ch_count; ch_index++){
-         unsigned int data;
-         struct fru_picmgext_amc_channel_desc_record *src, *dst;
-         data = record->data[index_data] | 
-              (record->data[index_data + 1] << 8) |
-              (record->data[index_data + 2] << 16);
+	if (amc_record->ch_count > 0) {
+		int ch_index = 0;
+		amc_record->ch_desc = malloc((amc_record->ch_count) * \
+				sizeof(struct fru_picmgext_amc_channel_desc_record));
+		for (ch_index = 0; ch_index < amc_record->ch_count;
+				ch_index++) {
+			unsigned int data;
+			struct fru_picmgext_amc_channel_desc_record *src, *dst;
+			data = record->data[index_data] | 
+				(record->data[index_data + 1] << 8) |
+				(record->data[index_data + 2] << 16);
+			
+			src = (struct fru_picmgext_amc_channel_desc_record *)&data;
+			dst = (struct fru_picmgext_amc_channel_desc_record *)
+				&amc_record->ch_desc[ch_index];
 
-         src = (struct fru_picmgext_amc_channel_desc_record *) &data;
-         dst = (struct fru_picmgext_amc_channel_desc_record *) 
-               &amc_record->ch_desc[ch_index];
-         dst->lane0port = src->lane0port;
-         dst->lane1port = src->lane1port;
-         dst->lane2port = src->lane2port;
-         dst->lane3port = src->lane3port;
-         index_data += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
-      }
-   }
-   if (amc_record->link_desc_count > 0){
-      int i=0;
-      amc_record->link_desc = malloc ( amc_record->link_desc_count *
-                        sizeof(struct fru_picmgext_amc_link_desc_record) );
-      for (i = 0; i< amc_record->link_desc_count; i++ ){
-         unsigned int data[2];
-         struct fru_picmgext_amc_link_desc_record *src, *dst;
-         data[0] = record->data[index_data] | 
-                       (record->data[index_data + 1] << 8) |
-                       (record->data[index_data + 2] << 16) |
-                       (record->data[index_data + 3] << 24);
-         data[1] = record->data[index_data + 4];
-         src = (struct fru_picmgext_amc_link_desc_record*) &data;
-         dst = (struct fru_picmgext_amc_link_desc_record*) 
-                       &amc_record->link_desc[i];
+			dst->lane0port = src->lane0port;
+			dst->lane1port = src->lane1port;
+			dst->lane2port = src->lane2port;
+			dst->lane3port = src->lane3port;
+			index_data += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
+		}
+	}
+	if (amc_record->link_desc_count > 0) {
+		int i=0;
+		amc_record->link_desc = malloc(amc_record->link_desc_count * \
+				sizeof(struct fru_picmgext_amc_link_desc_record));
+		for (i = 0; i< amc_record->link_desc_count; i++) {
+			unsigned int data[2];
+			struct fru_picmgext_amc_link_desc_record *src, *dst;
+			data[0] = record->data[index_data] | 
+				(record->data[index_data + 1] << 8) |
+				(record->data[index_data + 2] << 16) |
+				(record->data[index_data + 3] << 24);
 
-         dst->channel_id = src->channel_id;
-         dst->port_flag_0 = src->port_flag_0;
-         dst->port_flag_1 = src->port_flag_1;
-         dst->port_flag_2 = src->port_flag_2;
-         dst->port_flag_3 = src->port_flag_3;
-         dst->type = src->type;
-         dst->type_ext = src->type_ext;
-         dst->group_id = src->group_id;
-         dst->asym_match = src->asym_match;
-         index_data += FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE;
-      }
-   }
-   else{
-      return_status = ERROR_STATUS;
-   }
+			data[1] = record->data[index_data + 4];
+			src = (struct fru_picmgext_amc_link_desc_record*)&data;
+			dst = (struct fru_picmgext_amc_link_desc_record*) 
+				&amc_record->link_desc[i];
 
-   return return_status;
+			dst->channel_id = src->channel_id;
+			dst->port_flag_0 = src->port_flag_0;
+			dst->port_flag_1 = src->port_flag_1;
+			dst->port_flag_2 = src->port_flag_2;
+			dst->port_flag_3 = src->port_flag_3;
+			dst->type = src->type;
+			dst->type_ext = src->type_ext;
+			dst->group_id = src->group_id;
+			dst->asym_match = src->asym_match;
+			index_data += FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE;
+		}
+	} else {
+		return_status = ERROR_STATUS;
+	}
+	return return_status;
 }
 
 /**************************************************************************
