@@ -2146,7 +2146,7 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 {
 	struct fru_multirec_oem_header *h;
-	int   guid_count;
+	int guid_count;
 	int offset = off;
 	int start_offset = off;
 	int i;
@@ -2156,20 +2156,21 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 
 	switch (h->record_id)
 	{
-
 		case FRU_PICMG_BACKPLANE_P2P:
 		{
 			uint8_t index;
-			struct fru_picmgext_slot_desc * slot_d
-					= (struct fru_picmgext_slot_desc*) &fru_data[offset];
+			unsigned int data;
+			struct fru_picmgext_slot_desc *slot_d;
 
+			slot_d =
+				(struct fru_picmgext_slot_desc*)&fru_data[offset];
 			offset += sizeof(struct fru_picmgext_slot_desc);
 			printf("    FRU_PICMG_BACKPLANE_P2P\n");
 
 			while (offset <= (start_offset+length)) {
 				printf("\n");
 				printf("    Channel Type:  ");
-				switch ( slot_d -> chan_type )
+				switch (slot_d->chan_type)
 				{
 					case 0x00:
 					case 0x07:
@@ -2190,28 +2191,39 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					case 0x0c:
 						printf("Update Channel IF\n");
 						break;
+					case 0x0d:
+						printf("ShMC Cross Connect\n");
+						break;
 					default:
-						printf("Unknown IF\n");
+						printf("Unknown IF (0x%x)\n",
+								slot_d->chan_type);
 						break;
 				}
-				printf("    Slot Addr.   : %02x\n", slot_d -> slot_addr );
-				printf("    Channel Count: %i\n", slot_d -> chn_count);
+				printf("    Slot Addr.   : %02x\n",
+						slot_d->slot_addr );
+				printf("    Channel Count: %i\n",
+						slot_d->chn_count);
 
-				for (index = 0; index < (slot_d -> chn_count); index++) {
-					struct fru_picmgext_chn_desc * d
-						= (struct fru_picmgext_chn_desc *) &fru_data[offset];
-
-					if (verbose)
-						printf(  "       "
+				for (index = 0;
+						index < (slot_d->chn_count);
+						index++) {
+					struct fru_picmgext_chn_desc *d;
+					data = (fru_data[offset+0]) |
+						(fru_data[offset+1] << 8) |
+						(fru_data[offset+2] << 16);
+					d = (struct fru_picmgext_chn_desc *)&data;
+					if (verbose) {
+						printf( "       "
 								"Chn: %02x  ->  "
 								"Chn: %02x in "
 								"Slot: %02x\n",
-								d->local_chn, d->remote_chn, d->remote_slot);
-
-					offset += sizeof(struct fru_picmgext_chn_desc);
+								d->local_chn,
+								d->remote_chn,
+								d->remote_slot);
+					}
+					offset += FRU_PICMGEXT_CHN_DESC_RECORD_SIZE;
 				}
-
-				slot_d = (struct fru_picmgext_slot_desc*) &fru_data[offset];
+				slot_d = (struct fru_picmgext_slot_desc*)&fru_data[offset];
 				offset += sizeof(struct fru_picmgext_slot_desc);
 			}
 		}
@@ -2219,11 +2231,25 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 
 		case FRU_PICMG_ADDRESS_TABLE:
 		{
-			unsigned char entries = 0;
-			unsigned char i;
+			unsigned int hwaddr;
+			unsigned int sitetype;
+			unsigned int sitenum;
+			unsigned int entries;
+			unsigned int i;
+			char *picmg_site_type_strings[] = {
+					"AdvancedTCA Board",
+					"Power Entry",
+					"Shelf FRU Information",
+					"Dedicated ShMC",
+					"Fan Tray",
+					"Fan Filter Tray",
+					"Alarm",
+					"AdvancedMC Module",
+					"PMC",
+					"Rear Transition Module"};
+
 
 			printf("    FRU_PICMG_ADDRESS_TABLE\n");
-
 			printf("      Type/Len:  0x%02x\n", fru_data[offset++]);
 			printf("      Shelf Addr: ");
 			for (i=0;i<20;i++) {
@@ -2235,62 +2261,115 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			printf("      Addr Table Entries: 0x%02x\n", entries);
 
 			for (i=0; i<entries; i++) {
-				printf("        HWAddr: 0x%02x  - SiteNum: 0x%02x - SiteType: 0x%02x \n",
-					fru_data[offset], fru_data[offset+1], fru_data[offset+2]);
-				offset+= 3;
+				hwaddr = fru_data[offset];
+				sitenum = fru_data[offset + 1];
+				sitetype = fru_data[offset + 2];
+				printf(
+						"        HWAddr: 0x%02x (0x%02x) SiteNum: %d SiteType: 0x%02x %s\n",
+						hwaddr, hwaddr * 2,
+						sitenum, sitetype,
+						(sitetype < 0xa) ?
+						picmg_site_type_strings[sitetype] :
+						"Reserved");
+				offset += 3;
 			}
 		}
 		break;
 
 		case FRU_PICMG_SHELF_POWER_DIST:
 		{
-			unsigned char i,j;
-			unsigned char feeds = 0;
+			unsigned int entries;
+			unsigned int feeds;
+			unsigned int feedcnt;
+			unsigned int hwaddr;
+			unsigned int i;
+			unsigned int id;
+			unsigned int j;
+			unsigned int maxext;
+			unsigned int maxint;
+			unsigned int minexp;
 
 			printf("    FRU_PICMG_SHELF_POWER_DIST\n");
 
 			feeds = fru_data[offset++];
-			printf("      Number of Power Feeds:   0x%02x\n", feeds);
+			printf("      Number of Power Feeds:   0x%02x\n",
+					feeds);
 
 			for (i=0; i<feeds; i++) {
-				unsigned char entries;
-
-				printf("        Max Ext Current:   0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
+				printf("    Feed %d:\n", i);
+				maxext = fru_data[offset] |
+					(fru_data[offset+1] << 8);
 				offset += 2;
-				printf("        Max Int Current:   0x%04x\n", fru_data[offset+0] | (fru_data[offset+1]<<8));
+				maxint = fru_data[offset] |
+					(fru_data[offset+1] << 8);
 				offset += 2;
-				printf("        Min Exp Voltage:   0x%02x\n", fru_data[offset++]);
+				minexp = fru_data[offset];
+				offset += 1;
+				entries = fru_data[offset];
+				offset += 1;
 
-				entries = fru_data[offset++];
-				printf("        Feed to FRU count:   0x%02x\n", entries);
+				printf(
+						"      Max External Current:   %d.%d Amps (0x%04x)\n",
+						maxext / 10, maxext % 10, maxext);
+				if (maxint < 0xffff) {
+					printf(
+							"      Max Internal Current:   %d.%d Amps (0x%04x)\n",
+							maxint / 10, maxint % 10,
+							maxint);
+				} else {
+					printf(
+							"      Max Internal Current:   Not Specified\n");
+				}
 
-				for (j=0; j<entries; j++) {
-					printf("          HW: 0x%02x",   fru_data[offset++]);
-					printf("          FRU ID: 0x%02x\n", fru_data[offset++]);
+				if (minexp >= 0x48 && minexp <= 0x90) {
+					printf(
+							"      Min Expected Voltage:   -%02d.%dV\n",
+							minexp / 2, (minexp % 2) * 5);
+				} else {
+					printf(
+							"      Min Expected Voltage:   -36V (actual invalid value 0x%x)\n",
+							36, minexp);
+				}
+				for (j=0; j < entries; j++) {
+					hwaddr = fru_data[offset++];
+					id = fru_data[offset++];
+					printf(
+							"        FRU HW Addr: 0x%02x (0x%02x)",
+							hwaddr, hwaddr * 2);
+					printf(
+							"   FRU ID: 0x%02x\n",
+							id);
 				}
 			}
-
 		}
 		break;
 
 		case FRU_PICMG_SHELF_ACTIVATION:
 		{
-			unsigned char i;
-			unsigned char count = 0;
+			unsigned int i;
+			unsigned int count = 0;
 
 			printf("    FRU_PICMG_SHELF_ACTIVATION\n");
-
-			printf("      Allowance for FRU Act Readiness:   0x%02x\n", fru_data[offset++]);
+			printf(
+					"      Allowance for FRU Act Readiness:   0x%02x\n",
+					fru_data[offset++]);
 
 			count = fru_data[offset++];
-			printf("      FRU activation and Power Desc Cnt: 0x%02x\n", count);
+			printf(
+					"      FRU activation and Power Desc Cnt: 0x%02x\n",
+					count);
 
 			for (i=0; i<count; i++) {
-				printf("         HW Addr: 0x%02x ", fru_data[offset++]);
-				printf("         FRU ID: 0x%02x ", fru_data[offset++]);
-				printf("         Max FRU Power: 0x%04x ", fru_data[offset+0] | (fru_data[offset+1]<<8));
+				printf("         HW Addr: 0x%02x ",
+						fru_data[offset++]);
+				printf("         FRU ID: 0x%02x ",
+						fru_data[offset++]);
+				printf("         Max FRU Power: 0x%04x ",
+						fru_data[offset+0] |
+						(fru_data[offset+1]<<8));
 				offset += 2;
-				printf("         Config: 0x%02x \n", fru_data[offset++]);
+				printf("         Config: 0x%02x \n",
+						fru_data[offset++]);
 			}
 		}
 		break;
@@ -2308,28 +2387,32 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 				int j;
 				printf("        GUID [%2d]: 0x", i);
 
-				for (j=0; j < sizeof(struct fru_picmgext_guid); j++) {
+				for (j=0; j < sizeof(struct fru_picmgext_guid);
+						j++) {
 					printf("%02x", fru_data[offset+j]);
 				}
 
 				printf("\n");
 				offset += sizeof(struct fru_picmgext_guid);
 			}
-				printf("\n");
+			printf("\n");
 
-			for (; offset < off + length; offset += sizeof(struct fru_picmgext_link_desc)) {
+			for (; offset < off + length;
+					offset += sizeof(struct fru_picmgext_link_desc)) {
 
 				/* to solve little endian /big endian problem */
-				unsigned long data =    (fru_data[offset+0])
-										|  (fru_data[offset+1] << 8)
-										|  (fru_data[offset+2] << 16)
-										|  (fru_data[offset+3] << 24);
+				struct fru_picmgext_link_desc *d;
+				unsigned int data = (fru_data[offset+0]) |
+					(fru_data[offset+1] << 8) |
+					(fru_data[offset+2] << 16) |
+					(fru_data[offset+3] << 24);
+				d = (struct fru_picmgext_link_desc *) &data;
 
-				struct fru_picmgext_link_desc * d = (struct fru_picmgext_link_desc *) &data;
-
-				printf("      Link Grouping ID:     0x%02x\n", d->grouping);
-				printf("      Link Type Extension:  0x%02x - ", d->ext);
-				if (d->type == FRU_PICMGEXT_LINK_TYPE_BASE){
+				printf("      Link Grouping ID:     0x%02x\n",
+						d->grouping);
+				printf("      Link Type Extension:  0x%02x - ",
+						d->ext);
+				if (d->type == FRU_PICMGEXT_LINK_TYPE_BASE) {
 					switch (d->ext)
 					{
 						case 0:
@@ -2342,7 +2425,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							printf("Unknwon\n");
 							break;
 					}
-				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET){
+				} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET) {
 					switch (d->ext)
 					{
 						case 0:
@@ -2358,21 +2441,19 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							printf("Unknwon\n");
 							break;
 					}
-
-				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND){
+				} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND) {
 					printf("Unknwon\n");
-				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR){
+				} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR) {
 					printf("Unknwon\n");
-				}else if (d->type == FRU_PICMGEXT_LINK_TYPE_PCIE){
+				} else if (d->type == FRU_PICMGEXT_LINK_TYPE_PCIE) {
 					printf("Unknwon\n");
-				}else
-				{
+				} else {
 					printf("Unknwon\n");
 				}
 
-				printf("      Link Type:            0x%02x - ",d->type);
-				if (d->type == 0 || d->type == 0xff)
-				{
+				printf("      Link Type:            0x%02x - ",
+						d->type);
+				if (d->type == 0 || d->type == 0xff) {
 					printf("Reserved\n");
 				}
 				else if (d->type >= 0x06 && d->type <= 0xef) {
@@ -2405,27 +2486,30 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					}
 				}
 				printf("      Link Designator: \n");
-				printf("        Port Flag:            0x%02x\n", d->desig_port);
-				printf("        Interface:            0x%02x - ", d->desig_if);
-					switch (d->desig_if)
-					{
-						case FRU_PICMGEXT_DESIGN_IF_BASE:
-							printf("Base Interface\n");
-							break;
-						case FRU_PICMGEXT_DESIGN_IF_FABRIC:
-							printf("Fabric Interface\n");
-							break;
-						case FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL:
-							printf("Update Channel\n");
-							break;
-						case FRU_PICMGEXT_DESIGN_IF_RESERVED:
-							printf("Reserved\n");
-							break;
-						default:
-							printf("Invalid");
-							break;
-					}
-				printf("        Channel Number:       0x%02x\n", d->desig_channel);
+				printf("        Port Flag:            0x%02x\n",
+						d->desig_port);
+				printf("        Interface:            0x%02x - ",
+						d->desig_if);
+				switch (d->desig_if)
+				{
+					case FRU_PICMGEXT_DESIGN_IF_BASE:
+						printf("Base Interface\n");
+						break;
+					case FRU_PICMGEXT_DESIGN_IF_FABRIC:
+						printf("Fabric Interface\n");
+						break;
+					case FRU_PICMGEXT_DESIGN_IF_UPDATE_CHANNEL:
+						printf("Update Channel\n");
+						break;
+					case FRU_PICMGEXT_DESIGN_IF_RESERVED:
+						printf("Reserved\n");
+						break;
+					default:
+						printf("Invalid");
+						break;
+				}
+				printf("        Channel Number:       0x%02x\n",
+						d->desig_channel);
 				printf("\n");
 			}
 
@@ -2438,8 +2522,8 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 
 			current = fru_data[offset];
 			printf("      Current draw(@12V): %.2f A [ %.2f Watt ]\n",
-								(float)current / 10.0f,
-								(float)current / 10.0f * 12.0f);
+					(float)current / 10.0f,
+					(float)current / 10.0f * 12.0f);
 			printf("\n");
 		}
 		break;
@@ -2452,72 +2536,69 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 				max_current = fru_data[offset];
 				max_current |= fru_data[++offset]<<8;
 				printf("      Maximum Internal Current(@12V): %.2f A [ %.2f Watt ]\n",
-																(float)max_current / 10.0f,
-																(float)max_current / 10.0f * 12.0f);
+						(float)max_current / 10.0f,
+						(float)max_current / 10.0f * 12.0f);
 
 				printf("      Module Activation Readiness:    %i sec.\n", fru_data[++offset]);
 				printf("      Descriptor Count: %i\n", fru_data[++offset]);
 				printf("\n");
 
-				for(++offset; offset < off + length; offset += sizeof(struct fru_picmgext_activation_record))
+				for(++offset; offset < off + length;
+						offset += sizeof(struct fru_picmgext_activation_record))
 				{
-					struct fru_picmgext_activation_record * a =
-											(struct fru_picmgext_activation_record *) &fru_data[offset];
-
-					printf("        IPMB-Address:         0x%x\n", a->ibmb_addr);
-					printf("        Max. Module Current:  %.2f A\n", (float)a->max_module_curr / 10.0f);
+					struct fru_picmgext_activation_record *a;
+					a = (struct fru_picmgext_activation_record *)&fru_data[offset];
+					printf("        IPMB-Address:         0x%x\n",
+							a->ibmb_addr);
+					printf("        Max. Module Current:  %.2f A\n",
+							(float)a->max_module_curr / 10.0f);
 					printf("\n");
 				}
 			}
 			break;
 
 		case FRU_AMC_CARRIER_P2P:
-			printf("    FRU_CARRIER_P2P\n");
 			{
 				uint16_t index;
-
-				for(; offset < off + length; )
-				{
+				printf("    FRU_CARRIER_P2P\n");
+				for(; offset < off + length; ) {
 					struct fru_picmgext_carrier_p2p_record * h =
-						(struct fru_picmgext_carrier_p2p_record *) &fru_data[offset];
-
+						(struct fru_picmgext_carrier_p2p_record *)&fru_data[offset];
 					printf("\n");
-					printf("      Resource ID:      %i", h->resource_id & 0x07);
-					printf("  Type: ");
+					printf("      Resource ID:      %i",
+							(h->resource_id & 0x07));
+						printf("  Type: ");
 					if ((h->resource_id>>7) == 1) {
 						printf("AMC\n");
 					} else {
 						printf("Local\n");
 					}
-					printf("      Descriptor Count: %i\n", h->p2p_count);
-
+					printf("      Descriptor Count: %i\n",
+							h->p2p_count);
 					offset += sizeof(struct fru_picmgext_carrier_p2p_record);
-
-					for (index = 0; index < h->p2p_count; index++)
-					{
+					for (index = 0; index < h->p2p_count; index++) {
 						/* to solve little endian /big endian problem */
 						unsigned char data[3];
 						struct fru_picmgext_carrier_p2p_descriptor * desc;
-
-					#ifndef WORDS_BIGENDIAN
+# ifndef WORDS_BIGENDIAN
 						data[0] = fru_data[offset+0];
 						data[1] = fru_data[offset+1];
 						data[2] = fru_data[offset+2];
-					#else
+# else
 						data[0] = fru_data[offset+2];
 						data[1] = fru_data[offset+1];
 						data[2] = fru_data[offset+0];
-					#endif
-
+# endif
 						desc = (struct fru_picmgext_carrier_p2p_descriptor*)&data;
-
 						printf("        Port: %02d\t->  Remote Port: %02d\t",
-							desc->local_port, desc->remote_port);
-						if((desc->remote_resource_id >> 7) == 1)
-							printf("[ AMC   ID: %02d ]\n", desc->remote_resource_id & 0x0F);
-						else
-							printf("[ local ID: %02d ]\n", desc->remote_resource_id & 0x0F);
-
+								desc->local_port, desc->remote_port);
+						if ((desc->remote_resource_id >> 7) == 1) {
+							printf("[ AMC   ID: %02d ]\n",
+									desc->remote_resource_id & 0x0F);
+						} else {
+							printf("[ local ID: %02d ]\n",
+									desc->remote_resource_id & 0x0F);
+						}
 						offset += sizeof(struct fru_picmgext_carrier_p2p_descriptor);
 					}
 				}
@@ -2525,174 +2606,193 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			break;
 
 		case FRU_AMC_P2P:
-			printf("    FRU_AMC_P2P\n");
 			{
 				unsigned int index;
 				unsigned char channel_count;
 				struct fru_picmgext_amc_p2p_record * h;
-
-				guid_count = fru_data[offset++];
+				printf("    FRU_AMC_P2P\n");
+				guid_count = fru_data[offset];
 				printf("      GUID count: %2d\n", guid_count);
-
-				for (i = 0 ; i < guid_count; i++ )
-				{
+				for (i = 0 ; i < guid_count; i++) {
 					int j;
 					printf("        GUID %2d: ", i);
-
-					for (j=0; j < sizeof(struct fru_picmgext_guid); j++) {
+					for (j=0; j < sizeof(struct fru_picmgext_guid);
+							j++) {
 						printf("%02x", fru_data[offset+j]);
+						offset += sizeof(struct fru_picmgext_guid);
+						printf("\n");
 					}
-
-					offset += sizeof(struct fru_picmgext_guid);
-					printf("\n");
-				}
-
-				h = (struct fru_picmgext_amc_p2p_record *) &fru_data[offset];
-				printf("      %s", (h->record_type?"AMC Module:":"On-Carrier Device"));
-				printf("   Recource ID: %i\n", h->resource_id);
-
-				offset += sizeof(struct fru_picmgext_amc_p2p_record);
-
-				channel_count = fru_data[offset++];
-				printf("       Descriptor Count: %i\n", channel_count);
-
-				for (index=0 ;index < channel_count; index++)
-				{
-					struct fru_picmgext_amc_channel_desc_record * d =
-					(struct fru_picmgext_amc_channel_desc_record *) &fru_data[offset];
-
-					printf("        Lane 0 Port: %i\n", d->lane0port);
-					printf("        Lane 1 Port: %i\n", d->lane1port);
-					printf("        Lane 2 Port: %i\n", d->lane2port);
-					printf("        Lane 3 Port: %i\n\n", d->lane3port);
-
-
-					offset += sizeof(struct fru_picmgext_amc_channel_desc_record);
-				}
-
-				for ( ; offset < off + length;)
-				{
-					struct fru_picmgext_amc_link_desc_record * l =
-						(struct fru_picmgext_amc_link_desc_record *) &fru_data[offset];
-
-					printf("      Link Designator:  Channel ID: %i\n"
-							"            Port Flag 0: %s%s%s%s\n",
-												l->channel_id,
-												(l->port_flag_0)?"o":"-",
-												(l->port_flag_1)?"o":"-",
-												(l->port_flag_2)?"o":"-",
-												(l->port_flag_3)?"o":"-"  );
-
-					switch (l->type)
-					{
-						/* AMC.1 */
-						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE:
-							printf("        Link Type:       %02x - "
-									"AMC.1 PCI Express\n", l->type);
-							switch (l->type_ext)
-							{
-								case AMC_LINK_TYPE_EXT_PCIE_G1_NSSC:
-									printf("        Link Type Ext:   %i - "
-											" Gen 1 capable - non SSC\n", l->type_ext);
-								break;
-
-								case AMC_LINK_TYPE_EXT_PCIE_G1_SSC:
-									printf("        Link Type Ext:   %i - "
-											" Gen 1 capable - SSC\n", l->type_ext);
-								break;
-
-								case AMC_LINK_TYPE_EXT_PCIE_G2_NSSC:
-									printf("        Link Type Ext:   %i - "
-											" Gen 2 capable - non SSC\n", l->type_ext);
-								break;
-								case AMC_LINK_TYPE_EXT_PCIE_G2_SSC:
-									printf("        Link Type Ext:   %i - "
-											" Gen 2 capable - SSC\n", l->type_ext);
-								break;
-								default:
-									printf("        Link Type Ext:   %i - "
-											" Invalid\n", l->type_ext);
-								break;
-							}
-
-						break;
-
-						/* AMC.1 */
-						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS1:
-						case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS2:
-							printf("        Link Type:       %02x - "
-									"AMC.1 PCI Express Advanced Switching\n", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
-						break;
-
-						/* AMC.2 */
-						case FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET:
-							printf("        Link Type:       %02x - "
-									"AMC.2 Ethernet\n", l->type);
-							switch (l->type_ext)
-							{
-								case AMC_LINK_TYPE_EXT_ETH_1000_BX:
-									printf("        Link Type Ext:   %i - "
-											" 1000Base-Bx (SerDES Gigabit) Ethernet Link\n", l->type_ext);
-								break;
-
-								case AMC_LINK_TYPE_EXT_ETH_10G_XAUI:
-									printf("        Link Type Ext:   %i - "
-											" 10Gbit XAUI Ethernet Link\n", l->type_ext);
-								break;
-
-								default:
-									printf("        Link Type Ext:   %i - "
-											" Invalid\n", l->type_ext);
-								break;
-							}
-						break;
-
-						/* AMC.3 */
-						case FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE:
-							printf("        Link Type:       %02x - "
-									"AMC.3 Storage\n", l->type);
-							switch (l->type_ext)
-							{
-								case AMC_LINK_TYPE_EXT_STORAGE_FC:
-									printf("        Link Type Ext:   %i - "
-											" Fibre Channel\n", l->type_ext);
-								break;
-
-								case AMC_LINK_TYPE_EXT_STORAGE_SATA:
-									printf("        Link Type Ext:   %i - "
-											" Serial ATA\n", l->type_ext);
-								break;
-
-								case AMC_LINK_TYPE_EXT_STORAGE_SAS:
-									printf("        Link Type Ext:   %i - "
-											" Serial Attached SCSI\n", l->type_ext);
-								break;
-
-								default:
-									printf("        Link Type Ext:   %i - "
-											" Invalid\n", l->type_ext);
-								break;
-							}
-						break;
-
-						/* AMC.4 */
-						case FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO:
-							printf("        Link Type:       %02x - "
-									"AMC.4 Serial Rapid IO\n", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
-						break;
-						default:
-							printf("        Link Type:       %02x - "
-									"reserved or OEM GUID", l->type);
-							printf("        Link Type Ext:   %i\n", l->type_ext);
-						break;
+					h = (struct fru_picmgext_amc_p2p_record *)&fru_data[++offset];
+					printf("      %s",
+							(h->record_type ?
+							 "AMC Module:" : "On-Carrier Device"));
+					printf("   Resource ID: %i\n", h->resource_id);
+					offset += sizeof(struct fru_picmgext_amc_p2p_record);
+					channel_count = fru_data[offset++];
+					printf("       Descriptor Count: %i\n",
+							channel_count);
+					for (index = 0; index < channel_count; index++) {
+						unsigned int data;
+						struct fru_picmgext_amc_channel_desc_record *d;
+						/* pack the data in little endian format.
+						 * Stupid intel...
+						 */
+						data = fru_data[offset] |
+							(fru_data[offset + 1] << 8) |
+							(fru_data[offset + 2] << 16);
+						d = (struct fru_picmgext_amc_channel_desc_record *)&data;
+						printf("        Lane 0 Port: %i\n",
+								d->lane0port);
+						printf("        Lane 1 Port: %i\n",
+								d->lane1port);
+						printf("        Lane 2 Port: %i\n",
+								d->lane2port);
+						printf("        Lane 3 Port: %i\n\n",
+								d->lane3port);
+						offset += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
 					}
+					for (; offset < off + length;) {
+						unsigned int data[2];
+						struct fru_picmgext_amc_link_desc_record *l;
+						l = (struct fru_picmgext_amc_link_desc_record *)&data[0];
+						data[0] = fru_data[offset] |
+							(fru_data[offset + 1] << 8) |
+							(fru_data[offset + 2] << 16) |
+							(fru_data[offset + 3] << 24);
+						data[1] = fru_data[offset + 4];
+						printf( "      Link Designator:  Channel ID: %i\n"
+								"            Port Flag 0: %s%s%s%s\n",
+								l->channel_id,
+								(l->port_flag_0)?"o":"-",
+								(l->port_flag_1)?"o":"-",
+								(l->port_flag_2)?"o":"-",
+								(l->port_flag_3)?"o":"-"  );
+						switch (l->type) {
+							case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE:
+								/* AMC.1 */
+								printf( "        Link Type:       %02x - "
+										"AMC.1 PCI Express\n", l->type);
+								switch (l->type_ext) {
+									case AMC_LINK_TYPE_EXT_PCIE_G1_NSSC:
+										printf( "        Link Type Ext:   %i - "
+												" Gen 1 capable - non SSC\n",
+												l->type_ext);
+									break;
+									case AMC_LINK_TYPE_EXT_PCIE_G1_SSC:
+										printf( "        Link Type Ext:   %i - "
+												" Gen 1 capable - SSC\n",
+												l->type_ext);
+										break;
+									case AMC_LINK_TYPE_EXT_PCIE_G2_NSSC:
+										printf( "        Link Type Ext:   %i - "
+												" Gen 2 capable - non SSC\n",
+												l->type_ext);
+										break;
+									case AMC_LINK_TYPE_EXT_PCIE_G2_SSC:
+										printf( "        Link Type Ext:   %i - "
+												" Gen 2 capable - SSC\n",
+												l->type_ext);
+										break;
+									default:
+										printf( "        Link Type Ext:   %i - "
+												" Invalid\n",
+												l->type_ext);
+										break;
+								}
+								break;
 
-					printf("        Link group Id:   %i\n", l->group_id);
-					printf("        Link Asym Match: %i\n\n",l->asym_match);
+							case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS1:
+							case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS2:
+								/* AMC.1 */
+								printf( "        Link Type:       %02x - "
+										"AMC.1 PCI Express Advanced Switching\n",
+										l->type);
+								printf("        Link Type Ext:   %i\n",
+										l->type_ext);
+								break;
 
-					offset += sizeof(struct fru_picmgext_amc_link_desc_record);
+							case FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET:
+								/* AMC.2 */
+								printf( "        Link Type:       %02x - "
+										"AMC.2 Ethernet\n",
+										l->type);
+								switch (l->type_ext) {
+									case AMC_LINK_TYPE_EXT_ETH_1000_BX:
+										printf( "        Link Type Ext:   %i - "
+												" 1000Base-Bx (SerDES Gigabit) Ethernet Link\n",
+												l->type_ext);
+										break;
+
+									case AMC_LINK_TYPE_EXT_ETH_10G_XAUI:
+										printf( "        Link Type Ext:   %i - "
+												" 10Gbit XAUI Ethernet Link\n",
+										l->type_ext);
+										break;
+
+									default:
+										printf( "        Link Type Ext:   %i - "
+												" Invalid\n",
+												l->type_ext);
+										break;
+								}
+								break;
+
+							case FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE:
+								/* AMC.3 */
+								printf( "        Link Type:       %02x - "
+										"AMC.3 Storage\n",
+										l->type);
+								switch (l->type_ext) {
+									case AMC_LINK_TYPE_EXT_STORAGE_FC:
+										printf( "        Link Type Ext:   %i - "
+												" Fibre Channel\n",
+												l->type_ext);
+										break;
+
+									case AMC_LINK_TYPE_EXT_STORAGE_SATA:
+										printf( "        Link Type Ext:   %i - "
+												" Serial ATA\n",
+												l->type_ext);
+										break;
+
+									case AMC_LINK_TYPE_EXT_STORAGE_SAS:
+										printf( "        Link Type Ext:   %i - "
+												" Serial Attached SCSI\n",
+												l->type_ext);
+										break;
+
+									default:
+										printf( "        Link Type Ext:   %i - "
+												" Invalid\n",
+												l->type_ext);
+										break;
+								}
+								break;
+
+							case FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO:
+								/* AMC.4 */
+								printf( "        Link Type:       %02x - "
+										"AMC.4 Serial Rapid IO\n",
+										l->type);
+								printf("        Link Type Ext:   %i\n",
+										l->type_ext);
+								break;
+
+							default:
+								printf( "        Link Type:       %02x - "
+										"reserved or OEM GUID",
+										l->type);
+								printf("        Link Type Ext:   %i\n",
+										l->type_ext);
+								break;
+						}
+
+						printf("        Link group Id:   %i\n",
+								l->group_id);
+						printf("        Link Asym Match: %i\n\n",
+								l->asym_match);
+						offset += FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE;
+					}
 				}
 			}
 			break;
@@ -2708,8 +2808,8 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 			siteCount  = fru_data[offset++];
 
 			printf("      AMC.0 extension version: R%d.%d\n",
-												(extVersion >> 0)& 0x0F,
-												(extVersion >> 4)& 0x0F );
+					(extVersion >> 0)& 0x0F,
+					(extVersion >> 4)& 0x0F );
 			printf("      Carrier Sie Number Cnt: %d\n", siteCount);
 
 			for (i = 0 ; i < siteCount; i++ ){
@@ -2789,8 +2889,8 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 				indirect_cnt = fru_data[offset++];
 				direct_cnt   = fru_data[offset++];
 				printf("         Cnt: Indirect 0x%02x  /  Direct 0x%02x\n",
-											indirect_cnt,
-											direct_cnt  );
+						indirect_cnt,
+						direct_cnt);
 
 				/* indirect desc */
 				for(j=0; j<indirect_cnt; j++){
@@ -2823,12 +2923,12 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 					offset += 4;
 
 					printf("          - Feature: 0x%02x  - PLL: %x / Asym: %s\n",
-												feature,
-												(feature > 1) & 1,
-												(feature&1)?"Source":"Receiver");
+							feature,
+							(feature > 1) & 1,
+							(feature&1)?"Source":"Receiver");
 					printf("            Family:  0x%02x  - AccLVL: 0x%02x\n", family, accuracy);
-					printf("            FRQ: %-9d - min: %-9d - max: %-9d\n",
-										(int)freq, (int)min_freq, (int)max_freq);
+					printf("            FRQ: %-9ld - min: %-9ld - max: %-9ld\n",
+							freq, min_freq, max_freq);
 				}
 				printf("\n");
 			}

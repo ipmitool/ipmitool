@@ -397,20 +397,21 @@ struct fru_picmgext_amc_link_desc {
 #define OEM_SWFW_NBLOCK_OFFSET 0x05
 #define OEM_SWFW_FIELD_START_OFFSET 0x06
 
+#define FRU_PICMGEXT_CHN_DESC_RECORD_SIZE 3
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
 struct fru_picmgext_chn_desc {
 #ifndef WORDS_BIGENDIAN
-	unsigned char remote_slot:8;
-	unsigned char remote_chn:5;
-	unsigned char local_chn:5;
-	unsigned char:6;
+	unsigned int remote_slot:8;
+	unsigned int remote_chn:5;
+	unsigned int local_chn:5;
+	unsigned int res:14;
 #else
-	unsigned char:6;
-	unsigned char local_chn:5;
-	unsigned char remote_chn:5;
-	unsigned char remote_slot:8;
+	unsigned int res:14;
+	unsigned int local_chn:5;
+	unsigned int remote_chn:5;
+	unsigned int remote_slot:8;
 #endif
 }ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
@@ -507,28 +508,30 @@ struct fru_picmgext_amc_p2p_record {
 #pragma pack(0)
 #endif
 
+#define FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE 3
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
 struct fru_picmgext_amc_channel_desc_record {
 #ifndef WORDS_BIGENDIAN
-	unsigned char lane0port           :5;
-	unsigned char lane1port           :5;
-	unsigned char lane2port           :5;
-	unsigned char lane3port           :5;
-	unsigned char  /*reserved */     :4;
-#else	
-	unsigned char /*reserved  */     :4;
-	unsigned char lane3port           :5;
-	unsigned char lane2port           :5;
-	unsigned char lane1port           :5;
-	unsigned char lane0port           :5;
+	unsigned int lane0port           :5;
+	unsigned int lane1port           :5;
+	unsigned int lane2port           :5;
+	unsigned int lane3port           :5;
+	unsigned int /* reserved */      :12;
+#else
+	unsigned int /* reserved */      :12;
+	unsigned int lane3port           :5;
+	unsigned int lane2port           :5;
+	unsigned int lane1port           :5;
+	unsigned int lane0port           :5;
 #endif 
 }ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
+#define FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE 5
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
@@ -552,27 +555,28 @@ struct fru_picmgext_amc_link_desc_record {
 	#define AMC_LINK_TYPE_EXT_STORAGE_SATA	0x01
 	#define AMC_LINK_TYPE_EXT_STORAGE_SAS	0x02
 #ifndef WORDS_BIGENDIAN
-	unsigned short channel_id          :8;
-	unsigned short port_flag_0         :1;
-	unsigned short port_flag_1         :1;
-	unsigned short port_flag_2         :1;
-	unsigned short port_flag_3         :1;
-	unsigned short type                :8;
-	unsigned short type_ext            :4;
-	unsigned short group_id            :8;
-	unsigned char  asym_match          :2;
-	unsigned char  /* reserved */      :6;
+	unsigned int channel_id          :8;
+	unsigned int port_flag_0         :1;
+	unsigned int port_flag_1         :1;
+	unsigned int port_flag_2         :1;
+	unsigned int port_flag_3         :1;
+	unsigned int type                :8;
+	unsigned int type_ext            :4;
+	unsigned int group_id            :8;
+	unsigned int asym_match          :2;
+	unsigned int  /* reserved */     :30;
 #else	
-	unsigned char  /* reserved */      :6;
-	unsigned char  asym_match          :2;
-	unsigned short group_id            :8;
-	unsigned short type_ext            :4;
-	unsigned short type                :8;
-	unsigned short port_flag_3         :1;
-	unsigned short port_flag_2         :1;
-	unsigned short port_flag_1         :1;
-	unsigned short port_flag_0         :1;
-	unsigned short channel_id          :8;
+	unsigned int group_id            :8;
+	unsigned int type_ext            :4;
+	unsigned int type                :8;
+	unsigned int port_flag_3         :1;
+	unsigned int port_flag_2         :1;
+	unsigned int port_flag_1         :1;
+	unsigned int port_flag_0         :1;
+	unsigned int channel_id          :8;
+
+	unsigned int  /* reserved */     :30;
+	unsigned int asym_match          :2;
 #endif 
 }ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
