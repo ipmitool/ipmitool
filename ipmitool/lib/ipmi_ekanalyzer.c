@@ -3964,9 +3964,9 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		struct ipmi_ek_multi_header ** list_last)
 {
 	FILE * input_file;
-	char data;
+	unsigned char data;
 	unsigned char last_record = 0;
-	int multi_offset = 0;
+	unsigned int multi_offset = 0;
 	int record_count = 0;
 
 	input_file = fopen(filename, "r");
@@ -4012,9 +4012,10 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		}
 		if (verbose > 1) {
 			int i;
-			printf("%02x\t", (*list_record)->header.type);
+			printf("Type: %02x\t", (*list_record)->header.type);
 			for (i = 0; i < ((*list_record)->header.len); i++) {
-				printf("%02x\t", (*list_record)->data[i]);
+				printf("0x%04x: %02x\t", 
+					i, (*list_record)->data[i]);
 			}
 			printf("\n");
 		}
