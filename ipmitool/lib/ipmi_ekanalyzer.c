@@ -2124,21 +2124,24 @@ ipmi_ek_display_link_descriptor( int file_type, unsigned char rsc_id,
          printf("    - Link Type extension: %s\n",
                val2str (link_desc.type_ext, ipmi_ekanalyzer_extension_PCIE) );
          printf("    - Link Group ID: %d || ", link_desc.group_id );
-         printf("Link Asym. Match: %s\n",
+         printf("Link Asym. Match: %d - %s\n",
+                  link_desc.asym_match, 
                   val2str (link_desc.asym_match, ipmi_ekanalyzer_asym_PCIE) );
          break;
       case FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET:
          printf("    - Link Type extension: %s\n",
             val2str (link_desc.type_ext, ipmi_ekanalyzer_extension_ETHERNET) );
          printf("    - Link Group ID: %d || ", link_desc.group_id );
-         printf("Link Asym. Match: %s\n",
+         printf("Link Asym. Match: %d - %s\n",
+                  link_desc.asym_match, 
                   val2str (link_desc.asym_match, ipmi_ekanalyzer_asym_PCIE) );
          break;
       case FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE:
          printf("    - Link Type extension: %s\n",
             val2str (link_desc.type_ext, ipmi_ekanalyzer_extension_STORAGE) );
          printf("    - Link Group ID: %d || ", link_desc.group_id );
-         printf("Link Asym. Match: %s\n",
+         printf("Link Asym. Match: %d - %s\n",
+                  link_desc.asym_match, 
                   val2str (link_desc.asym_match, ipmi_ekanalyzer_asym_STORAGE) );
          break;
       default:
@@ -3653,12 +3656,11 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
          data = record->data[index_data] | 
              (record->data[index_data + 1] << 8) |
              (record->data[index_data + 2] << 16);
-         /*Warning: For gcc version between 4.0 and 4.3 this code doesnt work*/
          ch_desc = ( struct fru_picmgext_amc_channel_desc_record * ) &data;
-         printf("      Lane 0 Port: 0x%02x\n", ch_desc->lane0port);
-         printf("      Lane 1 Port: 0x%02x\n", ch_desc->lane1port);
-         printf("      Lane 2 Port: 0x%02x\n", ch_desc->lane2port);
-         printf("      Lane 3 Port: 0x%02x\n\n", ch_desc->lane3port);
+         printf("      Lane 0 Port: %d\n", ch_desc->lane0port);
+         printf("      Lane 1 Port: %d\n", ch_desc->lane1port);
+         printf("      Lane 2 Port: %d\n", ch_desc->lane2port);
+         printf("      Lane 3 Port: %d\n\n", ch_desc->lane3port);
          index_data += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
       }
    }
@@ -3685,7 +3687,8 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
             printf("\t- Link Type extension: %s\n",
                  val2str (link_desc->type_ext, ipmi_ekanalyzer_extension_PCIE));
             printf("\t- Link Group ID: %d\n ", link_desc->group_id );
-            printf("\t- Link Asym. Match: %s\n",
+            printf("\t- Link Asym. Match: %d - %s\n",
+                 link_desc->asym_match, 
                  val2str (link_desc->asym_match, ipmi_ekanalyzer_asym_PCIE));
             break;
          case FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET:
@@ -3693,7 +3696,8 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
                  val2str (link_desc->type_ext,
                            ipmi_ekanalyzer_extension_ETHERNET));
             printf("\t- Link Group ID: %d \n", link_desc->group_id );
-            printf("\t- Link Asym. Match: %s\n",
+            printf("\t- Link Asym. Match: %d - %s\n",
+                 link_desc->asym_match, 
                  val2str (link_desc->asym_match, ipmi_ekanalyzer_asym_PCIE));
             break;
          case FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE:
@@ -3701,11 +3705,12 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
                  val2str (link_desc->type_ext,
                            ipmi_ekanalyzer_extension_STORAGE));
             printf("\t- Link Group ID: %d \n", link_desc->group_id );
-            printf("\t- Link Asym. Match: %s\n",
+            printf("\t- Link Asym. Match: %d - %s\n",
+                 link_desc->asym_match, 
                  val2str (link_desc->asym_match, ipmi_ekanalyzer_asym_STORAGE));
             break;
          default:
-            printf("\t- Link Type extension: %i\n", link_desc->type_ext );
+            printf("\t- Link Type extension: %i (Unknown)\n", link_desc->type_ext );
             printf("\t- Link Group ID: %d \n", link_desc->group_id );
             printf("\t- Link Asym. Match: %i\n", link_desc->asym_match);
             break;
