@@ -3963,7 +3963,6 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		struct ipmi_ek_multi_header ** list_record,
 		struct ipmi_ek_multi_header ** list_last)
 {
-	int return_status = ERROR_STATUS;
 	FILE * input_file;
 	char data;
 	unsigned char last_record = 0;
@@ -3982,7 +3981,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		lprintf(LOG_NOTICE, "There is no multi record in the file %s\n",
 				filename);
 		fclose(input_file);
-		return OK_STATUS;
+		return ERROR_STATUS;
 	}
 	/* the offset value is in multiple of 8 bytes. */
 	multi_offset = data * 8;
@@ -4027,7 +4026,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		}
 		record_count++;
 	}
-	return return_status;
+	return OK_STATUS;
 }
 
 
