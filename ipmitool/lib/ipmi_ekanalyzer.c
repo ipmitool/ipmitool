@@ -2240,8 +2240,8 @@ ipmi_ek_create_amc_p2p_record( struct ipmi_ek_multi_header * record,
       /*Calculate link descriptor count*/
       amc_record->link_desc_count = ( (record->header.len) - 8 -
                                        (SIZE_OF_GUID*amc_record->guid_count) -
-                        ( sizeof(struct fru_picmgext_amc_channel_desc_record)*
-                                 amc_record->ch_count )
+                                       (FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
+                                        amc_record->ch_count)
                                     )/5 ;
    }
    else{
@@ -2249,8 +2249,8 @@ ipmi_ek_create_amc_p2p_record( struct ipmi_ek_multi_header * record,
       amc_record->ch_count = record->data[index_data++];
       /*Calculate link descriptor count see spec AMC.0 for detail*/
       amc_record->link_desc_count = ( (record->header.len) - 8 -
-                        ( sizeof(struct fru_picmgext_amc_channel_desc_record)*
-                                 amc_record->ch_count )
+                                      (FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE *
+                                       amc_record->ch_count )
                                     ) / 5;
    }
 
@@ -2259,10 +2259,20 @@ ipmi_ek_create_amc_p2p_record( struct ipmi_ek_multi_header * record,
       amc_record->ch_desc = malloc ( (amc_record->ch_count) * \
                            sizeof(struct fru_picmgext_amc_channel_desc_record));
       for (ch_index = 0; ch_index < amc_record->ch_count; ch_index++){
-         memcpy(&amc_record->ch_desc[ch_index], &record->data[index_data],
-               sizeof(struct fru_picmgext_amc_channel_desc_record) );
+         unsigned int data;
+         struct fru_picmgext_amc_channel_desc_record *src, *dst;
+         data = record->data[index_data] | 
+              (record->data[index_data + 1] << 8) |
+              (record->data[index_data + 2] << 16);
 
-         index_data += sizeof(struct fru_picmgext_amc_channel_desc_record) ;
+         src = (struct fru_picmgext_amc_channel_desc_record *) &data;
+         dst = (struct fru_picmgext_amc_channel_desc_record *) 
+               &amc_record->ch_desc[ch_index];
+         dst->lane0port = src->lane0port;
+         dst->lane1port = src->lane1port;
+         dst->lane2port = src->lane2port;
+         dst->lane3port = src->lane3port;
+         index_data += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
       }
    }
    if (amc_record->link_desc_count > 0){
@@ -2270,9 +2280,27 @@ ipmi_ek_create_amc_p2p_record( struct ipmi_ek_multi_header * record,
       amc_record->link_desc = malloc ( amc_record->link_desc_count *
                         sizeof(struct fru_picmgext_amc_link_desc_record) );
       for (i = 0; i< amc_record->link_desc_count; i++ ){
-         memcpy (&amc_record->link_desc[i], &record->data[index_data],
-                  sizeof(struct fru_picmgext_amc_link_desc_record) );
-         index_data += sizeof (struct fru_picmgext_amc_link_desc_record);
+         unsigned int data[2];
+         struct fru_picmgext_amc_link_desc_record *src, *dst;
+         data[0] = record->data[index_data] | 
+                       (record->data[index_data + 1] << 8) |
+                       (record->data[index_data + 2] << 16) |
+                       (record->data[index_data + 3] << 24);
+         data[1] = record->data[index_data + 4];
+         src = (struct fru_picmgext_amc_link_desc_record*) &data;
+         dst = (struct fru_picmgext_amc_link_desc_record*) 
+                       &amc_record->link_desc[i];
+
+         dst->channel_id = src->channel_id;
+         dst->port_flag_0 = src->port_flag_0;
+         dst->port_flag_1 = src->port_flag_1;
+         dst->port_flag_2 = src->port_flag_2;
+         dst->port_flag_3 = src->port_flag_3;
+         dst->type = src->type;
+         dst->type_ext = src->type_ext;
+         dst->group_id = src->group_id;
+         dst->asym_match = src->asym_match;
+         index_data += FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE;
       }
    }
    else{
@@ -3616,31 +3644,41 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
 
    if ( ch_count > 0 ){
       for ( index = 0; index < ch_count; index++ ){
+         unsigned int data;
          struct fru_picmgext_amc_channel_desc_record * ch_desc;
          printf("   AMC Channel Descriptor {%02x%02x%02x}\n",
                record->data[index_data+2], record->data[index_data+1],
                record->data[index_data]
                );
+         data = record->data[index_data] | 
+             (record->data[index_data + 1] << 8) |
+             (record->data[index_data + 2] << 16);
          /*Warning: For gcc version between 4.0 and 4.3 this code doesnt work*/
-         ch_desc = ( struct fru_picmgext_amc_channel_desc_record * )\
-                     &record->data[index_data];
+         ch_desc = ( struct fru_picmgext_amc_channel_desc_record * ) &data;
          printf("      Lane 0 Port: 0x%02x\n", ch_desc->lane0port);
          printf("      Lane 1 Port: 0x%02x\n", ch_desc->lane1port);
          printf("      Lane 2 Port: 0x%02x\n", ch_desc->lane2port);
          printf("      Lane 3 Port: 0x%02x\n\n", ch_desc->lane3port);
-         index_data += sizeof (struct fru_picmgext_amc_channel_desc_record) ;
+         index_data += FRU_PICMGEXT_AMC_CHANNEL_DESC_RECORD_SIZE;
       }
    }
    while ( index_data < record->header.len ){
       /*Warning: For gcc version between 4.0 and 4.3 this code doesnt work*/
-      struct fru_picmgext_amc_link_desc_record * link_desc =
-        (struct fru_picmgext_amc_link_desc_record *)&record->data[index_data];
+      unsigned int data[2];
+      struct fru_picmgext_amc_link_desc_record *link_desc;
+      data[0] = record->data[index_data] | 
+              (record->data[index_data + 1] << 8) |
+              (record->data[index_data + 2] << 16) |
+              (record->data[index_data + 3] << 24);
+      data[1] = record->data[index_data + 4];
+
+      link_desc = (struct fru_picmgext_amc_link_desc_record *) &data[0];
 
       printf("   AMC Link Descriptor:\n" );
 
       printf("\t- Link Type: %s \n",
                val2str (link_desc->type, ipmi_ekanalyzer_link_type));
-      switch ( link_desc->type ){
+      switch ( link_desc->type ) {
          case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE:
          case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS1:
          case FRU_PICMGEXT_AMC_LINK_TYPE_PCIE_AS2:
@@ -3678,7 +3716,7 @@ ipmi_ek_display_amc_p2p_record( struct ipmi_ek_multi_header * record )
       printf("\t\t Lane 1: %s\n", (link_desc->port_flag_1)?"enable":"disable");
       printf("\t\t Lane 2: %s\n", (link_desc->port_flag_2)?"enable":"disable");
       printf("\t\t Lane 3: %s\n", (link_desc->port_flag_3)?"enable":"disable");
-      index_data += sizeof (struct fru_picmgext_amc_link_desc_record);
+      index_data += FRU_PICMGEXT_AMC_LINK_DESC_RECORD_SIZE;
    }
 }
 
