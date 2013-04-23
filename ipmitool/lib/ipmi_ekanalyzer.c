@@ -4011,12 +4011,15 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		}
 		if (verbose > 1) {
 			int i;
-			printf("Type: %02x\t", (*list_record)->header.type);
+			printf("Type: %02x", (*list_record)->header.type);
 			for (i = 0; i < ((*list_record)->header.len); i++) {
-				printf("0x%04x: %02x\t", 
-					i, (*list_record)->data[i]);
+				if (!(i % 8)) {
+					printf("\n0x%02x: ", i);
+				}
+				printf("%02x ",
+					(*list_record)->data[i]);
 			}
-			printf("\n");
+			printf("\n\n");
 		}
 		ipmi_ek_add_record2list(list_record, list_head, list_last);
 		/* mask the 8th bits to see if it is the last record */
