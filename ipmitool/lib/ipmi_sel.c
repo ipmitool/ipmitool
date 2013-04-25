@@ -329,6 +329,7 @@ ipmi_sel_add_entry(struct ipmi_intf * intf, struct sel_event_record * rec)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 
+	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
 	req.msg.cmd = IPMI_CMD_ADD_SEL_ENTRY;
 	req.msg.data = (unsigned char *)rec;
