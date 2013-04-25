@@ -448,13 +448,17 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 			printf("    %s\n", ipm_dev_adtl_dev_support[i]);
 		}
 	}
-	printf("Aux Firmware Rev Info     : \n");
-	/* These values could be looked-up by vendor if documented,
-	 * so we put them on individual lines for better treatment later
-	 */
-	printf("    0x%02x\n    0x%02x\n    0x%02x\n    0x%02x\n",
-		devid->aux_fw_rev[0], devid->aux_fw_rev[1],
-		devid->aux_fw_rev[2], devid->aux_fw_rev[3]);
+	if (rsp->data_len == sizeof(*devid)) {
+		printf("Aux Firmware Rev Info     : \n");
+		/* These values could be looked-up by vendor if documented,
+		 * so we put them on individual lines for better treatment later
+		 */
+		printf("    0x%02x\n    0x%02x\n    0x%02x\n    0x%02x\n",
+			devid->aux_fw_rev[0],
+			devid->aux_fw_rev[1],
+			devid->aux_fw_rev[2],
+			devid->aux_fw_rev[3]);
+	}
 	return 0;
 }
 
