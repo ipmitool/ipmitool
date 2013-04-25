@@ -209,11 +209,18 @@ AC_ARG_WITH([kerneldir],
 
 AH_TEMPLATE([HAVE_LINUX_COMPILER_H], [])
 AC_MSG_CHECKING([for linux/compiler.h])
-AC_PREPROC_IFELSE([#include <linux/compiler.h>],
-	[AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
+
+m4_version_prereq([2.68],
+	[AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <linux/compiler.h>]])],
+		[AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
+			[Define to 1 if you have the <linux/compiler.h> header file.])
+		AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])],
+	[AC_PREPROC_IFELSE([#include <linux/compiler.h>],
+		[AC_DEFINE(HAVE_LINUX_COMPILER_H, [1],
 		[Define to 1 if you have the <linux/compiler.h> header file.])
-	AC_MSG_RESULT([yes])],
-	[AC_MSG_RESULT([no])])
+		AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])])
 
 CPPFLAGS=$ORIG_CPPFLAGS
 AC_SUBST(CPPFLAGS)
