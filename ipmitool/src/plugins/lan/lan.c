@@ -212,9 +212,10 @@ get_random(void *data, int len)
 
 	if (fd < 0)
 		return errno;
-	if (len < 0)
+	if (len < 0) {
 		close(fd);
 		return errno; /* XXX: ORLY? */
+	}
 
 	rv = read(fd, data, len);
 
