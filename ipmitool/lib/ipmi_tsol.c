@@ -456,9 +456,10 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 */
 	if (recvip == NULL) {
 		result = intf->open(intf);	/* must connect first */
-		if (result < 0)
+		if (result < 0) {
 			close(fd_socket);
 			return -1;
+		}
 
 		mylen = sizeof(myaddr);
 		if (getsockname(intf->fd, (struct sockaddr *)&myaddr, &mylen) < 0) {
