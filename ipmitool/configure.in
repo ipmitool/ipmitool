@@ -51,7 +51,16 @@ if test "x$exec_prefix" = "xNONE"; then
 	exec_prefix="$prefix"
 fi
 
+dnl
+dnl set default option values
+dnl
+
+xenable_intf_bmc=no
+xenable_intf_imb=yes
+xenable_intf_open=yes
+xenable_intf_lipmi=yes
 xenable_all_options=yes
+xenable_ipmishell=yes
 
 dnl set some things so we build with GNU tools on Solaris
 case "$host_os" in
@@ -76,7 +85,6 @@ solaris*)
 	xenable_intf_open=no
 	xenable_intf_lipmi=no
 	xenable_intf_bmc=no
-	xenable_ipmishell=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
@@ -386,7 +394,7 @@ AC_ARG_ENABLE([intf-open],
 	[AC_HELP_STRING([--enable-intf-open],
 			[enable Linux OpenIPMI interface [default=auto]])],
 	[xenable_intf_open=$enableval],
-	[xenable_intf_open=yes])
+	[])
 if test "x$xenable_intf_open" = "xstatic" || test "x$xenable_intf_open" = "xplugin"; then
 	xenable_intf_open=yes
 fi
@@ -429,7 +437,7 @@ AC_ARG_ENABLE([intf-imb],
 	[AC_HELP_STRING([--enable-intf-imb],
 			[enable Intel IMB driver interface [default=auto]])],
 	[xenable_intf_imb=$enableval],
-	[xenable_intf_imb=yes])
+	[])
 if test "x$xenable_intf_imb" = "xstatic" || test "x$xenable_intf_imb" = "xplugin"; then
 	xenable_intf_imb=yes
 fi
@@ -446,7 +454,7 @@ AC_ARG_ENABLE([intf-lipmi],
 	[AC_HELP_STRING([--enable-intf-lipmi],
 			[enable Solaris 9 x86 IPMI interface [default=no]])],
 	[xenable_intf_lipmi=$enableval],
-	[xenable_intf_lipmi=no])
+	[])
 if test "x$xenable_intf_lipmi" = "xstatic" || test "x$xenable_intf_lipmi" = "xplugin"; then
 	xenable_intf_lipmi=yes
 fi
@@ -479,12 +487,21 @@ fi
 
 AC_SUBST(IPMITOOL_INTF_LIB)
 
+if test "x$xenable_ipmishell" = "xyes"; then
+	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
+	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
+	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
+	if test "x$have_curses" != "xyes" || test "x$have_readline" != "xyes"; then
+		xenable_ipmishell=no
+	fi
+fi
+
 dnl check for readline library to enable ipmi shell
 AC_ARG_ENABLE([ipmishell],
 	[AC_HELP_STRING([--enable-ipmishell],
-			[enable IPMI shell interface [default=yes]])],
+			[enable IPMI shell interface [default=auto]])],
 	[xenable_ipmishell=$enableval],
-	[xenable_ipmishell=yes])
+	[])
 if test "x$xenable_ipmishell" = "xyes"; then
 	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
 	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
