@@ -2138,7 +2138,7 @@ ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf *intf,
 
 	if (verbose == 0) {
 		if (csv_output)
-			printf("%s,00h,ok,%d.%d",
+			printf("%s,00h,ok,%d.%d\n",
 			       mc->id_code ? desc : "",
 			       mc->entity.id, mc->entity.instance);
 		else if (sdr_extended) {
@@ -2231,7 +2231,7 @@ ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf *intf,
 
 	if (!verbose) {
 		if (csv_output)
-			printf("%s,00h,ns,%d.%d,",
+			printf("%s,00h,ns,%d.%d\n",
 			       dev->id_code ? desc : "",
 			       dev->entity.id, dev->entity.instance);
 		else if (sdr_extended)
@@ -2288,7 +2288,7 @@ ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf *intf,
 
 	if (!verbose) {
 		if (csv_output)
-			printf("%s,00h,ns,%d.%d,",
+			printf("%s,00h,ns,%d.%d\n",
 			       fru->id_code ? desc : "",
 			       fru->entity.id, fru->entity.instance);
 		else if (sdr_extended)
