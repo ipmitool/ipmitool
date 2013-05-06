@@ -165,11 +165,13 @@ struct ipmi_intf {
 	int opened;
 	int abort;
 	int noanswer;
+	int picmg_avail;
 	IPMI_OEM manufacturer_id;
 
 	struct ipmi_session * session;
 	struct ipmi_oem_handle * oem;
 	struct ipmi_cmd * cmdlist;
+	uint8_t	target_ipmb_addr;
 	uint32_t my_addr;
 	uint32_t target_addr;
 	uint8_t target_lun;
@@ -188,6 +190,7 @@ struct ipmi_intf {
 	struct ipmi_rs *(*recv_sol)(struct ipmi_intf * intf);
 	struct ipmi_rs *(*send_sol)(struct ipmi_intf * intf, struct ipmi_v2_payload * payload);
 	int (*keepalive)(struct ipmi_intf * intf);
+	int (*set_my_addr)(struct ipmi_intf * intf, uint8_t addr);
 };
 
 struct ipmi_intf * ipmi_intf_load(char * name);

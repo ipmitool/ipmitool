@@ -836,6 +836,30 @@ struct sensor_reading {
 	const char	*s_a_units;		/* analog value units string */
 };
 
+/*
+ * Determine if bridging is necessary to address a sensor at the given
+ * address (_addr) and (_chan) via the interface (_intf).
+ *
+ * If the sensor is being addressed on channel zero, it resides on
+ * IPMB-0.  If the interface target IPMB-0 address is exactly the same as
+ * the sensor address then the sensor resides on the target IPMB-0
+ * so we don't need extra levels of bridging to address  the sensor.
+ *	Or
+ * If the sensor target address and channel match the interface target address
+ * and channel then there is no extra levels of bridging required.
+ *
+ * Note:
+ *	The target IPMB-0 address is the address of the SDR repository that was
+ *	accessed using the user specified bridging command line arguments.
+ *	Access to any sensor on the target IPMB-0 can be addressed using the
+ *	target address and transit address in the interface.
+ */
+#define BRIDGE_TO_SENSOR(_intf, _addr, _chan)			\
+ ( !((_chan == 0 && _intf->target_ipmb_addr &&			\
+			     _intf->target_ipmb_addr == _addr)  ||	\
+    (_addr == _intf->target_addr && _chan == _intf->target_channel)) )
+
+
 struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf,
                                          int use_builtin);
 struct sdr_get_rs *ipmi_sdr_get_next_header(struct ipmi_intf *intf,

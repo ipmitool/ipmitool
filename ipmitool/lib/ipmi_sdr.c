@@ -456,13 +456,15 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
 	uint32_t save_channel;
 
-	save_addr = intf->target_addr;
-	intf->target_addr = target;
-	save_channel = intf->target_channel;
-	intf->target_channel = channel;
+	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
+		save_addr = intf->target_addr;
+		intf->target_addr = target;
+		save_channel = intf->target_channel;
+		intf->target_channel = channel;
+	}
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -471,8 +473,10 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 	req.msg.data_len = sizeof (sensor);
 
 	rsp = intf->sendrecv(intf, &req);
-	intf->target_addr = save_addr;
-	intf->target_channel = save_channel;
+	if ( save_addr ) {
+		intf->target_addr = save_addr;
+		intf->target_channel = save_channel;
+	}
 	return rsp;
 }
 
@@ -493,13 +497,15 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
 	struct ipmi_rs *rsp;
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
 	uint32_t save_channel;
 
-	save_addr = intf->target_addr;
-	intf->target_addr = target;
-	save_channel = intf->target_channel;
-	intf->target_channel = channel;
+	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
+		save_addr = intf->target_addr;
+		intf->target_addr = target;
+		save_channel = intf->target_channel;
+		intf->target_channel = channel;
+	}
 
 	rqdata[0] = sensor;
 	rqdata[1] = 0xff;	/* reserved */
@@ -511,8 +517,10 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	intf->target_addr = save_addr;
-	intf->target_channel = save_channel;
+	if ( save_addr ) {
+		intf->target_addr = save_addr;
+		intf->target_channel = save_channel;
+	}
 	return rsp;
 }
 
@@ -537,6 +545,7 @@ ipmi_sdr_get_sensor_reading(struct ipmi_intf *intf, uint8_t sensor)
 	return intf->sendrecv(intf, &req);
 }
 
+
 /* ipmi_sdr_get_sensor_reading_ipmb  -  retrieve a raw sensor reading from ipmb
  *
  * @intf:	ipmi interface
@@ -553,25 +562,15 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
 	uint32_t save_channel;
 
-#if 0
-	/* Enabling this code will cause sensors with an SDR Owner ID
-	 * not equal to IPMI_BMC_SLAVE_ADDR to be not readable when
-	 * running over the lanplus interface.   The
-	 * ipmi_sdr_get_sensor_reading function does not update the interface
-	 * target address or channel, so the failure makes sense.   I believe
-	 * the following code and function being called should be removed.
-	 */
-	if ((strncmp(intf->name, "ipmb", 4)) != 0)
-		return ipmi_sdr_get_sensor_reading(intf, sensor);
-#endif
-	save_addr = intf->target_addr;
-	intf->target_addr = target;
-	save_channel = intf->target_channel;
-	intf->target_channel = channel;
-
+	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
+		save_addr = intf->target_addr;
+		intf->target_addr = target;
+		save_channel = intf->target_channel;
+		intf->target_channel = channel;
+	}
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = GET_SENSOR_READING;
@@ -579,8 +578,10 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	intf->target_addr = save_addr;
-	intf->target_channel = save_channel;
+	if ( save_addr ) {
+		intf->target_addr    = save_addr;
+		intf->target_channel = save_channel;
+	}
 	return rsp;
 }
 
@@ -600,14 +601,15 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
 	uint32_t save_channel;
 
-	save_addr = intf->target_addr;
-	intf->target_addr = target;
-	save_channel = intf->target_channel;
-	intf->target_channel = channel;
-
+	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
+		save_addr = intf->target_addr;
+		intf->target_addr = target;
+		save_channel = intf->target_channel;
+		intf->target_channel = channel;
+	}
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = GET_SENSOR_EVENT_STATUS;
@@ -615,8 +617,10 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	intf->target_addr = save_addr;
-	intf->target_channel = save_channel;
+	if ( save_addr ) {
+		intf->target_addr = save_addr;
+		intf->target_channel = save_channel;
+	}
 	return rsp;
 }
 
@@ -636,13 +640,15 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
 	uint32_t save_channel;
 
-	save_addr = intf->target_addr;
-	intf->target_addr = target;
-	save_channel = intf->target_channel;
-	intf->target_channel = channel;
+	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
+		save_addr = intf->target_addr;
+		intf->target_addr = target;
+		save_channel = intf->target_channel;
+		intf->target_channel = channel;
+	}
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -651,8 +657,10 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	intf->target_addr = save_addr;
-	intf->target_channel = save_channel;
+	if ( save_addr ) {
+		intf->target_addr = save_addr;
+		intf->target_channel = save_channel;
+	}
 	return rsp;
 }
 
@@ -2838,6 +2846,8 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		return NULL;
 	}
 	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
+			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		free(itr);
 		itr = NULL;
 		return NULL;

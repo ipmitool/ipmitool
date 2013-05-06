@@ -123,8 +123,9 @@ Force session privilege level.  Can be CALLBACK, USER,
 OPERATOR, ADMINISTRATOR. Default is ADMINISTRATOR.
 .TP 
 \fB\-m\fR <\fIlocal_address\fP>
-Set the local IPMB address.  The default is 0x20 and there
-should be no need to change it for normal operation.
+Set the local IPMB address.  The local address defaults to 0x20
+or is auto discovered on PICMG platforms when -m is not specified.
+There should be no need to change the local address for normal operation.
 .TP 
 \fB\-N\fR <\fIsec\fP>
 Specify nr. of seconds between retransmissions of lan/lanplus messages.

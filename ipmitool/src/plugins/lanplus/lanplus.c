@@ -1356,9 +1356,9 @@ void getIpmiPayloadWireRep(
 	len = 0;
 
 	/* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec */
-	if ((intf->target_addr == ourAddress) || (!bridgePossible))
+	if ((intf->target_addr == ourAddress) || (!bridgePossible)) {
 		cs = len;
-	else {
+	} else {
 		bridgedRequest = 1;
 
 		if(intf->transit_addr != ourAddress && intf->transit_addr != 0)
@@ -1408,6 +1408,13 @@ void getIpmiPayloadWireRep(
 			cs = len;
 		}
 	}
+
+        lprintf(LOG_DEBUG,"%s RqAddr %#x transit %#x:%#x target %#x:%#x "
+		"bridgePossible %d",
+		bridgedRequest ? "Bridging" : "Local",
+		intf->my_addr, intf->transit_addr, intf->transit_channel,
+		intf->target_addr, intf->target_channel,
+		bridgePossible);
 
 	/* rsAddr */
 	msg[len++] = intf->target_addr; /* IPMI_BMC_SLAVE_ADDR; */
@@ -3296,6 +3303,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
 			val2str(privlvl, ipmi_privlvl_vals));
+		bridgePossible = backupBridgePossible;
 		return -1;
 	}
 	if (verbose > 2)
@@ -3305,6 +3313,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
+		bridgePossible = backupBridgePossible;
 		return -1;
 	}
 
@@ -3453,13 +3462,14 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 	lprintf(LOG_DEBUG, "IPMIv2 / RMCP+ SESSION OPENED SUCCESSFULLY\n");
 
-	bridgePossible = 1;
-
 	rc = ipmi_set_session_privlvl_cmd(intf);
+
 	if (rc < 0)
 		goto fail;
 
 	intf->manufacturer_id = ipmi_get_oem(intf);
+	bridgePossible = 1;
+
 	return intf->fd;
 
  fail:

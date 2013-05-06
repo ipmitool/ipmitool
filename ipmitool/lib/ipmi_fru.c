@@ -3106,7 +3106,8 @@ int
 ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 {
 	char desc[17];
-	uint32_t save_addr;
+	uint32_t save_addr = 0;
+	uint32_t save_channel;
 	int rc = 0;
 
 	if (fru == NULL)
@@ -3146,14 +3147,19 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 	switch (fru->dev_type_modifier) {
 	case 0x00:
 	case 0x02:
-		/* save current target address */
-		save_addr = intf->target_addr;
-		/* set new target address for bridged commands */
-		intf->target_addr = fru->dev_slave_addr;
+		if (BRIDGE_TO_SENSOR(intf, fru->dev_slave_addr,
+					   fru->channel_num)) {
+			save_addr = intf->target_addr;
+			intf->target_addr = fru->dev_slave_addr;
+			save_channel = intf->target_channel;
+			intf->target_channel = fru->channel_num;
+		}
 		/* print FRU */
 		rc = __ipmi_fru_print(intf, fru->device_id);
-		/* restore previous target */
-		intf->target_addr = save_addr;
+		if (save_addr) {
+			intf->target_addr = save_addr;
+			intf->target_channel = save_channel;
+		}
 		break;
 	case 0x01:
 		rc = ipmi_spd_print_fru(intf, fru->device_id);

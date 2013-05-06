@@ -1780,3 +1780,83 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 
 	return rc;
 }
+
+uint8_t
+ipmi_picmg_ipmb_address(struct ipmi_intf *intf) {
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	char msg_data;
+
+	if (!intf->picmg_avail) {
+		return 0;
+	}
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_PICMG;
+	req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
+	msg_data    = 0x00;
+	req.msg.data = &msg_data;
+	req.msg.data_len = 1;
+	msg_data = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp && !rsp->ccode) {
+		return rsp->data[2];
+	}
+	if (rsp) {
+		lprintf(LOG_DEBUG, "Get Address Info failed: %#x %s",
+			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
+	} else {
+		lprintf(LOG_DEBUG, "Get Address Info failed: No Response");
+	}
+	return 0;
+}
+
+uint8_t
+picmg_discover(struct ipmi_intf *intf) {
+	/* Check if PICMG extension is available to use the function 
+	 * GetDeviceLocator to retreive i2c address PICMG hack to set 
+	 * right IPMB address, If extension is not supported, should 
+	 * not give any problems
+	 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
+	 *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
+	 *  PICMG Extension Version 4.1 (PICMG 3.0 Revision 3.0 AMC)
+	 */
+
+	/* First, check if PICMG extension is available and supported */
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp;
+	char msg_data;
+
+	if (intf->picmg_avail == 0) {
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_PICMG;
+		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;
+		msg_data    = 0x00;
+		req.msg.data = &msg_data;
+		req.msg.data_len = 1;
+		msg_data = 0;
+
+		lprintf(LOG_INFO, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
+			intf->my_addr, intf->transit_addr, intf->target_addr);
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp && !rsp->ccode) {
+			if ( (rsp->data[0] == 0) &&
+					((rsp->data[1] & 0x0F) == PICMG_ATCA_MAJOR_VERSION
+					|| (rsp->data[1] & 0x0F) == PICMG_AMC_MAJOR_VERSION) )	{
+				intf->picmg_avail = 1;
+				lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d",
+						(rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
+			} 
+		} else {
+			if (rsp == NULL) {
+				lprintf(LOG_INFO,"No Response from Get PICMG Properties");
+			} else {
+				lprintf(LOG_INFO,"Error Response %#x from Get PICMG Properities", rsp->ccode);
+			}
+		}
+	}
+	if (intf->picmg_avail == 0) {
+		lprintf(LOG_INFO, "No PICMG Extenstion discovered");
+	}
+	return intf->picmg_avail;
+}

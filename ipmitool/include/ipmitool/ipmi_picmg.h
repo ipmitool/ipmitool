@@ -205,5 +205,7 @@ struct sAmcPortState {
 
 
 int ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv);
+uint8_t picmg_discover(struct ipmi_intf *intf);
+uint8_t ipmi_picmg_ipmb_address(struct ipmi_intf *intf);
 
 #endif

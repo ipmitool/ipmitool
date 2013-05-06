@@ -84,13 +84,6 @@ extern int csv_output;
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
-/* defined in ipmishell.c */
-#ifdef HAVE_READLINE
-extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
-#endif
-extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
-extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
-
 static struct ipmi_intf * ipmi_main_intf = NULL;
 
 /* ipmi_password_file_read  -  Open file and read password from it
@@ -245,7 +238,6 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -m address     Set local IPMB address");
 	lprintf(LOG_NOTICE, "       -b channel     Set destination channel for bridged request");
 	lprintf(LOG_NOTICE, "       -t address     Bridge request to remote target address");
-	lprintf(LOG_NOTICE, "       -M address     Set transit local address for bridge request(dual bridge)");
 	lprintf(LOG_NOTICE, "       -B channel     Set transit channel for bridged request (dual bridge)");
 	lprintf(LOG_NOTICE, "       -T address     Set transit address for bridge request (dual bridge)");
 	lprintf(LOG_NOTICE, "       -l lun         Set destination lun for raw commands");
@@ -364,7 +356,7 @@ ipmi_main(int argc, char ** argv,
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
-	uint8_t my_addr = 0;
+	uint8_t arg_addr = 0, addr;
 	uint16_t my_long_packet_size=0;
 	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
@@ -727,7 +719,7 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'm':
-			if (str2uchar(optarg, &my_addr) != 0) {
+			if (str2uchar(optarg, &arg_addr) != 0) {
 				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-m'.");
 				rc = -1;
 				goto out_free;
@@ -880,93 +872,82 @@ ipmi_main(int argc, char ** argv,
 	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
 	ipmi_intf_session_set_cipher_suite_id(ipmi_main_intf, cipher_suite_id);
 
-	/* setup destination lun if given */
-	ipmi_main_intf->target_lun = target_lun ;
-
-	/* setup destination channel if given */
-	ipmi_main_intf->target_channel = target_channel ;
-
 	ipmi_main_intf->devnum = devnum;
 
-	/* setup IPMB local and target address if given */
-	if (my_addr) {
-		ipmi_main_intf->my_addr = my_addr;
-	} else {
-		/* Use the default for the payload source address */
-		my_addr = 0x20;
+	/* Open the interface with the specified or default IPMB address */
+	ipmi_main_intf->my_addr = arg_addr ? arg_addr : IPMI_BMC_SLAVE_ADDR;
+	if (ipmi_main_intf->open != NULL)
+		ipmi_main_intf->open(ipmi_main_intf);
 
-		/* Check if PICMG extension is available to use the function 
-		 * GetDeviceLocator to retreive i2c address PICMG hack to set 
-		 * right IPMB address, If extension is not supported, should 
-		 * not give any problems
-		 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
-		 *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
-		 */
-
-		/* First, check if PICMG extension is available and supported */
-		struct ipmi_rq req;
-		struct ipmi_rs *rsp;
-		char msg_data;
-		unsigned char version_accepted = 0;
-
-		lprintf(LOG_INFO, "Running PICMG GetDeviceLocator" );
-		memset(&req, 0, sizeof(req));
-		req.msg.netfn = IPMI_NETFN_PICMG;
-		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;
-		msg_data    = 0x00;
-		req.msg.data = &msg_data;
-		req.msg.data_len = 1;
-		msg_data = 0;
-
-		rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
-		if (rsp && !rsp->ccode) {
-			if ( (rsp->data[0] == 0) &&
-					((rsp->data[1] & 0x0F) == PICMG_ATCA_MAJOR_VERSION) )	{
-				version_accepted = 1;
-				lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d",
-						(rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
-			}
-		}
-		
-		if (version_accepted == 1) {
-			lprintf(LOG_DEBUG, "Running PICMG GetDeviceLocator");
-			memset(&req, 0, sizeof(req));
-			req.msg.netfn = IPMI_NETFN_PICMG;
-			req.msg.cmd = PICMG_GET_ADDRESS_INFO_CMD;
-			msg_data    = 0x00;
-			req.msg.data = &msg_data;
-			req.msg.data_len = 1;
-			msg_data = 0;
-
-			rsp = ipmi_main_intf->sendrecv(ipmi_main_intf, &req);
-			if (rsp && !rsp->ccode) {
-				ipmi_main_intf->my_addr = rsp->data[2];
-				ipmi_main_intf->target_addr = ipmi_main_intf->my_addr;
-				lprintf(LOG_INFO, "Discovered IPMB address = 0x%x",
-						ipmi_main_intf->my_addr);
-			}
-		} else {
-			lprintf(LOG_INFO,
-					"No PICMG Extenstion discovered, keeping IPMB address 0x20");
-		}
+	/*
+	 * Attempt picmg discovery of the actual interface address unless
+	 * the users specified an address.
+	 *	Address specification always overrides discovery
+	 */
+	if (picmg_discover(ipmi_main_intf) && !arg_addr) {
+		lprintf(LOG_DEBUG, "Running PICMG Get Address Info");
+		addr = ipmi_picmg_ipmb_address(ipmi_main_intf);
+		lprintf(LOG_INFO,  "Discovered IPMB-0 address 0x%x", addr);
 	}
 
-	if ( target_addr > 0  && (target_addr != my_addr) ) {
-		/* need to open the interface first */
-		if (ipmi_main_intf->open != NULL)
-			ipmi_main_intf->open(ipmi_main_intf);
+	/*
+	 * If we discovered the ipmb address and it is not the same as what we
+	 * used for open, Set the discovered IPMB address as my address if the
+	 * interface supports it.
+	 */
+	if (addr != 0 && addr != ipmi_main_intf->my_addr &&
+						ipmi_main_intf->set_my_addr) {
+		/*
+		 * Only set the interface address on interfaces which support
+		 * it
+		 */
+		(void) ipmi_main_intf->set_my_addr(ipmi_main_intf, addr);
+	}
 
-		ipmi_main_intf->target_addr = target_addr;
-
-		if (transit_addr > 0) {
-			ipmi_main_intf->transit_addr    = transit_addr;
-			ipmi_main_intf->transit_channel = transit_channel;
-		} else {
-			ipmi_main_intf->transit_addr = ipmi_main_intf->my_addr;
+	/* If bridging addresses are specified, handle them */
+	if (transit_addr > 0 || target_addr > 0) {
+		/* sanity check, transit makes no sense without a target */
+		if ((transit_addr != 0 || transit_channel != 0) &&
+			target_addr == 0) {
+			lprintf(LOG_ERR,
+				"Transit address/channel %#x/%#x ignored. "
+				"Target address must be specified!",
+				transit_addr, transit_channel);
+			goto out_free;
 		}
+		ipmi_main_intf->target_addr = target_addr;
+		ipmi_main_intf->target_lun = target_lun ;
+		ipmi_main_intf->target_channel = target_channel ;
+
+		ipmi_main_intf->transit_addr    = transit_addr;
+		ipmi_main_intf->transit_channel = transit_channel;
+
+
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(ipmi_main_intf, IPMI_SESSION_PRIV_ADMIN);
+		/* Get the ipmb address of the targeted entity */
+		ipmi_main_intf->target_ipmb_addr =
+					ipmi_picmg_ipmb_address(ipmi_main_intf);
+		lprintf(LOG_DEBUG, "Specified addressing     Target  %#x:%#x Transit %#x:%#x",
+					   ipmi_main_intf->target_addr,
+					   ipmi_main_intf->target_channel,
+					   ipmi_main_intf->transit_addr,
+					   ipmi_main_intf->transit_channel);
+		if (ipmi_main_intf->target_ipmb_addr) {
+			lprintf(LOG_INFO, "Discovered Target IPMB-0 address %#x",
+					   ipmi_main_intf->target_ipmb_addr);
+		}
 	}
+
+	lprintf(LOG_DEBUG, "Interface address: my_addr %#x "
+			   "transit %#x:%#x target %#x:%#x "
+			   "ipmb_target %#x\n",
+			ipmi_main_intf->my_addr,
+			ipmi_main_intf->transit_addr,
+			ipmi_main_intf->transit_channel,
+			ipmi_main_intf->target_addr,
+			ipmi_main_intf->target_channel,
+			ipmi_main_intf->target_ipmb_addr);
 
 	/* parse local SDR cache if given */
 	if (sdrcache != NULL) {
@@ -1048,3 +1029,5 @@ ipmi_main(int argc, char ** argv,
 
 	return rc;
 }
+
+

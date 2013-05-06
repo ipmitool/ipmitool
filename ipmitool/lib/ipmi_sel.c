@@ -309,8 +309,8 @@ ipmi_get_oem(struct ipmi_intf * intf)
 		return IPMI_OEM_UNKNOWN;
 	}
 	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Device ID command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
+			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		return IPMI_OEM_UNKNOWN;
 	}
 
