@@ -191,31 +191,6 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 	return str;
 }
 
-/* is_fru_id - wrapper for str-2-int FRU ID conversion. Message is printed
- * on error.
- *
- * @argv_ptr: source string to convert from; usually argv
- * @fru_id_ptr: pointer where to store result
- *
- * returns zero on success
- * returns (-1) on error and message is printed on STDERR
- */
-int
-is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr)
-{
-	if (!argv_ptr || !fru_id_ptr) {
-		lprintf(LOG_ERR, "is_fru_id(): invalid argument(s).");
-		return (-1);
-	}
-
-	if (str2uchar(argv_ptr, fru_id_ptr) == 0) {
-		return 0;
-	}
-	lprintf(LOG_ERR, "FRU ID '%s' is either invalid or out of range.",
-			argv_ptr);
-	return (-1);
-} /* is_fru_id(...) */
-
 /* is_valid_filename - checks file/path supplied by user
  *
  * input_filename - user input string

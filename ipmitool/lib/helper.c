@@ -334,6 +334,31 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr)
 	return 0;
 } /* str2ushort(...) */
 
+/* str2char - safely convert string to int8
+ *
+ * @str: source string to convert from
+ * @chr_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) if one of args is NULL, (-2) or (-3) if conversion fails
+ */
+int str2char(const char *str, int8_t * chr_ptr)
+{
+	int rc = (-3);
+	int64_t arg_long = 0;
+	if (!str || !chr_ptr) {
+		return (-1);
+	}
+	if ((rc = str2long(str, &arg_long)) != 0) {
+		*chr_ptr = 0;
+		return rc;
+	}
+	if (arg_long < INT8_MIN || arg_long > INT8_MAX) {
+		return (-3);
+	}
+	return 0;
+} /* str2char(...) */
+
 /* str2uchar - safely convert string to uint8
  *
  * @str: source string to convert from
@@ -642,3 +667,29 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 	dup(0);
 	dup(0);
 }
+
+/* is_fru_id - wrapper for str-2-int FRU ID conversion. Message is printed
+ * on error.
+ * FRU ID range: <0..255>
+ *
+ * @argv_ptr: source string to convert from; usually argv
+ * @fru_id_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) on error and message is printed on STDERR
+ */
+int
+is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr)
+{
+	if (!argv_ptr || !fru_id_ptr) {
+		lprintf(LOG_ERR, "is_fru_id(): invalid argument(s).");
+		return (-1);
+	}
+
+	if (str2uchar(argv_ptr, fru_id_ptr) == 0) {
+		return 0;
+	}
+	lprintf(LOG_ERR, "FRU ID '%s' is either invalid or out of range.",
+			argv_ptr);
+	return (-1);
+} /* is_fru_id(...) */

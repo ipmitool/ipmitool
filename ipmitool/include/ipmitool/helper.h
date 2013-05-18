@@ -72,7 +72,10 @@ int str2int(const char * str, int32_t * int_ptr);
 int str2uint(const char * str, uint32_t * uint_ptr);
 int str2short(const char * str, int16_t * shrt_ptr);
 int str2ushort(const char * str, uint16_t * ushrt_ptr);
+int str2char(const char * str, int8_t * chr_ptr);
 int str2uchar(const char * str, uint8_t * uchr_ptr);
+
+int is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr);
 
 uint16_t str2val(const char * str, const struct valstr * vs);
 void print_valstr(const struct valstr * vs, const char * title, int loglevel);
