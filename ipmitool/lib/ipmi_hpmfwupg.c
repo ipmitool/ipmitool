@@ -3826,8 +3826,19 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
    else if ( (argc == 3) && (strcmp(argv[0], "compprop") == 0) )
    {
       struct HpmfwupgGetComponentPropertiesCtx cmdCtx;
-      cmdCtx.req.componentId = strtol(argv[1], NULL, 0);
-      cmdCtx.req.selector    = strtol(argv[2], NULL, 0);
+      if (str2uchar(argv[1], &(cmdCtx.req.componentId)) != 0
+              || cmdCtx.req.componentId > 7) {
+          lprintf(LOG_ERR, "Given Component ID '%s' is invalid.", argv[1]);
+          lprintf(LOG_ERR, "Valid Compoment ID is: <0..7>");
+          return (-1);
+      }
+      if (str2uchar(argv[2], &(cmdCtx.req.selector)) != 0
+              || cmdCtx.req.selector > 4) {
+          lprintf(LOG_ERR, "Given Properties selector '%s' is invalid.",
+                  argv[2]);
+          lprintf(LOG_ERR, "Valid Properties selector is: <0..4>");
+          return (-1);
+      }
       verbose++;
       rc = HpmfwupgGetComponentProperties(intf, &cmdCtx);
    }
