@@ -101,12 +101,13 @@ ipmi_password_file_read(char * filename)
 	char * pass = NULL;
 	int l;
 
-	pass = malloc(16);
+	pass = malloc(21);
 	if (pass == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
 
+	memset(pass, 21, 0);
 	fp = ipmi_open_file_read((const char *)filename);
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Unable to open password file %s",
@@ -115,7 +116,7 @@ ipmi_password_file_read(char * filename)
 	}
 
 	/* read in id */
-	if (fgets(pass, 16, fp) == NULL) {
+	if (fgets(pass, 21, fp) == NULL) {
 		lprintf(LOG_ERR, "Unable to read password from file %s",
 				filename);
 		fclose(fp);
