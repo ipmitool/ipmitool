@@ -567,9 +567,21 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 			return -1;
 		}
 		allUpper = 1;
-		setting1 = (double) strtod(argv[2], NULL);
-		setting2 = (double) strtod(argv[3], NULL);
-		setting3 = (double) strtod(argv[4], NULL);
+		if (str2double(argv[2], &setting1) != 0) {
+			lprintf(LOG_ERR, "Given unc '%s' is invalid.",
+					argv[2]);
+			return (-1);
+		}
+		if (str2double(argv[3], &setting2) != 0) {
+			lprintf(LOG_ERR, "Given ucr '%s' is invalid.",
+					argv[3]);
+			return (-1);
+		}
+		if (str2double(argv[4], &setting3) != 0) {
+			lprintf(LOG_ERR, "Given unr '%s' is invalid.",
+					argv[4]);
+			return (-1);
+		}
 	} else if (strncmp(thresh, "lower", 5) == 0) {
 		if (argc < 5) {
 			lprintf(LOG_ERR,
@@ -577,11 +589,22 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 			return -1;
 		}
 		allLower = 1;
-		setting1 = (double) strtod(argv[2], NULL);
-		setting2 = (double) strtod(argv[3], NULL);
-		setting3 = (double) strtod(argv[4], NULL);
+		if (str2double(argv[2], &setting1) != 0) {
+			lprintf(LOG_ERR, "Given lnc '%s' is invalid.",
+					argv[2]);
+			return (-1);
+		}
+		if (str2double(argv[3], &setting2) != 0) {
+			lprintf(LOG_ERR, "Given lcr '%s' is invalid.",
+					argv[3]);
+			return (-1);
+		}
+		if (str2double(argv[4], &setting3) != 0) {
+			lprintf(LOG_ERR, "Given lnr '%s' is invalid.",
+					argv[4]);
+			return (-1);
+		}
 	} else {
-		setting1 = (double) atof(argv[2]);
 		if (strncmp(thresh, "unr", 3) == 0)
 			settingMask = UPPER_NON_RECOV_SPECIFIED;
 		else if (strncmp(thresh, "ucr", 3) == 0)
@@ -599,6 +622,12 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 				"Valid threshold '%s' for sensor '%s' not specified!",
 				thresh, id);
 			return -1;
+		}
+		if (str2double(argv[2], &setting1) != 0) {
+			lprintf(LOG_ERR,
+					"Given %s threshold value '%s' is invalid.",
+					thresh, argv[2]);
+			return (-1);
 		}
 	}
 
