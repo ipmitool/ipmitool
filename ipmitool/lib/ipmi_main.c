@@ -107,7 +107,7 @@ ipmi_password_file_read(char * filename)
 		return NULL;
 	}
 
-	memset(pass, 21, 0);
+	memset(pass, 0, 21);
 	fp = ipmi_open_file_read((const char *)filename);
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Unable to open password file %s",
