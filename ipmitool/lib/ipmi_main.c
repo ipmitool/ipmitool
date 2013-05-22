@@ -504,7 +504,6 @@ ipmi_main(int argc, char ** argv,
 					password = NULL;
 				}
 				password = strdup(tmp_pass);
-				free(tmp_pass);
 				tmp_pass = NULL;
 				if (password == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -560,7 +559,6 @@ ipmi_main(int argc, char ** argv,
 					kgkey = NULL;
 				}
 				kgkey = strdup(tmp_pass);
-				free(tmp_pass);
 				tmp_pass = NULL;
 				if (kgkey == NULL) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
@@ -794,7 +792,6 @@ ipmi_main(int argc, char ** argv,
 #endif
 		if (tmp_pass != NULL) {
 			password = strdup(tmp_pass);
-			free(tmp_pass);
 			tmp_pass = NULL;
 			if (password == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
