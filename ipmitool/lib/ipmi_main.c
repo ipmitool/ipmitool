@@ -112,6 +112,7 @@ ipmi_password_file_read(char * filename)
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Unable to open password file %s",
 				filename);
+		free(pass);
 		return NULL;
 	}
 
@@ -119,6 +120,7 @@ ipmi_password_file_read(char * filename)
 	if (fgets(pass, 21, fp) == NULL) {
 		lprintf(LOG_ERR, "Unable to read password from file %s",
 				filename);
+		free(pass);
 		fclose(fp);
 		return NULL;
 	}
