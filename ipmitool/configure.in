@@ -59,6 +59,7 @@ xenable_intf_bmc=no
 xenable_intf_imb=yes
 xenable_intf_open=yes
 xenable_intf_lipmi=yes
+#xenable_intf_serial=yes
 xenable_all_options=yes
 xenable_ipmishell=yes
 
@@ -194,6 +195,23 @@ else
 fi
 
 ORIG_CPPFLAGS=$CPPFLAGS
+
+dnl enable serial interface
+AC_ARG_ENABLE([intf-serial],
+	[AC_HELP_STRING([--enable-intf-serial],
+			[enable direct Serial Basic/Terminal mode interface [default=yes]])],
+	[xenable_intf_serial=$enableval], [xenable_intf_serial=yes])
+if test "x$enable_intf_serial" = "xstatic" || test "x$enable_intf_serial" = "xplugin"; then
+   xenable_intf_serial=yes
+fi
+if test "x$xenable_intf_serial" = "xyes"; then
+    AC_DEFINE(IPMI_INTF_SERIAL, [1], [Define to 1 to enable serial interface.])
+    AC_SUBST(INTF_SERIAL, [serial])
+    AC_SUBST(INTF_SERIAL_LIB, [libintf_serial.la])
+    IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB serial/libintf_serial.la"
+else
+	xenable_intf_serial=no
+fi
 
 dnl look for OpenIPMI header files
 AC_ARG_WITH([kerneldir],
@@ -583,7 +601,8 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/free/Makefile
 		src/plugins/imb/Makefile
 		src/plugins/bmc/Makefile
-		src/plugins/lipmi/Makefile])
+		src/plugins/lipmi/Makefile
+		src/plugins/serial/Makefile])
 
 AC_OUTPUT
 
@@ -598,6 +617,7 @@ AC_MSG_RESULT([  free    : $xenable_intf_free])
 AC_MSG_RESULT([  imb     : $xenable_intf_imb])
 AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
 AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
+AC_MSG_RESULT([  serial  : $xenable_intf_serial])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Extra tools])
 AC_MSG_RESULT([  ipmievd   : yes])

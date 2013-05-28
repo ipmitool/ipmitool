@@ -74,9 +74,9 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:"
+# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:"
 #else
-# define OPTION_STRING	"I:hVvcH:f:U:p:d:S:"
+# define OPTION_STRING	"I:hVvcH:f:U:p:d:S:D:"
 #endif
 
 extern int verbose;
@@ -225,6 +225,8 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -f file        Read remote session password from file");
 	lprintf(LOG_NOTICE, "       -z size        Change Size of Communication Channel (OEM)");
 	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
+	lprintf(LOG_NOTICE, "       -D tty:b[:s]   Specify the serial device, baud rate to use");
+	lprintf(LOG_NOTICE, "                      and, optionally, specify that interface is the system one");
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -Y             Prompt for the Kg key for IPMIv2 authentication");
@@ -383,6 +385,7 @@ ipmi_main(int argc, char ** argv,
 	int argflag, i, found;
 	int rc = -1;
 	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
+	char * devfile  = NULL;
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
@@ -590,6 +593,18 @@ ipmi_main(int argc, char ** argv,
 			}
 			sdrcache = strdup(optarg);
 			if (sdrcache == NULL) {
+				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
+			}
+			break;
+		case 'D':
+			/* check for subsequent instance of -D */
+			if (devfile) {
+				/* free memory for previous string */
+				free(devfile);
+			}
+			devfile = strdup(optarg);
+			if (devfile == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -874,6 +889,9 @@ ipmi_main(int argc, char ** argv,
 
 	ipmi_main_intf->devnum = devnum;
 
+	/* setup device file if given */
+	ipmi_main_intf->devfile = devfile;
+
 	/* Open the interface with the specified or default IPMB address */
 	ipmi_main_intf->my_addr = arg_addr ? arg_addr : IPMI_BMC_SLAVE_ADDR;
 	if (ipmi_main_intf->open != NULL)
@@ -953,7 +971,6 @@ ipmi_main(int argc, char ** argv,
 	if (sdrcache != NULL) {
 		ipmi_sdr_list_cache_fromfile(ipmi_main_intf, sdrcache);
 	}
-
 	/* Parse SEL OEM file if given */
 	if (seloem != NULL) {
 		ipmi_sel_oem_init(seloem);
@@ -1025,6 +1042,10 @@ ipmi_main(int argc, char ** argv,
 	if (sdrcache != NULL) {
 		free(sdrcache);
 		sdrcache = NULL;
+	}
+	if (devfile) {
+		free(devfile);
+		devfile = NULL;
 	}
 
 	return rc;

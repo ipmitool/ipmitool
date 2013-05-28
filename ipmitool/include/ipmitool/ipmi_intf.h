@@ -161,6 +161,7 @@ struct ipmi_intf_support {
 struct ipmi_intf {
 	char name[16];
 	char desc[128];
+	char *devfile;
 	int fd;
 	int opened;
 	int abort;

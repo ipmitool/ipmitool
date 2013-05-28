@@ -1,4 +1,4 @@
-# Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+# * Copyright (c) 2012 Pigeon Point Systems.  All Rights Reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -11,7 +11,7 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 # 
-# Neither the name of Sun Microsystems, Inc. or the names of
+# Neither the name of Pigeon Point Systems, Inc. or the names of
 # contributors may be used to endorse or promote products derived
 # from this software without specific prior written permission.
 # 
@@ -19,25 +19,20 @@
 # ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
 # INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
 # PARTICULAR PURPOSE OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED.
-# SUN MICROSYSTEMS, INC. ("SUN") AND ITS LICENSORS SHALL NOT BE LIABLE
+# PIGEON POINT SYSTEMS ("PPS") AND ITS LICENSORS SHALL NOT BE LIABLE
 # FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
 # OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL
-# SUN OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA,
+# PPS OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA,
 # OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR
 # PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF
 # LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
-# EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+# EVEN IF PPS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-MAINTAINERCLEANFILES		= Makefile.in
+MAINTAINERCLEANFILES	= Makefile.in
 
-INCLUDES			= -I$(top_srcdir)/include
+INCLUDES		= -I$(top_srcdir)/include
 
-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@
-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial
-
-noinst_LTLIBRARIES		= libintf.la
-libintf_la_SOURCES		= ipmi_intf.c
-libintf_la_LDFLAGS		= -export-dynamic
-libintf_la_LIBADD		= @IPMITOOL_INTF_LIB@
-libintf_la_DEPENDENCIES		= @IPMITOOL_INTF_LIB@
-
+EXTRA_LTLIBRARIES	= libintf_serial.la
+noinst_LTLIBRARIES	= @INTF_SERIAL_LIB@
+libintf_serial_la_LIBADD	= $(top_builddir)/lib/libipmitool.la
+libintf_serial_la_SOURCES	= serial_terminal.c serial_basic.c
