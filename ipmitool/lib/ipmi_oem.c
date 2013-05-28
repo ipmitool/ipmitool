@@ -63,6 +63,10 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		desc:   "IBM OEM support",
 		setup:	ipmi_oem_ibm,
 	},
+	{
+		name:   "i82571spt",
+		desc:   "Intel 82571 MAC with integrated RMCP+ support in super pass-through mode",
+	},
 	{ 0 }
 };
 

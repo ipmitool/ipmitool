@@ -51,7 +51,7 @@ int lanplus_generate_rakp3_authcode(uint8_t                      * buffer,
 									const struct ipmi_session * session,
 									uint32_t                  * auth_length,
 									struct ipmi_intf          * intf);
-int lanplus_generate_sik(struct ipmi_session * session);
+int lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf);
 int lanplus_generate_k1(struct ipmi_session * session);
 int lanplus_generate_k2(struct ipmi_session * session);
 int lanplus_encrypt_payload(uint8_t         crypt_alg,

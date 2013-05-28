@@ -68,9 +68,9 @@
  * return 0 on success (the authcode matches)
  *        1 on failure (the authcode does not match)
  */
-int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t    * bmc_mac,
-							   struct ipmi_intf * intf)
+int
+lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
+		const uint8_t * bmc_mac, struct ipmi_intf * intf)
 {
 	uint8_t       * buffer;
 	int           bufferLength, i;
@@ -153,6 +153,15 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 	/* ROLEm */
 	buffer[56] = session->v2_data.requested_role;
 
+	if (ipmi_oem_active(intf, "i82571spt")) {
+		/*
+		 * The HMAC calculation code in the Intel 82571 GbE
+		 * skips this bit!  Looks like a GbE bug, but we need
+		 * to work around it here anyway...
+		 */
+		buffer[56] &= ~0x10;
+	}
+
 	/* ULENGTHm */
 	buffer[57] = strlen((const char *)session->username);
 
@@ -213,9 +222,9 @@ int lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
  *        0 on failure (the authcode does not match)
  *
  */
-int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
-							   const uint8_t    * bmc_mac,
-							   struct ipmi_intf * intf)
+int
+lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
+		const uint8_t * bmc_mac, struct ipmi_intf * intf)
 {
 	uint8_t       * buffer;
 	int           bufferLength, i;
@@ -341,10 +350,10 @@ int lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_generate_rakp3_authcode(uint8_t                      * output_buffer,
-									const struct ipmi_session * session,
-									uint32_t                  * mac_length,
-									struct ipmi_intf          * intf)
+int
+lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
+		const struct ipmi_session * session,
+		uint32_t * mac_length, struct ipmi_intf * intf)
 {
 	int ret = 0;
 	int input_buffer_length, i;
@@ -396,7 +405,7 @@ int lanplus_generate_rakp3_authcode(uint8_t                      * output_buffer
 	memcpy(input_buffer + 16, &SIDm_lsbf, 4);
 	
 	/* ROLEm */
-	if (ipmi_oem_active(intf, "intelplus")) 
+	if (ipmi_oem_active(intf, "intelplus") || ipmi_oem_active(intf, "i82571spt"))
 		input_buffer[20] = session->privlvl;
 	else 
 		input_buffer[20] = session->v2_data.requested_role;
@@ -460,7 +469,8 @@ int lanplus_generate_rakp3_authcode(uint8_t                      * output_buffer
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_generate_sik(struct ipmi_session * session)
+int
+lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 {
 	uint8_t * input_buffer;
 	int input_buffer_length, i;
@@ -515,6 +525,15 @@ int lanplus_generate_sik(struct ipmi_session * session)
 
 	/* ROLEm */
 	input_buffer[32] = session->v2_data.requested_role;
+
+	if (ipmi_oem_active(intf, "i82571spt")) {
+		/*
+		 * The HMAC calculation code in the Intel 82571 GbE
+		 * skips this bit!  Looks like a GbE bug, but we need
+		 * to work around it here anyway...
+		 */
+		input_buffer[32] &= ~0x10;
+	}
 
 	/* ULENGTHm */
 	input_buffer[33] = strlen((const char *)session->username);
@@ -580,7 +599,8 @@ int lanplus_generate_sik(struct ipmi_session * session)
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_generate_k1(struct ipmi_session * session)
+int
+lanplus_generate_k1(struct ipmi_session * session)
 {
 	uint32_t mac_length;
 
@@ -623,7 +643,8 @@ int lanplus_generate_k1(struct ipmi_session * session)
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_generate_k2(struct ipmi_session * session)
+int
+lanplus_generate_k2(struct ipmi_session * session)
 {
 	uint32_t mac_length;
 
@@ -673,12 +694,11 @@ int lanplus_generate_k2(struct ipmi_session * session)
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_encrypt_payload(uint8_t         crypt_alg,
-							const uint8_t * key,
-							const uint8_t * input,
-							uint32_t          input_length,
-							uint8_t       * output,
-							uint16_t      * bytes_written)
+int
+lanplus_encrypt_payload(uint8_t crypt_alg,
+		const uint8_t * key, const uint8_t * input,
+		uint32_t input_length, uint8_t * output,
+		uint16_t * bytes_written)
 {
 	uint8_t * padded_input;
 	uint32_t    mod, i, bytes_encrypted;
@@ -777,12 +797,12 @@ int lanplus_encrypt_payload(uint8_t         crypt_alg,
  * returns 1 on success (authcode is valid)
  *         0 on failure (autchode integrity check failed)
  */
-int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
-								struct ipmi_session * session)
+int
+lanplus_has_valid_auth_code(struct ipmi_rs * rs, struct ipmi_session * session)
 {
 	uint8_t * bmc_authcode;
-	uint8_t   generated_authcode[IPMI_MAX_MAC_SIZE];
-	uint32_t    generated_authcode_length;
+	uint8_t generated_authcode[IPMI_MAX_MAC_SIZE];
+	uint32_t generated_authcode_length;
 	
 
 	if ((rs->session.authtype != IPMI_SESSION_AUTHTYPE_RMCP_PLUS) ||
@@ -837,12 +857,10 @@ int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
  * returns 0 on success (we were able to successfully decrypt the packet)
  *         1 on failure (we were unable to successfully decrypt the packet)
  */
-int lanplus_decrypt_payload(uint8_t         crypt_alg,
-							const uint8_t * key,
-							const uint8_t * input,
-							uint32_t          input_length,
-							uint8_t       * output,
-							uint16_t      * payload_size)
+int
+lanplus_decrypt_payload(uint8_t crypt_alg, const uint8_t * key,
+		const uint8_t * input, uint32_t input_length,
+		uint8_t * output, uint16_t * payload_size)
 {
 	uint8_t * decrypted_payload;
 	uint32_t    bytes_decrypted;
@@ -897,7 +915,7 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 		 */
 		for (i = 0; i < conf_pad_length; ++i)
 		{
-			if (decrypted_payload[*payload_size + i] == i)
+			if (decrypted_payload[*payload_size + i] != (i + 1))
 			{
 				lprintf(LOG_ERR, "Malformed payload padding");
 				assert(0);

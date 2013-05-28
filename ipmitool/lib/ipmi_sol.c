@@ -1568,43 +1568,45 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 		FD_SET(0, &read_fds);
 		FD_SET(intf->fd, &read_fds);
 
-		/* Send periodic keepalive packet */
-		if(_use_sol_for_keepalive == 0)
+		if (!ipmi_oem_active(intf,"i82571spt"))
 		{
-			keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
-		}
-		else
-		{
-			keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
-		}
-		
-		if (keepAliveRet != 0)
-		{
-			/*
-			 * Retrying the keep Alive before declaring a communication
-			 * lost state with the IPMC. Helpful when the payload is 
-			 * reset and brings down the connection temporarily. Otherwise,
-			 * if we send getDevice Id to check the status of IPMC during
-			 * this down time when the connection is restarting, SOL will 
-			 * exit even though the IPMC is available and the session is open.
-			 */
-			if (retrySol == MAX_SOL_RETRY)
+			/* Send periodic keepalive packet */
+			if(_use_sol_for_keepalive == 0)
 			{
-				/* no response to Get Device ID keepalive message */
-				bShouldExit = 1;
-				continue;
+				keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
 			}
-			else 
-			{ 
-				retrySol++;         
+			else
+			{
+				keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
 			}
-		}
-		else
-		{
-			/* if the keep Alive is successful reset retries to zero */
-			retrySol = 0;
-		}
-
+		
+			if (keepAliveRet != 0)
+			{
+				/*
+				 * Retrying the keep Alive before declaring a communication
+				 * lost state with the IPMC. Helpful when the payload is
+				 * reset and brings down the connection temporarily. Otherwise,
+				 * if we send getDevice Id to check the status of IPMC during
+				 * this down time when the connection is restarting, SOL will
+				 * exit even though the IPMC is available and the session is open.
+				 */
+				if (retrySol == MAX_SOL_RETRY)
+				{
+					/* no response to Get Device ID keepalive message */
+					bShouldExit = 1;
+					continue;
+				}
+				else
+				{
+					retrySol++;
+				}
+			}
+			else
+			{
+				/* if the keep Alive is successful reset retries to zero */
+				retrySol = 0;
+			}
+		} /* !oem="i82571spt" */
 		/* Wait up to half a second */
 		tv.tv_sec =  0;
 		tv.tv_usec = 500000;
@@ -1757,6 +1759,20 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 
 	if (ipmi_oem_active(intf, "intelplus")) {
 		data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_TRUE;
+	} else if (ipmi_oem_active(intf, "i82571spt")) {
+		/*
+		 * A quote from Intel: "Engineering believes the problem
+		 * lies within the Auxiliary data being sent with the
+		 * 'Activate Payload' command from IPMITool.  IPMITool
+		 * sends a C6h which sets some bits having to do with
+		 * encryption and some behavior dealing with CTS DCD/DSR.
+		 * I recommend that the customer modify this request
+		 * to send 08h instead. This is what our internal utility
+		 * sends and it works without issue. I will work with
+		 * engineering to ensure the settings that IPMITool uses
+		 * (C6h) are supported in the future.
+		 */
+		data[2] = 0x08;
 	} else {
 		data[2] |= IPMI_SOL_BMC_ASSERTS_CTS_MASK_FALSE;
 	}

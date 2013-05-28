@@ -3164,7 +3164,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		}
 
 		/* Generate our Session Integrity Key, K1, and K2 */
-		if (lanplus_generate_sik(session))
+		if (lanplus_generate_sik(session, intf))
 		{
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating session integrity key");
@@ -3417,7 +3417,8 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	 *
 	 * I'm not sure why we accept a failure for the first call
 	 */
-	if (ipmi_get_auth_capabilities_cmd(intf, &auth_cap)) {
+	if (!ipmi_oem_active(intf, "i82571spt") &&
+			ipmi_get_auth_capabilities_cmd(intf, &auth_cap)) {
 		sleep(1);
 		if (ipmi_get_auth_capabilities_cmd(intf, &auth_cap));
 		{
@@ -3427,7 +3428,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		}
 	}
 
-	if (! auth_cap.v20_data_available)
+	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available)
 	{
 		lprintf(LOG_INFO, "This BMC does not support IPMI v2 / RMCP+");
 		goto fail;
@@ -3462,11 +3463,11 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 
 	lprintf(LOG_DEBUG, "IPMIv2 / RMCP+ SESSION OPENED SUCCESSFULLY\n");
 
-	rc = ipmi_set_session_privlvl_cmd(intf);
-
-	if (rc < 0)
-		goto fail;
-
+	if (!ipmi_oem_active(intf, "i82571spt")) {
+		rc = ipmi_set_session_privlvl_cmd(intf);
+		if (rc < 0)
+			goto fail;
+	}
 	intf->manufacturer_id = ipmi_get_oem(intf);
 	bridgePossible = 1;
 
