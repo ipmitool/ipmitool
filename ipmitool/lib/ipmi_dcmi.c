@@ -76,12 +76,12 @@ extern int verbose;
 /* Main set of DCMI commands */
 const struct dcmi_cmd dcmi_cmd_vals[] = {
     { 0x00, "discover", "           Used to discover supported DCMI capabilities" },
-    { 0x01, "power", "              Pltform power limit command options"         },
+    { 0x01, "power", "              Platform power limit command options"         },
     { 0x02, "sensors", "            Prints the available DCMI sensors"            },
-    { 0x03, "asset_tag", "          Prints the platforms asset tag"               },
-    { 0x04, "set_asset_tag", "      Sets the platforms asset tag"                 },
-    { 0x05, "get_mc_id_string", "   Get management controller id string"          },
-    { 0x06, "set_mc_id_string", "   Set management controller id string"          },
+    { 0x03, "asset_tag", "          Prints the platform's asset tag"              },
+    { 0x04, "set_asset_tag", "      Sets the platform's asset tag"                },
+    { 0x05, "get_mc_id_string", "   Get management controller ID string"          },
+    { 0x06, "set_mc_id_string", "   Set management controller ID string"          },
     { 0x07, "thermalpolicy", "      Thermal policy get/set"                       },
     { 0x08, "get_temp_reading", "   Get Temperature Readings"                     },
     { 0x09, "get_conf_param", "     Get DCMI Config Parameters"                   },
