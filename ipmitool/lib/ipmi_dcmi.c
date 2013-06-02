@@ -546,8 +546,10 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector) {
     struct capabilities cape;
     memcpy(&cape, rsp->data, sizeof (cape));
     
-    /* check to make sure that this is a 1.0 and 1.1 command */
-    if ((cape.conformance != IPMI_DCMI_CONFORM) && (cape.conformance != IPMI_DCMI_1_1_CONFORM)) {
+    /* check to make sure that this is a 1.0/1.1/1.5 command */
+    if ((cape.conformance != IPMI_DCMI_CONFORM)
+            && (cape.conformance != IPMI_DCMI_1_1_CONFORM)
+            && (cape.conformance != IPMI_DCMI_1_5_CONFORM)) {
         printf("ERROR!  This command is not available on this platform\n");
         return -1;
     }

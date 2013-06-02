@@ -44,6 +44,7 @@
 
 #define IPMI_DCMI_CONFORM           0x0001
 #define IPMI_DCMI_1_1_CONFORM       0x0101
+#define IPMI_DCMI_1_5_CONFORM       0x0501
 
 #define DCMI_MAX_BYTE_SIZE              0x10
 #define DCMI_MAX_BYTE_TEMP_READ_SIZE    0x08
