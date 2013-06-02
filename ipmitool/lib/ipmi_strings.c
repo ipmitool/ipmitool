@@ -67,6 +67,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_NOKIA_SIEMENS_NETWORKS, "Nokia Siemens Networks" },
    { IPMI_OEM_BULL,                   "Bull Company" },
    { IPMI_OEM_PPS,                    "Pigeon Point Systems" },
+   { IPMI_OEM_BROADCOM,               "Broadcom Corporation" },
    { 0xffff , NULL },
 };
 
@@ -112,6 +113,8 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5007, "AT8050" },
    { IPMI_OEM_KONTRON,5301, "AT8400" },
    { IPMI_OEM_KONTRON,5303, "AT8901" },
+   /* Broadcom */
+   { IPMI_OEM_BROADCOM, 5725, "BCM5725" },
 
    { 0xffffff        , 0xffff , NULL },
  };

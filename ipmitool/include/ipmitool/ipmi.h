@@ -266,6 +266,7 @@ typedef enum IPMI_OEM {
      IPMI_OEM_DELL       = 674,
      IPMI_OEM_LMC        = 2168,
      IPMI_OEM_RADISYS    = 4337,
+     IPMI_OEM_BROADCOM   = 4413,
      IPMI_OEM_MAGNUM     = 5593,
      IPMI_OEM_TYAN       = 6653,
      IPMI_OEM_NEWISYS    = 9237,
