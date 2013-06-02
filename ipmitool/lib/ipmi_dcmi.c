@@ -379,11 +379,11 @@ static int chk_rsp(struct ipmi_rs * rsp) {
      */
     if ((rsp->ccode >= 0x80) && (rsp->ccode <= 0x8F)) {
         lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
-            val2str(rsp->ccode, dcmi_ccode_vals), rsp->data[0]);
+            val2str(rsp->ccode, dcmi_ccode_vals), rsp->ccode);
         return 1;
     } else if (rsp->ccode > 0) {
         lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
-            val2str(rsp->ccode, completion_code_vals), rsp->data[0]);
+            val2str(rsp->ccode, completion_code_vals), rsp->ccode);
         return 1;
     }
 
