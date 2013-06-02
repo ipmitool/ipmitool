@@ -3558,8 +3558,16 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 							lprintf(LOG_ERR, "oem iana <record> <format> [<args>]");
 							error = 1;
 						} else {
-							suppliedIana = atol ( argv[3] ) ;
-							lprintf(LOG_DEBUG, "using iana: %d", suppliedIana);
+							if (str2uint(argv[3], &suppliedIana) == 0) {
+								lprintf(LOG_DEBUG,
+										"using iana: %d",
+										suppliedIana);
+							} else {
+								lprintf(LOG_ERR,
+										"Given IANA '%s' is invalid.",
+										argv[3]);
+								error = 1;
+							}
 						}
 					}
 				}
@@ -3746,8 +3754,16 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 						lprintf(LOG_ERR, "oem iana <record> <format>");
 						error = 1;
 					} else {
-						suppliedIana = atol ( argv[3] ) ;
-						lprintf(LOG_DEBUG, "using iana: %d", suppliedIana);
+						if (str2uint(argv[3], &suppliedIana) == 0) {
+							lprintf(LOG_DEBUG,
+									"using iana: %d",
+									suppliedIana);
+						} else {
+							lprintf(LOG_ERR,
+									"Given IANA '%s' is invalid.",
+									argv[3]);
+							error = 1;
+						}
 					}
 				}
 
