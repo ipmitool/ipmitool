@@ -87,11 +87,11 @@ struct get_channel_auth_cap_rsp {
 #endif
 #if WORDS_BIGENDIAN
 	uint8_t __reserved3        : 6;
-	uint8_t ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
 	uint8_t ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
+	uint8_t ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
 #else
-	uint8_t ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
 	uint8_t ipmiv15_support    : 1; /* channel supports IPMI v1.5 connections */
+	uint8_t ipmiv20_support    : 1; /* channel supports IPMI v2.0 connections */
 	uint8_t __reserved3        : 6;
 #endif
 	uint8_t oem_id[3];    /* IANA enterprise number for auth type */
