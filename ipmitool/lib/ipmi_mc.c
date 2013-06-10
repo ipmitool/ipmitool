@@ -616,8 +616,8 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 	}
 
 	else {
-		printf("Selttest     : device specific\n");
-		printf("Failure code : %02x\n", sft_res->test);
+		printf("Selftest     : device specific (%02Xh)\n", sft_res->code);
+		printf("Failure code : %02Xh\n", sft_res->test);
 		rv = 0;
 	}
 
