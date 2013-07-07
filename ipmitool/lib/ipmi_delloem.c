@@ -297,19 +297,32 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 static void
 usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "usage: delloem <command> [option...]");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "commands:");
-	lprintf(LOG_NOTICE, "    lcd");
-	lprintf(LOG_NOTICE, "    mac");
-	lprintf(LOG_NOTICE, "    lan");
-	lprintf(LOG_NOTICE, "    setled");
-	lprintf(LOG_NOTICE, "    powermonitor");
-	lprintf(LOG_NOTICE, "    vFlash");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "For help on individual commands type:");
-	lprintf(LOG_NOTICE, "delloem <command> help");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"usage: delloem <command> [option...]");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"commands:");
+	lprintf(LOG_NOTICE,
+"    lcd");
+	lprintf(LOG_NOTICE,
+"    mac");
+	lprintf(LOG_NOTICE,
+"    lan");
+	lprintf(LOG_NOTICE,
+"    setled");
+	lprintf(LOG_NOTICE,
+"    powermonitor");
+	lprintf(LOG_NOTICE,
+"    vFlash");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"For help on individual commands type:");
+	lprintf(LOG_NOTICE,
+"delloem <command> help");
 }
 /*
  * Function Name:       ipmi_delloem_lcd_main
@@ -1371,54 +1384,78 @@ ipmi_lcd_configure (struct ipmi_intf * intf, int command,
 static void
 ipmi_lcd_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "Generic DELL HW:");
-	lprintf(LOG_NOTICE, "   lcd set {none}|{default}|{custom <text>}");
 	lprintf(LOG_NOTICE,
-			"      Set LCD text displayed during non-fault conditions");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "iDRAC 11g or iDRAC 12g:");
-	lprintf(LOG_NOTICE, "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
+"");
 	lprintf(LOG_NOTICE,
-			"      Allows you to set the LCD mode and user-defined string.");
-	lprintf(LOG_NOTICE, "");
+"Generic DELL HW:");
 	lprintf(LOG_NOTICE,
-			"   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
+"   lcd set {none}|{default}|{custom <text>}");
 	lprintf(LOG_NOTICE,
-			"   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
-	lprintf(LOG_NOTICE, "   {systemwatt }|{assettag}|{userdefined}<text>");
-	lprintf(LOG_NOTICE, "	   Allows you to set the LCD display mode to any of "
-			"the preceding parameters");
-	lprintf(LOG_NOTICE, "");
+"      Set LCD text displayed during non-fault conditions");
 	lprintf(LOG_NOTICE,
-			"   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
-	lprintf(LOG_NOTICE, "      Allows you to set the unit for the system "
-			"ambient temperature mode.");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lcd set errordisplay {sel}|{simple}");
-	lprintf(LOG_NOTICE, "      Allows you to set the error display.");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lcd info");
+"");
 	lprintf(LOG_NOTICE,
-			"      Show LCD text that is displayed during non-fault conditions");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lcd set vkvm{active}|{inactive}");
-	lprintf(LOG_NOTICE, "           Set vKVM active and inactive, message will "
-			"be displayed on lcd");
-	lprintf(LOG_NOTICE, " when vKVM is active and vKVM session is in progress");
-	lprintf(LOG_NOTICE, "");
+"iDRAC 11g or iDRAC 12g:");
 	lprintf(LOG_NOTICE,
-			"   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}");
+"   lcd set {mode}|{lcdqualifier}|{errordisplay}");
 	lprintf(LOG_NOTICE,
-			"      Set LCD mode to view and modify, view only or disabled ");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lcd status");
+"      Allows you to set the LCD mode and user-defined string.");
 	lprintf(LOG_NOTICE,
-			"           Show LCD Status for vKVM display<active|inactive>");
+"");
 	lprintf(LOG_NOTICE,
-			"   and Front Panel access mode {viewandmodify}|{viewonly}|{disabled} ");
-	lprintf(LOG_NOTICE, "");
+"   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
+	lprintf(LOG_NOTICE,
+"   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
+	lprintf(LOG_NOTICE,
+"   {systemwatt }|{assettag}|{userdefined}<text>");
+	lprintf(LOG_NOTICE,
+"	   Allows you to set the LCD display mode to any of the preceding");
+	lprintf(LOG_NOTICE,
+"      parameters");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
+	lprintf(LOG_NOTICE,
+"      Allows you to set the unit for the system ambient temperature mode.");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd set errordisplay {sel}|{simple}");
+	lprintf(LOG_NOTICE,
+"      Allows you to set the error display.");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd info");
+	lprintf(LOG_NOTICE,
+"      Show LCD text that is displayed during non-fault conditions");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd set vkvm{active}|{inactive}");
+	lprintf(LOG_NOTICE,
+"      Set vKVM active and inactive, message will be displayed on lcd");
+	lprintf(LOG_NOTICE,
+"      when vKVM is active and vKVM session is in progress");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}");
+	lprintf(LOG_NOTICE,
+"      Set LCD mode to view and modify, view only or disabled ");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lcd status");
+	lprintf(LOG_NOTICE,
+"      Show LCD Status for vKVM display<active|inactive>");
+	lprintf(LOG_NOTICE,
+"      and Front Panel access mode {viewandmodify}|{viewonly}|{disabled}");
+	lprintf(LOG_NOTICE,
+"");
 }
 /*
  * Function Name:       ipmi_delloem_mac_main
@@ -1859,14 +1896,20 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 static void
 ipmi_mac_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   mac list");
-	lprintf(LOG_NOTICE, "      Lists the MAC address of LOMs");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   mac get <NIC number>");
-	lprintf(LOG_NOTICE, "      Shows the MAC address of specified LOM. "
-			"0-7 System LOM, 8- DRAC/iDRAC.");
-	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   mac list");
+	lprintf(LOG_NOTICE,
+"      Lists the MAC address of LOMs");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   mac get <NIC number>");
+	lprintf(LOG_NOTICE,
+"      Shows the MAC address of specified LOM. 0-7 System LOM, 8- DRAC/iDRAC.");
+	lprintf(LOG_NOTICE,
+"");
 }
 /*
  * Function Name:       ipmi_delloem_lan_main
@@ -2355,40 +2398,62 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 static void
 ipmi_lan_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lan set <Mode> ");
-	lprintf(LOG_NOTICE, "      sets the NIC Selection Mode :");
-	lprintf(LOG_NOTICE, "          on iDRAC12g :");
-	lprintf(LOG_NOTICE, "              dedicated, shared with lom1, shared with "
-			"lom2,shared with lom3,shared ");
-	lprintf(LOG_NOTICE, "              with lom4,shared with failover lom1,"
-			"shared with failover lom2,shared ");
-	lprintf(LOG_NOTICE, "              with failover lom3,shared with failover "
-			"lom4,shared with Failover all ");
-	lprintf(LOG_NOTICE, "              loms, shared with Failover None).");
-	lprintf(LOG_NOTICE, "          on other systems :");
+	/* TODO:
+	 *  - rewrite
+	 *  - review
+	 *  - make it fit into 80 chars per line
+	 *  - this ``shared with Failover None).'' seems like a typo
+	 */
 	lprintf(LOG_NOTICE,
-			"              dedicated, shared, shared with failover lom2,");
-	lprintf(LOG_NOTICE, "              shared with Failover all loms.");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lan get ");
-	lprintf(LOG_NOTICE, "          on iDRAC12g :");
-	lprintf(LOG_NOTICE, "              returns the current NIC Selection Mode "
-			"(dedicated, shared with lom1, shared ");
-	lprintf(LOG_NOTICE, "              with lom2, shared with lom3, shared with "
-			"lom4,shared with failover lom1,");
-	lprintf(LOG_NOTICE, "              shared with failover lom2,shared with "
-			"failover lom3,shared with failover ");
-	lprintf(LOG_NOTICE, "              lom4,shared with Failover all loms,"
-			"shared with Failover None).");
-	lprintf(LOG_NOTICE, "          on other systems :");
-	lprintf(LOG_NOTICE, "              dedicated, shared, shared with failover,");
-	lprintf(LOG_NOTICE, "              lom2, shared with Failover all loms.");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   lan get active");
-	lprintf(LOG_NOTICE, "      returns the current active NIC (dedicated, LOM1, "
-			"LOM2, LOM3, LOM4).");
-	lprintf(LOG_NOTICE, "");
+"");
+	lprintf(LOG_NOTICE,
+"   lan set <Mode>");
+	lprintf(LOG_NOTICE,
+"      sets the NIC Selection Mode :");
+	lprintf(LOG_NOTICE,
+"          on iDRAC12g :");
+	lprintf(LOG_NOTICE,
+"              dedicated, shared with lom1, shared with lom2,shared with lom3,shared");
+	lprintf(LOG_NOTICE,
+"              with lom4,shared with failover lom1,shared with failover lom2,shared");
+	lprintf(LOG_NOTICE,
+"              with failover lom3,shared with failover lom4,shared with Failover all");
+	lprintf(LOG_NOTICE,
+"              loms, shared with Failover None).");
+	lprintf(LOG_NOTICE,
+"          on other systems :");
+	lprintf(LOG_NOTICE,
+"              dedicated, shared, shared with failover lom2,");
+	lprintf(LOG_NOTICE,
+"              shared with Failover all loms.");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lan get ");
+	lprintf(LOG_NOTICE,
+"          on iDRAC12g :");
+	lprintf(LOG_NOTICE,
+"              returns the current NIC Selection Mode (dedicated, shared with lom1, shared");
+	lprintf(LOG_NOTICE,
+"              with lom2, shared with lom3, shared with lom4,shared with failover lom1,");
+	lprintf(LOG_NOTICE,
+"              shared with failover lom2,shared with failover lom3,shared with failover");
+	lprintf(LOG_NOTICE,
+"              lom4,shared with Failover all loms,shared with Failover None).");
+	lprintf(LOG_NOTICE,
+"          on other systems :");
+	lprintf(LOG_NOTICE,
+"              dedicated, shared, shared with failover,");
+	lprintf(LOG_NOTICE,
+"              lom2, shared with Failover all loms.");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   lan get active");
+	lprintf(LOG_NOTICE,
+"      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");
+	lprintf(LOG_NOTICE,
+"");
 }
 /*
  * Function Name:       ipmi_delloem_powermonitor_main
@@ -3659,36 +3724,62 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 static void
 ipmi_powermonitor_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor");
-	lprintf(LOG_NOTICE, "      Shows power tracking statistics ");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor clear cumulativepower");
-	lprintf(LOG_NOTICE, "      Reset cumulative power reading");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor clear peakpower");
-	lprintf(LOG_NOTICE, "      Reset peak power reading");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor powerconsumption");
-	lprintf(LOG_NOTICE, "      Displays power consumption in <watt|btuphr>");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor powerconsumptionhistory <watt|btuphr>");
-	lprintf(LOG_NOTICE, "      Displays power consumption history ");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor getpowerbudget");
-	lprintf(LOG_NOTICE, "      Displays power cap in <watt|btuphr>");
-	lprintf(LOG_NOTICE, "");
 	lprintf(LOG_NOTICE,
-			"   powermonitor setpowerbudget <val><watt|btuphr|percent>");
+"");
 	lprintf(LOG_NOTICE,
-			"      Allows user to set the  power cap in <watt|BTU/hr|percentage>");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor enablepowercap ");
-	lprintf(LOG_NOTICE, "      To enable set power cap");
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   powermonitor disablepowercap ");
-	lprintf(LOG_NOTICE, "      To disable set power cap");
-	lprintf(LOG_NOTICE, "");
+"   powermonitor");
+	lprintf(LOG_NOTICE,
+"      Shows power tracking statistics ");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor clear cumulativepower");
+	lprintf(LOG_NOTICE,
+"      Reset cumulative power reading");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor clear peakpower");
+	lprintf(LOG_NOTICE,
+"      Reset peak power reading");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor powerconsumption");
+	lprintf(LOG_NOTICE,
+"      Displays power consumption in <watt|btuphr>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor powerconsumptionhistory <watt|btuphr>");
+	lprintf(LOG_NOTICE,
+"      Displays power consumption history ");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor getpowerbudget");
+	lprintf(LOG_NOTICE,
+"      Displays power cap in <watt|btuphr>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor setpowerbudget <val><watt|btuphr|percent>");
+	lprintf(LOG_NOTICE,
+"      Allows user to set the  power cap in <watt|BTU/hr|percentage>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor enablepowercap ");
+	lprintf(LOG_NOTICE,
+"      To enable set power cap");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   powermonitor disablepowercap ");
+	lprintf(LOG_NOTICE,
+"      To disable set power cap");
+	lprintf(LOG_NOTICE,
+"");
 }
 /*
  * Function Name:	   ipmi_delloem_vFlash_main
@@ -3866,10 +3957,14 @@ ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** ar
 static void
 ipmi_vFlash_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   vFlash info Card");
-	lprintf(LOG_NOTICE, "      Shows Extended SD Card information");
-	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"   vFlash info Card");
+	lprintf(LOG_NOTICE,
+"      Shows Extended SD Card information");
+	lprintf(LOG_NOTICE,
+"");
 }
 /*
  * Function Name: ipmi_setled_usage
@@ -3883,15 +3978,20 @@ ipmi_vFlash_usage(void)
 static void
 ipmi_setled_usage(void)
 {
-	lprintf(LOG_NOTICE, "");
-	lprintf(LOG_NOTICE, "   setled <b:d.f> <state..>");
-	lprintf(LOG_NOTICE, "      Set backplane LED state");
 	lprintf(LOG_NOTICE,
-			"      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
+"");
 	lprintf(LOG_NOTICE,
-			"      state = present|online|hotspare|identify|rebuilding|");
-	lprintf(LOG_NOTICE, "              fault|predict|critical|failed");
-	lprintf(LOG_NOTICE, "");
+"   setled <b:d.f> <state..>");
+	lprintf(LOG_NOTICE,
+"      Set backplane LED state");
+	lprintf(LOG_NOTICE,
+"      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
+	lprintf(LOG_NOTICE,
+"      state = present|online|hotspare|identify|rebuilding|");
+	lprintf(LOG_NOTICE,
+"              fault|predict|critical|failed");
+	lprintf(LOG_NOTICE,
+"");
 }
 
 static int
