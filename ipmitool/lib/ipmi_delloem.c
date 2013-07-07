@@ -1554,25 +1554,25 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 			return -1;
 		}
 		if (IMC_IDRAC_10G == IMC_Type) {
-			printf ("\nDRAC MAC Address ");
+			printf("\nDRAC MAC Address ");
 		} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
 				|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC6 MAC Address ");
+			printf("\niDRAC6 MAC Address ");
 		} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
 				|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC7 MAC Address ");
+			printf("\niDRAC7 MAC Address ");
 		} else if ((IMC_MASER_LITE_BMC== IMC_Type)
 				|| (IMC_MASER_LITE_NU== IMC_Type)) {
-			printf ("\nBMC MAC Address ");
+			printf("\nBMC MAC Address ");
 		} else {
-			printf ("\niDRAC6 MAC Address ");
+			printf("\niDRAC6 MAC Address ");
 		}
 
 		for (j = 0; j < 5; j++) {
 			printf("%02x:", VirtualMacAddress[j]);
 		}
 		printf("%02x", VirtualMacAddress[j]);
-		printf ("\n");
+		printf("\n");
 	}
 	return 0;
 }
@@ -1621,25 +1621,25 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 				MACADDRESSLENGH);
 
 		if (IMC_IDRAC_10G == IMC_Type) {
-			printf ("\nDRAC MAC Address ");
+			printf("\nDRAC MAC Address ");
 		} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
 				|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC6 MAC Address ");
+			printf("\niDRAC6 MAC Address ");
 		} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
 				|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC7 MAC Address ");
+			printf("\niDRAC7 MAC Address ");
 		} else if ((IMC_MASER_LITE_BMC== IMC_Type)
 				|| (IMC_MASER_LITE_NU== IMC_Type)) {
-			printf ("\n\rBMC MAC Address ");
+			printf("\n\rBMC MAC Address ");
 		} else {
-			printf ("\niDRAC6 MAC Address ");
+			printf("\niDRAC6 MAC Address ");
 		}
 
 		for (j = 0; j < 5; j++) {
 			printf("%02x:", iDRAC6MacAddressByte[j]);
 		}
 		printf("%02x", iDRAC6MacAddressByte[j]);
-		printf ("\n");
+		printf("\n");
 	}
 	return 0;
 }
@@ -1688,7 +1688,7 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 	Total_No_NICs = (uint8_t)rsp->data[0 + PARAM_REV_OFFSET]; /* Byte 1: Total Number of Embedded NICs */
 	if (IDRAC_NIC_NUMBER != NicNum) {
 		if (0xff == NicNum) {
-			printf ("\nSystem LOMs");
+			printf("\nSystem LOMs");
 		}
 		printf("\nNIC Number\tMAC Address\n");
 		memcpy(&EmbeddedNICMacAddress_10G,
@@ -1707,7 +1707,7 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 						EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j]);
 			}
 		}
-		printf ("\n");
+		printf("\n");
 	}
 	ipmi_macinfo_drac_idrac_mac(intf,NicNum);
 	return 0;
@@ -1769,7 +1769,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 	loop_count = maxlen / len;
 	if (IDRAC_NIC_NUMBER != NicNum) {
 		if (0xff == NicNum) {
-			printf ("\nSystem LOMs");
+			printf("\nSystem LOMs");
 		}
 		printf("\nNIC Number\tMAC Address\t\tStatus\n");
 		/*Read the LOM type and Mac Addresses */
@@ -1800,8 +1800,8 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 			if (LOM_MACTYPE_ETHERNET == EmbeddedNICMacAddress.LOMMacAddress[i].MacType) {
 				if ((0xff==NicNum)
 						|| (NicNum == EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber)) {
-					printf ("\n%d",EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber);
-					printf ("\t\t");
+					printf("\n%d",EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber);
+					printf("\t\t");
 					for (j = 0; j < 5; j++) {
 						printf("%02x:",
 								EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte[j]);
@@ -1811,14 +1811,14 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 
 					if (LOM_ETHERNET_ENABLED
 							== EmbeddedNICMacAddress.LOMMacAddress[i].EthernetStatus) {
-						printf ("\tEnabled");
+						printf("\tEnabled");
 					} else {
-						printf ("\tDisabled");
+						printf("\tDisabled");
 					}
 				}
 			}
 		}
-		printf ("\n");
+		printf("\n");
 	}
 	ipmi_macinfo_drac_idrac_mac(intf,NicNum);
 	return 0;
@@ -2274,14 +2274,14 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 		if ((nic_selection < 6) && (nic_selection > 0)
 				&& (nic_selection_failover < 7)) {
 			if(nic_selection == 1) {
-				printf ("%s\n",NIC_Selection_Mode_String_12g[nic_selection-1]);
+				printf("%s\n",NIC_Selection_Mode_String_12g[nic_selection-1]);
 			} else if(nic_selection) {
-				printf ("Shared LOM   :  %s\n",
+				printf("Shared LOM   :  %s\n",
 						NIC_Selection_Mode_String_12g[nic_selection-1]);
 				if(nic_selection_failover  == 0) {
-					printf ("Failover LOM :  None\n");
+					printf("Failover LOM :  None\n");
 				} else if(nic_selection_failover >= 2 && nic_selection_failover <= 6) {
-					printf ("Failover LOM :  %s\n",
+					printf("Failover LOM :  %s\n",
 							NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
 				}
 			}
@@ -2291,7 +2291,7 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 			return -1;
 		}
 	} else {
-		printf ("%s\n",NIC_Selection_Mode_String[nic_selection]);
+		printf("%s\n",NIC_Selection_Mode_String[nic_selection]);
 	}
 	return 0;
 }
@@ -2947,8 +2947,8 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 	powerheadroom.instheadroom = BSWAP_16(powerheadroom.instheadroom);
 	powerheadroom.peakheadroom = BSWAP_16(powerheadroom.peakheadroom);
 # endif
-	printf ("Headroom\n");
-	printf ("Statistic                     Reading\n");
+	printf("Headroom\n");
+	printf("Statistic                     Reading\n");
 	if (unit == btuphr) {
 		peakpowerheadroombtuphr = watt_to_btuphr_conversion(powerheadroom.peakheadroom);
 		instantpowerhearoom = watt_to_btuphr_conversion(powerheadroom.instheadroom);
@@ -3007,19 +3007,19 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 		failure_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
 				rsp->data[5]);
 
-		printf ("System Board System Level\n");
+		printf("System Board System Level\n");
 		if (unit == btuphr) {
 			readingbtuphr = watt_to_btuphr_conversion(readingbtuphr);
 			warning_threshbtuphr = watt_to_btuphr_conversion(warning_threshbtuphr);
 			failure_threshbtuphr = watt_to_btuphr_conversion( failure_threshbtuphr);
 
-			printf ("Reading                        : %d BTU/hr\n", readingbtuphr);
-			printf ("Warning threshold      : %d BTU/hr\n", warning_threshbtuphr);
-			printf ("Failure threshold      : %d BTU/hr\n", failure_threshbtuphr);
+			printf("Reading                        : %d BTU/hr\n", readingbtuphr);
+			printf("Warning threshold      : %d BTU/hr\n", warning_threshbtuphr);
+			printf("Failure threshold      : %d BTU/hr\n", failure_threshbtuphr);
 		} else {
-			printf ("Reading                        : %d W \n",readingbtuphr);
-			printf ("Warning threshold      : %d W \n",(warning_threshbtuphr));
-			printf ("Failure threshold      : %d W \n",(failure_threshbtuphr));
+			printf("Reading                        : %d W \n",readingbtuphr);
+			printf("Warning threshold      : %d W \n",(warning_threshbtuphr));
+			printf("Failure threshold      : %d W \n",(failure_threshbtuphr));
 		}
 	} else {
 		lprintf(LOG_ERR,
@@ -3115,7 +3115,7 @@ ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
 {
 	int rc = 0;
 	IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata = {0,0,0,0};
-	printf ("\nPower consumption information\n");
+	printf("\nPower consumption information\n");
 	rc = ipmi_get_power_consumption_data(intf, unit);
 	if (rc == (-1)) {
 		return rc;
@@ -3334,71 +3334,71 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 		return rc;
 	}
 	if (rc == 0) {
-		printf ("Power Consumption History\n\n");
+		printf("Power Consumption History\n\n");
 		/* The fields are alligned manually changing the spaces will alter
 		 * the alignment*/
-		printf ("Statistic                   Last Minute     Last Hour     "
+		printf("Statistic                   Last Minute     Last Hour     "
 				"Last Day     Last Week\n\n");
 		if (unit == btuphr) {
-			printf ("Average Power Consumption  ");
+			printf("Average Power Consumption  ");
 			tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastminutepower);
-			printf ("%4lld BTU/hr     ", tempbtuphrconv);
+			printf("%4lld BTU/hr     ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lasthourpower);
-			printf ("%4lld BTU/hr   ", tempbtuphrconv);
+			printf("%4lld BTU/hr   ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastdaypower);
-			printf ("%4lld BTU/hr  ", tempbtuphrconv);
+			printf("%4lld BTU/hr  ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastweakpower);
-			printf ("%4lld BTU/hr\n", tempbtuphrconv);
+			printf("%4lld BTU/hr\n", tempbtuphrconv);
 
-			printf ("Max Power Consumption      ");
+			printf("Max Power Consumption      ");
 			tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastminutepower);
-			printf ("%4lld BTU/hr     ", tempbtuphrconv);
+			printf("%4lld BTU/hr     ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lasthourpower);
-			printf ("%4lld BTU/hr   ", tempbtuphrconv);
+			printf("%4lld BTU/hr   ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastdaypower);
-			printf ("%4lld BTU/hr  ", tempbtuphrconv);
+			printf("%4lld BTU/hr  ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastweakpower);
-			printf ("%4lld BTU/hr\n", tempbtuphrconv);
+			printf("%4lld BTU/hr\n", tempbtuphrconv);
 
-			printf ("Min Power Consumption      ");
+			printf("Min Power Consumption      ");
 			tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastminutepower);
-			printf ("%4lld BTU/hr     ", tempbtuphrconv);
+			printf("%4lld BTU/hr     ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lasthourpower);
-			printf ("%4lld BTU/hr   ", tempbtuphrconv);
+			printf("%4lld BTU/hr   ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastdaypower);
-			printf ("%4lld BTU/hr  ", tempbtuphrconv);
+			printf("%4lld BTU/hr  ", tempbtuphrconv);
 			tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastweakpower);
-			printf ("%4lld BTU/hr\n\n", tempbtuphrconv);
+			printf("%4lld BTU/hr\n\n", tempbtuphrconv);
 		} else {
-			printf ("Average Power Consumption  ");
+			printf("Average Power Consumption  ");
 			tempbtuphrconv = (avgpower.lastminutepower);
-			printf ("%4lld W          ", tempbtuphrconv);
+			printf("%4lld W          ", tempbtuphrconv);
 			tempbtuphrconv = (avgpower.lasthourpower);
-			printf ("%4lld W        ", tempbtuphrconv);
+			printf("%4lld W        ", tempbtuphrconv);
 			tempbtuphrconv = (avgpower.lastdaypower);
-			printf ("%4lld W       ", tempbtuphrconv);
+			printf("%4lld W       ", tempbtuphrconv);
 			tempbtuphrconv=(avgpower.lastweakpower);
-			printf ("%4lld W   \n", tempbtuphrconv);
+			printf("%4lld W   \n", tempbtuphrconv);
 
-			printf ("Max Power Consumption      ");
+			printf("Max Power Consumption      ");
 			tempbtuphrconv = (stPeakpower.lastminutepower);
-			printf ("%4lld W          ", tempbtuphrconv);
+			printf("%4lld W          ", tempbtuphrconv);
 			tempbtuphrconv = (stPeakpower.lasthourpower);
-			printf ("%4lld W        ", tempbtuphrconv);
+			printf("%4lld W        ", tempbtuphrconv);
 			tempbtuphrconv = (stPeakpower.lastdaypower);
-			printf ("%4lld W       ", tempbtuphrconv);
+			printf("%4lld W       ", tempbtuphrconv);
 			tempbtuphrconv = (stPeakpower.lastweakpower);
-			printf ("%4lld W   \n", tempbtuphrconv);
+			printf("%4lld W   \n", tempbtuphrconv);
 
-			printf ("Min Power Consumption      ");
+			printf("Min Power Consumption      ");
 			tempbtuphrconv = (stMinpower.lastminutepower);
-			printf ("%4lld W          ", tempbtuphrconv);
+			printf("%4lld W          ", tempbtuphrconv);
 			tempbtuphrconv = (stMinpower.lasthourpower);
-			printf ("%4lld W        ", tempbtuphrconv);
+			printf("%4lld W        ", tempbtuphrconv);
 			tempbtuphrconv = (stMinpower.lastdaypower);
-			printf ("%4lld W       ", tempbtuphrconv);
+			printf("%4lld W       ", tempbtuphrconv);
 			tempbtuphrconv = (stMinpower.lastweakpower);
-			printf ("%4lld W   \n\n", tempbtuphrconv);
+			printf("%4lld W   \n\n", tempbtuphrconv);
 		}
 
 		lastminutepeakpower = stPeakpower.lastminutepowertime;
@@ -3406,30 +3406,30 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 		lastdaypeakpower = stPeakpower.lastdaypowertime;
 		lastweekpeakpower = stPeakpower.lastweekpowertime;
 
-		printf ("Max Power Time\n");
+		printf("Max Power Time\n");
 		ipmi_time_to_str(lastminutepeakpower, timestr);
-		printf ("Last Minute     : %s",timestr);
+		printf("Last Minute     : %s",timestr);
 		ipmi_time_to_str(lasthourpeakpower, timestr);
-		printf ("Last Hour       : %s",timestr);
+		printf("Last Hour       : %s",timestr);
 		ipmi_time_to_str(lastdaypeakpower, timestr);
-		printf ("Last Day        : %s",timestr);
+		printf("Last Day        : %s",timestr);
 		ipmi_time_to_str(lastweekpeakpower, timestr);
-		printf ("Last Week       : %s",timestr);
+		printf("Last Week       : %s",timestr);
 
 		lastminutepeakpower=stMinpower.lastminutepowertime;
 		lasthourpeakpower=stMinpower.lasthourpowertime;
 		lastdaypeakpower=stMinpower.lastdaypowertime;
 		lastweekpeakpower=stMinpower.lastweekpowertime;
 
-		printf ("Min Power Time\n");
+		printf("Min Power Time\n");
 		ipmi_time_to_str(lastminutepeakpower, timestr);
-		printf ("Last Minute     : %s", timestr);
+		printf("Last Minute     : %s", timestr);
 		ipmi_time_to_str(lasthourpeakpower, timestr);
-		printf ("Last Hour       : %s", timestr);
+		printf("Last Hour       : %s", timestr);
 		ipmi_time_to_str(lastdaypeakpower, timestr);
-		printf ("Last Day        : %s", timestr);
+		printf("Last Day        : %s", timestr);
 		ipmi_time_to_str(lastweekpeakpower, timestr);
-		printf ("Last Week       : %s", timestr);
+		printf("Last Week       : %s", timestr);
 	}
 	return rc;
 }
