@@ -3877,7 +3877,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 				"vFlash SD card is unavailable, please insert the card of");
 		lprintf(LOG_ERR,
 				"size 256MB or greater");
-		return 0;
+		return (-1);
 	}
 
 	printf("vFlash SD Card Properties\n");
