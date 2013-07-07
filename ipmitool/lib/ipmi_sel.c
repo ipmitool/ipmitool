@@ -1739,6 +1739,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		 */
 		float trigger_reading = 0.0;
 		float threshold_reading = 0.0;
+		uint8_t threshold_reading_provided = 0;
 
 		/* trigger reading in event data byte 2 */
 		if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
@@ -1750,6 +1751,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		if (((evt->sel_type.standard_type.event_data[0] >> 4) & 3) == 1) {
 			threshold_reading = sdr_convert_sensor_reading(
 				sdr->record.full, evt->sel_type.standard_type.event_data[2]);
+			threshold_reading_provided = 1;
 		}
 
 		if (csv_output)
@@ -1757,16 +1759,19 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		else
 			printf(" | ");
 		
-		printf("Reading %.*f %s Threshold %.*f %s",
-		       (trigger_reading==(int)trigger_reading) ? 0 : 2,
-		       trigger_reading,
-		       ((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
-		       (threshold_reading==(int)threshold_reading) ? 0 : 2,
-		       threshold_reading,
-		       ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
+		printf("Reading %.*f",
+				(trigger_reading==(int)trigger_reading) ? 0 : 2,
+				trigger_reading);
+		if (threshold_reading_provided) {
+			printf(" %s Threshold %.*f %s",
+					((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
+					(threshold_reading==(int)threshold_reading) ? 0 : 2,
+					threshold_reading,
+					ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
 						sdr->record.common->unit.modifier,
 						sdr->record.common->unit.type.base,
 						sdr->record.common->unit.type.modifier));
+		}
 	}
 	else if (evt->sel_type.standard_type.event_type == 0x6f) {
 		/*
