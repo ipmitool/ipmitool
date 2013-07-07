@@ -3414,18 +3414,12 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	/*
 	 *
 	 * Make sure the BMC supports IPMI v2 / RMCP+
-	 *
-	 * I'm not sure why we accept a failure for the first call
 	 */
 	if (!ipmi_oem_active(intf, "i82571spt") &&
 			ipmi_get_auth_capabilities_cmd(intf, &auth_cap)) {
-		sleep(1);
-		if (ipmi_get_auth_capabilities_cmd(intf, &auth_cap));
-		{
-			lprintf(LOG_INFO, "Error issuing Get Channel "
-				"Authentication Capabilies request");
-			goto fail;
-		}
+		lprintf(LOG_INFO, "Error issuing Get Channel "
+			"Authentication Capabilies request");
+		goto fail;
 	}
 
 	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available)

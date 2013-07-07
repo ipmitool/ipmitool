@@ -1959,10 +1959,7 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 
 	rc = ipmi_get_auth_capabilities_cmd(intf);
 	if (rc < 0) {
-		sleep(1);
-		rc = ipmi_get_auth_capabilities_cmd(intf);
-		if (rc < 0)
-			goto fail;
+		goto fail;
 	}
 
 	rc = ipmi_get_session_challenge_cmd(intf);
