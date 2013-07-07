@@ -2889,12 +2889,10 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t clearType;
+	uint8_t clearType = 1;
 	uint8_t msg_data[3];
 	if (clearValue) {
 		clearType = 2;
-	} else {
-		clearType = 1;
 	}
 	/* clear powermanagement info*/
 	req.msg.netfn = DELL_OEM_NETFN;
