@@ -1539,45 +1539,38 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t input_length=0;
 	uint8_t j;
 	uint8_t i;
-	if (0xff == NicNum || IDRAC_NIC_NUMBER == NicNum) {
-		UseVirtualMacAddress = 0;
-		input_length = 0;
-		msg_data[input_length++] = 1; /*Get*/
+	if (NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER) {
+		return 0;
+	}
+	UseVirtualMacAddress = 0;
+	input_length = 0;
+	msg_data[input_length++] = 1; /*Get*/
 
-		req.msg.netfn = DELL_OEM_NETFN;
-		req.msg.lun = 0;
-		req.msg.cmd = GET_IDRAC_VIRTUAL_MAC;
-		req.msg.data = msg_data;
-		req.msg.data_len = input_length;
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_IDRAC_VIRTUAL_MAC;
+	req.msg.data = msg_data;
+	req.msg.data_len = input_length;
 
-		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
-			return -1;
-		}
-		if (rsp->ccode > 0) {
-			return -1;
-		}
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-				|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type) ) {
-			/* Get the Chasiss Assigned MAC Addresss for 12g Only */
-			memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
-			for (i = 0; i < MACADDRESSLENGH; i++) {
-				if (VirtualMacAddress[i] != 0) {
-					UseVirtualMacAddress = 1;
-				}
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		return -1;
+	}
+	if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type) ) {
+		/* Get the Chasiss Assigned MAC Addresss for 12g Only */
+		memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
+		for (i = 0; i < MACADDRESSLENGH; i++) {
+			if (VirtualMacAddress[i] != 0) {
+				UseVirtualMacAddress = 1;
 			}
-			/* Get the Server Assigned MAC Addresss for 12g Only */
-			if (!UseVirtualMacAddress) {
-				memcpy(VirtualMacAddress, ((rsp->data) + 1 + MACADDRESSLENGH),
-						MACADDRESSLENGH);
-				for (i = 0; i < MACADDRESSLENGH; i++) {
-					if (VirtualMacAddress[i] != 0) {
-						UseVirtualMacAddress = 1;
-					}
-				}
-			}
-		} else {
-			memcpy(VirtualMacAddress, ((rsp->data) + VIRTUAL_MAC_OFFSET),
+		}
+		/* Get the Server Assigned MAC Addresss for 12g Only */
+		if (!UseVirtualMacAddress) {
+			memcpy(VirtualMacAddress, ((rsp->data) + 1 + MACADDRESSLENGH),
 					MACADDRESSLENGH);
 			for (i = 0; i < MACADDRESSLENGH; i++) {
 				if (VirtualMacAddress[i] != 0) {
@@ -1585,30 +1578,38 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 				}
 			}
 		}
-		if (UseVirtualMacAddress == 0) {
-			return -1;
+	} else {
+		memcpy(VirtualMacAddress, ((rsp->data) + VIRTUAL_MAC_OFFSET),
+				MACADDRESSLENGH);
+		for (i = 0; i < MACADDRESSLENGH; i++) {
+			if (VirtualMacAddress[i] != 0) {
+				UseVirtualMacAddress = 1;
+			}
 		}
-		if (IMC_IDRAC_10G == IMC_Type) {
-			printf("\nDRAC MAC Address ");
-		} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
-				|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
-			printf("\niDRAC6 MAC Address ");
-		} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-				|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
-			printf("\niDRAC7 MAC Address ");
-		} else if ((IMC_MASER_LITE_BMC== IMC_Type)
-				|| (IMC_MASER_LITE_NU== IMC_Type)) {
-			printf("\nBMC MAC Address ");
-		} else {
-			printf("\niDRAC6 MAC Address ");
-		}
-
-		for (j = 0; j < 5; j++) {
-			printf("%02x:", VirtualMacAddress[j]);
-		}
-		printf("%02x", VirtualMacAddress[j]);
-		printf("\n");
 	}
+	if (UseVirtualMacAddress == 0) {
+		return -1;
+	}
+	if (IMC_IDRAC_10G == IMC_Type) {
+		printf("\nDRAC MAC Address ");
+	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
+		printf("\niDRAC6 MAC Address ");
+	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
+		printf("\niDRAC7 MAC Address ");
+	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
+			|| (IMC_MASER_LITE_NU== IMC_Type)) {
+		printf("\nBMC MAC Address ");
+	} else {
+		printf("\niDRAC6 MAC Address ");
+	}
+
+	for (j = 0; j < 5; j++) {
+		printf("%02x:", VirtualMacAddress[j]);
+	}
+	printf("%02x", VirtualMacAddress[j]);
+	printf("\n");
 	return 0;
 }
 /*
