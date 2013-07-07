@@ -81,9 +81,9 @@
 #define	INVAILD_FAILOVER_MODE_SETTINGS	-3
 #define	INVAILD_SHARED_MODE		-4
 
-#define	INVAILD_FAILOVER_MODE_STRING "ERROR: Cannot set shared with failover lom same as current shared lom.\n"
-#define	INVAILD_FAILOVER_MODE_SET "ERROR: Cannot set shared with failover loms when NIC is set to dedicated Mode.\n"
-#define	INVAILD_SHARED_MODE_SET_STRING "ERROR: Cannot set shared Mode for Blades.\n"
+#define	INVAILD_FAILOVER_MODE_STRING "ERROR: Cannot set shared with failover lom same as current shared lom."
+#define	INVAILD_FAILOVER_MODE_SET "ERROR: Cannot set shared with failover loms when NIC is set to dedicated Mode."
+#define	INVAILD_SHARED_MODE_SET_STRING "ERROR: Cannot set shared Mode for Blades."
 
 char AciveLOM_String [6] [10] = {
 	"None",
@@ -341,7 +341,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 	CheckLCDSupport(intf);
 	ipmi_idracvalidator_command(intf);
 	if (!IsLCDSupported()) {
-		printf("lcd is not supported on this system.\n");
+		lprintf(LOG_ERR, "lcd is not supported on this system.");
 		return -1;
 	} else if (strncmp(argv[current_arg], "info\0", 5) == 0) {
 		if ((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G)) {
@@ -1893,7 +1893,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	ipmi_idracvalidator_command(intf);
 	if (!IsLANSupported()) {
-		printf("lan is not supported on this system.\n");
+		lprintf(LOG_ERR, "lan is not supported on this system.");
 		return -1;
 	} else if (strncmp(argv[current_arg], "set\0", 4) == 0) {
 		current_arg++;
@@ -1908,13 +1908,13 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lan_usage();
 				return -1;
 			} else if (INVAILD_FAILOVER_MODE == nic_selection) {
-				printf(INVAILD_FAILOVER_MODE_STRING);
+				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_STRING);
 				return 0;
 			} else if (INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
-				printf(INVAILD_FAILOVER_MODE_SET);
+				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_SET);
 				return 0;
 			} else if (INVAILD_SHARED_MODE == nic_selection) {
-				printf(INVAILD_SHARED_MODE_SET_STRING);
+				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
 				return 0;
 			}
 			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
@@ -1925,7 +1925,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			}
 			if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
-				printf(INVAILD_SHARED_MODE_SET_STRING);
+				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
 				return 0;
 			}
 			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
@@ -2199,7 +2199,8 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 	} else if( (nic_selection[0] == 1)
 			&& ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
 		/* Check license only for setting the dedicated nic. */
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, " Error in setting nic selection (%s) \n",
@@ -2595,7 +2596,8 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, " Error getting powercap status");
 		return -1;
 	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1; /* Return Error as unlicensed */
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, " Error getting powercap statusr: %s",
@@ -2645,7 +2647,8 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 		lprintf(LOG_ERR, " Error setting powercap status");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1; /* return unlicensed Error code */
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, " Error setting powercap statusr: %s",
@@ -2708,7 +2711,8 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (rsp->ccode != 0) {
-		printf("Error getting power management information, return code %x\n",
+		lprintf(LOG_ERR,
+				"Error getting power management information, return code %x",
 				rsp->ccode);
 		return -1;
 	}
@@ -2737,14 +2741,16 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	}
 
 	if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
 		lprintf(LOG_ERR, " Error getting power management information: "
 				"Command not supported on this system.");
 		return -1;
 	}else if (rsp->ccode != 0) {
-		printf("Error getting power management information, return code %x\n",
+		lprintf(LOG_ERR,
+				"Error getting power management information, return code %x",
 				rsp->ccode);
 		return -1;
 	}
@@ -2841,7 +2847,8 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if (rsp->ccode == 0xc1) {
 		lprintf(LOG_ERR,
@@ -2918,7 +2925,8 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
 		lprintf(LOG_ERR, " Error getting power headroom status: "
@@ -2980,7 +2988,8 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 	int sensor_number = 0;
 	sdr = ipmi_sdr_find_sdr_byid(intf, "System Level");
 	if (sdr == NULL) {
-		printf("Error : Can not access the System Level sensor data \n\n");
+		lprintf(LOG_ERR,
+				"Error : Can not access the System Level sensor data");
 		return -1;
 	}
 	sensor_number = sdr->record.common->keys.sensor_num;
@@ -3013,7 +3022,8 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 			printf ("Failure threshold      : %d W \n",(failure_threshbtuphr));
 		}
 	} else {
-		printf ("Error : Can not access the System Level sensor data \n\n");
+		lprintf(LOG_ERR,
+				"Error : Can not access the System Level sensor data");
 		return -1;
 	}
 	return status;
@@ -3050,7 +3060,8 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
 		lprintf(LOG_ERR, "  Error getting instantaneous power consumption data: "
@@ -3141,7 +3152,8 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 				" Error getting average power consumption history data .\n");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rc == 0xc1) || (rc == 0xcb)) {
 		lprintf(LOG_ERR, "  Error getting average power consumption history data: "
@@ -3189,7 +3201,8 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rc == 0xc1) || (rc == 0xcb)) {
 		lprintf(LOG_ERR, "  Error getting peak power consumption history data: "
@@ -3245,7 +3258,8 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, " Error getting  peak power consumption history data .\n");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rc == 0xc1) || (rc == 0xcb)) {
 		lprintf(LOG_ERR, "  Error getting peak power consumption history data: "
@@ -3440,7 +3454,8 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap )
 		lprintf(LOG_ERR, " Error getting power cap  .\n");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if ((rc == 0xc1) || (rc == 0xcb)) {
 		lprintf(LOG_ERR, "  Error getting power cap: "
@@ -3539,7 +3554,8 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		lprintf(LOG_ERR, " Error getting power cap  .\n");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if (rc == 0xc1) {
 		lprintf(LOG_ERR, "  Error getting power cap, command not supported on "
@@ -3618,7 +3634,8 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		lprintf(LOG_ERR, " Error setting power cap");
 		return -1;
 	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if (rc > 0) {
 		lprintf(LOG_ERR, " Error setting power cap: %s",
@@ -3754,7 +3771,8 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 
 	if ((iDRAC_FLAG == IDRAC_12G)
 			&& (sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED)) {
-		printf("FM001 : A required license is missing or expired\n");
+		lprintf(LOG_ERR,
+				"FM001 : A required license is missing or expired");
 		return -1;
 	} else if (sdcardinfoblock->vflashcompcode != 0x00) {
 		lprintf(LOG_ERR, " Error in getting SD Card Extended Information (%s) \n",
@@ -4080,7 +4098,7 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	CheckSetLEDSupport(intf);
 	if (!IsSetLEDSupported()) {
-		printf("'setled' is not supported on this system.\n");
+		lprintf(LOG_ERR, "'setled' is not supported on this system.");
 		return -1;
 	} else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
 		/* We have bus/dev/function of drive */
