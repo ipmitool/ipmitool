@@ -1953,13 +1953,13 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			} else if (INVAILD_FAILOVER_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_STRING);
-				return 0;
+				return (-1);
 			} else if (INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_SET);
-				return 0;
+				return (-1);
 			} else if (INVAILD_SHARED_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return 0;
+				return (-1);
 			}
 			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
 		} else {
@@ -1970,7 +1970,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return 0;
+				return (-1);
 			}
 			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
 		}
