@@ -1882,7 +1882,7 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 		return ipmi_macinfo_11g(intf,NicNum);
 	} else {
 		lprintf(LOG_ERR, "Error in getting MAC Address : Not supported platform");
-		return 0;
+		return (-1);
 	}
 }
 /*
