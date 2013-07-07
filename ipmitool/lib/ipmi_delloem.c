@@ -1630,53 +1630,55 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
 	uint8_t j;
 	ipmi_macinfo_drac_idrac_virtual_mac (intf,NicNum);
-	if ((0xff==NicNum || IDRAC_NIC_NUMBER==NicNum) && 0 == UseVirtualMacAddress) {
-		input_length = 0;
-		msg_data[input_length++] = LAN_CHANNEL_NUMBER;
-		msg_data[input_length++] = MAC_ADDR_PARAM;
-		msg_data[input_length++] = 0x00;
-		msg_data[input_length++] = 0x00;
-
-		req.msg.netfn = TRANSPORT_NETFN;
-		req.msg.lun = 0;
-		req.msg.cmd = GET_LAN_PARAM_CMD;
-		req.msg.data = msg_data;
-		req.msg.data_len = input_length;
-
-		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
-			lprintf(LOG_ERR, "Error in getting MAC Address");
-			return -1;
-		}
-		if (rsp->ccode > 0) {
-			lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
-					val2str(rsp->ccode, completion_code_vals) );
-			return -1;
-		}
-		memcpy(iDRAC6MacAddressByte, ((rsp->data) + PARAM_REV_OFFSET),
-				MACADDRESSLENGH);
-
-		if (IMC_IDRAC_10G == IMC_Type) {
-			printf("\nDRAC MAC Address ");
-		} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
-				|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
-			printf("\niDRAC6 MAC Address ");
-		} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-				|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
-			printf("\niDRAC7 MAC Address ");
-		} else if ((IMC_MASER_LITE_BMC== IMC_Type)
-				|| (IMC_MASER_LITE_NU== IMC_Type)) {
-			printf("\n\rBMC MAC Address ");
-		} else {
-			printf("\niDRAC6 MAC Address ");
-		}
-
-		for (j = 0; j < 5; j++) {
-			printf("%02x:", iDRAC6MacAddressByte[j]);
-		}
-		printf("%02x", iDRAC6MacAddressByte[j]);
-		printf("\n");
+	if ((NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER)
+			|| UseVirtualMacAddress != 0) {
+		return 0;
 	}
+	input_length = 0;
+	msg_data[input_length++] = LAN_CHANNEL_NUMBER;
+	msg_data[input_length++] = MAC_ADDR_PARAM;
+	msg_data[input_length++] = 0x00;
+	msg_data[input_length++] = 0x00;
+
+	req.msg.netfn = TRANSPORT_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_LAN_PARAM_CMD;
+	req.msg.data = msg_data;
+	req.msg.data_len = input_length;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in getting MAC Address");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
+				val2str(rsp->ccode, completion_code_vals) );
+		return -1;
+	}
+	memcpy(iDRAC6MacAddressByte, ((rsp->data) + PARAM_REV_OFFSET),
+			MACADDRESSLENGH);
+
+	if (IMC_IDRAC_10G == IMC_Type) {
+		printf("\nDRAC MAC Address ");
+	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
+		printf("\niDRAC6 MAC Address ");
+	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
+		printf("\niDRAC7 MAC Address ");
+	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
+			|| (IMC_MASER_LITE_NU== IMC_Type)) {
+		printf("\n\rBMC MAC Address ");
+	} else {
+		printf("\niDRAC6 MAC Address ");
+	}
+
+	for (j = 0; j < 5; j++) {
+		printf("%02x:", iDRAC6MacAddressByte[j]);
+	}
+	printf("%02x", iDRAC6MacAddressByte[j]);
+	printf("\n");
 	return 0;
 }
 /*
