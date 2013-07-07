@@ -3064,32 +3064,31 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 			sdr->record.common->keys.owner_id,
 			sdr->record.common->keys.lun,
 			sdr->record.common->keys.channel);
-	if (rsp != NULL && rsp->ccode == 0) {
-		readingbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-				sensorReadingData.sensorReading);
-		warning_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-				rsp->data[4]);
-		failure_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-				rsp->data[5]);
-
-		printf("System Board System Level\n");
-		if (unit == btuphr) {
-			readingbtuphr = watt_to_btuphr_conversion(readingbtuphr);
-			warning_threshbtuphr = watt_to_btuphr_conversion(warning_threshbtuphr);
-			failure_threshbtuphr = watt_to_btuphr_conversion( failure_threshbtuphr);
-
-			printf("Reading                        : %d BTU/hr\n", readingbtuphr);
-			printf("Warning threshold      : %d BTU/hr\n", warning_threshbtuphr);
-			printf("Failure threshold      : %d BTU/hr\n", failure_threshbtuphr);
-		} else {
-			printf("Reading                        : %d W \n",readingbtuphr);
-			printf("Warning threshold      : %d W \n",(warning_threshbtuphr));
-			printf("Failure threshold      : %d W \n",(failure_threshbtuphr));
-		}
-	} else {
+	if (rsp == NULL || rsp->ccode != 0) {
 		lprintf(LOG_ERR,
 				"Error : Can not access the System Level sensor data");
 		return -1;
+	}
+	readingbtuphr = sdr_convert_sensor_reading(sdr->record.full,
+			sensorReadingData.sensorReading);
+	warning_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
+			rsp->data[4]);
+	failure_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
+			rsp->data[5]);
+
+	printf("System Board System Level\n");
+	if (unit == btuphr) {
+		readingbtuphr = watt_to_btuphr_conversion(readingbtuphr);
+		warning_threshbtuphr = watt_to_btuphr_conversion(warning_threshbtuphr);
+		failure_threshbtuphr = watt_to_btuphr_conversion( failure_threshbtuphr);
+
+		printf("Reading                        : %d BTU/hr\n", readingbtuphr);
+		printf("Warning threshold      : %d BTU/hr\n", warning_threshbtuphr);
+		printf("Failure threshold      : %d BTU/hr\n", failure_threshbtuphr);
+	} else {
+		printf("Reading                        : %d W \n",readingbtuphr);
+		printf("Warning threshold      : %d W \n",(warning_threshbtuphr));
+		printf("Failure threshold      : %d W \n",(failure_threshbtuphr));
 	}
 	return status;
 }
