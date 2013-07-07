@@ -1242,7 +1242,7 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 	int rc = 0;
 	if (bytes_to_store > IPMI_DELL_LCD_STRING_LENGTH_MAX) {
 		lprintf(LOG_ERR, "Out of range Max limit is 62 characters");
-		return 1;
+		return (-1);
 	} else {
 		bytes_to_store = MIN(bytes_to_store, IPMI_DELL_LCD_STRING_LENGTH_MAX);
 		for (ii = 0; ii < 4; ii++) {
