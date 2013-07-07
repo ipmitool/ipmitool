@@ -2102,7 +2102,7 @@ ipmi_lanplus_send_payload(
 	int                   try = 0;
 	int                   xmit = 1;
 	time_t                ltime;
-	uint32_t	      timeout;
+	uint32_t	      saved_timeout;
 
 	if (!intf->opened && intf->open && intf->open(intf) < 0)
 		return NULL;
@@ -2111,7 +2111,7 @@ ipmi_lanplus_send_payload(
 	 * The session timeout is initialized in the above interface open,
 	 * so it will only be valid after the open completes.
 	 */
-	timeout = session->timeout;
+	saved_timeout = session->timeout;
 	while (try < session->retry) {
 		//ltime = time(NULL);
 
@@ -2307,17 +2307,18 @@ ipmi_lanplus_send_payload(
 		}
 
 		/* only timeout if time exceeds the timeout value */
-		xmit = ((time(NULL) - ltime) > timeout);
+		xmit = ((time(NULL) - ltime) >= session->timeout);
 
 		usleep(5000);
 
 		if (xmit) {
 			/* increment session timeout by 1 second each retry */
-			timeout++;
+			session->timeout++;
 		}
 
 		try++;
 	}
+	session->timeout = saved_timeout;
 
 	/* IPMI messages are deleted under ipmi_lan_poll_recv() */
 	switch (payload->payload_type) {
