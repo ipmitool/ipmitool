@@ -156,7 +156,7 @@ static int ipmi_lcd_get_status_val(struct ipmi_intf *intf,
 static int IsLCDSupported();
 static void CheckLCDSupport(struct ipmi_intf *intf);
 static void ipmi_lcd_status_print(LCD_STATUS lcdstatus);
-static int ipmi_lcd_get_status(struct ipmi_intf *intf );
+static int ipmi_lcd_get_status(struct ipmi_intf *intf);
 static int ipmi_lcd_set_kvm(struct ipmi_intf *intf, char status);
 static int ipmi_lcd_set_lock(struct ipmi_intf *intf,  char lock);
 static int ipmi_lcd_set_single_line_text(struct ipmi_intf *intf, char *text);
@@ -1119,7 +1119,7 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
  *                   0 if successful
  */
 static int
-ipmi_lcd_get_status(struct ipmi_intf * intf )
+ipmi_lcd_get_status(struct ipmi_intf * intf)
 {
 	int rc=0;
 	LCD_STATUS  lcdstatus;
@@ -1560,7 +1560,7 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 		return -1;
 	}
 	if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type) ) {
+			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
 		/* Get the Chasiss Assigned MAC Addresss for 12g Only */
 		memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
 		for (i = 0; i < MACADDRESSLENGH; i++) {
@@ -1653,7 +1653,7 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	memcpy(iDRAC6MacAddressByte, ((rsp->data) + PARAM_REV_OFFSET),
@@ -1720,7 +1720,7 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	Total_No_NICs = (uint8_t)rsp->data[0 + PARAM_REV_OFFSET]; /* Byte 1: Total Number of Embedded NICs */
@@ -1830,7 +1830,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 			}
 			if (rsp->ccode > 0) {
 				lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
-						val2str(rsp->ccode, completion_code_vals) );
+						val2str(rsp->ccode, completion_code_vals));
 				return -1;
 			}
 			memcpy(&(EmbeddedNICMacAddress.LOMMacAddress[i]),
@@ -2026,7 +2026,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	nic_set[0] = rsp->data[0];
@@ -2248,7 +2248,7 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	printf("configured successfully");
@@ -2276,7 +2276,7 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	printf("configured successfully");
@@ -2309,7 +2309,7 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	nic_selection = rsp->data[0];
@@ -3509,7 +3509,7 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
  * Return:
  */
 static int
-ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap )
+ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 {
 	uint64_t tempbtuphrconv;
 	uint8_t *rdata;
@@ -3560,7 +3560,7 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap )
  * Return:
  */
 static int
-ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit )
+ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
 {
 	uint64_t tempbtuphrconv;
 	int rc;
@@ -3855,7 +3855,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 		return -1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Error in getting SD Card Extended Information (%s)",
-				val2str(rsp->ccode, completion_code_vals) );
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
