@@ -262,22 +262,22 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 	if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
-		ipmi_delloem_lcd_main (intf,argc,argv);
+		ipmi_delloem_lcd_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "mac\0", 4) == 0) {
 		/* mac address*/
-		ipmi_delloem_mac_main (intf,argc,argv);
+		ipmi_delloem_mac_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "lan\0", 4) == 0) {
 		/* lan address*/
-		ipmi_delloem_lan_main (intf,argc,argv);
+		ipmi_delloem_lan_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "setled\0", 7) == 0) {
 		/* SetLED support */
-		ipmi_delloem_setled_main (intf,argc,argv);
+		ipmi_delloem_setled_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) {
 		/*Powermanagement report processing*/
-		ipmi_delloem_powermonitor_main (intf,argc,argv);
+		ipmi_delloem_powermonitor_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0) {
 		/* vFlash Support */
-		ipmi_delloem_vFlash_main (intf,argc,argv);
+		ipmi_delloem_vFlash_main(intf,argc,argv);
 	} else {
 		usage();
 		return -1;
@@ -514,7 +514,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (strncmp(argv[current_arg], "active\0", 7) == 0) {
 				rc = ipmi_lcd_set_kvm(intf, 1);
 			} else if (strncmp(argv[current_arg], "inactive\0", 9) == 0) {
-				rc = ipmi_lcd_set_kvm (intf, 0);
+				rc = ipmi_lcd_set_kvm(intf, 0);
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
@@ -527,11 +527,11 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			}
 			if (strncmp(argv[current_arg], "viewandmodify\0", 14) == 0) {
-				rc = ipmi_lcd_set_lock (intf, 0);
+				rc = ipmi_lcd_set_lock(intf, 0);
 			} else if (strncmp(argv[current_arg], "viewonly\0", 9)==0) {
-				rc =  ipmi_lcd_set_lock (intf, 1);
+				rc =  ipmi_lcd_set_lock(intf, 1);
 			} else if (strncmp(argv[current_arg], "disabled\0", 9)==0) {
-				rc =  ipmi_lcd_set_lock (intf, 2);
+				rc =  ipmi_lcd_set_lock(intf, 2);
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
@@ -822,7 +822,7 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Return:
  */
 static int
-ipmi_lcd_get_single_line_text (struct ipmi_intf * intf, char* lcdstring,
+ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
 		uint8_t max_length)
 {
 	IPMI_DELL_LCD_STRING lcdstringblock;
@@ -884,7 +884,7 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 	int rc;
 	printf("LCD info\n");
-	if (ipmi_lcd_get_configure_command_wh (intf) != 0) {
+	if (ipmi_lcd_get_configure_command_wh(intf) != 0) {
 		return -1;
 	}
 	if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT) {
@@ -915,7 +915,7 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 		}
 		if (lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
-			rc = ipmi_lcd_get_single_line_text (intf, lcdstring,
+			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
 					lcd_caps.max_chars[0]);
 			printf("    Text:    %s\n", lcdstring);
 		} else {
@@ -1311,7 +1311,7 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
 		return -1;
 	}
 	if (lcd_caps.number_lines > 0) {
-		rc = ipmi_lcd_set_single_line_text (intf, text);
+		rc = ipmi_lcd_set_single_line_text(intf, text);
 	} else {
 		lprintf(LOG_ERR, "LCD does not have any lines that can be set");
 		rc = -1;
@@ -1332,7 +1332,7 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
  *                  0 if successful
  */
 static int
-ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode,
+ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp, int8_t line_number, char * text)
 {
 	int rc = 0;
@@ -1341,7 +1341,7 @@ ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode,
 		rc = ipmi_lcd_set_text(intf, text, line_number);
 	}
 	if (rc == 0) {
-		rc = ipmi_lcd_set_configure_command_wh (intf, mode ,lcdquallifier,errordisp);
+		rc = ipmi_lcd_set_configure_command_wh(intf, mode ,lcdquallifier,errordisp);
 	}
 	return rc;
 }
@@ -1358,7 +1358,7 @@ ipmi_lcd_configure_wh (struct ipmi_intf * intf, uint32_t  mode,
  *                  0 if successful
  */
 static int
-ipmi_lcd_configure (struct ipmi_intf * intf, int command,
+ipmi_lcd_configure(struct ipmi_intf * intf, int command,
 		int8_t line_number, char * text)
 {
 	int rc = 0;
@@ -1366,7 +1366,7 @@ ipmi_lcd_configure (struct ipmi_intf * intf, int command,
 		rc = ipmi_lcd_set_text(intf, text, line_number);
 	}
 	if (rc == 0) {
-		rc = ipmi_lcd_set_configure_command (intf, command);
+		rc = ipmi_lcd_set_configure_command(intf, command);
 	}
 	return rc;
 }
@@ -1629,7 +1629,7 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t input_length=0;
 	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
 	uint8_t j;
-	ipmi_macinfo_drac_idrac_virtual_mac (intf,NicNum);
+	ipmi_macinfo_drac_idrac_virtual_mac(intf,NicNum);
 	if ((NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER)
 			|| UseVirtualMacAddress != 0) {
 		return 0;
@@ -1873,13 +1873,13 @@ static int
 ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	if (IMC_IDRAC_10G == IMC_Type) {
-		return ipmi_macinfo_10g (intf,NicNum);
+		return ipmi_macinfo_10g(intf,NicNum);
 	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type
 				|| IMC_IDRAC_11G_MONOLITHIC == IMC_Type)
 			|| (IMC_IDRAC_12G_MODULAR == IMC_Type
 				|| IMC_IDRAC_12G_MONOLITHIC == IMC_Type)
 			|| (IMC_MASER_LITE_NU == IMC_Type || IMC_MASER_LITE_BMC== IMC_Type)) {
-		return ipmi_macinfo_11g (intf,NicNum);
+		return ipmi_macinfo_11g(intf,NicNum);
 	} else {
 		lprintf(LOG_ERR, "Error in getting MAC Address : Not supported platform");
 		return 0;
@@ -2607,7 +2607,7 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 	struct ipmi_rq req;
 	struct ipmi_rs * rsp;
 	int rc = 0;
-	memset(&req, 0, sizeof (req));
+	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.lun = 0;
 	req.msg.cmd = GET_SENSOR_READING;
@@ -3059,7 +3059,7 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 		return -1;
 	}
 	sensor_number = sdr->record.common->keys.sensor_num;
-	ipmi_get_sensor_reading (intf,sensor_number,&sensorReadingData);
+	ipmi_get_sensor_reading(intf,sensor_number,&sensorReadingData);
 	rsp = ipmi_sdr_get_sensor_thresholds(intf,
 			sdr->record.common->keys.sensor_num,
 			sdr->record.common->keys.owner_id,
