@@ -3912,8 +3912,9 @@ ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** ar
 {
 	int rc;
 	if (strncmp(intf->name,"wmi\0",4) && strncmp(intf->name, "open\0",5)) {
-		lprintf(LOG_ERR, " vFlash support is enabled only for wmi and open "
-				"interface.\n Its not enabled for lan and lanplus interface.");
+		lprintf(LOG_ERR,
+				"vFlash support is enabled only for wmi and open interface.");
+		lprintf(LOG_ERR, "Its not enabled for lan and lanplus interface.");
 		return -1;
 	}
 
