@@ -1696,7 +1696,7 @@ user, operator, admin, oem.
 
 Causes ipmitool to enter Intel IPMI v1.5 Serial Over LAN mode. An RMCP+
 connection is made to the BMC, the terminal is set to raw mode, and user
-input is sent to the serial console on the remote server. On exit, the
+input is sent to the serial console on the remote server. On exit, 
 the SOL payload mode is deactivated and the terminal is reset to its
 original settings.
 .RS
@@ -2108,7 +2108,7 @@ Possible arguments are:
 .TP
 \fIsystem_name\fP         System Name of Server
 .TP
-\fIdelloem_os_version\fP Running versin of operating system
+\fIdelloem_os_version\fP Running version of operating system
 .TP
 \fIdelloem_URL\fP        URL of BMC Webserver
 .RE
@@ -2875,7 +2875,7 @@ Decimal number
 Decimal number.  0 indicates no retries after packet is transmitted.
 .TP 
 \fIretry\-interval\fP
-Decimal number in 10 millisend increments.  0 indicates 
+Decimal number in 10 millisecond increments.  0 indicates 
 that retries should be sent back to back.
 .TP 
 \fInon\-volatile\-bit\-rate\fP
@@ -2885,7 +2885,7 @@ by the IPMI over serial channel.
 .TP 
 \fIvolatile\-bit\-rate\fP
 serial, 19.2, 38.4, 57.6, 115.2.  Setting this value to 
-serial indiates that the BMC should use the setting used 
+serial indicates that the BMC should use the setting used 
 by the IPMI over serial channel.
 .RE
 .TP 
@@ -2897,7 +2897,7 @@ mode, and is only available when using the lanplus
 interface.  An RMCP+ connection is made to the BMC,
 the terminal is set to raw mode, and user input is
 sent to the serial console on the remote server.
-On exit,the the SOL payload mode is deactivated and
+On exit, the the SOL payload mode is deactivated and
 the terminal is reset to its original settings.
 
 If the instance is given, it will activate using the given instance
@@ -3190,7 +3190,7 @@ Protocol (RMCP) to support pre\-OS and OS\-absent management.
 RMCP is a request\-response protocol delivered using UDP 
 datagrams to port 623.
 
-The LAN interface is an authenticatiod multi\-session connection;
+The LAN interface is an authentication multi\-session connection;
 messages delivered to the BMC can (and should) be authenticated
 with a challenge/response protocol with either straight
 password/key or MD5 message\-digest algorithm.  ipmitool will
