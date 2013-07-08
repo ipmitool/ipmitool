@@ -397,7 +397,7 @@ int ipmi_hex_to_dec( char * strchar, unsigned char * pDecValue)
   }
   else
   {
-    lprintf(LOG_ERR, "Must be Hex value of 4 characters (Ex.: 0x24)\n");
+    lprintf(LOG_ERR, "Must be Hex value of 4 characters (Ex.: 0x24)");
   }
 
   return rc;
@@ -460,7 +460,7 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
           }
           else
           {
-            lprintf(LOG_ERR, "I2c address provided value must be even.\n");
+            lprintf(LOG_ERR, "I2c address provided value must be even.");
           }
         }
       }
@@ -492,7 +492,7 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
           }
           else
           {
-            lprintf(LOG_ERR, "I2c address provided value must be even.\n");
+            lprintf(LOG_ERR, "I2C address provided value must be even.");
           }
         }
       }
