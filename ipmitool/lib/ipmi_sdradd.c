@@ -648,7 +648,7 @@ ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile)
   rc = ipmi_sdr_read_records(ifile, &sdrr_queue);
 
   if (ipmi_sdr_repo_clear(intf)) {
-    printf("Cannot erase SDRR. Give up.\n");
+    lprintf(LOG_ERR, "Cannot erase SDRR. Giving up.");
     /* FIXME: free sdr list */
     return -1;
   }
