@@ -460,7 +460,7 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
           }
           else
           {
-            lprintf(LOG_ERR, "I2c address provided value must be even.");
+            lprintf(LOG_ERR, "I2C address provided value must be even.");
           }
         }
       }
