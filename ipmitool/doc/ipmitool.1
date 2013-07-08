@@ -2,42 +2,61 @@
 .SH "NAME"
 ipmitool \- utility for controlling IPMI\-enabled devices
 .SH "SYNOPSIS"
-ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-d \fIN\fP\fR|\fB\-v\fR|\fB\-V\fR]
-\fB\-I\fR \fIopen\fP <\fIcommand\fP>
 
-ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
-\fB\-I\fR \fIlan\fP \fB\-H\fR <\fIhostname\fP>
-         [\fB\-p\fR <\fIport\fP>]
-         [\fB\-U\fR <\fIusername\fP>]
-         [\fB\-A\fR <\fIauthtype\fP>]
-         [\fB\-L\fR <\fIprivlvl\fP>]
-         [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
-         [\fB\-o\fR <\fIoemtype\fP>]
-         [\fB\-O\fR <\fIsel oem\fP>]
-         [\fB\-e\fR <\fIesc_char\fP>]
-         [\fB\-N\fR <\fIsec\fP>]
-         [\fB\-R\fR <\fIcount\fP>]
-         <\fIcommand\fP>
+ipmitool [ <options> ] <command> [ <sub-commands and sub-options> ]
 
-ipmitool [\fB\-c\fR|\fB\-h\fR|\fB\-v\fR|\fB\-V\fR]
-\fB\-I\fR \fIlanplus\fP \fB\-H\fR <\fIhostname\fP>
-         [\fB\-p\fR <\fIport\fP>]
-         [\fB\-U\fR <\fIusername\fP>]
-         [\fB\-L\fR <\fIprivlvl\fP>]
-         [\fB\-a\fR|\fB\-E\fR|\fB\-P\fR|\fB\-f\fR <\fIpassword\fP>]
-         [\fB\-o\fR <\fIoemtype\fP>]
-         [\fB\-O\fR <\fIsel oem\fP>]
-         [\fB\-C\fR <\fIciphersuite\fP>]
-         [\fB\-Y\fR|[\fB\-K\fR|\fB\-k\fR <\fIkg_key\fP>]
-         [\fB\-y\fR <\fIhex_kg_key\fP>]
-         [\fB\-e\fR <\fIesc_char\fP>]
-         [\fB\-N\fR <\fIsec\fP>]
-         [\fB\-R\fR <\fIcount\fP>]
-         <\fIcommand\fP>
+<options>           := [ <general-options> | <conditional-opts> ]
+.br
+Any recognized option is accepted. Conditional options may be ignored or it's usage postponed until shell or exec processes relevant command.
+.br
+
+<general-options>   := [ -h | -V | -v | -I <interface> | -H <address> |
+                         -d <N> | -p <port> | -c | -U <username> |
+                         -L <privlvl> | -l <lun> | -m <local_address> |
+                         -N <sec> | -R <count> | <password-option> |
+                         <oem-option> | <bridge-options> ]
+
+<conditional-opts>  := [ <lan-options> | <lanplus-options> |
+                         <command-options> ]
+.br
+Bridging:
+.br
+<bridge-options>    := -t <target_address> [ -b <channel> |
+                       [ -T <address> | -B <channel> ] ]
+.br
+
+Options used with -I lan:
+.br
+<lan-options>       := [ -A <authtype> ]
+.br
+
+Options used with -I lanplus:
+.br
+<lanplus-options>   := [ -C <ciphersuite> | <key-option> ]
+.br
+
+Option groups setting same value:
+.br
+<key-option>        := [ -k <key> | -K | -y <hex_key> | -Y ]
+.br
+<password-option>   := [ -f <password_file> | -a | -P <password> | -E ]
+.br
+<oem-option>        := [ -o <oemtype> | -g | -s ]
+.br
+
+Options used with specific command <command-options>:
+.br
+<options-sdr>       := [ -S <sdr_cache_file> ]
+.br
+<options-sel>       := [ -O <sel_oem> ]
+.br
+<options-sol>       := [ -e <sol_escape_char> ]
+
+
 .SH "DESCRIPTION"
 This program lets you manage Intelligent Platform Management Interface 
 (IPMI) functions of either the local system, via a kernel device driver,
-or a remote system, using IPMI V1.5 and IPMI v2.0. These functions include
+or a remote system, using IPMI v1.5 and IPMI v2.0. These functions include
 printing FRU information, LAN configuration, sensor readings, and remote
 chassis power control.
 
@@ -64,45 +83,44 @@ Set destination channel for bridged request.
 \fB\-B\fR <\fIchannel\fP>
 Set transit channel for bridged request (dual bridge).
 .TP 
+\fB\-b\fR <\fIchannel\fP>
+Set destination channel for bridged request.
+.TP 
+\fB\-B\fR <\fIchannel\fP>
+Set transit channel for bridged request. (dual bridge)
+.TP 
 \fB\-c\fR
 Present output in CSV (comma separated variable) format.  
 This is not available with all commands.
-.TP
-\fB\-e\fR <\fIsol_escape_char\fP>
-Use supplied character for SOL session escape character.  The default
-is to use \fI~\fP but this can conflict with ssh sessions.
-.TP
-\fB\-K\fR
-Read Kg key from IPMI_KGKEY environment variable.
-.TP
-\fB\-k\fR <\fIkey\fP>
-Use supplied Kg key for IPMIv2 authentication.  The default is not to
-use any Kg key.
-.TP
-\fB\-y\fR <\fIhex key\fP>
-Use supplied Kg key for IPMIv2 authentication. The key is expected in
-hexadecimal format and can be used to specify keys with non-printable
-characters. E.g. '-k PASSWORD' and '-y 50415353574F5244' are
-equivalent.
-The default is not to use any Kg key.
-.TP
-\fB\-Y\fR
-Prompt for the Kg key for IPMIv2 authentication.
 .TP 
 \fB\-C\fR <\fIciphersuite\fP>
 The remote server authentication, integrity, and encryption algorithms
-to use for IPMIv2 \fIlanplus\fP connections.  See table 22\-19 in the
-IPMIv2 specification.  The default is 3 which specifies RAKP\-HMAC\-SHA1 
-authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128 encryption algorightms.
+to use for IPMIv2.0 \fIlanplus\fP connections.  See table 22\-19 in the
+IPMIv2.0 specification.  The default is 3 which specifies RAKP\-HMAC\-SHA1 
+authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128 encryption algorithms.
+.TP 
+\fB\-d \fIN\fP\fR
+Use device number N to specify the /dev/ipmiN (or 
+/dev/ipmi/N or /dev/ipmidev/N) device to use for in-band 
+BMC communication.  Used to target a specific BMC on a 
+multi-node, multi-BMC system through the ipmi device 
+driver interface.  Default is 0.
+.TP 
+\fB\-e\fR <\fIsol_escape_char\fP>
+Use supplied character for SOL session escape character.  The default
+is to use \fI~\fP but this can conflict with ssh sessions.
 .TP 
 \fB\-E\fR
 The remote server password is specified by the environment
-variable \fIIPMI_PASSWORD\fP.
+variable \fIIPMI_PASSWORD\fP or \fIIPMITOOL_PASSWORD\fP. The \fIIPMITOOL_PASSWORD\fP takes precedence.
 .TP 
 \fB\-f\fR <\fIpassword_file\fP>
 Specifies a file containing the remote server password. If this
 option is absent, or if password_file is empty, the password
 will default to NULL.
+.TP 
+\fB\-g\fR
+Deprecated. Use: -o intelplus
 .TP 
 \fB\-h\fR
 Get basic usage help from the command line.
@@ -115,21 +133,35 @@ option is required for \fIlan\fP and \fIlanplus\fP interfaces.
 Selects IPMI interface to use.  Supported interfaces that are
 compiled in are visible in the usage help output.
 .TP 
+\fB\-k\fR <\fIkey\fP>
+Use supplied Kg key for IPMIv2.0 authentication.  The default is not to
+use any Kg key.
+.TP 
+\fB\-K\fR
+Read Kg key from IPMI_KGKEY environment variable.
+.TP 
 \fB\-l\fR <\fIlun\fP>
 Set destination lun for raw commands.
 .TP 
 \fB\-L\fR <\fIprivlvl\fP>
 Force session privilege level.  Can be CALLBACK, USER,
 OPERATOR, ADMINISTRATOR. Default is ADMINISTRATOR.
+This value is ignored and always set to ADMINISTRATOR when
+combined with \fI-t target address\fP.
 .TP 
 \fB\-m\fR <\fIlocal_address\fP>
 Set the local IPMB address.  The local address defaults to 0x20
 or is auto discovered on PICMG platforms when -m is not specified.
 There should be no need to change the local address for normal operation.
 .TP 
+\fB\-M\fR <\fIaddress\fP>
+Set transit local address for bridge request. (dual bridge)
+.TP 
 \fB\-N\fR <\fIsec\fP>
 Specify nr. of seconds between retransmissions of lan/lanplus messages.
-Default are 2 seconds for lan and 1 second for lanplus interfaces.
+Defaults are 2 seconds for lan and 1 second for lanplus interfaces.
+Command \fIraw\fP uses fixed value of 15 seconds.
+Command \fIsol\fP uses fixed value of 1 second.
 .TP 
 \fB\-o\fR <\fIoemtype\fP>
 Select OEM type to support.  This usually involves minor hacks
@@ -140,7 +172,7 @@ current supported OEM types.
 \fB\-O\fR <\fIsel oem\fP>
 Open selected file and read OEM SEL event descriptions to be used
 during SEL listings.  See examples in contrib dir for file format.
-.TP
+.TP 
 \fB\-p\fR <\fIport\fP>
 Remote server UDP port to connect to.  Default is 623.
 .TP 
@@ -152,6 +184,11 @@ option is not recommended.
 .TP 
 \fB\-R\fR <\fIcount\fP>
 Set the number of retries for lan/lanplus interface (default=4).
+Command \fIraw\fP uses fixed value of one try (no retries).
+Command \fIhpm\fP uses fixed value of 10 retries.
+.TP 
+\fB\-s\fR
+Deprecated. Use: -o supermicro
 .TP 
 \fB\-S\fR <\fIsdr_cache_file\fP>
 Use local file for remote SDR cache.  Using a local SDR cache
@@ -161,29 +198,43 @@ SDR cache from a remote system can be created with the
 \fIsdr dump\fP command.
 .TP 
 \fB\-t\fR <\fItarget_address\fP>
-Bridge IPMI requests to the remote target address.
+Bridge IPMI requests to the remote target address. Default is 32.
+The \fI-L privlvl\fP option is always ignored and value set to ADMINISTRATOR.
 .TP
 \fB\-T\fR <\fIaddress\fP>
 Set transit address for bridge request (dual bridge).
 .TP 
+\fB\-T\fR <\fItransmit_address\fP>
+Set transit address for bridge request. (dual bridge)
+.TP 
 \fB\-U\fR <\fIusername\fP>
 Remote server username, default is NULL user.
-.TP
-\fB\-d \fIN\fP\fR
-Use device number N to specify the /dev/ipmiN (or 
-/dev/ipmi/N or /dev/ipmidev/N) device to use for in-band 
-BMC communication.  Used to target a specific BMC on a 
-multi-node, multi-BMC system through the ipmi device 
-driver interface.  Default is 0.
 .TP 
 \fB\-v\fR
 Increase verbose output level.  This option may be specified
 multiple times to increase the level of debug output.  If given
 three times you will get hexdumps of all incoming and
-outgoing packets.
+outgoing packets. Using it five times provides details
+on request and expected reply procesing. The \fIhpm\fP commands
+\fItargetcap\fP \fIcompprop\fP \fIabort\fP \fIupgstatus\fP
+\fIrollback\fP \fIrollbackstatus\fP \fIselftestresult\fP increases
+the verbosity level
 .TP 
 \fB\-V\fR
 Display version information.
+.TP 
+\fB\-y\fR <\fIhex key\fP>
+Use supplied Kg key for IPMIv2.0 authentication. The key is expected in
+hexadecimal format and can be used to specify keys with non-printable
+characters. E.g. '-k PASSWORD' and '-y 50415353574F5244' are
+equivalent.
+The default is not to use any Kg key.
+.TP 
+\fB\-Y\fR
+Prompt for the Kg key for IPMIv2.0 authentication.
+.TP
+\fB\-z\fR <\fIsize\fP>
+Change Size of Communication Channel. (OEM)
 
 .LP 
 If no password method is specified then ipmitool will prompt the
@@ -223,172 +274,42 @@ to get option usage help.
 ipmitool help
 .br 
 Commands:
-        raw          Send a RAW IPMI request and print response
-        i2c          Send an I2C Master Write-Read command and print response
-        spd          Print SPD info from remote I2C device
-        lan          Configure LAN Channels
-        chassis      Get chassis status and set power state
-        power        Shortcut to chassis power commands
-        event        Send events to MC
-        mc           Management Controller status and global enables
-        sdr          Print Sensor Data Repository entries and readings
-        sensor       Print detailed sensor information
-        fru          Print built\-in FRU and scan for FRU locators
-        sel          Print System Event Log (SEL)
-        pef          Configure Platform Event Filtering (PEF)
-        sol          Configure and connect IPMIv2.0 Serial\-over\-LAN
-        tsol         Configure and connect Tyan IPMIv1.5 Serial\-over\-LAN
-        isol         Configure and connect Intel IPMIv1.5 Serial\-over\-LAN
-        user         Configure Management Controller users
+        bmc          Deprecated. Use mc
         channel      Configure Management Controller channels
+        chassis      Get chassis status and set power state
         dcmi         Data Center Management Interface
-        session      Print session information
-        sunoem       Manage Sun OEM Extensions
-        kontronoem   Manage Kontron OEM Extensions
-        picmg        Run a PICMG/ATA extended command
-        firewall     Configure Firmware Firewall
-        shell        Launch interactive IPMI shell
-        exec         Run list of commands from file
-        set          Set runtime variable for shell and exec
         delloem      Manage Dell OEM Extensions.
         echo         Used to echo lines to stdout in scripts
         ekanalyzer   run FRU-Ekeying analyzer using FRU files
-        ime          Upgrade/Query Intel ME firmware
-        hpm          Update HPM components using PICMG HPM.1 file
+        event        Send events to MC
+        exec         Run list of commands from file
+        firewall     Configure Firmware Firewall
+        fru          Print built\-in FRU and scan for FRU locators
         fwum         Update IPMC using Kontron OEM Firmware Update Manager
+        gendev       Read/Write Device associated with Generic Device locators sdr
+        hpm          Update HPM components using PICMG HPM.1 file
+        i2c          Send an I2C Master Write-Read command and print response
+        ime          Upgrade/Query Intel ME firmware
+        isol         Configure and connect Intel IPMIv1.5 Serial\-over\-LAN
+        kontronoem   Manage Kontron OEM Extensions
+        lan          Configure LAN Channels
+        mc           Management Controller status and global enables
+        pef          Configure Platform Event Filtering (PEF)
+        picmg        Run a PICMG/ATA extended command
+        power        Shortcut to chassis power commands
+        raw          Send a RAW IPMI request and print response
+        sdr          Print Sensor Data Repository entries and readings
+        sel          Print System Event Log (SEL)
+        sensor       Print detailed sensor information
+        session      Print session information
+        set          Set runtime variable for shell and exec
+        shell        Launch interactive IPMI shell
+        sol          Configure and connect IPMIv2.0 Serial\-over\-LAN
+        spd          Print SPD info from remote I2C device
+        sunoem       Manage Sun OEM Extensions
+        tsol         Configure and connect Tyan IPMIv1.5 Serial\-over\-LAN
+        user         Configure Management Controller users
 
-
-ipmitool chassis help
-.br 
-Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, bootparam, selftest
-
-ipmitool chassis power help
-.br 
-chassis power Commands: status, on, off, cycle, reset, diag, soft
-.TP 
-\fIbmc|mc\fP
-.RS
-.TP 
-\fIreset\fP <\fBwarm\fR|\fBcold\fR>
-.br 
-
-Instructs the BMC to perform a warm or cold reset.
-.TP 
-\fIguid\fP
-
-Display the Management Controller Globally Unique IDentifier.
-.TP 
-\fIinfo\fP
-.br
-
-Displays information about the BMC hardware, including device
-revision, firmware revision, IPMI version supported, manufacturer ID,
-and information on additional device support.
-.TP 
-\fIwatchdog\fP
-.br 
-
-These commands allow a user to view and change the current 
-state of the watchdog timer.
-.RS
-.TP 
-\fIget\fP
-.br
-
-Show current Watchdog Timer settings and countdown state.
-.TP 
-\fIreset\fP
-.br
-
-Reset the Watchdog Timer to its most recent state and restart the 
-countdown timer.
-.TP 
-\fIoff\fP
-.br
-
-Turn off a currently running Watchdog countdown timer.
-.RE
-.TP 
-\fIselftest\fP
-.br 
-
-Check on the basic health of the BMC by executing the Get Self Test
-results command and report the results.
-.TP 
-\fIgetenables\fP
-.br 
-
-Displays a list of the currently enabled options for the BMC.
-.br 
-.TP 
-\fIsetenables\fP <\fBoption\fR>=[\fIon\fP|\fIoff\fP]
-.br 
-
-Enables or disables the given \fIoption\fR.  This command is
-only supported over the system interface according to the IPMI
-specification.  Currently supported values for \fIoption\fR include:
-.RS
-.TP 
-\fIrecv_msg_intr\fP
-.br 
-
-Receive Message Queue Interrupt
-.TP 
-\fIevent_msg_intr\fP
-.br 
-
-Event Message Buffer Full Interrupt
-.TP 
-\fIevent_msg\fP
-.br 
-
-Event Message Buffer
-.TP 
-\fIsystem_event_log\fP
-.br 
-
-System Event Logging
-.TP 
-\fIoem0\fP
-.br 
-
-OEM\-Defined option #0
-.TP 
-\fIoem1\fP
-.br 
-
-OEM\-Defined option #1
-.TP 
-\fIoem2\fP
-.br 
-
-OEM\-Defined option #2
-
-.RE
-.TP
-\fIgetsysinfo\fP <\fBargument\fP>
-Retrieves system info from bmc for given argument.
-.br
-See \fIsetsysinfo\fP for argument definitions
-.TP
-\fIsetsysinfo\fP  <\fBargument\fP> <\fBstring\fP>
-Stores system info string to bmc for given argument
-.RS
-.TP
-Possible arguments are:
-.RS
-.TP
-\fIprimary_os_name\fP     Primary Operating System Name
-.TP
-\fIos_name\fP             Operating System Name
-.TP
-\fIsystem_name\fP         System Name of Server
-.TP
-\fIdelloem_os_version\fP Running versin of operating system
-.TP
-\fIdelloem_URL\fP        URL of BMC Webserver
-.RE
-.RE
 .TP 
 \fIchannel\fP
 .RS
@@ -410,6 +331,8 @@ Possible privilege levels are:
 \fI4\fP   Administrator level
 .br 
 \fI5\fP   OEM Proprietary level
+.br 
+\fI15\fP   No access
 .RE
 .TP 
 \fIinfo\fP [\fBchannel number\fR]
@@ -434,7 +357,7 @@ Channel 0xf info:
 .RE
 .TP 
 \fIgetaccess\fP <\fBchannel number\fR> [<\fBuserid\fR>]
-.br 
+.RS
 
 Configure the given userid as the default on the given channel number.  
 When the given channel is subsequently used, the user is identified 
@@ -452,242 +375,192 @@ Configure user access information on the given channel for the given userid.
 Displays the list of cipher suites supported for the given
 application (ipmi or sol) on the given channel.
 .RE
+.RE
 .TP 
 \fIchassis\fP
 .RS
 .TP 
 \fIstatus\fP
-.br 
 
-Displays information regarding the high\-level
-status of the system chassis and main power
-subsystem.
-.TP 
-\fIpoh\fP
-.br 
-
-This command will return the Power\-On Hours counter.
-.TP 
-\fIidentify\fP <\fBinterval\fR>
-
-Control the front panel identify  light.   Default interval
-is 15 seconds.  Use 0 to turn off.  Use "force" to turn on 
-indefinitely.
-.TP 
-\fIrestart_cause\fP
-.br 
-
-Query the chassis for the cause of the last system restart.
-.TP 
-\fIselftest\fP
-.br 
-
-Check on the basic health of the BMC by executing the Get Self Test
-results command and report the results.
-.TP 
-\fIpolicy\fP
-.br 
-
-Set the chassis power policy in  the  event  power failure.
+Status information related to power, buttons, cooling, drives and faults.
 .RS
-.TP 
-\fIlist\fP
-.br 
-
-Return supported policies.
-.TP 
-\fIalways\-on\fP
-.br 
-
-Turn on when power is restored.
-.TP 
-\fIprevious\fP
-.br 
-
-Returned to  previous  state  when  power  is restored.
-.TP 
-\fIalways\-off\fP
-.br 
-
-Stay off after power is restored.
 .RE
 .TP 
 \fIpower\fP
-.br 
-
-Performs a chassis control  command  to  view  and
-change the power state.
 .RS
 .TP 
 \fIstatus\fP
-.br 
-
-Show current chassis power status.
-.TP 
+.RS
+.RE
+.TP
 \fIon\fP
-.br 
-
-Power up chassis.
-.TP 
+.RS
+.RE
+.TP
 \fIoff\fP
-.br 
-
-Power down chassis into soft off (S4/S5 state).
-\fBWARNING\fR: This command does not initiate a clean 
-shutdown of the operating system prior to powering down the system.
-.TP 
+.RS
+.RE
+.TP
 \fIcycle\fP
-.br 
-
-Provides a power off interval of at least 1 second.  No action
-should occur if chassis power is in S4/S5 state, but it is
-recommended to check power state first and only issue a power
-cycle command if the  system  power is on or in lower sleep
-state than S4/S5.
-.TP 
+.RS
+.RE
+.TP
 \fIreset\fP
-.br 
-
-This command will perform a hard reset.
-.TP 
+.RS
+.RE
+.TP
 \fIdiag\fP
-.br 
-
-Pulse a diagnostic interrupt (NMI) directly to the processor(s).
-.TP 
+.RS
+.RE
+.TP
 \fIsoft\fP
-.br 
-
-Initiate a soft\-shutdown of OS via ACPI.  This can be done in a
-number of ways, commonly by simulating an overtemperture or by
-simulating a power button press.  It is necessary for there to
-be Operating System support for ACPI and some sort of daemon
-watching for events for this soft power to work.
+.RS
+.RE
 .RE
 .TP 
-\fIbootdev\fP <\fBdevice\fR> [<\fIclear\-cmos\fP=\fByes\fR|\fBno\fR>] [<\fIoptions\fP=\fBhelp,...\fR>]
-.br 
+\fIidentify\fP [<seconds>|force]
 
-Request the system to boot from an alternate boot device on next reboot.
-The \fIclear\-cmos\fP option, if supplied, will instruct the BIOS to
-clear its CMOS on the next reboot.  Various options may be used to modify 
-the boot device settings.  Run \fI"bootdev none options=help"\fP for a list of 
-available boot device modifiers/options.  
+Identify interval.
+.br
+Default is 15 seconds.
+.br
+0 - Off
+.br
+force - To turn on indefinitely
+.RS
+.RE
+.TP 
+\fIpolicy\fP
 
+What to do when power is restored.
 .RS
 .TP 
-Currently supported values for <device> are:
+\fIlist\fP
+
+Show available options.
+.RS
+.RE
+.TP 
+\fIalways-on\fP
+.RS
+.RE
+.TP 
+\fIprevious\fP
+.RS
+.RE
+.TP 
+\fIalways-off\fP
+.RS
+.RE
+.RE
+
+.TP 
+\fIrestart_cause\fP
+
+Last restart cause.
+.RS
+.RE
+.TP 
+\fIpoh\fP
+
+Get power on hours.
+.RS
+.RE
+.TP 
+\fIbootdev\fP
+.RS
 .TP 
 \fInone\fP
-.br 
 
-Do not change boot device
+Do not change boot device order.
+.RS
+.RE
 .TP 
 \fIpxe\fP
-.br 
 
-Force PXE boot
+Force PXE boot.
+.RS
+.RE
 .TP 
 \fIdisk\fP
-.br 
 
-Force boot from BIOS default boot device
+Force boot from default Hard-drive.
+.RS
+.RE
 .TP 
 \fIsafe\fP
-.br 
 
-Force boot from BIOS default boot device, request Safe Mode
+Force boot from default Hard-drive, request Safe Mode.
+.RS
+.RE
 .TP 
 \fIdiag\fP
-.br 
 
-Force boot from diagnostic partition
+Force boot from Diagnostic Partition.
+.RS
+.RE
 .TP 
 \fIcdrom\fP
-.br 
 
-Force boot from CD/DVD
+Force boot from CD/DVD.
+.RS
+.RE
 .TP 
 \fIbios\fP
-.br 
 
-Force boot into BIOS setup
+Force boot into BIOS Setup.
+.RS
+.RE
 .TP 
 \fIfloppy\fP
-.br 
 
-Force boot from Floppy/primary removable media
+Force boot from Floppy/primary removable media.
+.RS
+.RE
 .RE
 .TP 
 \fIbootparam\fP
-.br 
-
-Get or set various system boot option parameters.
 .RS
-.TP 
-\fIget\fP <\fBparam #\fR>
-.br 
-
-Get boot parameter. Currently supported values for <\fBparam #\fR> are:
-
-\fI0\fP - Set In Progress
-
-\fI1\fP - Service Partition Selector
-
-\fI2\fP - Service Partition Scan
-
-\fI3\fP - BMC Boot Flag Valid Bit Clearing
-
-\fI4\fP - Boot Info Acknowledge 
-
-\fI5\fP - Boot Flags
-
-\fI6\fP - Boot Initiator Info
-
-\fI7\fP - Boot Initiator Mailbox
-.br 
-
-.TP 
-\fIset\fP <\fBoption\fR> [\fBvalue ...\fR]
-.br 
-
-Set boot parameter.
-
-.RS
-.TP 
-Currently supported values for \fB<option>\fR are:
 .TP 
 \fIforce_pxe\fP
-.br 
 
 Force PXE boot
+.RS
+.RE
 .TP 
 \fIforce_disk\fP
-.br 
 
-Force boot from default hard-drive
+Force boot from default Hard-drive
+.RS
+.RE
 .TP 
 \fIforce_safe\fP
-.br 
 
-Force boot from default hard-drive, request Safe Mode
+Force boot from default Hard-drive, request Safe Mode
+.RS
+.RE
 .TP 
 \fIforce_diag\fP
-.br 
 
-Force boot from diagnostic partition
+Force boot from Diagnostic Partition
+.RS
+.RE
 .TP 
 \fIforce_cdrom\fP
-.br 
 
-Force boot from CD/DVD 
+Force boot from CD/DVD
+.RS
+.RE
 .TP 
 \fIforce_bios\fP
-.br 
 
-Force boot into BIOS setup
-
+Force boot into BIOS Setup
+.RS
 .RE
+.RE
+.TP 
+\fIselftest\fP
+.RS
 .RE
 .RE
 .TP 
@@ -866,225 +739,6 @@ Ping/Pong Message for DCMI Discovery.
 .RE
 .RE
 .RE
-.TP
-\fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
-.RS
-.TP
-.br
-\fINOTE\fP : This command can support a maximum of 8 files per command line
-.TP
-.br
-\fIfilename1\fP : binary file that stores FRU data of a Carrier or an AMC module
-.TP
-.br
-\fIfilename2\fP : binary file that stores FRU data of an AMC module.
-      These binary files can be generated from command:
-      \fIipmitool fru read <id> <filename>\fP
-.TP
-.br
-\fIfilename3\fP : configuration file used for configuring On-Carrier Device ID
-or OEM GUID. This file is optional.
-.TP
-.br
-\fIxx\fP : indicates the type of the file. It can take the following value:
-.RS
-.TP
-.br
-\fIoc\fP : On-Carrier device
-.TP
-.br
-\fIa1\fP : AMC slot A1
-.TP
-.br
-\fIa2\fP : AMC slot A2
-.TP
-.br
-\fIa3\fP : AMC slot A3
-.TP
-.br
-\fIa4\fP : AMC slot A4
-.TP
-.br
-\fIb1\fP : AMC slot B1
-.TP
-.br
-\fIb2\fP : AMC slot B2
-.TP
-.br
-\fIb3\fP : AMC slot B3
-.TP
-.br
-\fIb4\fP : AMC slot B4
-.TP
-.br
-\fIsm\fP : Shelf Manager
-
-.RE
-.TP
-.br
-The available commands for ekanalyzer are:
-
-.RE
-.RS
-.TP
-\fIprint\fP [<\fBcarrier\fR | \fBpower\fR | \fBall\fR>]
-.RS
-.TP
-\fIcarrier\fP (default) <\fBoc=filename1\fR> <\fBoc=filename2\fR> \fB...\fR
-.br
-
-Display point to point physical connectivity between carriers and AMC modules.
- Example:
-   > ipmitool ekanalyzer print carrier oc=fru oc=carrierfru
-   From Carrier file: fru
-      Number of AMC bays supported by Carrier: 2 
-      AMC slot B1 topology:
-         Port 0 =====> On Carrier Device ID 0, Port 16
-         Port 1 =====> On Carrier Device ID 0, Port 12
-         Port 2 =====> AMC slot B2, Port 2
-      AMC slot B2 topology:
-         Port 0 =====> On Carrier Device ID 0, Port 3
-         Port 2 =====> AMC slot B1, Port 2
-   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-   From Carrier file: carrierfru
-      On Carrier Device ID 0 topology:
-         Port 0 =====> AMC slot B1, Port 4
-         Port 1 =====> AMC slot B1, Port 5
-         Port 2 =====> AMC slot B2, Port 6
-         Port 3 =====> AMC slot B2, Port 7
-      AMC slot B1 topology:
-         Port 0 =====> AMC slot B2, Port 0
-      AMC slot B1 topology:
-         Port 1 =====> AMC slot B2, Port 1
-      Number of AMC bays supported by Carrier: 2
-
-.TP
-\fIpower\fP <\fBxx=filename1\fR> <\fBxx=filename2\fR> \fB...\fr
-.br
-
-Display power supply informations between carrier and AMC modules.
-.TP
-\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display both physical connectivity and power supply of each carrier and AMC
-modules.
-
-.RE
-.TP
-\fIfrushow\fP <\fBxx=filename\fR>
-.br
-Convert a binary FRU file into human readable text format. Use -v option to get
-more display information.
-
-.RE
-.RS
-.TP
-\fIsummary\fP [<\fBmatch\fR | \fBunmatch\fR | \fBall\fR>]
-.RS
-.TP
-\fImatch\fP (default) <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fR
-.br
-Display only matched results of Ekeying match between an On-Carrier device
-and an AMC module or between 2 AMC modules. Example:
- > ipmitool ekanalyzer summary match oc=fru b1=amcB1 a2=amcA2
- On-Carrier Device vs AMC slot B1
-  AMC slot B1 port 0 ==> On-Carrier Device 0 port 16
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 11 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot B1
-    -Channel ID 0 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-  AMC slot B1 port 1 ==> On-Carrier Device 0 port 12
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 6 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot B1
-    -Channel ID 1 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
- On-Carrier Device vs AMC slot A2
-  AMC slot A2 port 0 ==> On-Carrier Device 0 port 3
-   Matching Result
-   - From On-Carrier Device ID 0
-    -Channel ID 9 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   - To AMC slot A2
-    -Channel ID 0 || Lane 0: enable
-    -Link Type: AMC.2 Ethernet
-    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
-    -Link Group ID: 0 || Link Asym. Match: exact match
-   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
- AMC slot B1 vs AMC slot A2
-  AMC slot A2 port 2 ==> AMC slot B1 port 2
-   Matching Result
-   - From AMC slot B1
-    -Channel ID 2 || Lane 0: enable
-    -Link Type: AMC.3 Storage
-    -Link Type extension: Serial Attached SCSI (SAS/SATA)
-    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
-   - To AMC slot A2
-    -Channel ID 2 || Lane 0: enable
-    -Link Type: AMC.3 Storage
-    -Link Type extension: Serial Attached SCSI (SAS/SATA)
-    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
- *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-.TP
-\fIunmatch\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display the unmatched results of Ekeying match between an On-Carrier device
-and an AMC module or between 2 AMC modules
-.TP
-\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
-.br
-
-Display both matched result and unmatched results of Ekeying match between two
-cards or two modules.
-.RE
-.RE
-.TP 
-\fIime\fP
-.RS
-.TP 
-\fIhelp\fP
-.br 
-
-Print usage information
-.TP 
-\fIinfo\fP
-
-Displays information about the Manageability Engine (ME)
-.TP 
-\fIupdate\fP <\fBfile\fR>
-.br
-
-Upgrade the ME firmware with the specified image file
-.br
-\fBWARNING\fR You MUST use a supported image provided by your board vendor
-.br
-.TP
-\fIrollback\fP
-
-Perform manual rollback of the ME firmware
-
-.RE
-.RE
-
 .TP
 \fIdelloem\fP
 .RS
@@ -1290,32 +944,211 @@ Disables set power cap.
 .RE
 
 .RS
-.br
-.TP
-\fIwindbg\fP
-.RS
-.br
-\fIwindbg start\fP
-.RS
-.br
-Starts the windbg session (Cold Reset & SOL Activation)
-.RE
-\fIwindbg end\fP
-.RS
-.br
-Ends the windbg session (SOL Deactivation)
-
-.RE
-.RE
 .TP
 \fIvFlash info Card\fP
 .RS
 .br
 
-Shows Extended SD Card information
+Shows Extended SD Card information.
 .RE
+.RE
+.TP 
+\fIecho\fP
+
+For echoing lines to stdout in scripts.
+.RS
 .RE
 .TP
+\fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
+.RS
+.TP
+.br
+\fINOTE\fP : This command can support a maximum of 8 files per command line
+.TP
+.br
+\fIfilename1\fP : binary file that stores FRU data of a Carrier or an AMC module
+.TP
+.br
+\fIfilename2\fP : binary file that stores FRU data of an AMC module.
+      These binary files can be generated from command:
+      \fIipmitool fru read <id> <filename>\fP
+.TP
+.br
+\fIfilename3\fP : configuration file used for configuring On-Carrier Device ID
+or OEM GUID. This file is optional.
+.TP
+.br
+\fIxx\fP : indicates the type of the file. It can take the following value:
+.RS
+.TP
+.br
+\fIoc\fP : On-Carrier device
+.TP
+.br
+\fIa1\fP : AMC slot A1
+.TP
+.br
+\fIa2\fP : AMC slot A2
+.TP
+.br
+\fIa3\fP : AMC slot A3
+.TP
+.br
+\fIa4\fP : AMC slot A4
+.TP
+.br
+\fIb1\fP : AMC slot B1
+.TP
+.br
+\fIb2\fP : AMC slot B2
+.TP
+.br
+\fIb3\fP : AMC slot B3
+.TP
+.br
+\fIb4\fP : AMC slot B4
+.TP
+.br
+\fIsm\fP : Shelf Manager
+
+.RE
+.TP
+.br
+The available commands for ekanalyzer are:
+
+.RE
+.RS
+.TP
+\fIprint\fP [<\fBcarrier\fR | \fBpower\fR | \fBall\fR>]
+.RS
+.TP
+\fIcarrier\fP (default) <\fBoc=filename1\fR> <\fBoc=filename2\fR> \fB...\fR
+.br
+
+Display point to point physical connectivity between carriers and AMC modules.
+ Example:
+   > ipmitool ekanalyzer print carrier oc=fru oc=carrierfru
+   From Carrier file: fru
+      Number of AMC bays supported by Carrier: 2 
+      AMC slot B1 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 16
+         Port 1 =====> On Carrier Device ID 0, Port 12
+         Port 2 =====> AMC slot B2, Port 2
+      AMC slot B2 topology:
+         Port 0 =====> On Carrier Device ID 0, Port 3
+         Port 2 =====> AMC slot B1, Port 2
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+   From Carrier file: carrierfru
+      On Carrier Device ID 0 topology:
+         Port 0 =====> AMC slot B1, Port 4
+         Port 1 =====> AMC slot B1, Port 5
+         Port 2 =====> AMC slot B2, Port 6
+         Port 3 =====> AMC slot B2, Port 7
+      AMC slot B1 topology:
+         Port 0 =====> AMC slot B2, Port 0
+      AMC slot B1 topology:
+         Port 1 =====> AMC slot B2, Port 1
+      Number of AMC bays supported by Carrier: 2
+
+.TP
+\fIpower\fP <\fBxx=filename1\fR> <\fBxx=filename2\fR> \fB...\fr
+.br
+
+Display power supply informations between carrier and AMC modules.
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both physical connectivity and power supply of each carrier and AMC
+modules.
+
+.RE
+.TP
+\fIfrushow\fP <\fBxx=filename\fR>
+.br
+Convert a binary FRU file into human readable text format. Use -v option to get
+more display information.
+
+.RE
+.RS
+.TP
+\fIsummary\fP [<\fBmatch\fR | \fBunmatch\fR | \fBall\fR>]
+.RS
+.TP
+\fImatch\fP (default) <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fR
+.br
+Display only matched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules. Example:
+ > ipmitool ekanalyzer summary match oc=fru b1=amcB1 a2=amcA2
+ On-Carrier Device vs AMC slot B1
+  AMC slot B1 port 0 ==> On-Carrier Device 0 port 16
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 11 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+  AMC slot B1 port 1 ==> On-Carrier Device 0 port 12
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 6 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot B1
+    -Channel ID 1 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ On-Carrier Device vs AMC slot A2
+  AMC slot A2 port 0 ==> On-Carrier Device 0 port 3
+   Matching Result
+   - From On-Carrier Device ID 0
+    -Channel ID 9 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   - To AMC slot A2
+    -Channel ID 0 || Lane 0: enable
+    -Link Type: AMC.2 Ethernet
+    -Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+    -Link Group ID: 0 || Link Asym. Match: exact match
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+ AMC slot B1 vs AMC slot A2
+  AMC slot A2 port 2 ==> AMC slot B1 port 2
+   Matching Result
+   - From AMC slot B1
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+   - To AMC slot A2
+    -Channel ID 2 || Lane 0: enable
+    -Link Type: AMC.3 Storage
+    -Link Type extension: Serial Attached SCSI (SAS/SATA)
+    -Link Group ID: 0 || Link Asym. Match: FC or SAS interface {exact match}
+ *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+.TP
+\fIunmatch\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display the unmatched results of Ekeying match between an On-Carrier device
+and an AMC module or between 2 AMC modules
+.TP
+\fIall\fP <\fBxx=filename\fR> <\fBxx=filename\fR> \fB...\fr
+.br
+
+Display both matched result and unmatched results of Ekeying match between two
+cards or two modules.
+.RE
+.RE
 .TP 
 \fIevent\fP
 .RS
@@ -1458,6 +1291,89 @@ sdr list # get a list of sdr records
 sel list # get a list of sel records
 .RE
 .TP 
+\fIfirewall\fP
+.br 
+
+This command supports the Firmware Firewall capability.  It may be used to 
+add or remove security-based restrictions on certain commands/command 
+sub-functions  or to list the current firmware firewall restrictions set on 
+any commands.  For each firmware firewall command listed below, parameters 
+may be included to cause the command to be executed with increasing 
+granularity on a specific LUN, for a specific NetFn, for a specific IPMI 
+Command, and finally for a specific command's sub-function (see Appendix H in the 
+IPMI 2.0 Specification for a listing of any sub-function numbers that may 
+be associated with a particular command).
+
+Parameter syntax and dependencies are as follows:
+
+[<\fIchannel\fP \fBH\fR>] [<\fIlun\fP \fBL\fR> [ <\fInetfn\fP \fBN\fR> [<\fIcommand\fP \fBC\fR [<\fIsubfn\fP \fBS\fR>]]]] 
+
+Note that if "netfn <\fBN\fR>" is specified, then "lun <\fBL\fR>" must also be 
+specified;  if "command <\fBC\fR>" is specified, then "netfn <\fBN\fR>" (and
+therefore "lun <\fBL\fR>") must also be specified, and so forth.
+
+"channel <\fBH\fR>" is an optional and standalone parameter.  If not specified,
+the requested operation will be performed on the current channel.  Note that
+command support may vary from channel to channel. 
+
+Firmware firewall commands:
+.RS
+.TP 
+\fIinfo\fP [<\fBParms as described above\fR>]
+.br 
+
+List firmware firewall information for the specified LUN, NetFn, and 
+Command (if supplied) on the current or specified channel.  Listed
+information includes the support, configurable, and enabled bits for
+the specified command or commands.
+
+Some usage examples:
+.RS
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR>] 
+.br 
+
+This command will list firmware firewall information for all NetFns for the 
+specified LUN on either the current or the specified channel.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> ] 
+.br 
+
+This command will print out all command information for a single LUN/NetFn pair.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR] ]] 
+.br 
+
+This prints out detailed, human-readable information showing the support, configurable,
+and enabled bits for the specified command on the specified LUN/NetFn pair.  Information
+will be printed about each of the command subfunctions.
+.TP 
+\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR [<\fBsubfn S\fR>]]]] 
+.br 
+
+Print out information for a specific sub-function.
+.RE
+.TP 
+\fIenable\fP [<\fBParms as described above\fR>]
+.br 
+
+This command is used to enable commands for a given NetFn/LUN combination on
+the specified channel. 
+.TP 
+\fIdisable\fP [<\fBParms as described above\fR>] [\fBforce\fR]
+.br 
+
+This command is used to disable commands for a given NetFn/LUN combination on
+the specified channel.   Great care should be taken if using the "force"
+option so as not to disable the "Set Command Enables" command.
+.TP 
+\fIreset\fP [<\fBParms as described above\fR>]
+.br 
+
+This command may be used to reset the firmware firewall back to a state
+where all commands and command sub-functions are enabled.
+.RE
+.TP 
 \fIfru\fP
 .RS
 .TP 
@@ -1543,91 +1459,6 @@ Storage Areas and may be refer to:
 This command edits the data found in the multirecord area. Support for
 OEM specific records is limited. 
 .RE
-.TP 
-\fIfirewall\fP
-.br 
-
-This command supports the Firmware Firewall capability.  It may be used to 
-add or remove security-based restrictions on certain commands/command 
-sub-functions  or to list the current firmware firewall restrictions set on 
-any commands.  For each firmware firewall command listed below, parameters 
-may be included to cause the command to be executed with increasing 
-granularity on a specific LUN, for a specific NetFn, for a specific IPMI 
-Command, and finally for a specific command's sub-function (see Appendix H in the 
-IPMI 2.0 Specification for a listing of any sub-function numbers that may 
-be associated with a particular command).
-
-Parameter syntax and dependencies are as follows:
-
-[<\fIchannel\fP \fBH\fR>] [<\fIlun\fP \fBL\fR> [ <\fInetfn\fP \fBN\fR> [<\fIcommand\fP \fBC\fR [<\fIsubfn\fP \fBS\fR>]]]] 
-
-Note that if "netfn <\fBN\fR>" is specified, then "lun <\fBL\fR>" must also be 
-specified;  if "command <\fBC\fR>" is specified, then "netfn <\fBN\fR>" (and
-therefore "lun <\fBL\fR>") must also be specified, and so forth.
-
-"channel <\fBH\fR>" is an optional and standalone parameter.  If not specified,
-the requested operation will be performed on the current channel.  Note that
-command support may vary from channel to channel. 
-
-Firmware firewall commands:
-.RS
-.TP 
-\fIinfo\fP [<\fBParms as described above\fR>]
-.br 
-
-List firmware firewall information for the specified LUN, NetFn, and 
-Command (if supplied) on the current or specified channel.  Listed
-information includes the support, configurable, and enabled bits for
-the specified command or commands.
-
-Some usage examples:
-.RS
-.TP 
-\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR>] 
-.br 
-
-This command will list firmware firewall information for all NetFns for the 
-specified LUN on either the current or the specified channel.
-.TP 
-\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> ] 
-.br 
-
-This command will print out all command information for a single LUN/NetFn pair.
-.TP 
-\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR] ]] 
-.br 
-
-This prints out detailed, human-readable information showing the support, configurable,
-and enabled bits for the specified command on the specified LUN/NetFn pair.  Information
-will be printed about each of the command subfunctions.
-.TP 
-\fIinfo\fP [<\fBchannel H\fR>] [<\fBlun L\fR> [ <\fBnetfn N\fR> [<\fBcommand C\fR [<\fBsubfn S\fR>]]]] 
-.br 
-
-Print out information for a specific sub-function.
-.RE
-.TP 
-\fIenable\fP [<\fBParms as described above\fR>]
-.br 
-
-This command is used to enable commands for a given NetFn/LUN combination on
-the specified channel. 
-.TP 
-\fIdisable\fP [<\fBParms as described above\fR>] [\fBforce\fR]
-.br 
-
-This command is used to disable commands for a given NetFn/LUN combination on
-the specified channel.   Great care should be taken if using the "force"
-option so as not to disable the "Set Command Enables" command.
-.TP 
-\fIreset\fP [<\fBParms as described above\fR>]
-.br 
-
-This command may be used to reset the firmware firewall back to a state
-where all commands and command sub-functions are enabled.
-
-.RE
-
 .TP
 \fIfwum\fP
 .RS
@@ -1668,7 +1499,28 @@ Ask IPMC to rollback to previous version.
 Show firmware upgrade log.
 
 .RE
+.TP 
+\fIgendev\fP
+.RS
+.TP 
+\fIlist\fP
 
+List All Generic Device Locators.
+.RS
+.RE
+.TP 
+\fIread\fP <\fBsdr name\fR> <\fBfile\fR>
+
+Read to file eeprom specify by Generic Device Locators.
+.RS
+.RE
+.TP
+\fIwrite\fP <\fBsdr name\fR> <\fBfile\fR>
+
+Write from file eeprom specify by Generic Device Locators
+.RS
+.RE
+.RE
 .TP
 \fIhpm\fP
 .RS
@@ -1776,14 +1628,39 @@ Show the rollback status.
 Query the self test results.
 
 .RE
-
 .TP
 \fIi2c\fP <\fBi2caddr\fR> <\fBread bytes\fR> [<\fBwrite data\fR>]
 .br 
 
 This command may be used to execute raw I2C commands with the Master
 Write\-Read IPMI command.
+.RE
+.TP 
+\fIime\fP
+.RS
+.TP 
+\fIhelp\fP
+.br 
 
+Print usage information
+.TP 
+\fIinfo\fP
+
+Displays information about the Manageability Engine (ME)
+.TP 
+\fIupdate\fP <\fBfile\fR>
+.br
+
+Upgrade the ME firmware with the specified image file
+.br
+\fBWARNING\fR You MUST use a supported image provided by your board vendor
+.br
+.TP
+\fIrollback\fP
+
+Perform manual rollback of the ME firmware
+
+.RE
 .RE
 .TP 
 \fIisol\fP
@@ -1842,7 +1719,6 @@ Special escape sequences are provided to control the SOL session:
 
 Note that escapes are only recognized immediately after newline.
 .RE
-
 .RE
 .TP 
 \fIkontronoem\fP
@@ -2114,6 +1990,369 @@ Clear all IP/UDP/RMCP Statistics to 0 on the specified channel.
 The default will clear statistics on the first found LAN channel.
 .RE
 .TP 
+\fImc | bmc\fP
+.RS
+.TP 
+\fIreset\fP <\fBwarm\fR|\fBcold\fR>
+.br 
+
+Instructs the BMC to perform a warm or cold reset.
+.TP 
+\fIguid\fP
+
+Display the Management Controller Globally Unique IDentifier.
+.TP 
+\fIinfo\fP
+.br
+
+Displays information about the BMC hardware, including device
+revision, firmware revision, IPMI version supported, manufacturer ID,
+and information on additional device support.
+.TP 
+\fIwatchdog\fP
+.br 
+
+These commands allow a user to view and change the current 
+state of the watchdog timer.
+.RS
+.TP 
+\fIget\fP
+.br
+
+Show current Watchdog Timer settings and countdown state.
+.TP 
+\fIreset\fP
+.br
+
+Reset the Watchdog Timer to its most recent state and restart the 
+countdown timer.
+.TP 
+\fIoff\fP
+.br
+
+Turn off a currently running Watchdog countdown timer.
+.RE
+.TP 
+\fIselftest\fP
+.br 
+
+Check on the basic health of the BMC by executing the Get Self Test
+results command and report the results.
+.TP 
+\fIgetenables\fP
+.br 
+
+Displays a list of the currently enabled options for the BMC.
+.br 
+.TP 
+\fIsetenables\fP <\fBoption\fR>=[\fIon\fP|\fIoff\fP]
+.br 
+
+Enables or disables the given \fIoption\fR.  This command is
+only supported over the system interface according to the IPMI
+specification.  Currently supported values for \fIoption\fR include:
+.RS
+.TP 
+\fIrecv_msg_intr\fP
+.br 
+
+Receive Message Queue Interrupt
+.TP 
+\fIevent_msg_intr\fP
+.br 
+
+Event Message Buffer Full Interrupt
+.TP 
+\fIevent_msg\fP
+.br 
+
+Event Message Buffer
+.TP 
+\fIsystem_event_log\fP
+.br 
+
+System Event Logging
+.TP 
+\fIoem0\fP
+.br 
+
+OEM\-Defined option #0
+.TP 
+\fIoem1\fP
+.br 
+
+OEM\-Defined option #1
+.TP 
+\fIoem2\fP
+.br 
+
+OEM\-Defined option #2
+
+.RE
+.TP
+\fIgetsysinfo\fP <\fBargument\fP>
+Retrieves system info from bmc for given argument.
+.br
+See \fIsetsysinfo\fP for argument definitions
+.TP
+\fIsetsysinfo\fP  <\fBargument\fP> <\fBstring\fP>
+Stores system info string to bmc for given argument
+.RS
+.TP
+Possible arguments are:
+.RS
+.TP
+\fIprimary_os_name\fP     Primary Operating System Name
+.TP
+\fIos_name\fP             Operating System Name
+.TP
+\fIsystem_name\fP         System Name of Server
+.TP
+\fIdelloem_os_version\fP Running versin of operating system
+.TP
+\fIdelloem_URL\fP        URL of BMC Webserver
+.RE
+.RE
+.TP 
+\fIchassis\fP
+.RS
+.TP 
+\fIstatus\fP
+.br 
+
+Displays information regarding the high\-level
+status of the system chassis and main power
+subsystem.
+.TP 
+\fIpoh\fP
+.br 
+
+This command will return the Power\-On Hours counter.
+.TP 
+\fIidentify\fP <\fBinterval\fR>
+
+Control the front panel identify  light.   Default interval
+is 15 seconds.  Use 0 to turn off.  Use "force" to turn on 
+indefinitely.
+.TP 
+\fIrestart_cause\fP
+.br 
+
+Query the chassis for the cause of the last system restart.
+.TP 
+\fIselftest\fP
+.br 
+
+Check on the basic health of the BMC by executing the Get Self Test
+results command and report the results.
+.TP 
+\fIpolicy\fP
+.br 
+
+Set the chassis power policy in  the  event  power failure.
+.RS
+.TP 
+\fIlist\fP
+.br 
+
+Return supported policies.
+.TP 
+\fIalways\-on\fP
+.br 
+
+Turn on when power is restored.
+.TP 
+\fIprevious\fP
+.br 
+
+Returned to  previous  state  when  power  is restored.
+.TP 
+\fIalways\-off\fP
+.br 
+
+Stay off after power is restored.
+.RE
+.TP 
+\fIpower\fP
+.br 
+
+Performs a chassis control  command  to  view  and
+change the power state.
+.RS
+.TP 
+\fIstatus\fP
+.br 
+
+Show current chassis power status.
+.TP 
+\fIon\fP
+.br 
+
+Power up chassis.
+.TP 
+\fIoff\fP
+.br 
+
+Power down chassis into soft off (S4/S5 state).
+\fBWARNING\fR: This command does not initiate a clean 
+shutdown of the operating system prior to powering down the system.
+.TP 
+\fIcycle\fP
+.br 
+
+Provides a power off interval of at least 1 second.  No action
+should occur if chassis power is in S4/S5 state, but it is
+recommended to check power state first and only issue a power
+cycle command if the  system  power is on or in lower sleep
+state than S4/S5.
+.TP 
+\fIreset\fP
+.br 
+
+This command will perform a hard reset.
+.TP 
+\fIdiag\fP
+.br 
+
+Pulse a diagnostic interrupt (NMI) directly to the processor(s).
+.TP 
+\fIsoft\fP
+.br 
+
+Initiate a soft\-shutdown of OS via ACPI.  This can be done in a
+number of ways, commonly by simulating an overtemperture or by
+simulating a power button press.  It is necessary for there to
+be Operating System support for ACPI and some sort of daemon
+watching for events for this soft power to work.
+.RE
+.TP 
+\fIbootdev\fP <\fBdevice\fR> [<\fIclear\-cmos\fP=\fByes\fR|\fBno\fR>] [<\fIoptions\fP=\fBhelp,...\fR>]
+.br 
+
+Request the system to boot from an alternate boot device on next reboot.
+The \fIclear\-cmos\fP option, if supplied, will instruct the BIOS to
+clear its CMOS on the next reboot.  Various options may be used to modify 
+the boot device settings.  Run \fI"bootdev none options=help"\fP for a list of 
+available boot device modifiers/options.  
+
+.RS
+.TP 
+Currently supported values for <device> are:
+.TP 
+\fInone\fP
+.br 
+
+Do not change boot device
+.TP 
+\fIpxe\fP
+.br 
+
+Force PXE boot
+.TP 
+\fIdisk\fP
+.br 
+
+Force boot from BIOS default boot device
+.TP 
+\fIsafe\fP
+.br 
+
+Force boot from BIOS default boot device, request Safe Mode
+.TP 
+\fIdiag\fP
+.br 
+
+Force boot from diagnostic partition
+.TP 
+\fIcdrom\fP
+.br 
+
+Force boot from CD/DVD
+.TP 
+\fIbios\fP
+.br 
+
+Force boot into BIOS setup
+.TP 
+\fIfloppy\fP
+.br 
+
+Force boot from Floppy/primary removable media
+.RE
+.TP 
+\fIbootparam\fP
+.br 
+
+Get or set various system boot option parameters.
+.RS
+.TP 
+\fIget\fP <\fBparam #\fR>
+.br 
+
+Get boot parameter. Currently supported values for <\fBparam #\fR> are:
+
+\fI0\fP - Set In Progress
+
+\fI1\fP - Service Partition Selector
+
+\fI2\fP - Service Partition Scan
+
+\fI3\fP - BMC Boot Flag Valid Bit Clearing
+
+\fI4\fP - Boot Info Acknowledge 
+
+\fI5\fP - Boot Flags
+
+\fI6\fP - Boot Initiator Info
+
+\fI7\fP - Boot Initiator Mailbox
+.br 
+
+.TP 
+\fIset\fP <\fBoption\fR> [\fBvalue ...\fR]
+.br 
+
+Set boot parameter.
+
+.RS
+.TP 
+Currently supported values for \fB<option>\fR are:
+.TP 
+\fIforce_pxe\fP
+.br 
+
+Force PXE boot
+.TP 
+\fIforce_disk\fP
+.br 
+
+Force boot from default hard-drive
+.TP 
+\fIforce_safe\fP
+.br 
+
+Force boot from default hard-drive, request Safe Mode
+.TP 
+\fIforce_diag\fP
+.br 
+
+Force boot from diagnostic partition
+.TP 
+\fIforce_cdrom\fP
+.br 
+
+Force boot from CD/DVD 
+.TP 
+\fIforce_bios\fP
+.br 
+
+Force boot into BIOS setup
+
+.RE
+.RE
+.RE
+.RE
+.TP 
 \fIpef\fP
 .RS
 .TP 
@@ -2208,9 +2447,7 @@ on the deactivation or activation locked bit respectively.  \fBlock\fR is
 .TP 
 \fIportstate\fP \fBset\fR|\fBgetall\fR|\fBgetgranted\fR|\fBgetdenied\fR <\fBparameters\fR> 
 .br 
-
 Get or set various port states.  See usage for parameter details.
-
 .RE
 .TP 
 \fIpower\fP <\fBchassis power command\fR>
@@ -2219,7 +2456,6 @@ Get or set various port states.  See usage for parameter details.
 Shortcut to the \fIchassis power\fP commands.
 See the \fIchassis power\fP commands for usage information.
 .RE
-
 .TP 
 \fIraw\fP <\fBnetfn\fR> <\fBcmd\fR> [<\fBdata\fR>]
 .br 
@@ -2236,8 +2472,7 @@ RAW RSP (5 bytes)
 3c 72 0c 00 00
 
 \fBNote\fR that the OpenIPMI driver provided by the Linux kernel will reject the Get Message, Send Message and Read Event Message Buffer commands because it handles the message sequencing internally.
-.br
-
+.RE
 .TP 
 \fIsdr\fP
 .RS
@@ -2507,6 +2742,73 @@ Upper Non\-Critical, Upper Critical, and Upper Non\-Recoverable.
 Get information about the specified session(s).  You may identify
 sessions by their id, by their handle number, by their active status,
 or by using the keyword `all' to specify all sessions.
+.RE
+.TP
+\fIset\fP
+.RS
+.TP
+\fIhostname\fP <\fBhost\fR>
+
+Session hostname.
+.RS
+.RE
+.TP
+\fIusername\fP <\fBuser\fR>
+
+Session username.
+.RS
+.RE
+.TP
+\fIpassword\fP <\fBpass\fR>
+
+Session password.
+.RS
+.RE
+.TP
+\fIprivlvl\fP <\fBlevel\fR>
+
+Session privilege level force.
+.RS
+.RE
+.TP
+\fIauthtype\fP <\fBtype\fR>
+
+Authentication type force.
+.RS
+.RE
+.TP
+\fIlocaladdr\fP <\fBaddr\fR>
+
+Local IPMB address.
+.RS
+.RE
+.TP
+\fItargetaddr\fP <\fBaddr\fR>
+
+Remote target IPMB address.
+.RS
+.RE
+.TP
+\fIport\fP <\fBport\fR>
+
+Remote RMCP port.
+.RS
+.RE
+.TP
+\fIcsv\fP [\fBlevel\fR]
+
+Enable output in comma separated format.
+Affects following commands:
+\fIuser\fP, \fIchannel\fP, \fIisol\fP, \fIsunoem\fP,
+\fIsol\fP, \fIsensor\fP, \fIsdr\fP, \fIsel\fP, \fIsession\fP.
+.RS
+.RE
+.TP
+\fIverbose\fP [\fBverbose\fR]
+
+Verbosity level.
+.RS
+.RE
 .RE
 .TP 
 \fIshell\fP
