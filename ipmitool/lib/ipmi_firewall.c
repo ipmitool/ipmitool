@@ -65,6 +65,37 @@ printf_firewall_usage(void)
 "\t\tC is a Command and S is a Sub-Function");
 }
 
+void
+printf_firewall_info_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"info [channel H]");
+	lprintf(LOG_NOTICE,
+"\tList all of the firewall information for all LUNs, NetFns");
+	lprintf(LOG_NOTICE,
+"\tand Commands, This is a long list and is not very human readable.");
+	lprintf(LOG_NOTICE,
+"info [channel H] lun L");
+	lprintf(LOG_NOTICE,
+"\tThis also prints a long list that is not very human readable.");
+	lprintf(LOG_NOTICE,
+"info [channel H] lun L netfn N");
+	lprintf(LOG_NOTICE,
+"\tThis prints out information for a single LUN/NetFn pair.");
+	lprintf(LOG_NOTICE,
+"\tThat is not really very usable, but at least it is short.");
+	lprintf(LOG_NOTICE,
+"info [channel H] lun L netfn N command C");
+	lprintf(LOG_NOTICE,
+"\tThis is the one you want -- it prints out detailed human");
+	lprintf(LOG_NOTICE,
+"\treadable information.  It shows the support, configurable, and");
+	lprintf(LOG_NOTICE,
+"\tenabled bits for the Command C on LUN/NetFn pair L,N and the");
+	lprintf(LOG_NOTICE,
+"\tsame information about each of its Sub-functions.");
+}
+
 // print n bytes of bit field bf (if invert, print ~bf)
 static void print_bitfield(const unsigned char * bf, int n, int invert, int loglevel) {
 	int i = 0;
@@ -877,19 +908,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if ((argc > 0 && strncmp(argv[0], "help", 4) == 0) || ipmi_firewall_parse_args(argc, argv, &p) < 0)
 	{
-		printf("info [channel H]\n");
-		printf("\tlist all of the firewall information for all LUNs, NetFns, and Commands\n");
-		printf("\tthis is a long list and is not very human readable\n");
-		printf("info [channel H] lun L\n");
-		printf("\tthis also prints a long list that is not very human readable\n");
-		printf("info [channel H] lun L netfn N\n");
-		printf("\tthis prints out information for a single LUN/NetFn pair\n");
-		printf("\tthat is not really very usable, but at least it is short\n");
-		printf("info [channel H] lun L netfn N command C\n");
-		printf("\tthis is the one you want -- it prints out detailed human\n");
-		printf("\treadable information.  It shows the support, configurable, and\n");
-		printf("\tenabled bits for the Command C on LUN/NetFn pair L,N and the\n");
-		printf("\tsame information about each of its Sub-functions\n");
+		printf_firewall_info_usage();
 		return 0;
 	}
 
