@@ -47,14 +47,22 @@
 static void
 printf_firewall_usage(void)
 {
-	printf("Firmware Firewall Commands:\n");
-	printf("\tinfo [channel H] [lun L]\n");
-	printf("\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]\n");
-	printf("\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]\n");
-	printf("\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])\n");
-	printf("\treset [channel H] \n");
-	printf("\t\twhere H is a Channel, L is a LUN, N is a NetFn,\n");
-	printf("\t\tC is a Command and S is a Sub-Function\n");
+	lprintf(LOG_NOTICE,
+"Firmware Firewall Commands:");
+	lprintf(LOG_NOTICE,
+"\tinfo [channel H] [lun L]");
+	lprintf(LOG_NOTICE,
+"\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]");
+	lprintf(LOG_NOTICE,
+"\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]");
+	lprintf(LOG_NOTICE,
+"\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])");
+	lprintf(LOG_NOTICE,
+"\treset [channel H]");
+	lprintf(LOG_NOTICE,
+"\t\twhere H is a Channel, L is a LUN, N is a NetFn,");
+	lprintf(LOG_NOTICE,
+"\t\tC is a Command and S is a Sub-Function");
 }
 
 // print n bytes of bit field bf (if invert, print ~bf)
@@ -134,31 +142,31 @@ ipmi_firewall_parse_args(int argc, char ** argv, struct ipmi_function_params * p
 		return (-1);
 	}
 	if (p->subfn >= MAX_SUBFN) {
-		printf("subfn is out of range (0-%d)\n", MAX_SUBFN-1);
+		lprintf(LOG_ERR, "subfn is out of range (0-%d)", MAX_SUBFN-1);
 		return -1;
 	}
 	if (p->command >= MAX_COMMAND) {
-		printf("command is out of range (0-%d)\n", MAX_COMMAND-1);
+		lprintf(LOG_ERR, "command is out of range (0-%d)", MAX_COMMAND-1);
 		return -1;
 	}
 	if (p->netfn >= MAX_NETFN) {
-		printf("netfn is out of range (0-%d)\n", MAX_NETFN-1);
+		lprintf(LOG_ERR, "netfn is out of range (0-%d)", MAX_NETFN-1);
 		return -1;
 	}
 	if (p->lun >= MAX_LUN) {
-		printf("lun is out of range (0-%d)\n", MAX_LUN-1);
+		lprintf(LOG_ERR, "lun is out of range (0-%d)", MAX_LUN-1);
 		return -1;
 	}
 	if (p->netfn >= 0 && p->lun < 0) {
-		printf("if netfn is set, lun must be set also\n");
+		lprintf(LOG_ERR, "if netfn is set, so must be lun");
 		return -1;
 	}
 	if (p->command >= 0 && p->netfn < 0) {
-		printf("if command is set, netfn must be set also\n");
+		lprintf(LOG_ERR, "if command is set, so must be netfn");
 		return -1;
 	}
 	if (p->subfn >= 0 && p->command < 0) {
-		printf("if subfn is set, command must be set also\n");
+		lprintf(LOG_ERR, "if subfn is set, so must be command");
 		return -1;
 	}
 	return 0;
