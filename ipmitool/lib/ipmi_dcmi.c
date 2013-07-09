@@ -550,13 +550,15 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector) {
     if ((cape.conformance != IPMI_DCMI_CONFORM)
             && (cape.conformance != IPMI_DCMI_1_1_CONFORM)
             && (cape.conformance != IPMI_DCMI_1_5_CONFORM)) {
-        printf("ERROR!  This command is not available on this platform\n");
+        lprintf(LOG_ERR,
+				"ERROR!  This command is not available on this platform");
         return -1;
     }
     
     /* check to make sure that this is a rev .01 or .02 */
     if (cape.revision != 0x01 && cape.revision != 0x02) {
-        printf("ERROR!  This command is not compatible with this version\n");
+        lprintf(LOG_ERR,
+				"ERROR!  This command is not compatible with this version");
         return -1;
     }
     
@@ -793,7 +795,7 @@ static int ipmi_dcmi_prnt_setassettag(struct ipmi_intf * intf, uint8_t * data) {
     taglength = strlen(data);
 
     if (taglength > 64){
-        printf("\nValue to long\n");
+        lprintf(LOG_ERR, "\nValue is too long.");
         return -1; 
     }
 
@@ -934,7 +936,7 @@ static int ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
     taglength = strlen(data) +1;
 
     if (taglength > 64){
-        printf("\nValue to long\n");
+        lprintf(LOG_ERR, "\nValue is too long.");
         return -1; 
     }
 
@@ -1780,7 +1782,7 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
     case 0x03:
         /* asset tag */
         if(ipmi_dcmi_prnt_getassettag(intf) < 0) {
-            printf("Error getting asset tag!\n");
+            lprintf(LOG_ERR, "Error getting asset tag!");
             return -1;
         }   
         break;
@@ -1794,7 +1796,7 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
             return -1;
             }
             if(ipmi_dcmi_prnt_setassettag(intf, argv[1]) < 0) {
-                printf("\nError setting asset tag!\n");
+                lprintf(LOG_ERR, "\nError setting asset tag!");
                 return -1;
             }   
             break;
@@ -1803,7 +1805,8 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
     case 0x05:
         /* get management controller identifier string */
         if(ipmi_dcmi_prnt_getmngctrlids(intf) < 0) {
-            printf("Error getting management controller identifier string!\n");
+            lprintf(LOG_ERR,
+					"Error getting management controller identifier string!");
             return -1;
         }   
         break;
@@ -1818,7 +1821,8 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
             return -1;
             }
             if(ipmi_dcmi_prnt_setmngctrlids(intf, argv[1]) < 0) {
-                printf("Error setting management controller identifier string!\n");
+                lprintf(LOG_ERR,
+						"Error setting management controller identifier string!");
                 return -1;
             }   
             break;
@@ -1843,7 +1847,7 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
         case 0x00:
             if (argc < 4)
             {
-                printf("Get <entityID> <instanceID>\n");
+                lprintf(LOG_NOTICE, "Get <entityID> <instanceID>");
                 return -1;
             }
 
@@ -1855,7 +1859,7 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
         case 0x01:
             if (argc < 4)
             {
-                printf("Set <entityID> <instanceID>\n");
+                lprintf(LOG_NOTICE, "Set <entityID> <instanceID>");
                 return -1;
             }
             else if (argc < 9)
@@ -1900,13 +1904,13 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
     case 0x08:
         if(ipmi_dcmi_prnt_get_temp_readings(intf) < 0 )
         {
-            printf("Error get temperature readings!\n");
+            lprintf(LOG_ERR, "Error get temperature readings!");
         };
         break;
     case 0x09:
         if(ipmi_dcmi_prnt_getconfparam(intf) < 0 )
         {
-            printf("Error Get DCMI Configuration Parameters!\n");
+            lprintf(LOG_ERR, "Error Get DCMI Configuration Parameters!");
         };
         break;
     case 0x0A:
@@ -1933,19 +1937,20 @@ int ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv) {
         }
         if(chk_rsp(rsp))
         {
-            printf("Error Set DCMI Configuration Parameters!\n");
+            lprintf(LOG_ERR, "Error Set DCMI Configuration Parameters!");
         }
         break;
     }
     case 0x0B:
     {
         if (intf->session == NULL){
-            printf("\nOOB discovery is available only via RMCP interface.\n");
+            lprintf(LOG_ERR,
+					"\nOOB discovery is available only via RMCP interface.");
             return -1;
         }
         if(ipmi_dcmi_prnt_oobDiscover(intf) < 0)
         {
-            printf("\nOOB discovering capabilities failed.\n");
+            lprintf(LOG_ERR, "\nOOB discovering capabilities failed.");
             return -1;
         }
         break;
