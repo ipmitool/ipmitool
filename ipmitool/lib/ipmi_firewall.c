@@ -82,35 +82,56 @@ static int
 ipmi_firewall_parse_args(int argc, char ** argv, struct ipmi_function_params * p)
 {
 	int i;
+	uint8_t conv_err = 0;
 
 	if (!p) {
 		lprintf(LOG_ERR, "ipmi_firewall_parse_args: p is NULL");
 		return -1;
 	}
 	for (i=0; i<argc; i++) {
-		if (strncmp(argv[i], "channel", 7) == 0) {
-			if (++i < argc)
-				p->channel = strtol(argv[i], NULL, 0);
+		if (strncmp(argv[i], "channel", 7) == 0 && (++i < argc)) {
+			uint8_t channel_tmp = 0;
+			if (is_ipmi_channel_num(argv[i], &channel_tmp) != 0) {
+				conv_err = 1;
+				break;
+			} else {
+				p->channel = channel_tmp;
+			}
 		}
-		else if (strncmp(argv[i], "lun", 3) == 0) {
-			if (++i < argc)
-				p->lun = strtol(argv[i], NULL, 0);
+		else if (strncmp(argv[i], "lun", 3) == 0 && (++i < argc)) {
+			if (str2int(argv[i], &(p->lun)) != 0) {
+				lprintf(LOG_ERR, "Given lun '%s' is invalid.", argv[i]);
+				conv_err = 1;
+				break;
+			}
 		}
 		else if (strncmp(argv[i], "force", 5) == 0) {
 			p->force = 1;
 		}
-		else if (strncmp(argv[i], "netfn", 5) == 0) {
-			if (++i < argc)
-				p->netfn = strtol(argv[i], NULL, 0);
+		else if (strncmp(argv[i], "netfn", 5) == 0 && (++i < argc)) {
+			if (str2int(argv[i], &(p->netfn)) != 0) {
+				lprintf(LOG_ERR, "Given netfn '%s' is invalid.", argv[i]);
+				conv_err = 1;
+				break;
+			}
 		}
-		else if (strncmp(argv[i], "command", 7) == 0) {
-			if (++i < argc)
-				p->command = strtol(argv[i], NULL, 0);
+		else if (strncmp(argv[i], "command", 7) == 0 && (++i < argc)) {
+			if (str2int(argv[i], &(p->command)) != 0) {
+				lprintf(LOG_ERR, "Given command '%s' is invalid.", argv[i]);
+				conv_err = 1;
+				break;
+			}
 		}
-		else if (strncmp(argv[i], "subfn", 5) == 0) {
-			if (++i < argc)
-				p->subfn = strtol(argv[i], NULL, 0);
+		else if (strncmp(argv[i], "subfn", 5) == 0 && (++i < argc)) {
+			if (str2int(argv[i], &(p->subfn)) != 0) {
+				lprintf(LOG_ERR, "Given subfn '%s' is invalid.", argv[i]);
+				conv_err = 1;
+				break;
+			}
 		}
+	}
+	if (conv_err != 0) {
+		return (-1);
 	}
 	if (p->subfn >= MAX_SUBFN) {
 		printf("subfn is out of range (0-%d)\n", MAX_SUBFN-1);
