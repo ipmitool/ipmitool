@@ -468,6 +468,7 @@ ipmi_sdr_get_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = GET_SENSOR_THRESHOLDS;
 	req.msg.data = &sensor;
 	req.msg.data_len = sizeof (sensor);
@@ -512,6 +513,7 @@ ipmi_sdr_get_sensor_hysteresis(struct ipmi_intf *intf, uint8_t sensor,
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = GET_SENSOR_HYSTERESIS;
 	req.msg.data = rqdata;
 	req.msg.data_len = 2;
@@ -573,6 +575,7 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	}
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = GET_SENSOR_READING;
 	req.msg.data = &sensor;
 	req.msg.data_len = 1;
@@ -612,6 +615,7 @@ ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf, uint8_t sensor,
 	}
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = GET_SENSOR_EVENT_STATUS;
 	req.msg.data = &sensor;
 	req.msg.data_len = 1;
@@ -652,6 +656,7 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = GET_SENSOR_EVENT_ENABLE;
 	req.msg.data = &sensor;
 	req.msg.data_len = 1;

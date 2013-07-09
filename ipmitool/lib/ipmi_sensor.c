@@ -72,6 +72,7 @@ ipmi_sensor_get_sensor_reading_factors(
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = sensor->cmn.keys.lun;
 	req.msg.cmd   = GET_SENSOR_FACTORS;
 	req.msg.data  = req_data;
 	req.msg.data_len = sizeof(req_data);
@@ -138,6 +139,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 	}
 	memset(&req, 0, sizeof (req));
 	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = lun;
 	req.msg.cmd = SET_SENSOR_THRESHOLDS;
 	req.msg.data = (uint8_t *) & set_thresh_rq;
 	req.msg.data_len = sizeof (set_thresh_rq);
