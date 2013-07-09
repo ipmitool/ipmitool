@@ -257,6 +257,7 @@ int
 ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
+	current_arg = 0;
 	if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) {
 		usage();
 		return 0;
