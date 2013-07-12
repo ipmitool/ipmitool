@@ -590,14 +590,20 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "test", 4) == 0)
 	{
 		// a little irritating, isn't it
-		if ((argc == 3 || argc == 4)  &&
-		    ((strncmp(argv[2], "16", 2) == 0) ||
-		     (strncmp(argv[2], "20", 2) == 0)))
+		if (argc == 3 || argc == 4)
 		{
 			char * password = NULL;
-			int password_length = atoi(argv[2]);
+			int password_length = 0;
 			uint8_t user_id = 0;
 			if (is_ipmi_user_id(argv[1], &user_id)) {
+				return (-1);
+			}
+			if (str2int(argv[2], &password_length) != 0
+					|| (password_length != 16 && password_length != 20)) {
+				lprintf(LOG_ERR,
+						"Given password length '%s' is invalid.",
+						argv[2]);
+				lprintf(LOG_ERR, "Expected value is either 16 or 20.");
 				return (-1);
 			}
 
