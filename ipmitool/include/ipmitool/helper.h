@@ -50,6 +50,14 @@
 #define tboolean   int
 #endif
 
+/* IPMI spec. - UID 0 reserved, 63 maximum UID which can be used */
+#ifndef IPMI_UID_MIN
+# define IPMI_UID_MIN 1
+#endif
+#ifndef IPMI_UID_MAX
+# define IPMI_UID_MAX 63
+#endif
+
 struct ipmi_intf;
 
 struct valstr {
@@ -77,6 +85,7 @@ int str2uchar(const char * str, uint8_t * uchr_ptr);
 
 int is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr);
 int is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr);
+int is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr);
 
 uint16_t str2val(const char * str, const struct valstr * vs);
 void print_valstr(const struct valstr * vs, const char * title, int loglevel);

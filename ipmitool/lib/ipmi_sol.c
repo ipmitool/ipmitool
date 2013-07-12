@@ -659,21 +659,14 @@ int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
 					uint8_t maxval,
 					uint8_t *out_value)
 {
-	char *end;
-	long val = strtol(strval, &end, base);
-
-	if ((val < minval)
-			|| (val > maxval)
-			|| (*end != '\0')) {
+	if (str2uint(strval, &out_value) != 0 || (*out_value < minval)
+			|| (*out_value > maxval)) {
 		lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 			strval, name);
 		lprintf(LOG_ERR, "Valid values are %d-%d", minval, maxval);
 		return -1;
 	}
-	else {
-		*out_value = val;
-		return 0;
-	}
+	return 0;
 }
 
 
@@ -1956,10 +1949,11 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		if (argc == 1)
 			channel = 0x0E; /* Ask about the current channel */
-		else if (argc == 2)
-			channel = (uint8_t)strtol(argv[1], NULL, 0);
-		else
-		{
+		else if (argc == 2) {
+			if (is_ipmi_channel_num(argv[1], &channel) != 0) {
+				return (-1);
+			}
+		} else {
 			print_sol_usage();
 			return -1;
 		}
@@ -1987,13 +1981,16 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 
-		if (argc >= 3)
-		{
-			channel = (uint8_t)strtol(argv[2], NULL, 0);
+		if (argc >= 3) {
+			if (is_ipmi_channel_num(argv[2], &channel) != 0) {
+				return (-1);
+			}
 		}
 		if (argc == 4)
 		{
-			userid = (uint8_t)strtol(argv[3], NULL, 0);
+			if (is_ipmi_user_id(argv[3], &userid) != 0) {
+				return (-1);
+			}
 		}
 
 		if (!strncmp(argv[1], "enable", 6))
@@ -2033,12 +2030,17 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			if (!strncmp(argv[3], "noguard", 7))
 				guard = 0;
-			else
-				channel = (uint8_t)strtol(argv[3], NULL, 0);
+			else {
+				if (is_ipmi_channel_num(argv[3], &channel) != 0) {
+					return (-1);
+				}
+			}
 		}
 		else if (argc == 5)
 		{
-			channel = (uint8_t)strtol(argv[3], NULL, 0);
+			if (is_ipmi_channel_num(argv[3], &channel) != 0) {
+				return (-1);
+			}
 			if (!strncmp(argv[4], "noguard", 7))
 				guard = 0;
 		}
@@ -2117,12 +2119,20 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		if (argc != 1) /* at least 2 */
 		{
-			cnt = strtol(argv[1], NULL, 10);
+			if (str2int(argv[1], &cnt) != 0) {
+				lprintf(LOG_ERR, "Given cnt '%s' is invalid.",
+						argv[1]);
+				return (-1);
+			}
 			if(cnt <= 0) cnt = 200;
 		}
 		if (argc >= 3)
 		{
-			interval = strtol(argv[2], NULL, 10);
+			if (str2int(argv[2], &interval) != 0) {
+				lprintf(LOG_ERR, "Given interval '%s' is invalid.",
+						argv[2]);
+				return (-1);
+			}
 			if(interval < 0) interval = 0;
 		}
 		if (argc >= 4) {

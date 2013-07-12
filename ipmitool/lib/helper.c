@@ -720,7 +720,39 @@ is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr)
 				|| (*channel_ptr >= 0xE && *channel_ptr <= 0xF))) {
 		return 0;
 	}
-	lprintf(LOG_ERR, "Given Channel number '%s' is out of range.", argv_ptr);
+	lprintf(LOG_ERR,
+			"Given Channel number '%s' is either invalid or out of range.",
+			argv_ptr);
 	lprintf(LOG_ERR, "Channel number must be from ranges: <0..7>, <0xE..0xF>");
+	return (-1);
+}
+
+/* is_ipmi_user_id() - wrapper for str-2-uint IPMI UID conversion. Message is
+ * printed on error.
+ *
+ * @argv_ptr: source string to convert from; usually argv
+ * @ipmi_uid_ptr: pointer where to store result
+ *
+ * returns zero on success
+ * returns (-1) on error and message is printed on STDERR
+ */
+int
+is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr)
+{
+	if (!argv_ptr || !ipmi_uid_ptr) {
+		lprintf(LOG_ERR,
+				"is_ipmi_user_id(): invalid argument(s).");
+		return (-1);
+	}
+	if ((str2uchar(argv_ptr, ipmi_uid_ptr) == 0)
+			&& *ipmi_uid_ptr >= IPMI_UID_MIN
+			&& *ipmi_uid_ptr <= IPMI_UID_MAX) {
+		return 0;
+	}
+	lprintf(LOG_ERR,
+			"Given User ID '%s' is either invalid or out of range.",
+			argv_ptr);
+	lprintf(LOG_ERR, "User ID is limited to range <%i..%i>.",
+			IPMI_UID_MIN, IPMI_UID_MAX);
 	return (-1);
 }
