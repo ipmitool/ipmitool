@@ -614,28 +614,33 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				char * tmp;
 				const char * password_prompt =
 					ipmi_user_build_password_prompt(user_id);
-#ifdef HAVE_GETPASSPHRASE
+# ifdef HAVE_GETPASSPHRASE
 				tmp = getpassphrase (password_prompt);
-#else
+# else
 				tmp = (char*)getpass (password_prompt);
-#endif
-				if (tmp != NULL)
+# endif
+				if (tmp != NULL) {
 					password = strdup(tmp);
+					tmp = NULL;
+				}
 				if (password == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
 					return -1;
 				}
 			}
-			else
-				password = argv[3];
+			else {
+				password = strdup(argv[3]);
+			}
 
 
 			retval = ipmi_user_test_password(intf,
 							 user_id,
 							 password,
 							 password_length == 20);
-
-
+			if (password != NULL) {
+				free(password);
+				password = NULL;
+			}
 		}
 		else
 		{
@@ -664,46 +669,42 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (argc == 3)
 			{
 				/* We need to prompt for a password */
-
 				char * tmp;
 				const char * password_prompt =
 					ipmi_user_build_password_prompt(user_id);
-
-#ifdef HAVE_GETPASSPHRASE
+# ifdef HAVE_GETPASSPHRASE
 				tmp = getpassphrase (password_prompt);
-#else
+# else
 				tmp = (char*)getpass (password_prompt);
-#endif
-				if (tmp != NULL)
-				{
+# endif
+				if (tmp != NULL) {
 					password = strdup(tmp);
-					if (password == NULL) {
-						lprintf(LOG_ERR, "ipmitool: malloc failure");
-						return -1;
-					}
-
-#ifdef HAVE_GETPASSPHRASE
-					tmp = getpassphrase (password_prompt);
-#else
-					tmp = (char*)getpass (password_prompt);
-#endif
-					if (tmp != NULL)
-					{
-						if (strlen(password) != strlen(tmp))
-						{
-							lprintf(LOG_ERR, "Passwords do not match");
-							return -1;
-						}
-						if (strncmp(password, tmp, strlen(tmp)))
-						{
-							lprintf(LOG_ERR, "Passwords to not match");
-							return -1;
-						}
-					}
+					tmp = NULL;
 				}
+				if (password == NULL) {
+					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					return -1;
+				}
+# ifdef HAVE_GETPASSPHRASE
+				tmp = getpassphrase (password_prompt);
+# else
+				tmp = (char*)getpass (password_prompt);
+# endif
+				if (tmp == NULL) {
+					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					return (-1);
+				}
+				if (strlen(password) != strlen(tmp)
+						|| strncmp(password, tmp, strlen(tmp))) {
+					lprintf(LOG_ERR, "Passwords do not match.");
+					free(password);
+					password = NULL;
+					return -1;
+				}
+				tmp = NULL;
+			} else {
+				password = strdup(argv[3]);
 			}
-			else
-				password = argv[3];
 
 			if (password == NULL) {
 				lprintf(LOG_ERR, "Unable to parse password argument.");
@@ -720,6 +721,10 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 							IPMI_PASSWORD_SET_PASSWORD,
 							password,
 							strlen(password) > 16);
+			if (password != NULL) {
+				free(password);
+				password = NULL;
+			}
 		}
 
 		/*
