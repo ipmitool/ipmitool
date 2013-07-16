@@ -494,6 +494,13 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
                 s->hostname);
             return -1;
         }
+		if (host->h_addrtype != AF_INET) {
+			lprintf(LOG_ERR,
+					"Address lookup for %s failed. Got %s, expected IPv4 address.",
+					s->hostname,
+					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
+			return (-1);
+		}
         s->addr.sin_family = host->h_addrtype;
         memcpy(&s->addr.sin_addr, host->h_addr, host->h_length);
     }

@@ -437,6 +437,13 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 				intf->session->hostname);
 			return -1;
 		}
+		if (host->h_addrtype != AF_INET) {
+			lprintf(LOG_ERR,
+					"Address lookup for %s failed. Got %s, expected IPv4 address.",
+					intf->session->hostname,
+					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
+			return (-1);
+		}
 		intf->session->addr.sin_family = host->h_addrtype;
 		memcpy(&intf->session->addr.sin_addr, host->h_addr, host->h_length);
 	}

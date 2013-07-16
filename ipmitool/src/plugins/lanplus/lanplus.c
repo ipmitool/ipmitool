@@ -3387,6 +3387,13 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 				session->hostname);
 			return -1;
 		}
+		if (host->h_addrtype != AF_INET) {
+			lprintf(LOG_ERR,
+					"Address lookup for %s failed. Got %s, expected IPv4 address.",
+					session->hostname,
+					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
+			return (-1);
+		}
 		addr.sin_family = host->h_addrtype;
 		memcpy(&addr.sin_addr, host->h_addr, host->h_length);
 	}
