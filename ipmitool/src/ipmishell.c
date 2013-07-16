@@ -146,7 +146,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		while (*ptr != '\0') {
 			if (*ptr == '"') {
 				ptr++;
-				while (*ptr != '"') {
+				while (*ptr != '"' && *ptr != '\0') {
 					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
@@ -154,7 +154,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (*ptr == '\'') {
 				ptr++;
-				while (*ptr != '\'') {
+				while (*ptr != '\'' && *ptr != '\0') {
 					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
@@ -174,7 +174,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			ptr = *ap;
 			if (*ptr == '\'') {
 				memmove(ptr, ptr+1, strlen(ptr));
-				while (*ptr != '\'') {
+				while (*ptr != '\'' && *ptr != '\0') {
 					if (*ptr == '~')
 						*ptr = ' ';
 					ptr++;
@@ -183,7 +183,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (*ptr == '"') {
 				memmove(ptr, ptr+1, strlen(ptr));
-				while (*ptr != '"') {
+				while (*ptr != '"' && *ptr != '\0') {
 					if (*ptr == '~')
 						*ptr = ' ';
 					ptr++;
@@ -366,7 +366,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 		while (*ptr != '\0') {
 			if (*ptr == '"') {
 				ptr++;
-				while (*ptr != '"') {
+				while (*ptr != '"' && *ptr != '\0') {
 					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
@@ -374,7 +374,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (*ptr == '\'') {
 				ptr++;
-				while (*ptr != '\'') {
+				while (*ptr != '\'' && *ptr != '\0') {
 					if (isspace((int)*ptr))
 						*ptr = '~';
 					ptr++;
@@ -405,7 +405,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 				tmp = __argv[__argc-1];
 				if (*tmp == '\'') {
 					memmove(tmp, tmp+1, strlen(tmp));
-					while (*tmp != '\'') {
+					while (*tmp != '\'' && *tmp != '\0') {
 						if (*tmp == '~')
 							*tmp = ' ';
 						tmp++;
@@ -414,7 +414,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				if (*tmp == '"') {
 					memmove(tmp, tmp+1, strlen(tmp));
-					while (*tmp != '"') {
+					while (*tmp != '"' && *tmp != '\0') {
 						if (*tmp == '~')
 							*tmp = ' ';
 						tmp++;
