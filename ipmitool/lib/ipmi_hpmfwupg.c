@@ -1014,6 +1014,9 @@ typedef struct _VERSIONINFO
     unsigned char rollbackMajor;
     unsigned char rollbackMinor;
     unsigned char rollbackAux[4];
+    unsigned char deferredMajor;
+    unsigned char deferredMinor;
+    unsigned char deferredAux[4];
     unsigned char imageMajor;
     unsigned char imageMinor;
     unsigned char imageAux[4];
@@ -1192,16 +1195,20 @@ void HpmDisplayVersionHeader(int mode)
    if ( mode & IMAGE_VER)
    {
         HpmDisplayLine("-",74 );
-        printf("|ID  | Name        |                     Versions                        |\n");
-        printf("|    |             |     Active      |     Backup      |      File       |\n");
+        printf(
+ "|ID  | Name        |                     Versions                        |\n");
+        printf(
+ "|    |             |     Active      |     Backup      |      File       |\n");
         HpmDisplayLine("-",74 );
    }
    else
    {
-        HpmDisplayLine("-",56 );
-        printf("|ID  | Name        |             Versions              |\n");
-        printf("|    |             |     Active      |     Backup      |\n");
-        HpmDisplayLine("-",56 );
+        HpmDisplayLine("-",74 );
+        printf(
+ "|ID  | Name        |                     Versions                        |\n");
+        printf(
+ "|    |             |     Active      |     Backup      |      Deferred   |\n");
+        HpmDisplayLine("-",74 );
    }
 }
 
@@ -1214,70 +1221,89 @@ void HpmDisplayVersionHeader(int mode)
 *****************************************************************************/
 void HpmDisplayVersion(int mode, VERSIONINFO *pVersion, int upgradable)
 {
-      char descString[16];
+	char descString[16];
 
-      memset(&descString,0x00,sizeof(descString));
-      /*
-       * Added this to ensure that even if the description string
-       * is more than required it does not give problem in displaying it
-       */
-      strncpy(descString,pVersion->descString,13);
-      /*
-       * If the cold reset is required then we can display * on it
-       * so that user is aware that he needs to do payload power
-       * cycle after upgrade
-       */
-      printf("|%c%c%2d|%-13s|",
-		pVersion->coldResetRequired?'*':' ',
-		upgradable ? '^': ' ',
-		pVersion->componentId,descString);
+	memset(&descString,0x00,sizeof(descString));
+	/*
+	 * Added this to ensure that even if the description string
+	 * is more than required it does not give problem in displaying it
+	 */
+	strncpy(descString,pVersion->descString,13);
 
-      if (mode & TARGET_VER)
-      {
-              if (pVersion->targetMajor == 0xFF && pVersion->targetMinor == 0xFF)
-                printf(" ---.-- -------- |");
-              else
-                printf(" %3d.%02x %02X%02X%02X%02X |",
-                 pVersion->targetMajor,
-                 pVersion->targetMinor,
-                 pVersion->targetAux[0],
-                 pVersion->targetAux[1],
-                 pVersion->targetAux[2],
-                 pVersion->targetAux[3]
-                 );
+	/*
+	 * If the cold reset is required then we can display * on it
+	 * so that user is aware that he needs to do payload power
+	 * cycle after upgrade
+	 */
+	printf("|%c%c%2d|%-13s|",
+	pVersion->coldResetRequired?'*':' ',
+	upgradable ? '^': ' ',
+	pVersion->componentId,descString);
 
-              if (mode & ROLLBACK_VER)
-              {
-                    if (pVersion->rollbackMajor == 0xFF && pVersion->rollbackMinor == 0xFF)
-                        printf(" ---.-- -------- |");
-                    else
-                        printf(" %3d.%02x %02X%02X%02X%02X |",
-                         pVersion->rollbackMajor,
-                         pVersion->rollbackMinor,
-                         pVersion->rollbackAux[0],
-                         pVersion->rollbackAux[1],
-                 	     pVersion->rollbackAux[2],
-                 	     pVersion->rollbackAux[3]);
-              }
-              else
-              {
-                    printf(" ---.-- -------- |");
-              }
-      }
+	if (mode & TARGET_VER)
+		{
+		if ((pVersion->targetMajor == 0xFF ||
+		     (pVersion->targetMajor == 0x7F)) && 
+			pVersion->targetMinor == 0xFF)
+			printf(" ---.-- -------- |");
+		else
+			printf(" %3d.%02x %02X%02X%02X%02X |",
+				pVersion->targetMajor,
+				pVersion->targetMinor,
+				pVersion->targetAux[0],
+				pVersion->targetAux[1],
+				pVersion->targetAux[2],
+				pVersion->targetAux[3]);
 
-      if (mode & IMAGE_VER)
-      {
-              if (pVersion->imageMajor == 0xFF && pVersion->imageMinor == 0xFF)
-                printf(" ---.-- |");
-              else
-                printf(" %3d.%02x %02X%02X%02X%02X |",
-                 pVersion->imageMajor,
-                 pVersion->imageMinor,
-                 pVersion->imageAux[0],
-                 pVersion->imageAux[1],
-                 pVersion->imageAux[2],
-                 pVersion->imageAux[3]);
-      }
+		if (mode & ROLLBACK_VER)
+			{
+			if ((pVersion->rollbackMajor == 0xFF ||
+			     (pVersion->rollbackMajor == 0x7F)) && 
+				pVersion->rollbackMinor == 0xFF)
+				printf(" ---.-- -------- |");
+			    else
+				printf(" %3d.%02x %02X%02X%02X%02X |",
+					pVersion->rollbackMajor,
+					pVersion->rollbackMinor,
+					pVersion->rollbackAux[0],
+					pVersion->rollbackAux[1],
+					pVersion->rollbackAux[2],
+					pVersion->rollbackAux[3]);
+			}
+		else
+			printf(" ---.-- -------- |");
+		}
+
+	if (mode & IMAGE_VER)
+		{
+		if ((pVersion->imageMajor == 0xFF ||
+		     (pVersion->imageMajor == 0x7F)) && 
+			pVersion->imageMinor == 0xFF)
+			printf(" ---.-- |");
+		else
+			printf(" %3d.%02x %02X%02X%02X%02X |",
+				pVersion->imageMajor,
+				pVersion->imageMinor,
+				pVersion->imageAux[0],
+				pVersion->imageAux[1],
+				pVersion->imageAux[2],
+				pVersion->imageAux[3]);
+		}
+	else
+		{
+		if ((pVersion->deferredMajor == 0xFF ||
+		     (pVersion->deferredMajor == 0x7F)) && 
+			pVersion->deferredMinor == 0xFF)
+			printf(" ---.-- -------- |");
+		else
+			printf(" %3d.%02x %02X%02X%02X%02X |",
+				pVersion->deferredMajor,
+				pVersion->deferredMinor,
+				pVersion->deferredAux[0],
+				pVersion->deferredAux[1],
+				pVersion->deferredAux[2],
+				pVersion->deferredAux[3]);
+		}
 }
 
 
@@ -1397,17 +1423,45 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
                       .Response.rollbackFwVersionResp.rollbackFwVersion[0];
                     gVersionInfo[componentId].rollbackMinor = getCompProp.resp
                       .Response.rollbackFwVersionResp.rollbackFwVersion[1];
-                    gVersionInfo[componentId].rollbackAux[0] = getCompProp.resp.Response.
-                     rollbackFwVersionResp.rollbackFwVersion[2];
-                    gVersionInfo[componentId].rollbackAux[1] = getCompProp.resp.Response.
-                     rollbackFwVersionResp.rollbackFwVersion[3];
-                    gVersionInfo[componentId].rollbackAux[2] = getCompProp.resp.Response.
-                     rollbackFwVersionResp.rollbackFwVersion[4];
-                    gVersionInfo[componentId].rollbackAux[3] = getCompProp.resp.Response.
-                     rollbackFwVersionResp.rollbackFwVersion[5];
+                    gVersionInfo[componentId].rollbackAux[0] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[2];
+                    gVersionInfo[componentId].rollbackAux[1] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[3];
+                    gVersionInfo[componentId].rollbackAux[2] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[4];
+                    gVersionInfo[componentId].rollbackAux[3] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[5];
+                }
+
+                getCompProp.req.selector = HPMFWUPG_COMP_DEFERRED_FIRMWARE_VERSION;
+                rc = HpmfwupgGetComponentProperties(intf, &getCompProp);
+                if (rc != HPMFWUPG_SUCCESS)
+                {
+                    lprintf(LOG_NOTICE,"Get CompRollbackVersion Failed for component Id %d\n",componentId);
+                } else {
+                    gVersionInfo[componentId].deferredMajor = getCompProp.resp
+                      .Response.deferredFwVersionResp.deferredFwVersion[0];
+                    gVersionInfo[componentId].deferredMinor = getCompProp.resp
+                      .Response.deferredFwVersionResp.deferredFwVersion[1];
+                    gVersionInfo[componentId].deferredAux[0] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[2];
+                    gVersionInfo[componentId].deferredAux[1] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[3];
+                    gVersionInfo[componentId].deferredAux[2] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[4];
+                    gVersionInfo[componentId].deferredAux[3] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[5];
                 }
                 mode |= ROLLBACK_VER;
             }
+	    else
+	    {
+		gVersionInfo[componentId].rollbackMajor = 0xff;
+		gVersionInfo[componentId].rollbackMinor = 0xff;
+		gVersionInfo[componentId].rollbackAux[0] = 0xff;
+		gVersionInfo[componentId].rollbackAux[1] = 0xff;
+		gVersionInfo[componentId].rollbackAux[2] = 0xff;
+		gVersionInfo[componentId].rollbackAux[3] = 0xff;
+
+		gVersionInfo[componentId].deferredMajor = 0xff;
+		gVersionInfo[componentId].deferredMinor = 0xff;
+		gVersionInfo[componentId].deferredAux[0] = 0xff;
+		gVersionInfo[componentId].deferredAux[1] = 0xff;
+		gVersionInfo[componentId].deferredAux[2] = 0xff;
+		gVersionInfo[componentId].deferredAux[3] = 0xff;
+	    }
 
             if (gVersionInfo[componentId].coldResetRequired)
             {
@@ -1427,7 +1481,7 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
 
     if (option & VIEW_MODE)
     {
-        HpmDisplayLine("-",56 );
+        HpmDisplayLine("-",74 );
 	fflush(stdout);
 	lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
         printf("\n\n");
