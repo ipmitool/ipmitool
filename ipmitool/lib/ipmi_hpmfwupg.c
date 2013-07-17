@@ -2661,7 +2661,10 @@ int HpmfwupgGetDeviceId(struct ipmi_intf *intf, struct ipm_devid_rsp* pGetDevId)
       }
       else
       {
-         lprintf(LOG_NOTICE,"Error getting device ID, compcode = %x\n", rsp->ccode);
+         lprintf(LOG_NOTICE,"Error getting device ID");
+	 lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -2863,7 +2866,10 @@ int HpmfwupgGetComponentProperties(struct ipmi_intf *intf, struct HpmfwupgGetCom
       }
       else
       {
-         lprintf(LOG_NOTICE,"Error getting component properties, compcode = %x\n",  rsp->ccode);
+         lprintf(LOG_NOTICE,"Error getting component properties");
+	 lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -2897,7 +2903,10 @@ int HpmfwupgAbortUpgrade(struct ipmi_intf *intf, struct HpmfwupgAbortUpgradeCtx*
    {
       if ( rsp->ccode != 0x00 )
       {
-         lprintf(LOG_NOTICE,"Error aborting upgrade, compcode = %x\n",  rsp->ccode);
+         lprintf(LOG_NOTICE,"Error aborting upgrade");
+	 lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -2935,7 +2944,10 @@ int HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf, struct HpmfwupgInitiat
       }
       else if ( rsp->ccode != 0x00 )
       {
-         lprintf(LOG_NOTICE,"Error initiating upgrade action, compcode = %x\n",  rsp->ccode);
+         lprintf(LOG_NOTICE,"Error initiating upgrade action");
+	 lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -3028,7 +3040,10 @@ int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf, struct HpmfwupgUploadFir
          }
          else
          {
-            lprintf(LOG_NOTICE,"Error uploading firmware block, compcode = %x\n",  rsp->ccode);
+            lprintf(LOG_NOTICE,"Error uploading firmware block");
+	    lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
             rc = HPMFWUPG_ERROR;
          }
       }
@@ -3068,7 +3083,10 @@ int HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf, struct HpmfwupgFinishFi
       }
       else if ( rsp->ccode != IPMI_CC_OK )
       {
-         lprintf(LOG_NOTICE,"Error finishing firmware upload, compcode = %x\n",  rsp->ccode);
+	lprintf(LOG_NOTICE,"Error finishing firmware upload");
+	lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -3120,9 +3138,11 @@ int HpmfwupgActivateFirmware(struct ipmi_intf *intf, struct HpmfwupgActivateFirm
       }
       else if ( rsp->ccode != IPMI_CC_OK )
       {
-         lprintf(LOG_NOTICE,"Error activating firmware, compcode = %x\n",
-                            rsp->ccode);
-         rc = HPMFWUPG_ERROR;
+	lprintf(LOG_NOTICE,"Error activating firmware");
+	lprintf(LOG_NOTICE,"compcode=0x%x: %s",
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
+        rc = HPMFWUPG_ERROR;
       }
    }
    else
@@ -3178,8 +3198,11 @@ int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, struct HpmfwupgGetUpgradeSt
       {
          if ( verbose )
          {
-            lprintf(LOG_NOTICE,"Error getting upgrade status, compcode = %x\n",  rsp->ccode);
-            rc = HPMFWUPG_ERROR;
+		lprintf(LOG_NOTICE,"Error getting upgrade status");
+		lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
+			rsp->ccode,
+			val2str(rsp->ccode, completion_code_vals));
+		rc = HPMFWUPG_ERROR;
          }
       }
    }
@@ -3224,7 +3247,10 @@ int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf, struct HpmfwupgManual
       }
       else if ( rsp->ccode != 0x00 )
       {
-         lprintf(LOG_NOTICE,"Error sending manual rollback, compcode = %x\n",  rsp->ccode);
+	lprintf(LOG_NOTICE,"Error sending manual rollback");
+	lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
@@ -3328,7 +3354,10 @@ int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf, struct HpmfwupgQueryRoll
       }
       else
       {
-          lprintf(LOG_NOTICE,"Error getting rollback status, compcode = %x",  rsp->ccode);
+	lprintf(LOG_NOTICE,"Error getting rollback status");
+	lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
           rc = HPMFWUPG_ERROR;
       }
    }
@@ -3415,7 +3444,10 @@ int HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelf
       }
       else
       {
-         lprintf(LOG_NOTICE,"Error getting self test results, compcode = %x\n",  rsp->ccode);
+         lprintf(LOG_NOTICE,"Error getting self test results");
+         lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
+		rsp->ccode,
+		val2str(rsp->ccode, completion_code_vals));
          rc = HPMFWUPG_ERROR;
       }
    }
