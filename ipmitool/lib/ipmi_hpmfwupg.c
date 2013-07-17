@@ -2270,6 +2270,7 @@ static int HpmFwupgActionUploadFirmware
 
    if(!skip)
    {
+      HpmDisplayUpgrade(0,0,1,0);
       /* Initialize parameters */
       uploadCmd.req.blockNumber = 0;
 
