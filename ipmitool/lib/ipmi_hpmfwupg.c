@@ -1067,9 +1067,7 @@ static int HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf,
 static int HpmfwupgActivateFirmware(struct ipmi_intf *intf,
                                     struct HpmfwupgActivateFirmwareCtx* pCtx,
                                     struct HpmfwupgUpgradeCtx* pFwupgCtx);
-static int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf,
-                                    struct HpmfwupgGetUpgradeStatusCtx* pCtxstruct,
-                                    struct HpmfwupgUpgradeCtx* pFwupgCtx);
+static int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, struct HpmfwupgGetUpgradeStatusCtx* pCtxstruct, struct HpmfwupgUpgradeCtx* pFwupgCtx, int silent);
 static int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
                                           struct HpmfwupgManualFirmwareRollbackCtx* pCtx,
                                           struct HpmfwupgUpgradeCtx* pFwupgCtx);
@@ -3154,68 +3152,63 @@ int HpmfwupgActivateFirmware(struct ipmi_intf *intf, struct HpmfwupgActivateFirm
    return rc;
 }
 
-int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, struct HpmfwupgGetUpgradeStatusCtx* pCtx,
-                             struct HpmfwupgUpgradeCtx* pFwupgCtx)
+int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf, 
+			     struct HpmfwupgGetUpgradeStatusCtx *pCtx,
+                             struct HpmfwupgUpgradeCtx *pFwupgCtx,
+			     int silent)
 {
-   int    rc = HPMFWUPG_SUCCESS;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq   req;
+	int    rc = HPMFWUPG_SUCCESS;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq   req;
 
-   pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
+	pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn    = IPMI_NETFN_PICMG;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn    = IPMI_NETFN_PICMG;
 	req.msg.cmd      = HPMFWUPG_GET_UPGRADE_STATUS;
 	req.msg.data     = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgGetUpgradeStatusReq);
 
-   rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
+	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
+	if (!rsp){
+		lprintf(LOG_NOTICE,
+		"Error getting upgrade status. Failed to get response.");
+		return HPMFWUPG_ERROR;
+	}
 
-   if ( rsp )
-   {
-      if ( rsp->ccode == 0x00 )
-      {
-         memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetUpgradeStatusResp));
-         if ( verbose > 1 )
-         {
-            lprintf(LOG_NOTICE,"Upgrade status:");
-            lprintf(LOG_NOTICE," Command in progress:          %x", pCtx->resp.cmdInProcess);
-            lprintf(LOG_NOTICE," Last command completion code: %x", pCtx->resp.lastCmdCompCode);
-         }
-      }
-      /*
-       * PATCH --> This validation is to handle retryables errors codes on IPMB bus.
-       *           This will be fixed in the next release of open ipmi and this
-       *           check will have to be removed. (Buggy version = 39)
-       */
-      else if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) )
-      {
-         lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
-
-         pCtx->resp.lastCmdCompCode = HPMFWUPG_COMMAND_IN_PROGRESS;
-      }
-      else
-      {
-         if ( verbose )
-         {
+	if ( rsp->ccode == 0x00 ) {
+		memcpy(&pCtx->resp, rsp->data, 
+			sizeof(struct HpmfwupgGetUpgradeStatusResp));
+		if (!silent)
+			{
+			lprintf(LOG_NOTICE,"Upgrade status:");
+			lprintf(LOG_NOTICE," Command in progress:          %x", 
+				pCtx->resp.cmdInProcess);
+			lprintf(LOG_NOTICE," Last command completion code: %x", 
+				pCtx->resp.lastCmdCompCode);
+			}
+	} else if ( HPMFWUPG_IS_RETRYABLE(rsp->ccode) ) {
+		/*
+		 * PATCH --> This validation is to handle retryable errors 
+		 *           codes on the IPMB bus.
+		 *           This will be fixed in the next release of 
+		 *           open ipmi and this check can be removed. 
+		 *           (Buggy version = 39)
+		 */
+		if (!silent)
+			{
+			lprintf(LOG_DEBUG,"HPM: Retryable error detected");
+			}
+		pCtx->resp.lastCmdCompCode = HPMFWUPG_COMMAND_IN_PROGRESS;
+	} else {
 		lprintf(LOG_NOTICE,"Error getting upgrade status");
 		lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
 			rsp->ccode,
 			val2str(rsp->ccode, completion_code_vals));
-		rc = HPMFWUPG_ERROR;
-         }
-      }
-   }
-   else
-   {
-      if ( verbose )
-      {
-         lprintf(LOG_NOTICE,"Error getting upgrade status");
-         rc = HPMFWUPG_ERROR;
-      }
-   }
+		return HPMFWUPG_ERROR;
+	}
 
-   return rc;
+	return HPMFWUPG_SUCCESS;
 }
 
 int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf, struct HpmfwupgManualFirmwareRollbackCtx* pCtx,
@@ -3698,7 +3691,7 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
       /* Poll upgrade status until completion or timeout*/
       timeoutSec1 = time(NULL);
       timeoutSec2 = time(NULL);
-      rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
+      rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx, 1);
    }
 
    while(
@@ -3711,7 +3704,7 @@ int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf, struct HpmfwupgUpgradeCt
       /* Must wait at least 1000 ms between status requests */
       usleep(1000000);
       timeoutSec2 = time(NULL);
-      rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx);
+      rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx, 1);
       //printf("Get Status: %x - %x = %x _ %x [%x]\n", timeoutSec2, timeoutSec1,(timeoutSec2 - timeoutSec1),upgradeTimeout, rc);
    }
 
@@ -3937,7 +3930,7 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
    {
       struct HpmfwupgGetUpgradeStatusCtx cmdCtx;
       verbose++;
-      rc = HpmfwupgGetUpgradeStatus(intf, &cmdCtx, NULL);
+      rc = HpmfwupgGetUpgradeStatus(intf, &cmdCtx, NULL, 0);
    }
    else if ( (argc == 1) && (strcmp(argv[0], "rollback") == 0) )
    {
