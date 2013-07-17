@@ -1133,10 +1133,10 @@ void HpmDisplayLine(char *s, int n)
 void HpmDisplayUpgradeHeader(int option)
 {
     printf("\n");
-    HpmDisplayLine("-",78 );
-    printf("|ID | Name      |                     Versions                        |  %%   |\n");
-    printf("|   |           |      Active     |      Backup     |      File       |      |\n");
-    printf("|---|-----------|-----------------|-----------------|-----------------|------|\n");    
+    HpmDisplayLine("-",79 );
+    printf("|ID  | Name      |                     Versions                        |  %%   |\n");
+    printf("|    |           |      Active     |      Backup     |      File       |      |\n");
+    printf("|----|-----------|-----------------|-----------------|-----------------|------|\n");    
 }
 
 /****************************************************************************
@@ -1187,17 +1187,17 @@ void HpmDisplayVersionHeader(int mode)
 {
    if ( mode & IMAGE_VER)
    {
-        HpmDisplayLine("-",71 );
-        printf("|ID | Name      |                     Versions                        |\n");
-        printf("|   |           |     Active      |     Backup      |      File       |\n");
-        HpmDisplayLine("-",71 );
+        HpmDisplayLine("-",72 );
+        printf("|ID  | Name      |                     Versions                        |\n");
+        printf("|    |           |     Active      |     Backup      |      File       |\n");
+        HpmDisplayLine("-",72 );
    }
    else
    {
-        HpmDisplayLine("-",53 );
-        printf("|ID | Name      |             Versions              |\n");
-        printf("|   |           |     Active      |     Backup      |\n");
-        HpmDisplayLine("-",53 );
+        HpmDisplayLine("-",54 );
+        printf("|ID  | Name      |             Versions              |\n");
+        printf("|    |           |     Active      |     Backup      |\n");
+        HpmDisplayLine("-",54 );
    }
 }
 
@@ -1208,7 +1208,7 @@ void HpmDisplayVersionHeader(int mode)
 * Description: This function displays the version of the image and target
 *
 *****************************************************************************/
-void HpmDisplayVersion(int mode,VERSIONINFO *pVersion)
+void HpmDisplayVersion(int mode, VERSIONINFO *pVersion, int upgradable)
 {
       char descString[12];
       memset(&descString,0x00,12);
@@ -1222,7 +1222,10 @@ void HpmDisplayVersion(int mode,VERSIONINFO *pVersion)
        * so that user is aware that he needs to do payload power
        * cycle after upgrade
        */
-      printf("|%c%-2d|%-11s|",pVersion->coldResetRequired?'*':' ',pVersion->componentId,descString);
+      printf("|%c%c%2d|%-11s|",
+		pVersion->coldResetRequired?'*':' ',
+		upgradable ? '^': ' ',
+		pVersion->componentId,descString);
 
       if (mode & TARGET_VER)
       {
@@ -1411,7 +1414,7 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
             }
             if (option & VIEW_MODE)
             {
-              HpmDisplayVersion(mode,&gVersionInfo[componentId]);
+              HpmDisplayVersion(mode,&gVersionInfo[componentId], 0);
               printf("\n");
             }
         }
@@ -2017,7 +2020,7 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
 		if (option & VIEW_MODE) {
 			if (pVersionInfo->rollbackSupported)
 				mode |= ROLLBACK_VER;
-			HpmDisplayVersion(mode,pVersionInfo);
+			HpmDisplayVersion(mode,pVersionInfo, upgrade_comp);
 			printf("\n");
 		}
 		pImagePtr = pData + firmwareLength;
@@ -2032,10 +2035,11 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
    }
 
    if (option & VIEW_MODE) {
-	HpmDisplayLine("-",71);
+	HpmDisplayLine("-",72);
 	if (flagColdReset) {
 		fflush(stdout);
 		lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
+		lprintf(LOG_NOTICE,"(^) Indicates component would be upgraded");
 	}
    }
    return HPMFWUPG_SUCCESS;
@@ -2255,7 +2259,7 @@ static int HpmFwupgActionUploadFirmware
 	}
 	else
 	{
-		 HpmDisplayVersion(mode,pVersionInfo);
+		 HpmDisplayVersion(mode,pVersionInfo, 0);
 	}
 
 	if( (1 << componentId) & pFwupgCtx->compUpdateMask.ComponentBits.byte)
