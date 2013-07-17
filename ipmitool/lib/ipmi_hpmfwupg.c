@@ -1175,7 +1175,7 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
     {
         /* Display the time taken to complete the upgrade */
         printf(
- "|    |Upload Time: %02ld:%02ld             | Image Size: %05x                      |\n",
+ "|    |Upload Time: %02ld:%02ld             | Image Size: %7d bytes              |\n",
          timeElapsed/60,timeElapsed%60,totalSent);
     }
 }
