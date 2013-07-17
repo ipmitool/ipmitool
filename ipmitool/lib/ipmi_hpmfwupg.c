@@ -1019,7 +1019,6 @@ typedef struct _VERSIONINFO
     unsigned char imageAux[4];
     unsigned char coldResetRequired;
     unsigned char rollbackSupported;
-    unsigned char skipUpgrade;
     char descString[15];
 }VERSIONINFO, *PVERSIONINFO;
 
@@ -1851,6 +1850,37 @@ int HpmfwupgPreparationStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* 
    return rc;
 }
 
+static int image_version_upgradable(VERSIONINFO *pVersionInfo)
+{
+	/* If the image and active target versions are different, then
+	 * upgrade */
+	if ((pVersionInfo->imageMajor != pVersionInfo->targetMajor) ||
+	    (pVersionInfo->imageMinor != pVersionInfo->targetMinor) ||
+	    (pVersionInfo->imageAux[0] != pVersionInfo->targetAux[0]) ||
+	    (pVersionInfo->imageAux[1] != pVersionInfo->targetAux[1]) ||
+	    (pVersionInfo->imageAux[2] != pVersionInfo->targetAux[2]) ||
+	    (pVersionInfo->imageAux[3] != pVersionInfo->targetAux[3]))
+		return (1);
+
+	/* If the image and active target versions are the same and rollback
+	 * is not supported, then there's nothing to do, skip the upgrade */
+	if (!pVersionInfo->rollbackSupported)
+		return (0);
+
+	/* If the image and rollback target versions are different, then
+	 * go ahead and upgrade */
+	if ((pVersionInfo->imageMajor != pVersionInfo->rollbackMajor) ||
+	    (pVersionInfo->imageMinor != pVersionInfo->rollbackMinor) ||
+	    (pVersionInfo->imageAux[0] != pVersionInfo->rollbackAux[0]) ||
+	    (pVersionInfo->imageAux[1] != pVersionInfo->rollbackAux[1]) ||
+	    (pVersionInfo->imageAux[2] != pVersionInfo->rollbackAux[2]) ||
+	    (pVersionInfo->imageAux[3] != pVersionInfo->rollbackAux[3]))
+		return (1);
+
+	/* Image and rollback target versions are the same too, skip it */
+	return (0);
+}
+
 /****************************************************************************
 *
 * Function Name:  HpmfwupgPreUpgradeCheck
@@ -1860,206 +1890,155 @@ int HpmfwupgPreparationStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* 
 *              is same as target version.
 *
 *****************************************************************************/
-int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwupgCtx,
-                            int componentToUpload,int option)
+int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf, 
+			    struct HpmfwupgUpgradeCtx* pFwupgCtx,
+                            int componentToUpload, int option)
 {
-   int rc = HPMFWUPG_SUCCESS;
    unsigned char* pImagePtr;
-   struct HpmfwupgActionRecord* pActionRecord;
-   unsigned int actionsSize;
+   struct HpmfwupgActionRecord *pActionRecord;
    int flagColdReset = FALSE;
-   struct HpmfwupgImageHeader* pImageHeader = (struct HpmfwupgImageHeader*)
-                                                         pFwupgCtx->pImageData;
+   struct HpmfwupgImageHeader *pImageHeader;
+
+   pImageHeader = (struct HpmfwupgImageHeader*) pFwupgCtx->pImageData;
 
    /* Put pointer after image header */
    pImagePtr = (unsigned char*)
                (pFwupgCtx->pImageData + sizeof(struct HpmfwupgImageHeader) +
-                pImageHeader->oemDataLength + sizeof(unsigned char)/*checksum*/);
+                pImageHeader->oemDataLength + sizeof(unsigned char)/*chksum*/);
 
-   /* Deternime actions size */
-   actionsSize = pFwupgCtx->imageSize - sizeof(struct HpmfwupgImageHeader);
-
-   if (option & VIEW_MODE)
-   {
+   if (option & VIEW_MODE) {
        HpmDisplayVersionHeader(TARGET_VER|ROLLBACK_VER|IMAGE_VER);
    }
 
    /* Perform actions defined in the image */
-   while( ( pImagePtr < (pFwupgCtx->pImageData + pFwupgCtx->imageSize -
-            HPMFWUPG_MD5_SIGNATURE_LENGTH)) &&
-          ( rc == HPMFWUPG_SUCCESS) )
-   {
-      /* Get action record */
-      pActionRecord = (struct HpmfwupgActionRecord*)pImagePtr;
+   while (pImagePtr < (pFwupgCtx->pImageData + pFwupgCtx->imageSize -
+			    HPMFWUPG_MD5_SIGNATURE_LENGTH)) {
+	/* Get action record */
+	pActionRecord = (struct HpmfwupgActionRecord*)pImagePtr;
 
-      /* Validate action record checksum */
-      if ( HpmfwupgCalculateChecksum((unsigned char*)pActionRecord,
-                                     sizeof(struct HpmfwupgActionRecord)) != 0 )
-      {
-         lprintf(LOG_NOTICE,"    Invalid Action record.");
-         rc = HPMFWUPG_ERROR;
-      }
+	/* Validate action record checksum */
+	if (HpmfwupgCalculateChecksum((unsigned char*)pActionRecord,
+			     sizeof(struct HpmfwupgActionRecord)) != 0) {
+		lprintf(LOG_NOTICE,"    Invalid Action record.");
+		return HPMFWUPG_ERROR;
+	}
 
-      if ( rc == HPMFWUPG_SUCCESS )
-      {
-         switch( pActionRecord->actionType )
-         {
-            case HPMFWUPG_ACTION_BACKUP_COMPONENTS:
-            {
-               pImagePtr += sizeof(struct HpmfwupgActionRecord);
-            }
-            break;
+	switch( pActionRecord->actionType )
+	{
+	case HPMFWUPG_ACTION_BACKUP_COMPONENTS:
+	{
+		pImagePtr += sizeof(struct HpmfwupgActionRecord);
+	}
+	break;
 
-            case HPMFWUPG_ACTION_PREPARE_COMPONENTS:
-            {
-                if (componentToUpload != DEFAULT_COMPONENT_UPLOAD)
-                {
-                    if (!(1<<componentToUpload & pActionRecord->components.ComponentBits.byte))
-                    {
-                        lprintf(LOG_NOTICE,"\nComponent Id given is not supported\n");
-                        return HPMFWUPG_ERROR;
-                    }
-                }
-                pImagePtr += sizeof(struct HpmfwupgActionRecord);
-            }
-            break;
-
-            case HPMFWUPG_ACTION_UPLOAD_FIRMWARE:
-            /* Upload all firmware blocks */
-            {
-               struct HpmfwupgFirmwareImage* pFwImage;
-               unsigned char* pData;
-               unsigned int   firmwareLength = 0;
-               unsigned char  mode = 0;
-               unsigned char  componentId = 0x00;
-               unsigned char  componentIdByte = 0x00;
-               VERSIONINFO    *pVersionInfo;
-
-               struct HpmfwupgGetComponentPropertiesCtx getCompProp;
-
-               /* Save component ID on which the upload is done */
-               componentIdByte = pActionRecord->components.ComponentBits.byte;
-
-               while ((componentIdByte>>=1)!=0)
-               {
-                    componentId++;
-               }
-               pFwupgCtx->componentId = componentId;
-
-               pFwImage = (struct HpmfwupgFirmwareImage*)(pImagePtr +
-                              sizeof(struct HpmfwupgActionRecord));
-
-               pData = ((unsigned char*)pFwImage + sizeof(struct HpmfwupgFirmwareImage));
-
-              /* Get firmware length */
-              firmwareLength  =  pFwImage->length[0];
-              firmwareLength |= (pFwImage->length[1] << 8)  & 0xff00;
-              firmwareLength |= (pFwImage->length[2] << 16) & 0xff0000;
-              firmwareLength |= (pFwImage->length[3] << 24) & 0xff000000;
-
-              pVersionInfo = &gVersionInfo[componentId];
-
-              pVersionInfo->imageMajor   = pFwImage->version[0];
-              pVersionInfo->imageMinor   = pFwImage->version[1];
-              pVersionInfo->imageAux[0]  = pFwImage->version[2];
-              pVersionInfo->imageAux[1]  = pFwImage->version[3];
-              pVersionInfo->imageAux[2]  = pFwImage->version[4];
-              pVersionInfo->imageAux[3]  = pFwImage->version[5];
-
-              mode = TARGET_VER | IMAGE_VER;
-
-              if (pVersionInfo->coldResetRequired)
-              {
-                   flagColdReset = TRUE;
-              }
-              pVersionInfo->skipUpgrade = FALSE;
-
-				  if (option & FORCE_MODE_ALL)
-				  {
-					  /* user has given all to upload all the components on the command line */
-					  if(verbose) {
-						  lprintf(LOG_NOTICE,"Forcing ALL components");
-					  }
-				  }		
-				  else if( option & FORCE_MODE_COMPONENT )
-				  {
-					  if( componentToUpload != componentId )
-					  {
-                    if(verbose) {
-                       lprintf(LOG_NOTICE,"Forcing component %d skip", componentId);
-                    }
-						  /* user has given the component Id to upload on the command line */
-						  pVersionInfo->skipUpgrade = TRUE;
-					  }
-					  else if(verbose)
-					  {
-						  lprintf(LOG_NOTICE,"Forcing component %d update", componentId);
-						  /* user has given the component Id to upload on the command line */
-					  }
-				  }
-				  else 
-				  {	
-					  if 
-					  ( 
-						  (pVersionInfo->imageMajor == pVersionInfo->targetMajor)
-						  && 
-						  (pVersionInfo->imageMinor == pVersionInfo->targetMinor))
-					  {
-						  if (pVersionInfo->rollbackSupported)
-						  {
-							  /*If the Image Versions are same as Target Versions then check for the
-								* rollback version*/
-							  if 
-							  (
-								  (pVersionInfo->imageMajor == pVersionInfo->rollbackMajor)
-								  && 
-								  (pVersionInfo->imageMinor == pVersionInfo->rollbackMinor)
-							  )
-							  {
-								  /* This indicates that the Rollback version is also same as
-									* Image version -- So now we must skip it */
-								  pVersionInfo->skipUpgrade = TRUE;
-							  }
-							  mode |= ROLLBACK_VER;
-						  }
-						  else
-						  {
-							  pVersionInfo->skipUpgrade = TRUE;
-						  }
-					  }
-		if ( verbose ) {
-			lprintf(LOG_NOTICE,"Component %d: %s", componentId , (pVersionInfo->skipUpgrade?"skipped":"to update"));
+	case HPMFWUPG_ACTION_PREPARE_COMPONENTS:
+	{
+		if (componentToUpload != DEFAULT_COMPONENT_UPLOAD) {
+			if (!((1 << componentToUpload) & 
+				pActionRecord->components.ComponentBits.byte)) {
+				lprintf(LOG_NOTICE,
+				"\nComponent Id given is not supported\n");
+				return HPMFWUPG_ERROR;
+			}
 		}
-				  }	
-              if( pVersionInfo->skipUpgrade == FALSE )
-              {
-                 pFwupgCtx->compUpdateMask.ComponentBits.byte |= 1<<componentId;
-              }
-              if (option & VIEW_MODE)
-              {
-                 HpmDisplayVersion(mode,pVersionInfo);
-                 printf("\n");
-              } 
-              pImagePtr = pData + firmwareLength;
-            }
-            break;
-            default:
-               lprintf(LOG_NOTICE,"    Invalid Action type. Cannot continue");
-               rc = HPMFWUPG_ERROR;
-            break;
-         }
-      }
+		pImagePtr += sizeof(struct HpmfwupgActionRecord);
+	}
+	break;
+
+	case HPMFWUPG_ACTION_UPLOAD_FIRMWARE:
+	/* Upload all firmware blocks */
+	{
+		struct HpmfwupgFirmwareImage *pFwImage;
+		unsigned char *pData;
+		unsigned int firmwareLength;
+		unsigned char mode;
+		unsigned char componentId;
+		unsigned char componentIdByte;
+		unsigned int upgrade_comp;
+		VERSIONINFO *pVersionInfo;
+		struct HpmfwupgGetComponentPropertiesCtx getCompProp;
+
+		/* Save component ID on which the upload is done */
+		componentIdByte = pActionRecord->components.ComponentBits.byte;
+
+		componentId = 0;
+		while ((componentIdByte >>= 1) !=0) {
+			componentId++;
+		}
+		pFwupgCtx->componentId = componentId;
+
+		pFwImage = (struct HpmfwupgFirmwareImage*)(pImagePtr +
+			      sizeof(struct HpmfwupgActionRecord));
+
+		pData = ((unsigned char*)pFwImage + 
+			sizeof(struct HpmfwupgFirmwareImage));
+
+		/* Get firmware length */
+		firmwareLength  =  pFwImage->length[0];
+		firmwareLength |= (pFwImage->length[1] << 8)  & 0xff00;
+		firmwareLength |= (pFwImage->length[2] << 16) & 0xff0000;
+		firmwareLength |= (pFwImage->length[3] << 24) & 0xff000000;
+
+		pVersionInfo = &gVersionInfo[componentId];
+
+		pVersionInfo->imageMajor   = pFwImage->version[0];
+		pVersionInfo->imageMinor   = pFwImage->version[1];
+		pVersionInfo->imageAux[0]  = pFwImage->version[2];
+		pVersionInfo->imageAux[1]  = pFwImage->version[3];
+		pVersionInfo->imageAux[2]  = pFwImage->version[4];
+		pVersionInfo->imageAux[3]  = pFwImage->version[5];
+
+		mode = TARGET_VER | IMAGE_VER;
+
+		if (pVersionInfo->coldResetRequired)
+			flagColdReset = TRUE;
+
+		upgrade_comp = 0;
+		if (option & FORCE_MODE_ALL) {
+			upgrade_comp = 1;
+		}
+		else if ((option & FORCE_MODE_COMPONENT) && 
+			(componentToUpload == componentId)) {
+			upgrade_comp = 1;
+		}
+		else if (image_version_upgradable(pVersionInfo)) {
+			upgrade_comp = 1;
+		}
+				
+		if (verbose)
+			lprintf(LOG_NOTICE,"%s component %d", 
+				(upgrade_comp ? "Updating" : "Skipping"), 
+				componentId);
+
+		if (upgrade_comp)
+			pFwupgCtx->compUpdateMask.ComponentBits.byte |= 
+					1 << componentId;
+
+		if (option & VIEW_MODE) {
+			if (pVersionInfo->rollbackSupported)
+				mode |= ROLLBACK_VER;
+			HpmDisplayVersion(mode,pVersionInfo);
+			printf("\n");
+		}
+		pImagePtr = pData + firmwareLength;
+	}
+	break;
+	default:
+		lprintf(LOG_NOTICE,
+			"    Invalid Action type. Cannot continue");
+		return HPMFWUPG_ERROR;
+	break;
+	}
    }
-   if (option & VIEW_MODE)
-   {
-        HpmDisplayLine("-",71);
-       if (flagColdReset)
-       {
-           fflush(stdout);
-           lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
-       }
+
+   if (option & VIEW_MODE) {
+	HpmDisplayLine("-",71);
+	if (flagColdReset) {
+		fflush(stdout);
+		lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
+	}
    }
-   return rc;
+   return HPMFWUPG_SUCCESS;
 }
 
 
