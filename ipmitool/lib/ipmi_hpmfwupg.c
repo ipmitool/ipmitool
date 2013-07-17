@@ -1766,10 +1766,7 @@ int HpmfwupgPreparationStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* 
         }
         else
         {
-            /*
-             *  If you use all option its kind of FORCE command where we need to upgrade all the components
-             */
-            printf("\n\n Use \"all\" option for uploading all the components\n");
+	    printf("\n\n Use \"force\" option for copying all the components\n");
         }
       }
    }
@@ -3714,39 +3711,59 @@ unsigned char HpmfwupgCalculateChecksum(unsigned char* pData, unsigned int lengt
 
 static void HpmfwupgPrintUsage(void)
 {
-   lprintf(LOG_NOTICE,"help                    - This help menu");
-   lprintf(LOG_NOTICE,"check                   - Check the target information");
+   lprintf(LOG_NOTICE,"help                    - This help menu.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"check                   - Check the target information.");
    lprintf(LOG_NOTICE,"check <file>            - If the user is unsure of what update is going to be ");
    lprintf(LOG_NOTICE,"                          This will display the existing target version and");
    lprintf(LOG_NOTICE,"                          image version on the screen");
-   lprintf(LOG_NOTICE,"upgrade <file>          - Upgrade the firmware using a valid HPM.1 image <file>");
-   lprintf(LOG_NOTICE,"                          This checks the version from the file and image and ");
-   lprintf(LOG_NOTICE,"                          if it differs then only updates else skips");
-   lprintf(LOG_NOTICE,"upgrade <file> all      - Updates all the components present in the file"); 
-   lprintf(LOG_NOTICE,"                          on the target board without skipping."); 
-   lprintf(LOG_NOTICE,"                          Use this only after using \"check\" command");
-   lprintf(LOG_NOTICE,"upgrade <file> component x - Upgrade only component <x> from the given <file>");
-   lprintf(LOG_NOTICE,"                          component 0 - BOOT");
-   lprintf(LOG_NOTICE,"                          component 1 - RTK");
-   lprintf(LOG_NOTICE,"upgrade <file> activate - Upgrade the firmware using a valid HPM.1 image <file>");
-   lprintf(LOG_NOTICE,"                          If activate is specified, activate new firmware rigth");
-   lprintf(LOG_NOTICE,"                          away");
-   lprintf(LOG_NOTICE,"activate [norollback]   - Activate the newly uploaded firmware");
-   lprintf(LOG_NOTICE,"targetcap               - Get the target upgrade capabilities");
-   lprintf(LOG_NOTICE,"compprop <id> <select>  - Get the specified component properties");
-   lprintf(LOG_NOTICE,"                          Valid component <ID> 0-7 ");
-   lprintf(LOG_NOTICE,"                          Properties <select> can be one of the following: ");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"upgrade <file>          - Copies all the components from a valid HPM.1");
+   lprintf(LOG_NOTICE,"                          image <file> to the target.");
+   lprintf(LOG_NOTICE,"                          This compares the versions from both the target");
+   lprintf(LOG_NOTICE,"                          and image and will only perform the copy");
+   lprintf(LOG_NOTICE,"                          if the versions differ.");
+   lprintf(LOG_NOTICE,"upgrade <file> activate - Copy and activate the firmware using a valid HPM.1");
+   lprintf(LOG_NOTICE,"                          image <file>.");
+   lprintf(LOG_NOTICE,"                          This compares the versions from both the target");
+   lprintf(LOG_NOTICE,"                          and image and will only perform the copy and");
+   lprintf(LOG_NOTICE,"                          activation if the versions differ.");
+   lprintf(LOG_NOTICE,"upgrade <file> force    - Copies all the components present in <file>"); 
+   lprintf(LOG_NOTICE,"                          to the target board without checking the versions."); 
+   lprintf(LOG_NOTICE,"                          Make sure to check the versions first using the");
+   lprintf(LOG_NOTICE,"                          \"check <file>\" command.");
+   lprintf(LOG_NOTICE,"upgrade <file> component x - Copy only component <x> from the given <file>");
+   lprintf(LOG_NOTICE,"                          without checking if the versions differ.");
+   lprintf(LOG_NOTICE,"                          For example:");
+   lprintf(LOG_NOTICE,"                          component 0 = Bootloader");
+   lprintf(LOG_NOTICE,"                          component 1 = Firmware");
+   lprintf(LOG_NOTICE,"                          Make sure to check the versions first using the");
+   lprintf(LOG_NOTICE,"                          \"check <file>\" command.");
+   lprintf(LOG_NOTICE,"upgstatus               - Returns the status of the last long duration command.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"activate                - Activate the newly uploaded firmware.");
+   lprintf(LOG_NOTICE,"activate norollback     - Activate the newly uploaded firmware but inform");
+   lprintf(LOG_NOTICE,"                          the target to not automatically rollback if ");
+   lprintf(LOG_NOTICE,"                          the upgrade fails.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"targetcap               - Get the target upgrade capabilities.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"compprop <id> <prop>    - Get specified component properties from the target.");
+   lprintf(LOG_NOTICE,"                          Valid component <id>: 0-7 ");
+   lprintf(LOG_NOTICE,"                          Properties <prop> can be one of the following: ");
    lprintf(LOG_NOTICE,"                          0- General properties");
    lprintf(LOG_NOTICE,"                          1- Current firmware version");
    lprintf(LOG_NOTICE,"                          2- Description string");
    lprintf(LOG_NOTICE,"                          3- Rollback firmware version");
    lprintf(LOG_NOTICE,"                          4- Deferred firmware version");
-   lprintf(LOG_NOTICE,"abort                   - Abort the on-going firmware upgrade");
-   lprintf(LOG_NOTICE,"upgstatus               - Returns the status of the last long duration command");
-   lprintf(LOG_NOTICE,"rollback                - Performs a manual rollback on the IPM Controller");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"abort                   - Abort the on-going firmware upgrade.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"rollback                - Performs a manual rollback on the IPM Controller.");
    lprintf(LOG_NOTICE,"                          firmware");
-   lprintf(LOG_NOTICE,"rollbackstatus          - Query the rollback status");
-   lprintf(LOG_NOTICE,"selftestresult          - Query the self test results\n");
+   lprintf(LOG_NOTICE,"rollbackstatus          - Query the rollback status.");
+   lprintf(LOG_NOTICE,"");
+   lprintf(LOG_NOTICE,"selftestresult          - Query the self test results.\n");
 }
 
 int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
@@ -3794,8 +3811,8 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
         {
             activateFlag = 1;
         }
-        /* hpm upgrade <filename> all */
-        if (strcmp(argv[i],"all") == 0)
+        /* hpm upgrade <filename> force */
+        if (strcmp(argv[i],"force") == 0)
         {
             option &= ~(VERSIONCHECK_MODE);
             option &= ~(VIEW_MODE);
