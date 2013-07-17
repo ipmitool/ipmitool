@@ -1130,13 +1130,16 @@ void HpmDisplayLine(char *s, int n)
 * Description: This function the displays the Upgrade header information
 *
 *****************************************************************************/
-void HpmDisplayUpgradeHeader(int option)
+void HpmDisplayUpgradeHeader(void)
 {
     printf("\n");
     HpmDisplayLine("-",79 );
-    printf("|ID  | Name      |                     Versions                        |  %%   |\n");
-    printf("|    |           |      Active     |      Backup     |      File       |      |\n");
-    printf("|----|-----------|-----------------|-----------------|-----------------|------|\n");    
+    printf(
+ "|ID  | Name        |                     Versions                        | %%  |\n");
+    printf(
+ "|    |             |      Active     |      Backup     |      File       |    |\n");
+    printf(
+ "|----|-------------|-----------------|-----------------|-----------------|----|\n");    
 }
 
 /****************************************************************************
@@ -1154,7 +1157,7 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
     static int old_percent=1;
     if (skip)
     {
-        printf(" Skip |\n");
+        printf("Skip|\n");
         return;
     }
     fflush(stdout);
@@ -1162,16 +1165,17 @@ void HpmDisplayUpgrade( int skip, unsigned int totalSent,
     percent = ((float)totalSent/displayFWLength)*100;
     if (percent != old_percent)
     {
-        if ( percent == 0 ) printf("  0 %% |");
-        else if (percent == 100) printf("\b\b\b\b\b\b\b100 %% |\n");
-        else printf("\b\b\b\b\b\b\b%3d %% |", percent);
+        if ( percent == 0 ) printf("  0%%|");
+        else if (percent == 100) printf("\b\b\b\b\b100%%|\n");
+        else printf("\b\b\b\b\b%3d%%|", percent);
            old_percent = percent;
     }
 
     if (totalSent== displayFWLength)
     {
         /* Display the time taken to complete the upgrade */
-        printf("|   | Upload Time: %02ld.%02ld          | Image Size: %05x                        |\n",
+        printf(
+ "|    |Upload Time: %02ld:%02ld             | Image Size: %05x                      |\n",
          timeElapsed/60,timeElapsed%60,totalSent);
     }
 }
@@ -1187,17 +1191,17 @@ void HpmDisplayVersionHeader(int mode)
 {
    if ( mode & IMAGE_VER)
    {
-        HpmDisplayLine("-",72 );
-        printf("|ID  | Name      |                     Versions                        |\n");
-        printf("|    |           |     Active      |     Backup      |      File       |\n");
-        HpmDisplayLine("-",72 );
+        HpmDisplayLine("-",74 );
+        printf("|ID  | Name        |                     Versions                        |\n");
+        printf("|    |             |     Active      |     Backup      |      File       |\n");
+        HpmDisplayLine("-",74 );
    }
    else
    {
-        HpmDisplayLine("-",54 );
-        printf("|ID  | Name      |             Versions              |\n");
-        printf("|    |           |     Active      |     Backup      |\n");
-        HpmDisplayLine("-",54 );
+        HpmDisplayLine("-",56 );
+        printf("|ID  | Name        |             Versions              |\n");
+        printf("|    |             |     Active      |     Backup      |\n");
+        HpmDisplayLine("-",56 );
    }
 }
 
@@ -1210,19 +1214,20 @@ void HpmDisplayVersionHeader(int mode)
 *****************************************************************************/
 void HpmDisplayVersion(int mode, VERSIONINFO *pVersion, int upgradable)
 {
-      char descString[12];
-      memset(&descString,0x00,12);
+      char descString[16];
+
+      memset(&descString,0x00,sizeof(descString));
       /*
        * Added this to ensure that even if the description string
        * is more than required it does not give problem in displaying it
        */
-      strncpy(descString,pVersion->descString,11);
+      strncpy(descString,pVersion->descString,13);
       /*
        * If the cold reset is required then we can display * on it
        * so that user is aware that he needs to do payload power
        * cycle after upgrade
        */
-      printf("|%c%c%2d|%-11s|",
+      printf("|%c%c%2d|%-13s|",
 		pVersion->coldResetRequired?'*':' ',
 		upgradable ? '^': ' ',
 		pVersion->componentId,descString);
@@ -1422,12 +1427,9 @@ int HpmfwupgTargetCheck(struct ipmi_intf * intf, int option)
 
     if (option & VIEW_MODE)
     {
-        HpmDisplayLine("-",53 );
-        if (flagColdReset)
-        {
-            fflush(stdout);
-            lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
-        }
+        HpmDisplayLine("-",56 );
+	fflush(stdout);
+	lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
         printf("\n\n");
     }
     return HPMFWUPG_SUCCESS;
@@ -2035,12 +2037,10 @@ int HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
    }
 
    if (option & VIEW_MODE) {
-	HpmDisplayLine("-",72);
-	if (flagColdReset) {
-		fflush(stdout);
-		lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
-		lprintf(LOG_NOTICE,"(^) Indicates component would be upgraded");
-	}
+	HpmDisplayLine("-",74);
+	fflush(stdout);
+	lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
+	lprintf(LOG_NOTICE,"(^) Indicates component would be upgraded");
    }
    return HPMFWUPG_SUCCESS;
 }
@@ -2078,7 +2078,7 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
 
    if (option & VERSIONCHECK_MODE || option & FORCE_MODE)
    {
-       HpmDisplayUpgradeHeader(0);
+       HpmDisplayUpgradeHeader();
    }
 
    /* Perform actions defined in the image */
@@ -2176,13 +2176,11 @@ int HpmfwupgUpgradeStage(struct ipmi_intf *intf, struct HpmfwupgUpgradeCtx* pFwu
       }
    }
 
-   HpmDisplayLine("-",78);
+   HpmDisplayLine("-",79);
 
-   if (flagColdReset)
-   {
-       fflush(stdout);
-       lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
-   }
+   fflush(stdout);
+   lprintf(LOG_NOTICE,"(*) Component requires Payload Cold Reset");
+
    return rc;
 }
 
