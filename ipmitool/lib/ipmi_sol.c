@@ -659,7 +659,7 @@ int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
 					uint8_t maxval,
 					uint8_t *out_value)
 {
-	if (str2uint(strval, out_value) != 0 || (*out_value < minval)
+	if (str2uchar(strval, out_value) != 0 || (*out_value < minval)
 			|| (*out_value > maxval)) {
 		lprintf(LOG_ERR, "Invalid value %s for parameter %s",
 			strval, name);
