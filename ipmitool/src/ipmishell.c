@@ -277,43 +277,74 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (strncmp(argv[0], "host", 4) == 0 ||
 	    strncmp(argv[0], "hostname", 8) == 0) {
 		ipmi_intf_session_set_hostname(intf, argv[1]);
-		printf("Set session hostname to %s\n", intf->session->hostname);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR, "Failed to set session hostname.");
+			return (-1);
+		}
+		printf("Set session hostname to %s\n",
+				intf->session->hostname);
 	}
 	else if (strncmp(argv[0], "user", 4) == 0 ||
 		 strncmp(argv[0], "username", 8) == 0) {
 		ipmi_intf_session_set_username(intf, argv[1]);
-		printf("Set session username to %s\n", intf->session->username);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR, "Failed to set session username.");
+			return (-1);
+		}
+		printf("Set session username to %s\n",
+				intf->session->username);
 	}
 	else if (strncmp(argv[0], "pass", 4) == 0 ||
 		 strncmp(argv[0], "password", 8) == 0) {
 		ipmi_intf_session_set_password(intf, argv[1]);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR, "Failed to set session password.");
+			return (-1);
+		}
 		printf("Set session password\n");
 	}
 	else if (strncmp(argv[0], "authtype", 8) == 0) {
 		int authtype;
 		authtype = str2val(argv[1], ipmi_authtype_session_vals);
 		if (authtype == 0xFF) {
-			lprintf(LOG_ERR, "Invalid authtype: %s", argv[1]);
-		} else {
-			ipmi_intf_session_set_authtype(intf, authtype);
-			printf("Set session authtype to %s\n",
-			       val2str(intf->session->authtype_set, ipmi_authtype_session_vals));
+			lprintf(LOG_ERR, "Invalid authtype: %s",
+					argv[1]);
+			return (-1);
 		}
+		ipmi_intf_session_set_authtype(intf, authtype);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR, "Failed to set session authtype.");
+			return (-1);
+		}
+		printf("Set session authtype to %s\n",
+		       val2str(intf->session->authtype_set,
+				   ipmi_authtype_session_vals));
 	}
 	else if (strncmp(argv[0], "privlvl", 7) == 0) {
 		int privlvl;
 		privlvl = str2val(argv[1], ipmi_privlvl_vals);
 		if (privlvl == 0xFF) {
-			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[1]);
-		} else {
-			ipmi_intf_session_set_privlvl(intf, privlvl);
-			printf("Set session privilege level to %s\n",
-			       val2str(intf->session->privlvl, ipmi_privlvl_vals));
+			lprintf(LOG_ERR, "Invalid privilege level: %s",
+					argv[1]);
+			return (-1);
 		}
+		ipmi_intf_session_set_privlvl(intf, privlvl);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR,
+					"Failed to set session privilege level.");
+			return (-1);
+		}
+		printf("Set session privilege level to %s\n",
+		       val2str(intf->session->privlvl,
+				   ipmi_privlvl_vals));
 	}
 	else if (strncmp(argv[0], "port", 4) == 0) {
 		int port = atoi(argv[1]);
 		ipmi_intf_session_set_port(intf, port);
+		if (intf->session == NULL) {
+			lprintf(LOG_ERR, "Failed to set session port.");
+			return (-1);
+		}
 		printf("Set session port to %d\n", intf->session->port);
 	}
 	else if (strncmp(argv[0], "localaddr", 9) == 0) {
