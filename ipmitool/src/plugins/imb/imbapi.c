@@ -1,9 +1,9 @@
 /*M*
 //  PVCS:
 //      $Workfile:   imbapi.c  $
-//      $Revision: 1.3 $
+//      $Revision: 1.4 $
 //      $Modtime:   06 Aug 2001 13:16:56  $
-//      $Author: ledva $
+//      $Author: stybla $
 //
 //  Purpose:    This file contains the entry point that opens the IMB device in
 //              order to issue the  IMB driver API related IOCTLs.
@@ -39,6 +39,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *----------------------------------------------------------------------*/
 /*
  * $Log: imbapi.c,v $
+ * Revision 1.4  2013/07/21 11:33:57  stybla
+ * ID: 65 - Fixes for configure.in for cross compilation
+ *
+ * NULL should never be cast to an int.
+ *
+ * Commit for Dan Gora
+ *
  * Revision 1.3  2013/01/18 12:46:52  ledva
  * 3600962 descriptor leaks
  *
@@ -1909,7 +1916,7 @@ MapPhysicalMemory (
 	BOOL                 status;
 	PHYSICAL_MEMORY_INFO pmi;
    
-	if ( startAddress == (int) NULL || addressLength <= 0 )
+	if (startAddress == 0 || addressLength <= 0)
 		return ACCESN_OUT_OF_RANGE;
 
 	pmi.InterfaceType       = Internal;
