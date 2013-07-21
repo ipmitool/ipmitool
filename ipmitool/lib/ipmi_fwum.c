@@ -479,9 +479,9 @@ static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
 
    if(pFileHandle)
    {
-      if(fseek(pFileHandle, 0L , SEEK_END) == (unsigned int) NULL)
+      if (fseek(pFileHandle, 0L , SEEK_END) == 0)
       {
-         *pFileSize     =    ftell(pFileHandle);
+         *pFileSize = ftell(pFileHandle);
 
          if( *pFileSize != 0)
          {
