@@ -2368,42 +2368,37 @@ ipmi_ek_get_resource_descriptor( int port_count, int index,
 *
 ***************************************************************************/
 static int
-ipmi_ek_display_fru_header( char * filename )
+ipmi_ek_display_fru_header(char * filename)
 {
-   FILE * input_file;
-   /* this structure is declared in ipmi_fru.h */
-   struct fru_header header;
-   int return_status = ERROR_STATUS;
+	FILE * input_file;
+	struct fru_header header;
+	int ret = 0;
 
-   input_file = fopen ( filename, "r");
-   if ( input_file == NULL ){
-      lprintf(LOG_ERR, "file: '%s' is not found", filename);
-      return_status = ERROR_STATUS;
-   }
-   else{
-      if ( !feof (input_file) ){
-         fread ( &header, sizeof (struct fru_header), 1, input_file );
-         printf("%s\n", EQUAL_LINE_LIMITER);
-         printf("FRU Header Info\n");
-         printf("%s\n", EQUAL_LINE_LIMITER);
-         printf("Format Version          :0x%02x %s\n", (header.version & 0x0f),
-                  ((header.version & 0x0f)==1) ? "" : "{unsupported}");
-         printf("Internal Use Offset     :0x%02x\n", header.offset.internal);
-         printf("Chassis Info Offset     :0x%02x\n", header.offset.chassis);
-         printf("Board Info Offset       :0x%02x\n", header.offset.board);
-         printf("Product Info Offset     :0x%02x\n", header.offset.product);
-         printf("MultiRecord Offset      :0x%02x\n", header.offset.multi);
-         printf("Common header Checksum  :0x%02x\n", header.checksum);
+	input_file = fopen(filename, "r");
+	if (input_file == NULL) {
+		lprintf(LOG_ERR, "File '%s' not found.", filename);
+		return (ERROR_STATUS);
+	}
+	ret = fread(&header, sizeof (struct fru_header), 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Failed to read FRU header!");
+		return (ERROR_STATUS);
+	}
+	printf("%s\n", EQUAL_LINE_LIMITER);
+	printf("FRU Header Info\n");
+	printf("%s\n", EQUAL_LINE_LIMITER);
+	printf("Format Version          :0x%02x %s\n",
+		(header.version & 0x0f),
+		((header.version & 0x0f) == 1) ? "" : "{unsupported}");
+	printf("Internal Use Offset     :0x%02x\n", header.offset.internal);
+	printf("Chassis Info Offset     :0x%02x\n", header.offset.chassis);
+	printf("Board Info Offset       :0x%02x\n", header.offset.board);
+	printf("Product Info Offset     :0x%02x\n", header.offset.product);
+	printf("MultiRecord Offset      :0x%02x\n", header.offset.multi);
+	printf("Common header Checksum  :0x%02x\n", header.checksum);
 
-         return_status = OK_STATUS;
-      }
-      else{
-         lprintf(LOG_ERR, "Invalid FRU header!");
-         return_status = ERROR_STATUS;
-      }
-      fclose( input_file );
-   }
-   return return_status;
+	fclose(input_file);
+	return OK_STATUS;
 }
 
 /**************************************************************************
