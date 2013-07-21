@@ -2382,6 +2382,7 @@ ipmi_ek_display_fru_header(char * filename)
 	ret = fread(&header, sizeof (struct fru_header), 1, input_file);
 	if ((ret != 1) || ferror(input_file)) {
 		lprintf(LOG_ERR, "Failed to read FRU header!");
+		fclose(input_file);
 		return (ERROR_STATUS);
 	}
 	printf("%s\n", EQUAL_LINE_LIMITER);
