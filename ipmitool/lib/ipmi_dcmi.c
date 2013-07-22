@@ -457,7 +457,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 
 	if (intf->opened == 0 && intf->open != NULL) {
 		if (intf->open(intf) < 0)
-			return (int) NULL;
+			return (-1);
 	}
 	if (intf == NULL || intf->session == NULL)
 		return -1;
