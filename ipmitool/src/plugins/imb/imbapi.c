@@ -1,7 +1,7 @@
 /*M*
 //  PVCS:
 //      $Workfile:   imbapi.c  $
-//      $Revision: 1.4 $
+//      $Revision: 1.5 $
 //      $Modtime:   06 Aug 2001 13:16:56  $
 //      $Author: stybla $
 //
@@ -39,6 +39,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *----------------------------------------------------------------------*/
 /*
  * $Log: imbapi.c,v $
+ * Revision 1.5  2013/07/22 08:35:23  stybla
+ * ID: 65 - Fixes for configure.in for cross compilation
+ *
+ * 'src/plugins/imb/imbapi.c' - don't cast NULL to int, ever!!!
+ *
  * Revision 1.4  2013/07/21 11:33:57  stybla
  * ID: 65 - Fixes for configure.in for cross compilation
  *
@@ -1978,7 +1983,7 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	unsigned int 		diff;
 	caddr_t 			startvAddress;
 
-	if ((startAddress == (int) NULL) || (addressLength <= 0))
+	if ((startAddress == 0) || (addressLength <= 0))
 		return ACCESN_ERROR;
 
 	if ( (fd = open("/dev/mem", O_RDONLY)) < 0) {
