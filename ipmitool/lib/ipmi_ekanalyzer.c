@@ -282,7 +282,7 @@ static int ipmi_ek_display_chassis_info_area(FILE * input_file, long offset);
 static size_t ipmi_ek_display_board_info_area( FILE * input_file,
       char * board_type, unsigned int * board_length );
 
-static void ipmi_ek_display_product_info_area( FILE * input_file, long offset );
+static int ipmi_ek_display_product_info_area(FILE * input_file, long offset);
 
 static tboolean ipmi_ek_display_link_descriptor( int file_type,
       unsigned char rsc_id, char * str,
@@ -2595,7 +2595,8 @@ ipmi_ek_display_fru_header_detail(char * filename)
 	if (header.offset.product && (!feof(input_file))) {
 		long offset = 0;
 		offset = header.offset.product * FACTOR_OFFSET;
-		ipmi_ek_display_product_info_area(input_file, offset);
+		ret = ipmi_ek_display_product_info_area(input_file,
+				offset);
 	}
 	fclose(input_file);
 	return 0;
@@ -2829,43 +2830,52 @@ out:
 * Return: None
 *
 ***************************************************************************/
-static void
+static int
 ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 {
+	size_t file_offset = ftell(input_file);
+	int ret = 0;
 	unsigned char ch_len = 0;
 	unsigned char data = 0;
-	unsigned int len;
-	size_t file_offset = ftell(input_file);
+	unsigned int len = 0;
 
 	if (input_file == NULL) {
-		return;
+		lprintf(LOG_ERR, "No file stream to read.");
+		return (-1);
 	}
-
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Product Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-
-	fseek(input_file, offset, SEEK_SET);
+	ret = fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Product Info Area!");
-		return;
+		return (-1);
 	}
-
-	fread(&data, 1, 1, input_file);
+	ret = fread(&data, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Data!");
+		return (-1);
+	}
 	printf("Format Version Number: %d\n", (data & 0x0f));
 	if (feof(input_file)) {
-		return;
+		return (-1);
 	}
 	/* Have to read this into a char or else
-	 * it ends up byte swapped on big endian machines
-	 */
-	fread(&ch_len, 1, 1, input_file);
+	 * it ends up byte swapped on big endian machines */
+	ret = fread(&ch_len, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Length!");
+		return (-1);
+	}
 	/* length is in factor of 8 bytes */
 	len = ch_len * 8;
 	printf("Area Length: %d\n", len);
 	len -= 2; /* -1 byte of format version and -1 byte itself */
-	if (feof(input_file)) {
-		return;
+
+	ret = fread(&data, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Length!");
+		return (-1);
 	}
 
 	fread(&data, 1, 1, input_file);
@@ -2874,34 +2884,35 @@ ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 	/* Product Mfg */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Manufacture Data", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Product Name */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Name", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Product Part */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Part/Model Number", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Product Version */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Version", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Product Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Serial Number", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Product Asset Tag */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Asset Tag", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* FRU file ID */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"FRU File ID", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
+	return 0;
 }
 
 /**************************************************************************
