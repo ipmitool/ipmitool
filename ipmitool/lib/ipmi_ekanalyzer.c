@@ -277,7 +277,7 @@ static int ipmi_ek_display_fru_header( char * filename );
 
 static int ipmi_ek_display_fru_header_detail(char * filename);
 
-static void ipmi_ek_display_chassis_info_area( FILE * input_file, long offset );
+static int ipmi_ek_display_chassis_info_area(FILE * input_file, long offset);
 
 static size_t ipmi_ek_display_board_info_area( FILE * input_file,
       char * board_type, unsigned int * board_length );
@@ -2496,7 +2496,7 @@ ipmi_ek_display_fru_header_detail(char * filename)
 	if (header.offset.chassis != 0) {
 		long offset = 0;
 		offset = header.offset.chassis * FACTOR_OFFSET;
-		ipmi_ek_display_chassis_info_area(input_file, offset);
+		ret = ipmi_ek_display_chassis_info_area(input_file, offset);
 	}
 	/*** Display FRU Board Info Area ***/
 	while (1) {
@@ -2621,60 +2621,66 @@ ipmi_ek_display_fru_header_detail(char * filename)
 * Return: None
 *
 ***************************************************************************/
-static void
+static int
 ipmi_ek_display_chassis_info_area(FILE * input_file, long offset)
 {
+	size_t file_offset;
+	int ret = 0;
 	unsigned char data = 0;
 	unsigned char ch_len = 0;
 	unsigned char ch_type = 0;
 	unsigned int len;
-	size_t file_offset;
 
 	if (input_file == NULL) {
-		return;
+		lprintf(LOG_ERR, "No file stream to read.");
+		return (-1);
 	}
-
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Chassis Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-
-	fseek(input_file, offset, SEEK_SET);
+	ret = fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Chassis Info Area!");
-		return;
+		return (-1);
 	}
-
-	fread(&data, 1, 1, input_file);
+	ret = fread(&data, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Version Number!");
+		return (-1);
+	}
 	printf("Format Version Number: %d\n", (data & 0x0f));
-	if (feof(input_file)) {
-		return;
+	ret = fread(&ch_len, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid length!");
+		return (-1);
 	}
-	/* Have to read this into a char or else
-	 * it ends up byte swapped on big endian machines
-	 */
-	fread(&ch_len, 1, 1, input_file);
 	/* len is in factor of 8 bytes */
 	len = ch_len * 8;
 	printf("Area Length: %d\n", len);
 	len -= 2;
 	if (feof(input_file)) {
-		return;
+		return (-1);
 	}
 	/* Chassis Type*/
-	fread(&ch_type, 1, 1, input_file);
+	ret = fread(&ch_type, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Chassis Type!");
+		return (-1);
+	}
 	printf("Chassis Type: %d\n", ch_type);
 	len--;
 	/* Chassis Part Number*/
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Part Number", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Chassis Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Serial Number", &len);
-	fseek(input_file, file_offset, SEEK_SET);
+	ret = fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
+	return 0;
 }
 
 /**************************************************************************
