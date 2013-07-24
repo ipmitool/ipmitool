@@ -50,6 +50,7 @@
 
 #define EXEC_BUF_SIZE	2048
 #define EXEC_ARG_SIZE	64
+#define MAX_PORT	65535
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
@@ -260,11 +261,29 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	/* these options can have no arguments */
 	if (strncmp(argv[0], "verbose", 7) == 0) {
-		verbose = (argc > 1) ? atoi(argv[1]) : verbose+1;
+		if (argc > 1) {
+			if (str2int(argv[1], &verbose) != 0) {
+				lprintf(LOG_ERR,
+						"Given verbose '%s' argument is invalid.",
+						argv[1]);
+				return (-1);
+			}
+		} else {
+			verbose = verbose + 1;
+		}
 		return 0;
 	}
 	if (strncmp(argv[0], "csv", 3) == 0) {
-		csv_output = (argc > 1) ? atoi(argv[1]) : 1;
+		if (argc > 1) {
+			if (str2int(argv[1], &csv_output) != 0) {
+				lprintf(LOG_ERR,
+						"Given csv '%s' argument is invalid.",
+						argv[1]);
+				return (-1);
+			}
+		} else {
+			csv_output = 1;
+		}
 		return 0;
 	}
 
@@ -339,7 +358,12 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 				   ipmi_privlvl_vals));
 	}
 	else if (strncmp(argv[0], "port", 4) == 0) {
-		int port = atoi(argv[1]);
+		int port = 0;
+		if (str2int(argv[1], &port) != 0 || port > MAX_PORT) {
+			lprintf(LOG_ERR, "Given port '%s' is invalid.",
+					argv[1]);
+			return (-1);
+		}
 		ipmi_intf_session_set_port(intf, port);
 		if (intf->session == NULL) {
 			lprintf(LOG_ERR, "Failed to set session port.");
@@ -348,11 +372,23 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session port to %d\n", intf->session->port);
 	}
 	else if (strncmp(argv[0], "localaddr", 9) == 0) {
-		intf->my_addr = (uint8_t)strtol(argv[1], NULL, 0);
+		uint8_t my_addr = 0;
+		if (str2uchar(argv[1], &my_addr) != 0) {
+			lprintf(LOG_ERR, "Given localaddr '%s' is invalid.",
+					argv[1]);
+			return (-1);
+		}
+		intf->my_addr = my_addr;
 		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
 	}
 	else if (strncmp(argv[0], "targetaddr", 10) == 0) {
-		intf->target_addr = (uint8_t)strtol(argv[1], NULL, 0);
+		uint8_t target_addr = 0;
+		if (str2uchar(argv[1], &target_addr) != 0) {
+			lprintf(LOG_ERR, "Given targetaddr '%s' is invalid.",
+					argv[1]);
+			return (-1);
+		}
+		intf->target_addr = target_addr;
 		printf("Set remote IPMB address to 0x%02x\n", intf->target_addr);
 	}
 	else {
