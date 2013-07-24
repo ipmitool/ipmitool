@@ -4027,6 +4027,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 	unsigned char last_record = 0;
 	unsigned int multi_offset = 0;
 	int record_count = 0;
+	int ret = 0;
 
 	input_file = fopen(filename, "r");
 	if (input_file == NULL) {
@@ -4035,22 +4036,32 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 	}
 
 	fseek(input_file, START_DATA_OFFSET, SEEK_SET);
-	fread(&data, 1, 1, input_file);
-	if (data < 1) {
-		lprintf(LOG_NOTICE, "There is no multi record in the file %s\n",
-				filename);
+	data = 0;
+	ret = fread(&data, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Offset!");
+		return ERROR_STATUS;
+	}
+	if (data == 0) {
+		lprintf(LOG_ERR, "There is no multi record in the file '%s'",
+			filename);
 		fclose(input_file);
 		return ERROR_STATUS;
 	}
 	/* the offset value is in multiple of 8 bytes. */
 	multi_offset = data * 8;
-	if (verbose == LOG_DEBUG) {
-		printf("start multi offset = 0x%02lx\n", multi_offset);
-	}
+	lprintf(LOG_DEBUG, "start multi offset = 0x%02x", 
+		multi_offset );
+
 	fseek(input_file, multi_offset, SEEK_SET);
 	while (!feof(input_file)) {
 		*list_record = malloc(sizeof(struct ipmi_ek_multi_header));
-		fread(&(*list_record)->header, START_DATA_OFFSET, 1, input_file);
+		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1, 
+				input_file);
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid Header!");
+			return ERROR_STATUS;
+		}
 		if ((*list_record)->header.len == 0) {
 			record_count++;
 			continue;
@@ -4063,12 +4074,15 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 			continue;
 		}
 
-		fread((*list_record)->data, ((*list_record)->header.len), 1, 
-				input_file);
-		if (verbose > 0) {
+		ret = fread((*list_record)->data, ((*list_record)->header.len),
+				1, input_file);
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid Record Data!");
+			return ERROR_STATUS;
+		}
+		if (verbose > 0)
 			printf("Record %d has length = %02x\n", record_count,
 					(*list_record)->header.len);
-		}
 		if (verbose > 1) {
 			int i;
 			printf("Type: %02x", (*list_record)->header.type);
