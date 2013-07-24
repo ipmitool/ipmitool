@@ -2711,6 +2711,7 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 		unsigned int * board_length)
 {
 	size_t file_offset;
+	int ret = 0;
 	unsigned char len = 0;
 	unsigned int size_board = 0;
 	if (input_file == NULL || board_type == NULL
@@ -2718,16 +2719,15 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 		return (size_t)(-1);
 	}
 	file_offset = ftell(input_file);
-	/* Board length */
-	if (!feof(input_file)) {
-		fread(&len, 1, 1, input_file);
-		(*board_length)--;
-	}
-	/* Board Data */
-	if (feof(input_file)) {
-		printf("No Board Data found!\n");
+
+	/* Board length*/
+	ret = fread(&len, 1, 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Invalid Length!");
 		goto out;
 	}
+	(*board_length)--;
+
 	/* Bit 5:0 of Board Mfg type represent legnth */
 	size_board = (len & 0x3f);
 	if (size_board == 0) {
@@ -2742,7 +2742,11 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (size_t)(-1);
 		}
-		fread(data, size_board, 1, input_file);
+		ret = fread(data, size_board, 1, input_file);
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid board type size!");
+			goto out;
+		}
 		printf("%s type: 0x%02x\n", board_type, len);
 		printf("%s: ", board_type);
 		for (i = 0; i < size_board; i++) {
@@ -2763,6 +2767,7 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 	while (!feof(input_file)) {
 		if (len == NO_MORE_INFO_FIELD) {
 			unsigned char padding;
+			unsigned char checksum = 0;
 			/* take the rest of data in the area minus 1 byte of 
 			 * checksum
 			 */
@@ -2772,11 +2777,12 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 				printf("Unused space: %d (bytes)\n", padding);
 				fseek(input_file, padding, SEEK_CUR);
 			}
-			if (!feof(input_file)) {
-				unsigned char checksum = 0;
-				fread(&checksum, 1, 1, input_file);
-				printf("Checksum: 0x%02x\n", checksum);
+			ret = fread(&checksum, 1, 1, input_file);
+			if ((ret != 1) || ferror(input_file)) {
+				lprintf(LOG_ERR, "Invalid Checksum!");
+				goto out;
 			}
+			printf("Checksum: 0x%02x\n", checksum);
 			goto out;
 		}
 		printf("Additional Custom Mfg. length: 0x%02x\n", len);
@@ -2789,7 +2795,11 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 				return (size_t)(-1);
 			}
 				
-			fread(additional_data, size_board, 1, input_file);
+			ret = fread(additional_data, size_board, 1, input_file);
+			if ((ret != 1) || ferror(input_file)) {
+				lprintf(LOG_ERR, "Invalid Additional Data!");
+				goto out;
+			}
 			printf("Additional Custom Mfg. Data: %02x",
 					additional_data[0]);
 			for (i = 1; i < size_board; i++) {
