@@ -275,7 +275,7 @@ static int ipmi_ek_check_physical_connectivity(
 *****************************************************************************/
 static int ipmi_ek_display_fru_header( char * filename );
 
-static void ipmi_ek_display_fru_header_detail( char * filename );
+static int ipmi_ek_display_fru_header_detail(char * filename);
 
 static void ipmi_ek_display_chassis_info_area( FILE * input_file, long offset );
 
@@ -469,6 +469,7 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
 {
    int rc = ERROR_STATUS;
    int file_type[MAX_FILE_NUMBER];
+   int tmp_ret = 0;
    char * filename[MAX_FILE_NUMBER];
    unsigned int argument_offset = 0;
    unsigned int type_offset = 0;
@@ -509,7 +510,7 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
 
                   if ( rc != ERROR_STATUS ){
                      /* Display FRU header info in detail record */
-                     ipmi_ek_display_fru_header_detail (filename[type_offset]);
+                     tmp_ret = ipmi_ek_display_fru_header_detail(filename[type_offset]);
                      /* Convert from binary data into multi record structure */
                      rc = ipmi_ekanalyzer_fru_file2structure ( filename[type_offset],
                              &list_head, &list_record, &list_last );
@@ -2422,146 +2423,182 @@ ipmi_ek_display_fru_header(char * filename)
 * Return: None
 *
 ***************************************************************************/
-static void
-ipmi_ek_display_fru_header_detail( char * filename )
+static int
+ipmi_ek_display_fru_header_detail(char * filename)
 {
-   FILE * input_file;
-   struct fru_header header;
+# define FACTOR_OFFSET 8
+# define SIZE_MFG_DATE 3
+	FILE * input_file;
+	size_t file_offset = 0;
+	struct fru_header header;
+	time_t tval;
+	int ret = 0;
+	unsigned char data = 0;
+	unsigned char lan_code = 0;
+	unsigned char mfg_date[SIZE_MFG_DATE];
+	unsigned int board_length = 0;
 
-   input_file = fopen ( filename, "r");
-   if ( input_file == NULL ){
-      lprintf(LOG_ERR, "file: '%s' is not found", filename);
-   }
-   else{
-      /* the offset in each fru is in multiple of 8 bytes
-      *   See IPMI Platform Management FRU Information Storage Definition
-      *  for detail
-      */
-      #define FACTOR_OFFSET   8
+	input_file = fopen(filename, "r");
+	if (input_file == NULL) {
+		lprintf(LOG_ERR, "File '%s' not found.", filename);
+		return (-1);
+	}
+	/* The offset in each fru is in multiple of 8 bytes
+	 * See IPMI Platform Management FRU Information Storage Definition
+	 * for detail
+	 */
+	ret = fread(&header, sizeof(struct fru_header), 1, input_file);
+	if ((ret != 1) || ferror(input_file)) {
+		lprintf(LOG_ERR, "Failed to read FRU header!");
+		fclose(input_file);
+		return (-1);
+	}
+	/*** Display FRU Internal Use Info ***/
+	if (!feof(input_file)) {
+		unsigned char format_version;
+		unsigned long len = 0;
 
-      if ( !feof (input_file) ){
-         fread ( &header, sizeof( struct fru_header ), 1, input_file );
-      }
-      else{
-         lprintf(LOG_ERR, "Invalid FRU header!");
-      }
-      /*** Display FRU Internal Use Info ***/
-      if ( !feof (input_file) ){
-         unsigned char format_version;
-         unsigned long len;
+		printf("%s\n", EQUAL_LINE_LIMITER);
+		printf("FRU Internal Use Info\n");
+		printf("%s\n", EQUAL_LINE_LIMITER);
 
-         printf("%s\n", EQUAL_LINE_LIMITER);
-         printf("FRU Internal Use Info\n");
-         printf("%s\n", EQUAL_LINE_LIMITER);
+		ret = fread(&format_version, 1, 1, input_file);
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid format version!");
+			fclose(input_file);
+			return (-1);
+		}
+		printf("Format Version: %d\n", (format_version & 0x0f));
 
-         fread ( &format_version, 1, 1, input_file );
-         printf("Format Version: %d\n", (format_version & 0x0f) );
+		if (header.offset.chassis > 0) {
+			len = (header.offset.chassis * FACTOR_OFFSET)
+				- (header.offset.internal * FACTOR_OFFSET);
+		} else {
+			len = (header.offset.board * FACTOR_OFFSET)
+				- (header.offset.internal * FACTOR_OFFSET);
+		}
+		printf("Length: %ld\n", len);
+		printf("Data dump:\n");
+		while ((len > 0) && (!feof(input_file))) {
+			unsigned char data;
+			ret = fread(&data, 1, 1, input_file);
+			if ((ret != 1) || ferror(input_file)) {
+				lprintf(LOG_ERR, "Invalid data!");
+				fclose(input_file);
+				return (-1);
+			}
+			printf("0x%02x ", data);
+			len--;
+		}
+		printf("\n");
+	}
+	/*** Chassis Info Area ***/
+	if (header.offset.chassis != 0) {
+		long offset = 0;
+		offset = header.offset.chassis * FACTOR_OFFSET;
+		ipmi_ek_display_chassis_info_area(input_file, offset);
+	}
+	/*** Display FRU Board Info Area ***/
+	while (1) {
+		if (header.offset.board == 0) {
+			break;
+		}
+		ret = fseek(input_file,
+				(header.offset.board * FACTOR_OFFSET),
+				SEEK_SET);
+		if (feof(input_file)) {
+			break;
+		}
+		file_offset = ftell(input_file);
+		printf("%s\n", EQUAL_LINE_LIMITER);
+		printf("FRU Board Info Area\n");
+		printf("%s\n", EQUAL_LINE_LIMITER);
 
-         if ( header.offset.chassis > 0 ){
-            len = (header.offset.chassis * FACTOR_OFFSET)
-                  - (header.offset.internal * FACTOR_OFFSET);
-         }
-         else{
-            len = (header.offset.board * FACTOR_OFFSET)
-                  - (header.offset.internal * FACTOR_OFFSET);
-         }
-         printf("Length: %ld\n", len);
-         printf("Data dump:\n");
-         while ( (len > 0) && ( !feof (input_file) ) ) {
-            unsigned char data;
-            fread ( &data, 1, 1, input_file );
-            printf("0x%02x ", data);
-            len --;
-         }
-         printf("\n");
-      }
-      /*** Chassis Info Area ***/
-      if (header.offset.chassis != 0){
-         long offset = 0;
+		ret = fread(&data, 1, 1, input_file); /* Format version */
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid FRU Format Version!");
+			fclose(input_file);
+			return (-1);
+		}
+		printf("Format Version: %d\n", (data & 0x0f));
+		if (feof(input_file)) {
+			break;
+		}
+		ret = fread(&data, 1, 1, input_file); /* Board Area Length */
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid Board Area Length!");
+			fclose(input_file);
+			return (-1);
+		}
+		board_length = (data * FACTOR_OFFSET);
+		printf("Area Length: %d\n", board_length);
+		/* Decrease the length of board area by 1 byte of format version
+		 * and 1 byte for area length itself. the rest of this length will
+		 * be used to check for additional custom mfg. byte
+		 */
+		board_length -= 2;
+		if (feof(input_file)) {
+			break;
+		}
+		ret = fread(&lan_code, 1, 1, input_file); /* Language Code */
+		if ((ret != 1) || ferror(input_file)) {
+			lprintf(LOG_ERR, "Invalid Language Code in input");
+			fclose(input_file);
+			return (-1);
+		}
+		printf("Language Code: %d\n", lan_code);
+		board_length--;
+		/* Board Mfg Date */
+		if (feof(input_file)) {
+			break;
+		}
 
-         offset = header.offset.chassis * FACTOR_OFFSET;
-         ipmi_ek_display_chassis_info_area (input_file, offset);
-      }
-      /*** Display FRU Board Info Area ***/
-      if (header.offset.board != 0){
-         fseek ( input_file, (header.offset.board * FACTOR_OFFSET), SEEK_SET);
-         if ( !feof(input_file) ){
-            unsigned char data;
-            unsigned int board_length;
-            size_t file_offset = ftell (input_file);
-
-            printf("%s\n", EQUAL_LINE_LIMITER);
-            printf("FRU Board Info Area\n");
-            printf("%s\n", EQUAL_LINE_LIMITER);
-
-            fread ( &data, 1, 1, input_file ); /* Format version */
-            printf("Format Version: %d\n", (data & 0x0f));
-            if ( !feof(input_file) ){
-               fread ( &data, 1, 1, input_file ); /* Board Area Length */
-               board_length = (data * FACTOR_OFFSET);
-               printf("Area Length: %d\n", board_length);
-               /* Decrease the length of board area by 1 byte of format version
-               * and 1 byte for area length itself. the rest of this length will
-               * be used to check for additional custom mfg. byte
-               */
-               board_length -= 2;
-            }
-            if ( !feof(input_file) ){
-               unsigned char lan_code;
-               fread ( &lan_code, 1, 1, input_file ); /* Language Code */
-               printf("Language Code: %d\n", lan_code );
-               board_length --;
-            }
-            /* Board Mfg Date */
-            if ( !feof(input_file) ){
-               #define SIZE_MFG_DATE 3
-               time_t tval;
-               unsigned char mfg_date[SIZE_MFG_DATE];
-
-               fread ( mfg_date, SIZE_MFG_DATE, 1, input_file );
-               tval=((mfg_date[2] << 16) + (mfg_date[1] << 8) + (mfg_date[0]));
-               tval = tval * 60;
-               tval = tval + secs_from_1970_1996;
-               printf("Board Mfg Date: %ld, %s", tval,
-                                    asctime(localtime(&tval)));
-               board_length -= SIZE_MFG_DATE;
-
-               /* Board Mfg */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file, "Board Manufacture Data", &board_length);
-               fseek (input_file, file_offset, SEEK_SET);
-               /* Board Product */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "Board Product Name", &board_length);
-               fseek (input_file, file_offset, SEEK_SET);
-               /* Board Serial */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file, "Board Serial Number", &board_length);
-               fseek (input_file, file_offset, SEEK_SET);
-               /* Board Part */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file, "Board Part Number", &board_length);
-               fseek (input_file, file_offset, SEEK_SET);
-               /* FRU file ID */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "FRU File ID", &board_length);
-               fseek (input_file, file_offset, SEEK_SET);
-               /* Additional Custom Mfg. */
-               file_offset = ipmi_ek_display_board_info_area (
-                           input_file,   "Custom", &board_length);
-            }
-         }
-      }
-      /*** Product Info Area ***/
-      if ( header.offset.product ){
-         if ( !feof(input_file) ){
-            long offset = 0;
-            offset = header.offset.product * FACTOR_OFFSET;
-            ipmi_ek_display_product_info_area (input_file, offset);
-         }
-      }
-      fclose( input_file );
-   }
+		ret = fread(mfg_date, SIZE_MFG_DATE, 1, input_file);
+		if (ret != 1) {
+			lprintf(LOG_ERR, "Invalid Board Data.");
+			fclose(input_file);
+			return (-1);
+		}
+		tval = ((mfg_date[2] << 16) + (mfg_date[1] << 8)
+				+ (mfg_date[0]));
+		tval = tval * 60;
+		tval = tval + secs_from_1970_1996;
+		printf("Board Mfg Date: %ld, %s", tval,
+				asctime(localtime(&tval)));
+		board_length -= SIZE_MFG_DATE;
+		/* Board Mfg */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "Board Manufacture Data", &board_length);
+		ret = fseek(input_file, file_offset, SEEK_SET);
+		/* Board Product */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "Board Product Name", &board_length);
+		ret = fseek(input_file, file_offset, SEEK_SET);
+		/* Board Serial */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "Board Serial Number", &board_length);
+		ret = fseek(input_file, file_offset, SEEK_SET);
+		/* Board Part */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "Board Part Number", &board_length);
+		ret = fseek(input_file, file_offset, SEEK_SET);
+		/* FRU file ID */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "FRU File ID", &board_length);
+		ret = fseek(input_file, file_offset, SEEK_SET);
+		/* Additional Custom Mfg. */
+		file_offset = ipmi_ek_display_board_info_area(
+				input_file, "Custom", &board_length);
+		break;
+	}
+	/* Product Info Area */
+	if (header.offset.product && (!feof(input_file))) {
+		long offset = 0;
+		offset = header.offset.product * FACTOR_OFFSET;
+		ipmi_ek_display_product_info_area(input_file, offset);
+	}
+	fclose(input_file);
+	return 0;
 }
 
 /**************************************************************************
