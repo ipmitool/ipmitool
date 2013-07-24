@@ -2882,7 +2882,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 				/* direct desc */
 				for(j=0; j<direct_cnt; j++){
 					unsigned char feature, family, accuracy;
-					unsigned long freq, min_freq, max_freq;
+					unsigned int freq, min_freq, max_freq;
 
 					feature  = fru_data[offset++];
 					family   = fru_data[offset++];
@@ -5202,36 +5202,33 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		/* Do not requires any change in other section */
 
 		/* Change field length */
-		printf("Updating Field : '%s' with '%s' ... (Length from '%x' to '%x')\n",
-			fru_area, f_string, *(fru_data_old + fru_field_offset_tmp), (0xc0 + strlen(f_string)));
+		printf(
+			"Updating Field : '%s' with '%s' ... (Length from '%d' to '%d')\n",
+			fru_area, f_string, 
+			(int)*(fru_data_old + fru_field_offset_tmp), 
+			(int)(0xc0 + strlen(f_string)));
 		*(fru_data_new + fru_field_offset_tmp) = (0xc0 + strlen(f_string));
 		memcpy(fru_data_new + fru_field_offset_tmp + 1, f_string, strlen(f_string));
 
 		/* Copy remaing bytes in section */
-		#ifdef DBG_RESIZE_FRU
-		printf("Copying remaining of sections: %u \n",
-					(
-						(fru_data_old + header_offset + fru_section_len - 1)
-						-
-						(fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1)
-					)
-				);
-		#endif
+#ifdef DBG_RESIZE_FRU
+		printf("Copying remaining of sections: %d \n",
+		 (int)((fru_data_old + header_offset + fru_section_len - 1) -
+		 (fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1)));
+#endif
 
-		memcpy(
-					(fru_data_new + fru_field_offset_tmp + 1 + strlen(f_string)),
-					(fru_data_old + fru_field_offset_tmp + 1 + strlen(fru_area)),
-					(
-						(fru_data_old + header_offset + fru_section_len - 1)
-						-
-						(fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1)
-					)
-				);
+		memcpy((fru_data_new + fru_field_offset_tmp + 1 + 
+			strlen(f_string)),
+			(fru_data_old + fru_field_offset_tmp + 1 + 
+			strlen(fru_area)),
+		((fru_data_old + header_offset + fru_section_len - 1) -
+		(fru_data_old + fru_field_offset_tmp + strlen(f_string) + 1)));
 
 		/* Add Padding if required */
 		for(counter = 0; counter < padding_len; counter ++)
 		{
-			*(fru_data_new + header_offset + fru_section_len - 1 - padding_len+ counter) = 0;
+			*(fru_data_new + header_offset + fru_section_len - 1 - 
+			  padding_len + counter) = 0;
 		}
 
 		/* Calculate New Checksum */
