@@ -2607,6 +2607,7 @@ static int HpmfwupgActivationStage(struct ipmi_intf *intf, struct HpmfwupgUpgrad
 int HpmfwupgGetBufferFromFile(char* imageFilename, struct HpmfwupgUpgradeCtx* pFwupgCtx)
 {
    int rc = HPMFWUPG_SUCCESS;
+   int ret = 0;
    FILE* pImageFile = fopen(imageFilename, "rb");
 
    if ( pImageFile == NULL )
@@ -2625,7 +2626,13 @@ int HpmfwupgGetBufferFromFile(char* imageFilename, struct HpmfwupgUpgradeCtx* pF
       rewind(pImageFile);
       if ( pFwupgCtx->pImageData != NULL )
       {
-         fread(pFwupgCtx->pImageData, sizeof(unsigned char), pFwupgCtx->imageSize, pImageFile);
+         ret = fread(pFwupgCtx->pImageData, sizeof(unsigned char), 
+		pFwupgCtx->imageSize, pImageFile);
+	 if (ret != pFwupgCtx->imageSize) {
+		lprintf(LOG_ERROR,"Failed to read file %s size %d", 
+			imageFilename, pFwupgCtx->imageSize);
+		rc = HPMFWUPG_ERROR;
+	 }
       }
       else
       {
