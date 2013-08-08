@@ -1,3 +1,122 @@
+version 1.8.13 released 2012-08-09
+	* ID: 3611905 - Direct Serial Basic/Terminal Mode Interface drivers
+	* ID: 3577766 - configure's knobs and switches don't work
+	* ID: 3611253 - do not override OS-default values for interfaces
+	* ID: 65 - Fixes for configure.in for cross compilation
+	* ID: 3571153 - OpenIPMI/ipmievd fails to compile on Solaris
+	* numerous ipmitool man page updates
+	* ID: 3611226 - Bridging support for PICMG Platforms
+	* Add support for getsysinfo/setsysinfo commands to ipmi mc
+	* Cleanup Dell OEM code to use new sysinfo interface
+	* ID: 93 - str-to-int conversion is weak
+	* ID: 3582307 - ipmi_fru - ipmi_fru_main() return codes
+	* ID: 3582310 - ipmi_fru - ipmi_fru_main() - misuse of printf()
+	* ID: 3576213 - ipmi_fru - unused variable
+	* ID: 3578276 - ipmi_fru - free() on freed memory possible
+	* ID: 3578275 - ipmi_fru - memory leaks
+	* ID: 3528271 - ipmi_fru - possible *flow via FRUID
+	* ID: 3578277 - ipmi_fru - possible NULL pointer
+	* ID: 3612372 - Recognize Broadcom IANA number and BCM5725 product
+	* ID: 3608758 - add IPMI_NETFN_OEM
+	* ID: 143 - Reversed 'channel authcap' capabilities
+		Fixes reversed IPMIv1.5/2.0 'channel authcap' capabilities
+	* ID: 3587318 - "dcmi discover" is not DCMI 1.5 compatible
+	* ID: 3608757 - ipmi_fru - various fixes
+	* ID: 3598203 - 'mc getsysinfo|setsysinfo' needs a bit of re-work
+	* ID: 3597782 - ipmi_mc - sysinfo_param() has two consecutive returns
+	* ID: 3597781 - 'mc getsysinfo|setsysinfo' help has typos
+	* ID: 3608763 - ipmi_sdr - code cleanup & output display cleanup
+	* ID: 3610286 - ipmi_sdr - ipmi_sdr_print_type - incorrect eval
+	* ID: 3600930 - ipmi_sdr - code cleanup
+	* ID: 3602439 - ipmi_sdr - memory leaks
+	* ID: 3595199 - ipmi_sdr - Add support for 'ipmitool sdr <list|elist> help'
+	* ID: 3592773 - 'ipmitool sdr info'; prints incorrect info
+	* ID: 3592770 - 'ipmitool sdr list|elist INV_INPUT' return code
+	* ID: 3577159 - ipmi_sdr - uint32_t cast to uint8_t and back
+	* ID: 3528368 - ipmi_sdr - possible int *flow
+	* ID: 226 - ipmi_sdradd - typo
+	* ID: 258 - ipmi_sdradd - error printed on STDOUT
+	* Fixed ipmievd start under systemd.
+	* ID: 3608760 - Add bswap.h to ipmi_chassis.c and ipmi_pef.c
+	* ID: 3564701 - ipmitool 1.8.12 doesn't build on big endian architectures
+	* ID: 3600907 - defined value for "Chassis may not support Force Identify"
+	* ID: 256 - ipmitool could crash when IPv6 address is returned
+	* ID: 211 - 'lib/ipmi_dcmi.c' - typo & error printed on STDOUT
+	* ID: 3612237 - If DCMI command fails, incorrect completion code is printed
+	* ID: 3608149 - ipmitool - set pointer to NULL after free()
+	* ID: 3603419 - DCMI - waste of resources
+	* ID: 3600908 - DMCI - crash in ipmi_print_sensor_info(), NULL ref
+	* ID: 3609985 - delloem : Wrong MAC returned when flex addressing is enabled
+	* ID: 113 - delloem exec file won't handle more than one command
+	* ID: 28 - delloem - clean up the code
+	* ID: 3608261 - delloem - code formatting
+	* ID: 3528247 - delloem - fix possible *int flows
+	* ID: 3600910 - delloem - code cleanup
+	* ID: 3576211 - delloem - unused variable
+	* ID: 3578022 - delloem - fix typos
+	* ID: 263 - ipmi_ek* - cleanup
+	* ID: 3308765 - ipmi_ek* - cleanup
+	* ID: 3586228 - ipmi_ek* - ipmi_ekanalyzer_usage() rework
+	* ID: 3528388 - ipmi_ek* - a typo in error message
+	* ID: 3576212 - ipmi_event - better rsp handling
+	* ID: 3607393 - ipmi_event - redundant '\n' in error message
+	* ID: 153 - ipmi_firewall - printf() used instead of lprintf()
+	* ID: 3608003 - ipmi_fru - atol() should be replaced with str2*()
+	* ID: 3600911 - ipmi_fru - fix multiple increments in args to printf
+	* ID: 3600914 - no more crash on no response. allow more send/recv loops of waiting.
+	* ID: 70 - Fixes and updates for ipmitool hpm
+	* ID: 3528308 - ipmi_hpmfwupg - possible int *flow
+	* ID: 3608762 - ipmi_hpmfwup - Fixed help messages for hpm command
+	* ID: 3607981 - ipmi_lanp - replace atoi() calls
+	* ID: 3607320 - ipmi_lanp - possible NULL reference
+	* ID: 3600926 - ipmi_lanp - code cleanup
+	* ID: 3613575 - memory leak - ipmi_password_file_read()
+	* ID: 3522740 - reading password from file is limited to 16byte passwords
+	* ID: 3613605 - ipmi_main - call free() on pointer to static data
+	* ID: 3608761 - ipmi_main - PICMG Get Device Locator was never run
+	* ID: 3577155 - ipmi_main' - memory leaks
+	* ID: 239 - typo in 'mc selftest', add details
+	* ID: 3597471 - ipmi_mc - needs a bit of re-work - rc, inv. options
+	* ID: 3597468 - ipmi_mc - print_mc_usage() prints to STDOUT
+	* ID: 3597469 - 'mc watchdog off' prints on STDERR, should be STDOUT
+	* ID: 3597470 - 'mc watchdog reset' prints on STDERR, should be STDOUT
+	* ID: 3611254 - OEM handle for Intel 82751 in SPT mode
+	* ID: 3600927 - change eval order of input param in ipmi_oem_setup()
+	* ID: 3600928 - ipmi_pef - code cleanup
+	* ID: 3592732 - ipmi_picmg.c - printf() misuse
+	* ID: 3528310 - ipmi_picmg.c - NULL reference
+	* ID: 3528347 - ipmi_raw.c - possible int *flow
+	* ID: 3587913 - Command % ipmitool raw help; returns 1
+	* Added code to support sensors on other luns (On behalf of Kontron Germany)
+	* ID: 3611912 - Add missing newlines when cvs output is specified
+	* ID: 244 - ipmi_sel - "0.0" displayed for unspecified threshold values
+	* ID: 3612371 - Typo in impi_sel debug output
+	* ID: 3016359 - ipmi_sel - Get SEL Alloc Information is incorrect
+	* ID: 3568976 - 'sel set time' behaviour is inconsistent
+	* ID: 3528371 - ipmi_sensor - possible int *flow
+	* ID: 3601265 - 'ipmitool sensor get' leaks memory
+	* ID: 3601106 - 'ipmitool sensor get NACname' output incorrect/inconsistent
+	* ID: 3608007 - ipmi_session - typo in error message
+	* ID: 101 - ipmi_sol - possible int *flow
+	* ID: 3600933 - ipmi_sol - use of deprecated bzero()
+	* ID: 3609472 - ipmi_sol - Add the instance to the SOL commands
+	* ID: 3588726 - 'ipmitool sol payload status ...;'segfaults on no rsp
+	* ID: 3522731 - ipmi_sol - ipmi_get_sol_info() returns always 0
+	* ID: 3613042 - add missing Entity IDs
+	* ID: 3611306 - ipmi_tsol - fix always fail in case of error
+	* ID: 259 - ipmi_user - memory leak
+	* ID: 260 - ipmi_user - replace atoi() call
+	* ID: 2871903 - ipmitool user priv incorrectly sets Link Auth
+	* ID: 3600960 - check the copy of password exists
+	* ID: 3609473 - Add assertion/deassertion to threshold events
+	* ID: 104 - ipmishell - possible int *flow
+	* ID: 262 - 'set' segfaults when no IPMI inf present
+	* ID: 257 ipmitool exec segfaults if invalid input given
+	* ID: 254 - Fix retry of authentication capabilities retrieval
+	* ID: 3611303 - lan - error check is missing braces
+	* ID: 253 - Fix lanplus retransmission
+
+
 version 1.8.12 released 2012-08-09
 	* Added IPMB dual bridge support (no need for driver support)
 	* Enable compiler warnings and resolve all compiler warning so that

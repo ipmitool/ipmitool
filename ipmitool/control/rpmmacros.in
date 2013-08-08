@@ -8,5 +8,5 @@
 %_srcrpmdir	%{_topdir}/SRPMS
 %_distro	@DISTRO@
 %_rpmfilename	%%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
-%packager	duncan@iceblink.org
+%packager	jmank@hp.com
 %distribution	Sourceforge Build

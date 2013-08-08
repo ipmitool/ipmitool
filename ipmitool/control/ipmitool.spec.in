@@ -4,7 +4,7 @@ Version:      @VERSION@
 Release:      @RPM_RELEASE@%{?_distro:.%{_distro}}
 License:      BSD
 Group:        Utilities
-Packager:     Duncan Laurie <duncan@iceblink.org>
+Packager:     Jim Mankovich <jmank@hp.com>
 Source:       %{name}-%{version}.tar.gz
 Buildroot:    /var/tmp/ipmitool-root
 
