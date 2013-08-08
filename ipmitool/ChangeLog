@@ -1,4 +1,4 @@
-version 1.8.13 released 2012-08-09
+version 1.8.13rc0 Aug 8 2013
 	* ID: 3611905 - Direct Serial Basic/Terminal Mode Interface drivers
 	* ID: 3577766 - configure's knobs and switches don't work
 	* ID: 3611253 - do not override OS-default values for interfaces
