@@ -115,6 +115,7 @@ version 1.8.13rc0 2013-08-09
 	* ID: 254 - Fix retry of authentication capabilities retrieval
 	* ID: 3611303 - lan - error check is missing braces
 	* ID: 253 - Fix lanplus retransmission
+	* ID: 212 - 'lib/ipmi_dcmi.c' - possible int *flow
 
 
 version 1.8.12 released 2012-08-09
