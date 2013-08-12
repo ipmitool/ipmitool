@@ -3855,7 +3855,13 @@ int ipmi_hpmfwupg_main(struct ipmi_intf * intf, int argc, char ** argv)
         {
             if (i+1 < argc)
             {
-                componentId = atoi(argv[i+1]);
+                if (str2int(argv[i+1], &componentId) != 0 ||
+                        componentId < 0 || componentId > 7) {
+                    lprintf(LOG_ERR, "Given Component ID '%s' is invalid.",
+                            argv[i+1]);
+                    lprintf(LOG_ERR, "Valid Compoment ID is: <0..7>");
+                    return (-1);
+                }
                 option &= ~(VERSIONCHECK_MODE);
                 option &= ~(VIEW_MODE);
                 option |= FORCE_MODE_COMPONENT;
