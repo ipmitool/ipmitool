@@ -1477,8 +1477,14 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	struct ipmi_rq req; /* ipmi request (to send) */
 	struct power_limit val;
 	uint8_t msg_data[15]; /* number of request data bytes */
-	uint32_t lvalue = strtol(value, NULL, 10);
+	uint32_t lvalue = 0;
 	int i;
+
+	if (str2uint(value, &lvalue) != 0) {
+		lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+				option, value);
+		return (-1);
+	}
 
 	rsp = ipmi_dcmi_pwr_glimit(intf); /* get the power limit settings */
 # if 0
@@ -1694,6 +1700,9 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 				/* Let`s initialize dcmi power parameters */
 				struct ipmi_rq req;
 				uint8_t data[256];
+				uint16_t sample = 0;
+				uint16_t limit = 0;
+				uint32_t correction = 0;
 
 				memset(data, 0, sizeof(data));
 				memset(&req, 0, sizeof(req));
@@ -1724,13 +1733,36 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 					return -1;
 				}
 				/* limit */
-				*(uint16_t*)(&data[5]) = strtol(argv[4], NULL, 10);
+				if (str2ushort(argv[4], &limit) != 0) {
+					lprintf(LOG_ERR,
+							"Given Limit '%s' is invalid.",
+							argv[4]);
+					return (-1);
+				}
+				data[5] = limit >> 0;
+				data[6] = limit >> 8;
 				/* correction */
-				*(uint32_t*)(&data[7]) = strtol(argv[6], NULL, 10);
+				if (str2uint(argv[6], &correction) != 0) {
+					lprintf(LOG_ERR,
+							"Given Correction '%s' is invalid.",
+							argv[6]);
+					return (-1);
+				}
+				data[7] = correction >> 0;
+				data[8] = correction >> 8;
+				data[9] = correction >> 16;
+				data[10] = correction >> 24;
 				data[11] = 0x00;  /* reserved */
 				data[12] = 0x00;  /* reserved */
 				/* sample */
-				*(uint16_t*)(&data[13]) = strtol(argv[8], NULL, 10);
+				if (str2ushort(argv[8], &sample) != 0) {
+					lprintf(LOG_ERR,
+							"Given Sample '%s' is invalid.",
+							argv[8]);
+					return (-1);
+				}
+				data[13] = sample >> 0;
+				data[14] = sample >> 8;
 
 				rsp = intf->sendrecv(intf, &req);
 				if (chk_rsp(rsp)) {
@@ -1836,14 +1868,15 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	/* end set management controller identifier string */
 	case 0x07:
 	{
-		uint8_t entityID, entityInst;
+		uint8_t entityID = 0;
+		uint8_t entityInst = 0;
 		uint8_t persistanceFlag;
 		uint8_t actionHardPowerOff;
 		uint8_t actionLogToSEL;
-		uint8_t tempLimit;
-		uint16_t samplingTime;
+		uint8_t tempLimit = 0;
 		uint8_t samplingTimeLSB;
 		uint8_t samplingTimeMSB;
+		uint16_t samplingTime = 0;
 		/* Thermal policy get/set */
 		/* dcmitool dcmi thermalpolicy get */
 		switch (str2val2(argv[1], dcmi_thermalpolicy_vals)) {
@@ -1852,8 +1885,18 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 				lprintf(LOG_NOTICE, "Get <entityID> <instanceID>");
 				return -1;
 			}
-			entityID = (uint8_t)strtol(argv[2], NULL,0);
-			entityInst  = (uint8_t)strtol(argv[3], NULL, 0);
+			if (str2uchar(argv[2], &entityID) != 0) {
+				lprintf(LOG_ERR,
+						"Given Entity ID '%s' is invalid.",
+						argv[2]);
+				return (-1);
+			}
+			if (str2uchar(argv[3], &entityInst) != 0) {
+				lprintf(LOG_ERR,
+						"Given Instance ID '%s' is invalid.",
+						argv[3]);
+				return (-1);
+			}
 			rc = ipmi_dcmi_getthermalpolicy(intf,  entityID, entityInst);
 			break;
 		case 0x01:
@@ -1869,14 +1912,33 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 						-1, 0);
 				return -1;
 			}
-			entityID = (uint8_t)strtol(argv[2],NULL, 0);
-			entityInst = (uint8_t)strtol(argv[3], NULL, 0);
-
+			if (str2uchar(argv[2], &entityID) != 0) {
+				lprintf(LOG_ERR,
+						"Given Entity ID '%s' is invalid.",
+						argv[2]);
+				return (-1);
+			}
+			if (str2uchar(argv[3], &entityInst) != 0) {
+				lprintf(LOG_ERR,
+						"Given Instance ID '%s' is invalid.",
+						argv[3]);
+				return (-1);
+			}
 			persistanceFlag = (uint8_t) str2val2(argv[4], dcmi_thermalpolicy_set_parameters_vals);
 			actionHardPowerOff = (uint8_t) str2val2(argv[5], dcmi_thermalpolicy_set_parameters_vals);
 			actionLogToSEL = (uint8_t) str2val2(argv[6], dcmi_thermalpolicy_set_parameters_vals);
-			tempLimit = (uint8_t) strtol(argv[7], NULL, 0);
-			samplingTime = (uint16_t) strtol(argv[8], NULL, 0);
+			if (str2uchar(argv[7], &tempLimit) != 0) {
+				lprintf(LOG_ERR,
+						"Given Temp Limit '%s' is invalid.",
+						argv[7]);
+				return (-1);
+			}
+			if (str2ushort(argv[8], &samplingTime) != 0) {
+				lprintf(LOG_ERR,
+						"Given Sampling Time '%s' is invalid.",
+						argv[8]);
+				return (-1);
+			}
 			samplingTimeLSB =  (samplingTime & 0xFF);
 			samplingTimeMSB = ((samplingTime & 0xFF00) >> 8);
 
@@ -1933,9 +1995,16 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		if (strncmp(argv[1], "activate_dhcp", 13) == 0) {
 			rsp = ipmi_dcmi_setconfparam(intf, 1, 1);
 		} else {
+			uint16_t tmp_val = 0;
+			if (str2ushort(argv[2], &tmp_val) != 0) {
+				lprintf(LOG_ERR,
+						"Given %s '%s' is invalid.",
+						argv[1], argv[2]);
+				return (-1);
+			}
 			rsp = ipmi_dcmi_setconfparam(intf,
 					str2val2(argv[1], dcmi_conf_param_vals),
-					(uint16_t)strtol(argv[2], NULL, 0));
+					tmp_val);
 		}
 		if (chk_rsp(rsp)) {
 			lprintf(LOG_ERR,
