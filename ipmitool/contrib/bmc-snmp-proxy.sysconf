@@ -1,0 +1,48 @@
+# bmc-snmp-proxy
+#
+# Config file to control SNMP redirection between
+# the OS and Service Processor/Baseboard Management Controller (BMC)
+#
+# bmc-snnmp-proxy helps redirect certain SNMP requests (to this host)
+# destined to the Service Processor. We will need the Service Processor's
+# SNMP community string and the OID of the Service Processor's SNMP agent.
+#
+# For redirecting Traps from the Service Processor to the trap sink
+# configured in the host (this system), we will have to set
+# TRAP_FORWARD below.
+#
+# See here for details
+#    https://fedoraproject.org/wiki/Features/AgentFreeManagement
+
+### Configure SNMP proxy to BMC/Service Processor ###
+
+### Service Processor/BMC SNMP Community String. 
+# Name: BMC_COMMUNITY
+# Description: Set community string of the Service Processor (BMC)'s
+# 		SNMP agent.
+# Default: public
+#
+BMC_COMMUNITY="public"
+
+### OEM Specific OID of Service Processor
+# Name: BMC_OID
+# Description: SNMP OID that we would like to redirect to the Service
+# 		Processor (BMC). This can be unique to each OEM.
+# Default: ".1.3.6.1.4.1.674.10892.2"
+BMC_OID=".1.3.6.1.4.1.674.10892.2"  # Dell iDRAC
+
+### Forward Traps from the Service Processor to trap sink
+# Name: TRAP_FORWARD
+# Description: Enabling this will allow traps from the Service Processor
+# 		to be directed to this system and configure snmptrapd
+# Note: This option will have no effect if trap sink on the system is
+# 	not configured
+# Default: "no"
+TRAP_FORWARD="yes"
+
+### Reload snmpd and snmptrapd
+# Name: RELOAD_SERVICES
+# Description: Reload snmpd and snmptrapd after making changes to their config
+# 		files.
+# Default: "yes"
+RELOAD_SERVICES="yes"

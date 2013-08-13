@@ -1,0 +1,18 @@
+[Unit]
+Description=Setup SNMP proxy to BMC
+
+After=exchange-bmc-os-info.service
+Requires=exchange-bmc-os-info.service
+PartOf=exchange-bmc-os-info.service
+
+ConditionPathExists=/var/run/bmc-info
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/usr/libexec/bmc-snmp-proxy start
+ExecStop=/usr/libexec/bmc-snmp-proxy stop
+
+[Install]
+WantedBy=multi-user.target

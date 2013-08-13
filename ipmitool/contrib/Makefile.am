@@ -35,5 +35,5 @@ dist_pkgdata_DATA = oem_ibm_sel_map
 EXTRA_DIST = README \
 	bmclanconf ipmi.init.basic ipmi.init.redhat \
 	ipmievd.init.redhat ipmievd.init.suse ipmievd.init.debian \
-	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh
-
+	collect_data.sh create_rrds.sh create_webpage_compact.sh create_webpage.sh \
+	bmc-snmp-proxy bmc-snmp-proxy.service bmc-snmp-proxy.sysconf
