@@ -126,7 +126,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 
 	for (i = 0; ipmi_lan_params[i].cmd != (-1); i++) {
 		if (ipmi_lan_params[i].cmd == param) {
-			p = &ipmi_lan_params[param];
+			p = &ipmi_lan_params[i];
 			break;
 		}
 	}
