@@ -116,6 +116,7 @@ version 1.8.13rc0 2013-08-09
 	* ID: 3611303 - lan - error check is missing braces
 	* ID: 253 - Fix lanplus retransmission
 	* ID: 212 - 'lib/ipmi_dcmi.c' - possible int *flow
+	* ID: 264 - incorrect array index in get_lan_param_select()
 
 
 version 1.8.12 released 2012-08-09
