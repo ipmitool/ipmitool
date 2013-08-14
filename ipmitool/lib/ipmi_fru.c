@@ -1542,24 +1542,31 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 {
 	int status=FALSE;
+	int ret;
 	char answer;
 
-
 	printf("Would you like to change this value <y/n> ? ");
-
-	scanf("%c",&answer);
+	ret = scanf("%c", &answer);
+	if (ret != 1) {
+		return FALSE;
+	}
 
 	if( answer == 'y' || answer == 'Y' ){
 		int i;
 		unsigned int *holder;
 
 		holder = malloc(len);
-		printf("Enter hex values for each of the %d entries (lsb first),"   \
-				" hit <enter> between entries\n",len);
+		printf(
+		 "Enter hex values for each of the %d entries (lsb first), "
+		 "hit <enter> between entries\n", (int)len);
 
 		/* I can't assign scanf' %x into a single char */
 		for( i=0;i<len;i++ ){
-			scanf("%x",holder+i);
+			ret = scanf("%x", holder+i);
+			if (ret != 1) {
+				free(holder);
+				return FALSE;
+			}
 		}
 		for( i=0;i<len;i++ ){
 			data[offset++] = (unsigned char) *(holder+i);

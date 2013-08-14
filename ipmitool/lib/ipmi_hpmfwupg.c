@@ -1103,8 +1103,14 @@ static int HpmFwupgActionUploadFirmware
 int HpmGetUserInput(char *str)
 {
     char userInput[2];
+    int ret;
+
     printf("%s", str);
-    scanf("%s",userInput);
+    ret = scanf("%s", userInput);
+    if (!ret) {
+        return 1;
+    }
+
     if (toupper(userInput[0]) == 'Y')
     {
         return 1;
