@@ -1772,26 +1772,38 @@ is_alert_destination(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 static int
 ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 {
-	struct lan_param * ptype, * paddr;
+# define PTYPE_LEN	4
+# define PADDR_LEN	13
+	struct lan_param *lp_ptr = NULL;
 	int isack = 0;
+	uint8_t ptype[PTYPE_LEN];
+	uint8_t paddr[PADDR_LEN];
 
-	ptype = get_lan_param_select(intf, channel, IPMI_LANP_DEST_TYPE, alert);
-	paddr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_ADDR, alert);
-	if (ptype == NULL || paddr == NULL)
-		return -1;
-	if (ptype->data == NULL || paddr->data == NULL)
-		return -1;
+	lp_ptr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_TYPE, alert);
+	if (lp_ptr == NULL || lp_ptr->data == NULL
+			|| lp_ptr->data_len < PTYPE_LEN) {
+		return (-1);
+	}
+	memcpy(ptype, lp_ptr->data, PTYPE_LEN);
+
+	lp_ptr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_ADDR, alert);
+	if (lp_ptr == NULL || lp_ptr->data == NULL
+			|| lp_ptr->data_len < PADDR_LEN) {
+		return (-1);
+	}
+	memcpy(paddr, lp_ptr->data, PADDR_LEN);
 
 	printf("%-24s: %d\n", "Alert Destination",
-	       ptype->data[0]);
+			ptype[0]);
 
-	if (ptype->data[1] & 0x80)
+	if (ptype[1] & 0x80) {
 		isack = 1;
+	}
 	printf("%-24s: %s\n", "Alert Acknowledge",
-	       isack ? "Acknowledged" : "Unacknowledged");
+			isack ? "Acknowledged" : "Unacknowledged");
 
 	printf("%-24s: ", "Destination Type");
-	switch (ptype->data[1] & 0x7) {
+	switch (ptype[1] & 0x7) {
 	case 0:
 		printf("PET Trap\n");
 		break;
@@ -1807,27 +1819,27 @@ ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 	}
 
 	printf("%-24s: %d\n",
-	       isack ? "Acknowledge Timeout" : "Retry Interval",
-	       ptype->data[2]);
+			isack ? "Acknowledge Timeout" : "Retry Interval",
+			ptype[2]);
 
 	printf("%-24s: %d\n", "Number of Retries",
-	       ptype->data[3] & 0x7);
+			ptype[3] & 0x7);
 
-	if ((paddr->data[1] & 0xf0) != 0) {
+	if ((paddr[1] & 0xf0) != 0) {
 		/* unknown address format */
 		printf("\n");
 		return 0;
 	}
 
 	printf("%-24s: %s\n", "Alert Gateway",
-	       (paddr->data[2] & 1) ? "Backup" : "Default");
+			(paddr[2] & 1) ? "Backup" : "Default");
 
 	printf("%-24s: %d.%d.%d.%d\n", "Alert IP Address",
-	       paddr->data[3], paddr->data[4], paddr->data[5], paddr->data[6]);
+			paddr[3], paddr[4], paddr[5], paddr[6]);
 
 	printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", "Alert MAC Address",
-	       paddr->data[7], paddr->data[8], paddr->data[9],
-	       paddr->data[10], paddr->data[11], paddr->data[12]);
+			paddr[7], paddr[8], paddr[9],
+			paddr[10], paddr[11], paddr[12]);
 
 	printf("\n");
 	return 0;
