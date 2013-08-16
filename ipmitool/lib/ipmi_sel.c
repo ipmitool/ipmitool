@@ -2183,166 +2183,164 @@ ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
  *        -1 on error
  */
 static int
-ipmi_sel_interpret(struct ipmi_intf * intf, unsigned long iana, const char * readfile, const char *format)
+ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
+		const char *readfile, const char *format)
 {
-	FILE* fp = 0;
-	int status = 0;
-
+	FILE *fp = 0;
 	struct sel_event_record evt;
-	char *buffer;
-
-
-	/* since the interface is not used, iana is taken from the command line */
+	char *buffer = NULL;
+	char *cursor = NULL;
+	int status = 0;
+	/* since the interface is not used, iana is taken from
+	 * the command line
+	 */
 	sel_iana = iana;
-
-
-	if( strncmp("pps",format,3) == 0 ) {
-			/* Parser for the following format */
-			/* 
-             0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7);				\ 
-                    sensor:(0xc3,119); event:0x6f(asserted): 0xA3 0x00 0x88   
-            commonly found in PPS shelf managers 
-            Supports a tweak for hotswap events that are already interpreted.
-         */
+	if (strncmp("pps", format, 3) == 0) {
+		/* Parser for the following format */
+		/* 0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7);
+		 * sensor:(0xc3,119); event:0x6f(asserted): 0xA3 0x00 0x88
+		 * commonly found in PPS shelf managers
+		 * Supports a tweak for hotswap events that are already interpreted.
+		 */
 		fp = ipmi_open_file(readfile, 0);
-		if (fp){
-			buffer = (char*)malloc((size_t)256);
-			if( buffer != NULL ) {		
-				do {
-					/* Only allow complete lines to be parsed,hardcoded maximum
-                  line length */
-
-					if( fgets(buffer, 256, fp) != NULL ){
-						if( strlen(buffer) < 256 )	{
-							char *cursor = buffer;
-
-							evt.record_type= 2; /* assume normal "System" event */
-							evt.record_id=
-								strtol((const char*)cursor, (char **)NULL,16);
-							
-							evt.sel_type.standard_type.evm_rev = 4;
-
-							/* FIXME: convert*/ evt.sel_type.standard_type.timestamp;
-
-							/* skip timestamp */
-							cursor = index((const char*)cursor,';');
-							cursor++;
-
-							/* FIXME: parse originator */
-							evt.sel_type.standard_type.gen_id = 0x0020;
-
-							/* skip  originator info */
-							cursor = index((const char*)cursor,';');
-							cursor++;
-
-							/* Get sensor type */
-							cursor = index((const char*)cursor,'(');
-							cursor++;
-
-							evt.sel_type.standard_type.sensor_type=
-								strtol((const char*)cursor, (char **)NULL,16);
-
-							cursor = index((const char*)cursor,',');
-							cursor++;
-
-							evt.sel_type.standard_type.sensor_num=
-								strtol((const char*)cursor, (char **)NULL,10);
-
-							/* skip  to event type  info */
-							cursor = index((const char*)cursor,':');
-							cursor++;
-
-							evt.sel_type.standard_type.event_type=
-								strtol((const char*)cursor, (char **)NULL,16);
-
-							/* skip  to event dir  info */
-							cursor = index((const char*)cursor,'(');
-							cursor++;
-							if( *cursor == 'a' ) {
-								evt.sel_type.standard_type.event_dir = 0;
-							}
-							else {
-								evt.sel_type.standard_type.event_dir = 1;
-							}
-							/* skip  to data info */
-							cursor = index((const char*)cursor,' ');
-							cursor++;
-
-							if( evt.sel_type.standard_type.sensor_type == 0xF0 ) {		
-								
-								/* got to FRU id */
-								while( !isdigit(*cursor) ){
-									cursor++;
-								}
-                        /* store FRUid */
-								evt.sel_type.standard_type.event_data[2] =
-									strtol(cursor, (char **)NULL,10);
-
-								/* Get to previous state */
-								cursor = index((const char*)cursor,'M');
-								cursor++;
-		
-
-								/* Set previous state */
-								evt.sel_type.standard_type.event_data[1] =
-									strtol(cursor, (char **)NULL,10);
-
-								/* Get to current state */
-								cursor = index((const char*)cursor,'M');
-								cursor++;
-
-
-								/* Set current state */
-								evt.sel_type.standard_type.event_data[0] =
-									0xA0 | strtol(cursor, (char **)NULL,10) ;
-
-								/* skip  to cause */
-								cursor = index((const char*)cursor,'=');
-								cursor++;							
-								evt.sel_type.standard_type.event_data[1] |=
-									(strtol(cursor, (char **)NULL,16))<<4 ; 
-							}else if( *cursor == '0' ) { 
-
-								evt.sel_type.standard_type.event_data[0]=
-									strtol((const char*)cursor, (char **)NULL,16);
-
-								cursor = index((const char*)cursor,' ');
-								cursor++;
-
-								evt.sel_type.standard_type.event_data[1]=
-									strtol((const char*)cursor, (char **)NULL,16);
-
-								cursor = index((const char*)cursor,' ');
-								cursor++;
-							
-								evt.sel_type.standard_type.event_data[2]=
-									strtol((const char*)cursor, (char **)NULL,16);
-							}else {
-								lprintf(LOG_ERR, "ipmitool: can't guess format.");
-							}
-							
-							/* parse the PPS line into a sel_event_record */
-							if (verbose) {
-								ipmi_sel_print_std_entry_verbose(intf, &evt);
-							}
-							else {
-								ipmi_sel_print_std_entry(intf, &evt);
-							}
-						}else{   /* length didn't fit */
-							lprintf(LOG_ERR, "ipmitool: invalid entry found in file.");
-						}	
-					}else{ /* fgets failed (or reached end of file) */
-						status = -1;
-					}
-				}while (status == 0); /* until file is completely read */
-				free(buffer);
-				buffer = NULL;
-			}	/* if memory allocation succeeded */
+		if (fp == NULL) {
+			lprintf(LOG_ERR, "Failed to open file '%s' for reading.",
+					readfile);
+			return (-1);
+		}
+		buffer = (char *)malloc((size_t)256);
+		if (buffer == NULL) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			fclose(fp);
-		} 	/* if file open succeeded */
-	}	/* if format is known */
+			return (-1);
+		}
+		do {
+			/* Only allow complete lines to be parsed,
+			 * hardcoded maximum line length
+			 */
+			if (fgets(buffer, 256, fp) == NULL) {
+				status = (-1);
+				break;
+			}
+			if (strlen(buffer) > 255) {
+				lprintf(LOG_ERR, "ipmitool: invalid entry found in file.");
+				continue;
+			}
+			cursor = buffer;
+			/* assume normal "System" event */
+			evt.record_type = 2;
+			evt.record_id = strtol((const char *)cursor, (char **)NULL, 16);
+			evt.sel_type.standard_type.evm_rev = 4;
 
-	return status;	
+			/* FIXME: convert*/
+			evt.sel_type.standard_type.timestamp;
+
+			/* skip timestamp */
+			cursor = index((const char *)cursor, ';');
+			cursor++;
+
+			/* FIXME: parse originator */
+			evt.sel_type.standard_type.gen_id = 0x0020;
+
+			/* skip  originator info */
+			cursor = index((const char *)cursor, ';');
+			cursor++;
+
+			/* Get sensor type */
+			cursor = index((const char *)cursor, '(');
+			cursor++;
+
+			evt.sel_type.standard_type.sensor_type =
+				strtol((const char *)cursor, (char **)NULL, 16);
+			cursor = index((const char *)cursor, ',');
+			cursor++;
+
+			evt.sel_type.standard_type.sensor_num =
+				strtol((const char *)cursor, (char **)NULL, 10);
+
+			/* skip  to event type  info */
+			cursor = index((const char *)cursor, ':');
+			cursor++;
+
+			evt.sel_type.standard_type.event_type=
+				strtol((const char *)cursor, (char **)NULL, 16);
+
+			/* skip  to event dir  info */
+			cursor = index((const char *)cursor, '(');
+			cursor++;
+			if (*cursor == 'a') {
+				evt.sel_type.standard_type.event_dir = 0;
+			} else {
+				evt.sel_type.standard_type.event_dir = 1;
+			}
+			/* skip  to data info */
+			cursor = index((const char *)cursor, ' ');
+			cursor++;
+
+			if (evt.sel_type.standard_type.sensor_type == 0xF0) {
+				/* got to FRU id */
+				while (!isdigit(*cursor)) {
+					cursor++;
+				}
+				/* store FRUid */
+				evt.sel_type.standard_type.event_data[2] =
+					strtol(cursor, (char **)NULL,10);
+
+				/* Get to previous state */
+				cursor = index((const char *)cursor, 'M');
+				cursor++;
+
+				/* Set previous state */
+				evt.sel_type.standard_type.event_data[1] =
+					strtol(cursor, (char **)NULL, 10);
+
+				/* Get to current state */
+				cursor = index((const char *)cursor, 'M');
+				cursor++;
+
+				/* Set current state */
+				evt.sel_type.standard_type.event_data[0] =
+					0xA0 | strtol(cursor, (char **)NULL, 10);
+
+				/* skip  to cause */
+				cursor = index((const char *)cursor, '=');
+				cursor++;
+				evt.sel_type.standard_type.event_data[1] |=
+					(strtol(cursor, (char **)NULL, 16)) << 4;
+			} else if (*cursor == '0') {
+				evt.sel_type.standard_type.event_data[0] =
+					strtol((const char *)cursor, (char **)NULL, 16);
+				cursor = index((const char *)cursor, ' ');
+				cursor++;
+
+				evt.sel_type.standard_type.event_data[1] =
+					strtol((const char *)cursor, (char **)NULL, 16);
+
+				cursor = index((const char *)cursor, ' ');
+				cursor++;
+
+				evt.sel_type.standard_type.event_data[2] =
+					strtol((const char *)cursor, (char **)NULL, 16);
+			} else {
+				lprintf(LOG_ERR, "ipmitool: can't guess format.");
+			}
+			/* parse the PPS line into a sel_event_record */
+			if (verbose) {
+				ipmi_sel_print_std_entry_verbose(intf, &evt);
+			} else {
+				ipmi_sel_print_std_entry(intf, &evt);
+			}
+			cursor = NULL;
+		} while (status == 0); /* until file is completely read */
+		cursor = NULL;
+		free(buffer);
+		buffer = NULL;
+		fclose(fp);
+	} else {
+		lprintf(LOG_ERR, "Given format '%s' is unknown.", format);
+		status = (-1);
+	}
+	return status;
 }
 
 

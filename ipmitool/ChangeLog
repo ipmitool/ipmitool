@@ -119,6 +119,7 @@ version 1.8.13rc0 2013-08-09
 	* ID: 264 - incorrect array index in get_lan_param_select()
 	* ID: 269 - Fixes for configure.in for cross compilation
 	* ID: 267 - Corruption in "lan alert print" output
+	* ID: 41 - ipmi_sel_interpret() - clean up formatting, indentation
 
 
 version 1.8.12 released 2012-08-09
