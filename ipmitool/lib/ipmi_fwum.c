@@ -39,6 +39,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <ipmitool/log.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_fwum.h>
@@ -503,43 +504,45 @@ static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
  */
 #define MAX_BUFFER_SIZE          1024*16
 static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
-                                                        unsigned long fileSize)
+		unsigned long fileSize)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   FILE * pFileHandle;
+	tKFWUM_Status status = KFWUM_STATUS_ERROR;
+	FILE *pFileHandle = NULL;
+	int count;
+	int modulus;
+	int qty = 0;
 
-   pFileHandle = fopen((const char *)pFileName, "rb");
+	pFileHandle = fopen((const char *)pFileName, "rb");
+	if (pFileHandle == NULL) {
+		lprintf(LOG_ERR, "Failed to open '%s' for reading.",
+				(char *)pFileName);
+		return KFWUM_STATUS_ERROR;
+	}
+	count = fileSize / MAX_BUFFER_SIZE;
+	modulus = fileSize % MAX_BUFFER_SIZE;
 
-   if(pFileHandle)
-   {
-      int count   = fileSize / MAX_BUFFER_SIZE;
-      int modulus = fileSize % MAX_BUFFER_SIZE;
-      int qty     =0;
-
-      rewind(pFileHandle);
-
-      for(qty=0;qty<count;qty++)
-      {
-         KfwumShowProgress((const unsigned char *)"Reading Firmware from File", qty, count );
-         if(fread(&firmBuf[qty*MAX_BUFFER_SIZE], 1, MAX_BUFFER_SIZE ,pFileHandle)
-            ==  MAX_BUFFER_SIZE)
-         {
-            status = KFWUM_STATUS_OK;
-         }
-      }
-      if( modulus )
-      {
-         if(fread(&firmBuf[qty*MAX_BUFFER_SIZE], 1, modulus, pFileHandle) == modulus)
-         {
-            status = KFWUM_STATUS_OK;
-         }
-      }
-      if(status == KFWUM_STATUS_OK)
-      {
-         KfwumShowProgress((const unsigned char *)"Reading Firmware from File", 100, 100);
-      }
-   }
-   return(status);
+	rewind(pFileHandle);
+	for (qty=0; qty < count; qty++) {
+		KfwumShowProgress((const unsigned char *)"Reading Firmware from File",
+				qty, count);
+		if (fread(&firmBuf[qty * MAX_BUFFER_SIZE], 1,
+					MAX_BUFFER_SIZE,
+					pFileHandle) == MAX_BUFFER_SIZE) {
+			status = KFWUM_STATUS_OK;
+		}
+	}
+	if (modulus) {
+		if (fread(&firmBuf[qty * MAX_BUFFER_SIZE], 1,
+					modulus, pFileHandle) == modulus) {
+			status = KFWUM_STATUS_OK;
+		}
+	}
+	if (status == KFWUM_STATUS_OK) {
+		KfwumShowProgress((const unsigned char *)"Reading Firmware from File",
+				100, 100);
+	}
+	fclose(pFileHandle);
+	return status;
 }
 
 /* KfwumShowProgress  -  helper routine to display progress bar

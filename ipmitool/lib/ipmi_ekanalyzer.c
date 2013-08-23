@@ -4040,6 +4040,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 	ret = fread(&data, 1, 1, input_file);
 	if ((ret != 1) || ferror(input_file)) {
 		lprintf(LOG_ERR, "Invalid Offset!");
+		fclose(input_file);
 		return ERROR_STATUS;
 	}
 	if (data == 0) {
@@ -4060,6 +4061,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 				input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid Header!");
+			fclose(input_file);
 			return ERROR_STATUS;
 		}
 		if ((*list_record)->header.len == 0) {
@@ -4078,6 +4080,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 				1, input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid Record Data!");
+			fclose(input_file);
 			return ERROR_STATUS;
 		}
 		if (verbose > 0)
@@ -4103,6 +4106,7 @@ ipmi_ekanalyzer_fru_file2structure(char * filename,
 		}
 		record_count++;
 	}
+	fclose(input_file);
 	return OK_STATUS;
 }
 
