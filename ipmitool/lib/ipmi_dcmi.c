@@ -1060,7 +1060,11 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct power_reading val;
+	struct tm tm_t;
+	time_t t;
 	uint8_t msg_data[4]; /* number of request data bytes */
+	memset(&tm_t, 0, sizeof(tm_t));
+	memset(&t, 0, sizeof(t));
 
 	msg_data[0] = IPMI_DCMI; /* Group Extension Identification */
 	msg_data[1] = 0x01; /* Mode Power Status */
@@ -1081,6 +1085,8 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf)
 	/* rsp->data[0] is equal to response data byte 2 in spec */
 	/* printf("Group Extension Identification: %02x\n", rsp->data[0]); */
 	memcpy(&val, rsp->data, sizeof (val));
+	t = val.time_stamp;
+	gmtime_r(&t, &tm_t);
 	printf("\n");
 	printf("    Instantaneous power reading:              %8d Watts\n",
 			val.curr_pwr);
@@ -1091,7 +1097,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf)
 	printf("    Average power reading over sample period: %8d Watts\n",
 			val.avg_pwr);
 	printf("    IPMI timestamp:                           %s",
-			ctime((time_t *)&val.time_stamp));
+			asctime(&tm_t));
 	printf("    Sampling period:                          %08d Milliseconds\n",
 			val.sample);
 	printf("    Power reading state is:                   ");
