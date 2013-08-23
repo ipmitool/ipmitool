@@ -1733,8 +1733,10 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		}
 		else if (sr->s_scanning_disabled)
 			printf("Disabled\n");
-		else
-			printf("Not Reading\n");
+		else {
+			/* Used to be 'Not Reading' */
+			printf("No Reading\n");
+		}
 
 		printf(" Event Message Control : ");
 		switch (sensor->sensor.capabilities.event_msg) {
