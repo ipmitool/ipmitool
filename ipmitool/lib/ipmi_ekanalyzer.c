@@ -542,7 +542,7 @@ ipmi_ekanalyzer_main( struct ipmi_intf * intf, int argc, char ** argv )
       * passing in command line
       */
       if ( argc < MIN_ARGUMENT ){
-         printf("Too few argument! \n");
+         lprintf(LOG_ERR, "Not enough parameters given.");
          if ( strcmp(argv[argument_offset], "print") == 0 ){
             lprintf(LOG_ERR, "   ekanalyzer print [carrier/power/all]"
                              " <xx=frufile> <xx=frufile> [xx=frufile]"
