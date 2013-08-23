@@ -120,6 +120,12 @@ version 1.8.13rc0 2013-08-09
 	* ID: 269 - Fixes for configure.in for cross compilation
 	* ID: 267 - Corruption in "lan alert print" output
 	* ID: 41 - ipmi_sel_interpret() - clean up formatting, indentation
+	* ID: 242 - Incorrect DCMI Power Reading "IPMI timestamp" interpretation
+	* ID: 229 - 'lib/ipmi_ekanalyzer.c' - a typo ``Too few argument!''
+	* ID: 266 - file descriptor leak in ipmi_fwum and ipmi_ekanalyzer
+	* ID: 99 - 'lib/ipmi_sel.c' - possible int *flow
+	* ID: 222 - 'lib/ipmi_sdr.c' - a typo 'Not Reading' -> 'No Reading'
+	* ID: 35 - Script to setup redirection of SNMP to/from BMC
 
 
 version 1.8.12 released 2012-08-09
