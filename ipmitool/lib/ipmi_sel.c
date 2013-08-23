@@ -31,11 +31,11 @@
  */
 
 #include <string.h>
-#include <stdlib.h> /* for strtoul, to parse hexadecimal values  */
 #include <math.h>
 #define __USE_XOPEN /* glibc2 needs this for strptime */
 #include <time.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -399,7 +399,9 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 			if (i == 7)
 				break;
 			j = i++;
-			rqdata[j] = (uint8_t)strtol(tok, NULL, 0);
+			if (str2uchar(tok, &rqdata[j]) != 0) {
+				break;
+			}
 			tok = strtok(NULL, " ");
 		}
 		if (i < 7) {
@@ -2229,7 +2231,13 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			cursor = buffer;
 			/* assume normal "System" event */
 			evt.record_type = 2;
+			errno = 0;
 			evt.record_id = strtol((const char *)cursor, (char **)NULL, 16);
+			if (errno != 0) {
+				lprintf(LOG_ERR, "Invalid record ID.");
+				status = (-1);
+				break;
+			}	
 			evt.sel_type.standard_type.evm_rev = 4;
 
 			/* FIXME: convert*/
@@ -2250,20 +2258,38 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			cursor = index((const char *)cursor, '(');
 			cursor++;
 
+			errno = 0;
 			evt.sel_type.standard_type.sensor_type =
 				strtol((const char *)cursor, (char **)NULL, 16);
+			if (errno != 0) {
+				lprintf(LOG_ERR, "Invalid Sensor Type.");
+				status = (-1);
+				break;
+			}	
 			cursor = index((const char *)cursor, ',');
 			cursor++;
 
+			errno = 0;
 			evt.sel_type.standard_type.sensor_num =
 				strtol((const char *)cursor, (char **)NULL, 10);
+			if (errno != 0) {
+				lprintf(LOG_ERR, "Invalid Sensor Number.");
+				status = (-1);
+				break;
+			}	
 
 			/* skip  to event type  info */
 			cursor = index((const char *)cursor, ':');
 			cursor++;
 
+			errno = 0;
 			evt.sel_type.standard_type.event_type=
 				strtol((const char *)cursor, (char **)NULL, 16);
+			if (errno != 0) {
+				lprintf(LOG_ERR, "Invalid Event Type.");
+				status = (-1);
+				break;
+			}	
 
 			/* skip  to event dir  info */
 			cursor = index((const char *)cursor, '(');
@@ -2283,44 +2309,86 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 					cursor++;
 				}
 				/* store FRUid */
+				errno = 0;
 				evt.sel_type.standard_type.event_data[2] =
-					strtol(cursor, (char **)NULL,10);
+					strtol(cursor, (char **)NULL, 10);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#2.");
+					status = (-1);
+					break;
+				}	
 
 				/* Get to previous state */
 				cursor = index((const char *)cursor, 'M');
 				cursor++;
 
 				/* Set previous state */
+				errno = 0;
 				evt.sel_type.standard_type.event_data[1] =
 					strtol(cursor, (char **)NULL, 10);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#1.");
+					status = (-1);
+					break;
+				}	
 
 				/* Get to current state */
 				cursor = index((const char *)cursor, 'M');
 				cursor++;
 
 				/* Set current state */
+				errno = 0;
 				evt.sel_type.standard_type.event_data[0] =
 					0xA0 | strtol(cursor, (char **)NULL, 10);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#0.");
+					status = (-1);
+					break;
+				}	
 
 				/* skip  to cause */
 				cursor = index((const char *)cursor, '=');
 				cursor++;
+				errno = 0;
 				evt.sel_type.standard_type.event_data[1] |=
 					(strtol(cursor, (char **)NULL, 16)) << 4;
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#1.");
+					status = (-1);
+					break;
+				}	
 			} else if (*cursor == '0') {
+				errno = 0;
 				evt.sel_type.standard_type.event_data[0] =
 					strtol((const char *)cursor, (char **)NULL, 16);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#0.");
+					status = (-1);
+					break;
+				}	
 				cursor = index((const char *)cursor, ' ');
 				cursor++;
 
+				errno = 0;
 				evt.sel_type.standard_type.event_data[1] =
 					strtol((const char *)cursor, (char **)NULL, 16);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#1.");
+					status = (-1);
+					break;
+				}	
 
 				cursor = index((const char *)cursor, ' ');
 				cursor++;
 
+				errno = 0;
 				evt.sel_type.standard_type.event_data[2] =
 					strtol((const char *)cursor, (char **)NULL, 16);
+				if (errno != 0) {
+					lprintf(LOG_ERR, "Invalid Event Data#2.");
+					status = (-1);
+					break;
+				}	
 			} else {
 				lprintf(LOG_ERR, "ipmitool: can't guess format.");
 			}
@@ -2625,6 +2693,12 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 	for (; argc != 0; argc--)
 	{
 		id = (uint16_t) strtoul(argv[argc-1], NULL, 0);
+		if (str2ushort(argv[argc-1], &id) != 0) {
+			lprintf(LOG_ERR, "Given SEL ID '%s' is invalid.",
+					argv[argc-1]);
+			rc = (-1);
+			continue;
+		}
 		msg_data[2] = id & 0xff;
 		msg_data[3] = id >> 8;
 
@@ -2674,7 +2748,12 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	for (i=0; i<argc; i++) {
-		id = (uint16_t)strtol(argv[i], NULL, 0);
+		if (str2ushort(argv[i], &id) != 0) {
+			lprintf(LOG_ERR, "Given SEL ID '%s' is invalid.",
+					argv[i]);
+			rc = (-1);
+			continue;
+		}
 
 		lprintf(LOG_DEBUG, "Looking up SEL entry 0x%x", id);
 
@@ -2731,17 +2810,6 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 	return rc;
 }
 
-static int make_int(const char *str, int *value)
-{
-	char *tmp=NULL;
-	*value = strtol(str,&tmp,0);
-	if ( tmp-str != strlen(str) )
-	{
-		return -1;
-	}
-	return 0;
-}
-
 int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -2752,11 +2820,17 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "SEL Commands:  "
 				"info clear delete list elist get add time save readraw writeraw interpret");
 	else if (strncmp(argv[0], "interpret", 9) == 0) {
+		uint32_t iana = 0;
 		if (argc < 4) {
 			lprintf(LOG_NOTICE, "usage: sel interpret iana filename format(pps)");
 			return 0;
 		}
-		rc = ipmi_sel_interpret(intf, atol(argv[1]),argv[2],argv[3]);
+		if (str2uint(argv[1], &iana) != 0) {
+			lprintf(LOG_ERR, "Given IANA '%s' is invalid.",
+					argv[1]);
+			return (-1);
+		}
+		rc = ipmi_sel_interpret(intf, iana, argv[2], argv[3]);
 	}
 	else if (strncmp(argv[0], "info", 4) == 0)
 		rc = ipmi_sel_get_info(intf);
@@ -2829,7 +2903,7 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		if (countstr) {
-			if (make_int(countstr,&count) < 0) {
+			if (str2int(countstr, &count) != 0) {
 				lprintf(LOG_ERR, "Numeric argument required; got '%s'",
 					countstr);
 				return -1;
