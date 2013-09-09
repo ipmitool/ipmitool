@@ -174,7 +174,7 @@ bmc_alert_dest()
 	# Pick the first active LAN channel
         for CHANNEL in `seq 1 14`
         do
-                [ $(${IPMITOOL} -I open channel info ${CHANNEL} 2>/dev/null \
+                [ $(${IPMI_TOOL} -I open channel info ${CHANNEL} 2>/dev/null \
                         | grep -q "802\.3") ] || break
         done
 
