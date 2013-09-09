@@ -1544,6 +1544,10 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 	int    keepAliveRet = 0;
 	int    retrySol = 0;
 
+	/* Subtract SOL header from max_inbound_payload_size */
+	if (buffer_size > 4)
+		buffer_size -= 4;
+
 	buffer = (char*)malloc(buffer_size);
 	if (buffer == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure"); 
