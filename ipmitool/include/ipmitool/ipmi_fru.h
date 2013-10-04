@@ -63,6 +63,8 @@ enum {
 struct fru_info {
 	uint16_t size;
 	uint8_t access:1;
+	uint8_t max_read_size;
+	uint8_t max_write_size;
 };
 
 #ifdef HAVE_PRAGMA_PACK
@@ -70,13 +72,16 @@ struct fru_info {
 #endif
 struct fru_header {
 	uint8_t version;
-	struct {
-		uint8_t internal;
-		uint8_t chassis;
-		uint8_t board;
-		uint8_t product;
-		uint8_t multi;
-	} offset;
+	union {
+		struct {
+			uint8_t internal;
+			uint8_t chassis;
+			uint8_t board;
+			uint8_t product;
+			uint8_t multi;
+		} offset;
+		uint8_t offsets[5];
+	};
 	uint8_t pad;
 	uint8_t checksum;
 }ATTRIBUTE_PACKING;
@@ -596,6 +601,20 @@ static const char * chassis_type_desc[] __attribute__((unused)) = {
 	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis",
 	    "Sealed-case PC", "Multi-system Chassis", "CompactPCI",
 	    "AdvancedTCA", "Blade", "Blade Enclosure"
+};
+
+typedef struct ipmi_fru_bloc {
+	struct ipmi_fru_bloc * next;
+	uint16_t start;
+	uint16_t size;
+	uint8_t  blocId[32];
+} t_ipmi_fru_bloc;
+
+static const char *section_id[4] = {
+	"Internal Use Section",
+	"Chassis Section",
+	"Board Section",
+	"Product Section"
 };
 
 int ipmi_fru_main(struct ipmi_intf *intf, int argc, char **argv);

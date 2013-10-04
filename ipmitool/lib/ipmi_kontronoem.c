@@ -350,6 +350,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf * intf)
       return(-1);
    }
 
+   memset(&fru, 0, sizeof(fru));
    fru.size = (rsp->data[1] << 8) | rsp->data[0];
    fru.access = rsp->data[2] & 0x1;
 
@@ -637,6 +638,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf * intf)
       return(-1);
    }
 
+   memset(&fru, 0, sizeof(fru));
    fru.size = (rsp->data[1] << 8) | rsp->data[0];
    fru.access = rsp->data[2] & 0x1;
 
