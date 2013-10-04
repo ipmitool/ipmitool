@@ -66,6 +66,9 @@ extern struct ipmi_intf ipmi_free_intf;
 extern struct ipmi_intf ipmi_serial_term_intf;
 extern struct ipmi_intf ipmi_serial_bm_intf;
 #endif
+#ifdef IPMI_INTF_DUMMY
+extern struct ipmi_intf ipmi_dummy_intf;
+#endif
 
 struct ipmi_intf * ipmi_intf_table[] = {
 #ifdef IPMI_INTF_OPEN
@@ -92,6 +95,9 @@ struct ipmi_intf * ipmi_intf_table[] = {
 #ifdef IPMI_INTF_SERIAL
 	&ipmi_serial_term_intf,
 	&ipmi_serial_bm_intf,
+#endif
+#ifdef IPMI_INTF_DUMMY
+	&ipmi_dummy_intf,
 #endif
 	NULL
 };

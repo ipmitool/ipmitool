@@ -32,8 +32,8 @@ MAINTAINERCLEANFILES		= Makefile.in
 
 INCLUDES			= -I$(top_srcdir)/include
 
-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@
-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial
+SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@
+DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy
 
 noinst_LTLIBRARIES		= libintf.la
 libintf_la_SOURCES		= ipmi_intf.c
