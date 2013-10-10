@@ -1678,116 +1678,114 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgGetComponentPropertiesReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp) {
-		if (rsp->ccode == 0x00) {
-			switch (pCtx->req.selector) {
-			case HPMFWUPG_COMP_GEN_PROPERTIES:
-				memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetGeneralPropResp));
-				if (verbose) {
-					lprintf(LOG_NOTICE, "GENERAL PROPERTIES");
-					lprintf(LOG_NOTICE, "-------------------------------");
-					lprintf(LOG_NOTICE, "Payload cold reset req....[%c]   ",
-							pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.payloadColdReset ? 'y' : 'n');
-					lprintf(LOG_NOTICE, "Def. activation supported.[%c]   ",
-							pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.deferredActivation ? 'y' : 'n');
-					lprintf(LOG_NOTICE, "Comparison supported......[%c]   ",
-							pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.comparisonSupport ? 'y' : 'n');
-					lprintf(LOG_NOTICE, "Preparation supported.....[%c]   ",
-							pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.preparationSupport ? 'y' : 'n');
-					lprintf(LOG_NOTICE, "Rollback supported........[%c]   \n",
-							pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.rollbackBackup ? 'y' : 'n');
-				}
-				break;
-			case HPMFWUPG_COMP_CURRENT_VERSION:
-				memcpy(&pCtx->resp, rsp->data,
-						sizeof(struct HpmfwupgGetCurrentVersionResp));
-				if (verbose) {
-					lprintf(LOG_NOTICE, "Current Version: ");
-					lprintf(LOG_NOTICE, " Major: %d",
-							pCtx->resp.Response.currentVersionResp.currentVersion[0]);
-					lprintf(LOG_NOTICE, " Minor: %x",
-							pCtx->resp.Response.currentVersionResp.currentVersion[1]);
-					lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
-							pCtx->resp.Response.currentVersionResp.currentVersion[2],
-							pCtx->resp.Response.currentVersionResp.currentVersion[3],
-							pCtx->resp.Response.currentVersionResp.currentVersion[4],
-							pCtx->resp.Response.currentVersionResp.currentVersion[5]);
-				}
-				break;
-			case HPMFWUPG_COMP_DESCRIPTION_STRING:
-				memcpy(&pCtx->resp, rsp->data,
-						sizeof(struct HpmfwupgGetDescStringResp));
-				if (verbose) {
-					char descString[HPMFWUPG_DESC_STRING_LENGTH + 1];
-					memcpy(descString,
-							pCtx->resp.Response.descStringResp.descString,
-							HPMFWUPG_DESC_STRING_LENGTH);
-					descString[HPMFWUPG_DESC_STRING_LENGTH] = '\0';
-					lprintf(LOG_NOTICE,
-							"Description string: %s\n",
-							descString);
-				}
-				break;
-			case HPMFWUPG_COMP_ROLLBACK_FIRMWARE_VERSION:
-				memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetRollbackFwVersionResp));
-				if (verbose) {
-					lprintf(LOG_NOTICE, "Rollback FW Version: ");
-					lprintf(LOG_NOTICE, " Major: %d",
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[0]);
-					lprintf(LOG_NOTICE, " Minor: %x",
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[1]);
-					lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[2],
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[3],
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[4],
-							pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[5]);
-				}
-				break;
-			case HPMFWUPG_COMP_DEFERRED_FIRMWARE_VERSION:
-				memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetDeferredFwVersionResp));
-				if (verbose) {
-					lprintf(LOG_NOTICE, "Deferred FW Version: ");
-					lprintf(LOG_NOTICE, " Major: %d",
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[0]);
-					lprintf(LOG_NOTICE, " Minor: %x",
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[1]);
-					lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[2],
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[3],
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[4],
-							pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[5]);
-				}
-				break;
-				/* OEM Properties command */
-			case HPMFWUPG_COMP_OEM_PROPERTIES:
-				memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetOemProperties));
-				if (verbose) {
-					unsigned char i = 0;
-					lprintf(LOG_NOTICE,"OEM Properties: ");
-					for (i=0; i < HPMFWUPG_OEM_LENGTH; i++) {
-						lprintf(LOG_NOTICE, " 0x%x ",
-								pCtx->resp.Response.oemProperties.oemRspData[i]);
-					}
-				}
-				break;
-			default:
-				lprintf(LOG_NOTICE,"Unsupported component selector");
-				rc = HPMFWUPG_ERROR;
-				break;
-			}
-		} else {
-			lprintf(LOG_NOTICE,
-					"Error getting component properties");
-			lprintf(LOG_NOTICE,
-					"compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
+	if (rsp == NULL) {
 		lprintf(LOG_NOTICE,
 				"Error getting component properties\n");
+		return HPMFWUPG_ERROR;
+	}
+	if (rsp->ccode != 0x00) {
+		lprintf(LOG_NOTICE,
+				"Error getting component properties");
+		lprintf(LOG_NOTICE,
+				"compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
+		return HPMFWUPG_ERROR;
+	}
+	switch (pCtx->req.selector) {
+	case HPMFWUPG_COMP_GEN_PROPERTIES:
+		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetGeneralPropResp));
+		if (verbose) {
+			lprintf(LOG_NOTICE, "GENERAL PROPERTIES");
+			lprintf(LOG_NOTICE, "-------------------------------");
+			lprintf(LOG_NOTICE, "Payload cold reset req....[%c]   ",
+					pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.payloadColdReset ? 'y' : 'n');
+			lprintf(LOG_NOTICE, "Def. activation supported.[%c]   ",
+					pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.deferredActivation ? 'y' : 'n');
+			lprintf(LOG_NOTICE, "Comparison supported......[%c]   ",
+					pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.comparisonSupport ? 'y' : 'n');
+			lprintf(LOG_NOTICE, "Preparation supported.....[%c]   ",
+					pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.preparationSupport ? 'y' : 'n');
+			lprintf(LOG_NOTICE, "Rollback supported........[%c]   \n",
+					pCtx->resp.Response.generalPropResp.GeneralCompProperties.bitfield.rollbackBackup ? 'y' : 'n');
+		}
+		break;
+	case HPMFWUPG_COMP_CURRENT_VERSION:
+		memcpy(&pCtx->resp, rsp->data,
+				sizeof(struct HpmfwupgGetCurrentVersionResp));
+		if (verbose) {
+			lprintf(LOG_NOTICE, "Current Version: ");
+			lprintf(LOG_NOTICE, " Major: %d",
+					pCtx->resp.Response.currentVersionResp.currentVersion[0]);
+			lprintf(LOG_NOTICE, " Minor: %x",
+					pCtx->resp.Response.currentVersionResp.currentVersion[1]);
+			lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
+					pCtx->resp.Response.currentVersionResp.currentVersion[2],
+					pCtx->resp.Response.currentVersionResp.currentVersion[3],
+					pCtx->resp.Response.currentVersionResp.currentVersion[4],
+					pCtx->resp.Response.currentVersionResp.currentVersion[5]);
+		}
+		break;
+	case HPMFWUPG_COMP_DESCRIPTION_STRING:
+		memcpy(&pCtx->resp, rsp->data,
+				sizeof(struct HpmfwupgGetDescStringResp));
+		if (verbose) {
+			char descString[HPMFWUPG_DESC_STRING_LENGTH + 1];
+			memcpy(descString,
+					pCtx->resp.Response.descStringResp.descString,
+					HPMFWUPG_DESC_STRING_LENGTH);
+			descString[HPMFWUPG_DESC_STRING_LENGTH] = '\0';
+			lprintf(LOG_NOTICE,
+					"Description string: %s\n",
+					descString);
+		}
+		break;
+	case HPMFWUPG_COMP_ROLLBACK_FIRMWARE_VERSION:
+		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetRollbackFwVersionResp));
+		if (verbose) {
+			lprintf(LOG_NOTICE, "Rollback FW Version: ");
+			lprintf(LOG_NOTICE, " Major: %d",
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[0]);
+			lprintf(LOG_NOTICE, " Minor: %x",
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[1]);
+			lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[2],
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[3],
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[4],
+					pCtx->resp.Response.rollbackFwVersionResp.rollbackFwVersion[5]);
+		}
+		break;
+	case HPMFWUPG_COMP_DEFERRED_FIRMWARE_VERSION:
+		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetDeferredFwVersionResp));
+		if (verbose) {
+			lprintf(LOG_NOTICE, "Deferred FW Version: ");
+			lprintf(LOG_NOTICE, " Major: %d",
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[0]);
+			lprintf(LOG_NOTICE, " Minor: %x",
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[1]);
+			lprintf(LOG_NOTICE, " Aux  : %03d %03d %03d %03d\n",
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[2],
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[3],
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[4],
+					pCtx->resp.Response.deferredFwVersionResp.deferredFwVersion[5]);
+		}
+		break;
+	case HPMFWUPG_COMP_OEM_PROPERTIES:
+		/* OEM Properties command */
+		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetOemProperties));
+		if (verbose) {
+			unsigned char i = 0;
+			lprintf(LOG_NOTICE,"OEM Properties: ");
+			for (i=0; i < HPMFWUPG_OEM_LENGTH; i++) {
+				lprintf(LOG_NOTICE, " 0x%x ",
+						pCtx->resp.Response.oemProperties.oemRspData[i]);
+			}
+		}
+		break;
+	default:
+		lprintf(LOG_NOTICE,"Unsupported component selector");
 		rc = HPMFWUPG_ERROR;
+		break;
 	}
 	return rc;
 }
