@@ -1534,33 +1534,32 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 	int ret = 0;
 	FILE *pImageFile = fopen(imageFilename, "rb");
 	if (pImageFile == NULL) {
-		lprintf(LOG_NOTICE, "Cannot open image file %s",
+		lprintf(LOG_ERR, "Cannot open image file '%s'",
 				imageFilename);
+		return HPMFWUPG_ERROR;
+	}
+	/* Get the raw data in file */
+	fseek(pImageFile, 0, SEEK_END);
+	pFwupgCtx->imageSize  = ftell(pImageFile);
+	pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
+	if (pFwupgCtx->pImageData == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		fclose(pImageFile);
+		return HPMFWUPG_ERROR;
+	}
+	rewind(pImageFile);
+	ret = fread(pFwupgCtx->pImageData,
+			sizeof(unsigned char),
+			pFwupgCtx->imageSize,
+			pImageFile);
+	if (ret != pFwupgCtx->imageSize) {
+		lprintf(LOG_ERR,
+				"Failed to read file %s size %d", 
+				imageFilename,
+				pFwupgCtx->imageSize);
 		rc = HPMFWUPG_ERROR;
 	}
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Get the raw data in file */
-		fseek(pImageFile, 0, SEEK_END);
-		pFwupgCtx->imageSize  = ftell(pImageFile);
-		pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
-		rewind(pImageFile);
-		if (pFwupgCtx->pImageData != NULL) {
-			ret = fread(pFwupgCtx->pImageData,
-					sizeof(unsigned char),
-					pFwupgCtx->imageSize,
-					pImageFile);
-			if (ret != pFwupgCtx->imageSize) {
-				lprintf(LOG_ERROR,
-						"Failed to read file %s size %d", 
-						imageFilename,
-						pFwupgCtx->imageSize);
-				rc = HPMFWUPG_ERROR;
-			}
-		} else {
-			rc = HPMFWUPG_ERROR;
-		}
-		fclose(pImageFile);
-	}
+	fclose(pImageFile);
 	return rc;
 }
 
