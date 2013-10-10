@@ -2157,7 +2157,7 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 			&& ((rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS)
 				|| (rsp->ccode == IPMI_CC_TIMEOUT))
 			&& (timeoutSec2 - timeoutSec1 < rollbackTimeout));
-	if (rsp) {
+	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting upgrade status.");
 		return HPMFWUPG_ERROR;
 	}
