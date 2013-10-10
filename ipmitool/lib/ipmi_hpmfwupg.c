@@ -678,7 +678,6 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 int
 HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx *pFwupgCtx)
 {
-	int rc = HPMFWUPG_SUCCESS;
 	struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)pFwupgCtx->pImageData;
 	md5_state_t ctx;
 	static unsigned char md[HPMFWUPG_MD5_SIGNATURE_LENGTH];
@@ -693,33 +692,29 @@ HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx *pFwupgCtx)
 	md5_finish(&ctx, md);
 	if (memcmp(md, pMd5Sig, HPMFWUPG_MD5_SIGNATURE_LENGTH) != 0) {
 		lprintf(LOG_NOTICE, "\n    Invalid MD5 signature");
-		rc = HPMFWUPG_ERROR;
+		return HPMFWUPG_ERROR;
 	}
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Validate Header signature */
-		if(strncmp(pImageHeader->signature,
-					HPMFWUPG_IMAGE_SIGNATURE,
-					HPMFWUPG_HEADER_SIGNATURE_LENGTH) == 0) {
-			/* Validate Header image format version */
-			if (pImageHeader->formatVersion == HPMFWUPG_IMAGE_HEADER_VERSION) {
-				/* Validate header checksum */
-				if (HpmfwupgCalculateChecksum((unsigned char*)pImageHeader,
-							sizeof(struct HpmfwupgImageHeader)
-							+ pImageHeader->oemDataLength
-							+ sizeof(unsigned char)/*checksum*/) != 0) {
-					lprintf(LOG_NOTICE,"\n    Invalid header checksum");
-					rc = HPMFWUPG_ERROR;
-				}
-			} else {
-				lprintf(LOG_NOTICE,"\n    Unrecognized image version");
-				rc = HPMFWUPG_ERROR;
-			}
-		} else {
-			lprintf(LOG_NOTICE,"\n    Invalid image signature");
-			rc = HPMFWUPG_ERROR;
-		}
+	/* Validate Header signature */
+	if(strncmp(pImageHeader->signature,
+				HPMFWUPG_IMAGE_SIGNATURE,
+				HPMFWUPG_HEADER_SIGNATURE_LENGTH) != 0) {
+		lprintf(LOG_NOTICE,"\n    Invalid image signature");
+		return HPMFWUPG_ERROR;
 	}
-	return rc;
+	/* Validate Header image format version */
+	if (pImageHeader->formatVersion != HPMFWUPG_IMAGE_HEADER_VERSION) {
+		lprintf(LOG_NOTICE,"\n    Unrecognized image version");
+		return HPMFWUPG_ERROR;
+	}
+	/* Validate header checksum */
+	if (HpmfwupgCalculateChecksum((unsigned char*)pImageHeader,
+				sizeof(struct HpmfwupgImageHeader)
+				+ pImageHeader->oemDataLength
+				+ sizeof(unsigned char)/*checksum*/) != 0) {
+		lprintf(LOG_NOTICE,"\n    Invalid header checksum");
+		return HPMFWUPG_ERROR;
+	}
+	return HPMFWUPG_SUCCESS;
 }
 
 /* HpmfwupgPreparationStage - prepere stage of a firmware upgrade procedure as
