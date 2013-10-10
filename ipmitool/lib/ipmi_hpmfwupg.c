@@ -1833,19 +1833,18 @@ HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgInitiateUpgradeActionReq);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp) {
-		/* Long duration command handling */
-		if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
-			rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-		} else if (rsp->ccode != 0x00) {
-			lprintf(LOG_NOTICE,"Error initiating upgrade action");
-			lprintf(LOG_NOTICE, "compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE, "Error initiating upgrade action\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error initiating upgrade action.");
+		return HPMFWUPG_ERROR;
+	}
+	/* Long duration command handling */
+	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
+		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
+	} else if (rsp->ccode != 0x00) {
+		lprintf(LOG_NOTICE,"Error initiating upgrade action");
+		lprintf(LOG_NOTICE, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
