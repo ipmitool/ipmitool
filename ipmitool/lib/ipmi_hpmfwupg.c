@@ -1944,23 +1944,22 @@ HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgFinishFirmwareUploadReq);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp) {
-		/* Long duration command handling */
-		if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
-			rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-		} else if ((option & COMPARE_MODE) && rsp->ccode == 0x83) {
-			printf("|    |Component's active copy doesn't match the upgrade image                 |\n");
-		} else if ((option & COMPARE_MODE) && rsp->ccode == IPMI_CC_OK) {
-			printf("|    |Comparison passed                                                       |\n");
-		} else if ( rsp->ccode != IPMI_CC_OK ) {
-			lprintf(LOG_NOTICE,"Error finishing firmware upload");
-			lprintf(LOG_NOTICE,"compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE,"Error fininshing firmware upload\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error fininshing firmware upload.");
+		return HPMFWUPG_ERROR;
+	}
+	/* Long duration command handling */
+	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
+		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
+	} else if ((option & COMPARE_MODE) && rsp->ccode == 0x83) {
+		printf("|    |Component's active copy doesn't match the upgrade image                 |\n");
+	} else if ((option & COMPARE_MODE) && rsp->ccode == IPMI_CC_OK) {
+		printf("|    |Comparison passed                                                       |\n");
+	} else if ( rsp->ccode != IPMI_CC_OK ) {
+		lprintf(LOG_ERR, "Error finishing firmware upload");
+		lprintf(LOG_ERR, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
@@ -1982,26 +1981,25 @@ HpmfwupgActivateFirmware(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof(struct HpmfwupgActivateFirmwareReq)
 		- (!pCtx->req.rollback_override ? 1 : 0);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp) {
-		/* Long duration command handling */
-		if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
-			printf("Waiting firmware activation...");
-			fflush(stdout);
-			rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-			if (rc == HPMFWUPG_SUCCESS) {
-				lprintf(LOG_NOTICE,"OK");
-			} else {
-				lprintf(LOG_NOTICE,"Failed");
-			}
-		} else if (rsp->ccode != IPMI_CC_OK) {
-			lprintf(LOG_NOTICE, "Error activating firmware");
-			lprintf(LOG_NOTICE, "compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error activating firmware.");
+		return HPMFWUPG_ERROR;
+	}
+	/* Long duration command handling */
+	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
+		printf("Waiting firmware activation...");
+		fflush(stdout);
+		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
+		if (rc == HPMFWUPG_SUCCESS) {
+			lprintf(LOG_NOTICE, "OK");
+		} else {
+			lprintf(LOG_NOTICE, "Failed");
 		}
-	} else {
-		lprintf(LOG_NOTICE, "Error activating firmware\n");
+	} else if (rsp->ccode != IPMI_CC_OK) {
+		lprintf(LOG_ERR, "Error activating firmware");
+		lprintf(LOG_ERR, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
