@@ -1867,65 +1867,64 @@ HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf,
 	/* 2 is the size of the upload struct - data */
 	req.msg.data_len = 2 + count;
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp) {
-		if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS
-				|| rsp->ccode == 0x00) {
+	if (rsp == NULL) {
+		lprintf(LOG_NOTICE, "Error uploading firmware block.");
+		return HPMFWUPG_ERROR;
+	}
+	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS
+			|| rsp->ccode == 0x00) {
+		/*
+		 * We need to check if the response also contains the next upload firmware offset
+		 * and the firmware length in its response - These are optional but very vital
+		 */
+		if (rsp->data_len > 1) {
 			/*
-			 * We need to check if the response also contains the next upload firmware offset
-			 * and the firmware length in its response - These are optional but very vital
+			 * If the response data length is greater than 1 it should contain both the
+			 * the Section offset and section length. Because we cannot just have
+			 * Section offset without section length so the length should be 9
 			 */
-			if (rsp->data_len > 1) {
-				/*
-				 * If the response data length is greater than 1 it should contain both the
-				 * the Section offset and section length. Because we cannot just have
-				 * Section offset without section length so the length should be 9
-				 */
-				if (rsp->data_len == 9) {
-					/* rsp->data[1] - LSB  rsp->data[2]  - rsp->data[3] = MSB */
-					*imageOffset = (rsp->data[4] << 24) + (rsp->data[3] << 16) + (rsp->data[2] << 8) + rsp->data[1];
-					*blockLength = (rsp->data[8] << 24) + (rsp->data[7] << 16) + (rsp->data[6] << 8) + rsp->data[5];
-				} else {
-					 /*
-					 * The Spec does not say much for this kind of errors where the
-					 * firmware returned only offset and length so currently returning it
-					 * as 0x82 - Internal CheckSum Error
-					 */
-					lprintf(LOG_NOTICE,
-							"Error wrong rsp->datalen %d for Upload Firmware block command\n",
-							rsp->data_len);
-					rsp->ccode = HPMFWUPG_INT_CHECKSUM_ERROR;
-				}
-			}
-		}
-		/* Long duration command handling */
-		if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
-			rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-		} else if (rsp->ccode != 0x00)  {
-			/* PATCH --> This validation is to handle retryables errors codes on IPMB bus.
-			 *           This will be fixed in the next release of open ipmi and this
-			 *           check will have to be removed. (Buggy version = 39)
-			 */
-			if (HPMFWUPG_IS_RETRYABLE(rsp->ccode)) {
-				lprintf(LOG_DEBUG,"HPM: [PATCH]Retryable error detected");
-				rc = HPMFWUPG_UPLOAD_RETRY;
-			} else if ( rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH ||
-					rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED) {
-				/* If completion code = 0xc7(0xc8), we will retry with a reduced buffer length.
-				 * Do not print error.
-				 */
-				rc = HPMFWUPG_UPLOAD_BLOCK_LENGTH;
+			if (rsp->data_len == 9) {
+				/* rsp->data[1] - LSB  rsp->data[2]  - rsp->data[3] = MSB */
+				*imageOffset = (rsp->data[4] << 24) + (rsp->data[3] << 16) + (rsp->data[2] << 8) + rsp->data[1];
+				*blockLength = (rsp->data[8] << 24) + (rsp->data[7] << 16) + (rsp->data[6] << 8) + rsp->data[5];
 			} else {
-				lprintf(LOG_NOTICE,"Error uploading firmware block");
-				lprintf(LOG_NOTICE,"compcode=0x%x: %s",
-						rsp->ccode,
-						val2str(rsp->ccode,
-							completion_code_vals));
-				rc = HPMFWUPG_ERROR;
+				 /*
+				 * The Spec does not say much for this kind of errors where the
+				 * firmware returned only offset and length so currently returning it
+				 * as 0x82 - Internal CheckSum Error
+				 */
+				lprintf(LOG_NOTICE,
+						"Error wrong rsp->datalen %d for Upload Firmware block command\n",
+						rsp->data_len);
+				rsp->ccode = HPMFWUPG_INT_CHECKSUM_ERROR;
 			}
 		}
-	} else {
-		lprintf(LOG_NOTICE, "Error uploading firmware block\n");
-		rc = HPMFWUPG_ERROR;
+	}
+	/* Long duration command handling */
+	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
+		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
+	} else if (rsp->ccode != 0x00)  {
+		/* PATCH --> This validation is to handle retryables errors codes on IPMB bus.
+		 *           This will be fixed in the next release of open ipmi and this
+		 *           check will have to be removed. (Buggy version = 39)
+		 */
+		if (HPMFWUPG_IS_RETRYABLE(rsp->ccode)) {
+			lprintf(LOG_DEBUG, "HPM: [PATCH]Retryable error detected");
+			rc = HPMFWUPG_UPLOAD_RETRY;
+		} else if (rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH ||
+				rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED) {
+			/* If completion code = 0xc7(0xc8), we will retry with a reduced buffer length.
+			 * Do not print error.
+			 */
+			rc = HPMFWUPG_UPLOAD_BLOCK_LENGTH;
+		} else {
+			lprintf(LOG_ERR, "Error uploading firmware block");
+			lprintf(LOG_ERR, "compcode=0x%x: %s",
+					rsp->ccode,
+					val2str(rsp->ccode,
+						completion_code_vals));
+			rc = HPMFWUPG_ERROR;
+		}
 	}
 	return rc;
 }
