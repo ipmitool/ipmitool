@@ -1804,16 +1804,15 @@ HpmfwupgAbortUpgrade(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgAbortUpgradeReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp) {
-		if (rsp->ccode != 0x00) {
-			lprintf(LOG_NOTICE,"Error aborting upgrade");
-			lprintf(LOG_NOTICE, "compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE,"Error aborting upgrade\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error - aborting upgrade.");
+		return HPMFWUPG_ERROR;
+	}
+	if (rsp->ccode != 0x00) {
+		lprintf(LOG_ERR, "Error aborting upgrade");
+		lprintf(LOG_ERR, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
