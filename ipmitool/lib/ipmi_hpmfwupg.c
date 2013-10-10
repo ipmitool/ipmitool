@@ -1566,7 +1566,6 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 int
 HpmfwupgGetDeviceId(struct ipmi_intf *intf, struct ipm_devid_rsp *pGetDevId)
 {
-	int rc = HPMFWUPG_SUCCESS;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	memset(&req, 0, sizeof(req));
@@ -1574,21 +1573,19 @@ HpmfwupgGetDeviceId(struct ipmi_intf *intf, struct ipm_devid_rsp *pGetDevId)
 	req.msg.cmd = BMC_GET_DEVICE_ID;
 	req.msg.data_len = 0;
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp) {
-		if (rsp->ccode == 0x00) {
-			memcpy(pGetDevId, rsp->data, sizeof(struct ipm_devid_rsp));
-		} else {
-			lprintf(LOG_NOTICE, "Error getting device ID");
-			lprintf(LOG_NOTICE, "compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE, "Error getting device ID\n");
-		rc = HPMFWUPG_ERROR;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error getting device ID.");
+		return HPMFWUPG_ERROR;
 	}
-	return rc;
+	if (rsp->ccode != 0x00) {
+		lprintf(LOG_ERR, "Error getting device ID.");
+		lprintf(LOG_ERR, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
+		return HPMFWUPG_ERROR;
+	}
+	memcpy(pGetDevId, rsp->data, sizeof(struct ipm_devid_rsp));
+	return HPMFWUPG_SUCCESS;
 }
 
 int
