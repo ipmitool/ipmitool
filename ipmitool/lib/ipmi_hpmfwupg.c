@@ -1137,58 +1137,59 @@ HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 		pActionRecord = (struct HpmfwupgActionRecord*)pImagePtr;
 		/* Validate action record checksum */
 		rc = HpmfwupgValidateActionRecordChecksum(pActionRecord);
-		if (rc == HPMFWUPG_SUCCESS) {
-			switch(pActionRecord->actionType) {
-			case HPMFWUPG_ACTION_BACKUP_COMPONENTS:
-				{
-					if (!(option & COMPARE_MODE)) {
-						/* Send Upgrade Action command */
-						struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
-						/* Affect only selected components */
-						initUpgActionCmd.req.componentsMask.ComponentBits.byte =
-							pFwupgCtx->compUpdateMask.ComponentBits.byte &
-							pActionRecord->components.ComponentBits.byte;
-						/* Action is prepare components */
-						if (initUpgActionCmd.req.componentsMask.ComponentBits.byte) {
-							initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_BACKUP;
-							rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
-						}
+		if (rc != HPMFWUPG_SUCCESS) {
+			continue;
+		}
+		switch(pActionRecord->actionType) {
+		case HPMFWUPG_ACTION_BACKUP_COMPONENTS:
+			{
+				if (!(option & COMPARE_MODE)) {
+					/* Send Upgrade Action command */
+					struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
+					/* Affect only selected components */
+					initUpgActionCmd.req.componentsMask.ComponentBits.byte =
+						pFwupgCtx->compUpdateMask.ComponentBits.byte &
+						pActionRecord->components.ComponentBits.byte;
+					/* Action is prepare components */
+					if (initUpgActionCmd.req.componentsMask.ComponentBits.byte) {
+						initUpgActionCmd.req.upgradeAction  = HPMFWUPG_UPGRADE_ACTION_BACKUP;
+						rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
 					}
-					pImagePtr+= sizeof(struct HpmfwupgActionRecord);
 				}
-				break;
-			case HPMFWUPG_ACTION_PREPARE_COMPONENTS:
-				{
-					if (!(option & COMPARE_MODE)) {
-						/* Send prepare components command */
-						struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
-						/* Affect only selected components */
-						initUpgActionCmd.req.componentsMask.ComponentBits.byte =
-							pFwupgCtx->compUpdateMask.ComponentBits.byte &
-							pActionRecord->components.ComponentBits.byte;
-						if (initUpgActionCmd.req.componentsMask.ComponentBits.byte) {
-							/* Action is prepare components */
-							initUpgActionCmd.req.upgradeAction = HPMFWUPG_UPGRADE_ACTION_PREPARE;
-							rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
-						}
-					}
-					pImagePtr+= sizeof(struct HpmfwupgActionRecord);
-				}
-				break;
-			case HPMFWUPG_ACTION_UPLOAD_FIRMWARE:
-				/* Upload all firmware blocks */
-				rc = HpmFwupgActionUploadFirmware(pActionRecord->components,
-						pFwupgCtx,
-						&pImagePtr,
-						intf,
-						option,
-						&flagColdReset);
-				break;
-			default:
-				lprintf(LOG_NOTICE, "    Invalid Action type. Cannot continue");
-				rc = HPMFWUPG_ERROR;
-				break;
+				pImagePtr+= sizeof(struct HpmfwupgActionRecord);
 			}
+			break;
+		case HPMFWUPG_ACTION_PREPARE_COMPONENTS:
+			{
+				if (!(option & COMPARE_MODE)) {
+					/* Send prepare components command */
+					struct HpmfwupgInitiateUpgradeActionCtx initUpgActionCmd;
+					/* Affect only selected components */
+					initUpgActionCmd.req.componentsMask.ComponentBits.byte =
+						pFwupgCtx->compUpdateMask.ComponentBits.byte &
+						pActionRecord->components.ComponentBits.byte;
+					if (initUpgActionCmd.req.componentsMask.ComponentBits.byte) {
+						/* Action is prepare components */
+						initUpgActionCmd.req.upgradeAction = HPMFWUPG_UPGRADE_ACTION_PREPARE;
+						rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
+					}
+				}
+				pImagePtr+= sizeof(struct HpmfwupgActionRecord);
+			}
+			break;
+		case HPMFWUPG_ACTION_UPLOAD_FIRMWARE:
+			/* Upload all firmware blocks */
+			rc = HpmFwupgActionUploadFirmware(pActionRecord->components,
+					pFwupgCtx,
+					&pImagePtr,
+					intf,
+					option,
+					&flagColdReset);
+			break;
+		default:
+			lprintf(LOG_NOTICE, "    Invalid Action type. Cannot continue");
+			rc = HPMFWUPG_ERROR;
+			break;
 		}
 	}
 	HpmDisplayLine("-", 79);
