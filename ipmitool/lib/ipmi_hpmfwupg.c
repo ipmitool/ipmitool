@@ -2083,23 +2083,22 @@ HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgManualFirmwareRollbackReq);
 	rsp = HpmfwupgSendCmd(intf, req, &fwupgCtx);
-	if (rsp) {
-		/* Long duration command handling */
-		if (rsp->ccode == IPMI_CC_OK
-				|| rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
-			struct HpmfwupgQueryRollbackStatusCtx resCmd;
-			printf("Waiting firmware rollback...");
-			fflush(stdout);
-			rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, &fwupgCtx);
-		} else if ( rsp->ccode != 0x00 ) {
-			lprintf(LOG_NOTICE,"Error sending manual rollback");
-			lprintf(LOG_NOTICE,"compcode=0x%x: %s",  
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE, "Error sending manual rollback\n");
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error sending manual rollback.");
+		return HPMFWUPG_ERROR;
+	}
+	/* Long duration command handling */
+	if (rsp->ccode == IPMI_CC_OK
+			|| rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
+		struct HpmfwupgQueryRollbackStatusCtx resCmd;
+		printf("Waiting firmware rollback...");
+		fflush(stdout);
+		rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, &fwupgCtx);
+	} else if ( rsp->ccode != 0x00 ) {
+		lprintf(LOG_ERR, "Error sending manual rollback");
+		lprintf(LOG_ERR, "compcode=0x%x: %s",  
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
