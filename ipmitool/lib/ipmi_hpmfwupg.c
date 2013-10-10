@@ -1592,7 +1592,6 @@ int
 HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 		struct HpmfwupgGetTargetUpgCapabilitiesCtx *pCtx)
 {
-	int rc = HPMFWUPG_SUCCESS;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
@@ -1602,68 +1601,67 @@ HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgGetTargetUpgCapabilitiesReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp) {
-		if (rsp->ccode == 0x00) {
-			memcpy(&pCtx->resp, rsp->data,
-					sizeof(struct HpmfwupgGetTargetUpgCapabilitiesResp));
-			if (verbose) {
-				lprintf(LOG_NOTICE, "TARGET UPGRADE CAPABILITIES");
-				lprintf(LOG_NOTICE, "-------------------------------");
-				lprintf(LOG_NOTICE, "HPM.1 version............%d    ",
-						pCtx->resp.hpmVersion);
-				lprintf(LOG_NOTICE, "Component 0 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component0 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 1 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component1 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 2 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component2 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 3 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component3 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 4 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component4 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 5 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component5 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 6 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component6 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Component 7 presence....[%c]   ",
-						pCtx->resp.componentsPresent.ComponentBits.bitField.component7 ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Upgrade undesirable.....[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.fwUpgUndesirable ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Aut rollback override...[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.autRollbackOverride ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "IPMC degraded...........[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.ipmcDegradedDurinUpg ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Defered activation......[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.deferActivation ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Service affected........[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.servAffectDuringUpg ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Manual rollback.........[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.manualRollback ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Automatic rollback......[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.autRollback ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Self test...............[%c]   ",
-						pCtx->resp.GlobalCapabilities.bitField.ipmcSelftestCap ? 'y' : 'n');
-				lprintf(LOG_NOTICE, "Upgrade timeout.........[%d sec] ",
-						pCtx->resp.upgradeTimeout*5);
-				lprintf(LOG_NOTICE, "Self test timeout.......[%d sec] ",
-						pCtx->resp.selftestTimeout*5);
-				lprintf(LOG_NOTICE, "Rollback timeout........[%d sec] ",
-						pCtx->resp.rollbackTimeout*5);
-				lprintf(LOG_NOTICE, "Inaccessibility timeout.[%d sec] \n",
-						pCtx->resp.inaccessTimeout*5);
-			}
-		} else {
-			lprintf(LOG_NOTICE,
-					"Error getting target upgrade capabilities\n",
-					rsp->ccode);
-			rc = HPMFWUPG_ERROR;
-		}
-	} else {
-		lprintf(LOG_NOTICE,
-				"Error getting target upgrade capabilities\n");
-		rc = HPMFWUPG_ERROR;
+	if (rsp == NULL) {
+		lprintf(LOG_ERR,
+				"Error getting target upgrade capabilities.");
+		return HPMFWUPG_ERROR;
 	}
-	return rc;
+	if (rsp->ccode != 0x00) {
+		lprintf(LOG_ERR,
+				"Error getting target upgrade capabilities, ccode: 0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
+		return HPMFWUPG_ERROR;
+	}
+	memcpy(&pCtx->resp, rsp->data,
+			sizeof(struct HpmfwupgGetTargetUpgCapabilitiesResp));
+	if (verbose) {
+		lprintf(LOG_NOTICE, "TARGET UPGRADE CAPABILITIES");
+		lprintf(LOG_NOTICE, "-------------------------------");
+		lprintf(LOG_NOTICE, "HPM.1 version............%d    ",
+				pCtx->resp.hpmVersion);
+		lprintf(LOG_NOTICE, "Component 0 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component0 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 1 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component1 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 2 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component2 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 3 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component3 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 4 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component4 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 5 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component5 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 6 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component6 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Component 7 presence....[%c]   ",
+				pCtx->resp.componentsPresent.ComponentBits.bitField.component7 ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Upgrade undesirable.....[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.fwUpgUndesirable ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Aut rollback override...[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.autRollbackOverride ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "IPMC degraded...........[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.ipmcDegradedDurinUpg ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Defered activation......[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.deferActivation ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Service affected........[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.servAffectDuringUpg ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Manual rollback.........[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.manualRollback ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Automatic rollback......[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.autRollback ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Self test...............[%c]   ",
+				pCtx->resp.GlobalCapabilities.bitField.ipmcSelftestCap ? 'y' : 'n');
+		lprintf(LOG_NOTICE, "Upgrade timeout.........[%d sec] ",
+				pCtx->resp.upgradeTimeout*5);
+		lprintf(LOG_NOTICE, "Self test timeout.......[%d sec] ",
+				pCtx->resp.selftestTimeout*5);
+		lprintf(LOG_NOTICE, "Rollback timeout........[%d sec] ",
+				pCtx->resp.rollbackTimeout*5);
+		lprintf(LOG_NOTICE, "Inaccessibility timeout.[%d sec] \n",
+				pCtx->resp.inaccessTimeout*5);
+	}
+	return HPMFWUPG_SUCCESS;
 }
 
 int
