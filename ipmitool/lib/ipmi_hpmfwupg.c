@@ -2158,34 +2158,33 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 				|| (rsp->ccode == IPMI_CC_TIMEOUT))
 			&& (timeoutSec2 - timeoutSec1 < rollbackTimeout));
 	if (rsp) {
-		if (rsp->ccode == 0x00) {
-			memcpy(&pCtx->resp, rsp->data,
-					sizeof(struct HpmfwupgQueryRollbackStatusResp));
-			if (pCtx->resp.rollbackComp.ComponentBits.byte != 0) {
-				/* Rollback occured */
-				lprintf(LOG_NOTICE,
-						"Rollback occured on component mask: 0x%02x",
-						pCtx->resp.rollbackComp.ComponentBits.byte);
-			} else {
-				lprintf(LOG_NOTICE,
-						"No Firmware rollback occured");
-			}
-		} else if (rsp->ccode == 0x81) {
+		lprintf(LOG_ERR, "Error getting upgrade status.");
+		return HPMFWUPG_ERROR;
+	}
+	if (rsp->ccode == 0x00) {
+		memcpy(&pCtx->resp, rsp->data,
+				sizeof(struct HpmfwupgQueryRollbackStatusResp));
+		if (pCtx->resp.rollbackComp.ComponentBits.byte != 0) {
+			/* Rollback occured */
 			lprintf(LOG_NOTICE,
-					"Rollback failed on component mask: 0x%02x",
+					"Rollback occured on component mask: 0x%02x",
 					pCtx->resp.rollbackComp.ComponentBits.byte);
-			rc = HPMFWUPG_ERROR;
 		} else {
 			lprintf(LOG_NOTICE,
-					"Error getting rollback status");
-			lprintf(LOG_NOTICE,
-					"compcode=0x%x: %s",  
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
+					"No Firmware rollback occured");
 		}
+	} else if (rsp->ccode == 0x81) {
+		lprintf(LOG_ERR,
+				"Rollback failed on component mask: 0x%02x",
+				pCtx->resp.rollbackComp.ComponentBits.byte);
+		rc = HPMFWUPG_ERROR;
 	} else {
-		lprintf(LOG_NOTICE,"Error getting upgrade status\n");
+		lprintf(LOG_ERR,
+				"Error getting rollback status");
+		lprintf(LOG_ERR,
+				"compcode=0x%x: %s",  
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
