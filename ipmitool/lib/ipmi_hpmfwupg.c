@@ -2233,26 +2233,25 @@ HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelftest
 	} while (rsp
 			&& (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS)
 			&& (timeoutSec2 - timeoutSec1 < selfTestTimeout));
-	if (rsp) {
-		if (rsp->ccode == 0x00) {
-			memcpy(&pCtx->resp, rsp->data,
-					sizeof(struct HpmfwupgQuerySelftestResultResp));
-			if (verbose) {
-				lprintf(LOG_NOTICE, "Self test results:");
-				lprintf(LOG_NOTICE, "Result1 = %x",
-						pCtx->resp.result1);
-				lprintf(LOG_NOTICE, "Result2 = %x",
-						pCtx->resp.result2);
-			}
-		} else {
-			lprintf(LOG_NOTICE, "Error getting self test results");
-			lprintf(LOG_NOTICE, "compcode=0x%x: %s",
-					rsp->ccode,
-					val2str(rsp->ccode, completion_code_vals));
-			rc = HPMFWUPG_ERROR;
+	if (rsp == NULL) {
+		lprintf(LOG_NOTICE, "Error getting upgrade status\n");
+		return HPMFWUPG_ERROR;
+	}
+	if (rsp->ccode == 0x00) {
+		memcpy(&pCtx->resp, rsp->data,
+				sizeof(struct HpmfwupgQuerySelftestResultResp));
+		if (verbose) {
+			lprintf(LOG_NOTICE, "Self test results:");
+			lprintf(LOG_NOTICE, "Result1 = %x",
+					pCtx->resp.result1);
+			lprintf(LOG_NOTICE, "Result2 = %x",
+					pCtx->resp.result2);
 		}
 	} else {
-		lprintf(LOG_NOTICE, "Error getting upgrade status\n");
+		lprintf(LOG_NOTICE, "Error getting self test results");
+		lprintf(LOG_NOTICE, "compcode=0x%x: %s",
+				rsp->ccode,
+				val2str(rsp->ccode, completion_code_vals));
 		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
