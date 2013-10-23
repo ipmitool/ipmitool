@@ -110,7 +110,8 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 	struct ipmi_rq req;
 	static struct sensor_set_thresh_rq set_thresh_rq;
 	struct ipmi_rs *rsp;
-	uint32_t save_addr = 0;
+	uint8_t  bridged_request = 0;
+	uint32_t save_addr;
 	uint32_t save_channel;
 
 	memset(&set_thresh_rq, 0, sizeof (set_thresh_rq));
@@ -132,6 +133,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 		return NULL;
 
 	if (BRIDGE_TO_SENSOR(intf, target, channel)) {
+		bridged_request = 1;
 		save_addr = intf->target_addr;
 		intf->target_addr = target;
 		save_channel = intf->target_channel;
@@ -145,7 +147,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof (set_thresh_rq);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (save_addr) {
+	if (bridged_request) {
 		intf->target_addr = save_addr;
 		intf->target_channel = save_channel;
 	}

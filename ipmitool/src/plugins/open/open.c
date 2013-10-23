@@ -187,8 +187,9 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		/* use IPMB address if needed */
 		ipmb_addr.slave_addr = intf->target_addr;
 		ipmb_addr.lun = req->msg.lun;
-		lprintf(LOG_DEBUG, "Sending request to "
+		lprintf(LOG_DEBUG, "Sending request 0x%x to "
 			"IPMB target @ 0x%x:0x%x (from 0x%x)", 
+			req->msg.cmd,
 			intf->target_addr,intf->target_channel, intf->my_addr);
 
 		if(intf->transit_addr != 0 && intf->transit_addr != intf->my_addr) { 
@@ -257,8 +258,8 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		_req.addr_len = sizeof(ipmb_addr);
 	} else {
 	   /* otherwise use system interface */
-	   lprintf(LOG_DEBUG+2, "Sending request to "
-		   "System Interface");
+	   lprintf(LOG_DEBUG+2, "Sending request 0x%x to "
+		   "System Interface", req->msg.cmd);
 	   bmc_addr.lun = req->msg.lun;
 	   _req.addr = (unsigned char *) &bmc_addr;
 	   _req.addr_len = sizeof(bmc_addr);
