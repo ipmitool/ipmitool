@@ -182,8 +182,8 @@ static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf);
 
 tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
-static void KfwumOutputInfo(tKFWUM_BoardInfo boardInfo,
-                                                tKFWUM_InFirmwareInfo firmInfo);
+void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
+		tKFWUM_InFirmwareInfo firmInfo);
 
 
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
@@ -359,7 +359,7 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
 			unsigned char notUsed;
 			KfwumGetInfo(intf, 0, &notUsed);
 		}
-		KfwumOutputInfo(boardInfo,firmInfo);
+		printf_kfwum_info(boardInfo,firmInfo);
 	}
 	if ((status == KFWUM_STATUS_OK)
 			&& ((task == KFWUM_TASK_UPGRADE)
@@ -1423,12 +1423,16 @@ tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 }
 
 
-static void KfwumOutputInfo(tKFWUM_BoardInfo boardInfo,
-                                                tKFWUM_InFirmwareInfo firmInfo)
+void
+printf_kfwum_info(tKFWUM_BoardInfo boardInfo, tKFWUM_InFirmwareInfo firmInfo)
 {
-   printf("Target Board Id            : %u\n",boardInfo.boardId);
-   printf("Target IANA number         : %u\n",boardInfo.iana);
-   printf("File Size                  : %lu bytes\n",firmInfo.fileSize);
-   printf("Firmware Version           : %d.%d%d SDR %d\n",firmInfo.versMajor,
-                   firmInfo.versMinor, firmInfo.versSubMinor, firmInfo.sdrRev);
+	printf(
+"Target Board Id            : %u\n", boardInfo.boardId);
+	printf(
+"Target IANA number         : %u\n", boardInfo.iana);
+	printf(
+"File Size                  : %lu bytes\n", firmInfo.fileSize);
+	printf(
+"Firmware Version           : %d.%d%d SDR %d\n", firmInfo.versMajor,
+firmInfo.versMinor, firmInfo.versSubMinor, firmInfo.sdrRev);
 }
