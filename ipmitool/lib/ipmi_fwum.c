@@ -128,7 +128,7 @@ static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
 void printf_kfwum_help(void);
-static void KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
+int KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
 static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
 		unsigned long *pFileSize);
 static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
@@ -185,11 +185,11 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		printf_kfwum_help();
 		rc = 0;
 	} else if (strncmp(argv[0], "info", 4) == 0) {
-		KfwumMain(intf, KFWUM_TASK_INFO);
+		rc = KfwumMain(intf, KFWUM_TASK_INFO);
 	} else if (strncmp(argv[0], "status", 6) == 0) {
-		KfwumMain(intf, KFWUM_TASK_STATUS);
+		rc = KfwumMain(intf, KFWUM_TASK_STATUS);
 	} else if (strncmp(argv[0], "rollback", 8) == 0) {
-		KfwumMain(intf, KFWUM_TASK_ROLLBACK);
+		rc = KfwumMain(intf, KFWUM_TASK_ROLLBACK);
 	} else if (strncmp(argv[0], "download", 8) == 0) {
 		if ((argc < 2) || (strlen(argv[1]) < 1)) {
 			lprintf(LOG_ERR,
@@ -204,7 +204,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		}
 		strcpy((char *)fileName, argv[1]);
 		printf("Firmware File Name         : %s\n", fileName);
-		KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
+		rc = KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
 	} else if (strncmp(argv[0], "upgrade", 7) == 0) {
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
 			/* There is a file name in the parameters */
@@ -215,12 +215,12 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 			strcpy((char *)fileName, argv[1]);
 			printf("Upgrading using file name %s\n", fileName);
-			KfwumMain(intf, KFWUM_TASK_UPGRADE);
+			rc = KfwumMain(intf, KFWUM_TASK_UPGRADE);
 		} else {
-			KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
+			rc = KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
 		}
 	} else if (strncmp(argv[0], "tracelog", 8) == 0) {
-		KfwumMain(intf, KFWUM_TASK_TRACELOG);
+		rc = KfwumMain(intf, KFWUM_TASK_TRACELOG);
 	} else {
 		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);
 		printf_kfwum_help();
@@ -261,9 +261,9 @@ typedef enum eFWUM_CmdId
  *
  * @task: task to do
  *
- * returns void
+ * returns 0 on success, otherwise (-1)
  */
-static void
+int
 KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
@@ -342,6 +342,10 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_TRACELOG)) {
 		status = KfwumGetTraceLog(intf);
 	}
+	if (status == KFWUM_STATUS_OK) {
+		return 0;
+	}
+	return (-1);
 }
 
 /* KfwumGetFileSize  -  gets the file size
