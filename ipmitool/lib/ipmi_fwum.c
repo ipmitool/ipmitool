@@ -130,9 +130,9 @@ typedef struct sKFWUM_SaveFirmwareInfo
 {
 	tKFWUM_DownloadType downloadType;
    unsigned char       bufferSize;
-   unsigned char       overheadSize;	
-}tKFWUM_SaveFirmwareInfo;	
-  
+   unsigned char       overheadSize;
+}tKFWUM_SaveFirmwareInfo;
+
 #define KFWUM_SMALL_BUFFER     32 /* Minimum size (IPMB/IOL/old protocol) */
 #define KFWUM_BIG_BUFFER       32 /* Maximum size on KCS interface        */
 
@@ -166,7 +166,7 @@ static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf);
 static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
                                    unsigned long length,unsigned short padding);
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address, 
+     unsigned char sequenceNumber, unsigned long address,
      unsigned char *pFirmBuf, unsigned char * pInBufLength);
 static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
                                                 tKFWUM_InFirmwareInfo firmInfo);
@@ -342,7 +342,7 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
 
    if( (status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_ROLLBACK) )
    {
-      status = KfwumManualRollback(intf);      
+      status = KfwumManualRollback(intf);
    }
 
    if(
@@ -374,7 +374,7 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
       {
          status = KfwumValidFirmwareForBoard(boardInfo,firmInfo);
       }
-      
+
       if (status == KFWUM_STATUS_OK)
       {
       	unsigned char notUsed;
@@ -434,7 +434,7 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
    {
       status = KfwumStartFirmwareUpgrade(intf);
    }
-   
+
    if((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_TRACELOG))
    {
       status = KfwumGetTraceLog(intf);
@@ -528,10 +528,10 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
 /* KfwumShowProgress  -  helper routine to display progress bar
  *
  * Converts current/total in percent
- * 
+ *
  * *task  : string identifying current operation
  * current: progress
- * total  : limit 
+ * total  : limit
  */
 #define PROG_LENGTH 42
 void KfwumShowProgress( const unsigned char * task,  unsigned long current ,
@@ -578,7 +578,7 @@ void KfwumShowProgress( const unsigned char * task,  unsigned long current ,
 /* KfwumCalculateChecksumPadding
  *
  * TBD
- * 
+ *
  */
 static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
                                                        unsigned long totalSize)
@@ -605,7 +605,7 @@ static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
 struct KfwumGetInfoResp {
    unsigned char protocolRevision;
    unsigned char controllerDeviceId;
-   struct 
+   struct
    {
       unsigned char mode:1;
       unsigned char seqAdd:1;
@@ -622,8 +622,8 @@ struct KfwumGetInfoResp {
 
 
 /* KfwumGetInfo  -  Get Firmware Update Manager (FWUM) information
- * 
- * * intf  : IPMI interface 
+ *
+ * * intf  : IPMI interface
  * output  : when set to non zero, queried information is displayed
  * pNumBank: output ptr for number of banks
  */
@@ -678,7 +678,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          printf("Number Of Memory Bank     : %u\n",pGetInfo->numBank);
       }
       * pNumBank = pGetInfo->numBank;
-      
+
       /* Determine wich type of download to use: */
       /* Old FWUM or Old IPMC fw (data_len < 7) -->
           Address with small buffer size */
@@ -720,7 +720,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          (
            (strstr(intf->name,"open")!= NULL)
            &&
-           intf->target_addr != IPMI_BMC_SLAVE_ADDR 
+           intf->target_addr != IPMI_BMC_SLAVE_ADDR
            &&
            (
               intf->target_addr !=  intf->my_addr
@@ -730,7 +730,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
             saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
             if(verbose)
             {
-               printf("IPMB payload size          : %d\n"  , 
+               printf("IPMB payload size          : %d\n"  ,
                                                    saveFirmwareInfo.bufferSize);
             }
          }
@@ -739,7 +739,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
          	saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
             if(verbose)
             {
-               printf("SMI payload size           : %d\n", 
+               printf("SMI payload size           : %d\n",
                                                   saveFirmwareInfo.bufferSize);
             }
          }
@@ -749,8 +749,8 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
 }
 
 /* KfwumGetDeviceInfo  -  Get IPMC/Board information
- * 
- * * intf  : IPMI interface 
+ *
+ * * intf  : IPMI interface
  * output  : when set to non zero, queried information is displayed
  * tKFWUM_BoardInfo: output ptr for IPMC/Board information
  */
@@ -798,9 +798,9 @@ static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf * intf,
                                  pGetDevId->fw_rev1, pGetDevId->fw_rev2 >> 4,
                                                    pGetDevId->fw_rev2 & 0x0f);
          if(
-            ( 
+            (
                ( pBoardInfo->iana == KFWUM_IANA_KONTRON)
-               && 
+               &&
                (pBoardInfo->boardId = KFWUM_BOARD_KONTRON_5002)
             )
            )
@@ -833,7 +833,7 @@ struct KfwumGetStatusResp {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
- 
+
 
 const struct valstr bankStateValS[] = {
    { 0x00, "Not programmed" },
@@ -844,8 +844,8 @@ const struct valstr bankStateValS[] = {
 };
 
 /* KfwumGetStatus  -  Get (and prints) FWUM  banks information
- * 
- * * intf  : IPMI interface 
+ *
+ * * intf  : IPMI interface
  */
 static tKFWUM_Status KfwumGetStatus(struct ipmi_intf * intf)
 {
@@ -928,8 +928,8 @@ struct KfwumManualRollbackReq{
 
 
 /* KfwumManualRollback  -  Ask IPMC to rollback to previous version
- * 
- * * intf  : IPMI interface 
+ *
+ * * intf  : IPMI interface
  */
 static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf)
 {
@@ -1014,7 +1014,7 @@ static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
    req.msg.netfn = IPMI_NETFN_FIRMWARE;
    req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_IMAGE;
    req.msg.data = (unsigned char *) &thisReq;
-   
+
    /* Look for download type */
    if ( saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS )
    {
@@ -1024,7 +1024,7 @@ static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
    {
    	req.msg.data_len = 6;
    }
-      
+
    rsp = intf->sendrecv(intf, &req);
 
    if (!rsp)
@@ -1079,7 +1079,7 @@ struct KfwumSaveFirmwareSequenceReq
 #define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT ((unsigned char)6)
 
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address, unsigned char *pFirmBuf, 
+     unsigned char sequenceNumber, unsigned long address, unsigned char *pFirmBuf,
      unsigned char * pInBufLength)
 {
    tKFWUM_Status status = KFWUM_STATUS_OK;
@@ -1088,7 +1088,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
    unsigned char out = 0;
    unsigned char retry = 0;
    unsigned char noResponse = 0 ;
-   
+
    struct KfwumSaveFirmwareAddressReq  addressReq;
    struct KfwumSaveFirmwareSequenceReq sequenceReq;
 
@@ -1097,7 +1097,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
    	memset(&req, 0, sizeof(req));
       req.msg.netfn = IPMI_NETFN_FIRMWARE;
       req.msg.cmd = KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE;
-      
+
    	if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS )
    	{
       	addressReq.addressLSB  = address         & 0x000000ff;
@@ -1115,7 +1115,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
          req.msg.data = (unsigned char *) &sequenceReq;
          req.msg.data_len = (* pInBufLength)+sizeof(unsigned char); /* + 1 => sequenceNumber*/
       }
-      						
+
       rsp = intf->sendrecv(intf, &req);
 
       if (!rsp)
@@ -1124,7 +1124,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
 
          out = 0;
          status = KFWUM_STATUS_OK;
-         
+
          /* With IOL, we don't receive "C7" on errors, instead we receive
             nothing */
          if(strstr(intf->name,"lan")!= NULL)
@@ -1139,7 +1139,7 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
             else
             {
                printf("Error, too many commands without response\n");
-               (* pInBufLength) = 0 ;               
+               (* pInBufLength) = 0 ;
                out = 1;
             }
          } /* For other interface keep trying */
@@ -1249,11 +1249,11 @@ static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
    req.msg.cmd = KFWUM_CMD_ID_FINISH_FIRMWARE_IMAGE;
    req.msg.data = (unsigned char *) &thisReq;
    req.msg.data_len = 4;
-   											       
+
    do
    {
    	rsp = intf->sendrecv(intf, &req);
-   }while (rsp == NULL || rsp->ccode == 0xc0); 
+   }while (rsp == NULL || rsp->ccode == 0xc0);
 
    if (!rsp)
    {
@@ -1287,7 +1287,7 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
    do
    {
       writeSize = saveFirmwareInfo.bufferSize - saveFirmwareInfo.overheadSize;
-           
+
       /* Reach the end */
       if( address + writeSize > totalSize )
       {
@@ -1300,9 +1300,9 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
       }
 
       oldWriteSize = writeSize;
-      status = KfwumSaveFirmwareImage(intf, sequenceNumber, address, 
+      status = KfwumSaveFirmwareImage(intf, sequenceNumber, address,
                                                 &pBuffer[address], &writeSize);
- 
+
       if((status != KFWUM_STATUS_OK) && (retry-- != 0))
       {
          address = lastAddress;
@@ -1310,7 +1310,7 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
       }
       else if( writeSize == 0 )
       {
-         status = KFWUM_STATUS_ERROR;     
+         status = KFWUM_STATUS_ERROR;
       }
       else
       {
@@ -1319,7 +1319,7 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
             printf("Adjusting length to %d bytes \n", writeSize);
             saveFirmwareInfo.bufferSize -= (oldWriteSize - writeSize);
          }
-         
+
          retry = FWUM_MAX_UPLOAD_RETRY;
          lastAddress = address;
          address+= writeSize;
@@ -1380,7 +1380,7 @@ static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf * intf)
       status = KFWUM_STATUS_ERROR;
    }
 
-   return status;              
+   return status;
 }
 
 #define TRACE_LOG_CHUNK_COUNT 7
@@ -1395,7 +1395,7 @@ static const char* CMD_ID_STRING[] = {
                 "BootHandshake",
                 "ReportStatus",
                 "CtrlIPMBLine",
-                "SetFwState",                
+                "SetFwState",
                 "GetFwStatus",
                 "GetSpiMemStatus",
                 "StartFwUpdate",
@@ -1405,7 +1405,7 @@ static const char* CMD_ID_STRING[] = {
                 "ReadFwImage",
                 "ManualRollback",
                 "GetTraceLog" };
-                
+
 static const char* EXT_CMD_ID_STRING[] = {
                 "FwUpgradeLock",
                 "ProcessFwUpg",
@@ -1413,8 +1413,8 @@ static const char* EXT_CMD_ID_STRING[] = {
                 "WaitHSAfterUpg",
                 "WaitFirstHSUpg",
                 "FwInfoStateChange" };
-               
-                
+
+
 static const char* CMD_STATE_STRING[] = {
                 "Invalid",
                 "Begin",
@@ -1434,7 +1434,7 @@ static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf)
    {
       printf(" Getting Trace Log!\n");
    }
-   
+
    for( chunkIdx = 0; (chunkIdx < TRACE_LOG_CHUNK_COUNT) && (status == KFWUM_STATUS_OK); chunkIdx++ )
    {
       /* Retreive each log chunk and print it */
@@ -1445,7 +1445,7 @@ static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf)
       req.msg.data_len = 1;
 
       rsp = intf->sendrecv(intf, &req);
-      
+
       if (!rsp)
       {
          printf("Error in FWUM Firmware Get Trace Log Command\n");
@@ -1455,32 +1455,32 @@ static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf)
       {
          printf("FWUM Firmware Get Trace Log returned %x\n", rsp->ccode);
          status = KFWUM_STATUS_ERROR;
-      } 
+      }
 
       if(status == KFWUM_STATUS_OK)
       {
          for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++)
          {
             /* Don't diplay commands with an invalid state */
-            if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) && 
+            if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) &&
                  (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] < KFWUM_CMD_ID_STD_MAX_CMD))
             {
-               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n", 
+               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
                                              CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx]],
                                              CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1]],
                                              rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+2]);
             }
-            else if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) && 
+            else if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) &&
                       (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] >= KFWUM_CMD_ID_EXTENDED_CMD))
             {
-               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n", 
+               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
                                              EXT_CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] - KFWUM_CMD_ID_EXTENDED_CMD],
                                              CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1]],
                                              rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+2]);
             }
          }
       }
-   }    
+   }
    printf("\n");
    return status;
 }
