@@ -48,17 +48,6 @@
 #define VER_MAJOR        1
 #define VER_MINOR        3
 
-typedef enum eKFWUM_Task
-{
-	KFWUM_TASK_INFO,
-	KFWUM_TASK_STATUS,
-	KFWUM_TASK_DOWNLOAD,
-	KFWUM_TASK_UPGRADE,
-	KFWUM_TASK_START_UPGRADE,
-	KFWUM_TASK_ROLLBACK,
-	KFWUM_TASK_TRACELOG
-} tKFWUM_Task;
-
 typedef enum eKFWUM_BoardList
 {
 	KFWUM_BOARD_KONTRON_UNKNOWN = 0,
@@ -123,12 +112,10 @@ typedef struct sKFWUM_SaveFirmwareInfo
 } tKFWUM_SaveFirmwareInfo;
 
 extern int verbose;
-static unsigned char fileName[512];
 static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
 void printf_kfwum_help(void);
-int KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
 static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
 		unsigned long *pFileSize);
 static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
@@ -163,6 +150,7 @@ void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 int ipmi_fwum_info(struct ipmi_intf *intf);
 int ipmi_fwum_status(struct ipmi_intf *intf);
+int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action);
 
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
  *
@@ -198,26 +186,12 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 					"Path and file name must be specified.");
 			return (-1);
 		}
-		/* There is a file name in the parameters */
-		if (strlen(argv[1]) >= 512) {
-			lprintf(LOG_ERR,
-					"File name length is limited to 512 characters.");
-			return (-1);
-		}
-		strcpy((char *)fileName, argv[1]);
-		printf("Firmware File Name         : %s\n", fileName);
-		rc = KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
+		printf("Firmware File Name         : %s\n", argv[1]);
+		rc = ipmi_fwum_fwupgrade(intf, argv[1], 0);
 	} else if (strncmp(argv[0], "upgrade", 7) == 0) {
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
-			/* There is a file name in the parameters */
-			if (strlen(argv[1]) >= 512) {
-				lprintf(LOG_ERR,
-						"File name length is limited to 512 characters.");
-				return (-1);
-			}
-			strcpy((char *)fileName, argv[1]);
-			printf("Upgrading using file name %s\n", fileName);
-			rc = KfwumMain(intf, KFWUM_TASK_UPGRADE);
+			printf("Upgrading using file name %s\n", argv[1]);
+			rc = ipmi_fwum_fwupgrade(intf, argv[1], 1);
 		} else {
 			rc = KfwumStartFirmwareUpgrade(intf);
 		}
@@ -288,78 +262,62 @@ ipmi_fwum_status(struct ipmi_intf *intf)
 	return 0;
 }
 
-/* KfwumMain - function implements upload of the firmware data received as
- * parameters
+/* ipmi_fwum_fwupgrade - function implements download/upload of the firmware
+ * data received as parameters
  *
- * @task: task to do
+ * @file: fw file
+ * @action: 0 = download, 1 = upload/start upload
  *
  * returns 0 on success, otherwise (-1)
  */
 int
-KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
+ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 {
-	tKFWUM_Status status = KFWUM_STATUS_OK;
-	tKFWUM_BoardInfo boardInfo;
-	tKFWUM_InFirmwareInfo firmInfo = { 0 };
-	unsigned long fileSize = 0;
+	tKFWUM_BoardInfo b_info;
+	tKFWUM_InFirmwareInfo fw_info = { 0 };
 	static unsigned short padding;
-
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_DOWNLOAD))) {
-		status = KfwumGetFileSize(fileName, &fileSize);
-		if (status == KFWUM_STATUS_OK) {
-			status = KfwumSetupBuffersFromFile(fileName, fileSize);
-			if (status == KFWUM_STATUS_OK) {
-				padding = KfwumCalculateChecksumPadding(firmBuf, fileSize);
-			}
-		}
-		if (status == KFWUM_STATUS_OK) {
-			status = KfwumGetInfoFromFirmware(firmBuf, fileSize, &firmInfo);
-		}
-		if (status == KFWUM_STATUS_OK) {
-			status = KfwumGetDeviceInfo(intf, 0, &boardInfo);
-		}
-		if (status == KFWUM_STATUS_OK) {
-			status = ipmi_kfwum_checkfwcompat(boardInfo,firmInfo);
-		}
-		if (status == KFWUM_STATUS_OK) {
-			unsigned char notUsed;
-			KfwumGetInfo(intf, 0, &notUsed);
-		}
-		printf_kfwum_info(boardInfo,firmInfo);
+	unsigned long fsize = 0;
+	unsigned char not_used;
+	if (file == NULL) {
+		lprintf(LOG_ERR, "No file given.");
+		return (-1);
 	}
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_DOWNLOAD))) {
-		status = KfwumStartFirmwareImage(intf, fileSize, padding);
+	if (KfwumGetFileSize(file, &fsize) != KFWUM_STATUS_OK) {
+		return (-1);
 	}
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_DOWNLOAD))) {
-		status = KfwumUploadFirmware(intf, firmBuf, fileSize);
+	if (KfwumSetupBuffersFromFile(file, fsize) != KFWUM_STATUS_OK) {
+		return (-1);
 	}
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_DOWNLOAD))) {
-		status = KfwumFinishFirmwareImage(intf, firmInfo);
+	padding = KfwumCalculateChecksumPadding(firmBuf, fsize);
+	if (KfwumGetInfoFromFirmware(firmBuf, fsize, &fw_info) != KFWUM_STATUS_OK) {
+		return (-1);
 	}
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_DOWNLOAD))) {
-		status = KfwumGetStatus(intf);
+	if (KfwumGetDeviceInfo(intf, 0, &b_info) != KFWUM_STATUS_OK) {
+		return (-1);
 	}
-	if ((status == KFWUM_STATUS_OK)
-			&& ((task == KFWUM_TASK_UPGRADE)
-				|| (task == KFWUM_TASK_START_UPGRADE))) {
+	if (ipmi_kfwum_checkfwcompat(b_info, fw_info) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	KfwumGetInfo(intf, 0, &not_used);
+	printf_kfwum_info(b_info, fw_info);
+	if (KfwumStartFirmwareImage(intf, fsize, padding) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	if (KfwumUploadFirmware(intf, firmBuf, fsize) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	if (KfwumFinishFirmwareImage(intf, fw_info) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	if (KfwumGetStatus(intf) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	if (action != 0) {
 		if (KfwumStartFirmwareUpgrade(intf) != 0) {
-			status = KFWUM_STATUS_ERROR;
+			return (-1);
 		}
 	}
-	if (status == KFWUM_STATUS_OK) {
-		return 0;
-	}
-	return (-1);
+	return 0;
 }
 
 /* KfwumGetFileSize  -  gets the file size
