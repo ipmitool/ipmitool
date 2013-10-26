@@ -658,73 +658,55 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
 	return status;
 }
 
-/* KfwumGetDeviceInfo  -  Get IPMC/Board information
+/* KfwumGetDeviceInfo - Get IPMC/Board information
  *
- * * intf  : IPMI interface
- * output  : when set to non zero, queried information is displayed
+ * *intf: IPMI interface
+ * output: when set to non zero, queried information is displayed
  * tKFWUM_BoardInfo: output ptr for IPMC/Board information
+ *
+ * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf * intf,
-                            unsigned char output, tKFWUM_BoardInfo * pBoardInfo)
+static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
+		unsigned char output, tKFWUM_BoardInfo *pBoardInfo)
 {
-   struct ipm_devid_rsp   *pGetDevId;
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
+	struct ipm_devid_rsp *pGetDevId;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	/* Send Get Device Id */
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data_len = 0;
 
-   /* Send Get Device Id */
-   if(status == KFWUM_STATUS_OK)
-   {
-      memset(&req, 0, sizeof(req));
-      req.msg.netfn = IPMI_NETFN_APP;
-      req.msg.cmd = BMC_GET_DEVICE_ID;
-      req.msg.data_len = 0;
-
-      rsp = intf->sendrecv(intf, &req);
-      if (!rsp)
-      {
-         printf("Error in Get Device Id Command\n");
-         status = KFWUM_STATUS_ERROR;
-      }
-      else if (rsp->ccode)
-      {
-         printf("Get Device Id returned %x\n", rsp->ccode);
-         status = KFWUM_STATUS_ERROR;
-      }
-   }
-
-   if(status == KFWUM_STATUS_OK)
-   {
-      pGetDevId = (struct ipm_devid_rsp *) rsp->data;
-      pBoardInfo->iana = IPM_DEV_MANUFACTURER_ID(pGetDevId->manufacturer_id);
-      pBoardInfo->boardId = buf2short(pGetDevId->product_id);
-      if(output)
-      {
-         printf("\nIPMC Info\n");
-         printf("=========\n");
-         printf("Manufacturer Id           : %u\n",pBoardInfo->iana);
-         printf("Board Id                  : %u\n",pBoardInfo->boardId);
-         printf("Firmware Revision         : %u.%u%u",
-                                 pGetDevId->fw_rev1, pGetDevId->fw_rev2 >> 4,
-                                                   pGetDevId->fw_rev2 & 0x0f);
-         if(
-            (
-               ( pBoardInfo->iana == KFWUM_IANA_KONTRON)
-               &&
-               (pBoardInfo->boardId = KFWUM_BOARD_KONTRON_5002)
-            )
-           )
-         {
-            printf(" SDR %u\n", pGetDevId->aux_fw_rev[0]);
-         }
-         else
-         {
-            printf("\n");
-         }
-      }
-   }
-
-   return status;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in Get Device Id Command");
+		return KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode != 0) {
+		lprintf(LOG_ERR, "Get Device Id returned %x",
+				rsp->ccode);
+		return KFWUM_STATUS_ERROR;
+	}
+	pGetDevId = (struct ipm_devid_rsp *)rsp->data;
+	pBoardInfo->iana = IPM_DEV_MANUFACTURER_ID(pGetDevId->manufacturer_id);
+	pBoardInfo->boardId = buf2short(pGetDevId->product_id);
+	if (output) {
+		printf("\nIPMC Info\n");
+		printf("=========\n");
+		printf("Manufacturer Id           : %u\n",
+				pBoardInfo->iana);
+		printf("Board Id                  : %u\n",
+				pBoardInfo->boardId);
+		printf("Firmware Revision         : %u.%u%u",
+				pGetDevId->fw_rev1, pGetDevId->fw_rev2 >> 4,
+				pGetDevId->fw_rev2 & 0x0f);
+		if (((pBoardInfo->iana == KFWUM_IANA_KONTRON)
+					&& (pBoardInfo->boardId = KFWUM_BOARD_KONTRON_5002))) {
+			printf(" SDR %u", pGetDevId->aux_fw_rev[0]);
+		}
+		printf("\n");
+	}
+	return KFWUM_STATUS_OK;
 }
 
 
