@@ -2469,11 +2469,15 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 	lprintf(LOG_NOTICE, "\nPICMG HPM.1 Upgrade Agent %d.%d.%d: \n",
 			HPMFWUPG_VERSION_MAJOR, HPMFWUPG_VERSION_MINOR,
 			HPMFWUPG_VERSION_SUBMINOR);
-	if ((argc == 0) || (strcmp(argv[0], "help") == 0)) {
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
 		HpmfwupgPrintUsage();
 		return HPMFWUPG_ERROR;
 	}
-	if ((strcmp(argv[0], "check") == 0)) {
+	if (strcmp(argv[0], "help") == 0) {
+		HpmfwupgPrintUsage();
+		return HPMFWUPG_SUCCESS;
+	} else if ((strcmp(argv[0], "check") == 0)) {
 		/* hpm check */
 		if (argv[1] == NULL) {
 			rc = HpmfwupgTargetCheck(intf,VIEW_MODE);
@@ -2633,7 +2637,9 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 		verbose++;
 		rc = HpmfwupgQuerySelftestResult(intf, &cmdCtx, NULL);
 	} else {
+		lprintf(LOG_ERR, "Invalid HPM command: %s", argv[0]);
 		HpmfwupgPrintUsage();
+		rc = HPMFWUPG_ERROR;
 	}
 	return rc;
 }
