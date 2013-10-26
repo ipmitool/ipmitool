@@ -54,15 +54,10 @@ typedef enum eKFWUM_BoardList
 	KFWUM_BOARD_KONTRON_5002 = 5002,
 } tKFWUM_BoardList;
 
-typedef enum eKFWUM_IanaList
-{
-	KFWUM_IANA_KONTRON = 15000,
-} tKFWUM_IanaList;
-
 typedef struct sKFWUM_BoardInfo
 {
 	tKFWUM_BoardList boardId;
-	tKFWUM_IanaList  iana;
+	IPMI_OEM  iana;
 } tKFWUM_BoardInfo;
 
 typedef enum eKFWUM_Status
@@ -101,7 +96,7 @@ typedef struct sKFWUM_InFirmwareInfo
 	unsigned char   versMinor;
 	unsigned char   versSubMinor;
 	unsigned char   sdrRev;
-	tKFWUM_IanaList iana;
+	IPMI_OEM iana;
 } tKFWUM_InFirmwareInfo;
 
 typedef struct sKFWUM_SaveFirmwareInfo
@@ -609,7 +604,7 @@ KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 		printf("Firmware Revision         : %u.%u%u",
 				pGetDevId->fw_rev1, pGetDevId->fw_rev2 >> 4,
 				pGetDevId->fw_rev2 & 0x0f);
-		if (((pBoardInfo->iana == KFWUM_IANA_KONTRON)
+		if (((pBoardInfo->iana == IPMI_OEM_KONTRON)
 					&& (pBoardInfo->boardId = KFWUM_BOARD_KONTRON_5002))) {
 			printf(" SDR %u", pGetDevId->aux_fw_rev[0]);
 		}
