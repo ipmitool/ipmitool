@@ -313,135 +313,82 @@ typedef enum eFWUM_CmdId
 *******************************************************************************/
 static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   tKFWUM_BoardInfo boardInfo;
-   tKFWUM_InFirmwareInfo firmInfo = { 0 };
-   unsigned long fileSize = 0;
-   static unsigned short padding;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	tKFWUM_BoardInfo boardInfo;
+	tKFWUM_InFirmwareInfo firmInfo = { 0 };
+	unsigned long fileSize = 0;
+	static unsigned short padding;
 
-   if((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_INFO))
-   {
-      unsigned char notUsed;
-      if(verbose)
-      {
-         printf("Getting Kontron FWUM Info\n");
-      }
-      KfwumGetDeviceInfo(intf, 1, &boardInfo);
-      KfwumGetInfo(intf, 1, &notUsed);
-
-   }
-
-
-   if((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_STATUS))
-   {
-      if(verbose)
-      {
-         printf("Getting Kontron FWUM Status\n");
-      }
-      KfwumGetStatus(intf);
-   }
-
-   if( (status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_ROLLBACK) )
-   {
-      status = KfwumManualRollback(intf);
-   }
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_DOWNLOAD)
-      )
-     )
-   {
-      status = KfwumGetFileSize(fileName, &fileSize);
-      if(status == KFWUM_STATUS_OK)
-      {
-         status = KfwumSetupBuffersFromFile(fileName, fileSize);
-         if(status == KFWUM_STATUS_OK)
-         {
-            padding = KfwumCalculateChecksumPadding(firmBuf, fileSize);
-         }
-      }
-      if(status == KFWUM_STATUS_OK)
-      {
-         status = KfwumGetInfoFromFirmware(firmBuf, fileSize, &firmInfo);
-      }
-      if(status == KFWUM_STATUS_OK)
-      {
-         status = KfwumGetDeviceInfo(intf, 0, &boardInfo);
-      }
-
-      if(status == KFWUM_STATUS_OK)
-      {
-         status = KfwumValidFirmwareForBoard(boardInfo,firmInfo);
-      }
-
-      if (status == KFWUM_STATUS_OK)
-      {
-      	unsigned char notUsed;
-      	KfwumGetInfo(intf, 0, &notUsed);
-      }
-
-      KfwumOutputInfo(boardInfo,firmInfo);
-   }
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_DOWNLOAD)
-      )
-     )
-   {
-      status = KfwumStartFirmwareImage(intf, fileSize, padding);
-   }
-
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_DOWNLOAD)
-      )
-     )
-   {
-      status = KfwumUploadFirmware(intf, firmBuf, fileSize);
-   }
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_DOWNLOAD)
-      )
-     )
-   {
-      status = KfwumFinishFirmwareImage(intf, firmInfo);
-   }
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_DOWNLOAD)
-      )
-     )
-   {
-      status = KfwumGetStatus(intf);
-   }
-
-   if(
-      (status == KFWUM_STATUS_OK) &&
-      (
-         (task == KFWUM_TASK_UPGRADE) || (task == KFWUM_TASK_START_UPGRADE)
-      )
-     )
-   {
-      status = KfwumStartFirmwareUpgrade(intf);
-   }
-
-   if((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_TRACELOG))
-   {
-      status = KfwumGetTraceLog(intf);
-   }
-
-
+	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_INFO)) {
+		unsigned char notUsed;
+		if (verbose) {
+			printf("Getting Kontron FWUM Info\n");
+		}
+		KfwumGetDeviceInfo(intf, 1, &boardInfo);
+		KfwumGetInfo(intf, 1, &notUsed);
+	}
+	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_STATUS)) {
+		if (verbose) {
+			printf("Getting Kontron FWUM Status\n");
+		}
+		KfwumGetStatus(intf);
+	}
+	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_ROLLBACK)) {
+		status = KfwumManualRollback(intf);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_DOWNLOAD))) {
+		status = KfwumGetFileSize(fileName, &fileSize);
+		if (status == KFWUM_STATUS_OK) {
+			status = KfwumSetupBuffersFromFile(fileName, fileSize);
+			if (status == KFWUM_STATUS_OK) {
+				padding = KfwumCalculateChecksumPadding(firmBuf, fileSize);
+			}
+		}
+		if (status == KFWUM_STATUS_OK) {
+			status = KfwumGetInfoFromFirmware(firmBuf, fileSize, &firmInfo);
+		}
+		if (status == KFWUM_STATUS_OK) {
+			status = KfwumGetDeviceInfo(intf, 0, &boardInfo);
+		}
+		if (status == KFWUM_STATUS_OK) {
+			status = KfwumValidFirmwareForBoard(boardInfo,firmInfo);
+		}
+		if (status == KFWUM_STATUS_OK) {
+			unsigned char notUsed;
+			KfwumGetInfo(intf, 0, &notUsed);
+		}
+		KfwumOutputInfo(boardInfo,firmInfo);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_DOWNLOAD))) {
+		status = KfwumStartFirmwareImage(intf, fileSize, padding);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_DOWNLOAD))) {
+		status = KfwumUploadFirmware(intf, firmBuf, fileSize);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_DOWNLOAD))) {
+		status = KfwumFinishFirmwareImage(intf, firmInfo);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_DOWNLOAD))) {
+		status = KfwumGetStatus(intf);
+	}
+	if ((status == KFWUM_STATUS_OK)
+			&& ((task == KFWUM_TASK_UPGRADE)
+				|| (task == KFWUM_TASK_START_UPGRADE))) {
+		status = KfwumStartFirmwareUpgrade(intf);
+	}
+	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_TRACELOG)) {
+		status = KfwumGetTraceLog(intf);
+	}
 }
 
 /* KfwumGetFileSize  -  gets the file size
