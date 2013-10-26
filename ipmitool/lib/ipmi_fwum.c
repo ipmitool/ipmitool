@@ -142,7 +142,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
 		unsigned char output, tKFWUM_BoardInfo *pBoardInfo);
 static tKFWUM_Status KfwumGetStatus(struct ipmi_intf *intf);
-static tKFWUM_Status KfwumManualRollback(struct ipmi_intf *intf);
+int KfwumManualRollback(struct ipmi_intf *intf);
 static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf *intf,
 		unsigned long length, unsigned short padding);
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf *intf,
@@ -189,7 +189,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 	} else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = KfwumMain(intf, KFWUM_TASK_STATUS);
 	} else if (strncmp(argv[0], "rollback", 8) == 0) {
-		rc = KfwumMain(intf, KFWUM_TASK_ROLLBACK);
+		rc = KfwumManualRollback(intf);
 	} else if (strncmp(argv[0], "download", 8) == 0) {
 		if ((argc < 2) || (strlen(argv[1]) < 1)) {
 			lprintf(LOG_ERR,
@@ -285,9 +285,6 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 			printf("Getting Kontron FWUM Status\n");
 		}
 		KfwumGetStatus(intf);
-	}
-	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_ROLLBACK)) {
-		status = KfwumManualRollback(intf);
 	}
 	if ((status == KFWUM_STATUS_OK)
 			&& ((task == KFWUM_TASK_UPGRADE)
@@ -750,9 +747,10 @@ struct KfwumManualRollbackReq {
  *
  * *intf  : IPMI interface
  *
- * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
+ * returns 0 on success
+ * returns (-1) on error
  */
-static tKFWUM_Status
+int
 KfwumManualRollback(struct ipmi_intf *intf)
 {
 	struct ipmi_rs *rsp;
@@ -769,15 +767,15 @@ KfwumManualRollback(struct ipmi_intf *intf)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
-		return KFWUM_STATUS_ERROR;
+		return (-1);
 	} else if (rsp->ccode != 0) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Manual Rollback Command returned %x",
 				rsp->ccode);
-		return KFWUM_STATUS_ERROR;
+		return (-1);
 	}
 	printf("FWUM Starting Manual Rollback \n");
-	return KFWUM_STATUS_OK;
+	return 0;
 }
 
 #ifdef HAVE_PRAGMA_PACK
