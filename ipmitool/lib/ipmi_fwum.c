@@ -946,145 +946,97 @@ struct KfwumSaveFirmwareSequenceReq
 #endif
 
 
-#define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT ((unsigned char)6)
+# define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT 6
 
 static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address, unsigned char *pFirmBuf,
-     unsigned char * pInBufLength)
+     unsigned char sequenceNumber, unsigned long address,
+	 unsigned char *pFirmBuf, unsigned char *pInBufLength)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   unsigned char out = 0;
-   unsigned char retry = 0;
-   unsigned char noResponse = 0 ;
-
-   struct KfwumSaveFirmwareAddressReq  addressReq;
-   struct KfwumSaveFirmwareSequenceReq sequenceReq;
-
-   do
-   {
-   	memset(&req, 0, sizeof(req));
-      req.msg.netfn = IPMI_NETFN_FIRMWARE;
-      req.msg.cmd = KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE;
-
-   	if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS )
-   	{
-      	addressReq.addressLSB  = address         & 0x000000ff;
-         addressReq.addressMid  = (address >>  8) & 0x000000ff;
-         addressReq.addressMSB  = (address >> 16) & 0x000000ff;
-         addressReq.numBytes    = (* pInBufLength);
-         memcpy(addressReq.txBuf, pFirmBuf, (* pInBufLength));
-         req.msg.data = (unsigned char *) &addressReq;
-         req.msg.data_len = (* pInBufLength)+4;
-   	}
-      else
-      {
-      	sequenceReq.sequenceNumber = sequenceNumber;
-         memcpy(sequenceReq.txBuf, pFirmBuf, (* pInBufLength));
-         req.msg.data = (unsigned char *) &sequenceReq;
-         req.msg.data_len = (* pInBufLength)+sizeof(unsigned char); /* + 1 => sequenceNumber*/
-      }
-
-      rsp = intf->sendrecv(intf, &req);
-
-      if (!rsp)
-      {
-         printf("Error in FWUM Firmware Save Firmware Image Download Command\n");
-
-         out = 0;
-         status = KFWUM_STATUS_OK;
-
-         /* With IOL, we don't receive "C7" on errors, instead we receive
-            nothing */
-         if(strstr(intf->name,"lan")!= NULL)
-         {
-            noResponse++;
-
-            if(noResponse < FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT )
-            {
-               (* pInBufLength) -= 1;
-               out = 0;
-            }
-            else
-            {
-               printf("Error, too many commands without response\n");
-               (* pInBufLength) = 0 ;
-               out = 1;
-            }
-         } /* For other interface keep trying */
-      }
-      else if (rsp->ccode)
-      {
-         if(rsp->ccode == 0xc0)
-         {
-            status = KFWUM_STATUS_OK;
-            sleep(1);
-         }
-         else if(
-                  (rsp->ccode == 0xc7)
-                  ||
-                  (
-                     (rsp->ccode == 0xC3) &&
-                     (sequenceNumber == 0)
-                  )
-                )
-         {
-            (* pInBufLength) -= 1;
-            status = KFWUM_STATUS_OK;
-            retry = 1;
-         }
-         else if(rsp->ccode == 0x82)
-         {
-            /* Double sent, continue */
-            status = KFWUM_STATUS_OK;
-            out = 1;
-         }
-         else if(rsp->ccode == 0x83)
-         {
-            if(retry == 0)
-            {
-               retry = 1;
-               status = KFWUM_STATUS_OK;
-            }
-            else
-            {
-               status = KFWUM_STATUS_ERROR;
-               out = 1;
-            }
-         }
-         else if(rsp->ccode == 0xcf) /* Ok if receive duplicated request */
-         {
-            retry = 1;
-            status = KFWUM_STATUS_OK;
-         }
-         else if(rsp->ccode == 0xC3)
-         {
-            if(retry == 0)
-           {
-               retry = 1;
-               status = KFWUM_STATUS_OK;
-            }
-            else
-            {
-               status = KFWUM_STATUS_ERROR;
-               out = 1;
-            }
-         }
-         else
-         {
-            printf("FWUM Firmware Save Firmware Image Download returned %x\n",
-                                                                     rsp->ccode);
-            status = KFWUM_STATUS_ERROR;
-            out = 1;
-         }
-      }
-      else
-      {
-         out = 1;
-      }
-   }while(out == 0);
-   return status;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct KfwumSaveFirmwareAddressReq addr_req;
+	struct KfwumSaveFirmwareSequenceReq seq_req;
+	int retry = 0;
+	int no_rsp = 0;
+	do {
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_FIRMWARE;
+		req.msg.cmd = KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE;
+		if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
+			addr_req.addressLSB  = address         & 0x000000ff;
+			addr_req.addressMid  = (address >>  8) & 0x000000ff;
+			addr_req.addressMSB  = (address >> 16) & 0x000000ff;
+			addr_req.numBytes    = *pInBufLength;
+			memcpy(addr_req.txBuf, pFirmBuf, *pInBufLength);
+			req.msg.data = (unsigned char *)&addr_req;
+			req.msg.data_len = *pInBufLength + 4;
+		} else {
+			seq_req.sequenceNumber = sequenceNumber;
+			memcpy(seq_req.txBuf, pFirmBuf, *pInBufLength);
+			req.msg.data = (unsigned char *)&seq_req;
+			req.msg.data_len = *pInBufLength + sizeof(unsigned char);
+			/* + 1 => sequenceNumber*/
+		}
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR,
+					"Error in FWUM Firmware Save Firmware Image Download Command.");
+			/* We don't receive "C7" on errors with IOL,
+			 * instead we receive nothing
+			 */
+			if (strstr(intf->name, "lan") != NULL) {
+				no_rsp++;
+				if (no_rsp < FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT) {
+					*pInBufLength -= 1;
+					continue;
+				}
+				lprintf(LOG_ERR,
+						"Error, too many commands without response.");
+				*pInBufLength = 0;
+				break;
+			} /* For other interface keep trying */
+		} else if (rsp->ccode != 0) {
+			if (rsp->ccode == 0xc0) {
+				sleep(1);
+			} else if ((rsp->ccode == 0xc7)
+					|| ((rsp->ccode == 0xc3)
+						&& (sequenceNumber == 0))) {
+				*pInBufLength -= 1;
+				retry = 1;
+			} else if (rsp->ccode == 0x82) {
+				/* Double sent, continue */
+				status = KFWUM_STATUS_OK;
+				break;
+			} else if (rsp->ccode == 0x83) {
+				if (retry == 0) {
+					retry = 1;
+					continue;
+				}
+				status = KFWUM_STATUS_ERROR;
+				break;
+			} else if (rsp->ccode == 0xcf) {
+				/* Ok if receive duplicated request */
+				retry = 1;
+			} else if (rsp->ccode == 0xc3) {
+				if (retry == 0) {
+					retry = 1;
+					continue;
+				}
+				status = KFWUM_STATUS_ERROR;
+				break;
+			} else {
+				lprintf(LOG_ERR,
+						"FWUM Firmware Save Firmware Image Download returned %x",
+						rsp->ccode);
+				status = KFWUM_STATUS_ERROR;
+				break;
+			}
+		} else {
+			break;
+		}
+	} while (1);
+	return status;
 }
 
 #ifdef HAVE_PRAGMA_PACK
