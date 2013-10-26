@@ -726,75 +726,69 @@ const struct valstr bankStateValS[] = {
 
 /* KfwumGetStatus  -  Get (and prints) FWUM  banks information
  *
- * * intf  : IPMI interface
+ * *intf  : IPMI interface
+ *
+ * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumGetStatus(struct ipmi_intf * intf)
+static tKFWUM_Status
+KfwumGetStatus(struct ipmi_intf * intf)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   struct KfwumGetStatusResp *pGetStatus;
-   unsigned char numBank;
-   unsigned char counter;
-
-   if(verbose)
-   {
-      printf(" Getting Status!\n");
-   }
-
-   /* Retreive the number of bank */
-   status = KfwumGetInfo(intf, 0, &numBank);
-
-   for(
-         counter = 0;
-         (counter < numBank) && (status == KFWUM_STATUS_OK);
-         counter ++
-      )
-   {
-      /* Retreive the status of each bank */
-      memset(&req, 0, sizeof(req));
-      req.msg.netfn = IPMI_NETFN_FIRMWARE;
-      req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_STATUS;
-      req.msg.data = &counter;
-      req.msg.data_len = 1;
-
-      rsp = intf->sendrecv(intf, &req);
-
-      if (!rsp)
-      {
-         printf("Error in FWUM Firmware Get Status Command\n");
-         status = KFWUM_STATUS_ERROR;
-      }
-      else if (rsp->ccode)
-      {
-         printf("FWUM Firmware Get Status returned %x\n", rsp->ccode);
-         status = KFWUM_STATUS_ERROR;
-      }
-
-
-      if(status == KFWUM_STATUS_OK)
-      {
-         pGetStatus = (struct KfwumGetStatusResp *) rsp->data;
-         printf("\nBank State %d               : %s\n", counter, val2str(
-                                         pGetStatus->bankState, bankStateValS));
-         if(pGetStatus->bankState)
-         {
-            unsigned long firmLength;
-            firmLength  = pGetStatus->firmLengthMSB;
-            firmLength  = firmLength << 8;
-            firmLength |= pGetStatus->firmLengthMid;
-            firmLength  = firmLength << 8;
-            firmLength |= pGetStatus->firmLengthLSB;
-
-            printf("Firmware Length            : %ld bytes\n", firmLength);
-            printf("Firmware Revision          : %u.%u%u SDR %u\n",
-                              pGetStatus->firmRev1,  pGetStatus->firmRev2 >> 4,
-                           pGetStatus->firmRev2 & 0x0f, pGetStatus->firmRev3);
-         }
-      }
-   }
-   printf("\n");
-   return status;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct KfwumGetStatusResp *pGetStatus;
+	unsigned char numBank;
+	unsigned char counter;
+	unsigned long firmLength;
+	if (verbose) {
+		printf(" Getting Status!\n");
+	}
+	/* Retreive the number of bank */
+	status = KfwumGetInfo(intf, 0, &numBank);
+	for(counter = 0;
+			(counter < numBank) && (status == KFWUM_STATUS_OK);
+			counter ++) {
+		/* Retreive the status of each bank */
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_FIRMWARE;
+		req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_STATUS;
+		req.msg.data = &counter;
+		req.msg.data_len = 1;
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR,
+					"Error in FWUM Firmware Get Status Command.");
+			status = KFWUM_STATUS_ERROR;
+			break;
+		} else if (rsp->ccode) {
+			lprintf(LOG_ERR,
+					"FWUM Firmware Get Status returned %x",
+					rsp->ccode);
+			status = KFWUM_STATUS_ERROR;
+			break;
+		}
+		pGetStatus = (struct KfwumGetStatusResp *) rsp->data;
+		printf("\nBank State %d               : %s\n",
+				counter,
+				val2str(pGetStatus->bankState, bankStateValS));
+		if (!pGetStatus->bankState) {
+			continue;
+		}
+		firmLength  = pGetStatus->firmLengthMSB;
+		firmLength  = firmLength << 8;
+		firmLength |= pGetStatus->firmLengthMid;
+		firmLength  = firmLength << 8;
+		firmLength |= pGetStatus->firmLengthLSB;
+		printf("Firmware Length            : %ld bytes\n",
+				firmLength);
+		printf("Firmware Revision          : %u.%u%u SDR %u\n",
+				pGetStatus->firmRev1,
+				pGetStatus->firmRev2 >> 4,
+				pGetStatus->firmRev2 & 0x0f,
+				pGetStatus->firmRev3);
+	}
+	printf("\n");
+	return status;
 }
 
 #ifdef HAVE_PRAGMA_PACK
