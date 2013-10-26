@@ -162,6 +162,7 @@ tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 int ipmi_fwum_info(struct ipmi_intf *intf);
+int ipmi_fwum_status(struct ipmi_intf *intf);
 
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
  *
@@ -188,7 +189,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 	} else if (strncmp(argv[0], "info", 4) == 0) {
 		rc = ipmi_fwum_info(intf);
 	} else if (strncmp(argv[0], "status", 6) == 0) {
-		rc = KfwumMain(intf, KFWUM_TASK_STATUS);
+		rc = ipmi_fwum_status(intf);
 	} else if (strncmp(argv[0], "rollback", 8) == 0) {
 		rc = KfwumManualRollback(intf);
 	} else if (strncmp(argv[0], "download", 8) == 0) {
@@ -275,6 +276,18 @@ ipmi_fwum_info(struct ipmi_intf *intf)
 	return rc;
 }
 
+int
+ipmi_fwum_status(struct ipmi_intf *intf)
+{
+	if (verbose) {
+		printf("Getting Kontron FWUM Status\n");
+	}
+	if (KfwumGetStatus(intf) != KFWUM_STATUS_OK) {
+		return (-1);
+	}
+	return 0;
+}
+
 /* KfwumMain - function implements upload of the firmware data received as
  * parameters
  *
@@ -291,12 +304,6 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 	unsigned long fileSize = 0;
 	static unsigned short padding;
 
-	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_STATUS)) {
-		if (verbose) {
-			printf("Getting Kontron FWUM Status\n");
-		}
-		KfwumGetStatus(intf);
-	}
 	if ((status == KFWUM_STATUS_OK)
 			&& ((task == KFWUM_TASK_UPGRADE)
 				|| (task == KFWUM_TASK_DOWNLOAD))) {
