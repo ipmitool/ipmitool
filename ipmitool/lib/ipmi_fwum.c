@@ -122,17 +122,6 @@ typedef struct sKFWUM_SaveFirmwareInfo
 	unsigned char       overheadSize;
 } tKFWUM_SaveFirmwareInfo;
 
-/* Minimum size (IPMB/IOL/old protocol) */
-#define KFWUM_SMALL_BUFFER     32
-/* Maximum size on KCS interface */
-#define KFWUM_BIG_BUFFER       32
-
-/* 3 address + 1 size + 1 checksum + 1 command */
-#define KFWUM_OLD_CMD_OVERHEAD 6
-/* 1 sequence + 1 size + 1 checksum + 1 command */
-#define KFWUM_NEW_CMD_OVERHEAD 4
-#define KFWUM_PAGE_SIZE        256
-
 extern int verbose;
 static unsigned char fileName[512];
 static unsigned char firmBuf[1024*512];
@@ -387,7 +376,6 @@ KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
  *
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
-#define MAX_BUFFER_SIZE          1024*16
 static tKFWUM_Status
 KfwumSetupBuffersFromFile(unsigned char * pFileName, unsigned long fileSize)
 {
@@ -882,8 +870,6 @@ struct KfwumSaveFirmwareSequenceReq
 #pragma pack(0)
 #endif
 
-# define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT 6
-
 static tKFWUM_Status
 KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 		unsigned long address, unsigned char *pFirmBuf,
@@ -1024,7 +1010,6 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 	return KFWUM_STATUS_OK;
 }
 
-#define FWUM_MAX_UPLOAD_RETRY 6
 static tKFWUM_Status
 KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 		unsigned long totalSize)
@@ -1114,9 +1099,6 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 	return status;
 }
 
-#define TRACE_LOG_CHUNK_COUNT 7
-#define TRACE_LOG_CHUNK_SIZE  7
-#define TRACE_LOG_ATT_COUNT   3
 /* String table */
 /* Must match eFWUM_CmdId */
 static const char* CMD_ID_STRING[] = {
@@ -1209,23 +1191,6 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 	printf("\n");
 	return status;
 }
-
-#define IN_FIRMWARE_INFO_OFFSET_LOCATION           0x5a0
-#define IN_FIRMWARE_INFO_SIZE                      20
-#define IN_FIRMWARE_INFO_OFFSET_FILE_SIZE          0
-#define IN_FIRMWARE_INFO_OFFSET_CHECKSUM           4
-#define IN_FIRMWARE_INFO_OFFSET_BOARD_ID           6
-#define IN_FIRMWARE_INFO_OFFSET_DEVICE_ID          8
-#define IN_FIRMWARE_INFO_OFFSET_TABLE_VERSION      9
-#define IN_FIRMWARE_INFO_OFFSET_IMPLEMENT_REV      10
-#define IN_FIRMWARE_INFO_OFFSET_VER_MAJOROR      11
-#define IN_FIRMWARE_INFO_OFFSET_VER_MINORSUB     12
-#define IN_FIRMWARE_INFO_OFFSET_SDR_REV            13
-#define IN_FIRMWARE_INFO_OFFSET_IANA0              14
-#define IN_FIRMWARE_INFO_OFFSET_IANA1              15
-#define IN_FIRMWARE_INFO_OFFSET_IANA2              16
-
-#define KWUM_GET_BYTE_AT_OFFSET(pBuffer,os)            pBuffer[os]
 
 tKFWUM_Status
 KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
