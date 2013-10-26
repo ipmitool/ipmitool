@@ -45,8 +45,8 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 
-#define VERSION_MAJ        1
-#define VERSION_MIN        3
+#define VER_MAJOR        1
+#define VER_MINOR        3
 
 typedef enum eKFWUM_Task
 {
@@ -186,7 +186,7 @@ int
 ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
-	printf("FWUM extension Version %d.%d\n", VERSION_MAJ, VERSION_MIN);
+	printf("FWUM extension Version %d.%d\n", VER_MAJOR, VER_MINOR);
 	if (argc < 1) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_kfwum_help();
@@ -1218,8 +1218,8 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 #define IN_FIRMWARE_INFO_OFFSET_DEVICE_ID          8
 #define IN_FIRMWARE_INFO_OFFSET_TABLE_VERSION      9
 #define IN_FIRMWARE_INFO_OFFSET_IMPLEMENT_REV      10
-#define IN_FIRMWARE_INFO_OFFSET_VERSION_MAJOR      11
-#define IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB     12
+#define IN_FIRMWARE_INFO_OFFSET_VER_MAJOROR      11
+#define IN_FIRMWARE_INFO_OFFSET_VER_MINORSUB     12
 #define IN_FIRMWARE_INFO_OFFSET_SDR_REV            13
 #define IN_FIRMWARE_INFO_OFFSET_IANA0              14
 #define IN_FIRMWARE_INFO_OFFSET_IANA1              15
@@ -1279,14 +1279,14 @@ KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
 
 	pInfo->versMajor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
 				offset
-				+ IN_FIRMWARE_INFO_OFFSET_VERSION_MAJOR)) & 0x0f;
+				+ IN_FIRMWARE_INFO_OFFSET_VER_MAJOROR)) & 0x0f;
 
 	pInfo->versMinor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
 				offset
-				+ IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB) >> 4) & 0x0f;
+				+ IN_FIRMWARE_INFO_OFFSET_VER_MINORSUB) >> 4) & 0x0f;
 
 	pInfo->versSubMinor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
-				offset + IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB)) & 0x0f;
+				offset + IN_FIRMWARE_INFO_OFFSET_VER_MINORSUB)) & 0x0f;
 
 	pInfo->sdrRev = KWUM_GET_BYTE_AT_OFFSET(pBuf,
 			offset + IN_FIRMWARE_INFO_OFFSET_SDR_REV);
