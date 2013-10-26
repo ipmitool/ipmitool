@@ -569,124 +569,93 @@ struct KfwumGetInfoResp {
  * pNumBank: output ptr for number of banks
  */
 static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
-                                                       unsigned char *pNumBank)
+		unsigned char *pNumBank)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   static struct KfwumGetInfoResp *pGetInfo;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	static struct KfwumGetInfoResp *pGetInfo;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_FIRMWARE;
-   req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_INFO;
-   req.msg.data_len = 0;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_FIRMWARE;
+	req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_INFO;
+	req.msg.data_len = 0;
 
-   rsp = intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
+	if (!rsp) {
+		lprintf(LOG_ERR, "Error in FWUM Firmware Get Info Command.");
+		return KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode != 0) {
+		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x\n",
+				rsp->ccode);
+		return KFWUM_STATUS_ERROR;
+	}
 
-   if (!rsp)
-   {
-      printf("Error in FWUM Firmware Get Info Command\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-   else if (rsp->ccode)
-   {
-      printf("FWUM Firmware Get Info returned %x\n", rsp->ccode);
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   if(status == KFWUM_STATUS_OK)
-   {
-      pGetInfo = (struct KfwumGetInfoResp *) rsp->data;
-      if(output)
-      {
-         printf("\nFWUM info\n");
-         printf("=========\n");
-         printf("Protocol Revision         : %02Xh\n",
-                                                    pGetInfo->protocolRevision);
-         printf("Controller Device Id      : %02Xh\n",
-                                                  pGetInfo->controllerDeviceId);
-         printf("Firmware Revision         : %u.%u%u",
-                                 pGetInfo->firmRev1, pGetInfo->firmRev2 >> 4,
-                                                     pGetInfo->firmRev2 & 0x0f);
-         if(pGetInfo->byte.mode != 0)
-         {
-            printf(" - DEBUG BUILD\n");
-         }
-         else
-         {
-            printf("\n");
-         }
-         printf("Number Of Memory Bank     : %u\n",pGetInfo->numBank);
-      }
-      * pNumBank = pGetInfo->numBank;
-
-      /* Determine wich type of download to use: */
-      /* Old FWUM or Old IPMC fw (data_len < 7) -->
-          Address with small buffer size */
-      if ( (pGetInfo->protocolRevision) <= 0x05 || (rsp->data_len < 7 ) )
-      {
-      	saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_ADDRESS;
-         saveFirmwareInfo.bufferSize   = KFWUM_SMALL_BUFFER;
-         saveFirmwareInfo.overheadSize = KFWUM_OLD_CMD_OVERHEAD;
-
-         if(verbose)
-         {
-            printf("Protocol Revision          :");
-            printf(" <= 5 detected, adjusting buffers\n");
-         }
-      }
-      else /* Both fw are using the new protocol */
-      {
-      	saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_SEQUENCE;
-         saveFirmwareInfo.overheadSize = KFWUM_NEW_CMD_OVERHEAD;
-         /* Buffer size depending on access type (Local or remote) */
-         /* Look if we run remote or locally */
-
-         if(verbose)
-         {
-            printf("Protocol Revision          :");
-            printf(" > 5 optimizing buffers\n");
-         }
-
-         if(strstr(intf->name,"lan")!= NULL) /* also covers lanplus */
-         {
-            saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
-            if(verbose)
-            {
-               printf("IOL payload size           : %d\n"  ,
-                                                  saveFirmwareInfo.bufferSize);
-            }
-         }
-         else if
-         (
-           (strstr(intf->name,"open")!= NULL)
-           &&
-           intf->target_addr != IPMI_BMC_SLAVE_ADDR
-           &&
-           (
-              intf->target_addr !=  intf->my_addr
-           )
-         )
-         {
-            saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
-            if(verbose)
-            {
-               printf("IPMB payload size          : %d\n"  ,
-                                                   saveFirmwareInfo.bufferSize);
-            }
-         }
-         else
-         {
-         	saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
-            if(verbose)
-            {
-               printf("SMI payload size           : %d\n",
-                                                  saveFirmwareInfo.bufferSize);
-            }
-         }
-      }
-   }
-   return status;
+	pGetInfo = (struct KfwumGetInfoResp *)rsp->data;
+	if (output) {
+		printf("\nFWUM info\n");
+		printf("=========\n");
+		printf("Protocol Revision         : %02Xh\n",
+				pGetInfo->protocolRevision);
+		printf("Controller Device Id      : %02Xh\n",
+				pGetInfo->controllerDeviceId);
+		printf("Firmware Revision         : %u.%u%u",
+				pGetInfo->firmRev1, pGetInfo->firmRev2 >> 4,
+				pGetInfo->firmRev2 & 0x0f);
+		if (pGetInfo->byte.mode != 0) {
+			printf(" - DEBUG BUILD\n");
+		} else {
+			printf("\n");
+		}
+		printf("Number Of Memory Bank     : %u\n", pGetInfo->numBank);
+	}
+	*pNumBank = pGetInfo->numBank;
+	/* Determine wich type of download to use: */
+	/* Old FWUM or Old IPMC fw (data_len < 7)
+	 * --> Address with small buffer size
+	 */
+	if ((pGetInfo->protocolRevision) <= 0x05 || (rsp->data_len < 7 )) {
+		saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_ADDRESS;
+		saveFirmwareInfo.bufferSize   = KFWUM_SMALL_BUFFER;
+		saveFirmwareInfo.overheadSize = KFWUM_OLD_CMD_OVERHEAD;
+		if (verbose) {
+			printf("Protocol Revision          :");
+			printf(" <= 5 detected, adjusting buffers\n");
+		}
+	} else {
+		/* Both fw are using the new protocol */
+		saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_SEQUENCE;
+		saveFirmwareInfo.overheadSize = KFWUM_NEW_CMD_OVERHEAD;
+		/* Buffer size depending on access type (Local or remote) */
+		/* Look if we run remote or locally */
+		if (verbose) {
+			printf("Protocol Revision          :");
+			printf(" > 5 optimizing buffers\n");
+		}
+		if (strstr(intf->name,"lan") != NULL) {
+			/* also covers lanplus */
+			saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
+			if (verbose) {
+				printf("IOL payload size           : %d\n",
+						saveFirmwareInfo.bufferSize);
+			}
+		} else if ((strstr(intf->name,"open")!= NULL)
+				&& intf->target_addr != IPMI_BMC_SLAVE_ADDR 
+				&& (intf->target_addr !=  intf->my_addr)) {
+			saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
+			if (verbose) {
+				printf("IPMB payload size          : %d\n",
+						saveFirmwareInfo.bufferSize);
+			}
+		} else {
+			saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
+			if (verbose) {
+				printf("SMI payload size           : %d\n",
+						saveFirmwareInfo.bufferSize);
+			}
+		}
+	}
+	return status;
 }
 
 /* KfwumGetDeviceInfo  -  Get IPMC/Board information
