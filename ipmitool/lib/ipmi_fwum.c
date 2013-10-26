@@ -398,29 +398,22 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
  *
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
-                                                     unsigned long * pFileSize)
+static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
+		unsigned long *pFileSize)
 {
-   tKFWUM_Status status = KFWUM_STATUS_ERROR;
-   FILE * pFileHandle;
-
-   pFileHandle = fopen((const char *)pFileName, "rb");
-
-   if(pFileHandle)
-   {
-      if (fseek(pFileHandle, 0L , SEEK_END) == 0)
-      {
-         *pFileSize = ftell(pFileHandle);
-
-         if( *pFileSize != 0)
-         {
-            status = KFWUM_STATUS_OK;
-         }
-      }
-      fclose(pFileHandle);
-   }
-
-   return(status);
+	FILE *pFileHandle = NULL;
+	pFileHandle = fopen((const char *)pFileName, "rb");
+	if (pFileHandle == NULL) {
+		return KFWUM_STATUS_ERROR;
+	}
+	if (fseek(pFileHandle, 0L , SEEK_END) == 0) {
+		*pFileSize = ftell(pFileHandle);
+	}
+	fclose(pFileHandle);
+	if (*pFileSize != 0) {
+		return KFWUM_STATUS_OK;
+	}
+	return KFWUM_STATUS_ERROR;
 }
 
 /* KfwumSetupBuffersFromFile  -  small buffers are used to store the file data
