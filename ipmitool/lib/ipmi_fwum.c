@@ -152,7 +152,7 @@ static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf *intf,
 		tKFWUM_InFirmwareInfo firmInfo);
 static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf *intf,
 		unsigned char *pBuffer, unsigned long totalSize);
-static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf *intf);
+int KfwumStartFirmwareUpgrade(struct ipmi_intf *intf);
 static tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char *pBuf,
 		unsigned long bufSize, tKFWUM_InFirmwareInfo *pInfo);
 static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
@@ -219,7 +219,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 			printf("Upgrading using file name %s\n", fileName);
 			rc = KfwumMain(intf, KFWUM_TASK_UPGRADE);
 		} else {
-			rc = KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
+			rc = KfwumStartFirmwareUpgrade(intf);
 		}
 	} else if (strncmp(argv[0], "tracelog", 8) == 0) {
 		rc = KfwumGetTraceLog(intf);
@@ -352,7 +352,9 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 	if ((status == KFWUM_STATUS_OK)
 			&& ((task == KFWUM_TASK_UPGRADE)
 				|| (task == KFWUM_TASK_START_UPGRADE))) {
-		status = KfwumStartFirmwareUpgrade(intf);
+		if (KfwumStartFirmwareUpgrade(intf) != 0) {
+			status = KFWUM_STATUS_ERROR;
+		}
 	}
 	if (status == KFWUM_STATUS_OK) {
 		return 0;
@@ -1082,10 +1084,10 @@ KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 	return(status);
 }
 
-static tKFWUM_Status
+int
 KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 {
-	tKFWUM_Status status = KFWUM_STATUS_OK;
+	int rc = 0;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	/* Upgrade type, wait BMC shutdown */
@@ -1101,7 +1103,7 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Firmware Start Firmware Upgrade Command");
-		status = KFWUM_STATUS_ERROR;
+		rc = (-1);
 	} else if (rsp->ccode) {
 		if (rsp->ccode == 0xd5) {
 			lprintf(LOG_ERR,
@@ -1111,9 +1113,9 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 					"FWUM Firmware Start Firmware Upgrade returned %x",
 					rsp->ccode);
 		}
-		status = KFWUM_STATUS_ERROR;
+		rc = (-1);
 	}
-	return status;
+	return rc;
 }
 
 /* String table */
