@@ -115,7 +115,6 @@ extern int verbose;
 static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
-void printf_kfwum_help(void);
 static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
 		unsigned long *pFileSize);
 static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
@@ -146,11 +145,13 @@ static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
 int KfwumGetTraceLog(struct ipmi_intf *intf);
 tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
-void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
-		tKFWUM_InFirmwareInfo firmInfo);
+
+int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action);
 int ipmi_fwum_info(struct ipmi_intf *intf);
 int ipmi_fwum_status(struct ipmi_intf *intf);
-int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action);
+void printf_kfwum_help(void);
+void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
+		tKFWUM_InFirmwareInfo firmInfo);
 
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
  *
