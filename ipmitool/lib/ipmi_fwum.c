@@ -107,36 +107,36 @@ typedef struct sKFWUM_SaveFirmwareInfo
 } tKFWUM_SaveFirmwareInfo;
 
 extern int verbose;
-static unsigned char firmBuf[1024*512];
-static tKFWUM_SaveFirmwareInfo save_fw_nfo;
+unsigned char firmBuf[1024*512];
+tKFWUM_SaveFirmwareInfo save_fw_nfo;
 
-static tKFWUM_Status KfwumGetFileSize(const char *pFileName,
+tKFWUM_Status KfwumGetFileSize(const char *pFileName,
 		unsigned long *pFileSize);
-static tKFWUM_Status KfwumSetupBuffersFromFile(const char *pFileName,
+tKFWUM_Status KfwumSetupBuffersFromFile(const char *pFileName,
 		unsigned long fileSize);
 void KfwumShowProgress(const char *task, unsigned long current,
 		unsigned long total);
-static unsigned short KfwumCalculateChecksumPadding(unsigned char *pBuffer,
+unsigned short KfwumCalculateChecksumPadding(unsigned char *pBuffer,
 		unsigned long totalSize);
-static tKFWUM_Status KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
+tKFWUM_Status KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		unsigned char *pNumBank);
-static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
+tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
 		unsigned char output, tKFWUM_BoardInfo *pBoardInfo);
-static tKFWUM_Status KfwumGetStatus(struct ipmi_intf *intf);
+tKFWUM_Status KfwumGetStatus(struct ipmi_intf *intf);
 int KfwumManualRollback(struct ipmi_intf *intf);
-static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf *intf,
+tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf *intf,
 		unsigned long length, unsigned short padding);
-static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf *intf,
+tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf *intf,
 		unsigned char sequenceNumber, unsigned long address,
 		unsigned char *pFirmBuf, unsigned char *pInBufLength);
-static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf *intf,
+tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf *intf,
 		tKFWUM_InFirmwareInfo firmInfo);
-static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf *intf,
+tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf *intf,
 		unsigned char *pBuffer, unsigned long totalSize);
 int KfwumStartFirmwareUpgrade(struct ipmi_intf *intf);
-static tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char *pBuf,
+tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char *pBuf,
 		unsigned long bufSize, tKFWUM_InFirmwareInfo *pInfo);
-static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
+void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
 int KfwumGetTraceLog(struct ipmi_intf *intf);
 tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
@@ -271,7 +271,7 @@ ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 {
 	tKFWUM_BoardInfo b_info;
 	tKFWUM_InFirmwareInfo fw_info = { 0 };
-	static unsigned short padding;
+	unsigned short padding;
 	unsigned long fsize = 0;
 	unsigned char not_used;
 	if (file == NULL) {
@@ -323,7 +323,7 @@ ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
  *
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status
+tKFWUM_Status
 KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle = NULL;
@@ -348,7 +348,7 @@ KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
  *
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status
+tKFWUM_Status
 KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_ERROR;
@@ -431,7 +431,7 @@ KfwumShowProgress(const char *task, unsigned long current, unsigned long total)
 
 /* KfwumCalculateChecksumPadding - TBD
  */
-static unsigned short
+unsigned short
 KfwumCalculateChecksumPadding(unsigned char *pBuffer, unsigned long totalSize)
 {
 	unsigned short sumOfBytes = 0;
@@ -470,7 +470,7 @@ struct KfwumGetInfoResp {
  * output  : when set to non zero, queried information is displayed
  * pNumBank: output ptr for number of banks
  */
-static tKFWUM_Status
+tKFWUM_Status
 KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		unsigned char *pNumBank)
 {
@@ -569,7 +569,7 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
  *
  * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status
+tKFWUM_Status
 KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 		tKFWUM_BoardInfo *pBoardInfo)
 {
@@ -643,7 +643,7 @@ const struct valstr bankStateValS[] = {
  *
  * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status
+tKFWUM_Status
 KfwumGetStatus(struct ipmi_intf * intf)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
@@ -774,7 +774,7 @@ struct KfwumStartFirmwareDownloadResp {
 #pragma pack(0)
 #endif
 
-static tKFWUM_Status
+tKFWUM_Status
 KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
 		unsigned short padding)
 {
@@ -843,7 +843,7 @@ struct KfwumSaveFirmwareSequenceReq
 #pragma pack(0)
 #endif
 
-static tKFWUM_Status
+tKFWUM_Status
 KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 		unsigned long address, unsigned char *pFirmBuf,
 		unsigned char *pInBufLength)
@@ -948,7 +948,7 @@ struct KfwumFinishFirmwareDownloadReq {
 #pragma pack(0)
 #endif
 
-static tKFWUM_Status
+tKFWUM_Status
 KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 {
 	struct ipmi_rs *rsp;
@@ -983,7 +983,7 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 	return KFWUM_STATUS_OK;
 }
 
-static tKFWUM_Status
+tKFWUM_Status
 KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 		unsigned long totalSize)
 {
@@ -1074,7 +1074,7 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 
 /* String table */
 /* Must match eFWUM_CmdId */
-static const char* CMD_ID_STRING[] = {
+const char* CMD_ID_STRING[] = {
 	"GetFwInfo",
 	"KickWatchdog",
 	"GetLastAnswer",
@@ -1093,7 +1093,7 @@ static const char* CMD_ID_STRING[] = {
 	"GetTraceLog"
 };
 
-static const char* EXT_CMD_ID_STRING[] = {
+const char* EXT_CMD_ID_STRING[] = {
 	"FwUpgradeLock",
 	"ProcessFwUpg",
 	"ProcessFwRb",
@@ -1102,7 +1102,7 @@ static const char* EXT_CMD_ID_STRING[] = {
 	"FwInfoStateChange"
 };
 
-static const char* CMD_STATE_STRING[] = {
+const char* CMD_STATE_STRING[] = {
 	"Invalid",
 	"Begin",
 	"Progress",
