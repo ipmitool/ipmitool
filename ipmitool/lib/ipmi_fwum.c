@@ -110,9 +110,9 @@ extern int verbose;
 static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
-static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
+static tKFWUM_Status KfwumGetFileSize(const char *pFileName,
 		unsigned long *pFileSize);
-static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
+static tKFWUM_Status KfwumSetupBuffersFromFile(const char *pFileName,
 		unsigned long fileSize);
 void KfwumShowProgress(const char *task, unsigned long current,
 		unsigned long total);
@@ -324,10 +324,10 @@ ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
 static tKFWUM_Status
-KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
+KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle = NULL;
-	pFileHandle = fopen((const char *)pFileName, "rb");
+	pFileHandle = fopen(pFileName, "rb");
 	if (pFileHandle == NULL) {
 		return KFWUM_STATUS_ERROR;
 	}
@@ -349,7 +349,7 @@ KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
 static tKFWUM_Status
-KfwumSetupBuffersFromFile(unsigned char * pFileName, unsigned long fileSize)
+KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_ERROR;
 	FILE *pFileHandle = NULL;
@@ -357,10 +357,10 @@ KfwumSetupBuffersFromFile(unsigned char * pFileName, unsigned long fileSize)
 	int modulus;
 	int qty = 0;
 
-	pFileHandle = fopen((const char *)pFileName, "rb");
+	pFileHandle = fopen(pFileName, "rb");
 	if (pFileHandle == NULL) {
 		lprintf(LOG_ERR, "Failed to open '%s' for reading.",
-				(char *)pFileName);
+				pFileName);
 		return KFWUM_STATUS_ERROR;
 	}
 	count = fileSize / MAX_BUFFER_SIZE;
