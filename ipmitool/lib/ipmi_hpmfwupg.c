@@ -2462,7 +2462,8 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = HPMFWUPG_SUCCESS;
 	int activateFlag = 0x00;
-	int componentMask = 0, componentId;
+	int componentMask = 0;
+	int componentId = 0;
 	int option = 0;
 
 	lprintf(LOG_DEBUG,"ipmi_hpmfwupg_main()");
