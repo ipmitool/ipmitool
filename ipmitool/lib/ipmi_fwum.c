@@ -1053,43 +1053,38 @@ struct KfwumFinishFirmwareDownloadReq{
 #endif
 
 static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
-                                                 tKFWUM_InFirmwareInfo firmInfo)
+		tKFWUM_InFirmwareInfo firmInfo)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   struct KfwumFinishFirmwareDownloadReq thisReq;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct KfwumFinishFirmwareDownloadReq thisReq;
 
-   thisReq.versionMaj     = firmInfo.versMajor;
-   thisReq.versionMinSub  = ((firmInfo.versMinor <<4) | firmInfo.versSubMinor);
-   thisReq.versionSdr     = firmInfo.sdrRev;
-   thisReq.reserved       = 0;
-   /* Byte 4 reserved, write 0 */
-
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_FIRMWARE;
-   req.msg.cmd = KFWUM_CMD_ID_FINISH_FIRMWARE_IMAGE;
-   req.msg.data = (unsigned char *) &thisReq;
-   req.msg.data_len = 4;
-
-   do
-   {
-   	rsp = intf->sendrecv(intf, &req);
-   }while (rsp == NULL || rsp->ccode == 0xc0);
-
-   if (!rsp)
-   {
-      printf("Error in FWUM Firmware Finish Firmware Image Download Command\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-   else if (rsp->ccode)
-   {
-      printf("FWUM Firmware Finish Firmware Image Download returned %x\n",
-                                                                    rsp->ccode);
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   return status;
+	thisReq.versionMaj = firmInfo.versMajor;
+	thisReq.versionMinSub = ((firmInfo.versMinor <<4)
+			| firmInfo.versSubMinor);
+	thisReq.versionSdr = firmInfo.sdrRev;
+	thisReq.reserved = 0;
+	/* Byte 4 reserved, write 0 */
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_FIRMWARE;
+	req.msg.cmd = KFWUM_CMD_ID_FINISH_FIRMWARE_IMAGE;
+	req.msg.data = (unsigned char *)&thisReq;
+	req.msg.data_len = 4;
+	/* Infinite loop if BMC doesn't reply or replies 0xc0 every time. */
+	do {
+		rsp = intf->sendrecv(intf, &req);
+	} while (rsp == NULL || rsp->ccode == 0xc0);
+	if (!rsp) {
+		lprintf(LOG_ERR,
+				"Error in FWUM Firmware Finish Firmware Image Download Command.");
+		return KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode != 0) {
+		lprintf(LOG_ERR,
+				"FWUM Firmware Finish Firmware Image Download returned %x",
+				rsp->ccode);
+		return KFWUM_STATUS_ERROR;
+	}
+	return KFWUM_STATUS_OK;
 }
 
 
