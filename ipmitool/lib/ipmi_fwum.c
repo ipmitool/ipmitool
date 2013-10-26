@@ -156,7 +156,7 @@ static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf *intf);
 static tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char *pBuf,
 		unsigned long bufSize, tKFWUM_InFirmwareInfo *pInfo);
 static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
-static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf *intf);
+int KfwumGetTraceLog(struct ipmi_intf *intf);
 tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
@@ -222,7 +222,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
 		}
 	} else if (strncmp(argv[0], "tracelog", 8) == 0) {
-		rc = KfwumMain(intf, KFWUM_TASK_TRACELOG);
+		rc = KfwumGetTraceLog(intf);
 	} else {
 		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);
 		printf_kfwum_help();
@@ -353,9 +353,6 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 			&& ((task == KFWUM_TASK_UPGRADE)
 				|| (task == KFWUM_TASK_START_UPGRADE))) {
 		status = KfwumStartFirmwareUpgrade(intf);
-	}
-	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_TRACELOG)) {
-		status = KfwumGetTraceLog(intf);
 	}
 	if (status == KFWUM_STATUS_OK) {
 		return 0;
@@ -1156,10 +1153,10 @@ static const char* CMD_STATE_STRING[] = {
 	"Completed"
 };
 
-static tKFWUM_Status
+int
 KfwumGetTraceLog(struct ipmi_intf *intf)
 {
-	tKFWUM_Status status = KFWUM_STATUS_OK;
+	int rc = 0;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	unsigned char chunkIdx;
@@ -1169,7 +1166,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 	}
 	for (chunkIdx = 0;
 			(chunkIdx < TRACE_LOG_CHUNK_COUNT)
-			&& (status == KFWUM_STATUS_OK);
+			&& (rc == 0);
 			chunkIdx++) {
 		/* Retreive each log chunk and print it */
 		memset(&req, 0, sizeof(req));
@@ -1182,13 +1179,13 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 		if (rsp == NULL) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Get Trace Log Command");
-			status = KFWUM_STATUS_ERROR;
+			rc = (-1);
 			break;
 		} else if (rsp->ccode) {
 			lprintf(LOG_ERR,
 					"FWUM Firmware Get Trace Log returned %x",
 					rsp->ccode);
-			status = KFWUM_STATUS_ERROR;
+			rc = (-1);
 			break;
 		}
 		for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++) {
@@ -1209,7 +1206,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 		}
 	}
 	printf("\n");
-	return status;
+	return rc;
 }
 
 tKFWUM_Status
