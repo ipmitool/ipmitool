@@ -19,7 +19,7 @@
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
  *
-  * This software is provided "AS IS," without a warranty of any kind.
+ * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
  * PARTICULAR PURPOSE OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED.
@@ -33,7 +33,6 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -46,98 +45,92 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 
-/******************************************************************************
-* HISTORY
-* ===========================================================================
-* 2007-01-11 [FI]
-*  - Incremented to version 1.3
-*  - Added lan packet size reduction mechanism to workaround fact
-*    that lan iface will not return C7 on excessive length
-*
-*****************************************************************************/
-
 #define VERSION_MAJ        1
 #define VERSION_MIN        3
 
-
 typedef enum eKFWUM_Task
 {
-   KFWUM_TASK_INFO,
-   KFWUM_TASK_STATUS,
-   KFWUM_TASK_DOWNLOAD,
-   KFWUM_TASK_UPGRADE,
-   KFWUM_TASK_START_UPGRADE,
-   KFWUM_TASK_ROLLBACK,
-   KFWUM_TASK_TRACELOG
-}tKFWUM_Task;
+	KFWUM_TASK_INFO,
+	KFWUM_TASK_STATUS,
+	KFWUM_TASK_DOWNLOAD,
+	KFWUM_TASK_UPGRADE,
+	KFWUM_TASK_START_UPGRADE,
+	KFWUM_TASK_ROLLBACK,
+	KFWUM_TASK_TRACELOG
+} tKFWUM_Task;
 
 typedef enum eKFWUM_BoardList
 {
-   KFWUM_BOARD_KONTRON_UNKNOWN   = 0,
-   KFWUM_BOARD_KONTRON_5002      = 5002,
-}tKFWUM_BoardList;
+	KFWUM_BOARD_KONTRON_UNKNOWN = 0,
+	KFWUM_BOARD_KONTRON_5002 = 5002,
+} tKFWUM_BoardList;
 
 typedef enum eKFWUM_IanaList
 {
-   KFWUM_IANA_KONTRON            = 15000,
-}tKFWUM_IanaList;
+	KFWUM_IANA_KONTRON = 15000,
+} tKFWUM_IanaList;
 
 typedef struct sKFWUM_BoardInfo
 {
-   tKFWUM_BoardList boardId;
-   tKFWUM_IanaList  iana;
-}tKFWUM_BoardInfo;
+	tKFWUM_BoardList boardId;
+	tKFWUM_IanaList  iana;
+} tKFWUM_BoardInfo;
 
 typedef enum eKFWUM_Status
 {
-   KFWUM_STATUS_OK,
-   KFWUM_STATUS_ERROR
-}tKFWUM_Status;
+	KFWUM_STATUS_OK,
+	KFWUM_STATUS_ERROR
+} tKFWUM_Status;
 
 typedef enum eKFWUM_DownloadType
 {
-   KFWUM_DOWNLOAD_TYPE_ADDRESS = 0,
+	KFWUM_DOWNLOAD_TYPE_ADDRESS = 0,
 	KFWUM_DOWNLOAD_TYPE_SEQUENCE,
-}tKFWUM_DownloadType;
+} tKFWUM_DownloadType;
 
 typedef enum eKFWUM_DownloadBuffferType
 {
-   KFWUM_SMALL_BUFFER_TYPE = 0,
+	KFWUM_SMALL_BUFFER_TYPE = 0,
 	KFUMW_BIG_BUFFER_TYPE
-}tKFWUM_DownloadBuffferType;
+} tKFWUM_DownloadBuffferType;
 
 typedef struct sKFWUM_InFirmwareInfo
 {
-   unsigned long   fileSize;
-   unsigned short  checksum;
-   unsigned short  sumToRemoveFromChecksum;
-                                  /* Since the checksum is added in the bin
-                                  after the checksum is calculated, we
-                                  need to remove the each byte value.  This
-                                  byte will contain the addition of both bytes*/
-   tKFWUM_BoardList boardId;
-   unsigned char   deviceId;
-   unsigned char   tableVers;
-   unsigned char   implRev;
-   unsigned char   versMajor;
-   unsigned char   versMinor;
-   unsigned char   versSubMinor;
-   unsigned char   sdrRev;
-   tKFWUM_IanaList iana;
-}tKFWUM_InFirmwareInfo;
+	unsigned long   fileSize;
+	unsigned short  checksum;
+	unsigned short  sumToRemoveFromChecksum;
+	/* Since the checksum is added in the bin
+	 * after the checksum is calculated, we
+	 * need to remove the each byte value.  This
+	 * byte will contain the addition of both bytes
+	 */
+	tKFWUM_BoardList boardId;
+	unsigned char   deviceId;
+	unsigned char   tableVers;
+	unsigned char   implRev;
+	unsigned char   versMajor;
+	unsigned char   versMinor;
+	unsigned char   versSubMinor;
+	unsigned char   sdrRev;
+	tKFWUM_IanaList iana;
+} tKFWUM_InFirmwareInfo;
 
 typedef struct sKFWUM_SaveFirmwareInfo
 {
 	tKFWUM_DownloadType downloadType;
-   unsigned char       bufferSize;
-   unsigned char       overheadSize;
-}tKFWUM_SaveFirmwareInfo;
+	unsigned char       bufferSize;
+	unsigned char       overheadSize;
+} tKFWUM_SaveFirmwareInfo;
 
-#define KFWUM_SMALL_BUFFER     32 /* Minimum size (IPMB/IOL/old protocol) */
-#define KFWUM_BIG_BUFFER       32 /* Maximum size on KCS interface        */
+/* Minimum size (IPMB/IOL/old protocol) */
+#define KFWUM_SMALL_BUFFER     32
+/* Maximum size on KCS interface */
+#define KFWUM_BIG_BUFFER       32
 
-#define KFWUM_OLD_CMD_OVERHEAD 6  /*3 address + 1 size + 1 checksum + 1 command*/
-#define KFWUM_NEW_CMD_OVERHEAD 4  /*1 sequence+ 1 size + 1 checksum + 1 command*/
+/* 3 address + 1 size + 1 checksum + 1 command */
+#define KFWUM_OLD_CMD_OVERHEAD 6
+/* 1 sequence + 1 size + 1 checksum + 1 command */
+#define KFWUM_NEW_CMD_OVERHEAD 4
 #define KFWUM_PAGE_SIZE        256
 
 extern int verbose;
@@ -146,56 +139,51 @@ static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
 void printf_kfwum_help(void);
-static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task);
-static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
-                                                     unsigned long * pFileSize);
-static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
-                                                        unsigned long fileSize);
+static void KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task);
+static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
+		unsigned long *pFileSize);
+static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char *pFileName,
+		unsigned long fileSize);
 void KfwumShowProgress(const char *task, unsigned long current,
 		unsigned long total);
-static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
-                                                       unsigned long totalSize);
-
-
-static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
-                                                       unsigned char *pNumBank);
-static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf * intf,
-                           unsigned char output, tKFWUM_BoardInfo * pBoardInfo);
-static tKFWUM_Status KfwumGetStatus(struct ipmi_intf * intf);
-static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf);
-static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
-                                   unsigned long length,unsigned short padding);
-static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address,
-     unsigned char *pFirmBuf, unsigned char * pInBufLength);
-static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
-                                                tKFWUM_InFirmwareInfo firmInfo);
-static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
-                              unsigned char * pBuffer, unsigned long totalSize);
-static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf * intf);
-
-static tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char * pBuf,
-                         unsigned long bufSize, tKFWUM_InFirmwareInfo * pInfo);
-static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo);
-
-static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf);
-
+static unsigned short KfwumCalculateChecksumPadding(unsigned char *pBuffer,
+		unsigned long totalSize);
+static tKFWUM_Status KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
+		unsigned char *pNumBank);
+static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
+		unsigned char output, tKFWUM_BoardInfo *pBoardInfo);
+static tKFWUM_Status KfwumGetStatus(struct ipmi_intf *intf);
+static tKFWUM_Status KfwumManualRollback(struct ipmi_intf *intf);
+static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf *intf,
+		unsigned long length, unsigned short padding);
+static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf *intf,
+		unsigned char sequenceNumber, unsigned long address,
+		unsigned char *pFirmBuf, unsigned char *pInBufLength);
+static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf *intf,
+		tKFWUM_InFirmwareInfo firmInfo);
+static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf *intf,
+		unsigned char *pBuffer, unsigned long totalSize);
+static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf *intf);
+static tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char *pBuf,
+		unsigned long bufSize, tKFWUM_InFirmwareInfo *pInfo);
+static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo);
+static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf *intf);
 tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 
-
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
  *
- * @intf:	  ipmi interface
- * @arc     : number of arguments
- * @argv    : point to argument array
+ * @intf: ipmi interface
+ * @arc: number of arguments
+ * @argv: point to argument array
  *
  * returns 0 on success
  * returns -1 on error
  */
-int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	printf("FWUM extension Version %d.%d\n", VERSION_MAJ, VERSION_MIN);
@@ -252,66 +240,42 @@ int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return rc;
 }
 
-
-void printf_kfwum_help(void)
+void
+printf_kfwum_help(void)
 {
 	lprintf(LOG_NOTICE,
 "KFWUM Commands:  info status download upgrade rollback tracelog");
 }
 
-
-/****************************************/
-/**  private definitions and macros    **/
-/****************************************/
+/*  private definitions and macros */
 typedef enum eFWUM_CmdId
 {
-   KFWUM_CMD_ID_GET_FIRMWARE_INFO                         = 0,
-   KFWUM_CMD_ID_KICK_IPMC_WATCHDOG                        = 1,
-   KFWUM_CMD_ID_GET_LAST_ANSWER                           = 2,
-   KFWUM_CMD_ID_BOOT_HANDSHAKE                            = 3,
-   KFWUM_CMD_ID_REPORT_STATUS                             = 4,
-   KFWUM_CMD_ID_GET_FIRMWARE_STATUS                       = 7,
-   KFWUM_CMD_ID_START_FIRMWARE_UPDATE                     = 9,
-   KFWUM_CMD_ID_START_FIRMWARE_IMAGE                      = 0x0a,
-   KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE                       = 0x0b,
-   KFWUM_CMD_ID_FINISH_FIRMWARE_IMAGE                     = 0x0c,
-   KFWUM_CMD_ID_READ_FIRMWARE_IMAGE                       = 0x0d,
-   KFWUM_CMD_ID_MANUAL_ROLLBACK                           = 0x0e,
-   KFWUM_CMD_ID_GET_TRACE_LOG                             = 0x0f,
-   KFWUM_CMD_ID_STD_MAX_CMD,
-   KFWUM_CMD_ID_EXTENDED_CMD                              = 0xC0
+	KFWUM_CMD_ID_GET_FIRMWARE_INFO                         = 0,
+	KFWUM_CMD_ID_KICK_IPMC_WATCHDOG                        = 1,
+	KFWUM_CMD_ID_GET_LAST_ANSWER                           = 2,
+	KFWUM_CMD_ID_BOOT_HANDSHAKE                            = 3,
+	KFWUM_CMD_ID_REPORT_STATUS                             = 4,
+	KFWUM_CMD_ID_GET_FIRMWARE_STATUS                       = 7,
+	KFWUM_CMD_ID_START_FIRMWARE_UPDATE                     = 9,
+	KFWUM_CMD_ID_START_FIRMWARE_IMAGE                      = 0x0a,
+	KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE                       = 0x0b,
+	KFWUM_CMD_ID_FINISH_FIRMWARE_IMAGE                     = 0x0c,
+	KFWUM_CMD_ID_READ_FIRMWARE_IMAGE                       = 0x0d,
+	KFWUM_CMD_ID_MANUAL_ROLLBACK                           = 0x0e,
+	KFWUM_CMD_ID_GET_TRACE_LOG                             = 0x0f,
+	KFWUM_CMD_ID_STD_MAX_CMD,
+	KFWUM_CMD_ID_EXTENDED_CMD                              = 0xC0
 }  tKFWUM_CmdId;
 
-
-
-/****************************************/
-/** global/static variables definition **/
-/****************************************/
-
-/****************************************/
-/**        functions definition        **/
-/****************************************/
-
-/*******************************************************************************
-*
-* Function Name:  KfwumMain
-*
-* Description:    This function implements the upload of the firware data
-*                 received as parameters.
-*
-* Restriction:    Called only from main
-*
-* Input:  unsigned char * pBuffer[] : The buffers
-*         unsigned long bufSize    : The size of the buffers
-*
-* Output: None
-*
-* Global: none
-*
-* Return: tIFWU_Status (success or failure)
-*
-*******************************************************************************/
-static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
+/* KfwumMain - function implements upload of the firmware data received as
+ * parameters
+ *
+ * @task: task to do
+ *
+ * returns void
+ */
+static void
+KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	tKFWUM_BoardInfo boardInfo;
@@ -398,8 +362,8 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
  *
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
-		unsigned long *pFileSize)
+static tKFWUM_Status
+KfwumGetFileSize(unsigned char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle = NULL;
 	pFileHandle = fopen((const char *)pFileName, "rb");
@@ -424,8 +388,8 @@ static tKFWUM_Status KfwumGetFileSize(unsigned char *pFileName,
  * returns KFWUM_STATUS_OK or KFWUM_STATUS_ERROR
  */
 #define MAX_BUFFER_SIZE          1024*16
-static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
-		unsigned long fileSize)
+static tKFWUM_Status
+KfwumSetupBuffersFromFile(unsigned char * pFileName, unsigned long fileSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_ERROR;
 	FILE *pFileHandle = NULL;
@@ -443,7 +407,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
 	modulus = fileSize % MAX_BUFFER_SIZE;
 
 	rewind(pFileHandle);
-	for (qty=0; qty < count; qty++) {
+	for (qty = 0; qty < count; qty++) {
 		KfwumShowProgress("Reading Firmware from File",
 				qty, count);
 		if (fread(&firmBuf[qty * MAX_BUFFER_SIZE], 1,
@@ -480,8 +444,8 @@ KfwumShowProgress(const char *task, unsigned long current, unsigned long total)
 	static unsigned long staticProgress=0xffffffff;
 	unsigned char spaces[PROG_LENGTH + 1];
 	unsigned short hash;
-	float percent = ((float)current/total);
-	unsigned long progress =  100*(percent);
+	float percent = ((float)current / total);
+	unsigned long progress =  100 * (percent);
 
 	if (staticProgress == progress) {
 		/* We displayed the same last time.. so don't do it */
@@ -490,7 +454,7 @@ KfwumShowProgress(const char *task, unsigned long current, unsigned long total)
 	staticProgress = progress;
 	printf("%-25s : ", task); /* total 20 bytes */
 	hash = (percent * PROG_LENGTH);
-	memset(spaces,'#', hash);
+	memset(spaces, '#', hash);
 	spaces[hash] = '\0';
 
 	printf("%s", spaces);
@@ -505,64 +469,54 @@ KfwumShowProgress(const char *task, unsigned long current, unsigned long total)
 	fflush(stdout);
 }
 
-/* KfwumCalculateChecksumPadding
- *
- * TBD
- *
+/* KfwumCalculateChecksumPadding - TBD
  */
-static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
-                                                       unsigned long totalSize)
+static unsigned short
+KfwumCalculateChecksumPadding(unsigned char *pBuffer, unsigned long totalSize)
 {
-   unsigned short sumOfBytes = 0;
-   unsigned short padding;
-   unsigned long  counter;
-
-   for(counter = 0; counter < totalSize; counter ++ )
-   {
-      sumOfBytes += pBuffer[counter];
-   }
-
-   padding = 0 - sumOfBytes;
-   return padding;
+	unsigned short sumOfBytes = 0;
+	unsigned short padding;
+	unsigned long  counter;
+	for (counter = 0; counter < totalSize; counter ++) {
+		sumOfBytes += pBuffer[counter];
+	}
+	padding = 0 - sumOfBytes;
+	return padding;
 }
 
-/******************************************************************************
-******************************* COMMANDS **************************************
-******************************************************************************/
+/* COMMANDS */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
 struct KfwumGetInfoResp {
-   unsigned char protocolRevision;
-   unsigned char controllerDeviceId;
-   struct
-   {
-      unsigned char mode:1;
-      unsigned char seqAdd:1;
-      unsigned char res : 6;
-   } byte;
-   unsigned char firmRev1;
-   unsigned char firmRev2;
-   unsigned char numBank;
+	unsigned char protocolRevision;
+	unsigned char controllerDeviceId;
+	struct {
+		unsigned char mode:1;
+		unsigned char seqAdd:1;
+		unsigned char res : 6;
+	} byte;
+	unsigned char firmRev1;
+	unsigned char firmRev2;
+	unsigned char numBank;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-
-
 /* KfwumGetInfo  -  Get Firmware Update Manager (FWUM) information
  *
- * * intf  : IPMI interface
+ * *intf  : IPMI interface
  * output  : when set to non zero, queried information is displayed
  * pNumBank: output ptr for number of banks
  */
-static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
+static tKFWUM_Status
+KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		unsigned char *pNumBank)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	static struct KfwumGetInfoResp *pGetInfo;
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 
 	memset(&req, 0, sizeof(req));
@@ -575,7 +529,7 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
 		lprintf(LOG_ERR, "Error in FWUM Firmware Get Info Command.");
 		return KFWUM_STATUS_ERROR;
 	} else if (rsp->ccode != 0) {
-		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x\n",
+		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x",
 				rsp->ccode);
 		return KFWUM_STATUS_ERROR;
 	}
@@ -655,8 +609,9 @@ static tKFWUM_Status KfwumGetInfo(struct ipmi_intf * intf, unsigned char output,
  *
  * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
-		unsigned char output, tKFWUM_BoardInfo *pBoardInfo)
+static tKFWUM_Status
+KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
+		tKFWUM_BoardInfo *pBoardInfo)
 {
 	struct ipm_devid_rsp *pGetDevId;
 	struct ipmi_rs *rsp;
@@ -698,30 +653,28 @@ static tKFWUM_Status KfwumGetDeviceInfo(struct ipmi_intf *intf,
 	return KFWUM_STATUS_OK;
 }
 
-
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
 struct KfwumGetStatusResp {
-   unsigned char bankState;
-   unsigned char firmLengthLSB;
-   unsigned char firmLengthMid;
-   unsigned char firmLengthMSB;
-   unsigned char firmRev1;
-   unsigned char firmRev2;
-   unsigned char firmRev3;
+	unsigned char bankState;
+	unsigned char firmLengthLSB;
+	unsigned char firmLengthMid;
+	unsigned char firmLengthMSB;
+	unsigned char firmRev1;
+	unsigned char firmRev2;
+	unsigned char firmRev3;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-
 const struct valstr bankStateValS[] = {
-   { 0x00, "Not programmed" },
-   { 0x01, "New firmware" },
-   { 0x02, "Wait for validation" },
-   { 0x03, "Last Known Good" },
-   { 0x04, "Previous Good" }
+	{ 0x00, "Not programmed" },
+	{ 0x01, "New firmware" },
+	{ 0x02, "Wait for validation" },
+	{ 0x03, "Last Known Good" },
+	{ 0x04, "Previous Good" }
 };
 
 /* KfwumGetStatus  -  Get (and prints) FWUM  banks information
@@ -794,13 +747,12 @@ KfwumGetStatus(struct ipmi_intf * intf)
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct KfwumManualRollbackReq{
-   unsigned char type;
+struct KfwumManualRollbackReq {
+	unsigned char type;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
-
 
 /* KfwumManualRollback  -  Ask IPMC to rollback to previous version
  *
@@ -808,9 +760,10 @@ struct KfwumManualRollbackReq{
  *
  * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
-static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf)
+static tKFWUM_Status
+KfwumManualRollback(struct ipmi_intf *intf)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct KfwumManualRollbackReq thisReq;
 
@@ -838,12 +791,12 @@ static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf)
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct KfwumStartFirmwareDownloadReq{
-   unsigned char lengthLSB;
-   unsigned char lengthMid;
-   unsigned char lengthMSB;
-   unsigned char paddingLSB;
-   unsigned char paddingMSB;
+struct KfwumStartFirmwareDownloadReq {
+	unsigned char lengthLSB;
+	unsigned char lengthMid;
+	unsigned char lengthMSB;
+	unsigned char paddingLSB;
+	unsigned char paddingMSB;
 	unsigned char useSequence;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
@@ -854,14 +807,15 @@ struct KfwumStartFirmwareDownloadReq{
 #pragma pack(1)
 #endif
 struct KfwumStartFirmwareDownloadResp {
-   unsigned char bank;
+	unsigned char bank;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
-		unsigned long length, unsigned short padding)
+static tKFWUM_Status
+KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
+		unsigned short padding)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -906,11 +860,11 @@ static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
 #endif
 struct KfwumSaveFirmwareAddressReq
 {
- 	unsigned char addressLSB;
-   unsigned char addressMid;
-   unsigned char addressMSB;
-   unsigned char numBytes;
-   unsigned char txBuf[KFWUM_SMALL_BUFFER-KFWUM_OLD_CMD_OVERHEAD];
+	unsigned char addressLSB;
+	unsigned char addressMid;
+	unsigned char addressMSB;
+	unsigned char numBytes;
+	unsigned char txBuf[KFWUM_SMALL_BUFFER-KFWUM_OLD_CMD_OVERHEAD];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -921,19 +875,19 @@ struct KfwumSaveFirmwareAddressReq
 #endif
 struct KfwumSaveFirmwareSequenceReq
 {
- 	unsigned char sequenceNumber;
-   unsigned char txBuf[KFWUM_BIG_BUFFER];
+	unsigned char sequenceNumber;
+	unsigned char txBuf[KFWUM_BIG_BUFFER];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-
 # define FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT 6
 
-static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
-     unsigned char sequenceNumber, unsigned long address,
-	 unsigned char *pFirmBuf, unsigned char *pInBufLength)
+static tKFWUM_Status
+KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
+		unsigned long address, unsigned char *pFirmBuf,
+		unsigned char *pInBufLength)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	struct ipmi_rs *rsp;
@@ -1025,18 +979,18 @@ static tKFWUM_Status KfwumSaveFirmwareImage(struct ipmi_intf * intf,
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct KfwumFinishFirmwareDownloadReq{
-   unsigned char versionMaj;
-   unsigned char versionMinSub;
-   unsigned char versionSdr;
-   unsigned char reserved;
+struct KfwumFinishFirmwareDownloadReq {
+	unsigned char versionMaj;
+	unsigned char versionMinSub;
+	unsigned char versionSdr;
+	unsigned char reserved;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
-		tKFWUM_InFirmwareInfo firmInfo)
+static tKFWUM_Status
+KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1070,10 +1024,10 @@ static tKFWUM_Status KfwumFinishFirmwareImage(struct ipmi_intf * intf,
 	return KFWUM_STATUS_OK;
 }
 
-
 #define FWUM_MAX_UPLOAD_RETRY 6
-static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
-		unsigned char *pBuffer, unsigned long totalSize)
+static tKFWUM_Status
+KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
+		unsigned long totalSize)
 {
 	tKFWUM_Status status = KFWUM_STATUS_ERROR;
 	unsigned long address = 0x0;
@@ -1166,38 +1120,39 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 /* String table */
 /* Must match eFWUM_CmdId */
 static const char* CMD_ID_STRING[] = {
-                "GetFwInfo",
-                "KickWatchdog",
-                "GetLastAnswer",
-                "BootHandshake",
-                "ReportStatus",
-                "CtrlIPMBLine",
-                "SetFwState",
-                "GetFwStatus",
-                "GetSpiMemStatus",
-                "StartFwUpdate",
-                "StartFwImage",
-                "SaveFwImage",
-                "FinishFwImage",
-                "ReadFwImage",
-                "ManualRollback",
-                "GetTraceLog" };
+	"GetFwInfo",
+	"KickWatchdog",
+	"GetLastAnswer",
+	"BootHandshake",
+	"ReportStatus",
+	"CtrlIPMBLine",
+	"SetFwState",
+	"GetFwStatus",
+	"GetSpiMemStatus",
+	"StartFwUpdate",
+	"StartFwImage",
+	"SaveFwImage",
+	"FinishFwImage",
+	"ReadFwImage",
+	"ManualRollback",
+	"GetTraceLog"
+};
 
 static const char* EXT_CMD_ID_STRING[] = {
-                "FwUpgradeLock",
-                "ProcessFwUpg",
-                "ProcessFwRb",
-                "WaitHSAfterUpg",
-                "WaitFirstHSUpg",
-                "FwInfoStateChange" };
-
+	"FwUpgradeLock",
+	"ProcessFwUpg",
+	"ProcessFwRb",
+	"WaitHSAfterUpg",
+	"WaitFirstHSUpg",
+	"FwInfoStateChange"
+};
 
 static const char* CMD_STATE_STRING[] = {
-                "Invalid",
-                "Begin",
-                "Progress",
-                "Completed" };
-
+	"Invalid",
+	"Begin",
+	"Progress",
+	"Completed"
+};
 
 static tKFWUM_Status
 KfwumGetTraceLog(struct ipmi_intf *intf)
@@ -1205,8 +1160,8 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 	tKFWUM_Status status = KFWUM_STATUS_OK;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	unsigned char  chunkIdx;
-	unsigned char  cmdIdx;
+	unsigned char chunkIdx;
+	unsigned char cmdIdx;
 	if (verbose) {
 		printf(" Getting Trace Log!\n");
 	}
@@ -1255,30 +1210,6 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 	return status;
 }
 
-
-/*******************************************************************************
-* Function Name: KfwumGetInfoFromFirmware
-*
-* Description: This function retreive from the firmare the following info :
-*
-*              o Checksum
-*              o File size (expected)
-*              o Board Id
-*              o Device Id
-*
-* Restriction: None
-*
-* Input: char * fileName - File to get info from
-*
-* Output: pInfo - container that will hold all the informations gattered.
-*                 see structure for all details
-*
-* Global: None
-*
-* Return: IFWU_SUCCESS - file ok
-*         IFWU_ERROR   - file error
-*
-*******************************************************************************/
 #define IN_FIRMWARE_INFO_OFFSET_LOCATION           0x5a0
 #define IN_FIRMWARE_INFO_SIZE                      20
 #define IN_FIRMWARE_INFO_OFFSET_FILE_SIZE          0
@@ -1373,18 +1304,19 @@ KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
 	return KFWUM_STATUS_OK;
 }
 
-
-void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo)
+void
+KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo)
 {
-   switch(pInfo->boardId)
-   {
-      case KFWUM_BOARD_KONTRON_UNKNOWN:
-         pInfo->tableVers = 0xff;
-      break;
-      default:
-         /* pInfo->tableVers is already set for the right version */
-      break;
-   }
+	switch(pInfo->boardId) {
+	case KFWUM_BOARD_KONTRON_UNKNOWN:
+		pInfo->tableVers = 0xff;
+		break;
+	default:
+		/* pInfo->tableVers is already set for
+		 * the right version
+		 */
+		break;
+	}
 }
 
 /* ipmi_kfwum_checkfwcompat - check whether firmware we're about to upload is
@@ -1395,7 +1327,8 @@ void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo)
  *
  * returns KFWUM_STATUS_OK if compatible, otherwise KFWUM_STATUS_ERROR
  */
-tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
+tKFWUM_Status
+ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo)
 {
 	tKFWUM_Status status = KFWUM_STATUS_OK;
@@ -1415,7 +1348,6 @@ tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 	}
 	return status;
 }
-
 
 void
 printf_kfwum_info(tKFWUM_BoardInfo boardInfo, tKFWUM_InFirmwareInfo firmInfo)
