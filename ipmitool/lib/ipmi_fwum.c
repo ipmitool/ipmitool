@@ -1126,41 +1126,38 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
 	return(status);
 }
 
-static tKFWUM_Status KfwumStartFirmwareUpgrade(struct ipmi_intf * intf)
+static tKFWUM_Status
+KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   unsigned char upgType = 0 ;  /* Upgrade type, wait BMC shutdown */
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	/* Upgrade type, wait BMC shutdown */
+	unsigned char upgType = 0 ;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_FIRMWARE;
-   req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_UPDATE;
-   req.msg.data = (unsigned char *) &upgType;
-   req.msg.data_len = 1;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_FIRMWARE;
+	req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_UPDATE;
+	req.msg.data = (unsigned char *) &upgType;
+	req.msg.data_len = 1;
 
-   rsp = intf->sendrecv(intf, &req);
-
-   if (!rsp)
-   {
-      printf("Error in FWUM Firmware Start Firmware Upgrade Command\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-   else if (rsp->ccode)
-   {
-      if(rsp->ccode == 0xd5)
-      {
-         printf("No firmware available for upgrade.  Download Firmware first\n");
-      }
-      else
-      {
-         printf("FWUM Firmware Start Firmware Upgrade returned %x\n",
-                                                                    rsp->ccode);
-      }
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   return status;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR,
+				"Error in FWUM Firmware Start Firmware Upgrade Command");
+		status = KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode) {
+		if (rsp->ccode == 0xd5) {
+			lprintf(LOG_ERR,
+					"No firmware available for upgrade.  Download Firmware first.");
+		} else {
+			lprintf(LOG_ERR,
+					"FWUM Firmware Start Firmware Upgrade returned %x",
+					rsp->ccode);
+		}
+		status = KFWUM_STATUS_ERROR;
+	}
+	return status;
 }
 
 #define TRACE_LOG_CHUNK_COUNT 7
