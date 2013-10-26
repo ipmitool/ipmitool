@@ -108,7 +108,7 @@ typedef struct sKFWUM_SaveFirmwareInfo
 
 extern int verbose;
 static unsigned char firmBuf[1024*512];
-static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
+static tKFWUM_SaveFirmwareInfo save_fw_nfo;
 
 static tKFWUM_Status KfwumGetFileSize(const char *pFileName,
 		unsigned long *pFileSize);
@@ -518,17 +518,17 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 	 * --> Address with small buffer size
 	 */
 	if ((pGetInfo->protocolRevision) <= 0x05 || (rsp->data_len < 7 )) {
-		saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_ADDRESS;
-		saveFirmwareInfo.bufferSize   = KFWUM_SMALL_BUFFER;
-		saveFirmwareInfo.overheadSize = KFWUM_OLD_CMD_OVERHEAD;
+		save_fw_nfo.downloadType = KFWUM_DOWNLOAD_TYPE_ADDRESS;
+		save_fw_nfo.bufferSize   = KFWUM_SMALL_BUFFER;
+		save_fw_nfo.overheadSize = KFWUM_OLD_CMD_OVERHEAD;
 		if (verbose) {
 			printf("Protocol Revision          :");
 			printf(" <= 5 detected, adjusting buffers\n");
 		}
 	} else {
 		/* Both fw are using the new protocol */
-		saveFirmwareInfo.downloadType = KFWUM_DOWNLOAD_TYPE_SEQUENCE;
-		saveFirmwareInfo.overheadSize = KFWUM_NEW_CMD_OVERHEAD;
+		save_fw_nfo.downloadType = KFWUM_DOWNLOAD_TYPE_SEQUENCE;
+		save_fw_nfo.overheadSize = KFWUM_NEW_CMD_OVERHEAD;
 		/* Buffer size depending on access type (Local or remote) */
 		/* Look if we run remote or locally */
 		if (verbose) {
@@ -537,24 +537,24 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		}
 		if (strstr(intf->name,"lan") != NULL) {
 			/* also covers lanplus */
-			saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
+			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
 			if (verbose) {
 				printf("IOL payload size           : %d\n",
-						saveFirmwareInfo.bufferSize);
+						save_fw_nfo.bufferSize);
 			}
 		} else if ((strstr(intf->name,"open")!= NULL)
 				&& intf->target_addr != IPMI_BMC_SLAVE_ADDR 
 				&& (intf->target_addr !=  intf->my_addr)) {
-			saveFirmwareInfo.bufferSize = KFWUM_SMALL_BUFFER;
+			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
 			if (verbose) {
 				printf("IPMB payload size          : %d\n",
-						saveFirmwareInfo.bufferSize);
+						save_fw_nfo.bufferSize);
 			}
 		} else {
-			saveFirmwareInfo.bufferSize = KFWUM_BIG_BUFFER;
+			save_fw_nfo.bufferSize = KFWUM_BIG_BUFFER;
 			if (verbose) {
 				printf("SMI payload size           : %d\n",
-						saveFirmwareInfo.bufferSize);
+						save_fw_nfo.bufferSize);
 			}
 		}
 	}
@@ -794,7 +794,7 @@ KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
 	req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_IMAGE;
 	req.msg.data = (unsigned char *) &thisReq;
 	/* Look for download type */
-	if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
+	if (save_fw_nfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
 		req.msg.data_len = 5;
 	} else {
 		req.msg.data_len = 6;
@@ -859,7 +859,7 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_FIRMWARE;
 		req.msg.cmd = KFWUM_CMD_ID_SAVE_FIRMWARE_IMAGE;
-		if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
+		if (save_fw_nfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
 			addr_req.addressLSB  = address         & 0x000000ff;
 			addr_req.addressMid  = (address >>  8) & 0x000000ff;
 			addr_req.addressMSB  = (address >> 16) & 0x000000ff;
@@ -996,7 +996,7 @@ KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 	unsigned char retry = FWUM_MAX_UPLOAD_RETRY;
 	unsigned char isLengthValid = 1;
 	do {
-		writeSize = saveFirmwareInfo.bufferSize - saveFirmwareInfo.overheadSize;
+		writeSize = save_fw_nfo.bufferSize - save_fw_nfo.overheadSize;
 		/* Reach the end */
 		if (address + writeSize > totalSize) {
 			writeSize = (totalSize - address);
@@ -1017,7 +1017,7 @@ KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 			if (writeSize != oldWriteSize) {
 				printf("Adjusting length to %d bytes \n",
 						writeSize);
-				saveFirmwareInfo.bufferSize -= (oldWriteSize - writeSize);
+				save_fw_nfo.bufferSize -= (oldWriteSize - writeSize);
 			}
 			retry = FWUM_MAX_UPLOAD_RETRY;
 			lastAddress = address;
