@@ -180,8 +180,8 @@ static void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo);
 
 static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf);
 
-tKFWUM_Status KfwumValidFirmwareForBoard(tKFWUM_BoardInfo boardInfo,
-                                                tKFWUM_InFirmwareInfo firmInfo);
+tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
+		tKFWUM_InFirmwareInfo firmInfo);
 static void KfwumOutputInfo(tKFWUM_BoardInfo boardInfo,
                                                 tKFWUM_InFirmwareInfo firmInfo);
 
@@ -353,7 +353,7 @@ static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task)
 			status = KfwumGetDeviceInfo(intf, 0, &boardInfo);
 		}
 		if (status == KFWUM_STATUS_OK) {
-			status = KfwumValidFirmwareForBoard(boardInfo,firmInfo);
+			status = ipmi_kfwum_checkfwcompat(boardInfo,firmInfo);
 		}
 		if (status == KFWUM_STATUS_OK) {
 			unsigned char notUsed;
@@ -1564,30 +1564,33 @@ void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo * pInfo)
    }
 }
 
-
-tKFWUM_Status KfwumValidFirmwareForBoard(tKFWUM_BoardInfo boardInfo,
-                                                tKFWUM_InFirmwareInfo firmInfo)
+/* ipmi_kfwum_checkfwcompat - check whether firmware we're about to upload is
+ * compatible with board.
+ *
+ * @boardInfo:
+ * @firmInfo:
+ *
+ * returns KFWUM_STATUS_OK if compatible, otherwise KFWUM_STATUS_ERROR
+ */
+tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
+		tKFWUM_InFirmwareInfo firmInfo)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-
-   if(boardInfo.iana != firmInfo.iana)
-   {
-      printf("Board IANA does not match firmware IANA\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   if(boardInfo.boardId != firmInfo.boardId)
-   {
-      printf("Board IANA does not match firmware IANA\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-
-
-   if(status == KFWUM_STATUS_ERROR)
-   {
-      printf("Firmware invalid for target board.  Download of upgrade aborted\n");
-   }
-   return status;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	if (boardInfo.iana != firmInfo.iana) {
+		lprintf(LOG_ERR,
+				"Board IANA does not match firmware IANA.");
+		status = KFWUM_STATUS_ERROR;
+	}
+	if (boardInfo.boardId != firmInfo.boardId) {
+		lprintf(LOG_ERR,
+				"Board IANA does not match firmware IANA.");
+		status = KFWUM_STATUS_ERROR;
+	}
+	if (status == KFWUM_STATUS_ERROR) {
+		lprintf(LOG_ERR,
+				"Firmware invalid for target board. Download of upgrade aborted.");
+	}
+	return status;
 }
 
 
