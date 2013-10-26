@@ -151,8 +151,8 @@ static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
                                                      unsigned long * pFileSize);
 static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
                                                         unsigned long fileSize);
-static void KfwumShowProgress( const unsigned char * task,
-                                    unsigned long current, unsigned long total);
+void KfwumShowProgress(const char *task, unsigned long current,
+		unsigned long total);
 static unsigned short KfwumCalculateChecksumPadding(unsigned char * pBuffer,
                                                        unsigned long totalSize);
 
@@ -444,7 +444,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
 
 	rewind(pFileHandle);
 	for (qty=0; qty < count; qty++) {
-		KfwumShowProgress((const unsigned char *)"Reading Firmware from File",
+		KfwumShowProgress("Reading Firmware from File",
 				qty, count);
 		if (fread(&firmBuf[qty * MAX_BUFFER_SIZE], 1,
 					MAX_BUFFER_SIZE,
@@ -459,8 +459,7 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
 		}
 	}
 	if (status == KFWUM_STATUS_OK) {
-		KfwumShowProgress((const unsigned char *)"Reading Firmware from File",
-				100, 100);
+		KfwumShowProgress("Reading Firmware from File", 100, 100);
 	}
 	fclose(pFileHandle);
 	return status;
@@ -474,46 +473,36 @@ static tKFWUM_Status KfwumSetupBuffersFromFile(unsigned char * pFileName,
  * current: progress
  * total  : limit
  */
-#define PROG_LENGTH 42
-void KfwumShowProgress( const unsigned char * task,  unsigned long current ,
-                                                           unsigned long total)
+# define PROG_LENGTH 42
+void
+KfwumShowProgress(const char *task, unsigned long current, unsigned long total)
 {
-   static unsigned long staticProgress=0xffffffff;
+	static unsigned long staticProgress=0xffffffff;
+	unsigned char spaces[PROG_LENGTH + 1];
+	unsigned short hash;
+	float percent = ((float)current/total);
+	unsigned long progress =  100*(percent);
 
-   unsigned char spaces[PROG_LENGTH + 1];
-   unsigned short hash;
-   float  percent = ((float)current/total);
-   unsigned long progress =  100*(percent);
+	if (staticProgress == progress) {
+		/* We displayed the same last time.. so don't do it */
+		return;
+	}
+	staticProgress = progress;
+	printf("%-25s : ", task); /* total 20 bytes */
+	hash = (percent * PROG_LENGTH);
+	memset(spaces,'#', hash);
+	spaces[hash] = '\0';
 
-   if(staticProgress == progress)
-   {
-      /* We displayed the same last time.. so don't do it */
-   }
-   else
-   {
-      staticProgress = progress;
+	printf("%s", spaces);
+	memset(spaces, ' ', (PROG_LENGTH - hash));
+	spaces[(PROG_LENGTH - hash)] = '\0';
+	printf("%s", spaces );
 
-
-      printf("%-25s : ",task);    /* total 20 bytes */
-
-      hash = ( percent * PROG_LENGTH );
-      memset(spaces,'#', hash);
-      spaces[ hash ] = '\0';
-      printf("%s", spaces );
-
-      memset(spaces,' ',( PROG_LENGTH - hash ) );
-      spaces[ ( PROG_LENGTH - hash ) ] = '\0';
-      printf("%s", spaces );
-
-
-      printf(" %3ld %%\r",progress); /* total 7 bytes */
-
-      if( progress == 100 )
-      {
-         printf("\n");
-      }
-      fflush(stdout);
-   }
+	printf(" %3ld %%\r", progress); /* total 7 bytes */
+	if (progress == 100) {
+		printf("\n");
+	}
+	fflush(stdout);
 }
 
 /* KfwumCalculateChecksumPadding
@@ -1130,16 +1119,14 @@ static tKFWUM_Status KfwumUploadFirmware(struct ipmi_intf * intf,
 		}
 		if (status == KFWUM_STATUS_OK) {
 			if ((address % 1024) == 0) {
-				KfwumShowProgress((const unsigned char *)\
-						"Writting Firmware in Flash",
+				KfwumShowProgress("Writting Firmware in Flash",
 						address, totalSize);
 			}
 			sequenceNumber++;
 		}
 	} while ((status == KFWUM_STATUS_OK) && (address < totalSize));
 	if (status == KFWUM_STATUS_OK) {
-		KfwumShowProgress((const unsigned char *)\
-				"Writting Firmware in Flash",
+		KfwumShowProgress("Writting Firmware in Flash",
 				100, 100);
 	}
 	return(status);
