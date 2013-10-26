@@ -1296,87 +1296,81 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 
 #define KWUM_GET_BYTE_AT_OFFSET(pBuffer,os)            pBuffer[os]
 
-tKFWUM_Status KfwumGetInfoFromFirmware(unsigned char * pBuf,
-                         unsigned long bufSize,  tKFWUM_InFirmwareInfo * pInfo)
+tKFWUM_Status
+KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
+		tKFWUM_InFirmwareInfo *pInfo)
 {
-   tKFWUM_Status status = KFWUM_STATUS_ERROR;
+	unsigned long offset = 0;
+	if (bufSize < (IN_FIRMWARE_INFO_OFFSET_LOCATION + IN_FIRMWARE_INFO_SIZE)) {
+		return KFWUM_STATUS_ERROR;
+	}
+	offset = IN_FIRMWARE_INFO_OFFSET_LOCATION;
 
-   if(bufSize >= (IN_FIRMWARE_INFO_OFFSET_LOCATION + IN_FIRMWARE_INFO_SIZE))
-   {
-      unsigned long offset = IN_FIRMWARE_INFO_OFFSET_LOCATION;
+	/* Now, fill the structure with read informations */
+	pInfo->checksum = (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + 0 + IN_FIRMWARE_INFO_OFFSET_CHECKSUM ) << 8;
 
-      /* Now, fill the structure with read informations */
-      pInfo->checksum  =  (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                           offset+0+IN_FIRMWARE_INFO_OFFSET_CHECKSUM ) << 8;
-      pInfo->checksum |= (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                           offset+1+IN_FIRMWARE_INFO_OFFSET_CHECKSUM );
+	pInfo->checksum|= (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + 1 + IN_FIRMWARE_INFO_OFFSET_CHECKSUM);
 
+	pInfo->sumToRemoveFromChecksum = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_CHECKSUM);
 
-      pInfo->sumToRemoveFromChecksum=
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_CHECKSUM);
+	pInfo->sumToRemoveFromChecksum+= KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_CHECKSUM + 1);
 
-      pInfo->sumToRemoveFromChecksum+=
-        KWUM_GET_BYTE_AT_OFFSET(pBuf ,
-                             offset+IN_FIRMWARE_INFO_OFFSET_CHECKSUM+1);
+	pInfo->fileSize = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_FILE_SIZE + 0) << 24;
 
-      pInfo->fileSize  =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf ,
-                              offset+IN_FIRMWARE_INFO_OFFSET_FILE_SIZE+0) << 24;
-      pInfo->fileSize |=
-         (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_FILE_SIZE+1) << 16;
-      pInfo->fileSize |=
-         (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_FILE_SIZE+2) << 8;
-      pInfo->fileSize |=
-         (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_FILE_SIZE+3);
+	pInfo->fileSize|= (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_FILE_SIZE + 1) << 16;
 
-      pInfo->boardId   =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_BOARD_ID+0) << 8;
-      pInfo->boardId  |=
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_BOARD_ID+1);
+	pInfo->fileSize|= (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_FILE_SIZE + 2) << 8;
 
-      pInfo->deviceId  =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_DEVICE_ID);
+	pInfo->fileSize|= (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_FILE_SIZE + 3);
 
-      pInfo->tableVers     =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_TABLE_VERSION);
-      pInfo->implRev       =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_IMPLEMENT_REV);
-      pInfo->versMajor     =
-         (KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                      offset+IN_FIRMWARE_INFO_OFFSET_VERSION_MAJOR)) & 0x0f;
-      pInfo->versMinor     =
-         (KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                 offset+IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB)>>4) & 0x0f;
-      pInfo->versSubMinor  =
-         (KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                    offset+IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB)) & 0x0f;
-      pInfo->sdrRev        =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_SDR_REV);
-      pInfo->iana  =
-         KWUM_GET_BYTE_AT_OFFSET(pBuf ,
-                              offset+IN_FIRMWARE_INFO_OFFSET_IANA2) << 16;
-      pInfo->iana |=
-         (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_IANA1) << 8;
-      pInfo->iana |=
-         (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
-                              offset+IN_FIRMWARE_INFO_OFFSET_IANA0);
+	pInfo->boardId = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_BOARD_ID + 0) << 8;
 
-      KfwumFixTableVersionForOldFirmware(pInfo);
+	pInfo->boardId|= KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_BOARD_ID + 1);
 
-      status = KFWUM_STATUS_OK;
-   }
-   return(status);
+	pInfo->deviceId = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_DEVICE_ID);
+
+	pInfo->tableVers = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_TABLE_VERSION);
+
+	pInfo->implRev = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_IMPLEMENT_REV);
+
+	pInfo->versMajor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
+				offset
+				+ IN_FIRMWARE_INFO_OFFSET_VERSION_MAJOR)) & 0x0f;
+
+	pInfo->versMinor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
+				offset
+				+ IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB) >> 4) & 0x0f;
+
+	pInfo->versSubMinor = (KWUM_GET_BYTE_AT_OFFSET(pBuf,
+				offset + IN_FIRMWARE_INFO_OFFSET_VERSION_MINSUB)) & 0x0f;
+
+	pInfo->sdrRev = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_SDR_REV);
+
+	pInfo->iana = KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_IANA2) << 16;
+
+	pInfo->iana|= (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_IANA1) << 8;
+
+	pInfo->iana|= (unsigned long)KWUM_GET_BYTE_AT_OFFSET(pBuf,
+			offset + IN_FIRMWARE_INFO_OFFSET_IANA0);
+
+	KfwumFixTableVersionForOldFirmware(pInfo);
+	return KFWUM_STATUS_OK;
 }
 
 
