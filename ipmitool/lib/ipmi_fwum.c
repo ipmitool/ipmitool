@@ -197,79 +197,59 @@ static void KfwumOutputInfo(tKFWUM_BoardInfo boardInfo,
  */
 int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-   printf("FWUM extension Version %d.%d\n", VERSION_MAJ, VERSION_MIN);
-   if ((!argc) || ( !strncmp(argv[0], "help", 4)))
-   {
-         KfwumOutputHelp();
-   }
-   else
-   {
-      if (!strncmp(argv[0], "info", 4))
-      {
-         KfwumMain(intf, KFWUM_TASK_INFO);
-      }
-      else if (!strncmp(argv[0], "status", 6))
-      {
-         KfwumMain(intf, KFWUM_TASK_STATUS);
-      }
-      else if (!strncmp(argv[0], "rollback", 8))
-      {
-         KfwumMain(intf, KFWUM_TASK_ROLLBACK);
-      }
-      else if (!strncmp(argv[0], "download", 8))
-      {
-         if((argc >= 2) && (strlen(argv[1]) > 0))
-         {
-            /* There is a file name in the parameters */
-            if(strlen(argv[1]) < 512)
-            {
-               strcpy((char *)fileName, argv[1]);
-               printf("Firmware File Name         : %s\n", fileName);
-
-               KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
-            }
-            else
-            {
-               fprintf(stderr,"File name must be smaller than 512 bytes\n");
-            }
-         }
-         else
-         {
-            fprintf(stderr,"A path and a file name must be specified\n");
-         }
-      }
-      else if (!strncmp(argv[0], "upgrade", 7))
-      {
-         if((argc >= 2) && (strlen(argv[1]) > 0))
-         {
-            /* There is a file name in the parameters */
-            if(strlen(argv[1]) < 512)
-            {
-               strcpy((char *)fileName, argv[1]);
-               printf("Upgrading using file name %s\n", fileName);
-               KfwumMain(intf, KFWUM_TASK_UPGRADE);
-            }
-            else
-            {
-               fprintf(stderr,"File name must be smaller than 512 bytes\n");
-            }
-         }
-         else
-         {
-            KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
-         }
-
-      }
-      else if (!strncmp(argv[0], "tracelog", 8))
-      {
-         KfwumMain(intf, KFWUM_TASK_TRACELOG);
-      }
-      else
-      {
-         printf("Invalid KFWUM command: %s\n", argv[0]);
-      }
-   }
-   return 0;
+	int rc = 0;
+	printf("FWUM extension Version %d.%d\n", VERSION_MAJ, VERSION_MIN);
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		KfwumOutputHelp();
+		return (-1);
+	}
+	if (strncmp(argv[0], "help", 4) == 0) {
+		KfwumOutputHelp();
+		rc = 0;
+	} else if (strncmp(argv[0], "info", 4) == 0) {
+		KfwumMain(intf, KFWUM_TASK_INFO);
+	} else if (strncmp(argv[0], "status", 6) == 0) {
+		KfwumMain(intf, KFWUM_TASK_STATUS);
+	} else if (strncmp(argv[0], "rollback", 8) == 0) {
+		KfwumMain(intf, KFWUM_TASK_ROLLBACK);
+	} else if (strncmp(argv[0], "download", 8) == 0) {
+		if ((argc < 2) || (strlen(argv[1]) < 1)) {
+			lprintf(LOG_ERR,
+					"Path and file name must be specified.");
+			return (-1);
+		}
+		/* There is a file name in the parameters */
+		if (strlen(argv[1]) >= 512) {
+			lprintf(LOG_ERR,
+					"File name length is limited to 512 characters.");
+			return (-1);
+		}
+		strcpy((char *)fileName, argv[1]);
+		printf("Firmware File Name         : %s\n", fileName);
+		KfwumMain(intf, KFWUM_TASK_DOWNLOAD);
+	} else if (strncmp(argv[0], "upgrade", 7) == 0) {
+		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
+			/* There is a file name in the parameters */
+			if (strlen(argv[1]) >= 512) {
+				lprintf(LOG_ERR,
+						"File name length is limited to 512 characters.");
+				return (-1);
+			}
+			strcpy((char *)fileName, argv[1]);
+			printf("Upgrading using file name %s\n", fileName);
+			KfwumMain(intf, KFWUM_TASK_UPGRADE);
+		} else {
+			KfwumMain(intf, KFWUM_TASK_START_UPGRADE);
+		}
+	} else if (strncmp(argv[0], "tracelog", 8) == 0) {
+		KfwumMain(intf, KFWUM_TASK_TRACELOG);
+	} else {
+		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);
+		KfwumOutputHelp();
+		rc = (-1);
+	}
+	return rc;
 }
 
 
