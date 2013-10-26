@@ -602,157 +602,154 @@ int
 HpmfwupgPreparationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int option)
 {
+	int componentId;
 	int rc = HPMFWUPG_SUCCESS;
+	struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
 	struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 		pFwupgCtx->pImageData;
 	/* Get device ID */
 	rc = HpmfwupgGetDeviceId(intf, &pFwupgCtx->devId);
 	/* Match current IPMC IDs with upgrade image */
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Validate device ID */
-		if (pImageHeader->deviceId == pFwupgCtx->devId.device_id) {
-			/* Validate product ID */
-			if (memcmp(pImageHeader->prodId,
-						pFwupgCtx->devId.product_id,
-						HPMFWUPG_PRODUCT_ID_LENGTH ) == 0) {
-				/* Validate man ID */
-				if (memcmp(pImageHeader->manId,
-							pFwupgCtx->devId.manufacturer_id,
-							HPMFWUPG_MANUFATURER_ID_LENGTH) != 0) {
-					lprintf(LOG_NOTICE,
-							"\n    Invalid image file for manufacturer %u",
-							buf2short(pFwupgCtx->devId.manufacturer_id));
-					rc = HPMFWUPG_ERROR;
-				}
-			} else {
+	if (rc != HPMFWUPG_SUCCESS) {
+		return HPMFWUPG_ERROR;
+	}
+	/* Validate device ID */
+	if (pImageHeader->deviceId == pFwupgCtx->devId.device_id) {
+		/* Validate product ID */
+		if (memcmp(pImageHeader->prodId,
+					pFwupgCtx->devId.product_id,
+					HPMFWUPG_PRODUCT_ID_LENGTH ) == 0) {
+			/* Validate man ID */
+			if (memcmp(pImageHeader->manId,
+						pFwupgCtx->devId.manufacturer_id,
+						HPMFWUPG_MANUFATURER_ID_LENGTH) != 0) {
 				lprintf(LOG_NOTICE,
-						"\n    Invalid image file for product %u",
-						buf2short(pFwupgCtx->devId.product_id));
+						"\n    Invalid image file for manufacturer %u",
+						buf2short(pFwupgCtx->devId.manufacturer_id));
 				rc = HPMFWUPG_ERROR;
 			}
 		} else {
 			lprintf(LOG_NOTICE,
-					"\n    Invalid device ID %x",
-					pFwupgCtx->devId.device_id);
+					"\n    Invalid image file for product %u",
+					buf2short(pFwupgCtx->devId.product_id));
 			rc = HPMFWUPG_ERROR;
 		}
-		if (rc != HPMFWUPG_SUCCESS) {
-			/* Giving one more chance to user to check whether its OK to continue even if the
-			 * product ID does not match. This is helpful as sometimes we just want to update
-			 * and dont care whether we have a different product Id. If the user says NO then
-			 * we need to just bail out from here
-			 */
-			if ((option & FORCE_MODE) || (option & VIEW_MODE)) {
-				printf("\n    Image Information");
-				printf("\n        Device Id : 0x%x", pImageHeader->deviceId);
-				printf("\n        Prod   Id : 0x%02x%02x",
-						pImageHeader->prodId[1], pImageHeader->prodId[0]);
-				printf("\n        Manuf  Id : 0x%02x%02x%02x",
-						pImageHeader->manId[2],
-						pImageHeader->manId[1],
-						pImageHeader->manId[0]);
-				printf("\n    Board Information");
-				printf("\n        Device Id : 0x%x", pFwupgCtx->devId.device_id);
-				printf("\n        Prod   Id : 0x%02x%02x",
-						pFwupgCtx->devId.product_id[1], pFwupgCtx->devId.product_id[0]);
-				printf("\n        Manuf  Id : 0x%02x%02x%02x",
-						pFwupgCtx->devId.manufacturer_id[2],
-						pFwupgCtx->devId.manufacturer_id[1],
-						pFwupgCtx->devId.manufacturer_id[0]);
-				if (HpmGetUserInput("\n Continue ignoring DeviceID/ProductID/ManufacturingID (Y/N) :")) {
-					rc = HPMFWUPG_SUCCESS;
-				}
-			} else {
-				printf("\n\n Use \"force\" option for copying all the components\n");
-			}
+	} else {
+		lprintf(LOG_NOTICE, "\n    Invalid device ID %x",
+				pFwupgCtx->devId.device_id);
+		rc = HPMFWUPG_ERROR;
+	}
+	if (rc != HPMFWUPG_SUCCESS) {
+		/* Giving one more chance to user to check whether its OK to continue even if the
+		 * product ID does not match. This is helpful as sometimes we just want to update
+		 * and dont care whether we have a different product Id. If the user says NO then
+		 * we need to just bail out from here
+		 */
+		if (!((option & FORCE_MODE) || (option & VIEW_MODE))) {
+			printf("\n\n Use \"force\" option for copying all the components\n");
+			return HPMFWUPG_ERROR;
+		}
+		printf("\n    Image Information");
+		printf("\n        Device Id : 0x%x", pImageHeader->deviceId);
+		printf("\n        Prod   Id : 0x%02x%02x",
+				pImageHeader->prodId[1], pImageHeader->prodId[0]);
+		printf("\n        Manuf  Id : 0x%02x%02x%02x",
+				pImageHeader->manId[2],
+				pImageHeader->manId[1],
+				pImageHeader->manId[0]);
+		printf("\n    Board Information");
+		printf("\n        Device Id : 0x%x", pFwupgCtx->devId.device_id);
+		printf("\n        Prod   Id : 0x%02x%02x",
+				pFwupgCtx->devId.product_id[1], pFwupgCtx->devId.product_id[0]);
+		printf("\n        Manuf  Id : 0x%02x%02x%02x",
+				pFwupgCtx->devId.manufacturer_id[2],
+				pFwupgCtx->devId.manufacturer_id[1],
+				pFwupgCtx->devId.manufacturer_id[0]);
+		if (HpmGetUserInput("\n Continue ignoring DeviceID/ProductID/ManufacturingID (Y/N): ")) {
+			rc = HPMFWUPG_SUCCESS;
+		} else {
+			return HPMFWUPG_ERROR;
 		}
 	}
 	/* Validate earliest compatible revision */
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Validate major & minor revision */
-		if (pImageHeader->compRevision[0] > pFwupgCtx->devId.fw_rev1
-				|| (pImageHeader->compRevision[0] == pFwupgCtx->devId.fw_rev1
-					&& pImageHeader->compRevision[1] > pFwupgCtx->devId.fw_rev2)) {
-			/* Version not compatible for upgrade */
-			lprintf(LOG_NOTICE, "\n    Version: Major: %d", pImageHeader->compRevision[0]);
-			lprintf(LOG_NOTICE, "             Minor: %x", pImageHeader->compRevision[1]);
-			lprintf(LOG_NOTICE, "    Not compatible with ");
-			lprintf(LOG_NOTICE, "    Version: Major: %d", pFwupgCtx->devId.fw_rev1);
-			lprintf(LOG_NOTICE, "             Minor: %x", pFwupgCtx->devId.fw_rev2);
-			rc = HPMFWUPG_ERROR;
+	/* Validate major & minor revision */
+	if (pImageHeader->compRevision[0] > pFwupgCtx->devId.fw_rev1
+			|| (pImageHeader->compRevision[0] == pFwupgCtx->devId.fw_rev1
+				&& pImageHeader->compRevision[1] > pFwupgCtx->devId.fw_rev2)) {
+		/* Version not compatible for upgrade */
+		lprintf(LOG_NOTICE, "\n    Version: Major: %d", pImageHeader->compRevision[0]);
+		lprintf(LOG_NOTICE, "             Minor: %x", pImageHeader->compRevision[1]);
+		lprintf(LOG_NOTICE, "    Not compatible with ");
+		lprintf(LOG_NOTICE, "    Version: Major: %d", pFwupgCtx->devId.fw_rev1);
+		lprintf(LOG_NOTICE, "             Minor: %x", pFwupgCtx->devId.fw_rev2);
+		/* Confirming it once again */
+		if (!((option & FORCE_MODE) || (option & VIEW_MODE))) {
+			return HPMFWUPG_ERROR;
 		}
-		if (rc != HPMFWUPG_SUCCESS) {
-			/* Confirming it once again */
-			if ((option & FORCE_MODE) || (option & VIEW_MODE)) {
-				if(HpmGetUserInput("\n Continue IGNORING Earliest compatibility (Y/N) :")) {
-					rc = HPMFWUPG_SUCCESS;
-				}
-			}
+		if (HpmGetUserInput("\n Continue IGNORING Earliest compatibility (Y/N): ")) {
+			rc = HPMFWUPG_SUCCESS;
+		} else {
+			return HPMFWUPG_ERROR;
 		}
 	}
 	/* Get target upgrade capabilities */
-	if (rc == HPMFWUPG_SUCCESS) {
-		struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
-		rc = HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd);
-		if (rc == HPMFWUPG_SUCCESS) {
-			/* Copy response to context */
-			memcpy(&pFwupgCtx->targetCap,
-					&targetCapCmd.resp,
-					sizeof(struct HpmfwupgGetTargetUpgCapabilitiesResp));
-			if (option & VIEW_MODE) {
-				/* do nothing */
+	rc = HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd);
+	if (rc != HPMFWUPG_SUCCESS) {
+		return HPMFWUPG_ERROR;
+	}
+	/* Copy response to context */
+	memcpy(&pFwupgCtx->targetCap,
+			&targetCapCmd.resp,
+			sizeof(struct HpmfwupgGetTargetUpgCapabilitiesResp));
+	if (option & VIEW_MODE) {
+		/* do nothing */
+	} else {
+		/* Make sure all component IDs defined in the
+		 * upgrade image are supported by the IPMC
+		 */
+		if ((pImageHeader->components.ComponentBits.byte &
+					pFwupgCtx->targetCap.componentsPresent.ComponentBits.byte) !=
+					pImageHeader->components.ComponentBits.byte) {
+			lprintf(LOG_NOTICE,
+					"\n    Some components present in the image file are not supported by the IPMC");
+			return HPMFWUPG_ERROR;
+		}
+		/* Make sure the upgrade is desirable rigth now */
+		if (pFwupgCtx->targetCap.GlobalCapabilities.bitField.fwUpgUndesirable == 1) {
+			lprintf(LOG_NOTICE, "\n    Upgrade undesirable at this moment");
+			return HPMFWUPG_ERROR;
+		}
+		/* Get confimation from the user if he wants to continue when
+		 * service affected during upgrade
+		 */
+		if (!(option & COMPARE_MODE)
+				&& (pFwupgCtx->targetCap.GlobalCapabilities.bitField.servAffectDuringUpg == 1
+					|| pImageHeader->imageCapabilities.bitField.servAffected == 1)) {
+			if (HpmGetUserInput("\nServices may be affected during upgrade. Do you wish to continue? (y/n): ")) {
+				rc = HPMFWUPG_SUCCESS;
 			} else {
-				/* Make sure all component IDs defined in the
-				 * upgrade image are supported by the IPMC
-				 */
-				if ((pImageHeader->components.ComponentBits.byte &
-							pFwupgCtx->targetCap.componentsPresent.ComponentBits.byte) !=
-							pImageHeader->components.ComponentBits.byte) {
-					lprintf(LOG_NOTICE,
-							"\n    Some components present in the image file are not supported by the IPMC");
-					rc = HPMFWUPG_ERROR;
-				}
-				/* Make sure the upgrade is desirable rigth now */
-				if (pFwupgCtx->targetCap.GlobalCapabilities.bitField.fwUpgUndesirable == 1) {
-					lprintf(LOG_NOTICE, "\n    Upgrade undesirable at this moment");
-					rc = HPMFWUPG_ERROR;
-				}
-				/* Get confimation from the user if he wants to continue when
-				 * service affected during upgrade
-				 */
-				if (!(option & COMPARE_MODE)
-						&& (pFwupgCtx->targetCap.GlobalCapabilities.bitField.servAffectDuringUpg == 1
-							|| pImageHeader->imageCapabilities.bitField.servAffected == 1)) {
-					if (HpmGetUserInput("\nServices may be affected during upgrade. Do you wish to continue? y/n ")) {
-						rc = HPMFWUPG_SUCCESS;
-					} else {
-						rc = HPMFWUPG_ERROR;
-					}
-				}
+				return HPMFWUPG_ERROR;
 			}
 		}
 	}
 	/* Get the general properties of each component present in image */
-	if (rc == HPMFWUPG_SUCCESS) {
-		int componentId;
-		for (componentId = HPMFWUPG_COMPONENT_ID_0;
-				componentId < HPMFWUPG_COMPONENT_ID_MAX;
-				componentId++) {
-			/* Reset component properties */
-			memset(&pFwupgCtx->genCompProp[componentId], 0,
-					sizeof (struct HpmfwupgGetGeneralPropResp));
-			if ((1 << componentId & pImageHeader->components.ComponentBits.byte)) {
-				struct HpmfwupgGetComponentPropertiesCtx getCompPropCmd;
-				/* Get general component properties */
-				getCompPropCmd.req.componentId = componentId;
-				getCompPropCmd.req.selector = HPMFWUPG_COMP_GEN_PROPERTIES;
-				rc = HpmfwupgGetComponentProperties(intf, &getCompPropCmd);
-				if (rc == HPMFWUPG_SUCCESS) {
-					/* Copy response to context */
-					memcpy(&pFwupgCtx->genCompProp[componentId],
-							&getCompPropCmd.resp,
-							sizeof(struct HpmfwupgGetGeneralPropResp));
-				}
+	for (componentId = HPMFWUPG_COMPONENT_ID_0;
+			componentId < HPMFWUPG_COMPONENT_ID_MAX;
+			componentId++) {
+		/* Reset component properties */
+		memset(&pFwupgCtx->genCompProp[componentId], 0,
+				sizeof (struct HpmfwupgGetGeneralPropResp));
+		if ((1 << componentId & pImageHeader->components.ComponentBits.byte)) {
+			struct HpmfwupgGetComponentPropertiesCtx getCompPropCmd;
+			/* Get general component properties */
+			getCompPropCmd.req.componentId = componentId;
+			getCompPropCmd.req.selector = HPMFWUPG_COMP_GEN_PROPERTIES;
+			rc = HpmfwupgGetComponentProperties(intf, &getCompPropCmd);
+			if (rc == HPMFWUPG_SUCCESS) {
+				/* Copy response to context */
+				memcpy(&pFwupgCtx->genCompProp[componentId],
+						&getCompPropCmd.resp,
+						sizeof(struct HpmfwupgGetGeneralPropResp));
 			}
 		}
 	}
