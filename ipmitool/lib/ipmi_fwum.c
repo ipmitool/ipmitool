@@ -821,44 +821,35 @@ struct KfwumManualRollbackReq{
 
 /* KfwumManualRollback  -  Ask IPMC to rollback to previous version
  *
- * * intf  : IPMI interface
+ * *intf  : IPMI interface
+ *
+ * returns KFWUM_STATUS_OK on success, otherwise KFWUM_STATUS_ERROR
  */
 static tKFWUM_Status KfwumManualRollback(struct ipmi_intf * intf)
 {
-  tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   struct KfwumManualRollbackReq thisReq;
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct KfwumManualRollbackReq thisReq;
 
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_FIRMWARE;
+	req.msg.cmd = KFWUM_CMD_ID_MANUAL_ROLLBACK;
+	thisReq.type = 0; /* Wait BMC shutdown */
+	req.msg.data = (unsigned char *)&thisReq;
+	req.msg.data_len = 1;
 
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_FIRMWARE;
-   req.msg.cmd = KFWUM_CMD_ID_MANUAL_ROLLBACK;
-
-   thisReq.type = 0;  /* Wait BMC shutdown */
-
-   req.msg.data = (unsigned char *) &thisReq;
-   req.msg.data_len = 1;
-
-   rsp = intf->sendrecv(intf, &req);
-
-   if (!rsp)
-   {
-      printf("Error in FWUM Manual Rollback Command\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-   else if (rsp->ccode)
-   {
-      printf("Error in FWUM Manual Rollback Command returned %x\n",
-                                                                    rsp->ccode);
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   if(status == KFWUM_STATUS_OK)
-   {
-      printf("FWUM Starting Manual Rollback \n");
-   }
-   return status;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
+		return KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode != 0) {
+		lprintf(LOG_ERR,
+				"Error in FWUM Manual Rollback Command returned %x",
+				rsp->ccode);
+		return KFWUM_STATUS_ERROR;
+	}
+	printf("FWUM Starting Manual Rollback \n");
+	return KFWUM_STATUS_OK;
 }
 
 #ifdef HAVE_PRAGMA_PACK
