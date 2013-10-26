@@ -1199,67 +1199,60 @@ static const char* CMD_STATE_STRING[] = {
                 "Completed" };
 
 
-static tKFWUM_Status KfwumGetTraceLog(struct ipmi_intf * intf)
+static tKFWUM_Status
+KfwumGetTraceLog(struct ipmi_intf *intf)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs *rsp;
-   struct ipmi_rq req;
-   unsigned char  chunkIdx;
-   unsigned char  cmdIdx;
+	tKFWUM_Status status = KFWUM_STATUS_OK;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	unsigned char  chunkIdx;
+	unsigned char  cmdIdx;
+	if (verbose) {
+		printf(" Getting Trace Log!\n");
+	}
+	for (chunkIdx = 0;
+			(chunkIdx < TRACE_LOG_CHUNK_COUNT)
+			&& (status == KFWUM_STATUS_OK);
+			chunkIdx++) {
+		/* Retreive each log chunk and print it */
+		memset(&req, 0, sizeof(req));
+		req.msg.netfn = IPMI_NETFN_FIRMWARE;
+		req.msg.cmd = KFWUM_CMD_ID_GET_TRACE_LOG;
+		req.msg.data = &chunkIdx;
+		req.msg.data_len = 1;
 
-   if(verbose)
-   {
-      printf(" Getting Trace Log!\n");
-   }
-
-   for( chunkIdx = 0; (chunkIdx < TRACE_LOG_CHUNK_COUNT) && (status == KFWUM_STATUS_OK); chunkIdx++ )
-   {
-      /* Retreive each log chunk and print it */
-      memset(&req, 0, sizeof(req));
-      req.msg.netfn = IPMI_NETFN_FIRMWARE;
-      req.msg.cmd = KFWUM_CMD_ID_GET_TRACE_LOG;
-      req.msg.data = &chunkIdx;
-      req.msg.data_len = 1;
-
-      rsp = intf->sendrecv(intf, &req);
-
-      if (!rsp)
-      {
-         printf("Error in FWUM Firmware Get Trace Log Command\n");
-         status = KFWUM_STATUS_ERROR;
-      }
-      else if (rsp->ccode)
-      {
-         printf("FWUM Firmware Get Trace Log returned %x\n", rsp->ccode);
-         status = KFWUM_STATUS_ERROR;
-      }
-
-      if(status == KFWUM_STATUS_OK)
-      {
-         for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++)
-         {
-            /* Don't diplay commands with an invalid state */
-            if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) &&
-                 (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] < KFWUM_CMD_ID_STD_MAX_CMD))
-            {
-               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
-                                             CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx]],
-                                             CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1]],
-                                             rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+2]);
-            }
-            else if ( (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1] != 0) &&
-                      (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] >= KFWUM_CMD_ID_EXTENDED_CMD))
-            {
-               printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
-                                             EXT_CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] - KFWUM_CMD_ID_EXTENDED_CMD],
-                                             CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+1]],
-                                             rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx+2]);
-            }
-         }
-      }
-   }
-   printf("\n");
-   return status;
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR,
+					"Error in FWUM Firmware Get Trace Log Command");
+			status = KFWUM_STATUS_ERROR;
+			break;
+		} else if (rsp->ccode) {
+			lprintf(LOG_ERR,
+					"FWUM Firmware Get Trace Log returned %x",
+					rsp->ccode);
+			status = KFWUM_STATUS_ERROR;
+			break;
+		}
+		for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++) {
+			/* Don't diplay commands with an invalid state */
+			if ((rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1] != 0)
+					&& (rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx] < KFWUM_CMD_ID_STD_MAX_CMD)) {
+				printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
+						CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx]],
+						CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1]],
+						rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 2]);
+			} else if ((rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1] != 0)
+					&& (rsp->data[TRACE_LOG_ATT_COUNT*cmdIdx] >= KFWUM_CMD_ID_EXTENDED_CMD)) {
+				printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
+						EXT_CMD_ID_STRING[rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx] - KFWUM_CMD_ID_EXTENDED_CMD],
+						CMD_STATE_STRING[rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1]],
+						rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 2]);
+			}
+		}
+	}
+	printf("\n");
+	return status;
 }
 
 
