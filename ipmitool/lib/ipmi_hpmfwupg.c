@@ -48,59 +48,59 @@
 
 extern int verbose;
 
-static int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
+int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
 		int activate, int, int);
-static int HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgPreparationStage(struct ipmi_intf *intf,
+int HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx *pFwupgCtx);
+int HpmfwupgPreparationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int option);
-static int HpmfwupgUpgradeStage(struct ipmi_intf *intf,
+int HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int option);
-static int HpmfwupgActivationStage(struct ipmi_intf *intf,
+int HpmfwupgActivationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
+int HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 		struct HpmfwupgGetTargetUpgCapabilitiesCtx *pCtx);
-static int HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
+int HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 		struct HpmfwupgGetComponentPropertiesCtx *pCtx);
-static int HpmfwupgQuerySelftestResult(struct ipmi_intf *intf,
+int HpmfwupgQuerySelftestResult(struct ipmi_intf *intf,
 		struct HpmfwupgQuerySelftestResultCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
+int HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 		struct HpmfwupgQueryRollbackStatusCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgAbortUpgrade(struct ipmi_intf *intf,
+int HpmfwupgAbortUpgrade(struct ipmi_intf *intf,
 		struct HpmfwupgAbortUpgradeCtx *pCtx);
-static int HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf,
+int HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf,
 		struct HpmfwupgInitiateUpgradeActionCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf,
+int HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf,
 		struct HpmfwupgUploadFirmwareBlockCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int count,
 		unsigned int *pOffset, unsigned int *blockLen);
-static int HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf,
+int HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf,
 		struct HpmfwupgFinishFirmwareUploadCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int option);
-static int HpmfwupgActivateFirmware(struct ipmi_intf *intf,
+int HpmfwupgActivateFirmware(struct ipmi_intf *intf,
 		struct HpmfwupgActivateFirmwareCtx *pCtx,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf,
+int HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf,
 		struct HpmfwupgGetUpgradeStatusCtx *pCtxstruct,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int silent);
-static int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
+int HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
 		struct HpmfwupgManualFirmwareRollbackCtx *pCtx);
-static void HpmfwupgPrintUsage(void);
-static unsigned char HpmfwupgCalculateChecksum(unsigned char *pData,
+void HpmfwupgPrintUsage(void);
+unsigned char HpmfwupgCalculateChecksum(unsigned char *pData,
 		unsigned int length);
-static int HpmfwupgGetDeviceId(struct ipmi_intf *intf,
+int HpmfwupgGetDeviceId(struct ipmi_intf *intf,
 		struct ipm_devid_rsp *pGetDevId);
-static int HpmfwupgGetBufferFromFile(char *imageFilename,
+int HpmfwupgGetBufferFromFile(char *imageFilename,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
+int HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx);
-static struct ipmi_rs *HpmfwupgSendCmd(struct ipmi_intf *intf,
+struct ipmi_rs *HpmfwupgSendCmd(struct ipmi_intf *intf,
 		struct ipmi_rq req, struct HpmfwupgUpgradeCtx* pFwupgCtx);
 
 
-static int HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
+int HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		struct HpmfwupgUpgradeCtx* pFwupgCtx,
 		unsigned char **pImagePtr,
 		struct ipmi_intf *intf,
@@ -756,7 +756,7 @@ HpmfwupgPreparationStage(struct ipmi_intf *intf,
 	return rc;
 }
 
-static int
+int
 image_version_upgradable(VERSIONINFO *pVersionInfo)
 {
 	/* If the image and active target versions are different, then
@@ -793,7 +793,7 @@ image_version_upgradable(VERSIONINFO *pVersionInfo)
 /* HpmfwupgValidateActionRecordChecksum - validate checksum of the specified
  * action record header.
  */
-static int
+int
 HpmfwupgValidateActionRecordChecksum(struct HpmfwupgActionRecord *pActionRecord)
 {
 	int rc = HPMFWUPG_SUCCESS;
@@ -1072,7 +1072,7 @@ HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 	return rc;
 }
 
-static int
+int
 get_max_rq_data_size(struct ipmi_intf *intf)
 {
 	int bufLength;
@@ -1104,7 +1104,7 @@ get_max_rq_data_size(struct ipmi_intf *intf)
 	return bufLength;
 }
 
-static int
+int
 HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		unsigned char **pImagePtr,
@@ -1340,7 +1340,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
  * defined in section 3.4 of the IPM Controller Firmware Upgrade Specification
  * version 1.0
  */
-static int
+int
 HpmfwupgActivationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx)
 {
@@ -2353,7 +2353,7 @@ HpmfwupgCalculateChecksum(unsigned char *pData, unsigned int length)
 	return checksum;
 }
 
-static void
+void
 HpmfwupgPrintUsage(void)
 {
 	lprintf(LOG_NOTICE,
