@@ -878,57 +878,44 @@ struct KfwumStartFirmwareDownloadResp {
 #endif
 
 static tKFWUM_Status KfwumStartFirmwareImage(struct ipmi_intf * intf,
-                                   unsigned long length,unsigned short padding)
+		unsigned long length, unsigned short padding)
 {
-   tKFWUM_Status status = KFWUM_STATUS_OK;
-   struct ipmi_rs * rsp;
-   struct ipmi_rq req;
-   struct KfwumStartFirmwareDownloadResp *pResp;
-   struct KfwumStartFirmwareDownloadReq thisReq;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct KfwumStartFirmwareDownloadResp *pResp;
+	struct KfwumStartFirmwareDownloadReq thisReq;
 
-   thisReq.lengthLSB  = length         & 0x000000ff;
-   thisReq.lengthMid  = (length >>  8) & 0x000000ff;
-   thisReq.lengthMSB  = (length >> 16) & 0x000000ff;
-   thisReq.paddingLSB = padding        & 0x00ff;
-   thisReq.paddingMSB = (padding>>  8) & 0x00ff;
+	thisReq.lengthLSB  = length         & 0x000000ff;
+	thisReq.lengthMid  = (length >>  8) & 0x000000ff;
+	thisReq.lengthMSB  = (length >> 16) & 0x000000ff;
+	thisReq.paddingLSB = padding        & 0x00ff;
+	thisReq.paddingMSB = (padding>>  8) & 0x00ff;
 	thisReq.useSequence = 0x01;
-
-   memset(&req, 0, sizeof(req));
-   req.msg.netfn = IPMI_NETFN_FIRMWARE;
-   req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_IMAGE;
-   req.msg.data = (unsigned char *) &thisReq;
-
-   /* Look for download type */
-   if ( saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS )
-   {
-   	req.msg.data_len = 5;
-   }
-   else
-   {
-   	req.msg.data_len = 6;
-   }
-
-   rsp = intf->sendrecv(intf, &req);
-
-   if (!rsp)
-   {
-      printf("Error in FWUM Firmware Start Firmware Image Download Command\n");
-      status = KFWUM_STATUS_ERROR;
-   }
-   else if (rsp->ccode)
-   {
-      printf("FWUM Firmware Start Firmware Image Download returned %x\n",
-                                                                    rsp->ccode);
-      status = KFWUM_STATUS_ERROR;
-   }
-
-   if(status == KFWUM_STATUS_OK)
-   {
-      pResp = (struct KfwumStartFirmwareDownloadResp *) rsp->data;
-      printf("Bank holding new firmware  : %d\n", pResp->bank);
-      sleep(5);
-   }
-   return status;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_FIRMWARE;
+	req.msg.cmd = KFWUM_CMD_ID_START_FIRMWARE_IMAGE;
+	req.msg.data = (unsigned char *) &thisReq;
+	/* Look for download type */
+	if (saveFirmwareInfo.downloadType == KFWUM_DOWNLOAD_TYPE_ADDRESS) {
+		req.msg.data_len = 5;
+	} else {
+		req.msg.data_len = 6;
+	}
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR,
+				"Error in FWUM Firmware Start Firmware Image Download Command.");
+		return KFWUM_STATUS_ERROR;
+	} else if (rsp->ccode) {
+		lprintf(LOG_ERR,
+				"FWUM Firmware Start Firmware Image Download returned %x",
+				rsp->ccode);
+		return KFWUM_STATUS_ERROR;
+	}
+	pResp = (struct KfwumStartFirmwareDownloadResp *)rsp->data;
+	printf("Bank holding new firmware  : %d\n", pResp->bank);
+	sleep(5);
+	return KFWUM_STATUS_OK;
 }
 
 #ifdef HAVE_PRAGMA_PACK
