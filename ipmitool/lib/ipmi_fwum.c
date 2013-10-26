@@ -145,7 +145,7 @@ static unsigned char fileName[512];
 static unsigned char firmBuf[1024*512];
 static tKFWUM_SaveFirmwareInfo saveFirmwareInfo;
 
-static void KfwumOutputHelp(void);
+void printf_kfwum_help(void);
 static void KfwumMain(struct ipmi_intf * intf, tKFWUM_Task task);
 static tKFWUM_Status KfwumGetFileSize(unsigned char * pFileName,
                                                      unsigned long * pFileSize);
@@ -201,11 +201,11 @@ int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printf("FWUM extension Version %d.%d\n", VERSION_MAJ, VERSION_MIN);
 	if (argc < 1) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
-		KfwumOutputHelp();
+		printf_kfwum_help();
 		return (-1);
 	}
 	if (strncmp(argv[0], "help", 4) == 0) {
-		KfwumOutputHelp();
+		printf_kfwum_help();
 		rc = 0;
 	} else if (strncmp(argv[0], "info", 4) == 0) {
 		KfwumMain(intf, KFWUM_TASK_INFO);
@@ -246,16 +246,17 @@ int ipmi_fwum_main(struct ipmi_intf * intf, int argc, char ** argv)
 		KfwumMain(intf, KFWUM_TASK_TRACELOG);
 	} else {
 		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);
-		KfwumOutputHelp();
+		printf_kfwum_help();
 		rc = (-1);
 	}
 	return rc;
 }
 
 
-static void KfwumOutputHelp(void)
+void printf_kfwum_help(void)
 {
-   printf("KFWUM Commands:  info status download upgrade rollback tracelog\n");
+	lprintf(LOG_NOTICE,
+"KFWUM Commands:  info status download upgrade rollback tracelog");
 }
 
 
