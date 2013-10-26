@@ -161,6 +161,7 @@ tKFWUM_Status ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
 void printf_kfwum_info(tKFWUM_BoardInfo boardInfo,
 		tKFWUM_InFirmwareInfo firmInfo);
+int ipmi_fwum_info(struct ipmi_intf *intf);
 
 /* ipmi_fwum_main  -  entry point for this ipmitool mode
  *
@@ -185,7 +186,7 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		printf_kfwum_help();
 		rc = 0;
 	} else if (strncmp(argv[0], "info", 4) == 0) {
-		rc = KfwumMain(intf, KFWUM_TASK_INFO);
+		rc = ipmi_fwum_info(intf);
 	} else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = KfwumMain(intf, KFWUM_TASK_STATUS);
 	} else if (strncmp(argv[0], "rollback", 8) == 0) {
@@ -256,6 +257,24 @@ typedef enum eFWUM_CmdId
 	KFWUM_CMD_ID_EXTENDED_CMD                              = 0xC0
 }  tKFWUM_CmdId;
 
+int
+ipmi_fwum_info(struct ipmi_intf *intf)
+{
+	tKFWUM_BoardInfo b_info;
+	int rc = 0;
+	unsigned char not_used;
+	if (verbose) {
+		printf("Getting Kontron FWUM Info\n");
+	}
+	if (KfwumGetDeviceInfo(intf, 1, &b_info) != KFWUM_STATUS_OK) {
+		rc = (-1);
+	}
+	if (KfwumGetInfo(intf, 1, &not_used) != KFWUM_STATUS_OK) {
+		rc = (-1);
+	}
+	return rc;
+}
+
 /* KfwumMain - function implements upload of the firmware data received as
  * parameters
  *
@@ -272,14 +291,6 @@ KfwumMain(struct ipmi_intf *intf, tKFWUM_Task task)
 	unsigned long fileSize = 0;
 	static unsigned short padding;
 
-	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_INFO)) {
-		unsigned char notUsed;
-		if (verbose) {
-			printf("Getting Kontron FWUM Info\n");
-		}
-		KfwumGetDeviceInfo(intf, 1, &boardInfo);
-		KfwumGetInfo(intf, 1, &notUsed);
-	}
 	if ((status == KFWUM_STATUS_OK) && (task == KFWUM_TASK_STATUS)) {
 		if (verbose) {
 			printf("Getting Kontron FWUM Status\n");
