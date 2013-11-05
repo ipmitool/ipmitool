@@ -9,7 +9,7 @@
 ### Set OS Info in BMC/Service Processor ###
 # Name: SET_OS_INFO
 # Description: Set OS Name, Version and Hostname in the Service Processor (BMC)
-# Default: no
+# Default: yes
 SET_OS_INFO="yes"
 
 ### Reset OS Info in BMC/Service Processor ###
@@ -22,5 +22,5 @@ RESET_OS_INFO="no"
 ### Set BMC/Service Processor Info in OS ###
 # Name; SET_BMC_INFO
 # Description: Set IP Address and URL of Service Processor/BMC in /run/bmc-info
-# Default: no
+# Default: yes
 SET_BMC_INFO="yes"

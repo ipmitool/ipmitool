@@ -1,6 +1,7 @@
 [Unit]
 Description=Exchange Information between BMC and OS
-After=ipmi.service
+After=ipmi.service network.target
+Requires=ipmi.service
 
 [Service]
 Type=oneshot
