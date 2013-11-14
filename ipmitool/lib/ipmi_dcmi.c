@@ -481,44 +481,14 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 	intf->abort = 1;
 	intf->session->sol_data.sequence_number = 1;
 
-	/* open port to BMC */
-	memset(&s->addr, 0, sizeof(struct sockaddr_in));
-	s->addr.sin_family = AF_INET;
-	s->addr.sin_port = htons(s->port);
-
-	rc = inet_pton(AF_INET, (const char *)s->hostname, &s->addr.sin_addr);
-	if (rc <= 0) {
-		struct hostent *host = gethostbyname((const char *)s->hostname);
-		if (host == NULL) {
-			lprintf(LOG_ERR, "Address lookup for %s failed",
-			s->hostname);
-			return -1;
-		}
-		if (host->h_addrtype != AF_INET) {
-			lprintf(LOG_ERR,
-					"Address lookup for %s failed. Got %s, expected IPv4 address.",
-					s->hostname,
-					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
-			return (-1);
-		}
-		s->addr.sin_family = host->h_addrtype;
-		memcpy(&s->addr.sin_addr, host->h_addr, host->h_length);
-	}
-
-	lprintf(LOG_DEBUG, "IPMI LAN host %s port %d",
-			s->hostname, ntohs(s->addr.sin_port));
-
-	intf->fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (intf->fd < 0) {
-		lperror(LOG_ERR, "Socket failed");
+	if (ipmi_intf_socket_connect (intf)  == -1) {
+		lprintf(LOG_ERR, "Could not open socket!");
 		return -1;
 	}
 
-	/* connect to UDP socket so we get async errors */
-	rc = connect(intf->fd, (struct sockaddr *)&s->addr,
-			sizeof(struct sockaddr_in));
-	if (rc < 0) {
-		lperror(LOG_ERR, "Connect failed");
+	if (intf->fd < 0) {
+		lperror(LOG_ERR, "Connect to %s failed",
+			s->hostname);
 		intf->close(intf);
 		return -1;
 	}

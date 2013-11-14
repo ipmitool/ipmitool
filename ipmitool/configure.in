@@ -29,7 +29,7 @@ AC_C_BIGENDIAN
 AC_FUNC_MALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([alarm gethostbyname socket select])
+AC_CHECK_FUNCS([alarm gethostbyname getaddrinfo getifaddrs socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
 AC_CHECK_FUNCS([getpassphrase])
 
@@ -39,6 +39,8 @@ AM_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"
 
 AC_SEARCH_LIBS([gethostbyname], [nsl])
+AC_SEARCH_LIBS([getaddrinfo], [nsl])
+AC_SEARCH_LIBS([getifaddrs], [nsl])
 AC_SEARCH_LIBS([socket], [socket], [],
 	[AC_CHECK_LIB([nsl], [socket],
 		[LIBS="$LIBS -lsocket -lnsl"], [], [-lsocket])])

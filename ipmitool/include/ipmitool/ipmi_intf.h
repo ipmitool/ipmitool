@@ -89,8 +89,9 @@ struct ipmi_session {
 	uint32_t out_seq;
 	uint32_t timeout;
 
-	struct sockaddr_in addr;
+	struct sockaddr_storage addr;
 	socklen_t addrlen;
+	int ai_family; /* Protocol family for socket.  */
 
 	/*
 	 * This struct holds state data specific to IPMI v2 / RMCP+ sessions
@@ -211,4 +212,7 @@ void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);
 void ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry);
 void ipmi_cleanup(struct ipmi_intf * intf);
 
+#if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
+int  ipmi_intf_socket_connect(struct ipmi_intf * intf);
+#endif
 #endif /* IPMI_INTF_H */

@@ -381,7 +381,7 @@ int
 ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct pollfd fds_wait[3], fds_data_wait[3], *fds;
-	struct sockaddr_in sin, myaddr;
+	struct sockaddr_in sin, myaddr, *sa_in;
 	socklen_t mylen;
 	char *recvip = NULL;
 	char out_buff[IPMI_BUF_SIZE * 8], in_buff[IPMI_BUF_SIZE];
@@ -398,8 +398,11 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	for (i = 0; i<argc; i++) {
-		if (sscanf(argv[i], "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) == 4)
-			recvip = strdup(argv[i]);
+		if (sscanf(argv[i], "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) == 4) {
+			/* not free'd ...*/
+			/* recvip = strdup(argv[i]); */
+			recvip = argv[i];
+		} 
 		else if (sscanf(argv[i], "port=%d", &ip1) == 1)
 			port = ip1;
 		else if (sscanf(argv[i], "rows=%d", &ip1) == 1)
@@ -427,8 +430,9 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
 
+	sa_in = (struct sockaddr_in *)&intf->session->addr;
 	result = inet_pton(AF_INET, (const char *)intf->session->hostname,
-			   &intf->session->addr.sin_addr);
+			   &sa_in->sin_addr);
 
 	if (result <= 0) {
 		struct hostent *host = gethostbyname((const char *)intf->session->hostname);
@@ -444,8 +448,8 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
 			return (-1);
 		}
-		intf->session->addr.sin_family = host->h_addrtype;
-		memcpy(&intf->session->addr.sin_addr, host->h_addr, host->h_length);
+		sa_in->sin_family = host->h_addrtype;
+		memcpy(&sa_in->sin_addr, host->h_addr, host->h_length);
 	}
 
 	fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -455,6 +459,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	if (-1 == bind(fd_socket, (struct sockaddr *)&sin, sizeof(sin))) {
 		lprintf(LOG_ERR, "Failed to bind socket.");
+		close(fd_socket);
 		return -1;
 	}
 
