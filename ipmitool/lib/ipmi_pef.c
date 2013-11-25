@@ -206,7 +206,7 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 
 static uint8_t
 ipmi_pef_get_policy_table(struct ipmi_intf * intf,
-									struct pef_cfgparm_policy_table_entry ** table)
+			  struct pef_cfgparm_policy_table_entry ** table)
 {	/*
 	// get the PEF policy table: allocate space, fillin, and return its size 
 	//  NB: the caller must free the returned area (when returned size > 0)
@@ -254,6 +254,64 @@ ipmi_pef_get_policy_table(struct ipmi_intf * intf,
 
 	*table = ptbl;
 	return(tbl_size);
+}
+
+#define IPMI_CMD_SET_PEF_CONFIG_PARMS 0x12
+struct pef_cfgparm_set_policy_table_entry
+{
+  uint8_t id;
+  uint8_t sel;
+  struct pef_policy_entry entry;
+} ATTRIBUTE_PACKING;
+
+static int
+ipmi_pef_set_policy_table_entry(struct ipmi_intf * intf, int set, struct pef_cfgparm_policy_table_entry *entry)
+{
+  	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct pef_cfgparm_set_policy_table_entry psel;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_SET_PEF_CONFIG_PARMS;
+	req.msg.data = &psel;
+	req.msg.data_len = sizeof(psel);
+
+	memset(&psel, 0, sizeof(psel));
+	psel.id = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
+	psel.sel = set & 0x3F;
+	memcpy(&psel.entry, &entry->entry, sizeof(entry->entry));
+
+	rsp = ipmi_pef_msg_exchange(intf, &req, "Set Alert policy table entry");
+	if (!rsp) {
+		lprintf(LOG_ERR, " **Error setting Alert policy table entry");
+		return -1;
+	}
+	return 0;
+}
+
+static void
+ipmi_pef_policy_enable(struct ipmi_intf * intf, int set, int enable)
+{
+	struct pef_cfgparm_policy_table_entry * ptbl = NULL;
+	int tbl_size;
+
+	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
+	if (!tbl_size) {
+		if (ptbl) {
+			free(ptbl);
+		}
+		return;
+	}
+	if (set > 0 && set <= tbl_size) {	
+		if (enable)
+			ptbl[set-1].entry.policy |= PEF_POLICY_ENABLED;
+		else
+			ptbl[set-1].entry.policy &= ~PEF_POLICY_ENABLED;
+		ipmi_pef_set_policy_table_entry(intf, set, &ptbl[set-1]);
+	} else {
+	  	lprintf(LOG_ERR, "Invalid policy index, valid range = (1..%d)", tbl_size);
+	}
 }
 
 static void
@@ -858,6 +916,12 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	ipmi_pef_print_flags(&pef_b2s_actions, P_SUPP, actions);
 }
 
+static struct valstr endis[] = {
+	{ .str = "enable", .val = 0x01 },
+	{ .str = "disable", .val = 0x00 },
+	{ .val = -1 },
+};
+
 int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
 {	/*
 	// PEF subcommand handling
@@ -873,16 +937,32 @@ int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_pef_get_status(intf);
 	else if (!strncmp(argv[0], "policy", 6))
 		ipmi_pef_list_policies(intf);
+	else if (!strncmp(argv[0], "setpolicy", 6)) {
+		uint16_t set,  enable;
+
+		set = enable = 0xFFFF;
+		if (argc > 2) {
+			str2int(argv[1], &set);
+			enable = str2val(argv[2], endis);
+		}
+		if (set == 0xFFFF || enable == 0xFFFF) {
+			lprintf(LOG_NOTICE, "setpolicy <policy number> <enable|disable>");
+			rc = -1;
+		}
+		else {	
+			ipmi_pef_policy_enable(intf, set, enable);
+		}
+	}
 	else if (!strncmp(argv[0], "list", 4))
 		ipmi_pef_list_entries(intf);
 	else {
 		help = 1;
-        rc   = -1;
+	        rc   = -1;
 		lprintf(LOG_ERR, "Invalid PEF command: '%s'\n", argv[0]);
 	}
 
 	if (help)
-		lprintf(LOG_NOTICE, "PEF commands: info status policy list");
+		lprintf(LOG_NOTICE, "PEF commands: info status policy setpolicy list");
 	else if (!verbose)
 		printf("\n");
 

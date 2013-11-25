@@ -2374,6 +2374,13 @@ processed by the BMC, etc).
 This command lists the PEF policy table entries.  Each policy 
 entry describes an alert destination.  A policy set is a 
 collection of table entries.  PEF alert actions reference policy sets.
+.TP
+\fIsetpolicy\fP <\fBid\fP> <\fBenable\fP|\fBdisable\fP>
+.br
+
+This command enables or disables a PEF policy entry.  The
+policy ID is the first column from the output of command
+\fBipmitool pef policy\fP
 .TP 
 \fIlist\fP
 .br 
