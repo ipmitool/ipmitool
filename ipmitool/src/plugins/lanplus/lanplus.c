@@ -2174,7 +2174,8 @@ ipmi_lanplus_send_payload(
 			else if (payload->payload_type == IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST)
 			{
 				lprintf(LOG_DEBUG, ">> SENDING AN OPEN SESSION REQUEST\n");
-				assert(session->v2_data.session_state == LANPLUS_STATE_PRESESSION);
+				assert(session->v2_data.session_state == LANPLUS_STATE_PRESESSION
+						|| session->v2_data.session_state == LANPLUS_STATE_OPEN_SESSION_SENT);
 
 				ipmi_lanplus_build_v2x_msg(intf,        /* in  */
 								payload,     /* in  */
