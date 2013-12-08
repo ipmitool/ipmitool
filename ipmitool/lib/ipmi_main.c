@@ -894,9 +894,11 @@ ipmi_main(int argc, char ** argv,
 
 	/* Open the interface with the specified or default IPMB address */
 	ipmi_main_intf->my_addr = arg_addr ? arg_addr : IPMI_BMC_SLAVE_ADDR;
-	if (ipmi_main_intf->open != NULL)
-		ipmi_main_intf->open(ipmi_main_intf);
-
+	if (ipmi_main_intf->open != NULL) {
+		if (ipmi_main_intf->open(ipmi_main_intf) < 0) {
+			goto out_free;
+		}
+	}
 	/*
 	 * Attempt picmg discovery of the actual interface address unless
 	 * the users specified an address.
