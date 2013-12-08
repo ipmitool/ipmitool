@@ -2858,7 +2858,10 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 
 	free(msg);
 	msg = NULL;
-
+	if (!rsp) {
+		lprintf(LOG_WARNING, "Error sending open session message.");
+		return -1;
+	}
 	if (verbose)
 		lanplus_dump_open_session_response(rsp);
 
