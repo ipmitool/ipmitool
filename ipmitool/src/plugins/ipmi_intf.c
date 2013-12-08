@@ -383,7 +383,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	session->ai_family = AF_UNSPEC;
 	for (rp = rp0; rp != NULL; rp = rp->ai_next) {
 		/* We are only interested in IPv4 and IPv6 */
-		if ((rp->ai_family != AF_INET6) && (rp->ai_family == AF_INET)) {
+		if ((rp->ai_family != AF_INET6) && (rp->ai_family != AF_INET)) {
 			continue;
 		}
 
