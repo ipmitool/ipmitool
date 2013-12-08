@@ -346,8 +346,9 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	char service[NI_MAXSERV];
 	int rc;
 
-	if (!intf || intf->session == NULL)
+	if (!intf || intf->session == NULL) {
 		return -1;
+	}
 
 	session = intf->session;
 
@@ -382,12 +383,14 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	session->ai_family = AF_UNSPEC;
 	for (rp = rp0; rp != NULL; rp = rp->ai_next) {
 		/* We are only interested in IPv4 and IPv6 */
-		if ((rp->ai_family != AF_INET6) && (rp->ai_family == AF_INET))
+		if ((rp->ai_family != AF_INET6) && (rp->ai_family == AF_INET)) {
 			continue;
+		}
 
 		intf->fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if (intf->fd == -1)
+		if (intf->fd == -1) {
 			continue;
+		}
 
 		if (rp->ai_family == AF_INET) {
 			if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
@@ -396,30 +399,25 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 				session->ai_family = rp->ai_family;
 				break;  /* Success */
 			}
-		} 
-
-		else if (rp->ai_family == AF_INET6) {
+		}  else if (rp->ai_family == AF_INET6) {
 			struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)rp->ai_addr;
 			char hbuf[NI_MAXHOST];
 			socklen_t len;
 
 			/* The scope was specified on the command line e.g. with -H FE80::219:99FF:FEA0:BD95%eth0 */
-			if ( addr6->sin6_scope_id != 0) {
-
+			if (addr6->sin6_scope_id != 0) {
 				len = sizeof(struct sockaddr_in6);
-				if ( getnameinfo((struct sockaddr *)addr6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
+				if (getnameinfo((struct sockaddr *)addr6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
 					lprintf(LOG_DEBUG, "Trying address: %s scope=%d", 
 						hbuf, 
 						addr6->sin6_scope_id);
 				}
-
 				if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
 					memcpy(&session->addr, rp->ai_addr, rp->ai_addrlen);
 					session->addrlen = rp->ai_addrlen;
 					session->ai_family = rp->ai_family;
 					break;  /* Success */
 				}
-
 			} else {
 				/* No scope specified, try to get this from the list of interfaces */
 				struct ifaddrs *ifaddrs = NULL;
@@ -432,18 +430,20 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 				}
 
 				for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-					if (ifa->ifa_addr == NULL)
+					if (ifa->ifa_addr == NULL) {
 						continue;
+					}
 
 					if (ifa->ifa_addr->sa_family == AF_INET6) {
 						struct sockaddr_in6 *tmp6 = (struct sockaddr_in6 *)ifa->ifa_addr;
 
 						/* Skip unwanted addresses */
-						if (IN6_IS_ADDR_MULTICAST(&tmp6->sin6_addr))
+						if (IN6_IS_ADDR_MULTICAST(&tmp6->sin6_addr)) {
 							continue;
-						if (IN6_IS_ADDR_LOOPBACK(&tmp6->sin6_addr))
+						}
+						if (IN6_IS_ADDR_LOOPBACK(&tmp6->sin6_addr)) {
 							continue;
-
+						}
 						len = sizeof(struct sockaddr_in6);
 						if ( getnameinfo((struct sockaddr *)tmp6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
 							lprintf(LOG_DEBUG, "Testing %s interface address: %s scope=%d", 
@@ -462,8 +462,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 							 * byte. See also this page:
 							 * http://www.freebsd.org/doc/en/books/developers-handbook/ipv6.html
 							 */
-							if ( IN6_IS_ADDR_LINKLOCAL(&tmp6->sin6_addr)
-							&& ( tmp6->sin6_addr.s6_addr16[1] != 0 ) ) {
+							if (IN6_IS_ADDR_LINKLOCAL(&tmp6->sin6_addr)
+									&& (tmp6->sin6_addr.s6_addr16[1] != 0)) {
 								addr6->sin6_scope_id = ntohs(tmp6->sin6_addr.s6_addr16[1]);
 							}
 						}
@@ -480,15 +480,12 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						} 
 					}
 				}
-
 				freeifaddrs(ifaddrs);
 			}
-
 		}
-
-		if (session->ai_family != AF_UNSPEC)
+		if (session->ai_family != AF_UNSPEC) {
 			break;
-
+		}
 		close(intf->fd);
 		intf->fd = -1;
 	}

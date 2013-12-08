@@ -481,7 +481,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 	intf->abort = 1;
 	intf->session->sol_data.sequence_number = 1;
 
-	if (ipmi_intf_socket_connect (intf)  == -1) {
+	if (ipmi_intf_socket_connect(intf) == -1) {
 		lprintf(LOG_ERR, "Could not open socket!");
 		return -1;
 	}
