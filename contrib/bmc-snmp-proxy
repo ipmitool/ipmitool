@@ -3,7 +3,7 @@
 #
 # bmc-snmp-proxy:	Set SNMP proxy to BMC (Baseboard Management Controller)
 #
-# version:	0.6
+# version:	0.62
 #
 # Authors:	Charles Rose <charles_rose@dell.com>
 #		Jordan Hargrave <jordan_hargrave@dell.com>
@@ -20,9 +20,9 @@
 SYSCONF_DIR="/etc/sysconfig"
 CONFIG="${SYSCONF_DIR}/bmc-snmp-proxy"
 
-SNMPD_LOCAL_CONF_DIR="/etc/snmp/bmc"
-SNMPD_LOCAL_CONF="${SNMPD_LOCAL_CONF_DIR}/snmpd.local.conf"
-TRAPD_LOCAL_CONF="${SNMPD_LOCAL_CONF_DIR}/snmptrapd.local.conf"
+SNMPD_BMC_CONF_DIR="/etc/snmp/bmc"
+SNMPD_BMC_CONF="${SNMPD_BMC_CONF_DIR}/snmpd.local.conf"
+TRAPD_BMC_CONF="${SNMPD_BMC_CONF_DIR}/snmptrapd.local.conf"
 
 TRAPD_CONF="/etc/snmp/snmptrapd.conf"
 
@@ -57,14 +57,16 @@ bmc_info_exists()
 	else
 		RETVAL=2
 	fi
+
 	return $RETVAL
 }
 
 check_snmp()
 {
-	if [ ! -d /etc/snmp ] && [ ! -x /usr/sbin/snmpd ]; then
+	if [ ! -d /etc/snmp ] || [ ! -x /usr/sbin/snmpd ]; then
 		RETVAL=12
 	fi
+
 	return $RETVAL
 }
 
@@ -77,11 +79,12 @@ write_snmp_conf()
 	printf "###############################################\n"
 	printf "# Automatically created by %s #\n" "${SCRIPT_NAME}"
 	printf "###############################################\n"
-	printf "view bmcview included %s 80\n" "${BMC_OID}"
-	printf "com2sec -Cn bmc_ctx bmc_sec default bmc_cmty\n"
-	printf "group bmc_grp v1 bmc_sec\n"
-	printf "access bmc_grp bmc_ctx any noauth exact bmcview none none\n"
-	printf "proxy -Cn bmc_ctx -v 1 %s\n" "${PROXY_TOKEN}"
+	printf "#view bmcview included %s 80\n" "${BMC_OID}"
+	printf "#com2sec -Cn bmc_ctx bmc_sec default bmc_cmty\n"
+	printf "#group bmc_grp v1 bmc_sec\n"
+	printf "#access bmc_grp bmc_ctx any noauth exact bmcview none none\n"
+	printf "#proxy -Cn bmc_ctx -v 1 %s\n" "${PROXY_TOKEN}"
+	printf "proxy -v 1 %s\n" "${PROXY_TOKEN}"
 	printf "###############################################\n"
 }
 
@@ -92,6 +95,7 @@ valid_ip()
 
         printf -- "%s" "${1}"| grep -Eq \
 		"^${octet}\\.${octet}\\.${octet}\\.${octet}$"
+
         return $?
 }
 
@@ -112,37 +116,38 @@ set_snmp_proxy()
 	if check_vars; then
 		PROXY_TOKEN="-c ${BMC_COMMUNITY} ${BMC_IPv4} ${BMC_OID}"
 
-		if [ ! -d ${SNMPD_LOCAL_CONF_DIR} ] && \
-			 	mkdir ${SNMPD_LOCAL_CONF_DIR}; then
-			write_snmp_conf > ${SNMPD_LOCAL_CONF}
-			[ $? -ne 0 ] && RETVAL=4
+		if [ -d ${SNMPD_BMC_CONF_DIR} ]; then
+			write_snmp_conf > ${SNMPD_BMC_CONF} || RETVAL=4
 		fi
 	else
 		RETVAL=3
 	fi
 }
 
-
 set_snmpd_conf_path()
 {
-	for SYSCONF in ${SYSCONF_DIR}/snmp*d;
+	if [ ! -d ${SNMPD_BMC_CONF_DIR} ]; then
+		mkdir ${SNMPD_BMC_CONF_DIR} || RETVAL=7
+	fi
+
+	# We need SNMPCONFPATH set for both snmpd and snmptrapd
+	for sysconf in ${SYSCONF_DIR}/snmp*d;
 	do
-		if grep -q "${SNMPD_LOCAL_CONF_DIR}" "${SYSCONF}" > \
-				 /dev/null 2>&1; then
-			continue
-		else
-			printf "SNMPCONFPATH=%s\n" "${SNMPD_LOCAL_CONF_DIR}" \
-				>> ${SYSCONF} || RETVAL=7
+		if ! grep -q "^SNMPCONFPATH.*${SNMPD_BMC_CONF_DIR}" \
+			"${sysconf}" > /dev/null 2>&1; then
+			printf "SNMPCONFPATH=/etc/snmp:%s\n" \
+				"${SNMPD_BMC_CONF_DIR}" >> ${sysconf} || \
+				RETVAL=7
 		fi
 	done
+
 	return $RETVAL
 }
 
 disable_snmp_proxy()
 {
-	if [ -f ${SNMPD_LOCAL_CONF} ]; then
-		rm -f ${SNMPD_LOCAL_CONF}
-		[ $? -ne 0 ] && RETVAL=5
+	if [ -f ${SNMPD_BMC_CONF} ]; then
+		rm -f ${SNMPD_BMC_CONF} || RETVAL=5
 	fi
 }
 #############################################################################
@@ -152,6 +157,7 @@ disable_snmp_proxy()
 pick_alert_dest()
 {
 	test_ip="$1"
+	# We have 4 IPv4 and 4 IPv6 alert dest. We will set IPv4 for now.
 	for ALERT_DEST in `seq 1 4`
 	do
 		temp_ip=$(${IPMITOOL} lan alert print ${CHANNEL} ${ALERT_DEST}\
@@ -165,12 +171,12 @@ pick_alert_dest()
 set_alert_dest_ip()
 {
 	${IPMITOOL} lan alert set ${CHANNEL} ${ALERT_DEST} ipaddr ${1} \
-		retry 4 type pet >/dev/null 2>&1
-	[ $? -ne 0 ] && RETVAL=8
+		retry 4 type pet >/dev/null 2>&1 || RETVAL=8
 }
 
-bmc_alert_dest()
+config_bmc_alert_dest()
 {
+	# call with enable|disable
 	# Pick the first active LAN channel
         for CHANNEL in `seq 1 14`
         do
@@ -180,12 +186,12 @@ bmc_alert_dest()
 
 	# If TRAPD_IP is already set as an alert dest,
 	if pick_alert_dest "${TRAPD_IP}"; then
-		# reset: reset it if we are called with reset
-		[ "${1}" = "reset" ] && \
+		# disable: reset it if we are called with disable
+		[ "${1}" = "disable" ] && \
 			set_alert_dest_ip "0.0.0.0"
 	# else, find the next free alert dest,
 	elif pick_alert_dest "0.0.0.0"; then
-		[ "${1}" = "reset" ] && \
+		[ "${1}" = "disable" ] && \
 			return $RETVAL
 		# set: the TRAPD_IP
 		set_alert_dest_ip "${TRAPD_IP}"
@@ -193,42 +199,54 @@ bmc_alert_dest()
 		# No free alert destinations
 		RETVAL=9
 	fi
+
 	return $RETVAL
 }
 
-set_ipmi_alert()
+set_ipmi_pef()
 {
-	${IPMITOOL} lan set ${CHANNEL} alert "${1}" >/dev/null 2>&1
-	[ $? -ne 0 ] && RETVAL=10
+	# Needs ipmitool-1.8.13 + patches
+	${IPMITOOL} pef policy set ${ALERT_DEST} "${1}" >/dev/null 2>&1 || \
+		RETVAL=10
 }
 
 get_host_ip()
 {
-	# Get host's IP that the BMC can reach.
+	# Get host's IP that the BMC can reach. This is at best a hack.
 	IFACE=$(/usr/sbin/ip -o -f inet address |awk '!/: lo/ {print $2}')
+
 	for dev in ${IFACE}
 	do
-		ping -c 1 -I ${dev} ${BMC_IPv4} > /dev/null 2>&1
+		temp_ping=$(ping -c 1 -I ${dev} ${BMC_IPv4})
+		[ $? -ne 0 ] && continue
+
+		printf -- "%s" "$temp_ping"| awk 'NR==1{print $5}' && break
 	done
 }
 
 config_bmc_alert()
 {
+	# Do two things
+	# Set/Reset TRAP IP in BMC
+	# Enable/Disable PEF alerting in BMC for TRAP
+
 	# Get Host's IP that the BMC can send traps to
 	TRAPD_IP=$(get_host_ip)
 
 	# Set Host's IP as the alert destination in the BMC
-	valid_ip ${TRAPD_IP} && bmc_alert_dest "${ACTION}"
+	valid_ip ${TRAPD_IP} && config_bmc_alert_dest "${ACTION}"
 
-	# Enable alerting on the LAN channel
-	[ $RETVAL -eq 0 ] && set_ipmi_alert "${ACTION}"
+	# Enable/Disable alerting on the LAN channel
+	[ $RETVAL -eq 0 ] && set_ipmi_pef "${ACTION}"
+
+	return $RETVAL
 }
 
 write_trapd_conf()
 {
 	printf "###############################################\n"
 	printf "# Automatically created by %s #\n" "${SCRIPT_NAME}"
-	printf "forward %s %s\n" "${BMC_OID}*" "${FORWARD_HOST}"
+	printf "forward default %s\n" "${FORWARD_HOST}"
 	printf "###############################################\n"
 }
 
@@ -236,10 +254,9 @@ config_trapd()
 {
 	# Proceed only if snmptrapd is available on the system
 	if [ -f ${TRAPD_CONF} ]; then
-		write_trapd_conf > ${TRAPD_LOCAL_CONF}
-		[ $? -ne 0 ] && RETVAL=11
+		write_trapd_conf > ${TRAPD_BMC_CONF} || RETVAL=11
 	else
-		return 1
+		RETVAL=11
 	fi
 }
 
@@ -249,6 +266,7 @@ trap_sink_exists()
 	# multiple
 	FORWARD_HOST=$(awk '/^trap.*sink/{print $2}; /^informsink/{print $2}' \
 			/etc/snmp/snmpd*conf | head -1)
+
 	if [ -z "${FORWARD_HOST}" ]; then
 		# there is no trapsink setup.
 		return 1
@@ -261,19 +279,20 @@ trap_sink_exists()
 trap_forward()
 {
 	NO_TRAP=0
-	ACTION=${1} # set or reset
+	ACTION=${1} # enable or disable
 
-	if [ "${ACTION}" = "set" ]; then
+	if [ "${ACTION}" = "enable" ]; then
 		# Get trapd config,
 		if trap_sink_exists; then
-			config_trapd && config_bmc_alert
+			config_bmc_alert && config_trapd
 		else
 			# exit silently if there is no sink
 			NO_TRAP=1
 		fi
 	else
-		if [ -f ${TRAPD_LOCAL_CONF} ]; then
-			rm -f ${TRAPD_LOCAL_CONF} >/dev/null 2>&1
+		if [ -f ${TRAPD_BMC_CONF} ]; then
+			rm -f ${TRAPD_BMC_CONF} >/dev/null 2>&1
+			config_bmc_alert
 		else
 			NO_TRAP=1
 		fi
@@ -288,7 +307,6 @@ service_reload()
 		service $1 reload
 		[ $? -ne 0 ] && RETVAL=6
 	fi
-	return
 }
 
 #############################################################################
@@ -296,11 +314,12 @@ start()
 {
 	if bmc_info_exists && check_snmp; then
 		touch ${LOCKFILE}
+
 		set_snmpd_conf_path && set_snmp_proxy
 		[ $RETVAL -eq 0 ] && service_reload snmpd
 
 		if [ "${TRAP_FORWARD}" = "yes" ]; then
-			trap_forward "set"
+			trap_forward "enable"
 			[ $RETVAL -eq 0 ] && [ $NO_TRAP -eq 0 ] && \
 				service_reload snmptrapd
 		fi
@@ -316,10 +335,11 @@ stop()
 		[ $RETVAL -eq 0 ] && service_reload snmpd
 
 		if [ "${TRAP_FORWARD}" = "yes" ]; then
-			trap_forward "reset"
+			trap_forward "disable"
 			[ $RETVAL -eq 0 ] && [ $NO_TRAP -eq 0 ] && \
 				service_reload snmptrapd
 		fi
+
 		rm -f ${LOCKFILE}
 	fi
 }
@@ -329,12 +349,13 @@ status()
 {
 	eval_gettext "${SCRIPT_NAME}: snmp proxy to BMC is "
 	# Checking for lockfile is better.
-	#if grep -q "^proxy" "${SNMPD_LOCAL_CONF}" > /dev/null 2>&1 ; then
+	#if grep -q "^proxy" "${SNMPD_BMC_CONF}" > /dev/null 2>&1 ; then
 	if [ -f ${LOCKFILE} ]; then
 		eval_gettext "set"
 	else
 		eval_gettext "not set"
 	fi
+
 	echo
 	RETVAL=0
 }
@@ -360,10 +381,10 @@ case "$RETVAL" in
 	0|1) ;;
 	2) eval_gettext "${SCRIPT_NAME}: failed to read ${BMC_INFO} " 1>&2 ;;
 	3) eval_gettext "${SCRIPT_NAME}: failed to get proxy config." 1>&2 ;;
-	4) eval_gettext "${SCRIPT_NAME}: failed to set ${SNMPD_LOCAL_CONF}." 1>&2 ;;
+	4) eval_gettext "${SCRIPT_NAME}: failed to set ${SNMPD_BMC_CONF}." 1>&2 ;;
 	5) eval_gettext "${SCRIPT_NAME}: failed to disable snmp proxy." 1>&2 ;;
 	6) eval_gettext "${SCRIPT_NAME}: failed to reload snmpd." 1>&2 ;;
-	7) eval_gettext "${SCRIPT_NAME}: failed to update ${SYSCONF}." 1>&2 ;;
+	7) eval_gettext "${SCRIPT_NAME}: failed to set snmpd config." 1>&2 ;;
 	8) eval_gettext "${SCRIPT_NAME}: failed to set IPMI alert dest." 1>&2 ;;
 	9) eval_gettext "${SCRIPT_NAME}: no free IPMI alert dest." 1>&2 ;;
 	10) eval_gettext "${SCRIPT_NAME}: failed to set IPMI PEF." 1>&2 ;;
@@ -375,6 +396,7 @@ esac
 if [ ${RETVAL} -gt 1 ]; then
         eval_gettext " Return code: ${RETVAL}"; echo
 fi
+
 exit ${RETVAL}
 #############################################################################
 # end of file
