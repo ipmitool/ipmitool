@@ -71,7 +71,7 @@
 #define SOL_PARAMETER_SOL_PAYLOAD_CHANNEL       0x07
 #define SOL_PARAMETER_SOL_PAYLOAD_PORT          0x08
 
-#define MAX_SOL_RETRY           		6
+#define MAX_SOL_RETRY 6
 
 const struct valstr sol_parameter_vals[] = {
 	{ SOL_PARAMETER_SET_IN_PROGRESS,           "Set In Progress (0)" },
@@ -100,47 +100,45 @@ extern int verbose;
  * ipmi_sol_payload_access
  */
 int
-ipmi_sol_payload_access(struct ipmi_intf * intf,
-			uint8_t channel,
-			uint8_t userid,
-			int enable)
+ipmi_sol_payload_access(struct ipmi_intf * intf, uint8_t channel,
+		uint8_t userid, int enable)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
+	int rc = (-1);
 	uint8_t data[6];
 
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn	 = IPMI_NETFN_APP;
-	req.msg.cmd	 = IPMI_SET_USER_PAYLOAD_ACCESS;
-	req.msg.data	 = data;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_SET_USER_PAYLOAD_ACCESS;
+	req.msg.data = data;
 	req.msg.data_len = 6;
 
 	memset(data, 0, 6);
-
-	data[0] = channel & 0xf;	/* channel */
-	data[1] = userid & 0x3f;	/* user id */
-	if (!enable)
-		data[1] |= 0x40;	/* disable */
-	data[2] = 0x02;			/* payload 1 is SOL */
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (NULL != rsp) {
-		switch (rsp->ccode) {
-			case 0x00:
-				return 0;
-			default:
-				lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d: %s",
-					enable ? "en" : "dis", userid, channel,
-					val2str(rsp->ccode, completion_code_vals));
-				break;
-		}
-	} else {
-		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d",
-			enable ? "en" : "dis", userid, channel);
+	/* channel */
+	data[0] = channel & 0xf;
+	/* user id */
+	data[1] = userid & 0x3f;
+	if (!enable) {
+		/* disable */
+		data[1] |= 0x40;
 	}
-
-	return -1;
+	/* payload 1 is SOL */
+	data[2] = 0x02;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d",
+				enable ? "en" : "dis", userid, channel);
+		rc = (-1);
+	} else if (rsp->ccode != 0) {
+		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d: %s",
+				enable ? "en" : "dis", userid, channel,
+				val2str(rsp->ccode, completion_code_vals));
+		rc = (-1);
+	} else {
+		rc = 0;
+	}
+	return rc;
 }
 
 int
