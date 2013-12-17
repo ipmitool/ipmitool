@@ -2056,7 +2056,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* SOL loop test: Activate and then Dectivate */
 		int cnt = 200;
 		int interval = 100; /* Unit is: ms */
-		uint8_t instance;
+		uint8_t instance = 1;
 		if (argc > 4) {
 			print_sol_usage();
 			return -1;
