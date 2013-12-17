@@ -756,3 +756,32 @@ is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr)
 			IPMI_UID_MIN, IPMI_UID_MAX);
 	return (-1);
 }
+
+uint16_t
+ipmi_get_oem_id(struct ipmi_intf *intf)
+{
+	/* Execute a Get Board ID command to determine the board */
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint16_t oem_id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_TSOL;
+	req.msg.cmd   = 0x21;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Get Board ID command failed");
+		return 0;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Board ID command failed: %#x %s",
+			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
+		return 0;
+	}
+	oem_id = rsp->data[0] | (rsp->data[1] << 8);
+	lprintf(LOG_DEBUG,"Board ID: %x", oem_id);
+
+	return oem_id;
+}
