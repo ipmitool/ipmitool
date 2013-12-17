@@ -281,7 +281,8 @@ typedef enum IPMI_OEM {
      IPMI_OEM_KONTRON    = 15000,
      IPMI_OEM_PPS        = 16394,
      IPMI_OEM_AMI        = 20974,
-     IPMI_OEM_NOKIA_SIEMENS_NETWORKS = 28458
+     IPMI_OEM_NOKIA_SIEMENS_NETWORKS = 28458,
+     IPMI_OEM_SUPERMICRO_47488 = 47488
 } IPMI_OEM;
 
 extern const struct valstr completion_code_vals[];

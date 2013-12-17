@@ -322,7 +322,6 @@ ipmi_get_oem(struct ipmi_intf * intf)
 	return  IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id);
 }
 
-
 static int
 ipmi_sel_add_entry(struct ipmi_intf * intf, struct sel_event_record * rec)
 {
@@ -524,6 +523,115 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	description[rsp->data[3]] = 0;;
 
 	return description;
+}
+
+char *
+get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	char *desc = NULL;
+	char *str;
+	int chipset_type = 1;
+	int data1;
+	int data2;
+	int data3;
+	int length;
+	int sensor_type;
+	uint8_t i = 0;
+	uint16_t oem_id = 0;
+	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to
+	 * data1,data2,data3
+	 */
+	data1 = rec->sel_type.standard_type.event_data[0];
+	data2 = rec->sel_type.standard_type.event_data[1];
+	data3 = rec->sel_type.standard_type.event_data[2];
+	/* Check for the Standard Event type == 0x6F */
+	if (rec->sel_type.standard_type.event_type != 0x6F) {
+		return NULL;
+	}
+	/* Allocate mem for te Description string */
+	desc = (char *)malloc(SIZE_OF_DESC);
+	if (desc == NULL) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		return NULL;
+	}
+	memset(desc,0,SIZE_OF_DESC);
+	sensor_type = rec->sel_type.standard_type.sensor_type;
+	switch (sensor_type) {
+		case SENSOR_TYPE_MEMORY:
+			memset(&req, 0, sizeof (req));
+			req.msg.netfn = IPMI_NETFN_APP;
+			req.msg.lun = 0;
+			req.msg.cmd = BMC_GET_DEVICE_ID;
+			req.msg.data = NULL;
+			req.msg.data_len = 0;
+
+			rsp = intf->sendrecv(intf, &req);
+			if (rsp == NULL) {
+				lprintf(LOG_ERR, " Error getting system info");
+				if (desc != NULL) {
+					free(desc);
+					desc = NULL;
+				}
+				return NULL;
+			} else if (rsp->ccode > 0) {
+				lprintf(LOG_ERR, " Error getting system info: %s",
+						val2str(rsp->ccode, completion_code_vals));
+				if (desc != NULL) {
+					free(desc);
+					desc = NULL;
+				}
+				return NULL;
+			}
+			/* check the chipset type */
+			oem_id = ipmi_get_oem_id(intf);
+			if (oem_id == 0) {
+				return NULL;
+			}
+			length = sizeof(supermicro_X8);
+			for (i = 0; i < length; i++) {
+				if (oem_id == supermicro_X8[i]) {
+					chipset_type = 0;
+					break;
+				}
+			}
+			length = sizeof(supermicro_x9);
+			for (i = 0; i < length; i++) {
+				if (oem_id == supermicro_x9[i]) {
+					chipset_type = 2;
+					break;
+				}
+			}
+			if (chipset_type == 0) {
+				snprintf(desc, SIZE_OF_DESC, "@DIMM%2X(CPU%x)",
+						data2,
+						(data3 & 0x03) + 1);
+			} else if (chipset_type == 1) {
+				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
+						(data2 >> 4) + 0x40 + (data3 & 0x3) * 4,
+						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
+			} else if (chipset_type == 2) {
+				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
+						(data2 >> 4) + 0x40 + (data3 & 0x3) * 3,
+						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
+			} else {
+				snprintf(desc, SIZE_OF_DESC, "");
+			}
+			break;
+		case SENSOR_TYPE_SUPERMICRO_OEM:
+			if (data1 == 0x80 && data3 == 0xFF) {
+				if (data2 == 0x0) {
+					snprintf(desc, SIZE_OF_DESC, "BMC unexpected reset");
+				} else if (data2 == 0x1) {
+					snprintf(desc, SIZE_OF_DESC, "BMC cold reset");
+				} else if (data2 == 0x2) {
+					snprintf(desc, SIZE_OF_DESC, "BMC warm reset");
+				}
+			}
+			break;
+	}
+	return desc;
 }
 
 /*
@@ -1067,6 +1175,10 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_DELL: // Dell Decoding of the OEM Bytes from SEL Record.
 		desc = get_dell_evt_desc(intf, rec);
 		break;
+	case IPMI_OEM_SUPERMICRO:
+	case IPMI_OEM_SUPERMICRO_47488:
+		desc = get_supermicro_evt_desc(intf, rec);
+		break;
 	case IPMI_OEM_UNKNOWN:
 	default:
 		break;
@@ -1092,7 +1204,6 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		*desc = ipmi_get_oem_desc(intf, rec);
 		return;
 	} else if (rec->sel_type.standard_type.event_type == 0x6f) {
-
 		if( rec->sel_type.standard_type.sensor_type >= 0xC0 &&  rec->sel_type.standard_type.sensor_type < 0xF0) {
 			IPMI_OEM iana = ipmi_get_oem(intf);
 
@@ -1116,11 +1227,26 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 						 sfx = ipmi_get_oem_desc(intf, rec);
 				 	}
 				 break;
+				case IPMI_OEM_SUPERMICRO:
+				case IPMI_OEM_SUPERMICRO_47488:
+					evt = sensor_specific_types;
+					code = rec->sel_type.standard_type.sensor_type;
+					sfx = ipmi_get_oem_desc(intf, rec);
+					break;
 				 /* add your oem sensor assignation here */
 			}			
 			if( evt == NULL ){		
 				lprintf(LOG_DEBUG, "oem sensor type %x  using standard type supplied description",
 		                          rec->sel_type.standard_type.sensor_type );
+			}
+		} else {
+			switch (ipmi_get_oem(intf)) {
+				case IPMI_OEM_SUPERMICRO:
+				case IPMI_OEM_SUPERMICRO_47488:
+					evt = sensor_specific_types;
+					code = rec->sel_type.standard_type.sensor_type;
+					sfx = ipmi_get_oem_desc(intf, rec);
+				 break;
 			}
 		}
 		if( evt == NULL ){
@@ -1210,6 +1336,9 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
                  if(0x01 == offset)
                      flag = 0x01;			
                  break;
+            case SENSOR_TYPE_SUPERMICRO_OEM:
+                 flag = 0x02;
+                 break;
             default:
                  break;
 		}
@@ -1222,6 +1351,10 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			    return;
 		    }
 		memset(*desc, 0, 48 + SIZE_OF_DESC);
+		if (flag == 0x02) {
+			sprintf(*desc, "%s", sfx);
+			return;
+		}
 		sprintf(*desc, "(%s)",sfx);		
      	}
 		free(sfx);
@@ -1776,10 +1909,17 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		}
 	}
 	else if (evt->sel_type.standard_type.event_type == 0x6f) {
+		int print_sensor = 1;
+		switch (ipmi_get_oem(intf)) {
+			case IPMI_OEM_SUPERMICRO:
+			case IPMI_OEM_SUPERMICRO_47488:
+				print_sensor = 0;
+			 break;
+		}
 		/*
 		 * Sensor-Specific Discrete
 		 */
-		if (evt->sel_type.standard_type.sensor_type == 0xC &&
+		if (print_sensor && evt->sel_type.standard_type.sensor_type == 0xC && /*TODO*/
 		    evt->sel_type.standard_type.sensor_num == 0 &&
 		    (evt->sel_type.standard_type.event_data[0] & 0x30) == 0x20) {
 			/* break down memory ECC reporting if we can */
