@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <assert.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -663,9 +664,10 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 			close(fd);
 	}
 
-	open("/dev/null", O_RDWR);
-	dup(0);
-	dup(0);
+	fd = open("/dev/null", O_RDWR);
+	assert(0 == fd);
+	dup(fd);
+	dup(fd);
 }
 
 /* is_fru_id - wrapper for str-2-int FRU ID conversion. Message is printed
