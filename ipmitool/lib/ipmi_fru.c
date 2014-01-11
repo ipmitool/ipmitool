@@ -2161,7 +2161,7 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 							minexp / 2, (minexp % 2) * 5);
 				} else {
 					printf(
-							"      Min Expected Voltage:   -36V (actual invalid value 0x%x)\n",
+							"      Min Expected Voltage:   -%dV (actual invalid value 0x%x)\n",
 							36, minexp);
 				}
 				for (j=0; j < entries; j++) {
