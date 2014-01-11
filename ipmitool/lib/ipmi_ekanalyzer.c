@@ -2746,6 +2746,7 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid board type size!");
 			free(data);
+			data = NULL;
 			goto out;
 		}
 		printf("%s type: 0x%02x\n", board_type, len);
