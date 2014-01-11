@@ -2763,6 +2763,7 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 		}
 		printf("\n");
 		free(data);
+		data = NULL;
 		(*board_length) -= size_board;
 		goto out;
 	}
@@ -2809,6 +2810,7 @@ ipmi_ek_display_board_info_area(FILE * input_file, char * board_type,
 			}
 			printf("\n");
 			free(additional_data);
+			additional_data = NULL;
 			(*board_length) -= size_board;
 		}
 		else {
