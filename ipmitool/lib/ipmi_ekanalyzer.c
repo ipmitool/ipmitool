@@ -2843,7 +2843,7 @@ out:
 static int
 ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 {
-	size_t file_offset = ftell(input_file);
+	size_t file_offset;
 	int ret = 0;
 	unsigned char ch_len = 0;
 	unsigned char data = 0;
@@ -2853,6 +2853,7 @@ ipmi_ek_display_product_info_area(FILE * input_file, long offset)
 		lprintf(LOG_ERR, "No file stream to read.");
 		return (-1);
 	}
+	file_offset = ftell(input_file);
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Product Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
