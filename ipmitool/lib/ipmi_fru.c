@@ -311,7 +311,10 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id)
 			p_new->next = NULL;
 			p_new->start = header.offsets[i] * 8;
 			p_new->size = fru->size - p_new->start;
-			strcpy((char *)p_new->blocId, section_id[i]);
+
+			strncpy((char *)p_new->blocId, section_id[i], sizeof(p_new->blocId));
+			/* Make sure string is null terminated */
+			p_new->blocId[sizeof(p_new->blocId)-1] = 0;
 
 			p_bloc->next = p_new;
 			p_bloc->size = p_new->start - p_bloc->start;
