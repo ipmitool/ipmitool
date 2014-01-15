@@ -3281,7 +3281,7 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		rdata = (void *)pstPeakpower;
 		printf("Peak power consmhistory  Data               : "
 				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
+				"%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
 				rdata[0], rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10], rdata[11],
