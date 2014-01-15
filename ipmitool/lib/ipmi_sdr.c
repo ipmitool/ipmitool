@@ -2422,6 +2422,7 @@ ipmi_sdr_print_sensor_oem_intel(struct ipmi_intf *intf,
 				    ("Power Redundancy | PS@%02xh            | nr\n",
 				     oem->data[8]);
 			}
+			break;
 		case 9:	/* SR2300, non-redundant, PSx present */
 			if (verbose) {
 				printf("Power Redundancy       : Yes\n");
