@@ -3633,7 +3633,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 	}
 	if (verbose > 1) {
 		rdata = (void *)&ipmipowercap;
-		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x ",
 				rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10],rdata[11]);
