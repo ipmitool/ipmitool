@@ -3232,7 +3232,7 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 	if (verbose > 1) {
 		rdata = (void *)pavgpower;
 		printf("Average power consumption history data"
-				"       :%x %x %x %x %x %x %x\n\n",
+				"       :%x %x %x %x %x %x %x %x\n\n",
 				rdata[0], rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7]);
 	}
