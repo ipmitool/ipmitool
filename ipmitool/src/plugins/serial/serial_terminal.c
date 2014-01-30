@@ -211,8 +211,13 @@ ipmi_serial_term_open(struct ipmi_intf * intf)
 
 	/* no flow control */
 	ti.c_cflag &= ~CRTSCTS;
-	ti.c_iflag &= ~(IGNBRK | IGNCR | INLCR | ICRNL | IUCLC | INPCK | ISTRIP
+	ti.c_iflag &= ~(IGNBRK | IGNCR | INLCR | ICRNL | INPCK | ISTRIP
 			| IXON | IXOFF | IXANY);
+#ifdef IUCLC
+        /* Only disable uppercase-to-lowercase mapping on input for
+	   platforms supporting the flag. */
+	ti.c_iflag &= ~(IUCLC)
+#endif
 
 	ti.c_oflag &= ~(OPOST);
 	ti.c_lflag &= ~(ICANON | ISIG | ECHO | ECHONL | NOFLSH);
