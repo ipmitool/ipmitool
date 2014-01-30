@@ -329,7 +329,13 @@ serial_bm_alloc_seq(void)
 static int
 serial_bm_flush(struct ipmi_intf * intf)
 {
-	return ioctl(intf->fd, TCFLSH, TCIOFLUSH);
+#if defined(TCFLSH)
+    return ioctl(intf->fd, TCFLSH, TCIOFLUSH);
+#elif defined(TIOCFLUSH)
+    return ioctl(intf->fd, TIOCFLUSH);
+#else
+#   error "unsupported platform, missing flush support (TCFLSH/TIOCFLUSH)"
+#endif
 }
 
 /*

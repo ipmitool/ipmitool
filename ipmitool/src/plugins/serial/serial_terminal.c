@@ -342,7 +342,14 @@ serial_write_line(struct ipmi_intf * intf, const char *str)
 static int
 serial_flush(struct ipmi_intf * intf)
 {
+#if defined(TCFLSH)
     return ioctl(intf->fd, TCFLSH, TCIOFLUSH);
+#elif defined(TIOCFLUSH)
+    return ioctl(intf->fd, TIOCFLUSH);
+#else
+#   error "unsupported platform, missing flush support (TCFLSH/TIOCFLUSH)"
+#endif
+
 }
 
 /*
