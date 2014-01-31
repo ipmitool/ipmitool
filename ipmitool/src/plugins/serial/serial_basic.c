@@ -271,7 +271,7 @@ serial_bm_open(struct ipmi_intf * intf)
 #ifdef IUCLC
         /* Only disable uppercase-to-lowercase mapping on input for
 	   platforms supporting the flag. */
-	ti.c_iflag &= ~(IUCLC)
+	ti.c_iflag &= ~(IUCLC);
 #endif
 
 
