@@ -410,3 +410,5 @@ http://www.intel.com/design/servers/ipmi/spec.htm
 OpenIPMI project: Linux IPMI kernel driver and userland library
 http://openipmi.sourceforge.net
 
+IPMItool commit archive
+https://lists.sourceforge.net/lists/listinfo/ipmitool-cvs
