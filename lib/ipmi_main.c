@@ -361,7 +361,8 @@ ipmi_main(int argc, char ** argv,
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
-	uint8_t arg_addr = 0, addr;
+	uint8_t arg_addr = 0;
+	uint8_t addr = 0;
 	uint16_t my_long_packet_size=0;
 	uint8_t my_long_packet_set=0;
 	uint8_t lookupbit = 0x10;	/* use name-only lookup by default */
