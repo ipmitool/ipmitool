@@ -2309,14 +2309,16 @@ Get boot parameter. Currently supported values for <\fBparam #\fR> are:
 .br 
 
 .TP 
-\fIset\fP <\fBoption\fR> [\fBvalue ...\fR]
+\fIset\fP <\fBdevice\fR> [<\fIoptions\fP=\fBhelp,...\fR>]
 .br 
 
-Set boot parameter.
+Set boot device parameter used for next boot.  Various options may be used
+to change when the the next boot device is cleared.
+Run \fI"options=help"\fP for a list of available bootparam set device options.
 
 .RS
 .TP 
-Currently supported values for \fB<option>\fR are:
+Currently supported bootparam \fBdevice\fR settings are:
 .TP 
 \fIforce_pxe\fP
 .br 
@@ -2347,6 +2349,37 @@ Force boot from CD/DVD
 .br 
 
 Force boot into BIOS setup
+
+.RE
+.RS
+.TP 
+Currently supported bootparam \fBoptions\fR settings are associated with BMC Boot Valid Bit Clearing and are as follows:   Any option can be prefixed with "no-" to invert the sense of the operation.
+.TP 
+\fIPEF\fP
+.br 
+
+Clear valid bit on reset/power cycle caused by PEF
+.TP 
+\fItimeout\fP
+.br 
+
+Automatically clear boot flag valid bit if Chassis Control command is
+not received within 60 seconds.
+.TP 
+\fIwatchdog\fP
+.br 
+
+Clear valid bit on reset/power cycle caused by watchdog timeout
+.TP 
+\fIreset\fP
+.br 
+
+Clear valid bit on push button reset / soft-reset
+.TP 
+\fIpower\fP
+.br 
+
+Clear valid bit on power up via power push button or wake event
 
 .RE
 .RE

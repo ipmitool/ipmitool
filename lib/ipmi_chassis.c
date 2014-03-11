@@ -755,6 +755,193 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 }
 
 static int
+get_bootparam_options(char *optstring,
+		unsigned char *set_flag, unsigned char *clr_flag)
+{
+	char *token;
+	char *saveptr = NULL;
+	int optionError = 0;
+	*set_flag = 0;
+	*clr_flag = 0;
+	static struct {
+		char *name;
+		unsigned char value;
+		char *desc;
+	} options[] = {
+	{"PEF",          0x10,
+	    "Clear valid bit on reset/power cycle cause by PEF"},
+	{"timeout",      0x08,
+	    "Automatically clear boot flag valid bit on timeout"},
+	{"watchdog",     0x04,
+	    "Clear valid bit on reset/power cycle cause by watchdog"},
+	{"reset",        0x02,
+	    "Clear valid bit on push button reset/soft reset"},
+	{"power", 0x01,
+	    "Clear valid bit on power up via power push button or wake event"},
+
+	{NULL}	/* End marker */
+	}, *op;
+
+	if (strncmp(optstring, "options=", 8) != 0) {
+		lprintf(LOG_ERR, "No options= keyword found \"%s\"", optstring);
+		return -1;
+	}
+	token = strtok_r(optstring + 8, ",", &saveptr);
+	while (token != NULL) {
+		int setbit = 0;
+		if (strcmp(token, "help") == 0) {
+			optionError = 1;
+			break;
+		}
+		if (strncmp(token, "no-", 3) == 0) {
+			setbit = 1;
+			token += 3;
+		}
+		for (op = options; op->name != NULL; ++op) {
+			if (strncmp(token, op->name, strlen(op->name)) == 0) {
+				if (setbit) {
+				    *set_flag |= op->value;
+				} else {
+				    *clr_flag |= op->value;
+				}
+				break;
+			}
+		}
+		if (op->name == NULL) {
+			/* Option not found */
+			optionError = 1;
+			if (setbit) {
+				token -=3;
+			}
+			lprintf(LOG_ERR, "Invalid option: %s", token);
+		}
+		token = strtok_r(NULL, ",", &saveptr);
+	}
+	if (optionError) {
+		lprintf(LOG_NOTICE, " Legal options are:");
+		lprintf(LOG_NOTICE, "  %-8s: print this message", "help");
+		for (op = options; op->name != NULL; ++op) {
+			lprintf(LOG_NOTICE, "  %-8s: %s", op->name, op->desc);
+		}
+		lprintf(LOG_NOTICE, " Any Option may be prepended with no-"
+				    " to invert sense of operation\n");
+		return (-1);
+	}
+	return (0);
+}
+
+static int
+ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[3];
+	uint8_t param_id = IPMI_CHASSIS_BOOTPARAM_FLAG_VALID;
+	memset(msg_data, 0, 3);
+
+	msg_data[0] = param_id & 0x7f;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_CHASSIS;
+	req.msg.cmd = 0x9;
+	req.msg.data = msg_data;
+	req.msg.data_len = 3;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR,
+			"Error Getting Chassis Boot Parameter %d", param_id);
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, "Get Chassis Boot Parameter %d failed: %s",
+			param_id, val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	if (verbose > 2)
+		printbuf(rsp->data, rsp->data_len, "Boot Option");
+
+	return(rsp->data[2]);
+}
+
+static int
+ipmi_chassis_set_bootvalid(struct ipmi_intf *intf, uint8_t set_flag, uint8_t clr_flag)
+{
+	int bootvalid;
+	uint8_t flags[5];
+	int rc = 0;
+	int use_progress = 1;
+	uint8_t param_id = IPMI_CHASSIS_BOOTPARAM_FLAG_VALID;
+
+	if (use_progress) {
+		/* set set-in-progress flag */
+		memset(flags, 0, 5);
+		flags[0] = 0x01;
+		rc = ipmi_chassis_set_bootparam(intf,
+				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
+		if (rc < 0)
+			use_progress = 0;
+	}
+
+	memset(flags, 0, 5);
+	flags[0] = 0x01;
+	flags[1] = 0x01;
+	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
+			flags, 2);
+
+	if (rc < 0) {
+		if (use_progress) {
+			/* set-in-progress = set-complete */
+			memset(flags, 0, 5);
+			ipmi_chassis_set_bootparam(intf,
+					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+					flags, 1);
+		}
+		return -1;
+	}
+
+	bootvalid = ipmi_chassis_get_bootvalid(intf);
+
+	if (bootvalid < 0) {
+		if (use_progress) {
+			/* set-in-progress = set-complete */
+			memset(flags, 0, 5);
+			ipmi_chassis_set_bootparam(intf,
+					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+					flags, 1);
+		}
+		return -1;
+	}
+	flags[0] = (bootvalid & ~clr_flag) | set_flag;
+
+	rc = ipmi_chassis_set_bootparam(intf, param_id, flags, 1);
+
+	if (rc == 0) {
+		if (use_progress) {
+			/* set-in-progress = commit-write */
+			memset(flags, 0, 5);
+			flags[0] = 0x02;
+			ipmi_chassis_set_bootparam(intf,
+					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+					flags, 1);
+		}
+	}
+
+	if (use_progress) {
+		/* set-in-progress = set-complete */
+		memset(flags, 0, 5);
+		ipmi_chassis_set_bootparam(intf,
+				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+				flags, 1);
+	}
+
+	return rc;
+}
+
+static int
 ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 {
 	uint8_t flags[5];
@@ -946,6 +1133,23 @@ ipmi_power_main(struct ipmi_intf * intf, int argc, char ** argv)
 	return rc;
 }
 
+void
+ipmi_chassis_set_bootflag_help()
+{
+	unsigned char set_flag;
+	unsigned char clr_flag;
+	lprintf(LOG_NOTICE, "bootparam set bootflag <device> [options=...]");
+	lprintf(LOG_NOTICE, " Legal devices are:");
+	lprintf(LOG_NOTICE, "  none        : No override");
+	lprintf(LOG_NOTICE, "  force_pxe   : Force PXE boot");
+	lprintf(LOG_NOTICE, "  force_disk  : Force boot from default Hard-drive");
+	lprintf(LOG_NOTICE, "  force_safe  : Force boot from default Hard-drive, request Safe Mode");
+	lprintf(LOG_NOTICE, "  force_diag  : Force boot from Diagnostic Partition");
+	lprintf(LOG_NOTICE, "  force_cdrom : Force boot from CD/DVD");
+	lprintf(LOG_NOTICE, "  force_bios  : Force boot into BIOS Setup");
+	get_bootparam_options("options=help", &set_flag, &clr_flag);
+}
+
 int
 ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -1036,26 +1240,27 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "bootparam", 9) == 0) {
 		if ((argc < 3) || (strncmp(argv[1], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE, "bootparam get <param #>");
-			lprintf(LOG_NOTICE, "bootparam set bootflag <flag>");
-			lprintf(LOG_NOTICE, "  force_pxe   : Force PXE boot");
-			lprintf(LOG_NOTICE, "  force_disk  : Force boot from default Hard-drive");
-			lprintf(LOG_NOTICE, "  force_safe  : Force boot from default Hard-drive, request Safe Mode");
-			lprintf(LOG_NOTICE, "  force_diag  : Force boot from Diagnostic Partition");
-			lprintf(LOG_NOTICE, "  force_cdrom : Force boot from CD/DVD");
-			lprintf(LOG_NOTICE, "  force_bios  : Force boot into BIOS Setup");
+		    ipmi_chassis_set_bootflag_help();
 		}
 		else {
 			if (strncmp(argv[1], "get", 3) == 0) {
 				rc = ipmi_chassis_get_bootparam(intf, argv[2]);
 			}
 			else if (strncmp(argv[1], "set", 3) == 0) {
-				if (argc < 4) {
-					lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
+			    unsigned char set_flag=0;
+			    unsigned char clr_flag=0;
+				if (strncmp(argv[2], "help", 4) == 0  ||
+						argc < 4 || (argc >= 4 &&
+							 strncmp(argv[2], "bootflag", 8) != 0)) {
+					ipmi_chassis_set_bootflag_help();
 				} else {
-					if (strncmp(argv[2], "bootflag", 8) == 0)
-						rc = ipmi_chassis_set_bootdev(intf, argv[3], NULL);
-					else
-						lprintf(LOG_NOTICE, "bootparam set <option> [value ...]");
+					if (argc == 5) {
+						get_bootparam_options(argv[4], &set_flag, &clr_flag);
+					}
+					rc = ipmi_chassis_set_bootdev(intf, argv[3], NULL);
+					if (argc == 5 && (set_flag != 0 || clr_flag != 0)) {
+						rc = ipmi_chassis_set_bootvalid(intf, set_flag, clr_flag);
+					}
 				}
 			}
 			else
@@ -1166,7 +1371,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 				token = strtok_r(NULL, ",", &saveptr);
 			}
 			if (optionError) {
-				lprintf(LOG_NOTICE, "Legal options are:");
+				lprintf(LOG_NOTICE, "Legal options settings are:");
 				lprintf(LOG_NOTICE, "\thelp:\tprint this message");
 				for (op = options; op->name != NULL; ++op) {
 					lprintf(LOG_NOTICE, "\t%s:\t%s", op->name, op->desc);
