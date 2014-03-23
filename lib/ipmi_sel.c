@@ -2898,7 +2898,11 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_DEBUG, "Looking up SEL entry 0x%x", id);
 
 		/* lookup SEL entry based on ID */
-		ipmi_sel_get_std_entry(intf, id, &evt);
+		if (!ipmi_sel_get_std_entry(intf, id, &evt)) {
+			lprintf(LOG_DEBUG, "SEL Entry 0x%x not found.", id);
+			rc = (-1);
+			continue;
+		}
 		if (evt.sel_type.standard_type.sensor_num == 0 && evt.sel_type.standard_type.sensor_type == 0 && evt.record_type == 0) {
 			lprintf(LOG_WARN, "SEL Entry 0x%x not found", id);
 			rc = -1;
