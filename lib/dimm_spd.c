@@ -719,7 +719,8 @@ const struct valstr jedec_id5_vals[] = {
 int
 ipmi_spd_print(uint8_t *spd_data, int len)
 {
-	int size;
+	int k = 0;
+	int ii = 0;
 
 	if (len < 92)
 		return -1; /* we need first 91 bytes to do our thing */
@@ -802,8 +803,15 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 	}
 	else
 	{
-		size = spd_data[5] * (spd_data[31] << 2);
-		printf(" Memory Size           : %d MB\n", size);
+		ii = (spd_data[3] & 0x0f) + (spd_data[4] & 0x0f) - 17;
+		k = ((spd_data[5] & 0x7) + 1) * spd_data[17];
+
+		if(ii > 0 && ii <= 12 && k > 0) {
+			printf(" Memory Size           : %d MB\n", ((1 << ii) * k));
+		} else {
+			printf(" Memory Size    INVALID: %d, %d, %d, %d\n", spd_data[3],
+					spd_data[4], spd_data[5], spd_data[17]);
+		}
 		printf(" Voltage Intf          : %s\n",
 		val2str(spd_data[8], spd_voltage_vals));
 		printf(" Error Detect/Cor      : %s\n",
