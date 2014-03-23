@@ -1503,7 +1503,7 @@ static int
 ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 {
 	struct timeval  end;
-	int ret = 0;
+	static int ret = 0;
 
 	if (_disable_keepalive)
 		return 0;
