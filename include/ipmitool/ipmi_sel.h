@@ -327,6 +327,8 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x07, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Disabled" },
 	{ 0x07, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Terminator presence detected" },
 	{ 0x07, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Throttled" },
+	{ 0x07, 0x0b, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Uncorrectable machine check exception" },
+	{ 0x07, 0x0c, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Processor", "Correctable machine check error" },
 
 	{ 0x08, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Presence detected" },
 	{ 0x08, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Failure detected" },
@@ -337,7 +339,10 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x08, 0x06, 0x00, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Vendor Mismatch" },
 	{ 0x08, 0x06, 0x01, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Revision Mismatch" },
 	{ 0x08, 0x06, 0x02, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Processor Missing" },
+	{ 0x08, 0x06, 0x03, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Power Supply Rating Mismatch" },
+	{ 0x08, 0x06, 0x04, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error: Voltage Rating Mismatch" },
 	{ 0x08, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Config Error" },
+	{ 0x08, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Supply", "Power Supply Inactive" },
 
 	{ 0x09, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Unit", "Power off/down" },
 	{ 0x09, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Power Unit", "Power cycle" },
@@ -361,6 +366,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x0c, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Configuration Error" },
 	{ 0x0c, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Spare" },
 	{ 0x0c, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Throttled" },
+	{ 0x0c, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Memory", "Critical Overtemperature" },
 
 	{ 0x0d, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Drive Present" },
 	{ 0x0d, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Drive Slot", "Drive Fault" },
@@ -480,6 +486,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x13, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Uncorrectable error" },
 	{ 0x13, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Fatal NMI" },
 	{ 0x13, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Fatal Error" },
+	{ 0x13, 0x0b, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Critical Interrupt", "Bus Degraded" },
 
 	{ 0x14, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "Power Button pressed" },
 	{ 0x14, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Button", "Sleep Button pressed" },
@@ -492,6 +499,7 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x17, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Add-in Card", NULL },
 	{ 0x18, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Chassis", NULL },
 	{ 0x19, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Chip Set", NULL },
+	{ 0x19, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Chip Set", "Thermal Trip" },
 	{ 0x1a, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Other FRU", NULL },
 
 	{ 0x1b, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "Cable/Interconnect", "Connected" },
