@@ -390,7 +390,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	/* save response data for caller */
 	if (rsp.ccode == 0 && rsp.data_len > 0) {
 	   memmove(rsp.data, rsp.data + 1, rsp.data_len);
-	   rsp.data[recv.msg.data_len] = 0;
+	   rsp.data[rsp.data_len] = 0;
 	}
 
 	if (data != NULL) {
