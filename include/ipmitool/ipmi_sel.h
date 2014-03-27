@@ -521,6 +521,10 @@ static struct ipmi_event_sensor_types sensor_specific_types[] __attribute__((unu
 	{ 0x1f, 0x04, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "CD-ROM boot completed" },
 	{ 0x1f, 0x05, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "ROM boot completed" },
 	{ 0x1f, 0x06, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "boot completed - device not specified" },
+	{ 0x1f, 0x07, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "Installation started" },
+	{ 0x1f, 0x08, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "Installation completed" },
+	{ 0x1f, 0x09, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "Installation aborted" },
+	{ 0x1f, 0x0a, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Boot", "Installation failed" },
 
 	{ 0x20, 0x00, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Error during system startup" },
 	{ 0x20, 0x01, 0xff, IPMI_EVENT_CLASS_DISCRETE, "OS Stop/Shutdown", "Run-time critical stop" },
