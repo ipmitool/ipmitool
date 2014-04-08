@@ -187,18 +187,60 @@ const struct dcmi_cmd dcmi_pwrmgmt_vals[] = {
 
 /* set power limit commands */
 const struct dcmi_cmd dcmi_pwrmgmt_set_usage_vals[] = {
-	{ 0x00, "action", "    <sel_logging | power_off>" },
+	{ 0x00, "action", "    <no_action | sel_logging | power_off>" },
 	{ 0x01, "limit", "     <number in Watts>" },
 	{ 0x02, "correction", "<number in milliseconds>" },
 	{ 0x03, "sample", "    <number in seconds>" },
 	{ 0xFF, NULL, NULL }
 };
 
+/* power management/get action commands */
+const struct dcmi_cmd dcmi_pwrmgmt_get_action_vals[] = {
+	{ 0x00, "No Action", ""},
+	{ 0x01, "Hard Power Off & Log Event to SEL", ""},
+
+	{ 0x02, "OEM reserved (02h)", ""},
+	{ 0x03, "OEM reserved (03h)", ""},
+	{ 0x04, "OEM reserved (04h)", ""},
+	{ 0x05, "OEM reserved (05h)", ""},
+	{ 0x06, "OEM reserved (06h)", ""},
+	{ 0x07, "OEM reserved (07h)", ""},
+	{ 0x08, "OEM reserved (08h)", ""},
+	{ 0x09, "OEM reserved (09h)", ""},
+	{ 0x0a, "OEM reserved (0ah)", ""},
+	{ 0x0b, "OEM reserved (0bh)", ""},
+	{ 0x0c, "OEM reserved (0ch)", ""},
+	{ 0x0d, "OEM reserved (0dh)", ""},
+	{ 0x0e, "OEM reserved (0eh)", ""},
+	{ 0x0f, "OEM reserved (0fh)", ""},
+	{ 0x10, "OEM reserved (10h)", ""},
+
+	{ 0x11, "Log Event to SEL", ""},
+	{ 0xFF, NULL, NULL      }
+};
+
 /* power management/set action commands */
 const struct dcmi_cmd dcmi_pwrmgmt_action_vals[] = {
-	{ 0x00, "No Action", "" },
-	{ 0x01, "Hard Power Off & Log Event to SEL", "" },
-	{ 0x11, "Log Event to SEL", ""  },
+	{ 0x00, "no_action",   "No Action"},
+	{ 0x01, "power_off",   "Hard Power Off & Log Event to SEL"},
+	{ 0x11, "sel_logging", "Log Event to SEL"},
+
+	{ 0x02, "oem_02", "OEM reserved (02h)"},
+	{ 0x03, "oem_03", "OEM reserved (03h)"},
+	{ 0x04, "oem_04", "OEM reserved (04h)"},
+	{ 0x05, "oem_05", "OEM reserved (05h)"},
+	{ 0x06, "oem_06", "OEM reserved (06h)"},
+	{ 0x07, "oem_07", "OEM reserved (07h)"},
+	{ 0x08, "oem_08", "OEM reserved (08h)"},
+	{ 0x09, "oem_09", "OEM reserved (09h)"},
+	{ 0x0a, "oem_0a", "OEM reserved (0ah)"},
+	{ 0x0b, "oem_0b", "OEM reserved (0bh)"},
+	{ 0x0c, "oem_0c", "OEM reserved (0ch)"},
+	{ 0x0d, "oem_0d", "OEM reserved (0dh)"},
+	{ 0x0e, "oem_0e", "OEM reserved (0eh)"},
+	{ 0x0f, "oem_0f", "OEM reserved (0fh)"},
+	{ 0x10, "oem_10", "OEM reserved (10h)"},
+
 	{ 0xFF, NULL, NULL      }
 };
 
@@ -481,7 +523,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 	intf->abort = 1;
 	intf->session->sol_data.sequence_number = 1;
 
-	if (ipmi_intf_socket_connect(intf) == -1) {
+	if (ipmi_intf_socket_connect (intf)  == -1) {
 		lprintf(LOG_ERR, "Could not open socket!");
 		return -1;
 	}
@@ -1425,7 +1467,7 @@ ipmi_dcmi_pwr_prnt_glimit(struct ipmi_intf * intf)
 			(realCc == 0) ?
 			"Power Limit Active" : "No Active Power Limit");
 	printf("    Exception actions:   %s\n",
-			val2str2(val.action, dcmi_pwrmgmt_action_vals));
+			val2str2(val.action, dcmi_pwrmgmt_get_action_vals));
 	printf("    Power Limit:         %i Watts\n", val.limit);
 	printf("    Correction time:     %i milliseconds\n", val.correction);
 	printf("    Sampling period:     %i seconds\n", val.sample);
@@ -1455,12 +1497,6 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	uint8_t msg_data[15]; /* number of request data bytes */
 	uint32_t lvalue = 0;
 	int i;
-
-	if (str2uint(value, &lvalue) != 0) {
-		lprintf(LOG_ERR, "Given %s '%s' is invalid.",
-				option, value);
-		return (-1);
-	}
 
 	rsp = ipmi_dcmi_pwr_glimit(intf); /* get the power limit settings */
 # if 0
@@ -1499,13 +1535,80 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	 * sample period in seconds *
 	 * val.sample = *(uint16_t*)(&rsp->data[12]);
 	 */
+	lprintf(LOG_INFO,
+			"DCMI IN  Limit=%d Correction=%d Action=%d Sample=%d\n",
+			val.limit, val.correction, val.action, val.sample);
 	switch (str2val2(option, dcmi_pwrmgmt_set_usage_vals)) {
 	case 0x00:
 		/* action */
 		switch (str2val2(value, dcmi_pwrmgmt_action_vals)) {
+		case 0x00:
+			/* no_action */
+			val.action = 0;
+			break;
 		case 0x01:
 			/* power_off */
 			val.action = 1;
+			break;
+		case 0x02: 
+			/* OEM reserved action */
+			val.action = 0x02;
+			break;
+		case 0x03: 
+			/* OEM reserved action */
+			val.action = 0x03;
+			break;
+		case 0x04:
+			/* OEM reserved action */
+			val.action = 0x04;
+			break;
+		case 0x05:
+			/* OEM reserved action */
+			val.action = 0x05;
+			break;
+		case 0x06:
+			/* OEM reserved action */
+			val.action = 0x06;
+			break;
+		case 0x07:
+			/* OEM reserved action */
+			val.action = 0x07;
+			break;
+		case 0x08:
+			/* OEM reserved action */
+			val.action = 0x08;
+			break;
+		case 0x09:
+			/* OEM reserved action */
+			val.action = 0x09;
+			break;
+		case 0x0a:
+			/* OEM reserved action */
+			val.action = 0x0a;
+			break;
+		case 0x0b:
+			/* OEM reserved action */
+			val.action = 0x0b;
+			break;
+		case 0x0c:
+			/* OEM reserved action */
+			val.action = 0x0c;
+			break;
+		case 0x0d:
+			/* OEM reserved action */
+			val.action = 0x0d;
+			break;
+		case 0x0e:
+			/* OEM reserved action */
+			val.action = 0x0e;
+			break;
+		case 0x0f:
+			/* OEM reserved action */
+			val.action = 0x0f;
+			break;
+		case 0x10:
+			/* OEM reserved action */
+			val.action = 0x10;
 			break;
 		case 0x11:
 			/* sel_logging*/
@@ -1513,25 +1616,43 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 			break;
 		case 0xFF:
 			/* error - not a string we knew what to do with */
+			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+					option, value);
 			return -1;
 		}
 		break;
 	case 0x01:
 		/* limit */
+		if (str2uint(value, &lvalue) != 0) {
+			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+					option, value);
+			return (-1);
+		}
 		val.limit = *(uint16_t*)(&lvalue);
 		break;
 	case 0x02:
 		/* correction */
+		if (str2uint(value, &lvalue) != 0) {
+			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+					option, value);
+			return (-1);
+		}
 		val.correction = *(uint32_t*)(&lvalue);
 		break;
 	case 0x03:
 		/* sample */
+		if (str2uint(value, &lvalue) != 0) {
+			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+					option, value);
+			return (-1);
+		}
 		val.sample = *(uint16_t*)(&lvalue);
 		break;
 	case 0xff:
 		/* no valid options */
 		return -1;
 	}
+	lprintf(LOG_INFO, "DCMI OUT Limit=%d Correction=%d Action=%d Sample=%d\n", val.limit, val.correction, val.action, val.sample);
 
 	msg_data[0] = val.grp_id; /* Group Extension Identification */
 	msg_data[1] = 0x00; /* reserved */
@@ -1696,6 +1817,10 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 
 				/* action */
 				switch (str2val2(argv[2], dcmi_pwrmgmt_action_vals)) {
+				case 0x00:
+					/* no_action */
+					data[4] = 0x00;
+					break;
 				case 0x01:
 					/* power_off */
 					data[4] = 0x01;
@@ -1706,6 +1831,8 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 					break;
 				case 0xFF:
 					/* error - not a string we knew what to do with */
+					lprintf(LOG_ERR, "Given Action '%s' is invalid.",
+							argv[2]);
 					return -1;
 				}
 				/* limit */
