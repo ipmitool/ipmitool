@@ -53,6 +53,8 @@
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/log.h>
 
+#define IPMI_DEFAULT_PAYLOAD_SIZE   25
+
 #ifdef IPMI_INTF_OPEN
 extern struct ipmi_intf ipmi_open_intf;
 #endif
@@ -497,3 +499,153 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 }
 #endif
 
+uint16_t
+ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
+{
+	int16_t size;
+
+	size = intf->max_request_data_size;
+
+	/* check if request size is not specified */
+	if (!size) {
+		/*
+		 * The IPMB standard overall message length for ‘non -bridging’
+		 * messages is specified as 32 bytes, maximum, including slave
+		 * address. This sets the upper limit for typical IPMI messages.
+		 * With the exception of messages used for bridging messages to
+		 * other busses or interfaces (e.g. Master Write-Read and Send Message)
+		 * IPMI messages should be designed to fit within this 32-byte maximum.
+		 * In order to support bridging, the Master Write -Read and Send Message
+		 * commands are allowed to exceed the 32-byte maximum transaction on IPMB
+		 */
+
+		size = IPMI_DEFAULT_PAYLOAD_SIZE;
+
+		/* check if message is forwarded */
+		if (intf->target_addr && intf->target_addr != intf->my_addr) {
+			/* add Send Message request size */
+			size += 8;
+		}
+	}
+
+	/* check if message is forwarded */
+	if (intf->target_addr && intf->target_addr != intf->my_addr) {
+		/* subtract send message request size */
+		size -= 8;
+
+		/*
+		 * Check that forwarded request size is not greater
+		 * than the default payload size.
+		 */
+		if (size > IPMI_DEFAULT_PAYLOAD_SIZE) {
+			size = IPMI_DEFAULT_PAYLOAD_SIZE;
+		}
+
+		/* check for double bridging */
+		if (intf->transit_addr && intf->transit_addr != intf->target_addr) {
+			/* subtract inner send message request size */
+			size -= 8;
+		}
+	}
+
+	/* check for underflow */
+	if (size < 0) {
+		return 0;
+	}
+
+	return size;
+}
+
+uint16_t
+ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
+{
+	int16_t size;
+
+	size = intf->max_response_data_size;
+
+	/* check if response size is not specified */
+	if (!size) {
+		/*
+		 * The IPMB standard overall message length for ‘non -bridging’
+		 * messages is specified as 32 bytes, maximum, including slave
+		 * address. This sets the upper limit for typical IPMI messages.
+		 * With the exception of messages used for bridging messages to
+		 * other busses or interfaces (e.g. Master Write-Read and Send Message)
+		 * IPMI messages should be designed to fit within this 32-byte maximum.
+		 * In order to support bridging, the Master Write -Read and Send Message
+		 * commands are allowed to exceed the 32-byte maximum transaction on IPMB
+		 */
+
+		size = IPMI_DEFAULT_PAYLOAD_SIZE; /* response length with subtracted header and checksum byte */
+
+		/* check if message is forwarded */
+		if (intf->target_addr && intf->target_addr != intf->my_addr) {
+			/* add Send Message header size */
+			size += 7;
+		}
+	}
+
+	/* check if message is forwarded */
+	if (intf->target_addr && intf->target_addr != intf->my_addr) {
+		/*
+		 * Some IPMI controllers like PICMG AMC Carriers embed responses
+		 * to the forwarded messages into the Send Message response.
+		 * In order to be sure that the response is not truncated,
+		 * subtract the internal message header size.
+		 */
+		size -= 8;
+
+		/*
+		 * Check that forwarded response is not greater
+		 * than the default payload size.
+		 */
+		if (size > IPMI_DEFAULT_PAYLOAD_SIZE) {
+			size = IPMI_DEFAULT_PAYLOAD_SIZE;
+		}
+
+		/* check for double bridging */
+		if (intf->transit_addr && intf->transit_addr != intf->target_addr) {
+			/* subtract inner send message header size */
+			size -= 8;
+		}
+	}
+
+	/* check for underflow */
+	if (size < 0) {
+		return 0;
+	}
+
+	return size;
+}
+
+void
+ipmi_intf_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (size < IPMI_DEFAULT_PAYLOAD_SIZE) {
+		lprintf(LOG_ERR, "Request size is too small (%d), leave default size",
+				size);
+		return;
+	}
+
+	if (intf->set_max_request_data_size) {
+		intf->set_max_request_data_size(intf, size);
+	} else {
+		intf->max_request_data_size = size;
+	}
+}
+
+void
+ipmi_intf_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (size < IPMI_DEFAULT_PAYLOAD_SIZE - 1) {
+		lprintf(LOG_ERR, "Response size is too small (%d), leave default size",
+				size);
+		return;
+	}
+
+	if (intf->set_max_response_data_size) {
+		intf->set_max_response_data_size(intf, size);
+	} else {
+		intf->max_response_data_size = size;
+	}
+}

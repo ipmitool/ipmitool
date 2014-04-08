@@ -180,7 +180,8 @@ struct ipmi_intf {
 	uint8_t target_channel;
 	uint32_t transit_addr;
 	uint8_t transit_channel;
-	uint8_t channel_buf_size;
+	uint16_t max_request_data_size;
+	uint16_t max_response_data_size;
 
 	uint8_t devnum;
 
@@ -193,6 +194,8 @@ struct ipmi_intf {
 	struct ipmi_rs *(*send_sol)(struct ipmi_intf * intf, struct ipmi_v2_payload * payload);
 	int (*keepalive)(struct ipmi_intf * intf);
 	int (*set_my_addr)(struct ipmi_intf * intf, uint8_t addr);
+	void (*set_max_request_data_size)(struct ipmi_intf * intf, uint16_t size);
+	void (*set_max_response_data_size)(struct ipmi_intf * intf, uint16_t size);
 };
 
 struct ipmi_intf * ipmi_intf_load(char * name);

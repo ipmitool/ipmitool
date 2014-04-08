@@ -59,7 +59,7 @@
 
 extern int verbose;
 static int use_built_in;	/* Uses DeviceSDRs instead of SDRR */
-static int sdr_max_read_len = GET_SDR_ENTIRE_RECORD;
+static int sdr_max_read_len = 0;
 static int sdr_extended = 0;
 static long sdriana = 0;
 
@@ -3023,6 +3023,17 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 	}
 	req.msg.data = (uint8_t *) & sdr_rq;
 	req.msg.data_len = sizeof (sdr_rq);
+
+	/* check if max length is null */
+	if ( sdr_max_read_len == 0 ) {
+		/* get maximum response size */
+		sdr_max_read_len = ipmi_intf_get_max_response_data_size(intf) - 2;
+
+		/* cap the number of bytes to read */
+		if (sdr_max_read_len > 0xFE) {
+			sdr_max_read_len = 0xFE;
+		}
+	}
 
 	/* read SDR record with partial reads
 	 * because a full read usually exceeds the maximum

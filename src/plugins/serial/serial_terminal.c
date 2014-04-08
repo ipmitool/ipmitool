@@ -894,6 +894,10 @@ ipmi_serial_term_setup(struct ipmi_intf * intf)
 	}
 
 	memset(intf->session, 0, sizeof(struct ipmi_session));
+
+	/* setup default LAN maximum request and response sizes */
+	intf->max_request_data_size = IPMI_SERIAL_MAX_RQ_SIZE;
+	intf->max_response_data_size = IPMI_SERIAL_MAX_RS_SIZE;
 	return 0;
 }
 

@@ -1073,38 +1073,6 @@ HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 }
 
 int
-get_max_rq_data_size(struct ipmi_intf *intf)
-{
-	int bufLength;
-	/* Check if we receive size in parameters */
-	if(intf->channel_buf_size != 0) {
-		/* Plan for overhead */
-		if (intf->target_addr ==  intf->my_addr) {
-			bufLength = intf->channel_buf_size - 9;
-		} else {
-			bufLength = intf->channel_buf_size - 11;
-		}
-	} else if (strstr(intf->name,"lan") != NULL) {
-		/* Find max buffer length according the connection
-		 * parameters
-		 */
-		bufLength = HPMFWUPG_SEND_DATA_COUNT_LAN - 2;
-		if (intf->transit_addr != intf->my_addr
-				&& intf->transit_addr != 0) {
-			bufLength -= 8;
-		}
-	} else if (strstr(intf->name,"open") != NULL
-			&& intf->target_addr ==  intf->my_addr) {
-		bufLength = HPMFWUPG_SEND_DATA_COUNT_KCS - 2;
-	} else if (intf->target_channel == 7) {
-		bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMBL;
-	} else {
-		bufLength = HPMFWUPG_SEND_DATA_COUNT_IPMB;
-	}
-	return bufLength;
-}
-
-int
 HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		unsigned char **pImagePtr,
@@ -1138,6 +1106,8 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	unsigned char mode = 0;
 	unsigned char componentId = 0x00;
 	unsigned char componentIdByte = 0x00;
+	uint16_t max_rq_size;
+
 	/* Save component ID on which the upload is done */
 	componentIdByte = components.ComponentBits.byte;
 	while ((componentIdByte>>= 1) != 0) {
@@ -1150,8 +1120,19 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	pDataInitial = ((unsigned char *)pFwImage
 			+ sizeof(struct HpmfwupgFirmwareImage));
 	pData = pDataInitial;
+
 	/* Find max buffer length according the connection parameters */
-	bufLength = get_max_rq_data_size(intf);
+	max_rq_size = ipmi_intf_get_max_request_data_size(intf);
+
+	/* validate lower bound of max request size */
+	if (max_rq_size <= sizeof(struct HpmfwupgUploadFirmwareBlockReq)) {
+		lprintf(LOG_ERROR, "Maximum request size is too small to "
+				"send a upload request.");
+		return HPMFWUPG_ERROR;
+	}
+
+	bufLength = max_rq_size - sizeof(struct HpmfwupgUploadFirmwareBlockReq);
+
 	/* Get firmware length */
 	firmwareLength =  pFwImage->length[0];
 	firmwareLength|= (pFwImage->length[1] << 8)  & 0xff00;
@@ -1178,8 +1159,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	if (!skip) {
 		HpmDisplayUpgrade(0,0,1,0);
 		/* Initialize parameters */
-		uploadCmd.req = malloc(get_max_rq_data_size(intf)
-				+ sizeof(struct HpmfwupgUploadFirmwareBlockReq));
+		uploadCmd.req = malloc(max_rq_size);
 		if (!uploadCmd.req) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return HPMFWUPG_ERROR;

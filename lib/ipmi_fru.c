@@ -454,12 +454,25 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	/* initialize request size only once */
 	if (fru->max_write_size == 0) {
-		if (intf->channel_buf_size != 0) {
-			/* subtract 1 byte for FRU ID an 2 bytes for offset */
-			fru->max_write_size = intf->channel_buf_size - 3;
+		uint16_t max_rq_size = ipmi_intf_get_max_request_data_size(intf);
+
+		/* validate lower bound of the maximum request data size */
+		if (max_rq_size <= 3) {
+			lprintf(LOG_ERROR, "Maximum request size is too small to send "
+					"a write request");
+			return -1;
+		}
+
+		/*
+		 * Write FRU Info command returns the number of written bytes in
+		 * a single byte field.
+		 */
+		if (max_rq_size - 3 > 255) {
+			/*  Limit the max write size with 255 bytes. */
+			fru->max_write_size = 255;
 		} else {
 			/* subtract 1 byte for FRU ID an 2 bytes for offset */
-			fru->max_write_size = 32 - 3;
+			fru->max_write_size = max_rq_size - 3;
 		}
 
 		/* check word access */
@@ -611,8 +624,25 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	req.msg.data_len = 4;
 
 	if (fru->max_read_size == 0) {
-		/* subtract 1 byte for completion code and 1 for byte count */
-		fru->max_read_size = 32 - 2;
+		uint16_t max_rs_size = ipmi_intf_get_max_response_data_size(intf) - 1;
+
+		/* validate lower bound of the maximum response data size */
+		if (max_rs_size <= 1) {
+			lprintf(LOG_ERROR, "Maximum response size is too small to send "
+					"a read request");
+			return -1;
+		}
+
+		/*
+		 * Read FRU Info command may read up to 255 bytes of data.
+		 */
+		if (max_rs_size - 1 > 255) {
+			/*  Limit the max read size with 255 bytes. */
+			fru->max_read_size = 255;
+		} else {
+			/* subtract 1 byte for bytes count */
+			fru->max_write_size = max_rs_size - 1;
+		}
 
 		/* check word access */
 		if (fru->access) {

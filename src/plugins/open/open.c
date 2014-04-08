@@ -65,6 +65,22 @@
 # include "open.h"
 #endif
 
+/**
+ * Maximum input message size for KCS/SMIC is 40 with 2 utility bytes and
+ * 38 bytes of data.
+ * Maximum input message size for BT is 42 with 4 utility bytes and
+ * 38 bytes of data.
+ */
+#define IPMI_OPENIPMI_MAX_RQ_DATA_SIZE 38
+
+/**
+ * Maximum output message size for KCS/SMIC is 38 with 2 utility bytes, a byte
+ * for completion code and 35 bytes of data.
+ * Maximum output message size for BT is 40 with 4 utility bytes, a byte
+ * for completion code and 35 bytes of data.
+ */
+#define IPMI_OPENIPMI_MAX_RS_DATA_SIZE 35
+
 extern int verbose;
 
 static int
@@ -401,9 +417,19 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return &rsp;
 }
 
+int ipmi_openipmi_setup(struct ipmi_intf * intf)
+{
+	/* set default payload size */
+	intf->max_request_data_size = IPMI_OPENIPMI_MAX_RQ_DATA_SIZE;
+	intf->max_response_data_size = IPMI_OPENIPMI_MAX_RS_DATA_SIZE;
+
+	return 0;
+}
+
 struct ipmi_intf ipmi_open_intf = {
 	name:		"open",
 	desc:		"Linux OpenIPMI Interface",
+	setup:		ipmi_openipmi_setup,
 	open:		ipmi_openipmi_open,
 	close:		ipmi_openipmi_close,
 	sendrecv:	ipmi_openipmi_send_cmd,

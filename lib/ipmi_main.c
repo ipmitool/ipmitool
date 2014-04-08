@@ -982,13 +982,15 @@ ipmi_main(int argc, char ** argv,
 	}
 
 	/* Enable Big Buffer when requested */
-	ipmi_main_intf->channel_buf_size = 0;
 	if ( my_long_packet_size != 0 ) {
-		printf("Setting large buffer to %i\n", my_long_packet_size);
-		if (ipmi_kontronoem_set_large_buffer( ipmi_main_intf, my_long_packet_size ) == 0)
-		{
+		/* Enable Big Buffer when requested */
+		if (!ipmi_oem_active(ipmi_main_intf, "kontron") ||
+			ipmi_kontronoem_set_large_buffer(ipmi_main_intf,
+					my_long_packet_size ) == 0) {
+			printf("Setting large buffer to %i\n", my_long_packet_size);
 			my_long_packet_set = 1;
-			ipmi_main_intf->channel_buf_size = my_long_packet_size;
+			ipmi_intf_set_max_request_data_size(ipmi_main_intf,
+					my_long_packet_size);
 		}
 	}
 
@@ -1002,8 +1004,10 @@ ipmi_main(int argc, char ** argv,
 		rc = ipmi_cmd_run(ipmi_main_intf, NULL, 0, NULL);
 
 	if (my_long_packet_set == 1) {
-		/* Restore defaults */
-		ipmi_kontronoem_set_large_buffer( ipmi_main_intf, 0 );
+		if (ipmi_oem_active(ipmi_main_intf, "kontron")) {
+			/* Restore defaults */
+			ipmi_kontronoem_set_large_buffer( ipmi_main_intf, 0 );
+		}
 	}
 
 	/* clean repository caches */

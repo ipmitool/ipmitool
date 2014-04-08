@@ -55,6 +55,7 @@
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/hpm2.h>
 #include <ipmitool/bswap.h>
 #include <openssl/rand.h>
 
@@ -64,6 +65,13 @@
 #include "lanplus_dump.h"
 #include "rmcp.h"
 #include "asf.h"
+
+/*
+ * LAN interface is required to support 45 byte request transactions and
+ * 42 byte response transactions.
+ */
+#define IPMI_LAN_MAX_REQUEST_SIZE	38	/* 45 - 7 */
+#define IPMI_LAN_MAX_RESPONSE_SIZE	34	/* 42 - 8 */
 
 extern const struct valstr ipmi_rakp_return_codes[];
 extern const struct valstr ipmi_priv_levels[];
@@ -112,8 +120,10 @@ static int check_sol_packet_for_new_data(
 static void ack_sol_packet(
 							struct ipmi_intf * intf,
 							struct ipmi_rs * rsp);
+static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size);
+static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size);
 
-static uint8_t bridgePossible = 0; 
+static uint8_t bridgePossible = 0;
 
 struct ipmi_intf ipmi_lanplus_intf = {
 	name:		"lanplus",
@@ -125,6 +135,8 @@ struct ipmi_intf ipmi_lanplus_intf = {
 	recv_sol:	ipmi_lanplus_recv_sol,
 	send_sol:	ipmi_lanplus_send_sol,
 	keepalive:	ipmi_lanplus_keepalive,
+	set_max_request_data_size: ipmi_lanp_set_max_rq_data_size,
+	set_max_response_data_size: ipmi_lanp_set_max_rp_data_size,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
@@ -3473,6 +3485,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	intf->manufacturer_id = ipmi_get_oem(intf);
 	bridgePossible = 1;
 
+	/* automatically detect interface request and response sizes */
+	hpm2_detect_max_payload_size(intf);
+
 	return intf->fd;
 
  fail:
@@ -3624,5 +3639,46 @@ static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 		return -1;
 	}
 	memset(intf->session, 0, sizeof(struct ipmi_session));
+
+    /* setup default LAN maximum request and response sizes */
+    intf->max_request_data_size = IPMI_LAN_MAX_REQUEST_SIZE;
+    intf->max_response_data_size = IPMI_LAN_MAX_RESPONSE_SIZE;
+
 	return 0;
+}
+
+static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (intf->session->cipher_suite_id == 3) {
+		/*
+		 * encrypted payload can only be multiple of 16 bytes
+		 */
+		size &= ~15;
+
+		/*
+		 * decrement payload size on confidentiality header size
+		 * plus minimal confidentiality trailer size
+		 */
+		size -= (16 + 1);
+	}
+
+	intf->max_request_data_size = size;
+}
+
+static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (intf->session->cipher_suite_id == 3) {
+		/*
+		 * encrypted payload can only be multiple of 16 bytes
+		 */
+		size &= ~15;
+
+		/*
+		 * decrement payload size on confidentiality header size
+		 * plus minimal confidentiality trailer size
+		 */
+		size -= (16 + 1);
+	}
+
+	intf->max_response_data_size = size;
 }

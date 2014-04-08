@@ -52,6 +52,7 @@
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
+#include <ipmitool/hpm2.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -66,6 +67,13 @@
 #define IPMI_LAN_RETRY		4
 #define IPMI_LAN_PORT		0x26f
 #define IPMI_LAN_CHANNEL_E	0x0e
+
+/*
+ * LAN interface is required to support 45 byte request transactions and
+ * 42 byte response transactions.
+ */
+#define IPMI_LAN_MAX_REQUEST_SIZE	38	/* 45 - 7 */
+#define IPMI_LAN_MAX_RESPONSE_SIZE	34	/* 42 - 8 */
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
@@ -88,6 +96,8 @@ static int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 static int ipmi_lan_open(struct ipmi_intf * intf);
 static void ipmi_lan_close(struct ipmi_intf * intf);
 static int ipmi_lan_ping(struct ipmi_intf * intf);
+static void ipmi_lan_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size);
+static void ipmi_lan_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size);
 
 struct ipmi_intf ipmi_lan_intf = {
 	name:		"lan",
@@ -100,6 +110,8 @@ struct ipmi_intf ipmi_lan_intf = {
 	recv_sol:	ipmi_lan_recv_sol,
 	send_sol:	ipmi_lan_send_sol,
 	keepalive:	ipmi_lan_keepalive,
+	set_max_request_data_size: ipmi_lan_set_max_rq_data_size,
+	set_max_response_data_size: ipmi_lan_set_max_rp_data_size,
 	target_addr:	IPMI_BMC_SLAVE_ADDR,
 };
 
@@ -2055,6 +2067,10 @@ ipmi_lan_open(struct ipmi_intf * intf)
 	}
 
 	intf->manufacturer_id = ipmi_get_oem(intf);
+
+	/* automatically detect interface request and response sizes */
+	hpm2_detect_max_payload_size(intf);
+
 	return intf->fd;
 }
 
@@ -2067,5 +2083,30 @@ ipmi_lan_setup(struct ipmi_intf * intf)
 		return -1;
 	}
 	memset(intf->session, 0, sizeof(struct ipmi_session));
+
+	/* setup default LAN maximum request and response sizes */
+	intf->max_request_data_size = IPMI_LAN_MAX_REQUEST_SIZE;
+	intf->max_response_data_size = IPMI_LAN_MAX_RESPONSE_SIZE;
+
 	return 0;
+}
+
+static void
+ipmi_lan_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (size + 7 > 0xFF) {
+		size = 0xFF - 7;
+	}
+
+	intf->max_request_data_size = size;
+}
+
+static void
+ipmi_lan_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	if (size + 8 > 0xFF) {
+		size = 0xFF - 8;
+	}
+
+	intf->max_response_data_size = size;
 }

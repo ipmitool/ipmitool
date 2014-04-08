@@ -67,6 +67,10 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		name:   "i82571spt",
 		desc:   "Intel 82571 MAC with integrated RMCP+ support in super pass-through mode",
 	},
+	{
+		name:	"kontron",
+		desc:	"Kontron OEM big buffer support"
+	},
 	{ 0 }
 };
 
