@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2009, 2014, Oracle and/or its affiliates. All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,19 +39,35 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
 
-#define IPMI_NETFN_SUNOEM		0x2e
+#define IPMI_NETFN_SUNOEM				0x2e
 
-#define IPMI_SUNOEM_SET_SSH_KEY		0x01
-#define IPMI_SUNOEM_DEL_SSH_KEY		0x02
-#define IPMI_SUNOEM_GET_HEALTH_STATUS	0x10
-#define IPMI_SUNOEM_SET_FAN_SPEED	0x20
-#define IPMI_SUNOEM_LED_GET		0x21
-#define IPMI_SUNOEM_LED_SET		0x22
+#define IPMI_SUNOEM_SET_SSH_KEY				0x01
+#define IPMI_SUNOEM_DEL_SSH_KEY				0x02
+#define IPMI_SUNOEM_GET_HEALTH_STATUS			0x10
+#define IPMI_SUNOEM_CLI					0x19
+#define IPMI_SUNOEM_SET_FAN_SPEED			0x20
+#define IPMI_SUNOEM_LED_GET				0x21
+#define IPMI_SUNOEM_LED_SET				0x22
+#define IPMI_SUNOEM_ECHO				0x23
+#define IPMI_SUNOEM_VERSION				0x24
+#define IPMI_SUNOEM_NACNAME				0x29
+#define IPMI_SUNOEM_GETVAL				0x2A
+#define IPMI_SUNOEM_SETVAL				0x2C
+#define IPMI_SUNOEM_SENSOR_SET				0x3A
+#define IPMI_SUNOEM_SET_FAN_MODE			0x41
+#define IPMI_SUNOEM_CORE_TUNNEL                         0x44
+
+/*
+ * Error codes of sunoem functions
+ */
+typedef enum {
+	SUNOEM_EC_SUCCESS            = 0,
+	SUNOEM_EC_INVALID_ARG        = 1,
+	SUNOEM_EC_BMC_NOT_RESPONDING = 2,
+	SUNOEM_EC_BMC_CCODE_NONZERO  = 3
+} sunoem_ec_t;
 
 int ipmi_sunoem_main(struct ipmi_intf *, int, char **);
-
-struct ipmi_rs * sunoem_led_get(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev, int ledtype);
-struct ipmi_rs * sunoem_led_set(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev, int ledtype, int ledmode);
 
 #endif /*IPMI_SUNOEM_H*/
 
