@@ -1830,17 +1830,6 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 		(ap_rsp.payload_udp_port[1] << 8) |
 		ap_rsp.payload_udp_port[0];
 
-
-	#if WORDS_BIGENDIAN
-	intf->session->sol_data.max_inbound_payload_size =
-		BSWAP_16(intf->session->sol_data.max_inbound_payload_size);
-	intf->session->sol_data.max_outbound_payload_size =
-		BSWAP_16(intf->session->sol_data.max_outbound_payload_size);
-	intf->session->sol_data.port =
-		BSWAP_16(intf->session->sol_data.port);
-	#endif
-
-
 	intf->session->timeout = 1;
 
 
