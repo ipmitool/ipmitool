@@ -33,6 +33,7 @@
 #include <ipmitool/hpm2.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/log.h>
+#include <ipmitool/bswap.h>
 
 #if HAVE_PRAGMA_PACK
 # pragma pack(push, 1)
