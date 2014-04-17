@@ -29,6 +29,12 @@ version 1.8.14 2014-03-28
 	* Add support for enabling/disabling PEF policy entries
 	* PA: 83 -  Revised IPv6 patch
 	* FR: 24 -  Exchange OS Name Hostname BMC URL during startup
+	* Incorect byteswap in SOL maximum payload
+	* Fix build error in HPM.2 code
+	* ID: 300 - new sunoem functionality
+	* ID: 144 - Fix 'dcmi power set_limit action <value>'
+	* ID: 302 - HPM.2 long message support
+	* Add new SEL entries for ipmi 2.0 rev 1.1
 
 version 1.8.13 2013-09-09
 	* ID: 3611905 - Direct Serial Basic/Terminal Mode Interface drivers
