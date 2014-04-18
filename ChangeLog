@@ -23,18 +23,20 @@ version 1.8.14 2014-03-28
 	* ID: 90 - Add options to chassis bootparam set bootflag
 	* ID: 292 -Properly handle plugin non-zero target adddress with -t
 	* Numerous Fixes based on running Coverity
-	* Use TIOCFLUSH if TCFLSH is missing to get the serial plugin building on Hurd.
-	* Disable imb and open plugins by default on Hurd.  The platform lack the required kernel support.
-	* Change serial plugin to only try to disable the IUCLC serial line flag on platforms supporting it.  Fixes build problem on Hurd and FreeBSD.
-	* Add support for enabling/disabling PEF policy entries
+	* Use TIOCFLUSH if TCFLSH is missing to get the serial plugin building on
+	  Hurd.
+	* Disable imb and open plugins by default on Hurd.  The platform lack
+	  the required kernel support.
+	* Change serial plugin to only try to disable the IUCLC serial line flag on
+	  platforms supporting it.  Fixes build problem on Hurd and FreeBSD.
 	* PA: 83 -  Revised IPv6 patch
 	* FR: 24 -  Exchange OS Name Hostname BMC URL during startup
-	* Incorect byteswap in SOL maximum payload
-	* Fix build error in HPM.2 code
+	* ID: 304 - Incorect byteswap in SOL maximum payload
+	* ID: 303 - Fix build error in HPM.2 code
 	* ID: 300 - new sunoem functionality
 	* ID: 144 - Fix 'dcmi power set_limit action <value>'
 	* ID: 302 - HPM.2 long message support
-	* Add new SEL entries for ipmi 2.0 rev 1.1
+	* ID: 309 - Add new SEL entries for ipmi 2.0 rev 1.1
 
 version 1.8.13 2013-09-09
 	* ID: 3611905 - Direct Serial Basic/Terminal Mode Interface drivers
