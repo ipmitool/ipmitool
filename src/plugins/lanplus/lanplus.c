@@ -2882,17 +2882,13 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 
 	free(msg);
 	msg = NULL;
-	if (!rsp) {
-		lprintf(LOG_WARNING, "Error sending open session message.");
-		return -1;
-	}
-	if (verbose)
-		lanplus_dump_open_session_response(rsp);
-
 	if (rsp == NULL ) {
 		lprintf(LOG_DEBUG, "Timeout in open session response message.");
 		return 2;
 	}
+	if (verbose)
+		lanplus_dump_open_session_response(rsp);
+
 	if (rsp->payload.open_session_response.rakp_return_code !=
 		IPMI_RAKP_STATUS_NO_ERRORS)
 	{
