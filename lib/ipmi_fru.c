@@ -641,7 +641,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			fru->max_read_size = 255;
 		} else {
 			/* subtract 1 byte for bytes count */
-			fru->max_write_size = max_rs_size - 1;
+			fru->max_read_size = max_rs_size - 1;
 		}
 
 		/* check word access */
@@ -4717,22 +4717,22 @@ f_type, uint8_t f_index, char *f_string)
 	if (f_type == 'c' ) {
 		header_offset = (header.offset.chassis * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
-		fru_field_offset = (header.offset.chassis * 8) + 3;
-		fru_section_len = *(fru_data + header_offset + 1) * 8;
+		fru_field_offset = 3;
+		fru_section_len = *(fru_data + 1) * 8;
 	}
 	/* Board type field */
 	else if (f_type == 'b' ) {
 		header_offset = (header.offset.board * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
-		fru_field_offset = (header.offset.board * 8) + 6;
-		fru_section_len = *(fru_data + header_offset + 1) * 8;
+		fru_field_offset = 6;
+		fru_section_len = *(fru_data + 1) * 8;
 	}
 	/* Product type field */
 	else if (f_type == 'p' ) {
 		header_offset = (header.offset.product * 8);
 		read_fru_area(intf ,&fru, fruId, header_offset , 3 , fru_data);
-		fru_field_offset = (header.offset.product * 8) + 3;
-		fru_section_len = *(fru_data + header_offset + 1) * 8;
+		fru_field_offset = 3;
+		fru_section_len = *(fru_data + 1) * 8;
 	}
 	else
 	{
@@ -4782,8 +4782,8 @@ f_type, uint8_t f_index, char *f_string)
 		checksum = (~checksum) + 1;
 		fru_data[header_offset + fru_section_len - 1] = checksum;
 
-		/* Write the updated section to the FRU data */
-		if( write_fru_area(intf, &fru, fruId, header_offset,
+		/* Write the updated section to the FRU data; source offset: */
+		if( write_fru_area(intf, &fru, fruId, 0,
 				header_offset, fru_section_len, fru_data) < 0 )
 		{
 			printf("Write to FRU data failed.\n");
