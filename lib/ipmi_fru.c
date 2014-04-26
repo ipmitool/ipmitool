@@ -4782,7 +4782,7 @@ f_type, uint8_t f_index, char *f_string)
 		checksum = (~checksum) + 1;
 		fru_data[header_offset + fru_section_len - 1] = checksum;
 
-		/* Write the updated section to the FRU data; source offset: */
+		/* Write the updated section to the FRU data; source offset => 0 */
 		if( write_fru_area(intf, &fru, fruId, 0,
 				header_offset, fru_section_len, fru_data) < 0 )
 		{
