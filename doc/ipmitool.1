@@ -2972,10 +2972,19 @@ number.  The default is 1.
 This command may be used to read SPD (Serial Presence Detect) data using the 
 I2C Master Write\-Read IPMI command.
 
-.TP 
+.TP
 \fIsunoem\fP
 .RS
-.TP 
+.TP
+\fIcli\fP [<\fBcommand string\fR> ...]
+.br
+
+Execute the service processor command line interface commands.
+Without any command string, an interactive session is started
+in the service processor command line environ ment.  If a
+command string is specified, the command string is executed
+on the service processor and the connection is closed.
+.TP
 \fIled\fP
 .RS
 
@@ -2984,65 +2993,139 @@ on a Sun Microsystems server.  Use 'sdr list generic' to get a
 list of devices that are controllable LEDs.  The \fIledtype\fP
 parameter is optional and not necessary to provide on the command
 line unless it is required by hardware.
-.TP 
+.TP
 \fIget\fP <\fBsensorid\fR> [<\fBledtype\fR>]
 
 Get status of a particular LED described by a Generic Device Locator
 record in the SDR.  A sensorid of \fIall\fP will get the status
 of all available LEDS.
-.TP 
+.TP
 \fIset\fP <\fBsensorid\fR> <\fBledmode\fR> [<\fBledtype\fR>]
 
 Set status of a particular LED described by a Generic Device Locator
 record in the SDR.  A sensorid of \fIall\fP will set the status
 of all available LEDS to the specified \fIledmode\fP and \fIledtype\fP.
-.TP 
+.TP
 LED Mode is required for set operations:
-.br 
+.br
 \fIOFF\fP         Off
-.br 
+.br
 \fION\fP          Steady On
-.br 
+.br
 \fISTANDBY\fP     100ms on 2900ms off blink rate
-.br 
+.br
 \fISLOW\fP        1HZ blink rate
-.br 
+.br
 \fIFAST\fP        4HZ blink rate
-.TP 
+.TP
 LED Type is optional:
-.br 
+.br
 \fIOK2RM\fP       Ok to Remove
-.br 
+.br
 \fISERVICE\fP     Service Required
-.br 
+.br
 \fIACT\fP         Activity
-.br 
+.br
 \fILOCATE\fP      Locate
 
 .RE
-.TP 
-\fIfan\fP \fIspeed\fP <0-100>
+.TP
+\fInacname\fP <\fBipmi name\fR>
+.br
 
-Set system fan speed (PWM duty cycle).
-.RS
-.TP 
+Return the full NAC name of a target identified by ipmi name.
+.TP
+\fIping\fP <\fBcount\fR> [<\fBq\fR>]
+.br
+
+Send and receive count packets. Each packet is 64 bytes.
+
+q - Quiet. Displays output only at the start and end of the process.
+.TP
+\fIgetval\fP <\fBproperty name\fR>
+.br
+
+Returns value of specified ILOM property.
+.TP
+\fIsetval\fP <\fBproperty name\fR> <\fBproperty value\fR> [<\fBtimeout\fR>]
+.br
+
+Sets value of ILOM  property. If timeout is not specified, the
+default value is 5 seconds. NOTE: setval must be executed locally on host!
+.TP
 \fIsshkey\fP
 .RS
-.TP 
+.TP
 \fIset\fP <\fBuserid\fR> <\fBkeyfile\fR>
 
 This command will allow you to specify an SSH key to use for a particular
-user on the Service Processor.  This key will be used for CLI logins to
-the SP and not for IPMI sessions.  View available users and their userids
+user on the Service Processor. This key will be used for CLI logins to
+the SP and not for IPMI sessions. View available users and their userids
 with the 'user list' command.
-.TP 
+.TP
 \fIdel\fP <\fBuserid\fR>
 
 This command will delete the SSH key for a specified userid.
 .RE
+.TP
+\fIversion\fP
+.br
+
+Display the version of ILOM firmware.
+.TP
+\fIgetfile\fP <\fBfile identifier\fR> <\fBdestination file name\fR>
+.br
+
+This command will return various files from service processor and store them
+in specified destination file. Note that some files may not be present or
+be supported by your SP.
+.br
+
+.RS
+File identifiers:
+.RS
+.br
+\fISSH_PUBKEYS\fP
+.br
+\fIDIAG_PASSED\fP
+.br
+\fIDIAG_FAILED\fP
+.br
+\fIDIAG_END_TIME\fP
+.br
+\fIDIAG_INVENTORY\fP
+.br
+\fIDIAG_TEST_LOG\fP
+.br
+\fIDIAG_START_TIME\fP
+.br
+\fIDIAG_UEFI_LOG\fP
+.br
+\fIDIAG_TEST_LOG\fP
+.br
+\fIDIAG_LAST_LOG\fP
+.br
+\fIDIAG_LAST_CMD\fP
 .RE
 .RE
 
+.TP
+\fIgetbehavior\fP <\fBfeature identifier\fR>
+.br
+
+This command will test if various ILOM features are enabled.
+.br
+
+.RS
+Feature identifiers:
+.RS
+.br
+\fISUPPORTS_SIGNED_PACKAGES\fP
+.br
+\fIREQUIRES_SIGNED_PACKAGES\fP
+.RE
+.RE
+.RE
 .TP
 \fItsol\fP
 .RS
