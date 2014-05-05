@@ -1,4 +1,4 @@
-version 1.8.14 2014-03-28
+version 1.8.14 2014-05-05
 	* ID: 299 - openipmi plugin writes zero to wrong byte
 	* ID: 301 - Add OS/Hypervisor installation status events
 	* ID: 298 - fix LANplus retry
@@ -37,6 +37,8 @@ version 1.8.14 2014-03-28
 	* ID: 144 - Fix 'dcmi power set_limit action <value>'
 	* ID: 302 - HPM.2 long message support
 	* ID: 309 - Add new SEL entries for ipmi 2.0 rev 1.1
+	* ID: 280 - man page cleanup
+	* ID: 311 - man page update for new sunoem commands
 
 version 1.8.13 2013-09-09
 	* ID: 3611905 - Direct Serial Basic/Terminal Mode Interface drivers
