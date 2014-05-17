@@ -1778,7 +1778,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		else
 			printf(" | ");
 
-		if(evt->record_type < 0xdf)
+		if(evt->record_type <= 0xdf)
 		{
 			printf ("%02x%02x%02x", evt->sel_type.oem_ts_type.manf_id[0], evt->sel_type.oem_ts_type.manf_id[1], evt->sel_type.oem_ts_type.manf_id[2]);
 			if (csv_output)
@@ -1979,7 +1979,7 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 
 	if (evt->record_type >= 0xc0)
 	{
-		if(evt->record_type < 0xdf)
+		if(evt->record_type <= 0xdf)
 		{
 			printf (" Manufactacturer ID    : %02x%02x%02x\n", evt->sel_type.oem_ts_type.manf_id[0],
 			evt->sel_type.oem_ts_type.manf_id[1], evt->sel_type.oem_ts_type.manf_id[2]);
