@@ -545,13 +545,6 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 			 */
 			if ((result - 4) > 0) {
 				int length = result - 4;
-#if 1
-				length = (unsigned char)buff[2] & 0xff;
-				length *= 256;
-				length += ((unsigned char)buff[3] & 0xff);
-				if ((length <= 0) || (length > (result - 4)))
-					length = result - 4;
-#endif
 				memcpy(out_buff + out_buff_fill, buff + 4, length);
 				out_buff_fill += length;
 			}
