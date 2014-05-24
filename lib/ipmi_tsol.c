@@ -76,78 +76,77 @@ static int _altterm = 0;
 extern int verbose;
 
 static int
-ipmi_tsol_command(struct ipmi_intf * intf, char *recvip, int port, unsigned char cmd)
+ipmi_tsol_command(struct ipmi_intf *intf, char *recvip, int port,
+		unsigned char cmd)
 {
-        struct ipmi_rs *rsp;
-        struct ipmi_rq	req;
-        unsigned char	data[6];
-	unsigned	ip1, ip2, ip3, ip4;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq	req;
+	unsigned char data[6];
+	unsigned ip1, ip2, ip3, ip4;
 
-        if (sscanf(recvip, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
-                lprintf(LOG_ERR, "Invalid IP address: %s", recvip);
-                return -1;
-        }
-
+	if (sscanf(recvip, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
+		lprintf(LOG_ERR, "Invalid IP address: %s", recvip);
+		return (-1);
+	}
 	memset(&req, 0, sizeof(struct ipmi_rq));
-        req.msg.netfn    = IPMI_NETFN_TSOL;
-        req.msg.cmd      = cmd;
-        req.msg.data_len = 6;
-        req.msg.data     = data;
+	req.msg.netfn = IPMI_NETFN_TSOL;
+	req.msg.cmd = cmd;
+	req.msg.data_len = 6;
+	req.msg.data = data;
 
 	memset(data, 0, sizeof(data));
-        data[0] = ip1;
-        data[1] = ip2;
-        data[2] = ip3;
-        data[3] = ip4;
-        data[4] = (port & 0xff00) >> 8;
-        data[5] = (port & 0xff);
+	data[0] = ip1;
+	data[1] = ip2;
+	data[2] = ip3;
+	data[3] = ip4;
+	data[4] = (port & 0xff00) >> 8;
+	data[5] = (port & 0xff);
 
-        rsp = intf->sendrecv(intf, &req);
-        if (rsp == NULL) {
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to perform TSOL command");
-                return -1;
+		return (-1);
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Unable to perform TSOL command: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-        }
-
-        return 0;
+				val2str(rsp->ccode, completion_code_vals));
+		return (-1);
+	}
+	return 0;
 }
 
 static int
-ipmi_tsol_start(struct ipmi_intf * intf, char *recvip, int port)
+ipmi_tsol_start(struct ipmi_intf *intf, char *recvip, int port)
 {
 	return ipmi_tsol_command(intf, recvip, port, IPMI_TSOL_CMD_START);
 }
 
 static int
-ipmi_tsol_stop(struct ipmi_intf * intf, char *recvip, int port)
+ipmi_tsol_stop(struct ipmi_intf *intf, char *recvip, int port)
 {
-        return ipmi_tsol_command(intf, recvip, port, IPMI_TSOL_CMD_STOP);
+	return ipmi_tsol_command(intf, recvip, port, IPMI_TSOL_CMD_STOP);
 }
 
 static int
-ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
+ipmi_tsol_send_keystroke(struct ipmi_intf *intf, char *buff, int length)
 {
-        struct ipmi_rs * rsp;
-        struct ipmi_rq   req;
-        unsigned char    data[16];
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	unsigned char data[16];
 	static unsigned char keyseq = 0;
 
 	memset(&req, 0, sizeof(struct ipmi_rq));
-        req.msg.netfn    = IPMI_NETFN_TSOL;
-        req.msg.cmd      = IPMI_TSOL_CMD_SENDKEY;
-        req.msg.data_len = length + 2;
-        req.msg.data     = data;
+	req.msg.netfn = IPMI_NETFN_TSOL;
+	req.msg.cmd = IPMI_TSOL_CMD_SENDKEY;
+	req.msg.data_len = length + 2;
+	req.msg.data = data;
 
 	memset(data, 0, sizeof(data));
-        data[0] = length + 1;
+	data[0] = length + 1;
 	memcpy(data + 1, buff, length);
 	data[length + 1] = keyseq++;
 
-        rsp = intf->sendrecv(intf, &req);
+	rsp = intf->sendrecv(intf, &req);
 	if (verbose) {
 		if (rsp == NULL) {
 			lprintf(LOG_ERR, "Unable to send keystroke");
@@ -155,61 +154,56 @@ ipmi_tsol_send_keystroke(struct ipmi_intf * intf, char *buff, int length)
 		}
 		if (rsp->ccode > 0) {
 			lprintf(LOG_ERR, "Unable to send keystroke: %s",
-				val2str(rsp->ccode, completion_code_vals));
+					val2str(rsp->ccode, completion_code_vals));
 			return -1;
 		}
 	}
-
-        return length;
+	return length;
 }
 
 static int
-tsol_keepalive(struct ipmi_intf * intf)
+tsol_keepalive(struct ipmi_intf *intf)
 {
-        struct timeval end;
-
-        gettimeofday(&end, 0);
-
-        if (end.tv_sec - _start_keepalive.tv_sec <= 30)
-                return 0;
-
-        intf->keepalive(intf);
-
+	struct timeval end;
+	gettimeofday(&end, 0);
+	if (end.tv_sec - _start_keepalive.tv_sec <= 30) {
+		return 0;
+	}
+	intf->keepalive(intf);
 	gettimeofday(&_start_keepalive, 0);
-
-        return 0;
+	return 0;
 }
 
 static void
 print_escape_seq(struct ipmi_intf *intf)
 {
 	lprintf(LOG_NOTICE,
-		"       %c.  - terminate connection\n"
-		"       %c^Z - suspend ipmitool\n"
-		"       %c^X - suspend ipmitool, but don't restore tty on restart\n"
-		"       %c?  - this message\n"
-		"       %c%c  - send the escape character by typing it twice\n"
-		"       (Note that escapes are only recognized immediately after newline.)",
-		intf->session->sol_escape_char,
-		intf->session->sol_escape_char,
-		intf->session->sol_escape_char,
-		intf->session->sol_escape_char,
-		intf->session->sol_escape_char,
-		intf->session->sol_escape_char);
+"       %c.  - terminate connection\n"
+"       %c^Z - suspend ipmitool\n"
+"       %c^X - suspend ipmitool, but don't restore tty on restart\n"
+"       %c?  - this message\n"
+"       %c%c  - send the escape character by typing it twice\n"
+"       (Note that escapes are only recognized immediately after newline.)",
+			intf->session->sol_escape_char,
+			intf->session->sol_escape_char,
+			intf->session->sol_escape_char,
+			intf->session->sol_escape_char,
+			intf->session->sol_escape_char,
+			intf->session->sol_escape_char);
 }
 
 static int
 leave_raw_mode(void)
 {
-	if (!_in_raw_mode)
+	if (!_in_raw_mode) {
 		return -1;
-	else if (tcsetattr(fileno(stdin), TCSADRAIN, &_saved_tio) == -1)
+	} else if (tcsetattr(fileno(stdin), TCSADRAIN, &_saved_tio) == -1) {
 		lperror(LOG_ERR, "tcsetattr(stdin)");
-	else if (tcsetattr(fileno(stdout), TCSADRAIN, &_saved_tio) == -1)
+	} else if (tcsetattr(fileno(stdout), TCSADRAIN, &_saved_tio) == -1) {
 		lperror(LOG_ERR, "tcsetattr(stdout)");
-	else
+	} else {
 		_in_raw_mode = 0;
-
+	}
 	return 0;
 }
 
@@ -217,16 +211,14 @@ static int
 enter_raw_mode(void)
 {
 	struct termios tio;
-
 	if (tcgetattr(fileno(stdout), &_saved_tio) < 0) {
 		lperror(LOG_ERR, "tcgetattr failed");
 		return -1;
 	}
 
 	tio = _saved_tio;
-
 	if (_altterm) {
-		tio.c_iflag &= (ISTRIP | IGNBRK );
+		tio.c_iflag &= (ISTRIP | IGNBRK);
 		tio.c_cflag &= ~(CSIZE | PARENB | IXON | IXOFF | IXANY);
 		tio.c_cflag |= (CS8 |CREAD) | (IXON|IXOFF|IXANY);
 		tio.c_lflag &= 0;
@@ -241,13 +233,13 @@ enter_raw_mode(void)
 		tio.c_cc[VTIME] = 0;
 	}
 
-	if (tcsetattr(fileno(stdin), TCSADRAIN, &tio) < 0)
+	if (tcsetattr(fileno(stdin), TCSADRAIN, &tio) < 0) {
 		lperror(LOG_ERR, "tcsetattr(stdin)");
-	else if (tcsetattr(fileno(stdout), TCSADRAIN, &tio) < 0)
+	} else if (tcsetattr(fileno(stdout), TCSADRAIN, &tio) < 0) {
 		lperror(LOG_ERR, "tcsetattr(stdout)");
-	else
+	} else {
 		_in_raw_mode = 1;
-
+	}
 	return 0;
 }
 
@@ -255,11 +247,10 @@ static void
 suspend_self(int restore_tty)
 {
 	leave_raw_mode();
-
 	kill(getpid(), SIGTSTP);
-
-	if (restore_tty)
+	if (restore_tty) {
 		enter_raw_mode();
+	}
 }
 
 static int
@@ -272,7 +263,7 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 	for(i = 0; i < len ;) {
 		if (!in_esc) {
 			if (last_was_cr &&
-			    (in_buff[i] == intf->session->sol_escape_char)) {
+					(in_buff[i] == intf->session->sol_escape_char)) {
 				in_esc = 1;
 				memmove(in_buff, in_buff + 1, len - i - 1);
 				len--;
@@ -289,40 +280,35 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 			switch (in_buff[i]) {
 			case '.':
 				printf("%c. [terminated ipmitool]\n",
-				       intf->session->sol_escape_char);
+						intf->session->sol_escape_char);
 				return -1;
-
 			case 'Z' - 64:
 				printf("%c^Z [suspend ipmitool]\n",
-				       intf->session->sol_escape_char);
-				suspend_self(1); /* Restore tty back to raw */
+						intf->session->sol_escape_char);
+				/* Restore tty back to raw */
+				suspend_self(1);
 				break;
-
 			case 'X' - 64:
 				printf("%c^X [suspend ipmitool]\n",
-				       intf->session->sol_escape_char);
-				suspend_self(0); /* Don't restore to raw mode */
+						intf->session->sol_escape_char);
+				/* Don't restore to raw mode */
+				suspend_self(0);
 				break;
-
 			case '?':
 				printf("%c? [ipmitool help]\n",
-				       intf->session->sol_escape_char);
+						intf->session->sol_escape_char);
 				print_escape_seq(intf);
 				break;
 			}
 
-			memmove(in_buff, in_buff + 1, len - i - 1);
+			memmove(in_buff, (in_buff + 1), (len - i - 1));
 			len--;
 			in_esc = 0;
-
 			continue;
 		}
-
 		last_was_cr = (in_buff[i] == '\r' || in_buff[i] == '\n');
-
 		i++;
 	}
-
 	return len;
 }
 
@@ -330,27 +316,25 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 static void
 do_terminal_cleanup(void)
 {
-	if (_saved_winsize.ws_row > 0 && _saved_winsize.ws_col > 0)
+	if (_saved_winsize.ws_row > 0 && _saved_winsize.ws_col > 0) {
 		ioctl(fileno(stdout), TIOCSWINSZ, &_saved_winsize);
-
+	}
 	leave_raw_mode();
-
-	if (errno)
+	if (errno) {
 		lprintf(LOG_ERR, "Exiting due to error %d -> %s",
 			errno, strerror(errno));
+	}
 }
 
 static void
 set_terminal_size(int rows, int cols)
 {
 	struct winsize winsize;
-
-	if (rows <= 0 || cols <= 0)
+	if (rows <= 0 || cols <= 0) {
 		return;
-
+	}
 	/* save initial winsize */
 	ioctl(fileno(stdout), TIOCGWINSZ, &_saved_winsize);
-
 	/* set new winsize */
 	winsize.ws_row = rows;
 	winsize.ws_col = cols;
@@ -361,24 +345,28 @@ static void
 print_tsol_usage(void)
 {
 	struct winsize winsize;
-
-	lprintf(LOG_NOTICE, "Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]");
-	lprintf(LOG_NOTICE, "       recvip       Receiver IP Address             [default=local]");
-	lprintf(LOG_NOTICE, "       port=NUM     Receiver UDP Port               [default=%d]",
-		IPMI_TSOL_DEF_PORT);
-	lprintf(LOG_NOTICE, "       ro|rw        Set Read-Only or Read-Write     [default=rw]");
-
-	ioctl(fileno(stdout), TIOCGWINSZ, &winsize);
-	lprintf(LOG_NOTICE, "       rows=NUM     Set terminal rows               [default=%d]",
-		winsize.ws_row);
-	lprintf(LOG_NOTICE, "       cols=NUM     Set terminal columns            [default=%d]",
-		winsize.ws_col);
-
-	lprintf(LOG_NOTICE, "       altterm      Alternate terminal setup        [default=off]");
+	lprintf(LOG_NOTICE,
+"Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]");
+	lprintf(LOG_NOTICE,
+"       recvip       Receiver IP Address             [default=local]");
+	lprintf(LOG_NOTICE,
+"       port=NUM     Receiver UDP Port               [default=%d]",
+			IPMI_TSOL_DEF_PORT);
+	lprintf(LOG_NOTICE,
+"       ro|rw        Set Read-Only or Read-Write     [default=rw]");
+			ioctl(fileno(stdout), TIOCGWINSZ, &winsize);
+	lprintf(LOG_NOTICE,
+"       rows=NUM     Set terminal rows               [default=%d]",
+			winsize.ws_row);
+	lprintf(LOG_NOTICE,
+"       cols=NUM     Set terminal columns            [default=%d]",
+			winsize.ws_col);
+	lprintf(LOG_NOTICE,
+"       altterm      Alternate terminal setup        [default=off]");
 }
 
 int
-ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct pollfd fds_wait[3], fds_data_wait[3], *fds;
 	struct sockaddr_in sin, myaddr, *sa_in;
@@ -394,7 +382,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (strlen(intf->name) < 3 || strncmp(intf->name, "lan", 3) != 0) {
 		lprintf(LOG_ERR, "Error: Tyan SOL is only available over lan interface");
-		return -1;
+		return (-1);
 	}
 
 	for (i = 0; i<argc; i++) {
@@ -402,24 +390,26 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			/* not free'd ...*/
 			/* recvip = strdup(argv[i]); */
 			recvip = argv[i];
-		} 
-		else if (sscanf(argv[i], "port=%d", &ip1) == 1)
+		} else if (sscanf(argv[i], "port=%d", &ip1) == 1) {
 			port = ip1;
-		else if (sscanf(argv[i], "rows=%d", &ip1) == 1)
+		} else if (sscanf(argv[i], "rows=%d", &ip1) == 1) {
 			rows = ip1;
-		else if (sscanf(argv[i], "cols=%d", &ip1) == 1)
+		} else if (sscanf(argv[i], "cols=%d", &ip1) == 1) {
 			cols = ip1;
-		else if (strlen(argv[i]) == 2 && strncmp(argv[i], "ro", 2) == 0)
+		} else if (strlen(argv[i]) == 2
+				&& strncmp(argv[i], "ro", 2) == 0) {
 			read_only = 1;
-		else if (strlen(argv[i]) == 2 && strncmp(argv[i], "rw", 2) == 0)
+		} else if (strlen(argv[i]) == 2
+				&& strncmp(argv[i], "rw", 2) == 0) {
 			read_only = 0;
-		else if (strlen(argv[i]) == 7 && strncmp(argv[i], "altterm", 7) == 0)
+		} else if (strlen(argv[i]) == 7
+				&& strncmp(argv[i], "altterm", 7) == 0) {
 			_altterm = 1;
-		else if (strlen(argv[i]) == 4 && strncmp(argv[i], "help", 4) == 0) {
+		} else if (strlen(argv[i]) == 4
+				&& strncmp(argv[i], "help", 4) == 0) {
 			print_tsol_usage();
 			return 0;
-		}
-		else {
+		} else {
 			print_tsol_usage();
 			return 0;
 		}
@@ -432,7 +422,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	sa_in = (struct sockaddr_in *)&intf->session->addr;
 	result = inet_pton(AF_INET, (const char *)intf->session->hostname,
-			   &sa_in->sin_addr);
+			&sa_in->sin_addr);
 
 	if (result <= 0) {
 		struct hostent *host = gethostbyname((const char *)intf->session->hostname);
@@ -457,7 +447,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Can't open port %d", port);
 		return -1;
 	}
-	if (-1 == bind(fd_socket, (struct sockaddr *)&sin, sizeof(sin))) {
+	if (bind(fd_socket, (struct sockaddr *)&sin, sizeof(sin)) == (-1)) {
 		lprintf(LOG_ERR, "Failed to bind socket.");
 		close(fd_socket);
 		return -1;
@@ -467,7 +457,8 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * retrieve local IP address if not supplied on command line
 	 */
 	if (recvip == NULL) {
-		result = intf->open(intf);	/* must connect first */
+		/* must connect first */
+		result = intf->open(intf);
 		if (result < 0) {
 			close(fd_socket);
 			return -1;
@@ -489,7 +480,7 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	printf("[Starting %sSOL with receiving address %s:%d]\n",
-	       read_only ? "Read-only " : "", recvip, port);
+			read_only ? "Read-only " : "", recvip, port);
 
 	set_terminal_size(rows, cols);
 	enter_raw_mode();
@@ -499,14 +490,14 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	 * ipmitool -I lan -H 192.168.168.227 -U Administrator raw 0x30 0x06 0xC0 0xA8 0xA8 0x78 0x1A 0x0A
 	 */
 	result = ipmi_tsol_start(intf, recvip, port);
-        if (result < 0) {
+	if (result < 0) {
 		lprintf(LOG_ERR, "Error starting SOL");
 		close(fd_socket);
-                return -1;
-        }
+		return (-1);
+	}
 
 	printf("[SOL Session operational.  Use %c? for help]\n",
-	       intf->session->sol_escape_char);
+			intf->session->sol_escape_char);
 
 	gettimeofday(&_start_keepalive, 0);
 
@@ -535,50 +526,58 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	fds = fds_wait;
 
 	for (;;) {
-		result = poll(fds, 3, 15*1000);
-		if (result < 0)
+		result = poll(fds, 3, 15 * 1000);
+		if (result < 0) {
 			break;
+		}
 
 		/* send keepalive packet */
 		tsol_keepalive(intf);
 
-		if ((fds[0].revents & POLLIN) && (sizeof(out_buff) > out_buff_fill)){
+		if ((fds[0].revents & POLLIN) && (sizeof(out_buff) > out_buff_fill)) {
 			socklen_t sin_len = sizeof(sin);
-			result = recvfrom(fd_socket, buff, sizeof(out_buff) - out_buff_fill + 4, 0,
-					  (struct sockaddr *)&sin, &sin_len);
-
-			/* read the data from udp socket, skip some bytes in the head */
-			if((result - 4) > 0 ){
+			/* Note - buffer over-flow here */
+			result = recvfrom(fd_socket, buff,
+					sizeof(out_buff) - out_buff_fill + 4, 0,
+					(struct sockaddr *)&sin, &sin_len);
+			/* read the data from udp socket,
+			 * skip some bytes in the head
+			 */
+			if ((result - 4) > 0) {
 				int length = result - 4;
 #if 1
-		 		length = (unsigned char)buff[2] & 0xff;
-			       	length *= 256;
+				length = (unsigned char)buff[2] & 0xff;
+				length *= 256;
 				length += ((unsigned char)buff[3] & 0xff);
 				if ((length <= 0) || (length > (result - 4)))
-			              length = result - 4;
+					length = result - 4;
 #endif
 				memcpy(out_buff + out_buff_fill, buff + 4, length);
 				out_buff_fill += length;
 			}
 		}
 		if ((fds[1].revents & POLLIN) && (sizeof(in_buff) > in_buff_fill)) {
+			/* Read from keyboard */
 			result = read(fileno(stdin), in_buff + in_buff_fill,
-				      sizeof(in_buff) - in_buff_fill); // read from keyboard
+					sizeof(in_buff) - in_buff_fill);
 			if (result > 0) {
 				int bytes;
-				bytes = do_inbuf_actions(intf, in_buff + in_buff_fill, result);
-				if(bytes < 0) {
+				bytes = do_inbuf_actions(intf,
+						in_buff + in_buff_fill, result);
+				if (bytes < 0) {
 					result = ipmi_tsol_stop(intf, recvip, port);
 					do_terminal_cleanup();
 					return result;
 				}
-				if (read_only)
+				if (read_only) {
 					bytes = 0;
+				}
 				in_buff_fill += bytes;
 			}
 		}
 		if ((fds[2].revents & POLLOUT) && out_buff_fill) {
-			result = write(fileno(stdout), out_buff, out_buff_fill); // to screen
+			/* To screen */
+			result = write(fileno(stdout), out_buff, out_buff_fill);
 			if (result > 0) {
 				out_buff_fill -= result;
 				if (out_buff_fill) {
@@ -591,7 +590,8 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			 * translate key and send that to SMDC using IPMI
 			 * ipmitool -I lan -H 192.168.168.227 -U Administrator raw 0x30 0x03 0x04 0x1B 0x5B 0x43
 			 */
-			result = ipmi_tsol_send_keystroke(intf, in_buff, __min(in_buff_fill,14));
+			result = ipmi_tsol_send_keystroke(intf,
+					in_buff, __min(in_buff_fill, 14));
 			if (result > 0) {
 				gettimeofday(&_start_keepalive, 0);
 				in_buff_fill -= result;
@@ -603,6 +603,5 @@ ipmi_tsol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		fds = (in_buff_fill || out_buff_fill )?
 			fds_data_wait : fds_wait;
 	}
-
 	return 0;
 }
