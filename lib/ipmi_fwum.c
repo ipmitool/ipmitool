@@ -892,14 +892,14 @@ KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 		}
 		if (rc == 0) {
 			if ((address % 1024) == 0) {
-				KfwumShowProgress("Writting Firmware in Flash",
+				KfwumShowProgress("Writing Firmware in Flash",
 						address, totalSize);
 			}
 			sequenceNumber++;
 		}
 	} while ((rc == 0) && (address < totalSize));
 	if (rc == 0) {
-		KfwumShowProgress("Writting Firmware in Flash",
+		KfwumShowProgress("Writing Firmware in Flash",
 				100, 100);
 	}
 	return rc;
