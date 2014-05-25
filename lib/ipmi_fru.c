@@ -3111,7 +3111,8 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 			mc = (struct sdr_record_mc_locator *)
 				ipmi_sdr_get_record(intf, header, itr);
 			/* Does this MC device support FRU inventory device? */
-			if (mc && (mc->dev_support & 0x08)) {	 /* FRU inventory device? */
+			if (mc && (mc->dev_support & 0x08) && /* FRU inventory device? */
+				intf->target_addr != mc->dev_slave_addr) {
 				/* Yes. Prepare to issue FRU commands to FRU device #0 LUN 0  */
 				/* using the slave address specified in the MC record.	      */
 
