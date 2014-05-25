@@ -344,6 +344,8 @@ HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 				generalPropResp.GeneralCompProperties.bitfield.rollbackBackup;
 			gVersionInfo[componentId].coldResetRequired =  getCompProp.resp.Response.
 				generalPropResp.GeneralCompProperties.bitfield.payloadColdReset;
+			gVersionInfo[componentId].deferredActivationSupported =  getCompProp.resp.Response.
+				generalPropResp.GeneralCompProperties.bitfield.deferredActivation;
 			getCompProp.req.selector = HPMFWUPG_COMP_DESCRIPTION_STRING;
 			rc = HpmfwupgGetComponentProperties(intf, &getCompProp);
 			if (rc != HPMFWUPG_SUCCESS) {
@@ -395,6 +397,16 @@ HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 					gVersionInfo[componentId].rollbackAux[2] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[4];
 					gVersionInfo[componentId].rollbackAux[3] = getCompProp.resp.Response.rollbackFwVersionResp.rollbackFwVersion[5];
 				}
+				mode |= ROLLBACK_VER;
+			} else {
+				gVersionInfo[componentId].rollbackMajor = 0xff;
+				gVersionInfo[componentId].rollbackMinor = 0xff;
+				gVersionInfo[componentId].rollbackAux[0] = 0xff;
+				gVersionInfo[componentId].rollbackAux[1] = 0xff;
+				gVersionInfo[componentId].rollbackAux[2] = 0xff;
+				gVersionInfo[componentId].rollbackAux[3] = 0xff;
+			}
+			if (gVersionInfo[componentId].deferredActivationSupported) {
 				getCompProp.req.selector = HPMFWUPG_COMP_DEFERRED_FIRMWARE_VERSION;
 				rc = HpmfwupgGetComponentProperties(intf, &getCompProp);
 				if (rc != HPMFWUPG_SUCCESS) {
@@ -411,14 +423,7 @@ HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 					gVersionInfo[componentId].deferredAux[2] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[4];
 					gVersionInfo[componentId].deferredAux[3] = getCompProp.resp.Response.deferredFwVersionResp.deferredFwVersion[5];
 				}
-				mode |= ROLLBACK_VER;
 			} else {
-				gVersionInfo[componentId].rollbackMajor = 0xff;
-				gVersionInfo[componentId].rollbackMinor = 0xff;
-				gVersionInfo[componentId].rollbackAux[0] = 0xff;
-				gVersionInfo[componentId].rollbackAux[1] = 0xff;
-				gVersionInfo[componentId].rollbackAux[2] = 0xff;
-				gVersionInfo[componentId].rollbackAux[3] = 0xff;
 				gVersionInfo[componentId].deferredMajor = 0xff;
 				gVersionInfo[componentId].deferredMinor = 0xff;
 				gVersionInfo[componentId].deferredAux[0] = 0xff;

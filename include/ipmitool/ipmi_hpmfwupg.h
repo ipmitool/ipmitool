@@ -796,6 +796,7 @@ typedef struct _VERSIONINFO {
 	unsigned char imageAux[4];
 	unsigned char coldResetRequired;
 	unsigned char rollbackSupported;
+	unsigned char deferredActivationSupported;
 	char descString[HPMFWUPG_DESC_STRING_LENGTH + 1];
 }VERSIONINFO, *PVERSIONINFO;
 
