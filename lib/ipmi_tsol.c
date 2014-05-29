@@ -372,7 +372,8 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	struct sockaddr_in sin, myaddr, *sa_in;
 	socklen_t mylen;
 	char *recvip = NULL;
-	char out_buff[IPMI_BUF_SIZE * 8], in_buff[IPMI_BUF_SIZE];
+	char in_buff[IPMI_BUF_SIZE];
+	char out_buff[IPMI_BUF_SIZE * 8];
 	char buff[IPMI_BUF_SIZE + 4];
 	int fd_socket, result, i;
 	int out_buff_fill, in_buff_fill;
@@ -524,7 +525,6 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	out_buff_fill = 0;
 	in_buff_fill = 0;
 	fds = fds_wait;
-
 	for (;;) {
 		result = poll(fds, 3, 15 * 1000);
 		if (result < 0) {
@@ -536,9 +536,15 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 
 		if ((fds[0].revents & POLLIN) && (sizeof(out_buff) > out_buff_fill)) {
 			socklen_t sin_len = sizeof(sin);
-			/* Note - buffer over-flow here */
+			int buff_size = sizeof(buff);
+			if ((sizeof(out_buff) - out_buff_fill + 4) < buff_size) {
+				buff_size = (sizeof(out_buff) - out_buff_fill) + 4;
+				if ((buff_size - 4) <= 0) {
+					buff_size = 0;
+				}
+			}
 			result = recvfrom(fd_socket, buff,
-					sizeof(out_buff) - out_buff_fill + 4, 0,
+					buff_size, 0,
 					(struct sockaddr *)&sin, &sin_len);
 			/* read the data from udp socket,
 			 * skip some bytes in the head
