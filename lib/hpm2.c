@@ -30,6 +30,7 @@
  * EVEN IF PPS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <ipmitool/bswap.h>
 #include <ipmitool/hpm2.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/log.h>
@@ -233,7 +234,8 @@ int hpm2_get_lan_channel_capabilities(struct ipmi_intf * intf,
 	}
 
 	/* check parameter revision */
-	if (rsp->data[0] != HPM2_LAN_PARAMS_REV) {
+	if (rsp->data[0] !=
+			LAN_PARAM_REV(HPM2_LAN_PARAMS_REV, HPM2_LAN_PARAMS_REV)) {
 		lprintf(LOG_NOTICE, "Bad HPM.2 LAN parameter revision, rev=%d",
 				rsp->data[0]);
 		return -1;

@@ -39,6 +39,11 @@
 #define HPM2_LAN_PARAMS_REV	0x01
 #define HPM2_SOL_PARAMS_REV	0x01
 #define HPM3_LAN_PARAMS_REV	0x01
+/* IPMI defines parameter revision as
+ * MSN = present revision,
+ * LSN = oldest revision parameter is
+ * backward compatible with. */
+#define LAN_PARAM_REV(x, y)	((x) << 4 | (y) & 0xF)
 
 /* HPM.2 capabilities */
 #define HPM2_CAPS_SOL_EXTENSION		0x01
