@@ -2345,7 +2345,7 @@ picmg_discover(struct ipmi_intf *intf) {
 		req.msg.data_len = 1;
 		msg_data = 0;
 
-		lprintf(LOG_INFO, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
+		lprintf(LOG_DEBUG, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
 			intf->my_addr, intf->transit_addr, intf->target_addr);
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp && !rsp->ccode) {
@@ -2353,19 +2353,19 @@ picmg_discover(struct ipmi_intf *intf) {
 					((rsp->data[1] & 0x0F) == PICMG_ATCA_MAJOR_VERSION
 					|| (rsp->data[1] & 0x0F) == PICMG_AMC_MAJOR_VERSION) )	{
 				intf->picmg_avail = 1;
-				lprintf(LOG_INFO, "Discovered PICMG Extension %d.%d",
+				lprintf(LOG_DEBUG, "Discovered PICMG Extension %d.%d",
 						(rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
-			} 
+			}
 		} else {
 			if (rsp == NULL) {
-				lprintf(LOG_INFO,"No Response from Get PICMG Properties");
+				lprintf(LOG_DEBUG,"No Response from Get PICMG Properties");
 			} else {
-				lprintf(LOG_INFO,"Error Response %#x from Get PICMG Properities", rsp->ccode);
+				lprintf(LOG_DEBUG,"Error Response %#x from Get PICMG Properities", rsp->ccode);
 			}
 		}
 	}
 	if (intf->picmg_avail == 0) {
-		lprintf(LOG_INFO, "No PICMG Extenstion discovered");
+		lprintf(LOG_DEBUG, "No PICMG Extenstion discovered");
 	}
 	return intf->picmg_avail;
 }
