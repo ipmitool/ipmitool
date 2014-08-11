@@ -1240,10 +1240,12 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			} else {
 				/* success, buf length is valid */
 				bufLengthIsSet = 1;
-				if (blockLength > firmwareLength) {
+				if (imageOffset + blockLength > firmwareLength ||
+						imageOffset + blockLength < blockLength) {
 					/*
 					 * blockLength is the remaining length of the firmware to upload so
-					 * if its greater than the firmware length then its kind of error
+					 * if imageOffset and blockLength sum is greater than the firmware
+					 * length then its kind of error
 					 */
 					lprintf(LOG_NOTICE,
 							"\n Error in Upload FIRMWARE command [rc=%d]\n",
@@ -1252,6 +1254,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 							"\n TotalSent:0x%x Img offset:0x%x  Blk length:0x%x  Fwlen:0x%x\n",
 							totalSent,imageOffset,blockLength,firmwareLength);
 					rc = HPMFWUPG_ERROR;
+					continue;
 				}
 				totalSent += count;
 				if (imageOffset != 0x00) {
@@ -2301,7 +2304,8 @@ HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 			 * receive d5 (on the first get status) from
 			 * the ipmi driver.
 			 */
-			(upgStatusCmd.resp.lastCmdCompCode != 0x00 )
+			(upgStatusCmd.resp.lastCmdCompCode == 0x80 ||
+					upgStatusCmd.resp.lastCmdCompCode == 0xD5)
 			&& ((timeoutSec2 - timeoutSec1) < upgradeTimeout )
 			&& (rc == HPMFWUPG_SUCCESS)) {
 		/* Must wait at least 1000 ms between status requests */
