@@ -63,6 +63,7 @@ const struct valstr spd_memtype_vals[] = {
 	{ 0x09, "DDR2 SDRAM FB-DIMM" },
 	{ 0x0A, "DDR2 SDRAM FB-DIMM Probe" },
 	{ 0x0B, "DDR3 SDRAM" },
+	{ 0x0C, "DDR4 SDRAM" },
 	{ 0x00, NULL },
 };
 
