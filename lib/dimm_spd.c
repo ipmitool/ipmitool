@@ -67,7 +67,7 @@ const struct valstr spd_memtype_vals[] = {
 	{ 0x00, NULL },
 };
 
-const struct valstr ddr3_density_vals[] = 
+const struct valstr ddr3_density_vals[] =
 {
 	{ 0, "256 Mb" },
 	{ 1, "512 Mb" },
@@ -88,10 +88,68 @@ const struct valstr ddr3_banks_vals[] =
 	{ 0x00, NULL },
 };
 
+
+#define ddr4_ecc_vals ddr3_ecc_vals
 const struct valstr ddr3_ecc_vals[] =
 {
 	{ 0, "0 bits" },
 	{ 1, "8 bits" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ddr4_density_vals[] =
+{
+	{ 0, "256 Mb" },
+	{ 1, "512 Mb" },
+	{ 2, "1 Gb" },
+	{ 3, "2 Gb" },
+	{ 4, "4 Gb" },
+	{ 5, "8 Gb" },
+	{ 6, "16 Gb" },
+	{ 7, "32 Gb" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ddr4_banks_vals[] =
+{
+	{ 0, "2 (4 Banks)" },
+	{ 1, "3 (8 Banks)" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ddr4_bank_groups[] =
+{
+	{ 0, "0 (no Bank Groups)" },
+	{ 1, "1 (2 Bank Groups)" },
+	{ 2, "2 (4 Bank Groups)" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ddr4_package_type[] =
+{
+	{ 0, "Monolithic DRAM Device" },
+	{ 1, "Non-Monolithic Device" },
+	{ 0x00, NULL },
+};
+
+const struct valstr ddr4_technology_type[] =
+{
+	{ 0, "Extended module type, see byte 15" },
+	{ 1, "RDIMM" },
+	{ 2, "UDIMM" },
+	{ 3, "SO-DIMM" },
+	{ 4, "LRDIMM" },
+	{ 5, "Mini-RDIMM" },
+	{ 6, "Mini-UDIMM" },
+	{ 7, "7 - Reserved" },
+	{ 8, "72b-SO-RDIMM" },
+	{ 9, "72b-SO-UDIMM" },
+	{ 10, "10 - Reserved" },
+	{ 11, "11 - Reserved" },
+	{ 12, "16b-SO-DIMM" },
+	{ 13, "32b-SO-DIMM" },
+	{ 14, "14 - Reserved" },
+	{ 15, "No base memory present" },
 	{ 0x00, NULL },
 };
 
@@ -801,6 +859,92 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 			printf( "%c", *pchPN++ );
 		}
 		printf("\n");
+	} else if (spd_data[2] == 0x0C)	/* DDR4 SDRAM */
+	{
+		int i;
+		int sdram_cap = 0;
+		int pri_bus_width = 0;
+		int sdram_width = 0;
+		int mem_size = 0;
+		int lrank_dimm;
+
+		if (len < 148)
+			return -1; /* we need first 91 bytes to do our thing */
+
+		/* "Logical rank" referes to the individually addressable die
+		 * in a 3DS stack and has no meaning for monolithic or
+		 * multi-load stacked SDRAMs; however, for the purposes of
+		 * calculating the capacity of the module, one should treat
+		 * monolithic and multi-load stack SDRAMs as having one logical
+		 * rank per package rank.
+		 */
+		lrank_dimm = (spd_data[12]>>3&0x3) + 1; /* Number of Package Ranks per DIMM */
+		if ((spd_data[6] & 0x3) == 0x10) { /* 3DS package Type */
+			lrank_dimm *= ((spd_data[6]>>4)&0x3) + 1; /* Die Count */
+		}
+		sdram_cap = ldexp(256,(spd_data[4]&15));
+		pri_bus_width = ldexp(8,(spd_data[13]&7));
+		sdram_width = ldexp(4,(spd_data[12]&7));
+		mem_size = (sdram_cap/8) * (pri_bus_width/sdram_width) * lrank_dimm;
+		printf(" SDRAM Package Type    : %s\n", val2str((spd_data[6]>>7), ddr4_package_type));
+		printf(" Technology            : %s\n", val2str((spd_data[3]&15), ddr4_technology_type));
+		printf(" SDRAM Die Count       : %d\n", ((spd_data[6]>>4) & 3)+1);
+		printf(" SDRAM Capacity        : %d Mb\n", sdram_cap );
+		printf(" Memory Bank Group     : %s\n", val2str((spd_data[4]>>6 & 0x3), ddr4_bank_groups));
+		printf(" Memory Banks          : %s\n", val2str((spd_data[4]>>4 & 0x3), ddr4_banks_vals));
+		printf(" Primary Bus Width     : %d bits\n", pri_bus_width );
+		printf(" SDRAM Device Width    : %d bits\n", sdram_width );
+		printf(" Logical Rank per DIMM : %d\n", lrank_dimm );
+		printf(" Memory size           : %d MB\n", mem_size );
+
+		printf(" Memory Density        : %s\n", val2str(spd_data[4]&15, ddr4_density_vals));
+		printf(" 1.2 V Nominal Op      : %s\n", (((spd_data[11]&3) != 3) ? "No":"Yes" ) );
+		printf(" TBD1 V Nominal Op     : %s\n", (((spd_data[11]>>2&3) != 3) ? "No":"Yes" ) );
+		printf(" TBD2 V Nominal Op     : %s\n", (((spd_data[11]>>4&3) != 3) ? "No":"Yes" ) );
+		printf(" Error Detect/Cor      : %s\n", val2str(spd_data[13]>>3, ddr4_ecc_vals));
+
+		printf(" Manufacturer          : ");
+		switch (spd_data[320]&127)
+		{
+		case	0:
+			printf("%s\n", val2str(spd_data[321], jedec_id1_vals));
+			break;
+
+		case	1:
+			printf("%s\n", val2str(spd_data[321], jedec_id2_vals));
+			break;
+
+		case	2:
+			printf("%s\n", val2str(spd_data[321], jedec_id3_vals));
+			break;
+
+		case	3:
+			printf("%s\n", val2str(spd_data[321], jedec_id4_vals));
+			break;
+
+		case	4:
+			printf("%s\n", val2str(spd_data[321], jedec_id5_vals));
+			break;
+
+		default:
+			printf("%s\n", "JEDEC JEP106 update required");
+
+		}
+
+		u_int year = (spd_data[323]>>4)*10 + spd_data[323]&15;
+		u_int week = (spd_data[324]>>4)*10 + spd_data[324]&15;
+		printf(" Manufacture Date      : year %4d week %2d\n",
+		       2000 + year, week);
+
+		printf(" Serial Number         : %02x%02x%02x%02x\n",
+		spd_data[325], spd_data[326], spd_data[327], spd_data[328]);
+
+		printf(" Part Number           : ");
+		for (i=329; i <= 348; i++)
+		{
+			printf( "%c", spd_data[i]);
+		}
+		printf("\n");
 	}
 	else
 	{
@@ -869,7 +1013,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
-	uint8_t spd_data[256], msg_data[4];
+	uint8_t *spd_data, msg_data[4];
 	int len, offset;
 
 	msg_data[0] = id;
@@ -897,10 +1041,19 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
 		fru.size, fru.access ? "words" : "bytes");
 
+
 	if (fru.size < 1) {
 		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
 		return -1;
 	}
+
+        spd_data = malloc(fru.size);
+
+        if (spd_data == NULL) {
+		printf(" Unable to malloc memory for spd array of size=%d\n",
+		       fru.size);
+		return -1;
+        }
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -909,22 +1062,27 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	req.msg.data_len = 4;
 
 	offset = 0;
-	memset(spd_data, 0, 256);
+	memset(spd_data, 0, fru.size);
 	do {
+                int i;
 		msg_data[0] = id;
-		msg_data[1] = offset;
-		msg_data[2] = 0;
+		msg_data[1] = offset & 0xFF;
+		msg_data[2] = offset >> 8;
 		msg_data[3] = FRU_DATA_RQST_SIZE;
 
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
 			printf(" Device not present (No Response)\n");
+                        free(spd_data);
+                        spd_data = NULL;
 			return -1;
 		}
 		if (rsp->ccode > 0) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
 
+                        free(spd_data);
+                        spd_data = NULL;
 			/* Timeouts are acceptable. No DIMM in the socket */
 			if (rsp->ccode == 0xc3)
 				return 1;
@@ -939,6 +1097,8 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 
 	/* now print spd info */
 	ipmi_spd_print(spd_data, offset);
+        free(spd_data);
+        spd_data = NULL;
 
 	return 0;
 }
