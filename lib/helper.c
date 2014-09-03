@@ -357,6 +357,7 @@ int str2char(const char *str, int8_t * chr_ptr)
 	if (arg_long < INT8_MIN || arg_long > INT8_MAX) {
 		return (-3);
 	}
+	*chr_ptr = (uint8_t)arg_long;
 	return 0;
 } /* str2char(...) */
 
