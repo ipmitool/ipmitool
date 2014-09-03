@@ -227,7 +227,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		      fprintf(stderr, "Converting message:\n");
 		      fprintf(stderr, "  netfn     = 0x%x\n",  req->msg.netfn );
 		      fprintf(stderr, "  cmd       = 0x%x\n", req->msg.cmd);
-		      if (recv.msg.data && recv.msg.data_len) {
+		      if (req->msg.data && req->msg.data_len) {
 			 fprintf(stderr, "  data_len  = %d\n", req->msg.data_len);
 			 fprintf(stderr, "  data      = %s\n",
 				 buf2str(req->msg.data,req->msg.data_len));
