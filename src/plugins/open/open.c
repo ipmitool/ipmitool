@@ -188,9 +188,14 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		if (intf->open(intf) < 0)
 			return NULL;
 
-	if (verbose > 2)
-		printbuf(req->msg.data, req->msg.data_len,
-			 "OpenIPMI Request Message");
+	if (verbose > 2) {
+		fprintf(stderr, "OpenIPMI Request Message Header:\n");
+		fprintf(stderr, "  netfn     = 0x%x\n",  req->msg.netfn );
+		fprintf(stderr, "  cmd       = 0x%x\n", req->msg.cmd);
+		printbuf(req->msg.data, req->msg.data_len, "OpenIPMI Request Message Data");
+	}
+		
+
 
 	/*
 	 * setup and send message
