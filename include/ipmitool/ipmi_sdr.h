@@ -102,8 +102,6 @@ enum {
 #define GET_SENSOR_EVENT_STATUS	0x2b
 #define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_TYPE		0x2f
-#define GET_SENSOR_READING      0x2d
-#define GET_SENSOR_TYPE         0x2f
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
