@@ -72,6 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define	IDRAC_11G					1
 #define	IDRAC_12G					2
+#define	IDRAC_13G					3
 // Return Error code for license
 #define	LICENSE_NOT_SUPPORTED		0x6F
 #define	VFL_NOT_LICENSED			0x33
@@ -184,6 +185,9 @@ typedef struct _lcd_mode
 #define IMC_IDRAC_12G_MONOLITHIC 	(uint8_t) (0x10)
 #define IMC_IDRAC_12G_MODULAR 		(uint8_t) (0x11)
 
+#define IMC_IDRAC_13G_MONOLITHIC 	(uint8_t) (0x20)
+#define IMC_IDRAC_13G_MODULAR 		(uint8_t) (0x21)
+#define IMC_IDRAC_13G_DCS			(uint8_t) (0x22)
 
 
 typedef struct

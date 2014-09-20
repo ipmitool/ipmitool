@@ -123,6 +123,16 @@ const struct vFlashstr vFlash_completion_code_vals[] = {
 
 static int current_arg =0;
 uint8_t iDRAC_FLAG=0;
+
+/*
+ * new flags for
+ * 11G || 12G || 13G  -> _ALL
+ * 12G || 13G -> _12_13
+ *
+ */
+uint8_t iDRAC_FLAG_ALL=0;
+uint8_t iDRAC_FLAG_12_13=0;
+
 LCD_MODE lcd_mode;
 static uint8_t LcdSupported=0;
 static uint8_t SetLEDSupported=0;
@@ -358,7 +368,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "lcd is not supported on this system.");
 		return -1;
 	} else if (strncmp(argv[current_arg], "info\0", 5) == 0) {
-		if ((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G)) {
+		if (iDRAC_FLAG_ALL) {
 			rc = ipmi_lcd_get_info_wh(intf);
 		} else {
 			rc = ipmi_lcd_get_info(intf);
@@ -392,7 +402,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		}
 		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)
-				&& ((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G))) {
+				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
 				ipmi_lcd_usage();
@@ -446,7 +456,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lcd_usage();
 			}
 		} else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13) == 0)
-				&& ((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G))) {
+				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
 				ipmi_lcd_usage();
@@ -470,7 +480,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lcd_usage();
 			}
 		} else if ((strncmp(argv[current_arg], "errordisplay\0", 13) == 0)
-				&& ((iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G))) {
+				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
 				ipmi_lcd_usage();
@@ -635,17 +645,33 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
 		val2str(rsp->ccode, completion_code_vals));  */
 		return -1;
 	}
+	/*
+	 * Set the new flags to 0
+	 */
+	iDRAC_FLAG_ALL = 0;
+	iDRAC_FLAG_12_13 = 0;
 	/* Support the 11G Monolithic, modular, Maisy and Coaster */
 	if ((IMC_IDRAC_11G_MONOLITHIC == data[10])
 			|| (IMC_IDRAC_11G_MODULAR == data[10])
 			|| (IMC_MASER_LITE_BMC == data[10])
 			|| (IMC_MASER_LITE_NU == data[10])) {
 		iDRAC_FLAG=IDRAC_11G;
+		iDRAC_FLAG_ALL = 1;
 	} else if((IMC_IDRAC_12G_MONOLITHIC == data[10])
 			|| (IMC_IDRAC_12G_MODULAR == data[10])) {
 		iDRAC_FLAG = IDRAC_12G;
+		iDRAC_FLAG_ALL = 1;
+		iDRAC_FLAG_12_13 = 1;
+	} else if ((IMC_IDRAC_13G_MONOLITHIC == data[10])
+			|| (IMC_IDRAC_13G_MODULAR == data[10])
+			|| (IMC_IDRAC_13G_DCS == data[10])) {
+		iDRAC_FLAG=IDRAC_13G;
+		iDRAC_FLAG_ALL = 1;
+		iDRAC_FLAG_12_13 = 1;
 	} else {
 		iDRAC_FLAG = 0;
+		iDRAC_FLAG_ALL = 0;
+		iDRAC_FLAG_12_13 = 0;
 	}
 	IMC_Type = data[10];
 	return 0;
@@ -1394,7 +1420,7 @@ ipmi_lcd_usage(void)
 	lprintf(LOG_NOTICE,
 "");
 	lprintf(LOG_NOTICE,
-"iDRAC 11g or iDRAC 12g:");
+"iDRAC 11g or iDRAC 12g or  iDRAC 13g :");
 	lprintf(LOG_NOTICE,
 "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
 	lprintf(LOG_NOTICE,
@@ -1561,7 +1587,9 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 		return -1;
 	}
 	if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
+			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)
+			|| (IMC_IDRAC_13G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
 		/* Get the Chasiss Assigned MAC Addresss for 12g Only */
 		memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
 		for (i = 0; i < MACADDRESSLENGH; i++) {
@@ -1599,6 +1627,9 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
 			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
 		printf("\niDRAC7 MAC Address ");
+	} else if ((IMC_IDRAC_13G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
+			printf ("\niDRAC8 MAC Address ");
 	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
 			|| (IMC_MASER_LITE_NU== IMC_Type)) {
 		printf("\nBMC MAC Address ");
@@ -1668,6 +1699,9 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
 			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
 		printf("\niDRAC7 MAC Address ");
+	} else if ((IMC_IDRAC_13G_MODULAR == IMC_Type)
+			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
+			printf ("\niDRAC8 MAC Address ");
 	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
 			|| (IMC_MASER_LITE_NU== IMC_Type)) {
 		printf("\n\rBMC MAC Address ");
@@ -1879,6 +1913,8 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 				|| IMC_IDRAC_11G_MONOLITHIC == IMC_Type)
 			|| (IMC_IDRAC_12G_MODULAR == IMC_Type
 				|| IMC_IDRAC_12G_MONOLITHIC == IMC_Type)
+			|| (IMC_IDRAC_13G_MODULAR == IMC_Type
+				|| IMC_IDRAC_13G_MONOLITHIC == IMC_Type)
 			|| (IMC_MASER_LITE_NU == IMC_Type || IMC_MASER_LITE_BMC== IMC_Type)) {
 		return ipmi_macinfo_11g(intf,NicNum);
 	} else {
@@ -1946,7 +1982,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
 			ipmi_lan_usage();
 			return -1;
 		}
-		if (iDRAC_FLAG == IDRAC_12G) {
+		if (iDRAC_FLAG_12_13)  {
 			nic_selection = get_nic_selection_mode_12g(intf, current_arg, argv,
 					nic_set);
 			if (INVALID == nic_selection) {
@@ -2063,7 +2099,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	}
 	if (argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "lom1\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (failover) {
@@ -2082,7 +2118,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		return 0;
 	} else if (argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "lom2\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (failover) {
@@ -2101,7 +2137,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		return 0;
 	} else if (argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "lom3\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (failover) {
@@ -2120,7 +2156,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		return 0;
 	} else if (argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "lom4\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (failover) {
@@ -2139,7 +2175,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		return 0;
 	} else if (failover && argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "none\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type) ) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (failover) {
@@ -2159,7 +2195,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	current_arg++;
 	if (failover && argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "loms\0", 5) == 0) {
-		if (IMC_IDRAC_12G_MODULAR == IMC_Type) {
+		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
 		if (nic_set[0] == 1) {
@@ -2242,7 +2278,8 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 		lprintf(LOG_ERR, "Error in setting nic selection");
 		return -1;
 	} else if( (nic_selection[0] == 1)
-			&& ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
+			&& (( iDRAC_FLAG_12_13 )
+			&& (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
 		/* Check license only for setting the dedicated nic. */
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
@@ -2297,7 +2334,7 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 	input_length = 0;
 	req.msg.netfn = DELL_OEM_NETFN;
 	req.msg.lun = 0;
-	if (iDRAC_FLAG == IDRAC_12G) {
+	if( iDRAC_FLAG_12_13 ) {
 		req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
 	} else {
 		req.msg.cmd = GET_NIC_SELECTION_CMD;
@@ -2314,7 +2351,7 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 		return -1;
 	}
 	nic_selection = rsp->data[0];
-	if (iDRAC_FLAG == IDRAC_12G) {
+	if( iDRAC_FLAG_12_13 ) {
 		nic_selection_failover = rsp->data[1];
 		if ((nic_selection < 6) && (nic_selection > 0)
 				&& (nic_selection_failover < 7)) {
@@ -2413,7 +2450,7 @@ ipmi_lan_usage(void)
 	lprintf(LOG_NOTICE,
 "      sets the NIC Selection Mode :");
 	lprintf(LOG_NOTICE,
-"          on iDRAC12g :");
+"          on iDRAC12g OR iDRAC13g  :");
 	lprintf(LOG_NOTICE,
 "              dedicated, shared with lom1, shared with lom2,shared with lom3,shared");
 	lprintf(LOG_NOTICE,
@@ -2433,7 +2470,7 @@ ipmi_lan_usage(void)
 	lprintf(LOG_NOTICE,
 "   lan get ");
 	lprintf(LOG_NOTICE,
-"          on iDRAC12g :");
+"          on iDRAC12g or iDRAC13g  :");
 	lprintf(LOG_NOTICE,
 "              returns the current NIC Selection Mode (dedicated, shared with lom1, shared");
 	lprintf(LOG_NOTICE,
@@ -2662,7 +2699,7 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting powercap status");
 		return -1;
-	} else if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+	} else if (( iDRAC_FLAG_12_13 ) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1; /* Return Error as unlicensed */
@@ -2713,7 +2750,7 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error setting powercap status");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1; /* return unlicensed Error code */
@@ -2807,7 +2844,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	if((iDRAC_FLAG == IDRAC_12G) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+	if ((iDRAC_FLAG_12_13) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -2910,7 +2947,7 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error clearing power values.");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G)
+	} else if ((iDRAC_FLAG_12_13)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
@@ -2988,7 +3025,7 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting power headroom status");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G)
+	} else if ((iDRAC_FLAG_12_13)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
@@ -3122,7 +3159,7 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data .");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G)
+	} else if ((iDRAC_FLAG_12_13)
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
@@ -3215,7 +3252,7 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"Error getting average power consumption history data.");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3264,7 +3301,7 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting  peak power consumption history data.");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3321,7 +3358,7 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting  peak power consumption history data .");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) &&  (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) &&  (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3518,7 +3555,7 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting power cap.");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3618,7 +3655,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting power cap.");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3698,7 +3735,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error setting power cap");
 		return -1;
-	} else if ((iDRAC_FLAG == IDRAC_12G) && (rc == LICENSE_NOT_SUPPORTED)) {
+	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3860,7 +3897,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 
 	sdcardinfoblock = (IPMI_DELL_SDCARD_INFO *) (void *) rsp->data;
 
-	if ((iDRAC_FLAG == IDRAC_12G)
+	if ((iDRAC_FLAG_12_13)
 			&& (sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
