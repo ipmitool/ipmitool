@@ -42,7 +42,7 @@
 #include <ipmitool/ipmi_sensor.h>
 
 extern int verbose;
-void printf_sensor_get_usage();
+void print_sensor_get_usage();
 void print_sensor_thresh_usage();
 
 // Macro's for Reading the current sensor Data.
@@ -873,10 +873,10 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (argc < 1) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
-		printf_sensor_get_usage();
+		print_sensor_get_usage();
 		return (-1);
 	} else if (strcmp(argv[0], "help") == 0) {
-		printf_sensor_get_usage();
+		print_sensor_get_usage();
 		return 0;
 	}
 	printf("Locating sensor record...\n");
@@ -926,18 +926,18 @@ ipmi_sensor_main(struct ipmi_intf *intf, int argc, char **argv)
 	return rc;
 }
 
-/* printf_sensor_get_usage - print usage for # ipmitool sensor get NAC;
+/* print_sensor_get_usage - print usage for # ipmitool sensor get NAC;
  *
  * @returns: void
  */
 void
-printf_sensor_get_usage()
+print_sensor_get_usage()
 {
 	lprintf(LOG_NOTICE, "sensor get <id> ... [id]");
 	lprintf(LOG_NOTICE, "   id        : name of desired sensor");
 }
 
-/* printf_sensor_thresh_set_usage - print usage for # ipmitool sensor thresh;
+/* print_sensor_thresh_set_usage - print usage for # ipmitool sensor thresh;
  *
  * @returns: void
  */
