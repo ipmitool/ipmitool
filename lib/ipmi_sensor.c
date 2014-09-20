@@ -563,7 +563,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 	} else if (strncmp(thresh, "lower", 5) == 0) {
 		if (argc < 5) {
 			lprintf(LOG_ERR,
-				"usage: sensor thresh <id> lower <unc> <ucr> <unr>");
+				"usage: sensor thresh <id> lower <lnr> <lcr> <lnc>");
 			return -1;
 		}
 		allLower = 1;
