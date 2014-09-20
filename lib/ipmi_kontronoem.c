@@ -53,9 +53,9 @@ extern int read_fru_area(struct ipmi_intf * intf, struct fru_info *fru,
                          uint8_t id, uint32_t offset, uint32_t length, 
                          uint8_t *frubuf);
 extern int write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, 
-                          unsigned char id, unsigned int soffset,  
-                          unsigned int doffset,  unsigned int length, 
-                          unsigned char *pFrubuf);
+                          uint8_t id, uint16_t soffset,  
+                          uint16_t doffset,  uint16_t length, 
+                          uint8_t *pFrubuf);
 
 extern char * get_fru_area_str(uint8_t * data, uint32_t * offset);
 
