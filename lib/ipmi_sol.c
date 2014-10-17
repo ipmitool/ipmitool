@@ -1477,10 +1477,7 @@ static int
 ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 {
 	struct ipmi_v2_payload v2_payload;
-   struct ipmi_rs * rsp = NULL;
 	struct timeval end;
-
-	int ret = 0;
 
 	if (_disable_keepalive)
 		return 0;
@@ -1488,22 +1485,20 @@ ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 	gettimeofday(&end, 0);
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
-	   memset(&v2_payload, 0, sizeof(v2_payload));
-
-      v2_payload.payload.sol_packet.character_count = 0;
-
-      rsp = intf->send_sol(intf, &v2_payload);
-
+		memset(&v2_payload, 0, sizeof(v2_payload));
+		v2_payload.payload.sol_packet.character_count = 0;
+		if (intf->send_sol(intf, &v2_payload) == NULL)
+			return -1;
+		/* good return, reset start time */
 		gettimeofday(&_start_keepalive, 0);
-   }
-	return ret;
+	}
+	return 0;
 }
 
 static int
 ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 {
 	struct timeval  end;
-	static int ret = 0;
 
 	if (_disable_keepalive)
 		return 0;
@@ -1511,16 +1506,12 @@ ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 	gettimeofday(&end, 0);
 
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
-	   ret = intf->keepalive(intf);
-	   if ( (ret!=0) && (_keepalive_retries < SOL_KEEPALIVE_RETRIES) ) {
-         ret = 0;
-         _keepalive_retries++;
-	   }
-	   else if ((ret==0) && (_keepalive_retries > 0))
-         _keepalive_retries = 0;
+		if (intf->keepalive(intf) != 0)
+         		return -1;
+		/* good return, reset start time */
 		gettimeofday(&_start_keepalive, 0);
-   }
-	return ret;
+   	}
+	return 0;
 }
 
 
@@ -1653,14 +1644,15 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 			else if (FD_ISSET(intf->fd, &read_fds))
 			{
 				struct ipmi_rs * rs =intf->recv_sol(intf);
-				if (! rs)
-				{
-					bShouldExit = bBmcClosedSession = 1;
-				}
-				else
+				if ( rs)
 				{
 					output(rs);
 				}
+				/*
+				 * Should recv_sol come back null, the incoming packet was not ours.
+				 * Just fall through, the keepalive logic will determine if
+				 * the BMC has dropped the session.
+				 */
  			}
 
 
