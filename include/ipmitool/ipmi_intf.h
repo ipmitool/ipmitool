@@ -63,7 +63,7 @@ enum LANPLUS_SESSION_STATE {
 #define IPMI_KG_BUFFER_SIZE       21 /* key plus null byte */
 
 struct ipmi_session {
-	uint8_t hostname[64];
+	char *hostname; /* Numeric IP adress or DNS name - see RFC 1034/RFC 1035 */
 	uint8_t username[17];
 	uint8_t authcode[IPMI_AUTHCODE_BUFFER_SIZE + 1];
 	uint8_t challenge[16];
@@ -213,6 +213,7 @@ void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype);
 void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);
 void ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry);
+void ipmi_intf_session_cleanup(struct ipmi_intf *intf);
 void ipmi_cleanup(struct ipmi_intf * intf);
 
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)

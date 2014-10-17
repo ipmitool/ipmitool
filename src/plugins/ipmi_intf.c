@@ -194,15 +194,14 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 void
 ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 {
-	if (intf->session == NULL)
+	if (intf->session == NULL || hostname == NULL) {
 		return;
-
-	memset(intf->session->hostname, 0, 16);
-
-	if (hostname != NULL) {
-		memcpy(intf->session->hostname, hostname,
-		       __min(strlen(hostname), 64));
 	}
+	if (intf->session->hostname != NULL) {
+		free(intf->session->hostname);
+		intf->session->hostname = NULL;
+	}
+	intf->session->hostname = strdup(hostname);
 }
 
 void
@@ -328,6 +327,20 @@ ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry)
 		return;
 
 	intf->session->retry = retry;
+}
+
+void
+ipmi_intf_session_cleanup(struct ipmi_intf *intf)
+{
+	if (intf->session == NULL) {
+		return;
+	}
+	if (intf->session->hostname != NULL) {
+		free(intf->session->hostname);
+		intf->session->hostname = NULL;
+	}
+	free(intf->session);
+	intf->session = NULL;
 }
 
 void

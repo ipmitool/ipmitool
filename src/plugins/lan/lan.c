@@ -2005,12 +2005,7 @@ ipmi_lan_close(struct ipmi_intf * intf)
 		close(intf->fd);
 
 	ipmi_req_clear_entries();
-
-	if (intf->session != NULL) {
-		free(intf->session);
-		intf->session = NULL;
-	}
-
+	ipmi_intf_session_cleanup(intf);
 	intf->opened = 0;
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 	intf = NULL;

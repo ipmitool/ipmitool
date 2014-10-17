@@ -242,12 +242,7 @@ ipmi_serial_term_close(struct ipmi_intf * intf)
 		close(intf->fd);
 		intf->fd = -1;
 	}
-
-	if (intf->session) {
-		free(intf->session);
-		intf->session = NULL;
-	}
-
+	ipmi_intf_session_cleanup(intf);
 	intf->opened = 0;
 }
 

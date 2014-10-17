@@ -3291,12 +3291,7 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 		close(intf->fd);
 
 	ipmi_req_clear_entries();
-
-	if (intf->session) {
-		free(intf->session);
-		intf->session = NULL;
-	}
-
+	ipmi_intf_session_cleanup(intf);
 	intf->session = NULL;
 	intf->opened = 0;
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
@@ -3366,7 +3361,6 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!intf || !intf->session)
 		return -1;
 	session = intf->session;
-
 
 	if (!session->port)
 		session->port = IPMI_LANPLUS_PORT;
