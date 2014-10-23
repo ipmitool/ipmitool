@@ -1,3 +1,25 @@
+version 1.8.15RC1 2014-10-23
+	* ID: 340 - ipmitool sol session improperly closes on packet retry
+	* ID: 277 - support for hostnames longer than 64 chars
+	* ID: 313 - ipmitool doesn't support hostname long than 64 symbols
+	* ID: 277 - Minor issue with ipmi_intf_session_set_hostname()
+	* ID: 247 - 'sensor thresh' help output is wrong
+	* ID: 324 - conflicting declaration write_fru_area()
+	* ID: 337 - Add support for 13G Dell PowerEdge
+	* ID: 325 - DDR4 DIMM Decoding Logic
+	* ID: 328 - HPM.2 fixes
+	* ID: 329 - hpm.1 upgrade fixes
+	* ID: 103 - picmg discover messages should be DEBUG, not INFO
+	* ID: 331 - Passwords provided in file (-f option) truncated on space
+	* ID: 318 - ipmi_tsol.c: fix buffer overflow
+	* ID: 306 - "fru print" command prints the FRU #0 twice
+	* ID: 305 - HPM.1 deferred activation support fixup
+	* ID: 317 - ipmi_fwum.c: fix typo
+	* ID: 315 - buildsystem: configure.in is deprecated
+	* ID: 316 - Directory debian is outdated
+	* ID: 103 - 'lib/ipmi_ekanalyzer.c' needs a re-work
+	* ID: 46 - SEL OEM record corner case
+
 version 1.8.14 2014-05-05
 	* ID: 299 - openipmi plugin writes zero to wrong byte
 	* ID: 301 - Add OS/Hypervisor installation status events
