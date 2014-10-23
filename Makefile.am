@@ -31,9 +31,7 @@
 DOCDIR = $(datadir)/doc/$(PACKAGE)
 DOCLIST = $(top_srcdir)/README $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
 
-EXTRA_DIST = $(DOCLIST) \
-	debian/changelog debian/control debian/copyright \
-	debian/dirs debian/docs debian/rules
+EXTRA_DIST = $(DOCLIST)
 
 AUTOMAKE_OPTIONS = dist-bzip2
 
