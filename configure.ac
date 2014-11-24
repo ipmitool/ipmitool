@@ -3,7 +3,7 @@ dnl autoconf for ipmitool
 dnl
 AC_INIT([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([ipmitool], [1.8.14-cvs])
+AM_INIT_AUTOMAKE([ipmitool], [1.8.15-cvs])
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_PREREQ(2.50)
