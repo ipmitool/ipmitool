@@ -1,4 +1,4 @@
-version 1.8.15RC1 2014-10-23
+version 1.8.15 2014-11-24
 	* ID: 340 - ipmitool sol session improperly closes on packet retry
 	* ID: 277 - support for hostnames longer than 64 chars
 	* ID: 313 - ipmitool doesn't support hostname long than 64 symbols
