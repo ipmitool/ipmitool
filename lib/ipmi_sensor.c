@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -52,8 +52,8 @@ void print_sensor_thresh_usage();
 // static
 int
 ipmi_sensor_get_sensor_reading_factors(
-	struct ipmi_intf * intf, 
-	struct sdr_record_full_sensor * sensor, 
+	struct ipmi_intf * intf,
+	struct sdr_record_full_sensor * sensor,
 	uint8_t reading)
 {
 	struct ipmi_rq req;
@@ -88,9 +88,9 @@ ipmi_sensor_get_sensor_reading_factors(
 		return -1;
 	} else {
 		/* Update SDR copy with updated Reading Factors for this reading */
-		/* Note: 
-		 * The Format of the returned data is exactly as in the SDR definition (Little Endian Format), 
-		 * therefore we can use raw copy operation here. 
+		/* Note:
+		 * The Format of the returned data is exactly as in the SDR definition (Little Endian Format),
+		 * therefore we can use raw copy operation here.
 		 * Note: rsp->data[0] would point to the next valid entry in the sampling table
 		 */
 		 // BUGBUG: uses 'hardcoded' length information from SDR Definition
@@ -892,8 +892,20 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 		/* need to set verbose level to 1 */
 		v = verbose;
 		verbose = 1;
-		if (ipmi_sdr_print_listentry(intf, sdr) < 0) {
-			rc = (-1);
+		switch (sdr->type) {
+		case SDR_RECORD_TYPE_FULL_SENSOR:
+		case SDR_RECORD_TYPE_COMPACT_SENSOR:
+			if (ipmi_sensor_print_fc(intf,
+					(struct sdr_record_common_sensor *) sdr->record.common,
+					sdr->type)) {
+				rc = -1;
+			}
+			break;
+		default:
+			if (ipmi_sdr_print_listentry(intf, sdr) < 0) {
+				rc = (-1);
+			}
+			break;
 		}
 		verbose = v;
 		sdr = NULL;
