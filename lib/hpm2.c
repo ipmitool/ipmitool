@@ -213,8 +213,8 @@ int hpm2_get_lan_channel_capabilities(struct ipmi_intf * intf,
 	/* send */
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp) {
-		lprintf(LOG_NOTICE, "Error sending request");
+	if (!rsp) {
+		lprintf(LOG_NOTICE, "Error sending request.");
 		return -1;
 	}
 
