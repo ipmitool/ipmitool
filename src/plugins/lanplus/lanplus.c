@@ -3049,9 +3049,18 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	}
 	memcpy(msg + 28, session->username, msg[27]);
 
-	v2_payload.payload_type                   = IPMI_PAYLOAD_TYPE_RAKP_1;
-	v2_payload.payload_length                 =
-		IPMI_RAKP1_MESSAGE_SIZE - (16 - msg[27]);
+	v2_payload.payload_type = IPMI_PAYLOAD_TYPE_RAKP_1;
+	if (ipmi_oem_active(intf, "i82571spt")) {
+		/*
+		 * The IPMI v2.0 spec hints on that all user name bytes
+		 * must be occupied (29:44).  The Intel 82571 GbE refuses
+		 * to establish a session if this field is shorter.
+		 */
+		v2_payload.payload_length = IPMI_RAKP1_MESSAGE_SIZE;
+	} else {
+		v2_payload.payload_length =
+			IPMI_RAKP1_MESSAGE_SIZE - (16 - msg[27]);
+	}
 	v2_payload.payload.rakp_1_message.message = msg;
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
@@ -3417,8 +3426,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		goto fail;
 	}
 
-	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available)
-	{
+	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available) {
 		lprintf(LOG_INFO, "This BMC does not support IPMI v2 / RMCP+");
 		goto fail;
 	}
