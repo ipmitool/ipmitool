@@ -633,6 +633,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
       queue->tail->next = sdrr;
     queue->tail = sdrr;
   }
+  close(fd);
   return rc;
 }
 
