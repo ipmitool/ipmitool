@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -263,13 +263,18 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
  *
  *                       This insures that the IOL session gets freed
  *                       for other callers.
- * 
+ *
  * returns -1
  */
 void ipmi_catch_sigint()
 {
 	if (ipmi_main_intf != NULL) {
 		printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
+		/* reduce retry count to a single retry */
+		if (ipmi_main_intf->session) {
+			ipmi_main_intf->session->retry = 1;
+		}
+		/* close interface */
 		ipmi_main_intf->close(ipmi_main_intf);
 	}
 	exit(-1);
