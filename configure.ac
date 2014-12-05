@@ -26,7 +26,6 @@ AC_C_CONST
 AC_C_INLINE
 AC_C_BIGENDIAN
 
-AC_FUNC_MALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([alarm gethostbyname getaddrinfo getifaddrs socket select])
