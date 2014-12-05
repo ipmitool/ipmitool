@@ -700,9 +700,9 @@ is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr)
 /* is_ipmi_channel_num - wrapper for str-2-int Channel conversion. Message is
  * printed on error.
  *
- * 6.3 Channel Numbers, p. 45, IPMIv2 spec.
- * Valid channel numbers are: <0..7>, <E-F>
- * Reserved channel numbers: <8-D>
+ * 6.3 Channel Numbers, p. 49, IPMIv2 spec. rev1.1
+ * Valid channel numbers are: <0x0..0xB>, <0xE-0xF>
+ * Reserved channel numbers: <0xC-0xD>
  *
  * @argv_ptr: source string to convert from; usually argv
  * @channel_ptr: pointer where to store result
@@ -719,14 +719,14 @@ is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr)
 		return (-1);
 	}
 	if ((str2uchar(argv_ptr, channel_ptr) == 0)
-			&& ((*channel_ptr >= 0x0 && *channel_ptr <= 0x7)
+			&& ((*channel_ptr >= 0x0 && *channel_ptr <= 0xB)
 				|| (*channel_ptr >= 0xE && *channel_ptr <= 0xF))) {
 		return 0;
 	}
 	lprintf(LOG_ERR,
 			"Given Channel number '%s' is either invalid or out of range.",
 			argv_ptr);
-	lprintf(LOG_ERR, "Channel number must be from ranges: <0..7>, <0xE..0xF>");
+	lprintf(LOG_ERR, "Channel number must be from ranges: <0x0..0xB>, <0xE..0xF>");
 	return (-1);
 }
 
