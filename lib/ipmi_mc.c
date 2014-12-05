@@ -217,6 +217,8 @@ printf_sysinfo_usage(int full_help)
 		lprintf(LOG_NOTICE, "  Valid arguments are:");
 	}
 	lprintf(LOG_NOTICE,
+			"    system_fw_version   System firmware (e.g. BIOS) version");
+	lprintf(LOG_NOTICE,
 			"    primary_os_name     Primary operating system name");
 	lprintf(LOG_NOTICE, "    os_name             Operating system name");
 	lprintf(LOG_NOTICE,
@@ -914,6 +916,8 @@ sysinfo_param(const char *str, int *maxset)
 	else if (!strcmp(str, "delloem_url")) {
 		*maxset = 2;
 		return IPMI_SYSINFO_DELL_URL;
+	} else if (!strcmp(str, "system_fw_version")) {
+		return IPMI_SYSINFO_SYSTEM_FW_VERSION;
 	}
 
 	return (-1);

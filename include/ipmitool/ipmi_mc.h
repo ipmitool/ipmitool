@@ -157,6 +157,9 @@ struct ipm_get_watchdog_rsp {
 #define IPMI_SYSINFO_SET0_SIZE             14
 #define IPMI_SYSINFO_SETN_SIZE             16
 
+/* System Information "Parameter selector" values: */
+#define IPMI_SYSINFO_SET_STATE		0x00
+#define IPMI_SYSINFO_SYSTEM_FW_VERSION	0x01
 #define IPMI_SYSINFO_HOSTNAME		0x02
 #define IPMI_SYSINFO_PRIMARY_OS_NAME	0x03
 #define IPMI_SYSINFO_OS_NAME		0x04
