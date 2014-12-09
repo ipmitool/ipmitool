@@ -772,14 +772,14 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		if (argc == 4)
 		{
-			if (str2uchar(argv[3], &channel) != 0) 
+			if (str2uchar(argv[3], &channel) != 0)
 			{
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[3]);
 				return (-1);
 			}
 			channel = (channel & 0x0f);
 		}
-		
+
 		if (str2uchar(argv[2], &priv_level) != 0)
 		{
 			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[2]);
