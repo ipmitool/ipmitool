@@ -520,78 +520,44 @@ int
 ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
-
-	/*
-	 * Help
-	 */
-	if (argc == 0 || strncmp(argv[0], "help", 4) == 0)
-	{
+	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+		/* Help */
 		print_user_usage();
-	}
-
-	/*
-	 * Summary
-	 */
-	else if (strncmp(argv[0], "summary", 7) == 0)
-	{
+	} else if (strncmp(argv[0], "summary", 7) == 0) {
+		/* Summary*/
 		uint8_t channel;
-
-		if (argc == 1)
+		if (argc == 1) {
 			channel = 0x0E; /* Ask about the current channel */
-		else if (argc == 2)
-		{
-			if (str2uchar(argv[1], &channel) != 0)
-			{
+		}
+		else if (argc == 2) {
+			if (str2uchar(argv[1], &channel) != 0) {
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
 				return (-1);
 			}
-		}
-		else
-		{
+		} else {
 			print_user_usage();
 			return -1;
 		}
-
 		retval = ipmi_print_user_summary(intf, channel);
-	}
-
-
-	/*
-	 * List
-	 */
-	else if (strncmp(argv[0], "list", 4) == 0)
-	{
+	} else if (strncmp(argv[0], "list", 4) == 0) {
+		/* List */
 		uint8_t channel;
-
-		if (argc == 1)
+		if (argc == 1) {
 			channel = 0x0E; /* Ask about the current channel */
-		else if (argc == 2)
-		{
-			if (str2uchar(argv[1], &channel) != 0)
-			{
+		} else if (argc == 2) {
+			if (str2uchar(argv[1], &channel) != 0) {
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
 				return (-1);
 			}
-		}
-		else
-		{
+		} else {
 			print_user_usage();
 			return -1;
 		}
-
 		retval = ipmi_print_user_list(intf, channel);
-	}
-
-
-
-	/*
-	 * Test
-	 */
-	else if (strncmp(argv[0], "test", 4) == 0)
-	{
-		// a little irritating, isn't it
-		if (argc == 3 || argc == 4)
-		{
+	} else if (strncmp(argv[0], "test", 4) == 0) {
+		/* Test */
+		/* a little irritating, isn't it */
+		if (argc == 3 || argc == 4) {
 			char * password = NULL;
 			int password_length = 0;
 			uint8_t user_id = 0;
@@ -607,8 +573,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return (-1);
 			}
 
-			if (argc == 3)
-			{
+			if (argc == 3) {
 				/* We need to prompt for a password */
 
 				char * tmp;
@@ -627,12 +592,9 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
 					return -1;
 				}
-			}
-			else {
+			} else {
 				password = strdup(argv[3]);
 			}
-
-
 			retval = ipmi_user_test_password(intf,
 							 user_id,
 							 password,
@@ -641,33 +603,21 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				free(password);
 				password = NULL;
 			}
-		}
-		else
-		{
+		} else {
 			print_user_usage();
 			return -1;
 		}
-	}
-
-	/*
-	 * Set
-	 */
-	else if (strncmp(argv[0], "set", 3) == 0)
-	{
-		/*
-		 * Set Password
-		 */
-		if ((argc >= 3) &&
-		    (strncmp("password", argv[1], 8) == 0))
-		{
+	} else if (strncmp(argv[0], "set", 3) == 0) {
+		/* Set */
+		if ((argc >= 3)
+				&& (strncmp("password", argv[1], 8) == 0)) {
 			char * password = NULL;
 			uint8_t user_id = 0;
 			if (is_ipmi_user_id(argv[2], &user_id)) {
 				return (-1);
 			}
 
-			if (argc == 3)
-			{
+			if (argc == 3) {
 				/* We need to prompt for a password */
 				char * tmp;
 				const char * password_prompt =
@@ -709,9 +659,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (password == NULL) {
 				lprintf(LOG_ERR, "Unable to parse password argument.");
 				return -1;
-			}
-			else if (strlen(password) > 20)
-			{
+			} else if (strlen(password) > 20) {
 				lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
 				return -1;
 			}
@@ -725,17 +673,11 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				free(password);
 				password = NULL;
 			}
-		}
-
-		/*
-		 * Set Name
-		 */
-		else if ((argc >= 2) &&
-			 (strncmp("name", argv[1], 4) == 0))
-		{
+		} else if ((argc >= 2)
+				&& (strncmp("name", argv[1], 4) == 0)) {
+			/* Set Name */
 			uint8_t user_id = 0;
-			if (argc != 4)
-			{
+			if (argc != 4) {
 				print_user_usage();
 				return -1;
 			}
@@ -743,45 +685,35 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 					return (-1);
 			}
 
-			if (strlen(argv[3]) > 16)
-			{
+			if (strlen(argv[3]) > 16) {
 				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
 				return -1;
 			}
 
 			retval = ipmi_user_set_username(intf, user_id, argv[3]);
-		}
-		else
-		{
+		} else {
 			print_user_usage();
 			return -1;
 		}
-	}
-
-	else if (strncmp(argv[0], "priv", 4) == 0)
-	{
+	} else if (strncmp(argv[0], "priv", 4) == 0) {
 		uint8_t user_id;
 		uint8_t priv_level;
 		uint8_t channel = 0x0e; /* Use channel running on */
 
-		if (argc != 3 && argc != 4)
-		{
+		if (argc != 3 && argc != 4) {
 			print_user_usage();
 			return -1;
 		}
 
-		if (argc == 4)
-		{
-			if (str2uchar(argv[3], &channel) != 0)
-			{
+		if (argc == 4) {
+			if (str2uchar(argv[3], &channel) != 0) {
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[3]);
 				return (-1);
 			}
 			channel = (channel & 0x0f);
 		}
 
-		if (str2uchar(argv[2], &priv_level) != 0)
-		{
+		if (str2uchar(argv[2], &priv_level) != 0) {
 			lprintf(LOG_ERR, "Invalid privilege level: %s", argv[2]);
 			return (-1);
 		}
@@ -792,22 +724,16 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		retval = ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
-	}
-
-	/*
-	 * Disable / Enable
-	 */
-	else if ((strncmp(argv[0], "disable", 7) == 0) ||
-		 (strncmp(argv[0], "enable",  6) == 0))
-	{
+	} else if ((strncmp(argv[0], "disable", 7) == 0)
+			|| (strncmp(argv[0], "enable",  6) == 0)) {
+		/* Disable / Enable */
 		uint8_t user_id;
 		uint8_t operation;
 		char null_password[16]; /* Not used, but required */
 
 		memset(null_password, 0, sizeof(null_password));
 
-		if (argc != 2)
-		{
+		if (argc != 2) {
 			print_user_usage();
 			return -1;
 		}
@@ -824,13 +750,10 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 						operation,
 						null_password,
 						0); /* This field is ignored */
-	}
-	else
-	{
+	} else {
 		retval = -1;
 		lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);
 		print_user_usage();
 	}
-
 	return retval;
 }
