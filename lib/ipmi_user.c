@@ -517,13 +517,13 @@ ipmi_user_build_password_prompt(uint8_t user_id)
  * specific to this subcommand
  */
 int
-ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_user_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int retval = 0;
 	if (argc == 0) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		print_user_usage();
-		return 1;
+		return (-1);
 	}
 	if (strncmp(argv[0], "help", 4) == 0) {
 		/* Help */
@@ -540,7 +540,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		} else {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 		retval = ipmi_print_user_summary(intf, channel);
 	} else if (strncmp(argv[0], "list", 4) == 0) {
@@ -555,7 +555,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		} else {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 		retval = ipmi_print_user_list(intf, channel);
 	} else if (strncmp(argv[0], "test", 4) == 0) {
@@ -566,7 +566,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* a little irritating, isn't it */
 		if (argc != 3 && argc != 4) {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 		if (is_ipmi_user_id(argv[1], &user_id)) {
 			return (-1);
@@ -585,9 +585,9 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			const char *password_prompt =
 				ipmi_user_build_password_prompt(user_id);
 # ifdef HAVE_GETPASSPHRASE
-			tmp = getpassphrase (password_prompt);
+			tmp = getpassphrase(password_prompt);
 # else
-			tmp = (char*)getpass (password_prompt);
+			tmp = (char*)getpass(password_prompt);
 # endif
 			if (tmp != NULL) {
 				password = strdup(tmp);
@@ -595,7 +595,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (password == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
-				return -1;
+				return (-1);
 			}
 		} else {
 			password = strdup(argv[3]);
@@ -612,7 +612,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* Set */
 		if ((argc >= 3)
 				&& (strncmp("password", argv[1], 8) == 0)) {
-			char * password = NULL;
+			char *password = NULL;
 			uint8_t user_id = 0;
 			if (is_ipmi_user_id(argv[2], &user_id)) {
 				return (-1);
@@ -620,13 +620,13 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			if (argc == 3) {
 				/* We need to prompt for a password */
-				char * tmp;
-				const char * password_prompt =
+				char *tmp;
+				const char *password_prompt =
 					ipmi_user_build_password_prompt(user_id);
 # ifdef HAVE_GETPASSPHRASE
-				tmp = getpassphrase (password_prompt);
+				tmp = getpassphrase(password_prompt);
 # else
-				tmp = (char*)getpass (password_prompt);
+				tmp = (char*)getpass(password_prompt);
 # endif
 				if (tmp != NULL) {
 					password = strdup(tmp);
@@ -634,12 +634,12 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				if (password == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
-					return -1;
+					return (-1);
 				}
 # ifdef HAVE_GETPASSPHRASE
-				tmp = getpassphrase (password_prompt);
+				tmp = getpassphrase(password_prompt);
 # else
-				tmp = (char*)getpass (password_prompt);
+				tmp = (char*)getpass(password_prompt);
 # endif
 				if (tmp == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
@@ -650,7 +650,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_ERR, "Passwords do not match.");
 					free(password);
 					password = NULL;
-					return -1;
+					return (-1);
 				}
 				tmp = NULL;
 			} else {
@@ -659,10 +659,10 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			if (password == NULL) {
 				lprintf(LOG_ERR, "Unable to parse password argument.");
-				return -1;
+				return (-1);
 			} else if (strlen(password) > 20) {
 				lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
-				return -1;
+				return (-1);
 			}
 
 			retval = ipmi_user_set_password(intf,
@@ -680,7 +680,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 			uint8_t user_id = 0;
 			if (argc != 4) {
 				print_user_usage();
-				return -1;
+				return (-1);
 			}
 			if (is_ipmi_user_id(argv[2], &user_id)) {
 					return (-1);
@@ -688,13 +688,13 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			if (strlen(argv[3]) > 16) {
 				lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
-				return -1;
+				return (-1);
 			}
 
 			retval = ipmi_user_set_username(intf, user_id, argv[3]);
 		} else {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 	} else if (strncmp(argv[0], "priv", 4) == 0) {
 		uint8_t user_id;
@@ -703,7 +703,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		if (argc != 3 && argc != 4) {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 		if (argc == 4) {
 			if (str2uchar(argv[3], &channel) != 0) {
@@ -730,7 +730,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		if (argc != 2) {
 			print_user_usage();
-			return -1;
+			return (-1);
 		}
 		if (is_ipmi_user_id(argv[1], &user_id)) {
 			return (-1);
@@ -745,7 +745,7 @@ ipmi_user_main(struct ipmi_intf * intf, int argc, char ** argv)
 						null_password,
 						0); /* This field is ignored */
 	} else {
-		retval = -1;
+		retval = (-1);
 		lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);
 		print_user_usage();
 	}
