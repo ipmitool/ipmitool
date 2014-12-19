@@ -573,18 +573,13 @@ ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 	}
 	if (argc == 3) {
 		/* We need to prompt for a password */
-		char *tmp;
 		const char *password_prompt =
 			ipmi_user_build_password_prompt(user_id);
 # ifdef HAVE_GETPASSPHRASE
-		tmp = getpassphrase(password_prompt);
+		password = getpassphrase(password_prompt);
 # else
-		tmp = (char*)getpass(password_prompt);
+		password = (char*)getpass(password_prompt);
 # endif
-		if (tmp != NULL) {
-			password = strdup(tmp);
-			tmp = NULL;
-		}
 		if (password == NULL) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (-1);
