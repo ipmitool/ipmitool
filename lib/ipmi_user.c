@@ -646,7 +646,8 @@ ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 		}
 		channel = (channel & 0x0f);
 	}
-	if (str2uchar(argv[2], &priv_level) != 0) {
+	if ((str2uchar(argv[2], &priv_level) != 0)
+			|| is_ipmi_user_priv_limit(priv_level) != 0) {
 		lprintf(LOG_ERR, "Invalid privilege level: %s", argv[2]);
 		return (-1);
 	}

@@ -760,6 +760,24 @@ is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr)
 	return (-1);
 }
 
+/* is_ipmi_user_priv_limit - check whether given value is valid User Privilege
+ * Limit, eg. IPMI v2 spec, 22.27 Get User Access Command.
+ *
+ * @priv_limit: User Privilege Limit
+ *
+ * returns 0 if Priv Limit is valid
+ * returns (-1) when Priv Limit is invalid
+ */
+int
+is_ipmi_user_priv_limit(uint8_t priv_limit)
+{
+	if (0x00 < priv_limit && priv_limit < 0x06 || priv_limit == 0x0f) {
+		return 0;
+	} else {
+		return (-1);
+	}
+}
+
 uint16_t
 ipmi_get_oem_id(struct ipmi_intf *intf)
 {
