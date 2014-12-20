@@ -496,7 +496,7 @@ print_user_usage(void)
 	lprintf(LOG_NOTICE,
 "               set name     <user id> <username>");
 	lprintf(LOG_NOTICE,
-"               set password <user id> [<password>]");
+"               set password <user id> [<password> <16|20>]");
 	lprintf(LOG_NOTICE,
 "               disable      <user id>");
 	lprintf(LOG_NOTICE,
@@ -685,6 +685,7 @@ int
 ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *password = NULL;
+	uint8_t password_type = 16;
 	uint8_t user_id = 0;
 	if (is_ipmi_user_id(argv[2], &user_id)) {
 		return (-1);
@@ -710,6 +711,15 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 		}
 	} else {
 		password = argv[3];
+		if (argc > 4) {
+			if ((str2uchar(argv[4], &password_type) != 0)
+					|| (password_type != 16 && password_type != 20)) {
+				lprintf(LOG_ERR, "Invalid password length '%s'", argv[4]);
+				return (-1);
+			}
+		} else {
+			password_type = 16;
+		}
 	}
 
 	if (password == NULL) {
@@ -724,7 +734,7 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 					user_id,
 					IPMI_PASSWORD_SET_PASSWORD,
 					password,
-					strlen(password) > 16);
+					password_type > 16);
 }
 
 int
