@@ -769,13 +769,25 @@ is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr)
  * returns (-1) when Priv Limit is invalid
  */
 int
-is_ipmi_user_priv_limit(uint8_t priv_limit)
+is_ipmi_user_priv_limit(const char *argv_ptr, uint8_t *ipmi_priv_limit_ptr)
 {
-	if (0x00 < priv_limit && priv_limit < 0x06 || priv_limit == 0x0f) {
-		return 0;
-	} else {
+	if (!argv_ptr || !ipmi_priv_limit_ptr) {
+		lprintf(LOG_ERR,
+				"is_ipmi_user_priv_limit(): invalid argument(s).");
 		return (-1);
 	}
+	if ((str2uchar(argv_ptr, ipmi_priv_limit_ptr) != 0)
+			|| ((*ipmi_priv_limit_ptr < 0x01
+				|| *ipmi_priv_limit_ptr > 0x05)
+				&& *ipmi_priv_limit_ptr != 0x0F)) {
+		lprintf(LOG_ERR,
+				"Given Privilege Limit '%s' is invalid.",
+				argv_ptr);
+		lprintf(LOG_ERR,
+				"Privilege Limit is limited to <0x1..0x5> and <0xF>.");
+		return (-1);
+	}
+	return 0;
 }
 
 uint16_t

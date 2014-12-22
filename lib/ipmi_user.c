@@ -559,8 +559,7 @@ ipmi_user_summary(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc == 1) {
 		channel = 0x0E; /* Ask about the current channel */
 	} else if (argc == 2) {
-		if (str2uchar(argv[1], &channel) != 0) {
-			lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
+		if (is_ipmi_channel_num(argv[1], &channel) != 0) {
 			return (-1);
 		}
 	} else {
@@ -578,8 +577,7 @@ ipmi_user_list(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc == 1) {
 		channel = 0x0E; /* Ask about the current channel */
 	} else if (argc == 2) {
-		if (str2uchar(argv[1], &channel) != 0) {
-			lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
+		if (is_ipmi_channel_num(argv[1], &channel) != 0) {
 			return (-1);
 		}
 	} else {
@@ -640,18 +638,13 @@ ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 		return (-1);
 	}
 	if (argc == 4) {
-		if (str2uchar(argv[3], &channel) != 0) {
-			lprintf(LOG_ERR, "Invalid channel: %s", argv[3]);
+		if (is_ipmi_channel_num(argv[3], &channel) != 0) {
 			return (-1);
 		}
 		channel = (channel & 0x0f);
 	}
-	if ((str2uchar(argv[2], &priv_level) != 0)
-			|| is_ipmi_user_priv_limit(priv_level) != 0) {
-		lprintf(LOG_ERR, "Invalid privilege level: %s", argv[2]);
-		return (-1);
-	}
-	if (is_ipmi_user_id(argv[1], &user_id)) {
+	if (is_ipmi_user_priv_limit(argv[2], &priv_level) != 0
+			&& is_ipmi_user_id(argv[1], &user_id)) {
 		return (-1);
 	}
 	priv_level = (priv_level & 0x0f);
