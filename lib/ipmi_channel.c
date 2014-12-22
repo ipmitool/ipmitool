@@ -89,27 +89,26 @@ ipmi_1_5_authtypes(uint8_t n)
  *        -1 on failure
  */
 int
-ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
-			  uint8_t channel,
-			  uint8_t priv)
+ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct get_channel_auth_cap_rsp auth_cap;
 	uint8_t msg_data[2];
 
-	msg_data[0] = channel | 0x80; // Ask for IPMI v2 data as well
+	/* Ask for IPMI v2 data as well */
+	msg_data[0] = channel | 0x80;
 	msg_data[1] = priv;
 
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;            // 0x06
-	req.msg.cmd      = IPMI_GET_CHANNEL_AUTH_CAP; // 0x38
-	req.msg.data     = msg_data;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_GET_CHANNEL_AUTH_CAP;
+	req.msg.data = msg_data;
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if ((rsp == NULL) || (rsp->ccode > 0))	{
+	if ((rsp == NULL) || (rsp->ccode > 0)) {
 		/*
 		 * It's very possible that this failed because we asked for IPMI v2 data
 		 * Ask again, without requesting IPMI v2 data
@@ -119,12 +118,12 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 		rsp = intf->sendrecv(intf, &req);
 		if (rsp == NULL) {
 			lprintf(LOG_ERR, "Unable to Get Channel Authentication Capabilities");
-			return -1;
+			return (-1);
 		}
 		if (rsp->ccode > 0) {
 			lprintf(LOG_ERR, "Get Channel Authentication Capabilities failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
-			return -1;
+			return (-1);
 		}
 	}
 
@@ -135,9 +134,10 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
 	printf("IPMI v1.5  auth types      : %s\n",
 		   ipmi_1_5_authtypes(auth_cap.enabled_auth_types));
 
-	if (auth_cap.v20_data_available)
+	if (auth_cap.v20_data_available) {
 		printf("KG status                  : %s\n",
 			   (auth_cap.kg_status) ? "non-zero" : "default (all zeroes)");
+	}
 
 	printf("Per message authentication : %sabled\n",
 		   (auth_cap.per_message_auth) ? "dis" : "en");
@@ -184,18 +184,18 @@ ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
  *
  */
 int
-ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
+ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
 	uint8_t medium;
-	struct get_channel_info_rsp   channel_info;
+	struct get_channel_info_rsp channel_info;
 	struct get_channel_access_rsp channel_access;
 
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;        // 0x06
-	req.msg.cmd   = IPMI_GET_CHANNEL_INFO; // 0x42
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd   = IPMI_GET_CHANNEL_INFO;
 	req.msg.data = &channel;
 	req.msg.data_len = 1;
 
@@ -257,10 +257,9 @@ ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 	rqdata[0] = channel & 0xf;
 
 	/* get volatile settings */
-
 	rqdata[1] = 0x80; /* 0x80=active */
-	req.msg.netfn = IPMI_NETFN_APP;          // 0x06
-	req.msg.cmd   = IPMI_GET_CHANNEL_ACCESS; // 0x41
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd   = IPMI_GET_CHANNEL_ACCESS;
 	req.msg.data = rqdata;
 	req.msg.data_len = 2;
 
@@ -352,13 +351,15 @@ ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel)
 }
 
 static int
-ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
+ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req1, req2;
 	uint8_t rqdata[2];
 	struct get_user_access_rsp user_access;
-	int curr_uid, max_uid = 0, init = 1;
+	int curr_uid;
+	int max_uid = 0;
+	int init = 1;
 
 	curr_uid = userid ? : 1;
 
@@ -374,8 +375,7 @@ ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 	req2.msg.data = rqdata;
 	req2.msg.data_len = 1;
 
-	do
-	{
+	do {
 		rqdata[0] = channel & 0xf;
 		rqdata[1] = curr_uid & 0x3f;
 
@@ -438,8 +438,10 @@ ipmi_get_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 static int
 ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	uint8_t channel, privilege_limit, userid;
-	struct ipmi_rs * rsp;
+	uint8_t channel;
+	uint8_t privilege_limit;
+	uint8_t userid;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t rqdata[2];
 	struct get_user_access_rsp user_access;
@@ -494,8 +496,7 @@ ipmi_set_user_access(struct ipmi_intf * intf, int argc, char ** argv)
 	set_access.privilege_limit = user_access.privilege_limit;
 	set_access.session_limit = 0;
 
-	for (i = 2; i < argc; i ++)
-	{
+	for (i = 2; i < argc; i ++) {
 		if (strncmp(argv[i], "callin=", 7) == 0) {
 			set_access.callin_callback = !(strncmp (argv[i]+7, "off", 3));
 		}
@@ -546,45 +547,46 @@ iana_string(uint32_t iana)
 {
 	static char s[10];
 
-	if (iana)
-	{
+	if (iana) {
 		sprintf(s, "%06x", iana);
 		return s;
-	}
-	else
+	} else {
 		return "N/A";
+	}
 }
 
 
 static int
-ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
-			       const char * payload_type,
-			       uint8_t channel)
+ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
+		uint8_t channel)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 
-	uint8_t  oem_record;
-	uint8_t  rqdata[3];
+	uint8_t oem_record;
+	uint8_t rqdata[3];
 	uint32_t iana;
-	uint8_t  auth_alg, integrity_alg, crypt_alg;
-	uint8_t  cipher_suite_id;
-	uint8_t  list_index = 0;
-	uint8_t  cipher_suite_data[1024]; // 0x40 sets * 16 bytes per set
+	uint8_t auth_alg, integrity_alg, crypt_alg;
+	uint8_t cipher_suite_id;
+	uint8_t list_index = 0;
+	/* 0x40 sets * 16 bytes per set */
+	uint8_t cipher_suite_data[1024];
 	uint16_t offset = 0;
-	uint16_t cipher_suite_data_length = 0; // how much was returned, total
+	/* how much was returned, total */
+	uint16_t cipher_suite_data_length = 0;
 
 	memset(cipher_suite_data, 0, sizeof(cipher_suite_data));
 	
 	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;                 // 0x06
-	req.msg.cmd   = IPMI_GET_CHANNEL_CIPHER_SUITES; // 0x54
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_GET_CHANNEL_CIPHER_SUITES;
 	req.msg.data = rqdata;
 	req.msg.data_len = 3;
 
 	rqdata[0] = channel;
 	rqdata[1] = ((strncmp(payload_type, "ipmi", 4) == 0)? 0: 1);
-	rqdata[2] = 0x80; // Always ask for cipher suite format
+	/* Always ask for cipher suite format */
+	rqdata[2] = 0x80;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
@@ -598,23 +600,26 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 	}
 
 
-	// Grab the returned channel number once.  We assume it's the same
-	// in future calls.
-	if (rsp->data_len >= 1)
+	/*
+	 * Grab the returned channel number once.  We assume it's the same
+	 * in future calls.
+	 */
+	if (rsp->data_len >= 1) {
 		channel = rsp->data[0];
-		
-	while ((rsp->data_len > 1) && (rsp->data_len == 17) && (list_index < 0x3F))
-	{
-		//
-		// We got back cipher suite data -- store it.
-		//printf("copying data to offset %d\n", offset);
-		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+	}
+
+	while ((rsp->data_len > 1) && (rsp->data_len == 17) && (list_index < 0x3F)) {
+		/*
+		 * We got back cipher suite data -- store it.
+		 * printf("copying data to offset %d\n", offset);
+		 * printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		 */
 		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
 		offset += rsp->data_len - 1;
 		
-		//
-		// Increment our list for the next call
-		//
+		/*
+		 * Increment our list for the next call
+		 */
 		++list_index;
 		rqdata[2] =  (rqdata[2] & 0x80) + list_index; 
 
@@ -631,78 +636,68 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 	}
 
 	/* Copy last chunk */
-	if(rsp->data_len > 1)
-	{
-		//
-		// We got back cipher suite data -- store it.
-		//printf("copying data to offset %d\n", offset);
-		//printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+	if(rsp->data_len > 1) {
+		/*
+		 * We got back cipher suite data -- store it.
+		 * printf("copying data to offset %d\n", offset);
+		 * printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		 */
 		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
 		offset += rsp->data_len - 1;
 	}
 
-	//
-	// We can chomp on all our data now.
-	//
+	/* We can chomp on all our data now. */
 	cipher_suite_data_length = offset;
 	offset = 0;
 
-	if (! csv_output)
+	if (! csv_output) {
 		printf("ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg\n");
-	
-	while (offset < cipher_suite_data_length)
-	{
-		if (cipher_suite_data[offset++] == 0xC0)
-		{
-			oem_record = 0; // standard type
-			iana       = 0;
+	}
+	while (offset < cipher_suite_data_length) {
+		if (cipher_suite_data[offset++] == 0xC0) {
+			/* standard type */
+			oem_record = 0;
+			iana = 0;
 
-			// Verify that we have at least a full record left
-			if ((cipher_suite_data_length - offset) < 4) // id + 3 algs
-			{
+			/* Verify that we have at least a full record left; id + 3 algs */
+			if ((cipher_suite_data_length - offset) < 4) {
 				lprintf(LOG_ERR, "Incomplete data record in cipher suite data");
 				return -1;
 			}
-			
 			cipher_suite_id = cipher_suite_data[offset++];
-				
-		}
-		else if (cipher_suite_data[offset++] == 0xC1)
-		{
-			oem_record = 1; // OEM record type    
+		} else if (cipher_suite_data[offset++] == 0xC1) {
+			/* OEM record type */
+			oem_record = 1;
 
-			// Verify that we have at least a full record left
-			if ((cipher_suite_data_length - offset) < 4) // id + iana + 3 algs
-			{
+			/* Verify that we have at least a full record left
+			 * id + iana + 3 algs
+			 */
+			if ((cipher_suite_data_length - offset) < 4) {
 				lprintf(LOG_ERR, "Incomplete data record in cipher suite data");
 				return -1;
 			}
 
 			cipher_suite_id = cipher_suite_data[offset++];
 
-			//
-			// Grab the IANA
-			//
+			/* Grab the IANA */
 			iana =
 				cipher_suite_data[offset]            | 
 				(cipher_suite_data[offset + 1] << 8) | 
 				(cipher_suite_data[offset + 2] << 16);
 			offset += 3;
-		}
-		else
-		{
+		} else {
 			lprintf(LOG_ERR, "Bad start of record byte in cipher suite data");
 			return -1;
 		}
 
-		//
-		// Grab the algorithms for this cipher suite.  I guess we can't be
-		// sure of what order they'll come in.  Also, I suppose we default
-		// to the NONE algorithm if one were absent.  This part of the spec is
-		// poorly written -- I have read the errata document.  For now, I'm only
-		// allowing one algorithm per type (auth, integrity, crypt) because I
-		// don't I understand how it could be otherwise.
-		//
+		/*
+		 * Grab the algorithms for this cipher suite.  I guess we can't be
+		 * sure of what order they'll come in.  Also, I suppose we default
+		 * to the NONE algorithm if one were absent.  This part of the spec is
+		 * poorly written -- I have read the errata document.  For now, I'm only
+		 * allowing one algorithm per type (auth, integrity, crypt) because I
+		 * don't I understand how it could be otherwise.
+		 */
 		auth_alg      = IPMI_AUTH_RAKP_NONE;
 		integrity_alg = IPMI_INTEGRITY_NONE;
 		crypt_alg     = IPMI_CRYPT_NONE;
@@ -713,24 +708,20 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 			switch (cipher_suite_data[offset] & 0xC0)
 			{
 			case 0x00:
-				// Authentication algorithm specifier
+				/* Authentication algorithm specifier */
 				auth_alg = cipher_suite_data[offset++] & 0x3F;
 				break;
 			case 0x40:
-				// Interity algorithm specifier
+				/* Interity algorithm specifier */
 				integrity_alg = cipher_suite_data[offset++] & 0x3F;
 				break;
 			case 0x80:
-				// Confidentiality algorithm specifier
+				/* Confidentiality algorithm specifier */
 				crypt_alg = cipher_suite_data[offset++] & 0x3F;
 				break;
 			}
 		}
-
-
-		//
-		// We have everything we need to spit out a cipher suite record
-		//
+		/* We have everything we need to spit out a cipher suite record */
 		printf((csv_output? "%d,%s,%s,%s,%s\n" :
 			"%-4d %-7s %-15s %-15s %-15s\n"),
 		       cipher_suite_id,
@@ -739,17 +730,15 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf * intf,
 		       val2str(integrity_alg, ipmi_integrity_algorithms),
 		       val2str(crypt_alg, ipmi_encryption_algorithms));
 	}
-	
-	
 	return 0;
 }
 
 
 
 uint8_t
-ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
+ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct get_channel_info_rsp info;
 
@@ -765,8 +754,9 @@ ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 		return 0;
 	}
 	if (rsp->ccode > 0) {
-		if (rsp->ccode == 0xcc)
+		if (rsp->ccode == 0xcc) {
 			return IPMI_CHANNEL_MEDIUM_RESERVED;
+		}
 		lprintf(LOG_INFO, "Get Channel Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return IPMI_CHANNEL_MEDIUM_RESERVED;
@@ -781,7 +771,7 @@ ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel)
 }
 
 uint8_t
-ipmi_current_channel_medium(struct ipmi_intf * intf)
+ipmi_current_channel_medium(struct ipmi_intf *intf)
 {
 	return ipmi_get_channel_medium(intf, 0xE);
 }
@@ -789,34 +779,46 @@ ipmi_current_channel_medium(struct ipmi_intf * intf)
 void
 printf_channel_usage()
 {
-	lprintf(LOG_NOTICE, "Channel Commands: authcap   <channel number> <max privilege>");
-	lprintf(LOG_NOTICE, "                  getaccess <channel number> [user id]");
-	lprintf(LOG_NOTICE, "                  setaccess <channel number> "
-		"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
-	lprintf(LOG_NOTICE, "                  info      [channel number]");
-	lprintf(LOG_NOTICE, "                  getciphers <ipmi | sol> [channel]\n");
-	lprintf(LOG_NOTICE, "Possible privilege levels are:");
-	lprintf(LOG_NOTICE, "   1   Callback level");
-	lprintf(LOG_NOTICE, "   2   User level");
-	lprintf(LOG_NOTICE, "   3   Operator level");
-	lprintf(LOG_NOTICE, "   4   Administrator level");
-	lprintf(LOG_NOTICE, "   5   OEM Proprietary level");
-	lprintf(LOG_NOTICE, "  15   No access");
+	lprintf(LOG_NOTICE,
+"Channel Commands: authcap   <channel number> <max privilege>");
+	lprintf(LOG_NOTICE,
+"                  getaccess <channel number> [user id]");
+	lprintf(LOG_NOTICE,
+"                  setaccess <channel number> "
+"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
+	lprintf(LOG_NOTICE,
+"                  info      [channel number]");
+	lprintf(LOG_NOTICE,
+"                  getciphers <ipmi | sol> [channel]");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"Possible privilege levels are:");
+	lprintf(LOG_NOTICE,
+"   1   Callback level");
+	lprintf(LOG_NOTICE,
+"   2   User level");
+	lprintf(LOG_NOTICE,
+"   3   Operator level");
+	lprintf(LOG_NOTICE,
+"   4   Administrator level");
+	lprintf(LOG_NOTICE,
+"   5   OEM Proprietary level");
+	lprintf(LOG_NOTICE,
+"  15   No access");
 }
 
 
 int
-ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int retval = 0;
-	uint8_t channel, priv = 0;
+	uint8_t channel;
+	uint8_t priv = 0;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0))
-	{
+	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
 		printf_channel_usage();
-	}
-	else if (strncmp(argv[0], "authcap", 7) == 0)
-	{
+	} else if (strncmp(argv[0], "authcap", 7) == 0) {
 		if (argc != 3) {
 			printf_channel_usage();
 			return (-1);
@@ -831,12 +833,10 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			retval = ipmi_get_channel_auth_cap(intf, channel, priv);
 		}
-	}
-	else if (strncmp(argv[0], "getaccess", 10) == 0)
-	{
-		if ((argc < 2) || (argc > 3))
+	} else if (strncmp(argv[0], "getaccess", 10) == 0) {
+		if ((argc < 2) || (argc > 3)) {
 			printf_channel_usage();
-		else {
+		} else {
 			uint8_t ch = 0;
 			uint8_t id = 0;
 			if (str2uchar(argv[1], &ch) != 0) {
@@ -851,16 +851,12 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			retval = ipmi_get_user_access(intf, ch, id);
 		}
-	}
-	else if (strncmp(argv[0], "setaccess", 9) == 0)
-	{
+	} else if (strncmp(argv[0], "setaccess", 9) == 0) {
 		retval = ipmi_set_user_access(intf, argc-1, &(argv[1]));
-	}
-	else if (strncmp(argv[0], "info", 4) == 0)
-	{
-		if (argc > 2)
+	} else if (strncmp(argv[0], "info", 4) == 0) {
+		if (argc > 2) {
 			printf_channel_usage();
-		else {
+		} else {
 			uint8_t ch = 0xe;
 			if (argc == 2) {
 				if (str2uchar(argv[1], &ch) != 0) {
@@ -870,16 +866,12 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			retval = ipmi_get_channel_info(intf, ch);
 		}
-	}
-
-	// it channel getciphers <ipmi | sol> [channel] 
-	else if (strncmp(argv[0], "getciphers", 10) == 0)
-	{
-		if ((argc < 2) || (argc > 3)  ||
-		    (strncmp(argv[1], "ipmi", 4) && strncmp(argv[1], "sol",  3)))
+	} else if (strncmp(argv[0], "getciphers", 10) == 0) {
+		/* it channel getciphers <ipmi | sol> [channel] */
+		if ((argc < 2) || (argc > 3) ||
+		    (strncmp(argv[1], "ipmi", 4) && strncmp(argv[1], "sol",  3))) {
 			printf_channel_usage();
-		else
-		{
+		} else {
 			uint8_t ch = 0xe;
 			if (argc == 3) {
 				if (str2uchar(argv[2], &ch) != 0) {
@@ -891,13 +883,10 @@ ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv)
 								argv[1], // ipmi | sol
 								ch);
 		}
-	}
-	else
-	{
+	} else {
 		printf("Invalid CHANNEL command: %s\n", argv[0]);
 		printf_channel_usage();
 		retval = -1;
 	}
-
 	return retval;
 }
