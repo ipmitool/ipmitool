@@ -816,73 +816,81 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 	uint8_t channel;
 	uint8_t priv = 0;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_channel_usage();
+		return (-1);
+	} else if (strncmp(argv[0], "help", 4) == 0) {
+		printf_channel_usage();
+		return 0;
 	} else if (strncmp(argv[0], "authcap", 7) == 0) {
 		if (argc != 3) {
 			printf_channel_usage();
 			return (-1);
-		} else {
-			if (str2uchar(argv[1], &channel) != 0) {
-				lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
-				return (-1);
-			}
-			if (str2uchar(argv[2], &priv) != 0) {
+		}
+		/* TODO - validate channel and priv */
+		if (str2uchar(argv[1], &channel) != 0) {
+			lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
+			return (-1);
+		}
+		if (str2uchar(argv[2], &priv) != 0) {
+			lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[2]);
+			return (-1);
+		}
+		retval = ipmi_get_channel_auth_cap(intf, channel, priv);
+	} else if (strncmp(argv[0], "getaccess", 10) == 0) {
+		uint8_t ch = 0;
+		uint8_t id = 0;
+		if ((argc < 2) || (argc > 3)) {
+			printf_channel_usage();
+			return (-1);
+		}
+		/* TODO - validate channel and uid */
+		if (str2uchar(argv[1], &ch) != 0) {
+			lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
+			return (-1);
+		}
+		if (argc == 3) {
+			if (str2uchar(argv[2], &id) != 0) {
 				lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[2]);
 				return (-1);
 			}
-			retval = ipmi_get_channel_auth_cap(intf, channel, priv);
 		}
-	} else if (strncmp(argv[0], "getaccess", 10) == 0) {
-		if ((argc < 2) || (argc > 3)) {
+		retval = ipmi_get_user_access(intf, ch, id);
+	} else if (strncmp(argv[0], "setaccess", 9) == 0) {
+		retval = ipmi_set_user_access(intf, argc-1, &(argv[1]));
+	} else if (strncmp(argv[0], "info", 4) == 0) {
+		uint8_t ch = 0xe;
+		if (argc > 2) {
 			printf_channel_usage();
-		} else {
-			uint8_t ch = 0;
-			uint8_t id = 0;
+			return (-1);
+		}
+		if (argc == 2) {
+			/* TODO - validate channel */
 			if (str2uchar(argv[1], &ch) != 0) {
 				lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
 				return (-1);
 			}
-			if (argc == 3) {
-				if (str2uchar(argv[2], &id) != 0) {
-					lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[2]);
-					return (-1);
-				}
-			}
-			retval = ipmi_get_user_access(intf, ch, id);
 		}
-	} else if (strncmp(argv[0], "setaccess", 9) == 0) {
-		retval = ipmi_set_user_access(intf, argc-1, &(argv[1]));
-	} else if (strncmp(argv[0], "info", 4) == 0) {
-		if (argc > 2) {
-			printf_channel_usage();
-		} else {
-			uint8_t ch = 0xe;
-			if (argc == 2) {
-				if (str2uchar(argv[1], &ch) != 0) {
-					lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[1]);
-					return (-1);
-				}
-			}
-			retval = ipmi_get_channel_info(intf, ch);
-		}
+		retval = ipmi_get_channel_info(intf, ch);
 	} else if (strncmp(argv[0], "getciphers", 10) == 0) {
-		/* it channel getciphers <ipmi | sol> [channel] */
+		/* channel getciphers <ipmi|sol> [channel] */
+		uint8_t ch = 0xe;
 		if ((argc < 2) || (argc > 3) ||
 		    (strncmp(argv[1], "ipmi", 4) && strncmp(argv[1], "sol",  3))) {
 			printf_channel_usage();
-		} else {
-			uint8_t ch = 0xe;
-			if (argc == 3) {
-				if (str2uchar(argv[2], &ch) != 0) {
-					lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[2]);
-					return (-1);
-				}
-			}
-			retval = ipmi_get_channel_cipher_suites(intf,
-								argv[1], // ipmi | sol
-								ch);
+			return (-1);
 		}
+		if (argc == 3) {
+			/* TODO - validate channel */
+			if (str2uchar(argv[2], &ch) != 0) {
+				lprintf(LOG_ERR, "Numeric value expected, but '%s' given.", argv[2]);
+				return (-1);
+			}
+		}
+		retval = ipmi_get_channel_cipher_suites(intf,
+							argv[1], /* ipmi | sol */
+							ch);
 	} else {
 		printf("Invalid CHANNEL command: %s\n", argv[0]);
 		printf_channel_usage();
