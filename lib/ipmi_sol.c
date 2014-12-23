@@ -1300,7 +1300,7 @@ ipmi_sol_deactivate(struct ipmi_intf * intf, int instance)
 	req.msg.data_len = 6;
 	req.msg.data     = data;
 
-	bzero(data, sizeof(data));
+	memset(data, 0, sizeof(data));
 	data[0] = IPMI_PAYLOAD_TYPE_SOL;  /* payload type      */
 	data[1] = instance;               /* payload instance. */
 

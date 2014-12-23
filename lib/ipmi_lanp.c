@@ -1198,8 +1198,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 	 * data 3 - maximum priv level for third (LSN) and fourth (MSN) ciphers
 	 * data 9 - maximum priv level for 15th (LSN) cipher.
 	 */
-	bzero(buf, 9);
-
+	memset(buf, 0, 9);
 	for (i = 0; i < 15; ++i)
 	{
 		unsigned char priv_level = IPMI_SESSION_PRIV_ADMIN;

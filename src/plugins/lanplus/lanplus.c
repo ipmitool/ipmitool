@@ -2574,7 +2574,7 @@ ack_sol_packet(
 	{
 		struct ipmi_v2_payload ack;
 
-		bzero(&ack, sizeof(struct ipmi_v2_payload));
+		memset(ack, 0, sizeof(struct ipmi_v2_payload));
 
 		ack.payload_type   = IPMI_PAYLOAD_TYPE_SOL;
 
