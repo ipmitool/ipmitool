@@ -1981,7 +1981,7 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	unsigned int 		length = addressLength;
 	off_t 				startpAddress = (off_t)startAddress;
 	unsigned int 		diff;
-	caddr_t 			startvAddress;
+	char 				*startvAddress;
 
 	if ((startAddress == 0) || (addressLength <= 0))
 		return ACCESN_ERROR;
@@ -2000,13 +2000,13 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	startpAddress -= diff;
 	length += diff;
 
-	if ( (startvAddress = mmap(	(caddr_t)0, 
+	if ( (startvAddress = mmap(0, 
 								length, 
 								PROT_READ, 
 								MAP_SHARED, 
 								fd, 
 								startpAddress
-								) ) == (caddr_t)-1)
+								) ) == MAP_FAILED)
 	{
 		char buf[128];
 
