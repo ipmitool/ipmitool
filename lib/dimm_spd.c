@@ -867,6 +867,8 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		int sdram_width = 0;
 		int mem_size = 0;
 		int lrank_dimm;
+		uint32_t year;
+		uint32_t week;
 
 		if (len < 148)
 			return -1; /* we need first 91 bytes to do our thing */
@@ -931,8 +933,8 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 		}
 
-		u_int year = (spd_data[323]>>4)*10 + spd_data[323]&15;
-		u_int week = (spd_data[324]>>4)*10 + spd_data[324]&15;
+		year = (spd_data[323]>>4)*10 + spd_data[323]&15;
+		week = (spd_data[324]>>4)*10 + spd_data[324]&15;
 		printf(" Manufacture Date      : year %4d week %2d\n",
 		       2000 + year, week);
 
