@@ -719,7 +719,7 @@ is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr)
 		return (-1);
 	}
 	if ((str2uchar(argv_ptr, channel_ptr) == 0)
-			&& ((*channel_ptr >= 0x0 && *channel_ptr <= 0xB)
+			&& (*channel_ptr <= 0xB
 				|| (*channel_ptr >= 0xE && *channel_ptr <= 0xF))) {
 		return 0;
 	}
