@@ -203,12 +203,12 @@ static void ipmi_free_close(struct ipmi_intf * intf)
 
 static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
-        u_int8_t lun = req->msg.lun;
-        u_int8_t cmd = req->msg.cmd;
-        u_int8_t netfn = req->msg.netfn;
-        u_int8_t rq_buf[IPMI_BUF_SIZE];
-        u_int8_t rs_buf[IPMI_BUF_SIZE];
-        u_int32_t rs_buf_len = IPMI_BUF_SIZE;
+        uint8_t lun = req->msg.lun;
+        uint8_t cmd = req->msg.cmd;
+        uint8_t netfn = req->msg.netfn;
+        uint8_t rq_buf[IPMI_BUF_SIZE];
+        uint8_t rs_buf[IPMI_BUF_SIZE];
+        uint32_t rs_buf_len = IPMI_BUF_SIZE;
         int32_t rs_len;
 
 	static struct ipmi_rs rsp;	
