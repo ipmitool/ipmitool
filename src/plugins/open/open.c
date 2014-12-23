@@ -29,6 +29,7 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
+#define _POSIX_SOURCE
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -38,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/select.h>
 #include <sys/stat.h>
 
 #include <ipmitool/ipmi.h>
