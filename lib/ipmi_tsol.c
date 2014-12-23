@@ -440,7 +440,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		sa_in->sin_family = host->h_addrtype;
-		memcpy(&sa_in->sin_addr, host->h_addr, host->h_length);
+		memcpy(&sa_in->sin_addr, host->h_addr_list[0], host->h_length);
 	}
 
 	fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
