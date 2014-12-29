@@ -1015,11 +1015,11 @@ serial_bm_set_my_addr(struct ipmi_intf * intf, uint8_t addr)
  *	Serial BM interface
  */
 struct ipmi_intf ipmi_serial_bm_intf = {
-	name:		"serial-basic",
-	desc:		"Serial Interface, Basic Mode",
-	setup:		serial_bm_setup,
-	open:		serial_bm_open,
-	close:		serial_bm_close,
-	sendrecv:	serial_bm_send_request,
-	set_my_addr:serial_bm_set_my_addr
+	.name = "serial-basic",
+	.desc = "Serial Interface, Basic Mode",
+	.setup = serial_bm_setup,
+	.open = serial_bm_open,
+	.close = serial_bm_close,
+	.sendrecv = serial_bm_send_request,
+	.set_my_addr = serial_bm_set_my_addr
 };

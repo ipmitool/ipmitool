@@ -129,18 +129,18 @@ static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t siz
 static uint8_t bridgePossible = 0;
 
 struct ipmi_intf ipmi_lanplus_intf = {
-	name:		"lanplus",
-	desc:		"IPMI v2.0 RMCP+ LAN Interface",
-	setup:		ipmi_lanplus_setup,
-	open:		ipmi_lanplus_open,
-	close:		ipmi_lanplus_close,
-	sendrecv:	ipmi_lanplus_send_ipmi_cmd,
-	recv_sol:	ipmi_lanplus_recv_sol,
-	send_sol:	ipmi_lanplus_send_sol,
-	keepalive:	ipmi_lanplus_keepalive,
-	set_max_request_data_size: ipmi_lanp_set_max_rq_data_size,
-	set_max_response_data_size: ipmi_lanp_set_max_rp_data_size,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "lanplus",
+	.desc = "IPMI v2.0 RMCP+ LAN Interface",
+	.setup = ipmi_lanplus_setup,
+	.open = ipmi_lanplus_open,
+	.close = ipmi_lanplus_close,
+	.sendrecv = ipmi_lanplus_send_ipmi_cmd,
+	.recv_sol = ipmi_lanplus_recv_sol,
+	.send_sol = ipmi_lanplus_send_sol,
+	.keepalive = ipmi_lanplus_keepalive,
+	.set_max_request_data_size = ipmi_lanp_set_max_rq_data_size,
+	.set_max_response_data_size = ipmi_lanp_set_max_rp_data_size,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };
 
 
@@ -3593,10 +3593,12 @@ static int
 ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req = { msg: {
-		netfn: IPMI_NETFN_APP,
-		cmd: 1,
-	}};
+	struct ipmi_rq req = {
+		.msg = {
+			.netfn = IPMI_NETFN_APP,
+			.cmd = 1,
+		}
+	};
 
 	if (!intf->opened)
 		return 0;

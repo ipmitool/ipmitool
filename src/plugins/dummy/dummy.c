@@ -276,11 +276,11 @@ ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 }
 
 struct ipmi_intf ipmi_dummy_intf = {
-	name:	"dummy",
-	desc:	"Linux DummyIPMI Interface",
-	open:	ipmi_dummyipmi_open,
-	close:	ipmi_dummyipmi_close,
-	sendrecv:	ipmi_dummyipmi_send_cmd,
-	my_addr:	IPMI_BMC_SLAVE_ADDR,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "dummy",
+	.desc = "Linux DummyIPMI Interface",
+	.open = ipmi_dummyipmi_open,
+	.close = ipmi_dummyipmi_close,
+	.sendrecv = ipmi_dummyipmi_send_cmd,
+	.my_addr = IPMI_BMC_SLAVE_ADDR,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };

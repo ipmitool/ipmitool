@@ -123,13 +123,13 @@ static int openipmi_setup(struct ipmi_event_intf * eintf);
 static int openipmi_wait(struct ipmi_event_intf * eintf);
 static int openipmi_read(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf openipmi_event_intf = {
-	name:	"open",
-	desc:	"OpenIPMI asyncronous notification of events",
-	prefix: "",
-	setup:	openipmi_setup,
-	wait:	openipmi_wait,
-	read:	openipmi_read,
-	log:	log_event,
+	.name = "open",
+	.desc = "OpenIPMI asyncronous notification of events",
+	.prefix = "",
+	.setup = openipmi_setup,
+	.wait = openipmi_wait,
+	.read = openipmi_read,
+	.log = log_event,
 };
 #endif
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -140,13 +140,13 @@ static int selwatch_wait(struct ipmi_event_intf * eintf);
 static int selwatch_read(struct ipmi_event_intf * eintf);
 static int selwatch_check(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf selwatch_event_intf = {
-	name:	"sel",
-	desc:	"Poll SEL for notification of events",
-	setup:	selwatch_setup,
-	wait:	selwatch_wait,
-	read:	selwatch_read,
-	check:	selwatch_check,
-	log:	log_event,
+	.name = "sel",
+	.desc = "Poll SEL for notification of events",
+	.setup = selwatch_setup,
+	.wait = selwatch_wait,
+	.read = selwatch_read,
+	.check = selwatch_check,
+	.log = log_event,
 };
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 

@@ -130,43 +130,41 @@ struct bitfield_data {
 	const char * name;
 	const char * desc;
 	uint32_t mask;
-};
-
-struct bitfield_data mc_enables_bf[] = {
+} mc_enables_bf[] = {
 	{
-		name:	"recv_msg_intr",
-		desc:	"Receive Message Queue Interrupt",
-		mask:	1<<0,
+		.name = "recv_msg_intr",
+		.desc = "Receive Message Queue Interrupt",
+		.mask = 1<<0,
 	},
 	{
-		name:	"event_msg_intr",
-		desc:	"Event Message Buffer Full Interrupt",
-		mask:	1<<1,
+		.name = "event_msg_intr",
+		.desc = "Event Message Buffer Full Interrupt",
+		.mask = 1<<1,
 	},
 	{
-		name:	"event_msg",
-		desc:	"Event Message Buffer",
-		mask:	1<<2,
+		.name = "event_msg",
+		.desc = "Event Message Buffer",
+		.mask = 1<<2,
 	},
 	{
-		name:	"system_event_log",
-		desc:	"System Event Logging",
-		mask:	1<<3,
+		.name = "system_event_log",
+		.desc = "System Event Logging",
+		.mask = 1<<3,
 	},
 	{
-		name:	"oem0",
-		desc:	"OEM 0",
-		mask:	1<<5,
+		.name = "oem0",
+		.desc = "OEM 0",
+		.mask = 1<<5,
 	},
 	{
-		name:	"oem1",
-		desc:	"OEM 1",
-		mask:	1<<6,
+		.name = "oem1",
+		.desc = "OEM 1",
+		.mask = 1<<6,
 	},
 	{
-		name:	"oem2",
-		desc:	"OEM 2",
-		mask:	1<<7,
+		.name = "oem2",
+		.desc = "OEM 2",
+		.mask = 1<<7,
 	},
 	{ NULL },
 };

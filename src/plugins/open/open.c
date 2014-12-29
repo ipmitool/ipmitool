@@ -166,11 +166,11 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	struct ipmi_recv recv;
 	struct ipmi_addr addr;
 	struct ipmi_system_interface_addr bmc_addr = {
-		addr_type:	IPMI_SYSTEM_INTERFACE_ADDR_TYPE,
-		channel:	IPMI_BMC_CHANNEL,
+		.addr_type = IPMI_SYSTEM_INTERFACE_ADDR_TYPE,
+		.channel = IPMI_BMC_CHANNEL,
 	};
 	struct ipmi_ipmb_addr ipmb_addr = {
-		addr_type:	IPMI_IPMB_ADDR_TYPE,
+		.addr_type = IPMI_IPMB_ADDR_TYPE,
 	};
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
@@ -434,13 +434,13 @@ int ipmi_openipmi_setup(struct ipmi_intf * intf)
 }
 
 struct ipmi_intf ipmi_open_intf = {
-	name:		"open",
-	desc:		"Linux OpenIPMI Interface",
-	setup:		ipmi_openipmi_setup,
-	open:		ipmi_openipmi_open,
-	close:		ipmi_openipmi_close,
-	sendrecv:	ipmi_openipmi_send_cmd,
-	set_my_addr:	ipmi_openipmi_set_my_addr,
-	my_addr:	IPMI_BMC_SLAVE_ADDR,
-	target_addr:	0, /* init so -m local_addr does not cause bridging */
+	.name = "open",
+	.desc = "Linux OpenIPMI Interface",
+	.setup = ipmi_openipmi_setup,
+	.open = ipmi_openipmi_open,
+	.close = ipmi_openipmi_close,
+	.sendrecv = ipmi_openipmi_send_cmd,
+	.set_my_addr = ipmi_openipmi_set_my_addr,
+	.my_addr = IPMI_BMC_SLAVE_ADDR,
+	.target_addr = 0, /* init so -m local_addr does not cause bridging */
 };

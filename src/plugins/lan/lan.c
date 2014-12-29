@@ -103,19 +103,19 @@ static void ipmi_lan_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size
 static void ipmi_lan_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size);
 
 struct ipmi_intf ipmi_lan_intf = {
-	name:		"lan",
-	desc:		"IPMI v1.5 LAN Interface",
-	setup:		ipmi_lan_setup,
-	open:		ipmi_lan_open,
-	close:		ipmi_lan_close,
-	sendrecv:	ipmi_lan_send_cmd,
-	sendrsp:	ipmi_lan_send_rsp,
-	recv_sol:	ipmi_lan_recv_sol,
-	send_sol:	ipmi_lan_send_sol,
-	keepalive:	ipmi_lan_keepalive,
-	set_max_request_data_size: ipmi_lan_set_max_rq_data_size,
-	set_max_response_data_size: ipmi_lan_set_max_rp_data_size,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "lan",
+	.desc = "IPMI v1.5 LAN Interface",
+	.setup = ipmi_lan_setup,
+	.open = ipmi_lan_open,
+	.close = ipmi_lan_close,
+	.sendrecv = ipmi_lan_send_cmd,
+	.sendrsp = ipmi_lan_send_rsp,
+	.recv_sol = ipmi_lan_recv_sol,
+	.send_sol = ipmi_lan_send_sol,
+	.keepalive = ipmi_lan_keepalive,
+	.set_max_request_data_size = ipmi_lan_set_max_rq_data_size,
+	.set_max_response_data_size = ipmi_lan_set_max_rp_data_size,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };
 
 static struct ipmi_rq_entry *
@@ -1552,10 +1552,12 @@ static int
 ipmi_lan_keepalive(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req = { msg: {
-		netfn: IPMI_NETFN_APP,
-		cmd: 1,
-	}};
+	struct ipmi_rq req = {
+		.msg = {
+			.netfn = IPMI_NETFN_APP,
+			.cmd = 1,
+		}
+	};
 
 	if (!intf->opened)
 		return 0;

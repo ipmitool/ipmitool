@@ -905,11 +905,11 @@ ipmi_serial_term_set_my_addr(struct ipmi_intf * intf, uint8_t addr)
 }
 
 struct ipmi_intf ipmi_serial_term_intf = {
-	name:		"serial-terminal",
-	desc:		"Serial Interface, Terminal Mode",
-	setup:		ipmi_serial_term_setup,
-	open:		ipmi_serial_term_open,
-	close:		ipmi_serial_term_close,
-	sendrecv:	ipmi_serial_term_send_cmd,
-	set_my_addr:ipmi_serial_term_set_my_addr
+	.name = "serial-terminal",
+	.desc = "Serial Interface, Terminal Mode",
+	.setup = ipmi_serial_term_setup,
+	.open = ipmi_serial_term_open,
+	.close = ipmi_serial_term_close,
+	.sendrecv = ipmi_serial_term_send_cmd,
+	.set_my_addr = ipmi_serial_term_set_my_addr
 };

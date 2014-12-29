@@ -42,34 +42,34 @@ static int ipmi_oem_ibm(struct ipmi_intf * intf);
 
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
-		name:	"supermicro",
-		desc:	"Supermicro IPMIv1.5 BMC with OEM LAN authentication support",
-		setup:	ipmi_oem_supermicro,
+		.name = "supermicro",
+		.desc = "Supermicro IPMIv1.5 BMC with OEM LAN authentication support",
+		.setup = ipmi_oem_supermicro,
 	},
 	{
-		name:	"intelwv2",
-		desc:	"Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support",
+		.name = "intelwv2",
+		.desc = "Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support",
 	},
 	{
-		name:	"intelplus",
-		desc:	"Intel IPMI 2.0 BMC with RMCP+ communication support",
+		.name = "intelplus",
+		.desc = "Intel IPMI 2.0 BMC with RMCP+ communication support",
 	},
 	{
-		name:   "icts",
-		desc:   "IPMI 2.0 ICTS compliance support",
+		.name = "icts",
+		.desc = "IPMI 2.0 ICTS compliance support",
 	},
 	{
-		name:   "ibm",
-		desc:   "IBM OEM support",
-		setup:	ipmi_oem_ibm,
+		.name = "ibm",
+		.desc = "IBM OEM support",
+		.setup = ipmi_oem_ibm,
 	},
 	{
-		name:   "i82571spt",
-		desc:   "Intel 82571 MAC with integrated RMCP+ support in super pass-through mode",
+		.name = "i82571spt",
+		.desc = "Intel 82571 MAC with integrated RMCP+ support in super pass-through mode",
 	},
 	{
-		name:	"kontron",
-		desc:	"Kontron OEM big buffer support"
+		.name = "kontron",
+		.desc = "Kontron OEM big buffer support"
 	},
 	{ 0 }
 };
