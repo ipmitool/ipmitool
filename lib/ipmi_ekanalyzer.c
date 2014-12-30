@@ -2773,6 +2773,10 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			ret = fread(additional_data, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
+				if (additional_data != NULL) {
+					free(additional_data);
+					additional_data = NULL;
+				}
 				goto out;
 			}
 			printf("Additional Custom Mfg. Data: %02x",
