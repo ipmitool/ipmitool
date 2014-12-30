@@ -1110,7 +1110,11 @@ ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 	unsigned int l, n, c, ret;
 	unsigned char enables[MAX_COMMAND_BYTES];
 
-	if (argc > 0 || (argc > 0 && strncmp(argv[0], "help", 4) == 0)) {
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		printf_firewall_usage();
+		return (-1);
+	} else if (argc > 0 && strncmp(argv[0], "help", 4) == 0) {
 		printf_firewall_usage();
 		return 0;
 	}
