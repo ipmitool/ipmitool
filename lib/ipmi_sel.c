@@ -587,6 +587,10 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 			/* check the chipset type */
 			oem_id = ipmi_get_oem_id(intf);
 			if (oem_id == 0) {
+				if (desc != NULL) {
+					free(desc);
+					desc = NULL;
+				}
 				return NULL;
 			}
 			length = sizeof(supermicro_X8);
