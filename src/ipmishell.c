@@ -467,6 +467,10 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 				__argv[__argc++] = strdup(tok);
 				if (__argv[__argc-1] == NULL) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					if (fp) {
+						fclose(fp);
+						fp = NULL;
+					}
 					return -1;
 				}
 				tmp = __argv[__argc-1];
