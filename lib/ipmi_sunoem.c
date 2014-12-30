@@ -1361,9 +1361,6 @@ ipmi_sunoem_echo(struct ipmi_intf * intf, int argc, char *argv[])
 
 	/* Fill in data packet */
 	for (i = 0; i < ECHO_DATA_SIZE; i++) {
-		if (i > UINT8_MAX)
-			break;
-
 		echo_req.data[i] = (uint8_t) i;
 	}
 
