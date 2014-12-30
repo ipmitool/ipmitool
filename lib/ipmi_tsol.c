@@ -412,8 +412,10 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 			print_tsol_usage();
 			return 0;
 		} else {
+			lprintf(LOG_ERR, "Invalid tsol command: '%s'\n",
+					argv[i]);
 			print_tsol_usage();
-			return 0;
+			return (-1);
 		}
 	}
 
