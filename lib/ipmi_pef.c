@@ -808,7 +808,7 @@ ipmi_pef_get_info(struct ipmi_intf * intf)
 	uint8_t actions, tbl_size;
 
 	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
-	if (!ptbl) {
+	if (ptbl != NULL) {
 		free(ptbl);
 		ptbl = NULL;
 	}
