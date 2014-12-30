@@ -360,7 +360,7 @@ ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
 	int max_uid = 0;
 	int init = 1;
 
-	curr_uid = userid ? : 1;
+	curr_uid = userid ? userid : 1;
 
 	memset(&req1, 0, sizeof(req1));
 	req1.msg.netfn = IPMI_NETFN_APP;

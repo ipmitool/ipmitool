@@ -284,7 +284,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 				eintf->prefix,
 				type,
 				sdr->record.full->id_string,
-				desc ? : "",
+				desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"),
 				(trigger_reading==(int)trigger_reading) ? 0 : 2,
@@ -304,7 +304,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			 */
 			lprintf(LOG_NOTICE, "%s%s sensor %s %s %s",
 				eintf->prefix, type,
-				sdr->record.full->id_string, desc ? : "",
+				sdr->record.full->id_string, desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"));
 			if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
@@ -317,7 +317,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			 */
 			lprintf(LOG_NOTICE, "%s%s sensor %s %s %s",
 				eintf->prefix, type,
-				sdr->record.full->id_string, desc ? : "",
+				sdr->record.full->id_string, desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"));
 		}
@@ -326,7 +326,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
 		lprintf(LOG_NOTICE, "%s%s sensor %s - %s %s",
 			eintf->prefix, type,
-			sdr->record.compact->id_string, desc ? : "",
+			sdr->record.compact->id_string, desc ? desc : "",
 			(evt->sel_type.standard_type.event_dir
 			 ? "Deasserted" : "Asserted"));
 		break;
@@ -334,7 +334,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	default:
 		lprintf(LOG_NOTICE, "%s%s sensor - %s",
 			eintf->prefix, type,
-			evt->sel_type.standard_type.sensor_num, desc ? : "");
+			evt->sel_type.standard_type.sensor_num, desc ? desc : "");
 		break;
 	}
 

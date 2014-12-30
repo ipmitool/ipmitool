@@ -2919,7 +2919,7 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* print SDR entry */
 		oldv = verbose;
-		verbose = verbose ? : 1;
+		verbose = verbose ? verbose : 1;
 		switch (sdr->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
