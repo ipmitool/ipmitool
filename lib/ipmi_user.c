@@ -629,9 +629,9 @@ ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 int
 ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 {
-	uint8_t user_id;
-	uint8_t priv_level;
 	uint8_t channel = 0x0e; /* Use channel running on */
+	uint8_t priv_level = 0;
+	uint8_t user_id = 0;
 
 	if (argc != 3 && argc != 4) {
 		print_user_usage();
@@ -644,7 +644,7 @@ ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 		channel = (channel & 0x0f);
 	}
 	if (is_ipmi_user_priv_limit(argv[2], &priv_level) != 0
-			&& is_ipmi_user_id(argv[1], &user_id)) {
+			|| is_ipmi_user_id(argv[1], &user_id) != 0) {
 		return (-1);
 	}
 	priv_level = (priv_level & 0x0f);
