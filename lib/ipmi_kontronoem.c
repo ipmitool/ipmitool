@@ -105,7 +105,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_kontron_nextboot_help();
-			rc = (-1);
+			return (-1);
 		}
 		rc = ipmi_kontron_nextboot_set(intf, (argc - 1), (argv + 1));
 		if (rc == 0) {
