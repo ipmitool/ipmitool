@@ -1745,18 +1745,8 @@ ipmi_picmg_clk_set(struct ipmi_intf * intf, int argc, char ** argv)
       }
    }
 
-#if 1
-printf("## ID:      %d\n", msg_data[1]);
-printf("## index:   %d\n", msg_data[2]);
-printf("## setting: 0x%02x\n", msg_data[3]);
-printf("## family:  %d\n", msg_data[4]);
-printf("## acc:     %d\n", msg_data[5]);
-printf("## freq:    %ld\n", freq );
-printf("## res:     %d\n", msg_data[10]);
-#endif
 
 	rsp = intf->sendrecv(intf, &req);
-
 	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
