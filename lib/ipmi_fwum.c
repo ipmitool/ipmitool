@@ -837,11 +837,8 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 	do {
 		rsp = intf->sendrecv(intf, &req);
 	} while (rsp == NULL || rsp->ccode == 0xc0);
-	if (!rsp) {
-		lprintf(LOG_ERR,
-				"Error in FWUM Firmware Finish Firmware Image Download Command.");
-		return (-1);
-	} else if (rsp->ccode != 0) {
+
+	if (rsp->ccode != 0) {
 		lprintf(LOG_ERR,
 				"FWUM Firmware Finish Firmware Image Download returned %x",
 				rsp->ccode);
