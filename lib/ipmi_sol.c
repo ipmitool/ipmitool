@@ -1942,10 +1942,6 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_sol_usage();
 			return -1;
 		}
-		if (argc == 1 || argc > 4) {
-			print_sol_usage();
-			return -1;
-		}
 		if (argc >= 3) {
 			if (is_ipmi_channel_num(argv[2], &channel) != 0) {
 				return (-1);
