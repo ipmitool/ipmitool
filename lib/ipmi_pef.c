@@ -674,7 +674,7 @@ ipmi_pef_list_policies(struct ipmi_intf * intf)
 
 	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
 	if (!tbl_size) {
-		if (!ptbl) {
+		if (ptbl != NULL) {
 			free(ptbl);
 			ptbl = NULL;
 		}
