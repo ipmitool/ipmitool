@@ -870,8 +870,8 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		uint32_t year;
 		uint32_t week;
 
-		if (len < 148)
-			return -1; /* we need first 91 bytes to do our thing */
+		if (len < 348)
+			return -1;
 
 		/* "Logical rank" referes to the individually addressable die
 		 * in a 3DS stack and has no meaning for monolithic or
@@ -881,7 +881,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		 * rank per package rank.
 		 */
 		lrank_dimm = (spd_data[12]>>3&0x3) + 1; /* Number of Package Ranks per DIMM */
-		if ((spd_data[6] & 0x3) == 0x10) { /* 3DS package Type */
+		if ((spd_data[6] & 0x3) == 0x2) { /* 3DS package Type */
 			lrank_dimm *= ((spd_data[6]>>4)&0x3) + 1; /* Die Count */
 		}
 		sdram_cap = ldexp(256,(spd_data[4]&15));
