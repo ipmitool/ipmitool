@@ -950,6 +950,9 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 	}
 	else
 	{
+		if (len < 100) {
+			return (-1);
+		}
 		ii = (spd_data[3] & 0x0f) + (spd_data[4] & 0x0f) - 17;
 		k = ((spd_data[5] & 0x7) + 1) * spd_data[17];
 
