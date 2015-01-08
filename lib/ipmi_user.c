@@ -58,6 +58,41 @@ extern int csv_output;
 #define IPMI_PASSWORD_SET_PASSWORD  0x02
 #define IPMI_PASSWORD_TEST_PASSWORD 0x03
 
+/* _ipmi_get_user_name - Fetch User Name for given User ID. User Name is stored
+ * into passed structure. 
+ *
+ * @intf - ipmi interface
+ * @user_name - user_name_t struct with UID set
+ *
+ * returns - negative number means error, positive is a ccode
+ */
+int
+_ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
+{
+	struct ipmi_rq req = {0};
+	struct ipmi_rs *rsp;
+	uint8_t data[1];
+	if (user_name_ptr == NULL) {
+		return (-3);
+	}
+	data[0] = user_name_ptr->user_id & 0x3F;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_GET_USER_NAME;
+	req.msg.data = data;
+	req.msg.data_len = 1;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode > 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 17) {
+		return (-2);
+	}
+	memset(user_name_ptr->user_name, '\0', 17);
+	memcpy(user_name_ptr->user_name, rsp->data, 16);
+	return rsp->ccode;
+}
+
 /*
  * ipmi_get_user_access
  *

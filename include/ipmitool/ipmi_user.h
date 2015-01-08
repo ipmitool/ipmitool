@@ -88,8 +88,12 @@ struct user_access_rsp {
 #pragma pack(0)
 #endif
 
-
+struct user_name_t {
+	uint8_t user_id;
+	uint8_t user_name[17];
+};
 
 int ipmi_user_main(struct ipmi_intf *, int, char **);
+int _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name);
 
 #endif /* IPMI_USER_H */
