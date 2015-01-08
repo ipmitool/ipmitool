@@ -58,6 +58,49 @@ extern int csv_output;
 #define IPMI_PASSWORD_SET_PASSWORD  0x02
 #define IPMI_PASSWORD_TEST_PASSWORD 0x03
 
+/* _ipmi_get_user_access - Get User Access for given channel. Results are stored
+ * into passed struct.
+ *
+ * @intf - IPMI interface
+ * @user_access_rsp - ptr to user_access_t with UID and Channel set
+ *
+ * returns - negative number means error, positive is a ccode
+ */
+int
+_ipmi_get_user_access(struct ipmi_intf *intf,
+		struct user_access_t *user_access_rsp)
+{
+	struct ipmi_rq req = {0};
+	struct ipmi_rs *rsp;
+	uint8_t data[2];
+	if (user_access_rsp == NULL) {
+		return (-3);
+	}
+	data[0] = user_access_rsp->channel & 0x0F;
+	data[1] = user_access_rsp->user_id & 0x3F;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_GET_USER_ACCESS;
+	req.msg.data = data;
+	req.msg.data_len = 2;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 4) {
+		return (-2);
+	}
+	user_access_rsp->max_user_ids = rsp->data[0] & 0x3F;
+	user_access_rsp->enable_status = rsp->data[1] & 0xC0;
+	user_access_rsp->enabled_user_ids = rsp->data[1] & 0x3F;
+	user_access_rsp->fixed_user_ids = rsp->data[2] & 0x3F;
+	user_access_rsp->callin_callback = rsp->data[3] & 0x40;
+	user_access_rsp->link_auth = rsp->data[3] & 0x20;
+	user_access_rsp->ipmi_messaging = rsp->data[3] & 0x10;
+	user_access_rsp->privilege_limit = rsp->data[3] & 0x0F;
+	return rsp->ccode;
+}
+
 /* _ipmi_get_user_name - Fetch User Name for given User ID. User Name is stored
  * into passed structure. 
  *
@@ -91,6 +134,49 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
 	memset(user_name_ptr->user_name, '\0', 17);
 	memcpy(user_name_ptr->user_name, rsp->data, 16);
 	return rsp->ccode;
+}
+
+/* _ipmi_set_user_access - Set User Access for given channel.
+ *
+ * @intf - IPMI interface
+ * @user_access_req - ptr to user_access_t with desired User Access.
+ *
+ * returns - negative number means error, positive is a ccode
+ */
+int
+_ipmi_set_user_access(struct ipmi_intf *intf,
+		struct user_access_t *user_access_req)
+{
+	uint8_t data[4];
+	struct ipmi_rq req = {0};
+	struct ipmi_rs *rsp;
+	if (user_access_req == NULL) {
+		return (-3);
+	}
+	data[0] = 0x80;
+	if (user_access_req->callin_callback) {
+		data[0] |= 0x40;
+	}
+	if (user_access_req->link_auth) {
+		data[0] |= 0x20;
+	}
+	if (user_access_req->ipmi_messaging) {
+		data[0] |= 0x10;
+	}
+	data[0] |= (user_access_req->channel & 0x0F);
+	data[1] = user_access_req->user_id & 0x3F;
+	data[2] = user_access_req->privilege_limit & 0x0F;
+	data[3] = user_access_req->session_limit & 0x0F;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_SET_USER_ACCESS;
+	req.msg.data = &data;
+	req.msg.data_len = 4;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else { 
+		return rsp->ccode;
+	}
 }
 
 /*
