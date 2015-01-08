@@ -380,42 +380,39 @@ ipmi_print_user_list(
 	return 0;
 }
 
-
-
+/* ipmi_print_user_summary - print User statistics for given channel
+ *
+ * @intf - IPMI interface
+ * @channel_number - channel number
+ *
+ * returns - 0 on success, (-1) on error
+ */
 static int
-ipmi_print_user_summary(
-			struct ipmi_intf * intf,
-			uint8_t	   channel_number)
+ipmi_print_user_summary(struct ipmi_intf *intf, uint8_t channel_number)
 {
-	struct user_access_rsp     user_access;
-
-	if (ipmi_get_user_access(intf,
-				 channel_number,
-				 1,
-				 &user_access))
-		return -1;
-
-	if (csv_output)
-	{
-		printf("%d,%d,%d\n",
-		       user_access.maximum_ids,
-		       user_access.enabled_user_count,
-		       user_access.fixed_name_count);
+	struct user_access_t user_access = {0};
+	int ccode = 0;
+	user_access.channel = channel_number;
+	user_access.user_id = 1;
+	ccode = _ipmi_get_user_access(intf, &user_access);
+	if (eval_ccode(ccode) != 0) {
+		return (-1);
 	}
-	else
-	{
-		printf("Maximum IDs	    : %d\n",
-		       user_access.maximum_ids);
-		printf("Enabled User Count  : %d\n",
-		       user_access.enabled_user_count);
-		printf("Fixed Name Count    : %d\n",
-		       user_access.fixed_name_count);
+	if (csv_output) {
+		printf("%" PRIu8 ",%" PRIu8 ",%" PRIu8 "\n",
+				user_access.max_user_ids,
+				user_access.enabled_user_ids,
+				user_access.fixed_user_ids);
+	} else {
+		printf("Maximum IDs	    : %" PRIu8 "\n",
+				user_access.max_user_ids);
+		printf("Enabled User Count  : %" PRIu8 "\n",
+				user_access.enabled_user_ids);
+		printf("Fixed Name Count    : %" PRIu8 "\n",
+				user_access.fixed_user_ids);
 	}
-
 	return 0;
 }
-
-
 
 /*
  * ipmi_user_set_username
