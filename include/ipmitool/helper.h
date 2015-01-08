@@ -83,6 +83,8 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr);
 int str2char(const char * str, int8_t * chr_ptr);
 int str2uchar(const char * str, uint8_t * uchr_ptr);
 
+int eval_ccode(const int ccode);
+
 int is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr);
 int is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr);
 int is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr);

@@ -672,6 +672,37 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 	dup(fd);
 }
 
+/* eval_ccode - evaluate return value of _ipmi_* functions and print error error
+ * message, if conditions are met.
+ *
+ * @ccode - return value of _ipmi_* function.
+ *
+ * returns - 0 if ccode is 0, otherwise (-1) and error might get printed-out.
+ */
+int
+eval_ccode(const int ccode)
+{
+	if (ccode == 0) {
+		return 0;
+	} else if (ccode < 0) {
+		switch (ccode) {
+			case (-1):
+				lprintf(LOG_ERR, "IPMI response is NULL.");
+				break;
+			case (-2):
+				lprintf(LOG_ERR, "Unexpected data length received.");
+				break;
+			default:
+				break;
+		}
+		return (-1);
+	} else {
+		lprintf(LOG_ERR, "IPMI command failed: %s",
+				val2str(ccode, completion_code_vals));
+		return (-1);
+	}
+}
+
 /* is_fru_id - wrapper for str-2-int FRU ID conversion. Message is printed
  * on error.
  * FRU ID range: <0..255>
