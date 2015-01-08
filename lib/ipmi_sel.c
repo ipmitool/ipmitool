@@ -594,14 +594,14 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				return NULL;
 			}
 			length = sizeof(supermicro_X8);
-			for (i = 0; i < length; i++) {
+			for (i = 0; i < length && supermicro_X8[i] != 0xFFFF; i++) {
 				if (oem_id == supermicro_X8[i]) {
 					chipset_type = 0;
 					break;
 				}
 			}
 			length = sizeof(supermicro_x9);
-			for (i = 0; i < length; i++) {
+			for (i = 0; i < length && supermicro_x9[i] != 0xFFFF; i++) {
 				if (oem_id == supermicro_x9[i]) {
 					chipset_type = 2;
 					break;
