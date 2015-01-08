@@ -169,7 +169,7 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 	data[3] = user_access_req->session_limit & 0x0F;
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = IPMI_SET_USER_ACCESS;
-	req.msg.data = &data;
+	req.msg.data = data;
 	req.msg.data_len = 4;
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
