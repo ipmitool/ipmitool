@@ -140,12 +140,14 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
  *
  * @intf - IPMI interface
  * @user_access_req - ptr to user_access_t with desired User Access.
+ * @change_priv_limit_only - change User's privilege limit only
  *
  * returns - negative number means error, positive is a ccode
  */
 int
 _ipmi_set_user_access(struct ipmi_intf *intf,
-		struct user_access_t *user_access_req)
+		struct user_access_t *user_access_req,
+		uint8_t change_priv_limit_only)
 {
 	uint8_t data[4];
 	struct ipmi_rq req = {0};
@@ -153,7 +155,7 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 	if (user_access_req == NULL) {
 		return (-3);
 	}
-	data[0] = 0x80;
+	data[0] = change_priv_limit_only ? 0x00 : 0x80;
 	if (user_access_req->callin_callback) {
 		data[0] |= 0x40;
 	}
@@ -342,47 +344,6 @@ ipmi_user_set_username(
 	return 0;
 }
 
-static int
-ipmi_user_set_userpriv(
-		       struct ipmi_intf *intf,
-		       uint8_t channel,
-		       uint8_t user_id,
-		       const unsigned char privLevel)
-{
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
-	uint8_t msg_data[4] = {0, 0, 0, 0};
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;         /* 0x06 */
-	req.msg.cmd      = IPMI_SET_USER_ACCESS;   /* 0x43 */
-	req.msg.data     = msg_data;
-	req.msg.data_len = 4;
-
-	/* The channel number will remain constant throughout this function */
-	msg_data[0] = (channel   & 0x0f);
-	msg_data[1] = (user_id   & 0x3f);
-	msg_data[2] = (privLevel & 0x0f);
-	msg_data[3] = 0;
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (rsp == NULL)
-	{
-		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
-			user_id);
-		return -1;
-	}
-	if (rsp->ccode > 0)
-	{
-		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d): %s",
-			user_id, val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	return 0;
-}
-
 /*
  * ipmi_user_set_password
  *
@@ -439,8 +400,6 @@ ipmi_user_set_password(
 
 	return 0;
 }
-
-
 
 /*
  * ipmi_user_test_password
@@ -628,26 +587,35 @@ ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 int
 ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 {
-	uint8_t channel = 0x0e; /* Use channel running on */
-	uint8_t priv_level = 0;
-	uint8_t user_id = 0;
+	struct user_access_t user_access;
+	int ccode = 0;
 
 	if (argc != 3 && argc != 4) {
 		print_user_usage();
 		return (-1);
 	}
 	if (argc == 4) {
-		if (is_ipmi_channel_num(argv[3], &channel) != 0) {
+		if (is_ipmi_channel_num(argv[3], &user_access.channel) != 0) {
 			return (-1);
 		}
-		channel = (channel & 0x0f);
+	} else {
+		/* Use channel running on */
+		user_access.channel = 0x0E;
 	}
-	if (is_ipmi_user_priv_limit(argv[2], &priv_level) != 0
-			|| is_ipmi_user_id(argv[1], &user_id) != 0) {
+	if (is_ipmi_user_priv_limit(argv[2], &user_access.privilege_limit) != 0
+			|| is_ipmi_user_id(argv[1], &user_access.user_id) != 0) {
 		return (-1);
 	}
-	priv_level = (priv_level & 0x0f);
-	return ipmi_user_set_userpriv(intf,channel,user_id,priv_level);
+	ccode = _ipmi_set_user_access(intf, &user_access, 1);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Set Privilege Level command failed (user %d)",
+				user_access.user_id);
+		return (-1);
+	} else {
+		printf("Set Privilege Level command successful (user %d)",
+				user_access.user_id);
+		return 0;
+	}
 }
 
 int

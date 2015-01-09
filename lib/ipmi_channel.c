@@ -735,7 +735,7 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 	}
-	ccode = _ipmi_set_user_access(intf, &user_access);
+	ccode = _ipmi_set_user_access(intf, &user_access, 0);
 	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR,
 				"Unable to Set User Access (channel %d id %d)",
