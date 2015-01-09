@@ -933,8 +933,8 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 		}
 
-		year = (spd_data[323]>>4)*10 + spd_data[323]&15;
-		week = (spd_data[324]>>4)*10 + spd_data[324]&15;
+		year = ((spd_data[323] >> 4) * 10) + (spd_data[323] & 15);
+		week = ((spd_data[324]>>4) * 10) + (spd_data[324] & 15);
 		printf(" Manufacture Date      : year %4d week %2d\n",
 		       2000 + year, week);
 
@@ -1069,7 +1069,6 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	offset = 0;
 	memset(spd_data, 0, fru.size);
 	do {
-                int i;
 		msg_data[0] = id;
 		msg_data[1] = offset & 0xFF;
 		msg_data[2] = offset >> 8;
