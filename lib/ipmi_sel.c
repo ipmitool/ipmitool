@@ -1235,6 +1235,8 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					sfx = ipmi_get_oem_desc(intf, rec);
 					break;
 				 /* add your oem sensor assignation here */
+				default:
+					break;
 			}			
 			if( evt == NULL ){		
 				lprintf(LOG_DEBUG, "oem sensor type %x  using standard type supplied description",
@@ -1247,6 +1249,8 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					evt = sensor_specific_types;
 					code = rec->sel_type.standard_type.sensor_type;
 					sfx = ipmi_get_oem_desc(intf, rec);
+				 break;
+				default:
 				 break;
 			}
 		}
@@ -1915,6 +1919,8 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			case IPMI_OEM_SUPERMICRO:
 			case IPMI_OEM_SUPERMICRO_47488:
 				print_sensor = 0;
+			 break;
+			default:
 			 break;
 		}
 		/*
