@@ -117,7 +117,7 @@ data_write(int fd, void *data_ptr, int data_len)
 		/* TODO - add poll() */
 		data_written = write(fd, data_ptr, data_len);
 		errno_save = errno;
-		if (data_read > 0) {
+		if (data_written > 0) {
 			data_total+= data_written;
 		}
 		if (errno_save != 0) {
@@ -149,9 +149,6 @@ static void
 ipmi_dummyipmi_close(struct ipmi_intf *intf)
 {
 	struct dummy_rq req;
-	int data_total = 0;
-	int data_written = 0;
-	int try = 0;
 	if (intf->fd < 0) {
 		return;
 	}
