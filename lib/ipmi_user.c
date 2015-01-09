@@ -179,204 +179,85 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 	}
 }
 
-/*
- * ipmi_get_user_access
- *
- * param intf		[in]
- * param channel_number [in]
- * param user_id	[in]
- * param user_access	[out]
- *
- * return 0 on succes
- *	  1 on failure
- */
-static int
-ipmi_get_user_access(
-		     struct ipmi_intf *intf,
-		     uint8_t channel_number,
-		     uint8_t user_id,
-		     struct user_access_rsp *user_access)
-{
-	struct ipmi_rs	     * rsp;
-	struct ipmi_rq	       req;
-	uint8_t	       msg_data[2];
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;	     /* 0x06 */
-	req.msg.cmd	     = IPMI_GET_USER_ACCESS; /* 0x44 */
-	req.msg.data     = msg_data;
-	req.msg.data_len = 2;
-
-
-	/* The channel number will remain constant throughout this function */
-	msg_data[0] = channel_number;
-	msg_data[1] = user_id;
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get User Access command failed "
-			"(channel %d, user %d)", channel_number, user_id);
-		return -1;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get User Access command failed "
-			"(channel %d, user %d): %s", channel_number, user_id,
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	memcpy(user_access,
-	       rsp->data,
-	       sizeof(struct user_access_rsp));
-
-	return 0;
-}
-
-
-
-/*
- * ipmi_get_user_name
- *
- * param intf		[in]
- * param channel_number [in]
- * param user_id	[in]
- * param user_name	[out]
- *
- * return 0 on succes
- *	  1 on failure
- */
-static int
-ipmi_get_user_name(
-		   struct ipmi_intf *intf,
-		   uint8_t user_id,
-		   char	*user_name)
-{
-	struct ipmi_rs	     * rsp;
-	struct ipmi_rq	       req;
-	uint8_t	       msg_data[1];
-
-	memset(user_name, 0, 17);
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn    = IPMI_NETFN_APP;     /* 0x06 */
-	req.msg.cmd      = IPMI_GET_USER_NAME; /* 0x45 */
-	req.msg.data     = msg_data;
-	req.msg.data_len = 1;
-
-	msg_data[0] = user_id;
-
-	rsp = intf->sendrecv(intf, &req);
-
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get User Name command failed (user %d)",
-			user_id);
-		return -1;
-	}
-	if (rsp->ccode > 0) {
-		if (rsp->ccode == 0xcc)
-			return 0;
-		lprintf(LOG_ERR, "Get User Name command failed (user %d): %s",
-			user_id, val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	memcpy(user_name, rsp->data, 16);
-
-	return 0;
-}
-
-
-
-
 static void
-dump_user_access(
-		 uint8_t		  user_id,
-		 const		   char * user_name,
-		 struct user_access_rsp * user_access)
+dump_user_access(const char *user_name,
+		struct user_access_t *user_access)
 {
 	static int printed_header = 0;
-
-	if (! printed_header)
-	{
+	if (!printed_header) {
 		printf("ID  Name	     Callin  Link Auth	IPMI Msg   "
-		       "Channel Priv Limit\n");
+				"Channel Priv Limit\n");
 		printed_header = 1;
 	}
-
 	printf("%-4d%-17s%-8s%-11s%-11s%-s\n",
-	       user_id,
-	       user_name,
-	       user_access->no_callin_access? "false": "true ",
-	       user_access->link_auth_access? "true ": "false",
-	       user_access->ipmi_messaging_access? "true ": "false",
-	       val2str(user_access->channel_privilege_limit,
-		       ipmi_privlvl_vals));
+			user_access->user_id,
+			user_name,
+			user_access->callin_callback? "false": "true ",
+			user_access->link_auth? "true ": "false",
+			user_access->ipmi_messaging? "true ": "false",
+			val2str(user_access->privilege_limit,
+				ipmi_privlvl_vals));
 }
 
 
 
 static void
-dump_user_access_csv(
-		     uint8_t user_id,
-		     const char *user_name,
-		     struct user_access_rsp *user_access)
+dump_user_access_csv(const char *user_name,
+		struct user_access_t *user_access)
 {
 	printf("%d,%s,%s,%s,%s,%s\n",
-	       user_id,
-	       user_name,
-	       user_access->no_callin_access? "false": "true",
-	       user_access->link_auth_access? "true": "false",
-	       user_access->ipmi_messaging_access? "true": "false",
-	       val2str(user_access->channel_privilege_limit,
-		       ipmi_privlvl_vals));
+			user_access->user_id,
+			user_name,
+			user_access->callin_callback? "false": "true",
+			user_access->link_auth? "true": "false",
+			user_access->ipmi_messaging? "true": "false",
+			val2str(user_access->privilege_limit,
+				ipmi_privlvl_vals));
 }
 
+/* ipmi_print_user_list - List IPMI Users and their ACLs for given channel.
+ *
+ * @intf - IPMI interface
+ * @channel_number - IPMI channel
+ *
+ * returns - 0 on success, (-1) on error
+ */
 static int
-ipmi_print_user_list(
-		     struct ipmi_intf *intf,
-		     uint8_t channel_number)
+ipmi_print_user_list(struct ipmi_intf *intf, uint8_t channel_number)
 {
-	/* This is where you were! */
-	char user_name[17];
-	struct user_access_rsp  user_access;
+	struct user_access_t user_access = {0};
+	struct user_name_t user_name = {0};
+	int ccode = 0;
 	uint8_t current_user_id = 1;
-
-
-	do
-	{
-		if (ipmi_get_user_access(intf,
-					 channel_number,
-					 current_user_id,
-					 &user_access))
-			return -1;
-
-
-		if (ipmi_get_user_name(intf,
-				       current_user_id,
-				       user_name))
-			return -1;
-
-		if ((current_user_id == 0)	      ||
-		    user_access.link_auth_access      ||
-		    user_access.ipmi_messaging_access ||
-		    strcmp("", user_name))
-		{
-			if (csv_output)
-				dump_user_access_csv(current_user_id,
-						     user_name, &user_access);
-			else
-				dump_user_access(current_user_id,
-						 user_name,
-						 &user_access);
+	do {
+		memset(&user_access, 0, sizeof(user_access));
+		user_access.user_id = current_user_id;
+		user_access.channel = channel_number;
+		ccode = _ipmi_get_user_access(intf, &user_access);
+		if (eval_ccode(ccode) != 0) {
+			return (-1);
 		}
-
-
+		memset(&user_name, 0, sizeof(user_name));
+		user_name.user_id = current_user_id;
+		ccode = _ipmi_get_user_name(intf, &user_name);
+		if (eval_ccode(ccode) != 0) {
+			return (-1);
+		}
+		if ((current_user_id == 0)
+				|| user_access.link_auth
+				|| user_access.ipmi_messaging
+				|| strcmp("", (char *)user_name.user_name)) {
+			if (csv_output) {
+				dump_user_access_csv((char *)user_name.user_name,
+						&user_access);
+			} else {
+				dump_user_access((char *)user_name.user_name,
+						&user_access);
+			}
+		}
 		++current_user_id;
-	} while((current_user_id <= user_access.maximum_ids) &&
-			(current_user_id <= IPMI_UID_MAX)); /* Absolute maximum allowed by spec */
-
-
+	} while ((current_user_id <= user_access.max_user_ids)
+			&& (current_user_id <= IPMI_UID_MAX));
 	return 0;
 }
 

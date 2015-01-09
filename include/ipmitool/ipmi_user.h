@@ -43,55 +43,6 @@
 #define IPMI_USER_ENABLE_DISABLED 0x80
 #define IPMI_USER_ENABLE_RESERVED 0xC0
 
-/*
- * The GET USER ACCESS response from table 22-32 of the IPMI v2.0 spec
- */
-struct user_access_rsp {
-#if WORDS_BIGENDIAN
-	uint8_t __reserved1 : 2;
-	uint8_t maximum_ids : 6;
-#else
-	uint8_t maximum_ids : 6;
-	uint8_t __reserved1 : 2;
-#endif
-
-#if WORDS_BIGENDIAN
-	uint8_t __reserved2        : 2;
-	uint8_t enabled_user_count : 6;
-#else
-	uint8_t enabled_user_count : 6;
-	uint8_t __reserved2        : 2;
-#endif
-
-#if WORDS_BIGENDIAN
-	uint8_t __reserved3      : 2;
-	uint8_t fixed_name_count : 6;
-#else
-	uint8_t fixed_name_count : 6;
-	uint8_t __reserved3      : 2;
-#endif
-
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(1)
-#endif
-#if WORDS_BIGENDIAN
-	uint8_t __reserved4             : 1;
-	uint8_t no_callin_access        : 1;
-	uint8_t link_auth_access        : 1;
-	uint8_t ipmi_messaging_access   : 1;
-	uint8_t channel_privilege_limit : 4;
-#else
-	uint8_t channel_privilege_limit : 4;
-	uint8_t ipmi_messaging_access   : 1;
-	uint8_t link_auth_access        : 1;
-	uint8_t no_callin_access        : 1;
-	uint8_t __reserved4             : 1;
-#endif
-} ATTRIBUTE_PACKING;
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
-#endif
-
 /* (22.27) Get and (22.26) Set User Access */
 struct user_access_t {
 	uint8_t callin_callback;
