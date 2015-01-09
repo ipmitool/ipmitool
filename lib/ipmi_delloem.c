@@ -453,6 +453,8 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
+				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
 		} else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13) == 0)
@@ -477,6 +479,8 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
+				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
 		} else if ((strncmp(argv[current_arg], "errordisplay\0", 13) == 0)
@@ -499,6 +503,8 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
+				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
 		} else if ((strncmp(argv[current_arg], "none\0", 5) == 0)
@@ -529,6 +535,8 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
+				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
 		} else if (strncmp(argv[current_arg], "frontpanelaccess\0", 17) == 0) {
@@ -546,16 +554,22 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
+				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
 		} else if( (strncmp(argv[current_arg], "help\0", 5) == 0)
 				&& (iDRAC_FLAG==0)) {
 			ipmi_lcd_usage();
 		} else {
+			lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+					argv[current_arg]);
 			ipmi_lcd_usage();
 			return -1;
 		}
 	} else {
+		lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+				argv[current_arg]);
 		ipmi_lcd_usage();
 		return -1;
 	}
