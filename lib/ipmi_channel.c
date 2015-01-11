@@ -350,6 +350,14 @@ ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
 	return 0;
 }
 
+/* ipmi_get_user_access - Get User Access for given Channel and User or Users.
+ *
+ * @intf - IPMI interface
+ * @channel - IPMI Channel we're getting access for
+ * @userid - User ID. If 0 is passed, all IPMI users will be listed
+ *
+ * returns - 0 on success, (-1) on error
+ */
 static int
 ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
 {
@@ -641,6 +649,7 @@ ipmi_current_channel_medium(struct ipmi_intf *intf)
 	return ipmi_get_channel_medium(intf, 0xE);
 }
 
+/* printf_channel_usage - print-out help. */
 void
 printf_channel_usage()
 {
@@ -673,6 +682,11 @@ printf_channel_usage()
 "  15   No access");
 }
 
+/* ipmi_set_user_access - Query BMC for current Channel ACLs, parse CLI args
+ * and update current ACLs.
+ *
+ * returns - 0 on success, (-1) on error
+ */
 int
 ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 {
