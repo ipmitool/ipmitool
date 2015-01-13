@@ -354,12 +354,12 @@ ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
  *
  * @intf - IPMI interface
  * @channel - IPMI Channel we're getting access for
- * @userid - User ID. If 0 is passed, all IPMI users will be listed
+ * @user_id - User ID. If 0 is passed, all IPMI users will be listed
  *
  * returns - 0 on success, (-1) on error
  */
 static int
-ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
+ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 {
 	struct user_access_t user_access;
 	struct user_name_t user_name;
@@ -368,7 +368,7 @@ ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
 	int init = 1;
 	int max_uid = 0;
 
-	curr_uid = userid ? userid : 1;
+	curr_uid = user_id ? user_id : 1;
 	do {
 		memset(&user_access, 0, sizeof(user_access));
 		user_access.channel = channel;
@@ -410,7 +410,7 @@ ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t userid)
 		       val2str(user_access.privilege_limit, ipmi_privlvl_vals));
 
 		curr_uid ++;
-	} while (!userid && curr_uid <= max_uid);
+	} while (!user_id && curr_uid <= max_uid);
 
 	return 0;
 }
