@@ -861,7 +861,7 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 							argv[1], /* ipmi | sol */
 							channel);
 	} else {
-		printf("Invalid CHANNEL command: %s\n", argv[0]);
+		lprintf(LOG_ERR, "Invalid CHANNEL command: %s\n", argv[0]);
 		printf_channel_usage();
 		retval = -1;
 	}
