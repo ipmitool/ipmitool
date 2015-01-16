@@ -649,41 +649,28 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	return 0;
 }
 
-
-
 uint8_t
 ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 {
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
-	struct get_channel_info_rsp info;
+	struct channel_info_t channel_info = {0};
+	int ccode = 0;
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = IPMI_GET_CHANNEL_INFO;
-	req.msg.data = &channel;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	channel_info.channel = channel;
+	ccode = _ipmi_get_channel_info(intf, &channel_info);
+	if (ccode < 0) {
+		eval_ccode(ccode);
 		lprintf(LOG_ERR, "Get Channel Info command failed");
 		return 0;
-	}
-	if (rsp->ccode > 0) {
-		if (rsp->ccode == 0xcc) {
-			return IPMI_CHANNEL_MEDIUM_RESERVED;
-		}
-		lprintf(LOG_INFO, "Get Channel Info command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
+	} else if (ccode = 0xCC) {
+		return IPMI_CHANNEL_MEDIUM_RESERVED;
+	} else {
+		lprintf(LOG_ERR, "Get Channel Info command failed: %s",
+				val2str(ccode, completion_code_vals));
 		return IPMI_CHANNEL_MEDIUM_RESERVED;
 	}
-
-	memcpy(&info, rsp->data, sizeof(struct get_channel_info_rsp));
-
 	lprintf(LOG_DEBUG, "Channel type: %s",
-		val2str(info.channel_medium, ipmi_channel_medium_vals));
-
-	return info.channel_medium;
+			val2str(channel_info.medium, ipmi_channel_medium_vals));
+	return channel_info.medium;
 }
 
 uint8_t
