@@ -653,13 +653,11 @@ ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 
 	channel_info.channel = channel;
 	ccode = _ipmi_get_channel_info(intf, &channel_info);
-	if (ccode < 0) {
-		eval_ccode(ccode);
-		lprintf(LOG_ERR, "Get Channel Info command failed");
-		return 0;
-	} else if (ccode = 0xCC) {
+	if (ccode == 0xCC) {
 		return IPMI_CHANNEL_MEDIUM_RESERVED;
-	} else {
+	} else if (ccode < 0 && eval_ccode(ccode) != 0) {
+		return 0;
+	} else if (ccode > 0) {
 		lprintf(LOG_ERR, "Get Channel Info command failed: %s",
 				val2str(ccode, completion_code_vals));
 		return IPMI_CHANNEL_MEDIUM_RESERVED;
