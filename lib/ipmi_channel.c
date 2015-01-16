@@ -479,7 +479,6 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 
-	uint8_t oem_record;
 	uint8_t rqdata[3];
 	uint32_t iana;
 	uint8_t auth_alg, integrity_alg, crypt_alg;
@@ -572,7 +571,6 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	while (offset < cipher_suite_data_length) {
 		if (cipher_suite_data[offset++] == 0xC0) {
 			/* standard type */
-			oem_record = 0;
 			iana = 0;
 
 			/* Verify that we have at least a full record left; id + 3 algs */
@@ -583,8 +581,6 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 			cipher_suite_id = cipher_suite_data[offset++];
 		} else if (cipher_suite_data[offset++] == 0xC1) {
 			/* OEM record type */
-			oem_record = 1;
-
 			/* Verify that we have at least a full record left
 			 * id + iana + 3 algs
 			 */
