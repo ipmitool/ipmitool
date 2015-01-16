@@ -264,8 +264,6 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 	return 0;
 }
 
-
-
 /**
  * ipmi_get_channel_info
  *
@@ -276,105 +274,69 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 int
 ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
 {
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
-	uint8_t rqdata[2];
-	uint8_t medium;
-	struct get_channel_info_rsp channel_info;
-	struct get_channel_access_rsp channel_access;
+	struct channel_info_t channel_info = {0};
+	struct channel_access_t channel_access = {0};
+	int ccode = 0;
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd   = IPMI_GET_CHANNEL_INFO;
-	req.msg.data = &channel;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	channel_info.channel = channel;
+	ccode = _ipmi_get_channel_info(intf, &channel_info);
+	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Unable to Get Channel Info");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Channel Info failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		return (-1);
 	}
 
-	memcpy(&channel_info, rsp->data, sizeof(struct get_channel_info_rsp));
-
-	printf("Channel 0x%x info:\n", channel_info.channel_number);
-
+	printf("Channel 0x%x info:\n", channel_info.channel);
 	printf("  Channel Medium Type   : %s\n",
-		   val2str(channel_info.channel_medium, ipmi_channel_medium_vals));
-
+		   val2str(channel_info.medium,
+			   ipmi_channel_medium_vals));
 	printf("  Channel Protocol Type : %s\n",
-		   val2str(channel_info.channel_protocol, ipmi_channel_protocol_vals));
-
+		   val2str(channel_info.protocol,
+			   ipmi_channel_protocol_vals));
 	printf("  Session Support       : ");
 	switch (channel_info.session_support) {
-		case 0x0:
+		case IPMI_CHANNEL_SESSION_LESS:
 			printf("session-less\n");
 			break;
-		case 0x1:
+		case IPMI_CHANNEL_SESSION_SINGLE:
 			printf("single-session\n");
 			break;
-		case 0x2:
+		case IPMI_CHANNEL_SESSION_MULTI:
 			printf("multi-session\n");
 			break;
-		case 0x3:
-		default:
+		case IPMI_CHANNEL_SESSION_BASED:
 			printf("session-based\n");
 			break;
+		default:
+			printf("unknown\n");
+			break;
 	}
-
 	printf("  Active Session Count  : %d\n",
 		   channel_info.active_sessions);
-
 	printf("  Protocol Vendor ID    : %d\n",
 		   channel_info.vendor_id[0]      |
 		   channel_info.vendor_id[1] << 8 |
 		   channel_info.vendor_id[2] << 16);
 
-
 	/* only proceed if this is LAN channel */
-	medium = ipmi_get_channel_medium(intf, channel);
-	if (medium != IPMI_CHANNEL_MEDIUM_LAN &&
-	    medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+	if (channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN
+		&& channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
 		return 0;
 	}
 
-	memset(&req, 0, sizeof(req));
-	rqdata[0] = channel & 0xf;
-
-	/* get volatile settings */
-	rqdata[1] = 0x80; /* 0x80=active */
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd   = IPMI_GET_CHANNEL_ACCESS;
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	channel_access.channel = channel_info.channel;
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 1);
+	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Unable to Get Channel Access (volatile)");
-		return -1;
+		return (-1);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Channel Access (volatile) failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	memcpy(&channel_access, rsp->data, sizeof(struct get_channel_access_rsp));
-
 
 	printf("  Volatile(active) Settings\n");
 	printf("    Alerting            : %sabled\n",
-		   (channel_access.alerting) ? "dis" : "en");
+			(channel_access.alerting) ? "dis" : "en");
 	printf("    Per-message Auth    : %sabled\n",
-		   (channel_access.per_message_auth) ? "dis" : "en");
+			(channel_access.per_message_auth) ? "dis" : "en");
 	printf("    User Level Auth     : %sabled\n",
-		   (channel_access.user_level_auth) ? "dis" : "en");
-
+			(channel_access.user_level_auth) ? "dis" : "en");
 	printf("    Access Mode         : ");
 	switch (channel_access.access_mode) {
 		case 0:
@@ -394,30 +356,22 @@ ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
 			break;
 	}
 
+	memset(&channel_access, 0, sizeof(channel_access));
+	channel_access.channel = channel_info.channel;
 	/* get non-volatile settings */
-
-	rqdata[1] = 0x40; /* 0x40=non-volatile */
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 0);
+	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Unable to Get Channel Access (non-volatile)");
-		return -1;
+		return (-1);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Channel Access (non-volatile) failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	memcpy(&channel_access, rsp->data, sizeof(struct get_channel_access_rsp));
 
 	printf("  Non-Volatile Settings\n");
 	printf("    Alerting            : %sabled\n",
-		   (channel_access.alerting) ? "dis" : "en");
+			(channel_access.alerting) ? "dis" : "en");
 	printf("    Per-message Auth    : %sabled\n",
-		   (channel_access.per_message_auth) ? "dis" : "en");
+			(channel_access.per_message_auth) ? "dis" : "en");
 	printf("    User Level Auth     : %sabled\n",
-		   (channel_access.user_level_auth) ? "dis" : "en");
-
+			(channel_access.user_level_auth) ? "dis" : "en");
 	printf("    Access Mode         : ");
 	switch (channel_access.access_mode) {
 		case 0:
@@ -436,7 +390,6 @@ ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
 			printf("unknown\n");
 			break;
 	}
-
 	return 0;
 }
 
