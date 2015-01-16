@@ -49,6 +49,32 @@
 #define IPMI_SET_USER_PASSWORD         0x47
 #define IPMI_GET_CHANNEL_CIPHER_SUITES 0x54
 
+/* These are for channel_info_t.session_support */
+#define IPMI_CHANNEL_SESSION_LESS 0x00
+#define IPMI_CHANNEL_SESSION_SINGLE 0x40
+#define IPMI_CHANNEL_SESSION_MULTI 0x80
+#define IPMI_CHANNEL_SESSION_BASED 0xC0
+
+/* (22.24) Get Channel Info */
+struct channel_info_t {
+	uint8_t channel;
+	uint8_t medium;
+	uint8_t protocol;
+	uint8_t session_support;
+	uint8_t active_sessions;
+	uint8_t vendor_id[3];
+	uint8_t aux_info[2];
+};
+
+/* (22.23) Get Channel Access */
+struct channel_access_t {
+	uint8_t access_mode;
+	uint8_t alerting;
+	uint8_t channel;
+	uint8_t per_message_auth;
+	uint8_t privilege_limit;
+	uint8_t user_level_auth;
+};
 
 /*
  * The Get Authentication Capabilities response structure
