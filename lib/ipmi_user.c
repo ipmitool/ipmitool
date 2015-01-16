@@ -587,7 +587,7 @@ ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 int
 ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 {
-	struct user_access_t user_access;
+	struct user_access_t user_access = {0};
 	int ccode = 0;
 
 	if (argc != 3 && argc != 4) {
