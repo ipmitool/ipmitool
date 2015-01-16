@@ -130,7 +130,7 @@ ipmi_master_write_read(struct ipmi_intf * intf, uint8_t bus, uint8_t addr,
 	return rsp;
 }
 
-#define RAW_SPD_SIZE	256
+#define RAW_SPD_SIZE	512
 
 int
 ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
