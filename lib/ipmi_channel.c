@@ -55,7 +55,7 @@
 extern int csv_output;
 extern int verbose;
 
-void printf_channel_usage (void);
+void printf_channel_usage(void);
 
 /* _ipmi_get_channel_access - Get Channel Access for given channel. Results are
  * stored into passed struct.
@@ -147,6 +147,19 @@ _ipmi_get_channel_info(struct ipmi_intf *intf,
 	return 0;
 }
 
+static const char *
+iana_string(uint32_t iana)
+{
+	static char s[10];
+
+	if (iana) {
+		sprintf(s, "%06x", iana);
+		return s;
+	} else {
+		return "N/A";
+	}
+}
+
 /**
  * ipmi_1_5_authtypes
  *
@@ -170,7 +183,11 @@ ipmi_1_5_authtypes(uint8_t n)
 	return supportedTypes;
 }
 
-
+uint8_t
+ipmi_current_channel_medium(struct ipmi_intf *intf)
+{
+	return ipmi_get_channel_medium(intf, 0xE);
+}
 
 /**
  * ipmi_get_channel_auth_cap
@@ -263,214 +280,6 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 
 	return 0;
 }
-
-/**
- * ipmi_get_channel_info
- *
- * returns 0 on success
- *         -1 on failure
- *
- */
-int
-ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
-{
-	struct channel_info_t channel_info = {0};
-	struct channel_access_t channel_access = {0};
-	int ccode = 0;
-
-	channel_info.channel = channel;
-	ccode = _ipmi_get_channel_info(intf, &channel_info);
-	if (eval_ccode(ccode) != 0) {
-		lprintf(LOG_ERR, "Unable to Get Channel Info");
-		return (-1);
-	}
-
-	printf("Channel 0x%x info:\n", channel_info.channel);
-	printf("  Channel Medium Type   : %s\n",
-		   val2str(channel_info.medium,
-			   ipmi_channel_medium_vals));
-	printf("  Channel Protocol Type : %s\n",
-		   val2str(channel_info.protocol,
-			   ipmi_channel_protocol_vals));
-	printf("  Session Support       : ");
-	switch (channel_info.session_support) {
-		case IPMI_CHANNEL_SESSION_LESS:
-			printf("session-less\n");
-			break;
-		case IPMI_CHANNEL_SESSION_SINGLE:
-			printf("single-session\n");
-			break;
-		case IPMI_CHANNEL_SESSION_MULTI:
-			printf("multi-session\n");
-			break;
-		case IPMI_CHANNEL_SESSION_BASED:
-			printf("session-based\n");
-			break;
-		default:
-			printf("unknown\n");
-			break;
-	}
-	printf("  Active Session Count  : %d\n",
-		   channel_info.active_sessions);
-	printf("  Protocol Vendor ID    : %d\n",
-		   channel_info.vendor_id[0]      |
-		   channel_info.vendor_id[1] << 8 |
-		   channel_info.vendor_id[2] << 16);
-
-	/* only proceed if this is LAN channel */
-	if (channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN
-		&& channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
-		return 0;
-	}
-
-	channel_access.channel = channel_info.channel;
-	ccode = _ipmi_get_channel_access(intf, &channel_access, 1);
-	if (eval_ccode(ccode) != 0) {
-		lprintf(LOG_ERR, "Unable to Get Channel Access (volatile)");
-		return (-1);
-	}
-
-	printf("  Volatile(active) Settings\n");
-	printf("    Alerting            : %sabled\n",
-			(channel_access.alerting) ? "dis" : "en");
-	printf("    Per-message Auth    : %sabled\n",
-			(channel_access.per_message_auth) ? "dis" : "en");
-	printf("    User Level Auth     : %sabled\n",
-			(channel_access.user_level_auth) ? "dis" : "en");
-	printf("    Access Mode         : ");
-	switch (channel_access.access_mode) {
-		case 0:
-			printf("disabled\n");
-			break;
-		case 1:
-			printf("pre-boot only\n");
-			break;
-		case 2:
-			printf("always available\n");
-			break;
-		case 3:
-			printf("shared\n");
-			break;
-		default:
-			printf("unknown\n");
-			break;
-	}
-
-	memset(&channel_access, 0, sizeof(channel_access));
-	channel_access.channel = channel_info.channel;
-	/* get non-volatile settings */
-	ccode = _ipmi_get_channel_access(intf, &channel_access, 0);
-	if (eval_ccode(ccode) != 0) {
-		lprintf(LOG_ERR, "Unable to Get Channel Access (non-volatile)");
-		return (-1);
-	}
-
-	printf("  Non-Volatile Settings\n");
-	printf("    Alerting            : %sabled\n",
-			(channel_access.alerting) ? "dis" : "en");
-	printf("    Per-message Auth    : %sabled\n",
-			(channel_access.per_message_auth) ? "dis" : "en");
-	printf("    User Level Auth     : %sabled\n",
-			(channel_access.user_level_auth) ? "dis" : "en");
-	printf("    Access Mode         : ");
-	switch (channel_access.access_mode) {
-		case 0:
-			printf("disabled\n");
-			break;
-		case 1:
-			printf("pre-boot only\n");
-			break;
-		case 2:
-			printf("always available\n");
-			break;
-		case 3:
-			printf("shared\n");
-			break;
-		default:
-			printf("unknown\n");
-			break;
-	}
-	return 0;
-}
-
-/* ipmi_get_user_access - Get User Access for given Channel and User or Users.
- *
- * @intf - IPMI interface
- * @channel - IPMI Channel we're getting access for
- * @user_id - User ID. If 0 is passed, all IPMI users will be listed
- *
- * returns - 0 on success, (-1) on error
- */
-static int
-ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
-{
-	struct user_access_t user_access;
-	struct user_name_t user_name;
-	int ccode = 0;
-	int curr_uid;
-	int init = 1;
-	int max_uid = 0;
-
-	curr_uid = user_id ? user_id : 1;
-	do {
-		memset(&user_access, 0, sizeof(user_access));
-		user_access.channel = channel;
-		user_access.user_id = curr_uid;
-		ccode = _ipmi_get_user_access(intf, &user_access);
-		if (eval_ccode(ccode) != 0) {
-			lprintf(LOG_ERR,
-					"Unable to Get User Access (channel %d id %d)",
-					channel, curr_uid);
-			return (-1);
-		}
-
-		memset(&user_name, 0, sizeof(user_name));
-		user_name.user_id = curr_uid;
-		ccode = _ipmi_get_user_name(intf, &user_name);
-		if (eval_ccode(ccode) != 0) {
-			lprintf(LOG_ERR, "Unable to Get User Name (id %d)", curr_uid);
-			return (-1);
-		}
-		if (init) {
-			printf("Maximum User IDs     : %d\n", user_access.max_user_ids);
-			printf("Enabled User IDs     : %d\n", user_access.enabled_user_ids);
-			max_uid = user_access.max_user_ids;
-			init = 0;
-		}
-
-		printf("\n");
-		printf("User ID              : %d\n", curr_uid);
-		printf("User Name            : %s\n", user_name.user_name);
-		printf("Fixed Name           : %s\n",
-		       (curr_uid <= user_access.fixed_user_ids) ? "Yes" : "No");
-		printf("Access Available     : %s\n",
-		       (user_access.callin_callback) ? "callback" : "call-in / callback");
-		printf("Link Authentication  : %sabled\n",
-		       (user_access.link_auth) ? "en" : "dis");
-		printf("IPMI Messaging       : %sabled\n",
-		       (user_access.ipmi_messaging) ? "en" : "dis");
-		printf("Privilege Level      : %s\n",
-		       val2str(user_access.privilege_limit, ipmi_privlvl_vals));
-
-		curr_uid ++;
-	} while (!user_id && curr_uid <= max_uid);
-
-	return 0;
-}
-
-static const char *
-iana_string(uint32_t iana)
-{
-	static char s[10];
-
-	if (iana) {
-		sprintf(s, "%06x", iana);
-		return s;
-	} else {
-		return "N/A";
-	}
-}
-
 
 static int
 ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
@@ -645,6 +454,142 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	return 0;
 }
 
+/**
+ * ipmi_get_channel_info
+ *
+ * returns 0 on success
+ *         -1 on failure
+ *
+ */
+int
+ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
+{
+	struct channel_info_t channel_info = {0};
+	struct channel_access_t channel_access = {0};
+	int ccode = 0;
+
+	channel_info.channel = channel;
+	ccode = _ipmi_get_channel_info(intf, &channel_info);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Unable to Get Channel Info");
+		return (-1);
+	}
+
+	printf("Channel 0x%x info:\n", channel_info.channel);
+	printf("  Channel Medium Type   : %s\n",
+		   val2str(channel_info.medium,
+			   ipmi_channel_medium_vals));
+	printf("  Channel Protocol Type : %s\n",
+		   val2str(channel_info.protocol,
+			   ipmi_channel_protocol_vals));
+	printf("  Session Support       : ");
+	switch (channel_info.session_support) {
+		case IPMI_CHANNEL_SESSION_LESS:
+			printf("session-less\n");
+			break;
+		case IPMI_CHANNEL_SESSION_SINGLE:
+			printf("single-session\n");
+			break;
+		case IPMI_CHANNEL_SESSION_MULTI:
+			printf("multi-session\n");
+			break;
+		case IPMI_CHANNEL_SESSION_BASED:
+			printf("session-based\n");
+			break;
+		default:
+			printf("unknown\n");
+			break;
+	}
+	printf("  Active Session Count  : %d\n",
+		   channel_info.active_sessions);
+	printf("  Protocol Vendor ID    : %d\n",
+		   channel_info.vendor_id[0]      |
+		   channel_info.vendor_id[1] << 8 |
+		   channel_info.vendor_id[2] << 16);
+
+	/* only proceed if this is LAN channel */
+	if (channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN
+		&& channel_info.medium != IPMI_CHANNEL_MEDIUM_LAN_OTHER) {
+		return 0;
+	}
+
+	channel_access.channel = channel_info.channel;
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 1);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Unable to Get Channel Access (volatile)");
+		return (-1);
+	}
+
+	printf("  Volatile(active) Settings\n");
+	printf("    Alerting            : %sabled\n",
+			(channel_access.alerting) ? "dis" : "en");
+	printf("    Per-message Auth    : %sabled\n",
+			(channel_access.per_message_auth) ? "dis" : "en");
+	printf("    User Level Auth     : %sabled\n",
+			(channel_access.user_level_auth) ? "dis" : "en");
+	printf("    Access Mode         : ");
+	switch (channel_access.access_mode) {
+		case 0:
+			printf("disabled\n");
+			break;
+		case 1:
+			printf("pre-boot only\n");
+			break;
+		case 2:
+			printf("always available\n");
+			break;
+		case 3:
+			printf("shared\n");
+			break;
+		default:
+			printf("unknown\n");
+			break;
+	}
+
+	memset(&channel_access, 0, sizeof(channel_access));
+	channel_access.channel = channel_info.channel;
+	/* get non-volatile settings */
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Unable to Get Channel Access (non-volatile)");
+		return (-1);
+	}
+
+	printf("  Non-Volatile Settings\n");
+	printf("    Alerting            : %sabled\n",
+			(channel_access.alerting) ? "dis" : "en");
+	printf("    Per-message Auth    : %sabled\n",
+			(channel_access.per_message_auth) ? "dis" : "en");
+	printf("    User Level Auth     : %sabled\n",
+			(channel_access.user_level_auth) ? "dis" : "en");
+	printf("    Access Mode         : ");
+	switch (channel_access.access_mode) {
+		case 0:
+			printf("disabled\n");
+			break;
+		case 1:
+			printf("pre-boot only\n");
+			break;
+		case 2:
+			printf("always available\n");
+			break;
+		case 3:
+			printf("shared\n");
+			break;
+		default:
+			printf("unknown\n");
+			break;
+	}
+	return 0;
+}
+
+/* ipmi_get_channel_medium - Return Medium of given IPMI Channel.
+ *
+ * @channel - IPMI Channel
+ *
+ * returns - IPMI Channel Medium, IPMI_CHANNEL_MEDIUM_RESERVED if ccode > 0,
+ * 0 on error.
+ */
 uint8_t
 ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 {
@@ -667,43 +612,69 @@ ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 	return channel_info.medium;
 }
 
-uint8_t
-ipmi_current_channel_medium(struct ipmi_intf *intf)
+/* ipmi_get_user_access - Get User Access for given Channel and User or Users.
+ *
+ * @intf - IPMI interface
+ * @channel - IPMI Channel we're getting access for
+ * @user_id - User ID. If 0 is passed, all IPMI users will be listed
+ *
+ * returns - 0 on success, (-1) on error
+ */
+static int
+ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 {
-	return ipmi_get_channel_medium(intf, 0xE);
-}
+	struct user_access_t user_access;
+	struct user_name_t user_name;
+	int ccode = 0;
+	int curr_uid;
+	int init = 1;
+	int max_uid = 0;
 
-/* printf_channel_usage - print-out help. */
-void
-printf_channel_usage()
-{
-	lprintf(LOG_NOTICE,
-"Channel Commands: authcap   <channel number> <max privilege>");
-	lprintf(LOG_NOTICE,
-"                  getaccess <channel number> [user id]");
-	lprintf(LOG_NOTICE,
-"                  setaccess <channel number> "
-"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
-	lprintf(LOG_NOTICE,
-"                  info      [channel number]");
-	lprintf(LOG_NOTICE,
-"                  getciphers <ipmi | sol> [channel]");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"Possible privilege levels are:");
-	lprintf(LOG_NOTICE,
-"   1   Callback level");
-	lprintf(LOG_NOTICE,
-"   2   User level");
-	lprintf(LOG_NOTICE,
-"   3   Operator level");
-	lprintf(LOG_NOTICE,
-"   4   Administrator level");
-	lprintf(LOG_NOTICE,
-"   5   OEM Proprietary level");
-	lprintf(LOG_NOTICE,
-"  15   No access");
+	curr_uid = user_id ? user_id : 1;
+	do {
+		memset(&user_access, 0, sizeof(user_access));
+		user_access.channel = channel;
+		user_access.user_id = curr_uid;
+		ccode = _ipmi_get_user_access(intf, &user_access);
+		if (eval_ccode(ccode) != 0) {
+			lprintf(LOG_ERR,
+					"Unable to Get User Access (channel %d id %d)",
+					channel, curr_uid);
+			return (-1);
+		}
+
+		memset(&user_name, 0, sizeof(user_name));
+		user_name.user_id = curr_uid;
+		ccode = _ipmi_get_user_name(intf, &user_name);
+		if (eval_ccode(ccode) != 0) {
+			lprintf(LOG_ERR, "Unable to Get User Name (id %d)", curr_uid);
+			return (-1);
+		}
+		if (init) {
+			printf("Maximum User IDs     : %d\n", user_access.max_user_ids);
+			printf("Enabled User IDs     : %d\n", user_access.enabled_user_ids);
+			max_uid = user_access.max_user_ids;
+			init = 0;
+		}
+
+		printf("\n");
+		printf("User ID              : %d\n", curr_uid);
+		printf("User Name            : %s\n", user_name.user_name);
+		printf("Fixed Name           : %s\n",
+		       (curr_uid <= user_access.fixed_user_ids) ? "Yes" : "No");
+		printf("Access Available     : %s\n",
+		       (user_access.callin_callback) ? "callback" : "call-in / callback");
+		printf("Link Authentication  : %sabled\n",
+		       (user_access.link_auth) ? "en" : "dis");
+		printf("IPMI Messaging       : %sabled\n",
+		       (user_access.ipmi_messaging) ? "en" : "dis");
+		printf("Privilege Level      : %s\n",
+		       val2str(user_access.privilege_limit, ipmi_privlvl_vals));
+
+		curr_uid ++;
+	} while (!user_id && curr_uid <= max_uid);
+
+	return 0;
 }
 
 /* ipmi_set_user_access - Query BMC for current Channel ACLs, parse CLI args
@@ -860,4 +831,37 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 		retval = -1;
 	}
 	return retval;
+}
+
+/* printf_channel_usage - print-out help. */
+void
+printf_channel_usage()
+{
+	lprintf(LOG_NOTICE,
+"Channel Commands: authcap   <channel number> <max privilege>");
+	lprintf(LOG_NOTICE,
+"                  getaccess <channel number> [user id]");
+	lprintf(LOG_NOTICE,
+"                  setaccess <channel number> "
+"<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
+	lprintf(LOG_NOTICE,
+"                  info      [channel number]");
+	lprintf(LOG_NOTICE,
+"                  getciphers <ipmi | sol> [channel]");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"Possible privilege levels are:");
+	lprintf(LOG_NOTICE,
+"   1   Callback level");
+	lprintf(LOG_NOTICE,
+"   2   User level");
+	lprintf(LOG_NOTICE,
+"   3   Operator level");
+	lprintf(LOG_NOTICE,
+"   4   Administrator level");
+	lprintf(LOG_NOTICE,
+"   5   OEM Proprietary level");
+	lprintf(LOG_NOTICE,
+"  15   No access");
 }
