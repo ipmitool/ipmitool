@@ -413,7 +413,6 @@ ipmi_isol_deactivate(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq   req;
 	uint8_t    data[6];	 
-	struct isol_config_parameters params;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_ISOL;

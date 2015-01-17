@@ -361,7 +361,6 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	struct addrinfo hints;
 	struct addrinfo *rp0 = NULL, *rp;
 	char service[NI_MAXSERV];
-	int rc;
 
 	if (!intf || intf->session == NULL) {
 		return -1;

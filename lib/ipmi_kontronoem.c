@@ -176,7 +176,6 @@ ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
-	int i;
 	memset(msg_data, 0, sizeof(msg_data));
 	/* channel =~ 0x0e => Currently running interface */
 	msg_data[0] = channel;

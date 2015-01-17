@@ -377,8 +377,6 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	if(intf->transit_addr != 0 && intf->transit_addr != intf->my_addr) {
-	   uint8_t index = 0;
-     
 	   /* ipmb_addr.transit_slave_addr = intf->transit_addr; */
 	   lprintf(LOG_DEBUG, "Decapsulating data received from transit "
 		   "IPMB target @ 0x%x", intf->transit_addr);

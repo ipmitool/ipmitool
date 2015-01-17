@@ -399,7 +399,6 @@ ipmi_ekanalyzer_usage(void)
 static int
 ipmi_ek_get_file_type(char *argument)
 {
-	int index_name=0;
 	int filetype = ERROR_STATUS;
 	if (strlen(argument) <= MIN_ARGUMENT) {
 		return filetype;

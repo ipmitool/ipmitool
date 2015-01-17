@@ -160,7 +160,6 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 				struct sdr_record_common_sensor *sensor,
 				uint8_t sdr_record_type)
 {
-	const char *id;
 	struct sensor_reading *sr;
 
 	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 3);

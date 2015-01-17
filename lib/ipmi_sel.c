@@ -531,7 +531,6 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	char *desc = NULL;
-	char *str;
 	int chipset_type = 1;
 	int data1;
 	int data2;
@@ -651,17 +650,13 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 
 	unsigned char count;
 	unsigned char node;
-	unsigned char num;
 	unsigned char dimmNum;
 	unsigned char dimmsPerNode;
 	char          dimmStr[MAX_DIMM_STR];
-	char          cardStr[MAX_CARD_STR];
-	char          numStr[MAX_CARDNO_STR];
 	char          tmpdesc[SIZE_OF_DESC];
 	char*         str;
 	unsigned char incr = 0;
 	unsigned char i=0,j = 0;
-	unsigned char postCode;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	char tmpData;

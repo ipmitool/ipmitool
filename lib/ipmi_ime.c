@@ -431,7 +431,6 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
          if(currentPercent != shownPercent)
          {
             uint16_t timeElapsedSecond;
-            uint16_t timeRemainingSecond;
             shownPercent = currentPercent;
             printf("Percent: %02i,  ", shownPercent);
             time(&current);
@@ -965,8 +964,6 @@ static int ImeManualRollback(struct ipmi_intf *intf)
 {
    int rc = IME_SUCCESS;
    tImeStatus imeStatus;
-   time_t start,end,current;
-   
 
    rc = ImeUpdateRegisterUpdate(intf, IME_UPDTYPE_MANUAL_ROLLBACK);
    ImeUpdateGetStatus(intf,&imeStatus);

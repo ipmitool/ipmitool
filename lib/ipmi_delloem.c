@@ -589,7 +589,6 @@ int
 ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
 		uint8_t max_length, uint8_t field_type)
 {
-	uint8_t data[4];
 	int bytes_copied = 0;
 	int ii = 0;
 	int lcdstring_len = 0;
@@ -706,7 +705,6 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
 static int
 ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
 {
-	uint8_t data[4];
 	int rc;
 	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0,
 			sizeof(lcd_mode), &lcd_mode);
@@ -2061,7 +2059,6 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	int failover = 0;
-	int nic_selection_mode = 0;
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
 
@@ -2224,7 +2221,6 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 static int
 get_nic_selection_mode(int current_arg, char ** argv)
 {
-	int nic_selection_mode = 0;
 	if (argv[current_arg] != NULL
 			&& strncmp(argv[current_arg], "dedicated\0", 10) == 0) {
 		return DEDICATED;
@@ -3561,7 +3557,6 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 static int
 ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 {
-	uint64_t tempbtuphrconv;
 	uint8_t *rdata;
 	int rc;
 	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0,

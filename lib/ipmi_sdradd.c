@@ -512,7 +512,6 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
 int
 ipmi_sdr_add_from_list(struct ipmi_intf *intf, const char *rangeList)
 {
-  int i;
   int rc = 0;
   int slave_addr;
   int myaddr = intf->target_addr;
@@ -575,7 +574,6 @@ ipmi_sdr_add_from_list(struct ipmi_intf *intf, const char *rangeList)
 static int
 ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
 {
-  struct sdr_get_rs header;
   int rc = 0;
   int fd;
   uint8_t binHdr[5];

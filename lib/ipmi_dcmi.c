@@ -494,7 +494,6 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 			"DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.");
 	return (-1);
 # else
-	int rc;
 	struct ipmi_session *s;
 
 	if (intf->opened == 0 && intf->open != NULL) {
@@ -552,8 +551,6 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 static int
 ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 {
-	uint8_t i;
-	uint8_t bit_shifter = 0;
 	struct capabilities cape;
 	struct ipmi_rs * rsp;
 	rsp = ipmi_dcmi_getcapabilities(intf, selector);
@@ -728,7 +725,6 @@ ipmi_dcmi_getassettag(struct ipmi_intf * intf, uint8_t offset, uint8_t length)
 static int
 ipmi_dcmi_prnt_getassettag(struct ipmi_intf * intf)
 {
-	uint8_t data_byte2;
 	struct ipmi_rs * rsp; /* ipmi response */
 	uint8_t taglength = 0;
 	uint8_t getlength = 0;
@@ -800,7 +796,6 @@ ipmi_dcmi_setassettag(struct ipmi_intf * intf, uint8_t offset, uint8_t length,
 static int
 ipmi_dcmi_prnt_setassettag(struct ipmi_intf * intf, uint8_t * data)
 {
-	uint8_t data_byte2;
 	struct ipmi_rs * rsp; /* ipmi response */
 	uint8_t tmpData[DCMI_MAX_BYTE_SIZE];
 	uint8_t taglength = 0;
@@ -864,7 +859,6 @@ ipmi_dcmi_getmngctrlids(struct ipmi_intf * intf, uint8_t offset, uint8_t length)
 static int
 ipmi_dcmi_prnt_getmngctrlids(struct ipmi_intf * intf)
 {
-	uint8_t data_byte2;
 	struct ipmi_rs * rsp; /* ipmi response */
 	uint8_t taglength = 0;
 	uint8_t getlength = 0;
@@ -942,7 +936,6 @@ ipmi_dcmi_setmngctrlids(struct ipmi_intf * intf, uint8_t offset, uint8_t length,
 static int
 ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
 {
-	uint8_t data_byte2;
 	struct ipmi_rs * rsp; /* ipmi response */
 	uint8_t tmpData[DCMI_MAX_BYTE_SIZE];
 	uint8_t taglength = 0;
@@ -1496,7 +1489,6 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	struct power_limit val;
 	uint8_t msg_data[15]; /* number of request data bytes */
 	uint32_t lvalue = 0;
-	int i;
 
 	rsp = ipmi_dcmi_pwr_glimit(intf); /* get the power limit settings */
 # if 0
@@ -1741,8 +1733,7 @@ int
 ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 {
 	int rc = 0;
-	uint8_t ctl = 0;
-	int i, ii, instances;
+	int i;
 	struct ipmi_rs *rsp;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {

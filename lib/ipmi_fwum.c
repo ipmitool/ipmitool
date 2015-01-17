@@ -858,7 +858,6 @@ KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 	unsigned long lastAddress = 0;
 	unsigned char sequenceNumber = 0;
 	unsigned char retry = FWUM_MAX_UPLOAD_RETRY;
-	unsigned char isLengthValid = 1;
 	do {
 		writeSize = save_fw_nfo.bufferSize - save_fw_nfo.overheadSize;
 		/* Reach the end */

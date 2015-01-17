@@ -1564,8 +1564,6 @@ static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
 	static int badParams=FALSE;
 	int start = off;
 	int offset = start;
-	int length = len;
-	int i;
 	offset += sizeof(struct fru_multirec_oem_header);
 
 	if(!badParams){
@@ -2147,7 +2145,6 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 		{
 			unsigned int entries;
 			unsigned int feeds;
-			unsigned int feedcnt;
 			unsigned int hwaddr;
 			unsigned int i;
 			unsigned int id;
@@ -4850,8 +4847,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 											struct fru_info fru, struct fru_header header,
 											uint8_t f_type, uint8_t f_index, char *f_string)
 {
-	uint8_t msg_data[4];
-	uint8_t checksum;
 	int i = 0;
 	uint8_t *fru_data_old = NULL;
 	uint8_t *fru_data_new = NULL;

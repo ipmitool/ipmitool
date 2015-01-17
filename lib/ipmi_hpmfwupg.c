@@ -998,7 +998,6 @@ HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 	unsigned char *pImagePtr;
 	unsigned int actionsSize;
 	int flagColdReset = FALSE;
-	time_t start,end;
 	/* Put pointer after image header */
 	pImagePtr = (unsigned char*)
 		(pFwupgCtx->pImageData + sizeof(struct HpmfwupgImageHeader) +
@@ -1869,7 +1868,6 @@ HpmfwupgGetUpgradeStatus(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		int silent)
 {
-	int rc = HPMFWUPG_SUCCESS;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
