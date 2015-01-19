@@ -1086,10 +1086,6 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		free(fru_data);
 		fru_data = NULL;
 	}
-	if (fru_area != NULL) {
-		free(fru_area);
-		fru_area = NULL;
-	}
 }
 
 /* fru_area_print_product  -  Print FRU Product Area
