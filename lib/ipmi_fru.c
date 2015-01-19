@@ -1225,9 +1225,13 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 			break;
 	}
 
-	if (fru_area != NULL) {
+	if (fru_data != NULL) {
 		free(fru_data);
 		fru_data = NULL;
+	}
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
 	}
 }
 
