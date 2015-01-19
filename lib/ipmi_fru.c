@@ -3697,7 +3697,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 			char * pFileName,
 			uint8_t fruId)
 {
-	struct fru_info fruInfo;
+	struct fru_info fruInfo = {0};
 	uint8_t *buf = NULL;
 	uint32_t offFruMultiRec = 0;
 	uint32_t fruMultiRecSize = 0;
