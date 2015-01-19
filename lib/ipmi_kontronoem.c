@@ -346,11 +346,28 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	/* Position at Board Manufacturer */
 	fru_data_offset = (header.offset.board * 8) + 6;
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	/* Position at Board Product Name */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
+	if (fru_area == NULL) {
+		lprintf(LOG_ERR, "Failed to read FRU Area string.");
+		free(fru_data);
+		fru_data = NULL;
+		free(sn);
+		sn = NULL;
+		return (-1);
+	}
+
 	fru_data_offset++;
 	if (strlen(fru_area) != sn_size) {
 		printf("The length of the serial number in the FRU Board Area is wrong.\n");
@@ -358,7 +375,12 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		sn = NULL;
 		free(fru_data);
 		fru_data = NULL;
+		free(fru_area);
+		fru_area = NULL;
 		return(-1);
+	} else {
+		free(fru_area);
+		fru_area = NULL;
 	}
 	/* Copy the new serial number in the board section saved in memory*/
 	memcpy(fru_data + fru_data_offset, sn, sn_size);
@@ -379,6 +401,8 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		sn = NULL;
 		free(fru_data);
 		fru_data = NULL;
+		free(fru_area);
+		fru_area = NULL;
 		return(-1);
 	}
 	/* Set the Product Section */
@@ -389,26 +413,54 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		sn = NULL;
 		free(fru_data);
 		fru_data = NULL;
+		free(fru_area);
+		fru_area = NULL;
 		return(-1);
 	}
 	/* Position at Product Manufacturer */
 	fru_data_offset = (header.offset.product * 8) + 3;
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	/* Position at Product Name */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	/* Position at Product Part */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	/* Position at Product Version */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
+	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
+	if (fru_area == NULL) {
+		lprintf(LOG_ERR, "Failed to read FRU Area string.");
+		free(sn);
+		sn = NULL;
+		free(fru_data);
+		fru_data = NULL;
+		return (-1);
+	}
 	fru_data_offset ++;
 	if (strlen(fru_area) != sn_size) {
 		free(sn);
 		sn = NULL;
 		free(fru_data);
 		fru_data = NULL;
+		free(fru_area);
+		fru_area = NULL;
 		printf("The length of the serial number in the FRU Product Area is wrong.\n");
 		return(-1);
 	}
@@ -431,12 +483,16 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		sn = NULL;
 		free(fru_data);
 		fru_data = NULL;
+		free(fru_area);
+		fru_area = NULL;
 		return -1;
 	}
 	free(sn);
 	sn = NULL;
 	free(fru_data);
 	fru_data = NULL;
+	free(fru_area);
+	fru_area = NULL;
 	return(1);
 }
 
