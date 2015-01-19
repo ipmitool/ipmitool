@@ -958,9 +958,13 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		}
 	}
 
-	if (fru_area != NULL) {
+	if (fru_data != NULL) {
 		free(fru_data);
 		fru_data = NULL;
+	}
+	if (fru_area != NULL) {
+		free(fru_area);
+		fru_area = NULL;
 	}
 }
 
