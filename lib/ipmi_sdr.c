@@ -3977,7 +3977,7 @@ ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
 	}
 
 	while (feof(fp) == 0) {
-		memset(&header, 0, 5);
+		memset(&header, 0, sizeof(header));
 		bc = fread(&header, 1, 5, fp);
 		if (bc <= 0)
 			break;
