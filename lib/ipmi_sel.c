@@ -2871,25 +2871,27 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	uint16_t id;
-	int i, oldv;
-	struct sel_event_record evt;
-	struct sdr_record_list * sdr;
 	struct entity_id entity;
-	struct sdr_record_list * list, * entry;
+	struct sdr_record_list *entry;
+	struct sdr_record_list *list;
+	struct sdr_record_list *sdr;
+	struct sel_event_record evt;
+	int i;
+	int oldv;
 	int rc = 0;
+	uint16_t id;
 
 	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
 		lprintf(LOG_ERR, "usage: sel get <id>...<id>");
-		return -1;
+		return (-1);
 	}
 
 	if (ipmi_sel_reserve(intf) == 0) {
 		lprintf(LOG_ERR, "Unable to reserve SEL");
-		return -1;
+		return (-1);
 	}
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		if (str2ushort(argv[i], &id) != 0) {
 			lprintf(LOG_ERR, "Given SEL ID '%s' is invalid.",
 					argv[i]);
@@ -2905,16 +2907,21 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = (-1);
 			continue;
 		}
-		if (evt.sel_type.standard_type.sensor_num == 0 && evt.sel_type.standard_type.sensor_type == 0 && evt.record_type == 0) {
+		if (evt.sel_type.standard_type.sensor_num == 0
+				&& evt.sel_type.standard_type.sensor_type == 0
+				&& evt.record_type == 0) {
 			lprintf(LOG_WARN, "SEL Entry 0x%x not found", id);
-			rc = -1;
+			rc = (-1);
 			continue;
 		}
 
 		/* lookup SDR entry based on sensor number and type */
 		ipmi_sel_print_extended_entry_verbose(intf, &evt);
 
-		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt.sel_type.standard_type.gen_id, evt.sel_type.standard_type.sensor_num, evt.sel_type.standard_type.sensor_type);
+		sdr = ipmi_sdr_find_sdr_bynumtype(intf,
+				evt.sel_type.standard_type.gen_id,
+				evt.sel_type.standard_type.sensor_num,
+				evt.sel_type.standard_type.sensor_type);
 		if (sdr == NULL) {
 			continue;
 		}
@@ -2949,8 +2956,9 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_fru_print(intf, entry->record.fruloc);
 		}
 
-		if ((argc > 1) && (i<(argc-1)))
+		if ((argc > 1) && (i < (argc - 1))) {
 			printf("----------------------\n\n");
+		}
 	}
 
 	return rc;
