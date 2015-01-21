@@ -91,15 +91,22 @@ static int ipmi_sel_oem_readval(char *str)
  * reference to byte positions instead of array indexes which (hopefully)
  * helps make the code easier to read.
  */
-static int ipmi_sel_oem_match(uint8_t *evt, struct ipmi_sel_oem_msg_rec rec)
+static int
+ipmi_sel_oem_match(uint8_t *evt, struct ipmi_sel_oem_msg_rec rec)
 {
-	if (evt[2] == rec.value[SEL_BYTE(3)] &&
-	    ((rec.value[SEL_BYTE(4)]  < 0) || (evt[3]  == rec.value[SEL_BYTE(4)])) &&
-	    ((rec.value[SEL_BYTE(5)]  < 0) || (evt[4]  == rec.value[SEL_BYTE(5)])) &&
-	    ((rec.value[SEL_BYTE(6)]  < 0) || (evt[5]  == rec.value[SEL_BYTE(6)])) &&
-	    ((rec.value[SEL_BYTE(7)]  < 0) || (evt[6]  == rec.value[SEL_BYTE(7)])) &&
-	    ((rec.value[SEL_BYTE(11)] < 0) || (evt[10] == rec.value[SEL_BYTE(11)])) &&
-	    ((rec.value[SEL_BYTE(12)] < 0) || (evt[11] == rec.value[SEL_BYTE(12)]))) {
+	if (evt[2] == rec.value[SEL_BYTE(3)]
+		&& ((rec.value[SEL_BYTE(4)] < 0)
+			|| (evt[3] == rec.value[SEL_BYTE(4)]))
+		&& ((rec.value[SEL_BYTE(5)] < 0)
+			|| (evt[4] == rec.value[SEL_BYTE(5)]))
+		&& ((rec.value[SEL_BYTE(6)] < 0)
+			|| (evt[5] == rec.value[SEL_BYTE(6)]))
+		&& ((rec.value[SEL_BYTE(7)] < 0)
+			|| (evt[6] == rec.value[SEL_BYTE(7)]))
+		&& ((rec.value[SEL_BYTE(11)] < 0)
+			|| (evt[10] == rec.value[SEL_BYTE(11)]))
+		&& ((rec.value[SEL_BYTE(12)] < 0)
+			|| (evt[11] == rec.value[SEL_BYTE(12)]))) {
 		return 1;
 	} else {
 		return 0;
