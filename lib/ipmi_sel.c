@@ -556,12 +556,12 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 		return NULL;
 	}
 	/* Allocate mem for te Description string */
-	desc = (char *)malloc(SIZE_OF_DESC);
+	desc = malloc(sizeof(char) * SIZE_OF_DESC);
 	if (desc == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
-	memset(desc,0,SIZE_OF_DESC);
+	memset(desc, '\0', SIZE_OF_DESC);
 	sensor_type = rec->sel_type.standard_type.sensor_type;
 	switch (sensor_type) {
 		case SENSOR_TYPE_MEMORY:
@@ -623,7 +623,8 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 						(data2 >> 4) + 0x40 + (data3 & 0x3) * 3,
 						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
 			} else {
-				snprintf(desc, SIZE_OF_DESC, "");
+				/* No description. */
+				desc[0] = '\0';
 			}
 			break;
 		case SENSOR_TYPE_SUPERMICRO_OEM:
