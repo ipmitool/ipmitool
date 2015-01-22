@@ -2842,7 +2842,6 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 
 	for (; argc != 0; argc--)
 	{
-		id = (uint16_t) strtoul(argv[argc-1], NULL, 0);
 		if (str2ushort(argv[argc-1], &id) != 0) {
 			lprintf(LOG_ERR, "Given SEL ID '%s' is invalid.",
 					argv[argc-1]);
