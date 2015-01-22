@@ -1014,7 +1014,8 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 {
 	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
 	struct bmc_fn_support * bmc_fn_support;
-	unsigned int l, n, c, ret;
+	int ret;
+	unsigned int l, n, c;
 	unsigned char enables[MAX_COMMAND_BYTES];
 
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
@@ -1104,7 +1105,8 @@ ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
 	struct bmc_fn_support * bmc_fn_support;
-	unsigned int l, n, c, ret;
+	int ret;
+	unsigned int l, n, c;
 	unsigned char enables[MAX_COMMAND_BYTES];
 
 	if (argc < 1) {
