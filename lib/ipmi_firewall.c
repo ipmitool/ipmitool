@@ -512,7 +512,7 @@ _set_command_enables(struct ipmi_intf * intf,
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	unsigned char * d, rqdata[19];
+	unsigned char rqdata[19];
 	unsigned int c;
 
 	if (!p || !lnfn) {
@@ -568,8 +568,6 @@ _set_command_enables(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	d = rsp->data;
-
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = BMC_SET_COMMAND_ENABLES;
@@ -591,7 +589,6 @@ _set_command_enables(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	d = rsp->data;
 	return 0;
 }
 
