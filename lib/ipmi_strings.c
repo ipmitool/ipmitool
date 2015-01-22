@@ -68,6 +68,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_BULL,                   "Bull Company" },
    { IPMI_OEM_PPS,                    "Pigeon Point Systems" },
    { IPMI_OEM_BROADCOM,               "Broadcom Corporation" },
+   { IPMI_OEM_QUANTA,                 "Quanta" },
    { 0xffff , NULL },
 };
 
