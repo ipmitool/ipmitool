@@ -92,21 +92,21 @@ static int ipmi_sel_oem_readval(char *str)
  * helps make the code easier to read.
  */
 static int
-ipmi_sel_oem_match(uint8_t *evt, struct ipmi_sel_oem_msg_rec rec)
+ipmi_sel_oem_match(uint8_t *evt, const struct ipmi_sel_oem_msg_rec *rec)
 {
-	if (evt[2] == rec.value[SEL_BYTE(3)]
-		&& ((rec.value[SEL_BYTE(4)] < 0)
-			|| (evt[3] == rec.value[SEL_BYTE(4)]))
-		&& ((rec.value[SEL_BYTE(5)] < 0)
-			|| (evt[4] == rec.value[SEL_BYTE(5)]))
-		&& ((rec.value[SEL_BYTE(6)] < 0)
-			|| (evt[5] == rec.value[SEL_BYTE(6)]))
-		&& ((rec.value[SEL_BYTE(7)] < 0)
-			|| (evt[6] == rec.value[SEL_BYTE(7)]))
-		&& ((rec.value[SEL_BYTE(11)] < 0)
-			|| (evt[10] == rec.value[SEL_BYTE(11)]))
-		&& ((rec.value[SEL_BYTE(12)] < 0)
-			|| (evt[11] == rec.value[SEL_BYTE(12)]))) {
+	if (evt[2] == rec->value[SEL_BYTE(3)]
+		&& ((rec->value[SEL_BYTE(4)] < 0)
+			|| (evt[3] == rec->value[SEL_BYTE(4)]))
+		&& ((rec->value[SEL_BYTE(5)] < 0)
+			|| (evt[4] == rec->value[SEL_BYTE(5)]))
+		&& ((rec->value[SEL_BYTE(6)] < 0)
+			|| (evt[5] == rec->value[SEL_BYTE(6)]))
+		&& ((rec->value[SEL_BYTE(7)] < 0)
+			|| (evt[6] == rec->value[SEL_BYTE(7)]))
+		&& ((rec->value[SEL_BYTE(11)] < 0)
+			|| (evt[10] == rec->value[SEL_BYTE(11)]))
+		&& ((rec->value[SEL_BYTE(12)] < 0)
+			|| (evt[11] == rec->value[SEL_BYTE(12)]))) {
 		return 1;
 	} else {
 		return 0;
@@ -198,7 +198,7 @@ static void ipmi_sel_oem_message(struct sel_event_record * evt, int verbose)
 	int i, j;
 
 	for (i=0; i < sel_oem_nrecs; i++) {
-		if (ipmi_sel_oem_match((uint8_t *)evt, sel_oem_msg[i])) {
+		if (ipmi_sel_oem_match((uint8_t *)evt, &sel_oem_msg[i])) {
 			printf (csv_output ? ",\"%s\"" : " | %s", sel_oem_msg[i].text);
 			for (j=4; j<17; j++) {
 				if (sel_oem_msg[i].value[SEL_BYTE(j)] == -3) {
