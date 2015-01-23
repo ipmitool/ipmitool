@@ -1310,7 +1310,6 @@ get_cmdline_ipaddr(char * arg, uint8_t * buf)
 	return 0;
 }
 
-/* TODO - formatting, vlan->VLAN */
 static int
 ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 {
@@ -1329,7 +1328,7 @@ ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 		}
 
 		if (id < 1 || id > 4094) {
-			lprintf(LOG_NOTICE, "vlan id must be between 1 and 4094.");
+			lprintf(LOG_NOTICE, "VLAN ID must be between 1 and 4094.");
 			return -1;
 		}
 		else {
@@ -1341,7 +1340,6 @@ ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 	return rc;
 }
 
-/* TODO - formatting, vlan->VLAN */
 static int
 ipmi_lan_set_vlan_priority(struct ipmi_intf * intf,  uint8_t chan, char *string)
 {
@@ -1354,7 +1352,7 @@ ipmi_lan_set_vlan_priority(struct ipmi_intf * intf,  uint8_t chan, char *string)
 	}
 
 	if (priority < 0 || priority > 7) {
-		lprintf(LOG_NOTICE, "vlan priority must be between 0 and 7.");
+		lprintf(LOG_NOTICE, "VLAN priority must be between 0 and 7.");
 		return -1;
 	}
 	data = (uint8_t)priority;
