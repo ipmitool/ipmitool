@@ -1173,16 +1173,34 @@ ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 	return 0;
 }
 
+/* get_cmdline_macaddr - parse-out MAC address from given string and store it
+ * into buffer.
+ *
+ * @arg: string to be parsed.
+ * @buf: buffer of 6 to hold parsed MAC address.
+ *
+ * returns zero on success, (-1) on error and error message is printed-out. 
+ */
 static int
-get_cmdline_macaddr(char * arg, uint8_t * buf)
+get_cmdline_macaddr(char *arg, uint8_t *buf)
 {
-	uint32_t m1, m2, m3, m4, m5, m6;
+	uint32_t m1 = 0;
+	uint32_t m2 = 0;
+	uint32_t m3 = 0;
+	uint32_t m4 = 0;
+	uint32_t m5 = 0;
+	uint32_t m6 = 0;
 	if (sscanf(arg, "%02x:%02x:%02x:%02x:%02x:%02x",
 		   &m1, &m2, &m3, &m4, &m5, &m6) != 6) {
 		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
 		return -1;
 	}
-	/* TODO - UINT8_MAX check */
+	if (m1 > UINT8_MAX || m2 > UINT8_MAX
+			|| m3 > UINT8_MAX || m4 > UINT8_MAX
+			|| m5 > UINT8_MAX || m6 > UINT8_MAX) {
+		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
+		return -1;
+	}
 	buf[0] = (uint8_t)m1;
 	buf[1] = (uint8_t)m2;
 	buf[2] = (uint8_t)m3;
