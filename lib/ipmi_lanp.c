@@ -56,6 +56,20 @@
 
 extern int verbose;
 
+static void print_lan_alert_print_usage(void);
+static void print_lan_alert_set_usage(void);
+static void print_lan_set_usage(void);
+static void print_lan_set_access_usage(void);
+static void print_lan_set_arp_usage(void);
+static void print_lan_set_auth_usage(void);
+static void print_lan_set_bakgw_usage(void);
+static void print_lan_set_cipher_privs_usage(void);
+static void print_lan_set_defgw_usage(void);
+static void print_lan_set_ipsrc_usage(void);
+static void print_lan_set_snmp_usage(void);
+static void print_lan_set_vlan_usage(void);
+static void print_lan_usage(void);
+
 /* is_lan_channel - Check if channel is LAN medium
  *
  * return 1 if channel is LAN
@@ -1278,53 +1292,6 @@ get_cmdline_ipaddr(char * arg, uint8_t * buf)
 	return 0;
 }
 
-static void ipmi_lan_set_usage(void)
-{
-	lprintf(LOG_NOTICE, "\nusage: lan set <channel> <command> <parameter>\n");
-	lprintf(LOG_NOTICE, "LAN set command/parameter options:");
-	lprintf(LOG_NOTICE, "  ipaddr <x.x.x.x>               Set channel IP address");
-	lprintf(LOG_NOTICE, "  netmask <x.x.x.x>              Set channel IP netmask");
-	lprintf(LOG_NOTICE, "  macaddr <x:x:x:x:x:x>          Set channel MAC address");
-	lprintf(LOG_NOTICE, "  defgw ipaddr <x.x.x.x>         Set default gateway IP address");
-	lprintf(LOG_NOTICE, "  defgw macaddr <x:x:x:x:x:x>    Set default gateway MAC address");
-	lprintf(LOG_NOTICE, "  bakgw ipaddr <x.x.x.x>         Set backup gateway IP address");
-	lprintf(LOG_NOTICE, "  bakgw macaddr <x:x:x:x:x:x>    Set backup gateway MAC address");
-	lprintf(LOG_NOTICE, "  password <password>            Set session password for this channel");
-	lprintf(LOG_NOTICE, "  snmp <community string>        Set SNMP public community string");
-	lprintf(LOG_NOTICE, "  user                           Enable default user for this channel");
-	lprintf(LOG_NOTICE, "  access <on|off>                Enable or disable access to this channel");
-	lprintf(LOG_NOTICE, "  alert <on|off>                 Enable or disable PEF alerting for this channel");
-	lprintf(LOG_NOTICE, "  arp respond <on|off>           Enable or disable BMC ARP responding");
-	lprintf(LOG_NOTICE, "  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
-	lprintf(LOG_NOTICE, "  arp interval <seconds>         Set gratuitous ARP generation interval");
-	lprintf(LOG_NOTICE, "  vlan id <off|<id>>             Disable or enable VLAN and set ID (1-4094)");
-	lprintf(LOG_NOTICE, "  vlan priority <priority>       Set vlan priority (0-7)");
-	lprintf(LOG_NOTICE, "  auth <level> <type,..>         Set channel authentication types");
-	lprintf(LOG_NOTICE, "    level  = CALLBACK, USER, OPERATOR, ADMIN");
-	lprintf(LOG_NOTICE, "    type   = NONE, MD2, MD5, PASSWORD, OEM");
-	lprintf(LOG_NOTICE, "  ipsrc <source>                 Set IP Address source");
-	lprintf(LOG_NOTICE, "    none   = unspecified source");
-	lprintf(LOG_NOTICE, "    static = address manually configured to be static");
-	lprintf(LOG_NOTICE, "    dhcp   = address obtained by BMC running DHCP");
-	lprintf(LOG_NOTICE, "    bios   = address loaded by BIOS or system software");
-	lprintf(LOG_NOTICE, "  cipher_privs XXXXXXXXXXXXXXX   Set RMCP+ cipher suite privilege levels");
-	lprintf(LOG_NOTICE, "    X = Cipher Suite Unused");
-	lprintf(LOG_NOTICE, "    c = CALLBACK");
-	lprintf(LOG_NOTICE, "    u = USER");
-	lprintf(LOG_NOTICE, "    o = OPERATOR");
-	lprintf(LOG_NOTICE, "    a = ADMIN");
-	lprintf(LOG_NOTICE, "    O = OEM\n");
-}
-
-static void
-ipmi_lan_set_vlan_usage(void)
-{
-	lprintf(LOG_NOTICE,
-		"lan set <channel> vlan id <id>\n"
-		"lan set <channel> vlan id off\n"
-		"lan set <channel> vlan priority <priority>\n");
-}
-
 /* TODO - formatting, vlan->VLAN */
 static int
 ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
@@ -1385,13 +1352,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if (argc < 2) {
-		ipmi_lan_set_usage();
+		print_lan_set_usage();
 		return (-1);
 	}
 
 	if (strncmp(argv[0], "help", 4) == 0 ||
 	    strncmp(argv[1], "help", 4) == 0) {
-		ipmi_lan_set_usage();
+		print_lan_set_usage();
 		return 0;
 	}
 	
@@ -1403,7 +1370,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* find type of channel and only accept 802.3 LAN */
 	if (!is_lan_channel(intf, chan)) {
 		lprintf(LOG_ERR, "Channel %d is not a LAN channel!", chan);
-		ipmi_lan_set_usage();
+		print_lan_set_usage();
 		return -1;
 	}
 
@@ -1416,11 +1383,11 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* set channel access mode */
 	else if (strncmp(argv[1], "access", 6) == 0) {
 		if (argc < 3) {
-			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			print_lan_set_access_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			print_lan_set_access_usage();
 			return 0;
 		}
 		else if (strncmp(argv[2], "on", 2) == 0) {
@@ -1430,27 +1397,18 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_set_channel_access(intf, chan, 0);
 		}
 		else {
-			lprintf(LOG_NOTICE, "lan set access <on|off>");
+			print_lan_set_access_usage();
 			return (-1);
 		}
 	}
 	/* set ARP control */
 	else if (strncmp(argv[1], "arp", 3) == 0) {
 		if (argc < 3) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> arp respond <on|off>\n"
-				"lan set <channel> arp generate <on|off>\n"
-				"lan set <channel> arp interval <seconds>\n\n"
-				"example: lan set 7 arp gratuitous off\n");
+			print_lan_set_arp_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> arp respond <on|off>\n"
-				"lan set <channel> arp generate <on|off>\n"
-				"lan set <channel> arp interval <seconds>\n\n"
-				"example: lan set 7 arp gratuitous off\n");
-			return 0;
+			print_lan_set_arp_usage();
 		}
 		else if (strncmp(argv[2], "interval", 8) == 0) {
 			uint8_t interval = 0;
@@ -1462,7 +1420,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else if (strncmp(argv[2], "generate", 8) == 0) {
 			if (argc < 4) {
-				lprintf(LOG_NOTICE, "lan set <channel> arp generate <on|off>");
+				print_lan_set_arp_usage();
 				return (-1);
 			}
 			else if (strncmp(argv[3], "on", 2) == 0)
@@ -1470,13 +1428,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			else if (strncmp(argv[3], "off", 3) == 0)
 				rc = lan_set_arp_generate(intf, chan, 0);
 			else {
-				lprintf(LOG_NOTICE, "lan set <channel> arp generate <on|off>");
+				print_lan_set_arp_usage();
 				return (-1);
 			}
 		}
 		else if (strncmp(argv[2], "respond", 7) == 0) {
 			if (argc < 4) {
-				lprintf(LOG_NOTICE, "lan set <channel> arp respond <on|off>");
+				print_lan_set_arp_usage();
 				return (-1);
 			}
 			else if (strncmp(argv[3], "on", 2) == 0)
@@ -1484,34 +1442,22 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			else if (strncmp(argv[3], "off", 3) == 0)
 				rc = lan_set_arp_respond(intf, chan, 0);
 			else {
-				lprintf(LOG_NOTICE, "lan set <channel> arp respond <on|off>");
+				print_lan_set_arp_usage();
 				return (-1);
 			}
 		}
 		else {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> arp respond <on|off>\n"
-				"lan set <channel> arp generate <on|off>\n"
-				"lan set <channel> arp interval <seconds>\n");
-			return (-1);
+			print_lan_set_arp_usage();
 		}
 	}
 	/* set authentication types */
 	else if (strncmp(argv[1], "auth", 4) == 0) {
 		if (argc < 3) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> auth <level> <type,type,...>\n"
-				"  level = CALLBACK, USER, OPERATOR, ADMIN\n"
-				"  types = NONE, MD2, MD5, PASSWORD, OEM\n"
-				"example: lan set 7 auth ADMIN PASSWORD,MD5\n");
+			print_lan_set_auth_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> auth <level> <type,type,...>\n"
-				"  level = CALLBACK, USER, OPERATOR, ADMIN\n"
-				"  types = NONE, MD2, MD5, PASSWORD, OEM\n"
-				"example: lan set 7 auth ADMIN PASSWORD,MD5\n");
+			print_lan_set_auth_usage();
 			return 0;
 		} else {
 			rc = ipmi_lan_set_auth(intf, chan, argv[2], argv[3]);
@@ -1520,21 +1466,11 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* ip address source */
 	else if (strncmp(argv[1], "ipsrc", 5) == 0) {
 		if (argc < 3) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> ipsrc <source>\n"
-				"  none   = unspecified\n"
-				"  static = static address (manually configured)\n"
-				"  dhcp   = address obtained by BMC running DHCP\n"
-				"  bios   = address loaded by BIOS or system software\n");
+			print_lan_set_ipsrc_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> ipsrc <source>\n"
-				"  none   = unspecified\n"
-				"  static = static address (manually configured)\n"
-				"  dhcp   = address obtained by BMC running DHCP\n"
-				"  bios   = address loaded by BIOS or system software\n");
+			print_lan_set_ipsrc_usage();
 			return 0;
 		}
 		else if (strncmp(argv[2], "none", 4) == 0)
@@ -1546,12 +1482,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		else if (strncmp(argv[2], "bios", 4) == 0)
 			data[0] = 3;
 		else {
-			lprintf(LOG_NOTICE,
-				"lan set <channel> ipsrc <source>\n"
-				"  none   = unspecified\n"
-				"  static = static address (manually configured)\n"
-				"  dhcp   = address obtained by BMC running DHCP\n"
-				"  bios   = address loaded by BIOS or system software\n");
+			print_lan_set_ipsrc_usage();
 			return -1;
 		}
 		rc = set_lan_param(intf, chan, IPMI_LANP_IP_ADDR_SRC, data, 1);
@@ -1564,11 +1495,11 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* snmp community string */
 	else if (strncmp(argv[1], "snmp", 4) == 0) {
 		if (argc < 3) {
-			lprintf(LOG_NOTICE, "lan set <channel> snmp <community string>");
+			print_lan_set_snmp_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE, "lan set <channel> snmp <community string>");
+			print_lan_set_snmp_usage();
 			return 0;
 		} else {
 			memcpy(data, argv[2], __min(strlen(argv[2]), 18));
@@ -1581,7 +1512,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[1], "ipaddr", 6) == 0) {
 		if(argc != 3)
 		{
-			ipmi_lan_set_usage();
+			print_lan_set_usage();
 			return -1;
 		}
 		rc = get_cmdline_ipaddr(argv[2], data);
@@ -1596,7 +1527,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[1], "netmask", 7) == 0) {
 		if(argc != 3)
 		{
-			ipmi_lan_set_usage();
+			print_lan_set_usage();
 			return -1;
 		}
 		rc = get_cmdline_ipaddr(argv[2], data);
@@ -1611,7 +1542,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[1], "macaddr", 7) == 0) {
 		if(argc != 3)
 		{
-			ipmi_lan_set_usage();
+			print_lan_set_usage();
 			return -1;
 		}
 		rc = get_cmdline_macaddr(argv[2], data);
@@ -1625,11 +1556,11 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* default gateway settings */
 	else if (strncmp(argv[1], "defgw", 5) == 0) {
 		if (argc < 4) {
-			lprintf(LOG_NOTICE, "LAN set default gateway Commands: ipaddr, macaddr");
+			print_lan_set_defgw_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE, "LAN set default gateway Commands: ipaddr, macaddr");
+			print_lan_set_defgw_usage();
 			return 0;
 		}
 		else if ((strncmp(argv[2], "ipaddr", 5) == 0) &&
@@ -1647,18 +1578,18 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_MAC, data, 6);
 		}
 		else {
-			ipmi_lan_set_usage();
+			print_lan_set_usage();
 			return -1;
 		}
 	}
 	/* backup gateway settings */
 	else if (strncmp(argv[1], "bakgw", 5) == 0) {
 		if (argc < 4) {
-			lprintf(LOG_NOTICE, "LAN set backup gateway commands: ipaddr, macaddr");
+			print_lan_set_bakgw_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			lprintf(LOG_NOTICE, "LAN set backup gateway commands: ipaddr, macaddr");
+			print_lan_set_bakgw_usage();
 			return 0;
 		}
 		else if ((strncmp(argv[2], "ipaddr", 5) == 0) &&
@@ -1676,17 +1607,17 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
 		}
 		else {
-			ipmi_lan_set_usage();
+			print_lan_set_usage();
 			return -1;
 		}
 	}
 	else if (strncasecmp(argv[1], "vlan", 4) == 0) {
 		if (argc < 4) {
-			ipmi_lan_set_vlan_usage();
+			print_lan_set_vlan_usage();
 			return (-1);
 		}
 		else if (strncmp(argv[2], "help", 4) == 0) {
-			ipmi_lan_set_vlan_usage();
+			print_lan_set_vlan_usage();
 			return 0;
 		}
 		else if (strncasecmp(argv[2], "id", 2) == 0) {
@@ -1701,7 +1632,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			ipmi_lan_set_vlan_priority(intf, chan, argv[3]);
 		}
 		else {
-			ipmi_lan_set_vlan_usage();
+			print_lan_set_vlan_usage();
 			return (-1);
 		}
 	}
@@ -1730,25 +1661,13 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[1], "cipher_privs", 12) == 0)
 	{
 		if (argc != 3) {
-			lprintf(LOG_NOTICE, "lan set <channel> cipher_privs XXXXXXXXXXXXXXX");
-			lprintf(LOG_NOTICE, "    X = Cipher Suite Unused");
-			lprintf(LOG_NOTICE, "    c = CALLBACK");
-			lprintf(LOG_NOTICE, "    u = USER");
-			lprintf(LOG_NOTICE, "    o = OPERATOR");
-			lprintf(LOG_NOTICE, "    a = ADMIN");
-			lprintf(LOG_NOTICE, "    O = OEM\n");
+			print_lan_set_cipher_privs_usage();
 			return (-1);
 		}
 		else if ((strncmp(argv[2], "help", 4) == 0) ||
 		    get_cmdline_cipher_suite_priv_data(argv[2], data))
 		{
-			lprintf(LOG_NOTICE, "lan set <channel> cipher_privs XXXXXXXXXXXXXXX");
-			lprintf(LOG_NOTICE, "    X = Cipher Suite Unused");
-			lprintf(LOG_NOTICE, "    c = CALLBACK");
-			lprintf(LOG_NOTICE, "    u = USER");
-			lprintf(LOG_NOTICE, "    o = OPERATOR");
-			lprintf(LOG_NOTICE, "    a = ADMIN");
-			lprintf(LOG_NOTICE, "    O = OEM\n");
+			print_lan_set_cipher_privs_usage();
 			return 0;
 		}
 		else
@@ -1757,7 +1676,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else {
-		ipmi_lan_set_usage();
+		print_lan_set_usage();
 		return (-1);
 	}
 
@@ -1878,28 +1797,6 @@ ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
 	return 0;
 }
 
-static void
-ipmi_lan_alert_print_usage(void)
-{
-	lprintf(LOG_NOTICE, "\nusage: lan alert print [channel number] [alert destination]\n");
-	lprintf(LOG_NOTICE, "Default will print all alerts for the first found LAN channel");
-}
-
-static void
-ipmi_lan_alert_set_usage(void)
-{
-	lprintf(LOG_NOTICE, "\nusage: lan alert set <channel number> <alert destination> <command> <parameter>\n");
-	lprintf(LOG_NOTICE, "    Command/parameter options:\n");
-	lprintf(LOG_NOTICE, "    ipaddr <x.x.x.x>               Set alert IP address");
-	lprintf(LOG_NOTICE, "    macaddr <x:x:x:x:x:x>          Set alert MAC address");
-	lprintf(LOG_NOTICE, "    gateway <default|backup>       Set channel gateway to use for alerts");
-	lprintf(LOG_NOTICE, "    ack <on|off>                   Set Alert Acknowledge on or off");
-	lprintf(LOG_NOTICE, "    type <pet|oem1|oem2>           Set destination type as PET or OEM");
-	lprintf(LOG_NOTICE, "    time <seconds>                 Set ack timeout or unack retry interval");
-	lprintf(LOG_NOTICE, "    retry <number>                 Set number of alert retries");
-	lprintf(LOG_NOTICE, "");
-}
-
 static int
 ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		   int argc, char ** argv)
@@ -1909,13 +1806,13 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	int rc = 0;
 
 	if (argc < 2) {
-		ipmi_lan_alert_set_usage();
+		print_lan_alert_set_usage();
 		return (-1);
 	}
 
 	if (strncmp(argv[0], "help", 4) == 0 ||
 	    strncmp(argv[1], "help", 4) == 0) {
-		ipmi_lan_alert_set_usage();
+		print_lan_alert_set_usage();
 		return 0;
 	}
 
@@ -1973,7 +1870,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 			data[2] = 1;
 		}
 		else {
-			ipmi_lan_alert_set_usage();
+			print_lan_alert_set_usage();
 			return -1;
 		}
 
@@ -1999,7 +1896,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 			data[1] &= ~0x80;
 		}
 		else {
-			ipmi_lan_alert_set_usage();
+			print_lan_alert_set_usage();
 			return -1;
 		}
 		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
@@ -2027,7 +1924,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 			data[1] |= 0x07;
 		}
 		else {
-			ipmi_lan_alert_set_usage();
+			print_lan_alert_set_usage();
 			return -1;
 		}
 		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
@@ -2066,7 +1963,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_TYPE, data, p->data_len);
 	}
 	else {
-		ipmi_lan_alert_set_usage();
+		print_lan_alert_set_usage();
 		return -1;
 	}
 
@@ -2080,13 +1977,13 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t channel = 1;
 
 	if (argc < 1) {
-		ipmi_lan_alert_print_usage();
-		ipmi_lan_alert_set_usage();
+		print_lan_alert_print_usage();
+		print_lan_alert_set_usage();
 		return (-1);
 	}
 	else if (strncasecmp(argv[0], "help", 4) == 0) {
-		ipmi_lan_alert_print_usage();
-		ipmi_lan_alert_set_usage();
+		print_lan_alert_print_usage();
+		print_lan_alert_set_usage();
 		return 0;
 	}
 
@@ -2102,7 +1999,7 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		if (strncasecmp(argv[1], "help", 4) == 0) {
-			ipmi_lan_alert_print_usage();
+			print_lan_alert_print_usage();
 			return 0;
 		}
 
@@ -2132,11 +2029,11 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 	/* alert set <channel> <alert> [option] */
 	if (strncasecmp(argv[0], "set", 3) == 0) {
 		if (argc < 5) {
-			ipmi_lan_alert_set_usage();
+			print_lan_alert_set_usage();
 			return (-1);
 		}
 		else if (strncasecmp(argv[1], "help", 4) == 0) {
-			ipmi_lan_alert_set_usage();
+			print_lan_alert_set_usage();
 			return 0;
 		}
 
@@ -2281,6 +2178,231 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 	return rc;
 }
 
+static void
+print_lan_alert_print_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"usage: lan alert print [channel number] [alert destination]");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"Default will print all alerts for the first found LAN channel");
+}
+
+static void
+print_lan_alert_set_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"usage: lan alert set <channel number> <alert destination> <command> <parameter>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"    Command/parameter options:");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"    ipaddr <x.x.x.x>               Set alert IP address");
+	lprintf(LOG_NOTICE,
+"    macaddr <x:x:x:x:x:x>          Set alert MAC address");
+	lprintf(LOG_NOTICE,
+"    gateway <default|backup>       Set channel gateway to use for alerts");
+	lprintf(LOG_NOTICE,
+"    ack <on|off>                   Set Alert Acknowledge on or off");
+	lprintf(LOG_NOTICE,
+"    type <pet|oem1|oem2>           Set destination type as PET or OEM");
+	lprintf(LOG_NOTICE,
+"    time <seconds>                 Set ack timeout or unack retry interval");
+	lprintf(LOG_NOTICE,
+"    retry <number>                 Set number of alert retries");
+	lprintf(LOG_NOTICE,
+"");
+}
+
+static void
+print_lan_set_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"usage: lan set <channel> <command> <parameter>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"LAN set command/parameter options:");
+	lprintf(LOG_NOTICE,
+"  ipaddr <x.x.x.x>               Set channel IP address");
+	lprintf(LOG_NOTICE,
+"  netmask <x.x.x.x>              Set channel IP netmask");
+	lprintf(LOG_NOTICE,
+"  macaddr <x:x:x:x:x:x>          Set channel MAC address");
+	lprintf(LOG_NOTICE,
+"  defgw ipaddr <x.x.x.x>         Set default gateway IP address");
+	lprintf(LOG_NOTICE,
+"  defgw macaddr <x:x:x:x:x:x>    Set default gateway MAC address");
+	lprintf(LOG_NOTICE,
+"  bakgw ipaddr <x.x.x.x>         Set backup gateway IP address");
+	lprintf(LOG_NOTICE,
+"  bakgw macaddr <x:x:x:x:x:x>    Set backup gateway MAC address");
+	lprintf(LOG_NOTICE,
+"  password <password>            Set session password for this channel");
+	lprintf(LOG_NOTICE,
+"  snmp <community string>        Set SNMP public community string");
+	lprintf(LOG_NOTICE,
+"  user                           Enable default user for this channel");
+	lprintf(LOG_NOTICE,
+"  access <on|off>                Enable or disable access to this channel");
+	lprintf(LOG_NOTICE,
+"  alert <on|off>                 Enable or disable PEF alerting for this channel");
+	lprintf(LOG_NOTICE,
+"  arp respond <on|off>           Enable or disable BMC ARP responding");
+	lprintf(LOG_NOTICE,
+"  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation");
+	lprintf(LOG_NOTICE,
+"  arp interval <seconds>         Set gratuitous ARP generation interval");
+	lprintf(LOG_NOTICE,
+"  vlan id <off|<id>>             Disable or enable VLAN and set ID (1-4094)");
+	lprintf(LOG_NOTICE,
+"  vlan priority <priority>       Set vlan priority (0-7)");
+	lprintf(LOG_NOTICE,
+"  auth <level> <type,..>         Set channel authentication types");
+	lprintf(LOG_NOTICE,
+"    level  = CALLBACK, USER, OPERATOR, ADMIN");
+	lprintf(LOG_NOTICE,
+"    type   = NONE, MD2, MD5, PASSWORD, OEM");
+	lprintf(LOG_NOTICE,
+"  ipsrc <source>                 Set IP Address source");
+	lprintf(LOG_NOTICE,
+"    none   = unspecified source");
+	lprintf(LOG_NOTICE,
+"    static = address manually configured to be static");
+	lprintf(LOG_NOTICE,
+"    dhcp   = address obtained by BMC running DHCP");
+	lprintf(LOG_NOTICE,
+"    bios   = address loaded by BIOS or system software");
+	lprintf(LOG_NOTICE,
+"  cipher_privs XXXXXXXXXXXXXXX   Set RMCP+ cipher suite privilege levels");
+	lprintf(LOG_NOTICE,
+"    X = Cipher Suite Unused");
+	lprintf(LOG_NOTICE,
+"    c = CALLBACK");
+	lprintf(LOG_NOTICE,
+"    u = USER");
+	lprintf(LOG_NOTICE,
+"    o = OPERATOR");
+	lprintf(LOG_NOTICE,
+"    a = ADMIN");
+	lprintf(LOG_NOTICE,
+"    O = OEM");
+	lprintf(LOG_NOTICE,
+"");
+}
+
+static void
+print_lan_set_access_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set access <on|off>");
+}
+
+static void
+print_lan_set_arp_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> arp respond <on|off>");
+	lprintf(LOG_NOTICE,
+"lan set <channel> arp generate <on|off>");
+	lprintf(LOG_NOTICE,
+"lan set <channel> arp interval <seconds>");
+	lprintf(LOG_NOTICE,
+"");
+	lprintf(LOG_NOTICE,
+"example: lan set 7 arp gratuitous off");
+}
+
+static void
+print_lan_set_auth_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> auth <level> <type,type,...>");
+	lprintf(LOG_NOTICE,
+"  level = CALLBACK, USER, OPERATOR, ADMIN");
+	lprintf(LOG_NOTICE,
+"  types = NONE, MD2, MD5, PASSWORD, OEM");
+	lprintf(LOG_NOTICE,
+"example: lan set 7 auth ADMIN PASSWORD,MD5");
+}
+
+static void
+print_lan_set_bakgw_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"LAN set backup gateway commands: ipaddr, macaddr");
+}
+
+static void
+print_lan_set_cipher_privs_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> cipher_privs XXXXXXXXXXXXXXX");
+	lprintf(LOG_NOTICE,
+"    X = Cipher Suite Unused");
+	lprintf(LOG_NOTICE,
+"    c = CALLBACK");
+	lprintf(LOG_NOTICE,
+"    u = USER");
+	lprintf(LOG_NOTICE,
+"    o = OPERATOR");
+	lprintf(LOG_NOTICE,
+"    a = ADMIN");
+	lprintf(LOG_NOTICE,
+"    O = OEM");
+	lprintf(LOG_NOTICE,
+"");
+}
+
+static void
+print_lan_set_defgw_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"LAN set default gateway Commands: ipaddr, macaddr");
+}
+
+static void
+print_lan_set_ipsrc_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> ipsrc <source>");
+	lprintf(LOG_NOTICE,
+"  none   = unspecified");
+	lprintf(LOG_NOTICE,
+"  static = static address (manually configured)");
+	lprintf(LOG_NOTICE,
+"  dhcp   = address obtained by BMC running DHCP");
+	lprintf(LOG_NOTICE,
+"  bios   = address loaded by BIOS or system software");
+}
+
+static void
+print_lan_set_snmp_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> snmp <community string>");
+}
+
+static void
+print_lan_set_vlan_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <channel> vlan id <id>");
+	lprintf(LOG_NOTICE,
+"lan set <channel> vlan id off");
+	lprintf(LOG_NOTICE,
+"lan set <channel> vlan priority <priority>");
+}
 
 /*
  * print_lan_usage
@@ -2288,13 +2410,20 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 static void
 print_lan_usage(void)
 {
-	lprintf(LOG_NOTICE, "LAN Commands:");
-	lprintf(LOG_NOTICE, "		   print [<channel number>]");
-	lprintf(LOG_NOTICE, "		   set <channel number> <command> <parameter>");
-	lprintf(LOG_NOTICE, "		   alert print <channel number> <alert destination>");
-	lprintf(LOG_NOTICE, "		   alert set <channel number> <alert destination> <command> <parameter>");
-	lprintf(LOG_NOTICE, "		   stats get [<channel number>]");
-	lprintf(LOG_NOTICE, "		   stats clear [<channel number>]");
+	lprintf(LOG_NOTICE,
+"LAN Commands:");
+	lprintf(LOG_NOTICE,
+"		   print [<channel number>]");
+	lprintf(LOG_NOTICE,
+"		   set <channel number> <command> <parameter>");
+	lprintf(LOG_NOTICE,
+"		   alert print <channel number> <alert destination>");
+	lprintf(LOG_NOTICE,
+"		   alert set <channel number> <alert destination> <command> <parameter>");
+	lprintf(LOG_NOTICE,
+"		   stats get [<channel number>]");
+	lprintf(LOG_NOTICE,
+"		   stats clear [<channel number>]");
 }
 
 
