@@ -530,7 +530,7 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 	return set_lan_param(intf, chan, IPMI_LANP_BMC_ARP, &data, 1);
 }
 
-
+/* TODO - probably move elsewhere */
 static char priv_level_to_char(unsigned char priv_level)
 {
 	char ret = 'X';
@@ -831,6 +831,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 }
 
 /* Configure Authentication Types */
+/* TODO - probably some code duplication going on ??? */
 static int
 ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * types)
 {
@@ -897,6 +898,7 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 	return set_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE, data, 5);
 }
 
+/* TODO - we already have set user password in ipmi_user! */
 static int
 ipmi_lan_set_password(struct ipmi_intf * intf,
 	uint8_t userid, uint8_t * password)
@@ -953,7 +955,7 @@ ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 	rqdata[1] = 0x40;
 
 	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x41;
+	req.msg.cmd = 0x41; /* Get Channel Access ??? */
 	req.msg.data = rqdata;
 	req.msg.data_len = 2;
 
@@ -979,7 +981,7 @@ ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 	rqdata[1] |= 0x40;
 	rqdata[2] = 0;
 
-	req.msg.cmd = 0x40;
+	req.msg.cmd = 0x40; /* Set Channel Access ??? */
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
@@ -1011,6 +1013,7 @@ ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 	return 0;
 }
 
+/* TODO - we already have functions for this elsewere!!! */
 static int
 ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 {
@@ -1122,6 +1125,7 @@ ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable
 	return 0;
 }
 
+/* TODO - we already have functions for this elsewhere!!! */
 static int
 ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
 {
@@ -1164,6 +1168,7 @@ get_cmdline_macaddr(char * arg, uint8_t * buf)
 		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
 		return -1;
 	}
+	/* TODO - UINT8_MAX check */
 	buf[0] = (uint8_t)m1;
 	buf[1] = (uint8_t)m2;
 	buf[2] = (uint8_t)m3;
@@ -1320,6 +1325,7 @@ ipmi_lan_set_vlan_usage(void)
 		"lan set <channel> vlan priority <priority>\n");
 }
 
+/* TODO - formatting, vlan->VLAN */
 static int
 ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 {
@@ -1350,6 +1356,7 @@ ipmi_lan_set_vlan_id(struct ipmi_intf * intf,  uint8_t chan, char *string)
 	return rc;
 }
 
+/* TODO - formatting, vlan->VLAN */
 static int
 ipmi_lan_set_vlan_priority(struct ipmi_intf * intf,  uint8_t chan, char *string)
 {
