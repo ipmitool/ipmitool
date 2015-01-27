@@ -479,8 +479,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 							 * http://www.freebsd.org/doc/en/books/developers-handbook/ipv6.html
 							 */
 							if (IN6_IS_ADDR_LINKLOCAL(&tmp6->sin6_addr)
-									&& (tmp6->sin6_addr.s6_addr16[1] != 0)) {
-								addr6->sin6_scope_id = ntohs(tmp6->sin6_addr.s6_addr16[1]);
+									&& (tmp6->sin6_addr.s6_addr[1] != 0)) {
+								addr6->sin6_scope_id = ntohs(tmp6->sin6_addr.s6_addr[1]);
 							}
 						}
 
