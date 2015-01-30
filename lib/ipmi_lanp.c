@@ -53,6 +53,7 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_user.h>
 
 extern int verbose;
 
@@ -912,45 +913,24 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 	return set_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE, data, 5);
 }
 
-/* TODO - we already have set user password in ipmi_user! */
 static int
-ipmi_lan_set_password(struct ipmi_intf * intf,
-	uint8_t userid, uint8_t * password)
+ipmi_lan_set_password(struct ipmi_intf *intf,
+		uint8_t user_id, const char *password)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	uint8_t data[18];
-
-	memset(&data, 0, sizeof(data));
-	data[0] = userid & 0x3f;/* user ID */
-	data[1] = 0x02;		/* set password */
-
-	if (password != NULL)
-		memcpy(data+2, password, __min(strlen((const char *)password), 16));
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x47;
-	req.msg.data = data;
-	req.msg.data_len = 18;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set LAN Password for user %d", userid);
-		return -1;
+	int ccode = 0;
+	ccode = _ipmi_set_user_password(intf, user_id,
+			IPMI_PASSWORD_SET_PASSWORD, password, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Unable to Set LAN Password for user %d",
+				user_id);
+		return (-1);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set LAN Password for user %d failed: %s",
-			userid, val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
 	/* adjust our session password
 	 * or we will no longer be able to communicate with BMC
 	 */
 	ipmi_intf_session_set_password(intf, (char *)password);
 	printf("Password %s for user %d\n",
-	       (password == NULL) ? "cleared" : "set", userid);
+	       (password == NULL) ? "cleared" : "set", user_id);
 
 	return 0;
 }
@@ -1506,7 +1486,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	/* session password
 	 * not strictly a lan setting, but its used for lan connections */
 	else if (strncmp(argv[1], "password", 8) == 0) {
-		rc = ipmi_lan_set_password(intf, 1, (uint8_t *)argv[2]);
+		rc = ipmi_lan_set_password(intf, 1, argv[2]);
 	}
 	/* snmp community string */
 	else if (strncmp(argv[1], "snmp", 4) == 0) {
