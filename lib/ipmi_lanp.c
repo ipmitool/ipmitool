@@ -1119,38 +1119,34 @@ ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable
 	return 0;
 }
 
-/* TODO - we already have functions for this elsewhere!!! */
+/* ipmi_set_user_access - set admin access for given user and channel.
+ *
+ * @intf - IPMI interface
+ * @channel - IPMI channel
+ * @user_id - IPMI User ID
+ *
+ * returns - 0 on success, (-1) on error.
+ */
 static int
-ipmi_set_user_access(struct ipmi_intf * intf, uint8_t channel, uint8_t userid)
+ipmi_set_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	uint8_t rqdata[4];
+	struct user_access_t user_access;
+	int ccode = 0;
+	memset(&user_access, 0, sizeof(user_access));
+	user_access.channel = channel;
+	user_access.user_id = user_id;
+	user_access.privilege_limit = 0x04;
 
-	memset(rqdata, 0, 4);
-	rqdata[0] = 0x90 | (channel & 0xf);
-	rqdata[1] = userid & 0x3f;
-	rqdata[2] = 0x4;
-	rqdata[3] = 0;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x43;
-	req.msg.data = rqdata;
-	req.msg.data_len = 4;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set User Access for channel %d", channel);
-		return -1;
+	ccode = _ipmi_set_user_access(intf, &user_access, 1);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Set User Access for channel %d failed",
+				channel);
+		return (-1);
+	} else {
+		printf("Set User Access for channel %d was successful.",
+				channel);
+		return 0;
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set User Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	return 0;
 }
 
 /* get_cmdline_macaddr - parse-out MAC address from given string and store it
