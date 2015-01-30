@@ -692,6 +692,12 @@ eval_ccode(const int ccode)
 			case (-2):
 				lprintf(LOG_ERR, "Unexpected data length received.");
 				break;
+			case (-3):
+				lprintf(LOG_ERR, "Invalid function parameter.");
+				break;
+			case (-4):
+				lprintf(LOG_ERR, "ipmitool: malloc failure.");
+				break;
 			default:
 				break;
 		}
