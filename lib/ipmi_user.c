@@ -176,6 +176,55 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 	}
 }
 
+/* _ipmi_set_user_password - Set User Password command.
+ *
+ * @user_id - IPMI User ID
+ * @operation - which operation to perform(en/disable user, set/test password)
+ * @password - User Password
+ * @is_twenty_byte - 0 = store as 16byte, otherwise store as 20byte password
+ *
+ * returns - negative number means error, positive is a ccode
+ */
+int
+_ipmi_set_user_password(struct ipmi_intf *intf, uint8_t user_id,
+		uint8_t operation, const char *password,
+		uint8_t is_twenty_byte)
+{
+	struct ipmi_rq req = {0};
+	struct ipmi_rs *rsp;
+	uint8_t *data;
+	uint8_t data_len = (is_twenty_byte) ? 22 : 18;
+	data = malloc(sizeof(uint8_t) * data_len);
+	if (data == NULL) {
+		return (-4);
+	}
+	memset(data, 0, data_len);
+	data[0] = (is_twenty_byte) ? 0x80 : 0x00;
+	data[0] |= (0x0F & user_id);
+	data[1] = 0x03 & operation;
+	if (password != NULL) {
+		size_t copy_len = strlen(password);
+		if (copy_len > (data_len - 2)) {
+			copy_len = data_len - 2;
+		} else if (copy_len < 1) {
+			copy_len = 0;
+		}
+		strncpy((char *)(data + 2), password, copy_len);
+	}
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_SET_USER_PASSWORD;
+	req.msg.data = data;
+	req.msg.data_len = data_len;
+	rsp = intf->sendrecv(intf, &req);
+	free(data);
+	data = NULL;
+	if (rsp == NULL) {
+		return (-1);
+	}
+	return rsp->ccode;
+}
+
 static void
 dump_user_access(const char *user_name,
 		struct user_access_t *user_access)

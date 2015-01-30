@@ -76,5 +76,8 @@ int _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name);
 int _ipmi_set_user_access(struct ipmi_intf *intf,
 		struct user_access_t *user_access_req,
 		uint8_t change_priv_limit_only);
+int _ipmi_set_user_password(struct ipmi_intf *intf,
+		uint8_t user_id, uint8_t operation,
+		const char *password, uint8_t is_twenty_byte);
 
 #endif /* IPMI_USER_H */
