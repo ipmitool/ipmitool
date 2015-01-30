@@ -178,6 +178,7 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 
 /* _ipmi_set_user_password - Set User Password command.
  *
+ * @intf - IPMI interface
  * @user_id - IPMI User ID
  * @operation - which operation to perform(en/disable user, set/test password)
  * @password - User Password
