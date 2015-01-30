@@ -396,12 +396,9 @@ ipmi_user_set_username(
  * Setting/Testing passwords
  */
 static int
-ipmi_user_set_password(
-		       struct ipmi_intf * intf,
-		       uint8_t user_id,
-		       uint8_t operation,
-		       const char *password,
-		       int is_twenty_byte_password)
+ipmi_user_set_password(struct ipmi_intf *intf, uint8_t user_id,
+		uint8_t operation, const char *password,
+		uint8_t is_twenty_byte_password)
 {
 	struct ipmi_rs	     * rsp;
 	struct ipmi_rq	       req;
@@ -445,25 +442,17 @@ ipmi_user_set_password(
 	return 0;
 }
 
-/*
- * ipmi_user_test_password
- *
- * Call ipmi_user_set_password, and interpret the result
+/* ipmi_user_test_password - Call _ipmi_set_user_password() with operation bit
+ * set to test password and interpret result.
  */
 static int
-ipmi_user_test_password(
-			struct ipmi_intf * intf,
-			uint8_t      user_id,
-			const char       * password,
-			int                is_twenty_byte_password)
+ipmi_user_test_password(struct ipmi_intf *intf, uint8_t user_id,
+		const char *password, uint8_t is_twenty_byte_password)
 {
-	int ret;
-
-	ret = ipmi_user_set_password(intf,
-				     user_id,
-				     IPMI_PASSWORD_TEST_PASSWORD,
-				     password,
-				     is_twenty_byte_password);
+	int ret = 0;
+	ret = _ipmi_set_user_password(intf, user_id,
+			IPMI_PASSWORD_TEST_PASSWORD, password,
+			is_twenty_byte_password);
 
 	switch (ret) {
 	case 0:
@@ -668,7 +657,6 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	/* Disable / Enable */
 	uint8_t user_id;
 	uint8_t operation;
-	char null_password[16]; /* Not used, but required */
 
 	if (argc != 2) {
 		print_user_usage();
@@ -677,18 +665,18 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	if (is_ipmi_user_id(argv[1], &user_id)) {
 		return (-1);
 	}
-	memset(null_password, 0, sizeof(null_password));
 	operation = (strncmp(argv[0], "disable", 7) == 0) ?
 		IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
 
-	/* Last parameter is ignored */
-	return ipmi_user_set_password(intf, user_id, operation, null_password, 0);
+	return _ipmi_set_user_password(intf, user_id, operation,
+			(char *)NULL, 0);
 }
 
 int
 ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *password = NULL;
+	int ccode = 0;
 	uint8_t password_type = 16;
 	uint8_t user_id = 0;
 	if (is_ipmi_user_id(argv[2], &user_id)) {
@@ -734,11 +722,18 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 		return (-1);
 	}
 
-	return ipmi_user_set_password(intf,
-					user_id,
-					IPMI_PASSWORD_SET_PASSWORD,
-					password,
-					password_type > 16);
+	ccode = _ipmi_set_user_password(intf, user_id,
+			IPMI_PASSWORD_SET_PASSWORD, password,
+			password_type > 16);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
+			user_id);
+		return (-1);
+	} else {
+		printf("Set User Password command successful (user %d)\n",
+				user_id);
+		return 0;
+	}
 }
 
 int
