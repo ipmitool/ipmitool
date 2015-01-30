@@ -53,11 +53,6 @@ extern int verbose;
 extern int csv_output;
 
 
-#define IPMI_PASSWORD_DISABLE_USER  0x00
-#define IPMI_PASSWORD_ENABLE_USER   0x01
-#define IPMI_PASSWORD_SET_PASSWORD  0x02
-#define IPMI_PASSWORD_TEST_PASSWORD 0x03
-
 /* _ipmi_get_user_access - Get User Access for given channel. Results are stored
  * into passed struct.
  *
