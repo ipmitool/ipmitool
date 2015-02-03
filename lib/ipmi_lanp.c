@@ -935,75 +935,51 @@ ipmi_lan_set_password(struct ipmi_intf *intf,
 	return 0;
 }
 
+/* ipmi_set_alert_enable - enable/disable PEF alerting for given channel.
+ *
+ * @channel - IPMI channel
+ * @enable - whether to enable/disable PEF alerting for given channel
+ * 
+ * returns - 0 on success, (-1) on error.
+ */
 static int
-ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
+ipmi_set_alert_enable(struct ipmi_intf *intf, uint8_t channel, uint8_t enable)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	uint8_t rqdata[3];
-
-	memset(&req, 0, sizeof(req));
-
-	/* update non-volatile access */
-	rqdata[0] = channel;
-	rqdata[1] = 0x40;
-
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x41; /* Get Channel Access ??? */
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Get Channel Access for channel %d", channel);
-		return -1;
+	struct channel_access_t channel_access;
+	int ccode = 0;
+	memset(&channel_access, 0, sizeof(channel_access));
+	channel_access.channel = channel;
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Get Channel Access(non-volatile) for channel %d",
+				channel);
+		return (-1);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	if (enable != 0) {
+		channel_access.alerting = 1;
+	} else {
+		channel_access.alerting = 0;
 	}
-
-	/* SAVE TO NVRAM */
-	memset(rqdata, 0, 3);
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = rsp->data[0];
-	if (enable != 0)
-		rqdata[1] &= ~0x20;
-	else
-		rqdata[1] |= 0x20;
-	rqdata[1] |= 0x40;
-	rqdata[2] = 0;
-
-	req.msg.cmd = 0x40; /* Set Channel Access ??? */
-	req.msg.data_len = 3;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
-		return -1;
+	/* non-volatile */
+	ccode = _ipmi_set_channel_access(intf, channel_access, 1, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Set Channel Access(non-volatile) for channel %d",
+				channel);
+		return (-1);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	/* volatile */
+	ccode = _ipmi_set_channel_access(intf, channel_access, 2, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Set Channel Access(volatile) for channel %d",
+				channel);
+		return (-1);
 	}
-
-	/* SAVE TO CURRENT */
-	rqdata[1] &= 0xc0;
-	rqdata[1] |= 0x80;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
-		return -1;
-	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
+	printf("PEF alerts for channel %d %s.\n",
+			channel,
+			(enable) ? "enabled" : "disabled");
 	return 0;
 }
 
