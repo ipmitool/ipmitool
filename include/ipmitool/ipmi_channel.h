@@ -128,6 +128,13 @@ struct get_channel_auth_cap_rsp {
 #pragma pack(0)
 #endif
 
+int _ipmi_get_channel_access(struct ipmi_intf *intf,
+		struct channel_access_t *channel_access,
+		uint8_t get_volatile_settings);
+int _ipmi_set_channel_access(struct ipmi_intf *intf,
+		struct channel_access_t channel_access, uint8_t access_option,
+		uint8_t privilege_option);
+
 uint8_t ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel);
 uint8_t ipmi_current_channel_medium(struct ipmi_intf * intf);
 int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);

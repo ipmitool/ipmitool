@@ -1007,115 +1007,76 @@ ipmi_set_alert_enable(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
 	return 0;
 }
 
-/* TODO - we already have functions for this elsewere!!! */
+/* ipmi_set_channel_access - enable/disable IPMI messaging for given channel and
+ * set Privilege Level to Administrator.
+ *
+ * @channel - IPMI channel
+ * @enable - whether to enable/disable IPMI messaging for given channel.
+ *
+ * returns - 0 on success, (-1) on error
+ */
 static int
-ipmi_set_channel_access(struct ipmi_intf * intf, uint8_t channel, uint8_t enable)
+ipmi_set_channel_access(struct ipmi_intf *intf, uint8_t channel,
+		uint8_t enable)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	uint8_t rqdata[3];
-	uint8_t byteEnable;
+	struct channel_access_t channel_access;
+	int ccode = 0;
+	memset(&channel_access, 0, sizeof(channel_access));
+	channel_access.channel = channel;
+	/* Get Non-Volatile Channel Access first */
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Get Channel Access(non-volatile) for channel %d",
+				channel);
+		return (-1);
+	}
 
-	memset(&req, 0, sizeof(req));
-
-	/* RETREIVE VALUE IN NVRAM */
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x41;  /* Get Channel Access Command */
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	memset(rqdata, 0, 2);
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x40; /* retreive NV */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Get Channel Access for channel %d", channel);
-		return -1;
-	} else if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	if (enable != 0) {
+		channel_access.access_mode = 2;
 	} else {
-		byteEnable = *(rsp->data + 0);
+		channel_access.access_mode = 0;
+	}
+	channel_access.privilege_limit = 0x04;
+	ccode = _ipmi_set_channel_access(intf, channel_access, 1, 1);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Set Channel Access(non-volatile) for channel %d",
+				channel);
+		return (-1);
 	}
 
-	/* SAVE TO NVRAM */
-	memset(&req, 0, sizeof(req));
-
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x40;   /* Set Channel Access Command */
-	req.msg.data = rqdata;
-	req.msg.data_len = 3;
-
-	memset(rqdata, 0, 3);
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x40 | (byteEnable & 0x38);  /* use previously set values */
-	if (enable != 0)
-		rqdata[1] |= 0x2; /* set always available if enable is set */
-	rqdata[2] = 0x44; 	/* set channel privilege limit to ADMIN */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
-		return -1;
-	} else if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	memset(&channel_access, 0, sizeof(channel_access));
+	channel_access.channel = channel;
+	/* Get Volatile Channel Access */
+	ccode = _ipmi_get_channel_access(intf, &channel_access, 1);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Get Channel Access(volatile) for channel %d",
+				channel);
+		return (-1);
 	}
 
-	/* RETREIVE VALUE IN NVRAM */
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x41;  /* Get Channel Access Command */
-	req.msg.data = rqdata;
-	req.msg.data_len = 2;
-
-	memset(rqdata, 0, 2);
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x80; /* retreive NV */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Get Channel Access for channel %d", channel);
-		return -1;
-	} else if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	if (enable != 0) {
+		channel_access.access_mode = 2;
 	} else {
-		byteEnable = *(rsp->data + 0);
+		channel_access.access_mode = 0;
 	}
-
-	/* SAVE TO CURRENT */
-	memset(&req, 0, sizeof(req));
-
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = 0x40;   /* Set Channel Access Command */
-	req.msg.data = rqdata;
-	req.msg.data_len = 3;
-
-	memset(rqdata, 0, 3);
-	rqdata[0] = channel & 0xf;
-	rqdata[1] = 0x80 | (byteEnable & 0x38);  /* use previously set values */
-	if (enable != 0)
-		rqdata[1] |= 0x2; /* set always available if enable is set */
-	rqdata[2] = 0x84; 	/* set channel privilege limit to ADMIN */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Unable to Set Channel Access for channel %d", channel);
-		return -1;
-	} else if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Set Channel Access for channel %d failed: %s",
-			channel, val2str(rsp->ccode, completion_code_vals));
-		return -1;
+	channel_access.privilege_limit = 0x04;
+	ccode = _ipmi_set_channel_access(intf, channel_access, 2, 2);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR,
+				"Unable to Set Channel Access(volatile) for channel %d",
+				channel);
+		return (-1);
 	}
 
 	/* can't send close session if access off so abort instead */
-	if (enable == 0)
+	if (enable == 0) {
 		intf->abort = 1;
-
+	}
+	printf("Set Channel Access for channel %d was successful.\n",
+			channel);
 	return 0;
 }
 
