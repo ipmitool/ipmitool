@@ -40,6 +40,7 @@
 
 
 #define IPMI_GET_CHANNEL_AUTH_CAP      0x38
+#define IPMI_SET_CHANNEL_ACCESS        0x40
 #define IPMI_GET_CHANNEL_ACCESS        0x41
 #define IPMI_GET_CHANNEL_INFO          0x42
 #define IPMI_SET_USER_ACCESS           0x43

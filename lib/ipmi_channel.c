@@ -147,6 +147,66 @@ _ipmi_get_channel_info(struct ipmi_intf *intf,
 	return 0;
 }
 
+/* _ipmi_set_channel_access - Set Channel Access values for given channel.
+ *
+ * @intf - IPMI interface
+ * @channel_access - channel_access_t with desired values and channel set.
+ * @access_option:
+ *   - 0 = don't set/change Channel Access
+ *   - 1 = set non-volatile settings of Channel Access
+ *   - 2 = set volatile settings of Channel Access
+ * @privilege_option:
+ *   - 0 = don't set/change Privilege Level Limit
+ *   - 1 = set non-volatile settings of Privilege Limit
+ *   - 2 = set volatile settings of Privilege Limit
+ *
+ * returns - negative number means error, positive is a ccode. See IPMI
+ *   specification for further information on ccodes for Set Channel Access.
+ * 0x82 - set not supported on selected channel, eg. session-less channel.
+ * 0x83 - access mode not supported
+ */
+int
+_ipmi_set_channel_access(struct ipmi_intf *intf,
+		struct channel_access_t channel_access,
+		uint8_t access_option,
+		uint8_t privilege_option)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t data[3];
+	/* Only values from <0..2> are accepted as valid. */
+	if (access_option > 2 || privilege_option > 2) {
+		return (-3);
+	}
+
+	data[0] = channel_access.channel & 0x0F;
+	data[1] = (access_option << 6);
+	if (channel_access.alerting) {
+		data[1] |= 0x20;
+	}
+	if (channel_access.per_message_auth) {
+		data[1] |= 0x10;
+	}
+	if (channel_access.user_level_auth) {
+		data[1] |= 0x08;
+	}
+	data[1] |= (channel_access.access_mode & 0x07);
+	data[2] = (privilege_option << 6);
+	data[2] |= (channel_access.privilege_limit & 0x0F);
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = IPMI_SET_CHANNEL_ACCESS;
+	req.msg.data = data;
+	req.msg.data_len = 3;
+	
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	}
+	return rsp->ccode;
+}
+
 static const char *
 iana_string(uint32_t iana)
 {
