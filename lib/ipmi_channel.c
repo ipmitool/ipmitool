@@ -179,6 +179,7 @@ _ipmi_set_channel_access(struct ipmi_intf *intf,
 		return (-3);
 	}
 
+	memset(&data, 0, sizeof(data));
 	data[0] = channel_access.channel & 0x0F;
 	data[1] = (access_option << 6);
 	if (channel_access.alerting) {
