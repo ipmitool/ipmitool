@@ -168,6 +168,7 @@ struct ipmi_intf {
 	int abort;
 	int noanswer;
 	int picmg_avail;
+	int vita_avail;
 	IPMI_OEM manufacturer_id;
 
 	struct ipmi_session * session;

@@ -344,6 +344,18 @@ ipmi_parse_hex(const char *str)
 	return out;
 }
 
+static uint8_t
+ipmi_acquire_ipmb_address(struct ipmi_intf * intf)
+{
+	if (intf->picmg_avail) {
+		return ipmi_picmg_ipmb_address(intf);
+	} else if (intf->vita_avail) {
+		return ipmi_vita_ipmb_address(intf);
+	} else {
+		return 0;
+    }
+}
+
 /* ipmi_parse_options  -  helper function to handle parsing command line options
  *
  * @argc:	count of options
@@ -907,14 +919,22 @@ ipmi_main(int argc, char ** argv,
 		}
 	}
 	/*
-	 * Attempt picmg discovery of the actual interface address unless
+	 * Attempt picmg/vita discovery of the actual interface address unless
 	 * the users specified an address.
 	 *	Address specification always overrides discovery
 	 */
-	if (picmg_discover(ipmi_main_intf) && !arg_addr) {
-		lprintf(LOG_DEBUG, "Running PICMG Get Address Info");
-		addr = ipmi_picmg_ipmb_address(ipmi_main_intf);
-		lprintf(LOG_INFO,  "Discovered IPMB-0 address 0x%x", addr);
+	if (picmg_discover(ipmi_main_intf)) {
+		ipmi_main_intf->picmg_avail = 1;
+	} else if (vita_discover(ipmi_main_intf)) {
+		ipmi_main_intf->vita_avail = 1;
+	}
+
+	if (arg_addr) {
+		addr = arg_addr;
+	} else {
+		lprintf(LOG_DEBUG, "Acquire IPMB address");
+		addr = ipmi_acquire_ipmb_address(ipmi_main_intf);
+		lprintf(LOG_INFO,  "Discovered IPMB address 0x%x", addr);
 	}
 
 	/*
@@ -956,7 +976,7 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_privlvl(ipmi_main_intf, IPMI_SESSION_PRIV_ADMIN);
 		/* Get the ipmb address of the targeted entity */
 		ipmi_main_intf->target_ipmb_addr =
-					ipmi_picmg_ipmb_address(ipmi_main_intf);
+					ipmi_acquire_ipmb_address(ipmi_main_intf);
 		lprintf(LOG_DEBUG, "Specified addressing     Target  %#x:%#x Transit %#x:%#x",
 					   ipmi_main_intf->target_addr,
 					   ipmi_main_intf->target_channel,

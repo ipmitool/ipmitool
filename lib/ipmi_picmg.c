@@ -2325,37 +2325,39 @@ picmg_discover(struct ipmi_intf *intf) {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	char msg_data;
+	uint8_t picmg_avail = 0;
 
-	if (intf->picmg_avail == 0) {
-		memset(&req, 0, sizeof(req));
-		req.msg.netfn = IPMI_NETFN_PICMG;
-		req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;
-		msg_data    = 0x00;
-		req.msg.data = &msg_data;
-		req.msg.data_len = 1;
-		msg_data = 0;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_PICMG;
+	req.msg.cmd = PICMG_GET_PICMG_PROPERTIES_CMD;
+	msg_data    = 0x00;
+	req.msg.data = &msg_data;
+	req.msg.data_len = 1;
+	msg_data = 0;
 
-		lprintf(LOG_DEBUG, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
-			intf->my_addr, intf->transit_addr, intf->target_addr);
-		rsp = intf->sendrecv(intf, &req);
-		if (rsp && !rsp->ccode) {
-			if ( (rsp->data[0] == 0) &&
-					((rsp->data[1] & 0x0F) == PICMG_ATCA_MAJOR_VERSION
-					|| (rsp->data[1] & 0x0F) == PICMG_AMC_MAJOR_VERSION) )	{
-				intf->picmg_avail = 1;
-				lprintf(LOG_DEBUG, "Discovered PICMG Extension %d.%d",
-						(rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
-			}
-		} else {
-			if (rsp == NULL) {
-				lprintf(LOG_DEBUG,"No Response from Get PICMG Properties");
-			} else {
-				lprintf(LOG_DEBUG,"Error Response %#x from Get PICMG Properities", rsp->ccode);
-			}
-		}
+	lprintf(LOG_INFO, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
+		intf->my_addr, intf->transit_addr, intf->target_addr);
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+	    lprintf(LOG_INFO,"No response from Get PICMG Properties");
+	} else if (rsp->ccode != 0) {
+	    lprintf(LOG_INFO,"Error response %#x from Get PICMG Properities",
+		    rsp->ccode);
+	} else if (rsp->data_len < 4) {
+	    lprintf(LOG_INFO,"Invalid Get PICMG Properties response length %d",
+		    rsp->data_len);
+	} else if (rsp->data[0] != 0) {
+	    lprintf(LOG_INFO,"Invalid Get PICMG Properties group extension %#x",
+		    rsp->data[0]);
+	} else if ((rsp->data[1] & 0x0F) != PICMG_ATCA_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_AMC_MAJOR_VERSION) {
+	    lprintf(LOG_INFO,"Unknown PICMG Extension Version %d.%d",
+		    (rsp->data[1] & 0x0F), (rsp->data[1] >> 4));
+	} else {
+	    picmg_avail = 1;
+	    lprintf(LOG_INFO, "Discovered PICMG Extension Version %d.%d",
+		    (rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
 	}
-	if (intf->picmg_avail == 0) {
-		lprintf(LOG_DEBUG, "No PICMG Extenstion discovered");
-	}
-	return intf->picmg_avail;
+
+	return picmg_avail;
 }

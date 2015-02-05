@@ -65,6 +65,7 @@
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_ime.h>
 #include <ipmitool/ipmi_dcmi.h>
+#include <ipmitool/ipmi_vita.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -120,6 +121,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_hpmfwupg_main,"hpm", "Update HPM components using PICMG HPM.1 file"},
 	{ ipmi_ekanalyzer_main,"ekanalyzer", "run FRU-Ekeying analyzer using FRU files"},
 	{ ipmi_ime_main,          "ime", "Update Intel Manageability Engine Firmware"},
+	{ ipmi_vita_main,   "vita",   "Run a VITA 46.11 extended cmd"},
 	{ NULL },
 };
 
