@@ -3581,8 +3581,7 @@ int
 ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 {
 	int rc = 0;
-	uint8_t ctl = 0;
-	int i, ii, instances;
+	int i;
 	struct ipmi_rs *rsp;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
