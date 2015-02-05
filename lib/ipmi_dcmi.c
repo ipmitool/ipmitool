@@ -2035,8 +2035,6 @@ _ipmi_nm_discover(struct ipmi_intf * intf, struct nm_discover *disc)
 static int
 _ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain, uint8_t trigger, struct nm_capability *caps)
 {
-	int rc = 0;
-	int i;
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[5]; /* 'raw' data to be sent to the BMC */
@@ -3128,7 +3126,8 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 	struct nm_thresh thresh;
 	int i = 0;
 
-	argv++; argc--;
+	argv++;
+	argc--;
 	/* set or get */
 	if ((argv[0] == NULL) || (argc < 3) ||
 			((action = str2val2(argv[0], nm_thresh_cmds)) == 0xFF)) {
@@ -3243,9 +3242,11 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 	struct nm_suspend suspend;
 	int i;
 
+	argv++;
+	argc--;
 	/* set or get */
-	if ((argv[1] == NULL) || (argc < 4) ||
-			((action = str2val2(argv[1], nm_suspend_cmds)) == 0xFF)) {
+	if ((argv[0] == NULL) || (argc < 3) ||
+			((action = str2val2(argv[0], nm_suspend_cmds)) == 0xFF)) {
 		print_strs(nm_suspend_cmds, "Suspend commands", LOG_ERR, 0);
 		return -1;
 	}
@@ -3272,12 +3273,11 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			argv++;
 			break;
                 case 0xFF:   /* process periods */
-			if (count > IPMI_NM_SUSPEND_PERIOD_MAX) {
-				lprintf(LOG_ERR,"Error: number of suspend periods limited to %d.\n",
-						IPMI_NM_SUSPEND_PERIOD_MAX);
-				return -1;
-			}
-			for (i = 0; i < argc; i += 3, count++) {
+			for (i = 0; count < IPMI_NM_SUSPEND_PERIOD_MAX; i += 3, count++) {
+				if (argc < 3) {
+					lprintf(LOG_ERR,"Error: suspend period requires a start, stop, and repeat values.\n");
+					return -1;
+				}
 				if (str2uchar(argv[i+0], &suspend.period[count].start) < 0) {
 					lprintf(LOG_ERR,"suspend start value %d must be 0-239.\n", count);
 					return -1;
@@ -3290,8 +3290,12 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 					lprintf(LOG_ERR,"suspend repeat value %d unable to convert.\n", count);
 					return -1;
 				}
+				argc -= 3;
+				if (argc <= 0)
+					break;
 			}
-			argc -=3;
+			if (argc <= 0)
+				break;
 			break;
                 default:
                         break;
