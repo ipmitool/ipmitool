@@ -2976,6 +2976,7 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 				lprintf(LOG_ERR,"Power minimum must be a positive integer.\n");
 				return -1;
 			}
+			break;
 		case 0x03: /* max */
 			if (str2ushort(argv[1], &maximum) < 0) {
 				lprintf(LOG_ERR,"Power maximum must be a positive integer.\n");
