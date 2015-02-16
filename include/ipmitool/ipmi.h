@@ -260,6 +260,7 @@ typedef enum IPMI_OEM {
      IPMI_OEM_HITACHI_116 = 116,
      IPMI_OEM_NEC        = 119,
      IPMI_OEM_TOSHIBA    = 186,
+     IPMI_OEM_ERICSSON   = 193,
      IPMI_OEM_INTEL      = 343,
      IPMI_OEM_TATUNG     = 373,
      IPMI_OEM_HITACHI_399 = 399,
