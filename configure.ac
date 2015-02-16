@@ -130,6 +130,24 @@ if test "x$xenable_all_options" = "xyes" || test "x$xenable_solaris_opt" = "xyes
 	AC_DEFINE(ENABLE_ALL_OPTIONS, [1], [Define to 1 to enable all command line options.])
 fi
 
+dnl Determine anonymous union/structure support in GCC
+AC_TRY_COMPILE([
+#include <stdio.h>
+	], [
+	struct test {
+		union {
+			int a;
+			unsigned int b;
+		};
+	} test;
+
+	printf("a is %d", test.a);
+        ], ac_need_fms_extension=no, ac_need_fms_extension=yes)
+if test "x$ac_need_fms_extension" = "xyes"; then
+       CFLAGS="$CFLAGS -fms-extensions"
+       AC_SUBST(CFLAGS)
+fi
+
 dnl check for OpenSSL functionality
 AC_ARG_ENABLE([internal-md5],
 	[AC_HELP_STRING([--enable-internal-md5],
