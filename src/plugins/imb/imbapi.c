@@ -97,6 +97,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #endif
 #include "imbapi.h"
+#include <asm/socket.h>
 
 #ifdef SCO_UW
 #define NO_MACRO_ARGS  1
@@ -104,7 +105,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IMB_DEVICE "/dev/instru/mismic"
 #else
 #define IMB_DEVICE "/dev/imb"
-#define PAGESIZE EXEC_PAGESIZE
+#ifndef PAGESIZE
+# define PAGESIZE EXEC_PAGESIZE
+#endif
 #endif
 
 /*Just to make the DEBUG code cleaner.*/
