@@ -291,6 +291,7 @@ Commands:
         kontronoem   Manage Kontron OEM Extensions
         lan          Configure LAN Channels
         mc           Management Controller status and global enables
+        nm           Node Manager
         pef          Configure Platform Event Filtering (PEF)
         picmg        Run a PICMG/ATA extended command
         power        Shortcut to chassis power commands
@@ -2403,6 +2404,272 @@ Clear valid bit on power up via power push button or wake event
 .RE
 .RE
 .RE
+.TP
+\fInm\fP
+.RS
+.TP
+\fIalert\fP
+.RS
+.TP
+\fIclear dest\fP <\fBdest\fR>
+.br
+
+Clear the Node Manager Alert lan destination.
+
+.RE
+.RS
+.TP
+\fIget\fP
+.br
+Get the Node Manager Alert settings.
+
+.RE
+.RS
+.TP
+\fIset chan\fP <\fBchan\fR> \fIdest\fP <\fBdest\fR> \fIstring\fP <\fBstring\fR>
+.br
+
+Set the Node Manager alert channel, lan destination, and alert string number.
+
+.RE
+.TP
+\fIcapability\fP
+.br
+
+Obtain the Node Manager power control capabilities and ranges.
+
+.TP
+\fIcontrol\fP
+.RS
+.TP
+\fIenable\fP|\fIdisable \fP
+.RS
+.TP
+\fIglobal\fP
+.br
+
+Enable/disable all policies for all domains.
+.TP
+\fIper_domain\fP <platform|CPU|Memory>
+.br
+
+Enable/disable all policies of the specified domain.
+.TP
+\fIper_policy\fP <0-7>
+.br
+
+Enable/disable the policy for the specified domain/policy combination.
+.RE
+.RE
+.TP
+\fIdiscover\fP
+.br
+
+Discover Node Manager presence as well as the Node Manager version, revision, and patch number.
+
+.TP
+\fIpolicy\fP
+.RS
+.TP
+\fIadd\fP
+.RS
+.TP
+\fIpower\fP <watts> \fIpolicy_id\fP <0-7> [\fIcorrection\fP auto|soft|hard] \fItrig_lim\fP <seconds> \fIstats\fP <seconds> [\fIdomain\fP <platform|CPU|Memory>] \fIenable\fP|\fIdisable\fP
+.br
+
+Add a new power policy, or overwrite an existing policy.
+The \fIcorrection\fP parameter is the agressiveness of frequency limiting, default is auto.
+The \fItrig_lim\fP is the correction time limit and must be at least 6000 and not greater than 65535.
+The \fIstats\fP setting is the averaging period in seconds and ranges from 1-65535.
+If domain is not supplied a default of platform is used.
+
+
+.TP
+\fIinlet\fP <temp> \fIpolicy_id\fP <0-7> [\fIcorrection\fP auto|soft|hard] \fItrig_lim\fP <seconds> \fIstats\fP <seconds> [\fIdomain\fP <platform|CPU|Memory>] \fIenable\fP|\fIdisable\fP
+.br
+
+Add a new inlet temp policy, or overwrite an existing policy.
+The \fIcorrection\fP parameter is the agressiveness of frequency limiting, default is auto.
+The \fItrig_lim\fP is the correction time limit and must be at least 6000 and not greater than 65535.
+The \fIstats\fP setting is the averaging period in seconds and ranges from 1-65535.
+If domain is not supplied a default of platform is used.
+
+
+.RE
+.TP
+\fIget\fP \fIpolicy_id\fP <0-7>
+.br
+
+Get a previously stored policy.
+.TP
+\fIlimiting\fP
+.br
+
+Report policy number if any policy is limiting power.
+.TP
+\fIremove\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Remove a policy. If domain is not supplied a default of platform is used.
+.RE
+.TP
+\fIpower\fP \fImin\fP <minimum> \fImax\fP <maximum> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Configure Node Manager power minumum and maximum power draw limits.
+The \fImin\fP and \fImax\fP values must be in the range of 0-65535.
+If domain is not supplied a default of platform is used.
+
+.RE
+.RS
+.TP
+\fIreset\fP
+.RS
+.TP
+\fIcomm\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager communication statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIglobal\fI 
+.br
+
+Reset Node Manager global statistics.
+
+.TP
+\fImemory\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager memory throttling statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIper_policy\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager per policy statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIrequests\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager unhandled requests statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIresponse\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager response time statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIthrottling\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Reset Node Manager throttling statistics.
+If domain is not supplied a default of platform is used.
+
+.RE
+.TP
+\fIstatistics\fP
+.RS
+.TP
+\fIcomm_fail\fP
+.br
+
+Report Node Manager communication failure statistics.
+
+.TP
+\fIcpu_throttling\fP
+.br
+
+Report Node Manager cpu throttling statistics.
+
+.TP
+\fImem_throttling\fP
+.br
+
+Report Node Manager memory throttling statistics.
+
+.TP
+\fIpolicy_power\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Report Node Manager per policy power statistics (policy must be a power limit type policy).
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIpolicy_temps\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Report Node Manager per policy temp statistics (policy must be an inlet temp limit policy).
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIpolicy_throt\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Report Node Manager per policy throttling statistics.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIrequests\fP
+.br
+
+Report Node Manager unhandled requests statistics.
+
+.TP
+\fIresponse\fP
+.br
+
+Report Node Manager response time statistics.
+
+.RE
+.TP
+\fIsuspend\fP
+.RS
+.TP
+\fIget\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Get Node Manager policy suspend periods.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIset\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>] <start> <stop> <repeat>
+.br
+
+Set Node Manager policy suspend periods.
+If domain is not supplied a default of platform is used.
+The <start> and <stop> values must be in the range of 0-239, which is the number of minutes past midnight divided by 6.
+The <repeat> value is the daily recurrence pattern. Bit 0 is repeat every Monday, bit 1 is repeat every Tuesday, on through bit 6 for Sunday.
+
+.RE
+.TP
+\fIthreshold\fP
+.RS
+.TP
+\fIget\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>]
+.br
+
+Get Node Manager policy Alert Threshold settings.
+If domain is not supplied a default of platform is used.
+
+.TP
+\fIset\fP \fIpolicy_id\fP <0-7> [\fIdomain\fP <platform|CPU|Memory>] \fIthresh_array\fP
+.br
+
+Set Node Manager policy Alert Threshold values.
+If domain is not supplied a default of platform is used.
+The \fIthresh_array\fP is 1, 2, or 3 integers that set three alert threshold settings. The setting type is a power or temperature value which must match the type of policy.
+
+.RE
+.RE
+
 .TP 
 \fIpef\fP
 .RS
