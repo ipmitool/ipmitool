@@ -95,7 +95,7 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		16 +                       /* GUIDc    */
 		1  +                       /* ROLEm    */
 		1  +                       /* ULENGTHm */
-		strlen((const char *)session->username); /* optional */
+		strlen((const char *)intf->ssn_params.username); /* optional */
 
 	buffer = malloc(bufferLength);
 	if (buffer == NULL) {
@@ -163,11 +163,11 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 	}
 
 	/* ULENGTHm */
-	buffer[57] = strlen((const char *)session->username);
+	buffer[57] = strlen((const char *)intf->ssn_params.username);
 
 	/* UserName [optional] */
 	for (i = 0; i < buffer[57]; ++i)
-		buffer[58 + i] = session->username[i];
+		buffer[58 + i] = intf->ssn_params.username[i];
 
 	if (verbose > 2)
 	{
@@ -375,7 +375,7 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 		4  + /* SIDm     */
 		1  + /* ROLEm    */
 		1  + /* ULENGTHm */
-		strlen((const char *)session->username);
+		strlen((const char *)intf->ssn_params.username);
 
 	input_buffer = malloc(input_buffer_length);
 	if (input_buffer == NULL) {
@@ -406,16 +406,16 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 	
 	/* ROLEm */
 	if (ipmi_oem_active(intf, "intelplus") || ipmi_oem_active(intf, "i82571spt"))
-		input_buffer[20] = session->privlvl;
+		input_buffer[20] = intf->ssn_params.privlvl;
 	else 
 		input_buffer[20] = session->v2_data.requested_role;
 
 	/* ULENGTHm */
-	input_buffer[21] = strlen((const char *)session->username);
+	input_buffer[21] = strlen((const char *)intf->ssn_params.username);
 
 	/* USERNAME */
 	for (i = 0; i < input_buffer[21]; ++i)
-		input_buffer[22 + i] = session->username[i];
+		input_buffer[22 + i] = intf->ssn_params.username[i];
 
 	if (verbose > 2)
 	{
@@ -491,7 +491,7 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 		16 +  /* Rc       */
 		1  +  /* ROLEm     */
 		1  +  /* ULENGTHm  */
-		strlen((const char *)session->username);
+		strlen((const char *)intf->ssn_params.username);
 
 	input_buffer = malloc(input_buffer_length);
 	if (input_buffer == NULL) {
@@ -536,13 +536,13 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 	}
 
 	/* ULENGTHm */
-	input_buffer[33] = strlen((const char *)session->username);
+	input_buffer[33] = strlen((const char *)intf->ssn_params.username);
 
 	/* USERNAME */
 	for (i = 0; i < input_buffer[33]; ++i)
-		input_buffer[34 + i] = session->username[i];
+		input_buffer[34 + i] = intf->ssn_params.username[i];
 
-	if (session->v2_data.kg[0])
+	if (intf->ssn_params.kg[0])
 	{
 		/* We will be hashing with Kg */
 		/*
@@ -550,7 +550,7 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 		 * using Kg.  It specifies that Kg should not be truncated.
 		 * Kg is set in ipmi_intf.
 		 */
-		input_key        = session->v2_data.kg;
+		input_key        = intf->ssn_params.kg;
 	}
 	else
 	{

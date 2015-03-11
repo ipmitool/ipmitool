@@ -272,9 +272,7 @@ void ipmi_catch_sigint()
 	if (ipmi_main_intf != NULL) {
 		printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
 		/* reduce retry count to a single retry */
-		if (ipmi_main_intf->session) {
-			ipmi_main_intf->session->retry = 1;
-		}
+		ipmi_main_intf->ssn_params.retry = 1;
 		/* close interface */
 		ipmi_main_intf->close(ipmi_main_intf);
 	}

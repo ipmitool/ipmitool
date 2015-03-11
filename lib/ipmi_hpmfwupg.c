@@ -2194,18 +2194,15 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 					lprintf(LOG_DEBUG, "HPM: try to re-open IOL session");
 					{
 						/* force session re-open */
-						intf->opened = 0;
-						intf->session->authtype = IPMI_SESSION_AUTHTYPE_NONE;
-						intf->session->session_id = 0;
-						intf->session->in_seq = 0;
-						intf->session->out_seq = 0;
-						intf->session->active = 0;
-						intf->session->retry = 10;
+						intf->abort = 1;
+						intf->close(intf);
+
 						while (intf->open(intf) == HPMFWUPG_ERROR
 								&& inaccessTimeoutCounter < inaccessTimeout) {
 							inaccessTimeoutCounter += (time(NULL) - timeoutSec1);
 							timeoutSec1 = time(NULL);
 						}
+
 						/* Fake timeout to retry command */
 						fakeRsp.ccode = 0xc3;
 						rsp = &fakeRsp;

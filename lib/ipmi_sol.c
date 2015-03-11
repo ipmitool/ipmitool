@@ -544,8 +544,8 @@ ipmi_get_sol_info(
 		case 0x80:
 			if( intf->session != NULL ) {
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d",
-						val2str(data[1], sol_parameter_vals), intf->session->port);
-				params->payload_port = intf->session->port;
+						val2str(data[1], sol_parameter_vals), intf->ssn_params.port);
+				params->payload_port = intf->ssn_params.port;
 			} else {
 				lprintf(LOG_ERR,
 						"Info: SOL parameter '%s' not supported - can't determine which "
@@ -1235,14 +1235,14 @@ printSolEscapeSequences(struct ipmi_intf * intf)
 	%c?  - this message\n\
 	%c%c  - send the escape character by typing it twice\n\
 	(Note that escapes are only recognized immediately after newline.)\n",
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char,
-		   intf->session->sol_escape_char);
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char,
+		   intf->ssn_params.sol_escape_char);
 }
 
 
@@ -1379,25 +1379,25 @@ processSolUserInput(
 			switch (ch) {
 			case '.':
 				printf("%c. [terminated ipmitool]\n",
-				       intf->session->sol_escape_char);
+				       intf->ssn_params.sol_escape_char);
 				retval = 1;
 				break;
 
 			case 'Z' - 64:
 				printf("%c^Z [suspend ipmitool]\n",
-				       intf->session->sol_escape_char);
+				       intf->ssn_params.sol_escape_char);
 				suspendSelf(1); /* Restore tty back to raw */
 				continue;
 
 			case 'X' - 64:
 				printf("%c^Z [suspend ipmitool]\n",
-				       intf->session->sol_escape_char);
+				       intf->ssn_params.sol_escape_char);
 				suspendSelf(0); /* Don't restore to raw mode */
 				continue;
 
 			case 'B':
 				printf("%cB [send break]\n",
-				       intf->session->sol_escape_char);
+				       intf->ssn_params.sol_escape_char);
 				sendBreak(intf);
 				continue;
 
@@ -1406,16 +1406,16 @@ processSolUserInput(
 				continue;
 
 			default:
-				if (ch != intf->session->sol_escape_char)
+				if (ch != intf->ssn_params.sol_escape_char)
 					v2_payload.payload.sol_packet.data[length++] =
-						intf->session->sol_escape_char;
+						intf->ssn_params.sol_escape_char;
 				v2_payload.payload.sol_packet.data[length++] = ch;
 			}
 		}
 
 		else
 		{
-			if (last_was_cr && (ch == intf->session->sol_escape_char)) {
+			if (last_was_cr && (ch == intf->ssn_params.sol_escape_char)) {
 				escape_pending = 1;
 				continue;
 			}
@@ -1441,7 +1441,7 @@ processSolUserInput(
 		struct ipmi_rs * rsp = NULL;
 		int try = 0;
 
-		while (try < intf->session->retry) {
+		while (try < intf->ssn_params.retry) {
 
 			v2_payload.payload.sol_packet.character_count = length;
 
@@ -1827,12 +1827,12 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 
 	/* NOTE: the spec does allow for SOL traffic to be sent on
 	 * a different port.  we do not yet support that feature. */
-	if (intf->session->sol_data.port != intf->session->port)
+	if (intf->session->sol_data.port != intf->ssn_params.port)
 	{
 		/* try byteswapping port in case BMC sent it incorrectly */
 		uint16_t portswap = BSWAP_16(intf->session->sol_data.port);
 
-		if (portswap == intf->session->port) {
+		if (portswap == intf->ssn_params.port) {
 			intf->session->sol_data.port = portswap;
 		}
 		else {
@@ -1842,7 +1842,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 	}
 
 	printf("[SOL Session operational.  Use %c? for help]\n",
-	       intf->session->sol_escape_char);
+	       intf->ssn_params.sol_escape_char);
 
 	if(looptest == 1)
 	{

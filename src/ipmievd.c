@@ -832,8 +832,8 @@ ipmievd_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (intf->session != NULL) {
 		snprintf(eintf->prefix,
-			 strlen((const char *)intf->session->hostname) + 3,
-			 "%s: ", intf->session->hostname);
+			 strlen((const char *)intf->ssn_params.hostname) + 3,
+			 "%s: ", intf->ssn_params.hostname);
 	}
 
 	return ipmievd_main(eintf, argc, argv);

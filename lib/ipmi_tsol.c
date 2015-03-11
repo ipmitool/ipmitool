@@ -185,12 +185,12 @@ print_escape_seq(struct ipmi_intf *intf)
 "       %c?  - this message\n"
 "       %c%c  - send the escape character by typing it twice\n"
 "       (Note that escapes are only recognized immediately after newline.)",
-			intf->session->sol_escape_char,
-			intf->session->sol_escape_char,
-			intf->session->sol_escape_char,
-			intf->session->sol_escape_char,
-			intf->session->sol_escape_char,
-			intf->session->sol_escape_char);
+			intf->ssn_params.sol_escape_char,
+			intf->ssn_params.sol_escape_char,
+			intf->ssn_params.sol_escape_char,
+			intf->ssn_params.sol_escape_char,
+			intf->ssn_params.sol_escape_char,
+			intf->ssn_params.sol_escape_char);
 }
 
 static int
@@ -264,7 +264,7 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 	for(i = 0; i < len ;) {
 		if (!in_esc) {
 			if (last_was_cr &&
-					(in_buff[i] == intf->session->sol_escape_char)) {
+					(in_buff[i] == intf->ssn_params.sol_escape_char)) {
 				in_esc = 1;
 				memmove(in_buff, in_buff + 1, len - i - 1);
 				len--;
@@ -272,7 +272,7 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 			}
 		}
 		if (in_esc) {
-			if (in_buff[i] == intf->session->sol_escape_char) {
+			if (in_buff[i] == intf->ssn_params.sol_escape_char) {
 				in_esc = 0;
 				i++;
 				continue;
@@ -281,23 +281,23 @@ do_inbuf_actions(struct ipmi_intf *intf, char *in_buff, int len)
 			switch (in_buff[i]) {
 			case '.':
 				printf("%c. [terminated ipmitool]\n",
-						intf->session->sol_escape_char);
+						intf->ssn_params.sol_escape_char);
 				return -1;
 			case 'Z' - 64:
 				printf("%c^Z [suspend ipmitool]\n",
-						intf->session->sol_escape_char);
+						intf->ssn_params.sol_escape_char);
 				/* Restore tty back to raw */
 				suspend_self(1);
 				break;
 			case 'X' - 64:
 				printf("%c^X [suspend ipmitool]\n",
-						intf->session->sol_escape_char);
+						intf->ssn_params.sol_escape_char);
 				/* Don't restore to raw mode */
 				suspend_self(0);
 				break;
 			case '?':
 				printf("%c? [ipmitool help]\n",
-						intf->session->sol_escape_char);
+						intf->ssn_params.sol_escape_char);
 				print_escape_seq(intf);
 				break;
 			}
@@ -425,20 +425,20 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	sin.sin_port = htons(port);
 
 	sa_in = (struct sockaddr_in *)&intf->session->addr;
-	result = inet_pton(AF_INET, (const char *)intf->session->hostname,
+	result = inet_pton(AF_INET, (const char *)intf->ssn_params.hostname,
 			&sa_in->sin_addr);
 
 	if (result <= 0) {
-		struct hostent *host = gethostbyname((const char *)intf->session->hostname);
+		struct hostent *host = gethostbyname((const char *)intf->ssn_params.hostname);
 		if (host == NULL ) {
 			lprintf(LOG_ERR, "Address lookup for %s failed",
-				intf->session->hostname);
+				intf->ssn_params.hostname);
 			return -1;
 		}
 		if (host->h_addrtype != AF_INET) {
 			lprintf(LOG_ERR,
 					"Address lookup for %s failed. Got %s, expected IPv4 address.",
-					intf->session->hostname,
+					intf->ssn_params.hostname,
 					(host->h_addrtype == AF_INET6) ? "IPv6" : "Unknown");
 			return (-1);
 		}
@@ -501,7 +501,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	}
 
 	printf("[SOL Session operational.  Use %c? for help]\n",
-			intf->session->sol_escape_char);
+			intf->ssn_params.sol_escape_char);
 
 	gettimeofday(&_start_keepalive, 0);
 

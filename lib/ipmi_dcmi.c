@@ -750,7 +750,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 			"DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.");
 	return (-1);
 # else
-	struct ipmi_session *s;
+	struct ipmi_session_params *p;
 
 	if (intf->opened == 0 && intf->open != NULL) {
 		if (intf->open(intf) < 0)
@@ -759,18 +759,18 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 	if (intf == NULL || intf->session == NULL)
 		return -1;
 
-	s = intf->session;
+	p = &intf->ssn_params;
 
-	if (s->port == 0)
-		s->port = IPMI_LAN_PORT;
-	if (s->privlvl == 0)
-		s->privlvl = IPMI_SESSION_PRIV_ADMIN;
-	if (s->timeout == 0)
-		s->timeout = IPMI_LAN_TIMEOUT;
-	if (s->retry == 0)
-		s->retry = IPMI_LAN_RETRY;
+	if (p->port == 0)
+		p->port = IPMI_LAN_PORT;
+	if (p->privlvl == 0)
+		p->privlvl = IPMI_SESSION_PRIV_ADMIN;
+	if (p->timeout == 0)
+		p->timeout = IPMI_LAN_TIMEOUT;
+	if (p->retry == 0)
+		p->retry = IPMI_LAN_RETRY;
 
-	if (s->hostname == NULL || strlen((const char *)s->hostname) == 0) {
+	if (p->hostname == NULL || strlen((const char *)p->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -785,7 +785,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 
 	if (intf->fd < 0) {
 		lperror(LOG_ERR, "Connect to %s failed",
-			s->hostname);
+			p->hostname);
 		intf->close(intf);
 		return -1;
 	}

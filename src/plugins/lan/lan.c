@@ -262,7 +262,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	FD_ZERO(&err_set);
 	FD_SET(intf->fd, &err_set);
 
-	tmout.tv_sec = intf->session->timeout;
+	tmout.tv_sec = intf->ssn_params.timeout;
 	tmout.tv_usec = 0;
 
 	ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
@@ -288,7 +288,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		FD_ZERO(&err_set);
 		FD_SET(intf->fd, &err_set);
 
-		tmout.tv_sec = intf->session->timeout;
+		tmout.tv_sec = intf->ssn_params.timeout;
 		tmout.tv_usec = 0;
 
 		ret = select(intf->fd + 1, &read_set, NULL, &err_set, &tmout);
@@ -955,7 +955,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 			break;
 
 		usleep(5000);
-		if (++try >= intf->session->retry) {
+		if (++try >= intf->ssn_params.retry) {
 			lprintf(LOG_DEBUG, "  No response from remote controller");
 			break;
 		}
@@ -1305,7 +1305,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 		}
 
 		usleep(5000);
-		if (++try >= intf->session->retry) {
+		if (++try >= intf->ssn_params.retry) {
 			lprintf(LOG_DEBUG, "  No response from remote controller");
 			break;
 		}
@@ -1580,10 +1580,11 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipmi_session * s = intf->session;
+	struct ipmi_session_params *p = &intf->ssn_params;
 	uint8_t msg_data[2];
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E;
-	msg_data[1] = s->privlvl;
+	msg_data[1] = p->privlvl;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_APP;
@@ -1634,44 +1635,44 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 
 	s->authstatus = rsp->data[2];
 
-	if (s->password &&
-	    (s->authtype_set == 0 ||
-	     s->authtype_set == IPMI_SESSION_AUTHTYPE_MD5) &&
+	if (p->password &&
+	    (p->authtype_set == 0 ||
+	     p->authtype_set == IPMI_SESSION_AUTHTYPE_MD5) &&
 	    (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5))
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_MD5;
 	}
-	else if (s->password &&
-		 (s->authtype_set == 0 ||
-		  s->authtype_set == IPMI_SESSION_AUTHTYPE_MD2) &&
+	else if (p->password &&
+		 (p->authtype_set == 0 ||
+		  p->authtype_set == IPMI_SESSION_AUTHTYPE_MD2) &&
 		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2))
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_MD2;
 	}
-	else if (s->password &&
-		 (s->authtype_set == 0 ||
-		  s->authtype_set == IPMI_SESSION_AUTHTYPE_PASSWORD) &&
+	else if (p->password &&
+		 (p->authtype_set == 0 ||
+		  p->authtype_set == IPMI_SESSION_AUTHTYPE_PASSWORD) &&
 		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD))
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_PASSWORD;
 	}
-	else if (s->password &&
-		 (s->authtype_set == 0 ||
-		  s->authtype_set == IPMI_SESSION_AUTHTYPE_OEM) &&
+	else if (p->password &&
+		 (p->authtype_set == 0 ||
+		  p->authtype_set == IPMI_SESSION_AUTHTYPE_OEM) &&
 		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM))
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_OEM;
 	}
-	else if ((s->authtype_set == 0 ||
-		  s->authtype_set == IPMI_SESSION_AUTHTYPE_NONE) &&
+	else if ((p->authtype_set == 0 ||
+		  p->authtype_set == IPMI_SESSION_AUTHTYPE_NONE) &&
 		 (rsp->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE))
 	{
 		s->authtype = IPMI_SESSION_AUTHTYPE_NONE;
 	}
 	else {
-		if (!(rsp->data[1] & 1<<s->authtype_set))
+		if (!(rsp->data[1] & 1<<p->authtype_set))
 			lprintf(LOG_ERR, "Authentication type %s not supported",
-			       val2str(s->authtype_set, ipmi_authtype_session_vals));
+			       val2str(p->authtype_set, ipmi_authtype_session_vals));
 		else
 			lprintf(LOG_ERR, "No supported authtypes found");
 
@@ -1698,7 +1699,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 
 	memset(msg_data, 0, 17);
 	msg_data[0] = s->authtype;
-	memcpy(msg_data+1, s->username, 16);
+	memcpy(msg_data+1, intf->ssn_params.username, 16);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -1755,12 +1756,12 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 	req.msg.cmd = 0x3a;
 
 	msg_data[0] = s->authtype;
-	msg_data[1] = s->privlvl;
+	msg_data[1] = intf->ssn_params.privlvl;
 
 	/* supermicro oem authentication hack */
 	if (ipmi_oem_active(intf, "supermicro")) {
 		uint8_t * special = ipmi_auth_special(s);
-		memcpy(s->authcode, special, 16);
+		memcpy(intf->session->authcode, special, 16);
 		memset(msg_data + 2, 0, 16);
 		lprintf(LOG_DEBUG, "  OEM Auth        : %s",
 			buf2str(special, 16));
@@ -1837,8 +1838,6 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	bridge_possible = 1;
-
 	lprintf(LOG_DEBUG, "\nSession Activated");
 	lprintf(LOG_DEBUG, "  Auth Type       : %s",
 		val2str(rsp->data[0], ipmi_authtype_session_vals));
@@ -1859,7 +1858,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t privlvl = intf->session->privlvl;
+	uint8_t privlvl = intf->ssn_params.privlvl;
 	uint8_t backup_bridge_possible = bridge_possible;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
@@ -1992,23 +1991,27 @@ ipmi_lan_activate_session(struct ipmi_intf * intf)
 
 	rc = ipmi_set_session_privlvl_cmd(intf);
 	if (rc < 0)
-		goto fail;
+		goto close_fail;
 
 	return 0;
 
+ close_fail:
+	ipmi_close_session_cmd(intf);
  fail:
 	lprintf(LOG_ERR, "Error: Unable to establish LAN session");
 	return -1;
 }
 
-static void
+void
 ipmi_lan_close(struct ipmi_intf * intf)
 {
-	if (intf->abort == 0)
+	if (!intf->abort && intf->session)
 		ipmi_close_session_cmd(intf);
 
-	if (intf->fd >= 0)
+	if (intf->fd >= 0) {
 		close(intf->fd);
+		intf->fd = -1;
+	}
 
 	ipmi_req_clear_entries();
 	ipmi_intf_session_cleanup(intf);
@@ -2022,69 +2025,79 @@ ipmi_lan_open(struct ipmi_intf * intf)
 {
 	int rc;
 	struct ipmi_session *s;
+	struct ipmi_session_params *p;
+	struct sockaddr_storage addr;
 
-	if (intf == NULL || intf->session == NULL)
+	if (intf == NULL || intf->opened)
 		return -1;
+
 	s = intf->session;
+	p = &intf->ssn_params;
 
-	if (s->port == 0)
-		s->port = IPMI_LAN_PORT;
-	if (s->privlvl == 0)
-		s->privlvl = IPMI_SESSION_PRIV_ADMIN;
-	if (s->timeout == 0)
-		s->timeout = IPMI_LAN_TIMEOUT;
-	if (s->retry == 0)
-		s->retry = IPMI_LAN_RETRY;
+	if (p->port == 0)
+		p->port = IPMI_LAN_PORT;
+	if (p->privlvl == 0)
+		p->privlvl = IPMI_SESSION_PRIV_ADMIN;
+	if (p->timeout == 0)
+		p->timeout = IPMI_LAN_TIMEOUT;
+	if (p->retry == 0)
+		p->retry = IPMI_LAN_RETRY;
 
-	if (s->hostname == NULL || strlen((const char *)s->hostname) == 0) {
+	if (p->hostname == NULL || strlen((const char *)p->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
 
-	intf->abort = 1;
-
-	intf->session->sol_data.sequence_number = 1;
-	
-	if (ipmi_intf_socket_connect (intf) == -1) {
+	if (ipmi_intf_socket_connect(intf) == -1) {
 		lprintf(LOG_ERR, "Could not open socket!");
 		return -1;
 	}
 
-	if (intf->fd < 0) {
-		lperror(LOG_ERR, "Connect to %s failed",
-			s->hostname);
-		intf->close(intf);
-		return -1;
+	s = (struct ipmi_session *)malloc(sizeof(struct ipmi_session));
+	if (!s) {
+		lprintf(LOG_ERR, "ipmitool: malloc failure");
+		goto fail;
 	}
 
 	intf->opened = 1;
+	intf->abort = 1;
+
+	intf->session = s;
+
+	memset(s, 0, sizeof(struct ipmi_session));
+	s->sol_data.sequence_number = 1;
+	s->timeout = p->timeout;
+	memcpy(&s->authcode, &p->authcode_set, sizeof(s->authcode));
+	s->addrlen = sizeof(s->addr);
+	if (getsockname(intf->fd, &s->addr, &s->addrlen)) {
+		goto fail;
+	}
 
 	/* try to open session */
 	rc = ipmi_lan_activate_session(intf);
 	if (rc < 0) {
-		intf->close(intf);
-		intf->opened = 0;
-		return -1;
+	    goto fail;
 	}
-
-	intf->manufacturer_id = ipmi_get_oem(intf);
 
 	/* automatically detect interface request and response sizes */
 	hpm2_detect_max_payload_size(intf);
 
+	/* set manufactirer OEM id */
+	intf->manufacturer_id = ipmi_get_oem(intf);
+
+	/* now allow bridging */
+	bridge_possible = 1;
 	return intf->fd;
+
+ fail:
+	lprintf(LOG_ERR, "Error: Unable to establish IPMI v1.5 / RMCP session");
+	intf->close(intf);
+	return -1;
 }
 
 static int
 ipmi_lan_setup(struct ipmi_intf * intf)
 {
-	intf->session = malloc(sizeof(struct ipmi_session));
-	if (intf->session == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return -1;
-	}
-	memset(intf->session, 0, sizeof(struct ipmi_session));
-
 	/* setup default LAN maximum request and response sizes */
 	intf->max_request_data_size = IPMI_LAN_MAX_REQUEST_SIZE;
 	intf->max_response_data_size = IPMI_LAN_MAX_RESPONSE_SIZE;

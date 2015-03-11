@@ -226,10 +226,10 @@ ipmi_serial_term_open(struct ipmi_intf * intf)
 	/* set the new options for the port with flushing */
 	tcsetattr(intf->fd, TCSAFLUSH, &ti);
 
-	if (intf->session->timeout == 0)
-		intf->session->timeout = IPMI_SERIAL_TIMEOUT;
-	if (intf->session->retry == 0)
-		intf->session->retry = IPMI_SERIAL_RETRY;
+	if (intf->ssn_params.timeout == 0)
+		intf->ssn_params.timeout = IPMI_SERIAL_TIMEOUT;
+	if (intf->ssn_params.retry == 0)
+		intf->ssn_params.retry = IPMI_SERIAL_RETRY;
 
 	intf->opened = 1;
 
@@ -260,7 +260,7 @@ serial_wait_for_data(struct ipmi_intf * intf)
 	pfd.events = POLLIN;
 	pfd.revents = 0;
 
-	n = poll(&pfd, 1, intf->session->timeout*1000);
+	n = poll(&pfd, 1, intf->ssn_params.timeout*1000);
 	if (n < 0) {
 		lperror(LOG_ERR, "Poll for serial data failed");
 		return -1;
@@ -770,7 +770,7 @@ serial_term_get_message(struct ipmi_intf * intf,
 		tm = clock() - start;
 
 		tm /= CLOCKS_PER_SEC;
-	} while (tm < intf->session->timeout);
+	} while (tm < intf->ssn_params.timeout);
 
 	return 0;
 }
@@ -788,7 +788,7 @@ ipmi_serial_term_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	}
 
 	/* Send the message and receive the answer */
-	for (retry = 0; retry < intf->session->retry; retry++) {
+	for (retry = 0; retry < intf->ssn_params.retry; retry++) {
 		/* build output message */
 		bridging_level = serial_term_build_msg(intf, req, msg,
 				sizeof (msg), req_ctx, &msg_len);
@@ -883,14 +883,6 @@ ipmi_serial_term_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 static int
 ipmi_serial_term_setup(struct ipmi_intf * intf)
 {
-	intf->session = malloc(sizeof(struct ipmi_session));
-	if (intf->session == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return -1;
-	}
-
-	memset(intf->session, 0, sizeof(struct ipmi_session));
-
 	/* setup default LAN maximum request and response sizes */
 	intf->max_request_data_size = IPMI_SERIAL_MAX_RQ_SIZE;
 	intf->max_response_data_size = IPMI_SERIAL_MAX_RS_SIZE;

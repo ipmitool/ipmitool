@@ -184,16 +184,10 @@ static int is_system;
 static int
 serial_bm_setup(struct ipmi_intf * intf)
 {
-	intf->session = malloc(sizeof(struct ipmi_session));
-	if (intf->session == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return -1;
-	}
-	memset(intf->session, 0, sizeof(struct ipmi_session));
-
 	/* setup default LAN maximum request and response sizes */
 	intf->max_request_data_size = SERIAL_BM_MAX_RQ_SIZE;
 	intf->max_response_data_size = SERIAL_BM_MAX_RS_SIZE;
+
 	return 0;
 }
 
@@ -286,10 +280,10 @@ serial_bm_open(struct ipmi_intf * intf)
 	/* set the new options for the port with flushing */
 	tcsetattr(intf->fd, TCSAFLUSH, &ti);
 
-	if (intf->session->timeout == 0)
-		intf->session->timeout = SERIAL_BM_TIMEOUT;
-	if (intf->session->retry == 0)
-		intf->session->retry = SERIAL_BM_RETRY_COUNT;
+	if (intf->ssn_params.timeout == 0)
+		intf->ssn_params.timeout = SERIAL_BM_TIMEOUT;
+	if (intf->ssn_params.retry == 0)
+		intf->ssn_params.retry = SERIAL_BM_RETRY_COUNT;
 
 	intf->opened = 1;
 
@@ -460,7 +454,7 @@ serial_bm_wait_for_data(struct ipmi_intf * intf)
 	pfd.events = POLLIN;
 	pfd.revents = 0;
 
-	n = poll(&pfd, 1, intf->session->timeout*1000);
+	n = poll(&pfd, 1, intf->ssn_params.timeout * 1000);
 	if (n < 0) {
 		lperror(LOG_ERR, "Poll for serial data failed");
 		return -1;
@@ -888,7 +882,7 @@ serial_bm_get_message(struct ipmi_intf * intf,
 		tm = clock() - start;
 
 		tm /= CLOCKS_PER_SEC;
-	} while (tm < intf->session->timeout);
+	} while (tm < intf->ssn_params.timeout);
 
 	return 0;
 }
@@ -911,7 +905,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 	read_ctx.max_buffer_size = SERIAL_BM_MAX_BUFFER_SIZE;
 
 	/* Send the message and receive the answer */
-	for (retry = 0; retry < intf->session->retry; retry++) {
+	for (retry = 0; retry < intf->ssn_params.retry; retry++) {
 		/* build output message */
 		bridging_level = serial_bm_build_msg(intf, req, msg,
 				sizeof (msg), req_ctx, &msg_len);

@@ -196,139 +196,106 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 void
 ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 {
-	if (intf->session == NULL || hostname == NULL) {
+	if (intf->ssn_params.hostname != NULL) {
+		free(intf->ssn_params.hostname);
+		intf->ssn_params.hostname = NULL;
+	}
+	if (hostname == NULL) {
 		return;
 	}
-	if (intf->session->hostname != NULL) {
-		free(intf->session->hostname);
-		intf->session->hostname = NULL;
-	}
-	intf->session->hostname = strdup(hostname);
+	intf->ssn_params.hostname = strdup(hostname);
 }
 
 void
 ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 {
-	if (intf->session == NULL)
-		return;
-
-	memset(intf->session->username, 0, 17);
+	memset(intf->ssn_params.username, 0, 17);
 
 	if (username == NULL)
 		return;
 
-	memcpy(intf->session->username, username, __min(strlen(username), 16));
+	memcpy(intf->ssn_params.username, username, __min(strlen(username), 16));
 }
 
 void
 ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 {
-	if (intf->session == NULL)
-		return;
-
-	memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
+	memset(intf->ssn_params.authcode_set, 0, IPMI_AUTHCODE_BUFFER_SIZE);
 
 	if (password == NULL) {
-		intf->session->password = 0;
+		intf->ssn_params.password = 0;
 		return;
 	}
 
-	intf->session->password = 1;
-	memcpy(intf->session->authcode, password,
+	intf->ssn_params.password = 1;
+	memcpy(intf->ssn_params.authcode_set, password,
 	       __min(strlen(password), IPMI_AUTHCODE_BUFFER_SIZE));
 }
 
 void
 ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t level)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->privlvl = level;
+	intf->ssn_params.privlvl = level;
 }
 
 void
 ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->v2_data.lookupbit = lookupbit;
+	intf->ssn_params.lookupbit = lookupbit;
 }
 
 void
 ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->cipher_suite_id = cipher_suite_id;
+	intf->ssn_params.cipher_suite_id = cipher_suite_id;
 }
 
 void
 ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->sol_escape_char = sol_escape_char;
+	intf->ssn_params.sol_escape_char = sol_escape_char;
 }
 
 void
 ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey)
 {
-	if (intf->session == NULL)
-		return;
-
-	memset(intf->session->v2_data.kg, 0, IPMI_KG_BUFFER_SIZE);
+	memset(intf->ssn_params.kg, 0, IPMI_KG_BUFFER_SIZE);
 
 	if (kgkey == NULL)
 		return;
 
-	memcpy(intf->session->v2_data.kg, kgkey, 
+	memcpy(intf->ssn_params.kg, kgkey,
 	       __min(strlen(kgkey), IPMI_KG_BUFFER_SIZE));
 }
 
 void
 ipmi_intf_session_set_port(struct ipmi_intf * intf, int port)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->port = port;
+	intf->ssn_params.port = port;
 }
 
 void
 ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype)
 {
-	if (intf->session == NULL)
-		return;
-
 	/* clear password field if authtype NONE specified */
 	if (authtype == IPMI_SESSION_AUTHTYPE_NONE) {
-		memset(intf->session->authcode, 0, IPMI_AUTHCODE_BUFFER_SIZE);
-		intf->session->password = 0;
+		memset(intf->ssn_params.authcode_set, 0, IPMI_AUTHCODE_BUFFER_SIZE);
+		intf->ssn_params.password = 0;
 	}
 
-	intf->session->authtype_set = authtype;
+	intf->ssn_params.authtype_set = authtype;
 }
 
 void
 ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->timeout = timeout;
+	intf->ssn_params.timeout = timeout;
 }
 
 void
 ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry)
 {
-	if (intf->session == NULL)
-		return;
-
-	intf->session->retry = retry;
+	intf->ssn_params.retry = retry;
 }
 
 void
@@ -337,10 +304,7 @@ ipmi_intf_session_cleanup(struct ipmi_intf *intf)
 	if (intf->session == NULL) {
 		return;
 	}
-	if (intf->session->hostname != NULL) {
-		free(intf->session->hostname);
-		intf->session->hostname = NULL;
-	}
+
 	free(intf->session);
 	intf->session = NULL;
 }
@@ -349,26 +313,27 @@ void
 ipmi_cleanup(struct ipmi_intf * intf)
 {
 	ipmi_sdr_list_empty(intf);
+	ipmi_intf_session_set_hostname(intf, NULL);
 }
 
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
 int
 ipmi_intf_socket_connect(struct ipmi_intf * intf)
 {
-	struct ipmi_session *session;
+	struct ipmi_session_params *params;
 
 	struct sockaddr_storage addr;
 	struct addrinfo hints;
 	struct addrinfo *rp0 = NULL, *rp;
 	char service[NI_MAXSERV];
 
-	if (!intf || intf->session == NULL) {
+	if (!intf) {
 		return -1;
 	}
 
-	session = intf->session;
+	params = &intf->ssn_params;
 
-	if (session->hostname == NULL || strlen((const char *)session->hostname) == 0) {
+	if (params->hostname == NULL || strlen((const char *)params->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -376,7 +341,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	/* open port to BMC */
 	memset(&addr, 0, sizeof(addr));
 
-	sprintf(service, "%d", session->port);
+	sprintf(service, "%d", params->port);
 	/* Obtain address(es) matching host/port */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family   = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
@@ -384,19 +349,18 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	hints.ai_flags    = 0;            /* use AI_NUMERICSERV for no name resolution */
 	hints.ai_protocol = IPPROTO_UDP; /*  */
 
-	if (getaddrinfo(session->hostname, service, &hints, &rp0) != 0) {
+	if (getaddrinfo(params->hostname, service, &hints, &rp0) != 0) {
 		lprintf(LOG_ERR, "Address lookup for %s failed",
-			session->hostname);
+				params->hostname);
 		return -1;
 	}
 
 	/* getaddrinfo() returns a list of address structures.
 	 * Try each address until we successfully connect(2).
 	 * If socket(2) (or connect(2)) fails, we (close the socket
-	 * and) try the next address. 
+	 * and) try the next address.
 	 */
 
-	session->ai_family = AF_UNSPEC;
 	for (rp = rp0; rp != NULL; rp = rp->ai_next) {
 		/* We are only interested in IPv4 and IPv6 */
 		if ((rp->ai_family != AF_INET6) && (rp->ai_family != AF_INET)) {
@@ -410,9 +374,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 
 		if (rp->ai_family == AF_INET) {
 			if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
-				memcpy(&session->addr, rp->ai_addr, rp->ai_addrlen);
-				session->addrlen = rp->ai_addrlen;
-				session->ai_family = rp->ai_family;
+				hints.ai_family = rp->ai_family;
 				break;  /* Success */
 			}
 		}  else if (rp->ai_family == AF_INET6) {
@@ -424,14 +386,12 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 			if (addr6->sin6_scope_id != 0) {
 				len = sizeof(struct sockaddr_in6);
 				if (getnameinfo((struct sockaddr *)addr6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
-					lprintf(LOG_DEBUG, "Trying address: %s scope=%d", 
-						hbuf, 
+					lprintf(LOG_DEBUG, "Trying address: %s scope=%d",
+						hbuf,
 						addr6->sin6_scope_id);
 				}
 				if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
-					memcpy(&session->addr, rp->ai_addr, rp->ai_addrlen);
-					session->addrlen = rp->ai_addrlen;
-					session->ai_family = rp->ai_family;
+					hints.ai_family = rp->ai_family;
 					break;  /* Success */
 				}
 			} else {
@@ -441,7 +401,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 
 				if (getifaddrs(&ifaddrs) < 0) {
 					lprintf(LOG_ERR, "Interface address lookup for %s failed",
-						session->hostname);
+						params->hostname);
 					break;
 				}
 
@@ -462,17 +422,17 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						}
 						len = sizeof(struct sockaddr_in6);
 						if ( getnameinfo((struct sockaddr *)tmp6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
-							lprintf(LOG_DEBUG, "Testing %s interface address: %s scope=%d", 
-								ifa->ifa_name != NULL ? ifa->ifa_name : "???", 
-								hbuf, 
+							lprintf(LOG_DEBUG, "Testing %s interface address: %s scope=%d",
+								ifa->ifa_name != NULL ? ifa->ifa_name : "???",
+								hbuf,
 								tmp6->sin6_scope_id);
 						}
 
 						if (tmp6->sin6_scope_id != 0) {
 							addr6->sin6_scope_id = tmp6->sin6_scope_id;
 						} else {
-							/* 
-							 * No scope information in interface address information 
+							/*
+							 * No scope information in interface address information
 							 * On some OS'es, getifaddrs() is returning out the 'kernel' representation
 							 * of scoped addresses which stores the scope in the 3rd and 4th
 							 * byte. See also this page:
@@ -487,19 +447,17 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						/* OK, now try to connect with the scope id from this interface address */
 						if (addr6->sin6_scope_id != 0) {
 							if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
-								memcpy(&session->addr, rp->ai_addr, rp->ai_addrlen);
-								session->addrlen = rp->ai_addrlen;
-								session->ai_family = rp->ai_family;
+								hints.ai_family = rp->ai_family;
 								lprintf(LOG_DEBUG, "Successful connected on %s interface with scope id %d", ifa->ifa_name, tmp6->sin6_scope_id);
 								break;  /* Success */
 							}
-						} 
+						}
 					}
 				}
 				freeifaddrs(ifaddrs);
 			}
 		}
-		if (session->ai_family != AF_UNSPEC) {
+		if (hints.ai_family != AF_UNSPEC) {
 			break;
 		}
 		close(intf->fd);
