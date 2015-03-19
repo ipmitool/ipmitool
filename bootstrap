@@ -31,7 +31,15 @@
 # EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 aclocal
-libtoolize --automake --copy
+
+case `uname` in
+	Darwin*)
+		glibtoolize --automake --copy
+		;;
+	*)
+		libtoolize --automake --copy
+		;;
+esac
 
 autoheader
 automake --foreign --add-missing --copy
