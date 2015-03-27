@@ -704,7 +704,6 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 	memset(pidfile, 0, 64);
 	sprintf(pidfile, "%s%d", DEFAULT_PIDFILE, eintf->intf->devnum);
-	lprintf(LOG_NOTICE, "ipmievd: using pidfile %s", pidfile);
 
 	for (i = 0; i < argc; i++) {
 		if (strncasecmp(argv[i], "help", 4) == 0) {
@@ -738,6 +737,8 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 				__min(strlen((const char *)(argv[i]+8)), 63));
 		}
 	}
+
+	lprintf(LOG_NOTICE, "ipmievd: using pidfile %s", pidfile);
 
 	/*
 	 * We need to open interface before forking daemon
