@@ -39,13 +39,13 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_raw.h>
-#include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_strings.h>
 
 #define IPMI_I2C_MASTER_MAX_SIZE	0x40 /* 64 bytes */
 
 static int is_valid_param(const char *input_param, uint8_t *uchr_ptr,
 		const char *label);
+int ipmi_spd_print(uint8_t *, int);
 
 /* ipmi_master_write_read  -  Perform I2C write/read transactions
  *
