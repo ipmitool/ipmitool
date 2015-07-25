@@ -951,7 +951,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 			/* check if response for inner request is not encapsulated */
 			} else if (rv == 1) {
 				/* wait for response for inner request */
-				rv = serial_bm_wait_response(intf, &req_ctx[0],
+				rv = serial_bm_wait_response(intf, &req_ctx[1],
 						&read_ctx, msg, sizeof (msg));
 
 				/* check for IO error */
