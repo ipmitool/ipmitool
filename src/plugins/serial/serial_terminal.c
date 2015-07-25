@@ -358,7 +358,7 @@ recv_response(struct ipmi_intf * intf, unsigned char *data, int len)
 {
 	char hex_rs[IPMI_SERIAL_MAX_RESPONSE * 3];
 	int i, j, resp_len = 0;
-	unsigned long rv;
+	long rv;
 	char *p, *pp;
 	char ch, str_hex[3];
 
