@@ -886,13 +886,7 @@ ipmi_serial_term_setup(struct ipmi_intf * intf)
 	/* setup default LAN maximum request and response sizes */
 	intf->max_request_data_size = IPMI_SERIAL_MAX_RQ_SIZE;
 	intf->max_response_data_size = IPMI_SERIAL_MAX_RS_SIZE;
-	return 0;
-}
 
-int
-ipmi_serial_term_set_my_addr(struct ipmi_intf * intf, uint8_t addr)
-{
-	intf->my_addr = addr;
 	return 0;
 }
 
@@ -903,5 +897,4 @@ struct ipmi_intf ipmi_serial_term_intf = {
 	.open = ipmi_serial_term_open,
 	.close = ipmi_serial_term_close,
 	.sendrecv = ipmi_serial_term_send_cmd,
-	.set_my_addr = ipmi_serial_term_set_my_addr
 };

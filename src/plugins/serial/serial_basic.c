@@ -998,13 +998,6 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 	return NULL;
 }
 
-int
-serial_bm_set_my_addr(struct ipmi_intf * intf, uint8_t addr)
-{
-	intf->my_addr = addr;
-	return 0;
-}
-
 /*
  *	Serial BM interface
  */
@@ -1015,5 +1008,4 @@ struct ipmi_intf ipmi_serial_bm_intf = {
 	.open = serial_bm_open,
 	.close = serial_bm_close,
 	.sendrecv = serial_bm_send_request,
-	.set_my_addr = serial_bm_set_my_addr
 };

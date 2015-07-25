@@ -940,36 +940,39 @@ ipmi_main(int argc, char ** argv,
 	 * used for open, Set the discovered IPMB address as my address if the
 	 * interface supports it.
 	 */
-	if (addr != 0 && addr != ipmi_main_intf->my_addr &&
-						ipmi_main_intf->set_my_addr) {
-		/*
-		 * Only set the interface address on interfaces which support
-		 * it
-		 */
-		(void) ipmi_main_intf->set_my_addr(ipmi_main_intf, addr);
+	if (addr != 0 && addr != ipmi_main_intf->my_addr) {
+		if (ipmi_main_intf->set_my_addr) {
+			/*
+			 * Some interfaces need special handling
+			 * when changing local address
+			 */
+			(void)ipmi_main_intf->set_my_addr(ipmi_main_intf, addr);
+		}
+
+		/* set local address */
+		ipmi_main_intf->my_addr = addr;
 	}
 
+	ipmi_main_intf->target_addr = ipmi_main_intf->my_addr;
+
 	/* If bridging addresses are specified, handle them */
-	if (target_addr > 0) {
-		ipmi_main_intf->target_addr = target_addr;
-		ipmi_main_intf->target_lun = target_lun ;
-		ipmi_main_intf->target_channel = target_channel ;
-	}
-	if (transit_addr > 0) {
+	if (transit_addr > 0 || target_addr > 0) {
 		/* sanity check, transit makes no sense without a target */
 		if ((transit_addr != 0 || transit_channel != 0) &&
-			ipmi_main_intf->target_addr == 0) {
+			target_addr == 0) {
 			lprintf(LOG_ERR,
 				"Transit address/channel %#x/%#x ignored. "
 				"Target address must be specified!",
 				transit_addr, transit_channel);
 			goto out_free;
 		}
+		ipmi_main_intf->target_addr = target_addr;
+		ipmi_main_intf->target_channel = target_channel ;
 
 		ipmi_main_intf->transit_addr    = transit_addr;
 		ipmi_main_intf->transit_channel = transit_channel;
-	}
-	if (ipmi_main_intf->target_addr > 0) {
+
+
 		/* must be admin level to do this over lan */
 		ipmi_intf_session_set_privlvl(ipmi_main_intf, IPMI_SESSION_PRIV_ADMIN);
 		/* Get the ipmb address of the targeted entity */
@@ -985,6 +988,9 @@ ipmi_main(int argc, char ** argv,
 					   ipmi_main_intf->target_ipmb_addr);
 		}
 	}
+
+	/* set target LUN (for RAW command) */
+	ipmi_main_intf->target_lun = target_lun ;
 
 	lprintf(LOG_DEBUG, "Interface address: my_addr %#x "
 			   "transit %#x:%#x target %#x:%#x "
