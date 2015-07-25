@@ -386,6 +386,9 @@ ipmi_req_clear_entries(void)
 		free(e);
 		e = p;
 	}
+
+	ipmi_req_entries = NULL;
+	ipmi_req_entries_tail = NULL;
 }
 
 

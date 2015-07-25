@@ -217,6 +217,7 @@ ipmi_req_clear_entries(void)
 		}
 	}
 	ipmi_req_entries = NULL;
+	ipmi_req_entries_tail = NULL;
 }
 
 static int
