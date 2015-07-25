@@ -273,22 +273,22 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return 0;
 	}
 	if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
-		ipmi_delloem_lcd_main(intf,argc,argv);
+		rc = ipmi_delloem_lcd_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "mac\0", 4) == 0) {
 		/* mac address*/
-		ipmi_delloem_mac_main(intf,argc,argv);
+		rc = ipmi_delloem_mac_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "lan\0", 4) == 0) {
 		/* lan address*/
-		ipmi_delloem_lan_main(intf,argc,argv);
+		rc = ipmi_delloem_lan_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "setled\0", 7) == 0) {
 		/* SetLED support */
-		ipmi_delloem_setled_main(intf,argc,argv);
+		rc = ipmi_delloem_setled_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) {
 		/*Powermanagement report processing*/
-		ipmi_delloem_powermonitor_main(intf,argc,argv);
+		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0) {
 		/* vFlash Support */
-		ipmi_delloem_vFlash_main(intf,argc,argv);
+		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
 	} else {
 		usage();
 		return -1;
