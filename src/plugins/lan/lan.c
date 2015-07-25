@@ -818,7 +818,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 	}
 
 	/* ipmi message header */
-	msg[len++] = intf->target_addr;
+	msg[len++] = entry->bridging_level ? intf->target_addr : IPMI_BMC_SLAVE_ADDR;
 	msg[len++] = req->msg.netfn << 2 | (req->msg.lun & 3);
 	tmp = len - cs;
 	msg[len++] = ipmi_csum(msg+cs, tmp);
