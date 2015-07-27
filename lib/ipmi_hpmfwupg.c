@@ -1199,7 +1199,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			} else {
 				count = (unsigned short)((pDataTemp+lengthOfBlock) - pData);
 			}
-			memcpy(&uploadCmd.req->data, pData, bufLength);
+			memcpy(&uploadCmd.req->data, pData, count);
 			imageOffset = 0x00;
 			blockLength = 0x00;
 			numTxPkts++;
