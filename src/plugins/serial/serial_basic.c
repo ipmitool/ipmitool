@@ -33,6 +33,7 @@
 
 /* Serial Interface, Basic Mode plugin. */
 
+#include <alloca.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <time.h>

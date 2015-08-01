@@ -33,6 +33,7 @@
 
 /* Serial Interface, Terminal Mode plugin. */
 
+#include <alloca.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
