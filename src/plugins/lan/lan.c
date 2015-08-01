@@ -2027,7 +2027,6 @@ ipmi_lan_open(struct ipmi_intf * intf)
 	int rc;
 	struct ipmi_session *s;
 	struct ipmi_session_params *p;
-	struct sockaddr_storage addr;
 
 	if (intf == NULL || intf->opened)
 		return -1;
@@ -2070,7 +2069,7 @@ ipmi_lan_open(struct ipmi_intf * intf)
 	s->timeout = p->timeout;
 	memcpy(&s->authcode, &p->authcode_set, sizeof(s->authcode));
 	s->addrlen = sizeof(s->addr);
-	if (getsockname(intf->fd, &s->addr, &s->addrlen)) {
+	if (getsockname(intf->fd, (struct sockaddr *)&s->addr, &s->addrlen)) {
 		goto fail;
 	}
 
