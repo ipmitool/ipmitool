@@ -577,7 +577,6 @@ static int
 ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
-	int rc = 0;
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
 		lprintf(LOG_ERR, "Invalid Channel %d", chan);
@@ -842,7 +841,25 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	else
 		printf("%-24s: Not Available\n", p->desc);
 
-	return rc;
+	/* Bad Password Threshold */
+	p = get_lan_param(intf, chan, IPMI_LANP_BAD_PASS_THRESH);
+	if (p == NULL)
+		return -1;
+	if ((p->data != NULL) && (p->data_len == 6)) {
+		int tmp;
+
+		printf("%-24s: %d\n", p->desc, p->data[1]);
+		printf("%-24s: %s\n", "Invalid password disable",
+				p->data[0] & 1 ? "yes" : "no" );
+		tmp = p->data[2] + (p->data[3] << 8);
+		printf("%-24s: %d\n", "Attempt Count Reset Int.", tmp * 10);
+		tmp = p->data[4] + (p->data[5] << 8);
+		printf("%-24s: %d\n", "User Lockout Interval", tmp * 10);
+	} else {
+		printf("%-24s: Not Available\n", p->desc);
+	}
+
+	return 0;
 }
 
 /* Configure Authentication Types */
@@ -1273,6 +1290,55 @@ ipmi_lan_set_vlan_priority(struct ipmi_intf *intf,  uint8_t chan, char *string)
 	return rc;
 }
 
+static void
+print_lan_set_bad_pass_thresh_usage(void)
+{
+	lprintf(LOG_NOTICE,
+"lan set <chanel> bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>\n"
+"        <thresh_num>         Bad Pasword Threshold number.\n"
+"        <1|0>                1 = generate a Session Audit sensor event.\n"
+"                             0 = do not generate an event.\n"
+"        <reset_interval>     Attempt Count Reset Interval. In tens of seconds.\n"
+"        <lockount_interval>  User Lockout Interval. In tens of seconds.");
+}
+
+/* get_cmdline_bad_pass_thresh - parse-out bad password threshold from given
+ * string and store it into buffer.
+ *
+ * @arg: string to be parsed.
+ * @buf: buffer of 6 to hold parsed Bad Password Threshold.
+ *
+ * returns zero on success, (-1) on error.
+ */
+static int
+get_cmdline_bad_pass_thresh(char *argv[], uint8_t *buf)
+{
+	uint16_t reset, lockout;
+
+	if (str2uchar(argv[0], &buf[1])) {
+		return -1;
+	}
+
+	if (str2uchar(argv[1], &buf[0]) || buf[0] > 1) {
+		return -1;
+	}
+
+	if (str2ushort(argv[2], &reset)) {
+		return -1;
+	}
+
+	if (str2ushort(argv[3], &lockout)) {
+		return -1;
+	}
+
+	/* store parsed data */
+	buf[2] = reset & 0xFF;
+	buf[3] = reset >> 8;
+	buf[4] = lockout & 0xFF;
+	buf[5] = lockout >> 8;
+	return 0;
+}
+
 static int
 ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -1603,6 +1669,18 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		{
 			rc = set_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS, data, 9);
 		}
+	}
+	else if (strncmp(argv[1], "bad_pass_thresh", 15) == 0)
+	{
+		if (argc == 3 && strncmp(argv[2], "help", 4) == 0) {
+			print_lan_set_bad_pass_thresh_usage();
+			return 0;
+		}
+		if (argc < 6 || get_cmdline_bad_pass_thresh(&argv[2], data)) {
+			print_lan_set_bad_pass_thresh_usage();
+			return (-1);
+		}
+		rc = set_lan_param(intf, chan, IPMI_LANP_BAD_PASS_THRESH, data, 6);
 	}
 	else {
 		print_lan_set_usage();
@@ -2228,6 +2306,9 @@ print_lan_set_usage(void)
 "    O = OEM");
 	lprintf(LOG_NOTICE,
 "");
+	lprintf(LOG_NOTICE,
+"  bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>\n"
+"                                Set bad password threshold");
 }
 
 static void
@@ -2383,6 +2464,8 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[1]);
 				return (-1);
 			}
+		} else {
+			chan = find_lan_channel(intf, 1);
 		}
 		if (!is_lan_channel(intf, chan)) {
 			lprintf(LOG_ERR, "Invalid channel: %d", chan);
@@ -2402,6 +2485,8 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR, "Invalid channel: %s", argv[2]);
 				return (-1);
 			}
+		} else {
+			chan = find_lan_channel(intf, 1);
 		}
 		if (!is_lan_channel(intf, chan)) {
 			lprintf(LOG_ERR, "Invalid channel: %d", chan);

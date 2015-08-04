@@ -1921,6 +1921,27 @@ ADMIN, issue the following command:
 
 > ipmitool \-I \fIinterface\fR lan set \fIchannel\fR cipher_privs uaXXXXXXXXXXXXX
 
+.TP
+
+\fIbad_pass_thresh\fP <\fBthresh_num\fR> <\fB1|0\fR> <\fBreset_interval\fR> <\fBlockout_interval\fR>
+.br
+
+Sets the Bad Password Threshold.
+
+<\fBthresh_num\fR> If non-zero, this value determines the number of sequential bad passwords
+that will be allowed to be entered for the identified user before the user is automatically
+disabled from access on the channel.
+
+<\fB1|0\fR> 1 = generate a Session Audit sensor "Invalid password disable" event message.
+0 = do not generate an event message when the user is disabled.
+
+<\fBreset_interval\fR> Attempt Count Reset Interval. The interval, in tens of seconds, for
+which the accumulated count of bad password attempts is retained before being automatically
+reset to zero.
+
+<\fBlockout_interval\fR> User Lockout Interval. The interval, in tens of seconds, that the user
+will remain disabled after being disabled because the Bad Password Threshold number was reached.
+
 .RE
 .TP
 \fIalert\fP \fIprint\fP [<\fBchannel\fR>] [<\fBalert destination\fR>]
