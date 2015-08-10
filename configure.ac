@@ -4,7 +4,7 @@ dnl
 AC_INIT([ipmitool], [1.8.18-csv])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER(config.h)
 AC_PREREQ(2.50)
 AC_SUBST(ac_configure_args)
