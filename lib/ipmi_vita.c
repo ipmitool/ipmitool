@@ -222,7 +222,7 @@ ipmi_vita_ipmb_address(struct ipmi_intf *intf)
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
 	unsigned char msg_data;
-	
+
 	memset(&req, 0, sizeof(req));
 
 	req.msg.netfn = IPMI_NETFN_PICMG;
@@ -806,7 +806,7 @@ ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 	}
 
 	printf("FRU Control: ok\n");
-	
+
 	return 0;
 }
 
@@ -920,11 +920,11 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 			show_help = 1;
 		}
 		break;
-		
+
 	case VITA_CMD_ADDRINFO:
 		rc = ipmi_vita_getaddr(intf, argc - 1, &argv[1]);
 		break;
-		
+
 	case VITA_CMD_ACTIVATE:
 		if (argc > 1) {
 			rc = ipmi_vita_set_fru_activation(intf, &argv[1], 1);
@@ -949,7 +949,7 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 			show_help = 1;
 		}
 		break;
-		
+
 	case VITA_CMD_POLICY_SET:
 		if (argc > 4) {
 			rc = ipmi_vita_set_fru_state_policy_bits(intf,
@@ -983,7 +983,7 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 			show_help = 1;
 		}
 		break;
-	
+
 	case VITA_CMD_LED_SET:
 		if (argc > 6) {
 			rc = ipmi_vita_set_led_state(intf, &argv[2]);
