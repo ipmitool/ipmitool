@@ -123,7 +123,7 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
 		return (-1);
 	} else if (rsp->ccode > 0) {
 		return rsp->ccode;
-	} else if (rsp->data_len != 17) {
+	} else if (rsp->data_len != 16) {
 		return (-2);
 	}
 	memset(user_name_ptr->user_name, '\0', 17);
