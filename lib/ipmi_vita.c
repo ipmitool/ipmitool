@@ -192,6 +192,9 @@ vita_discover(struct ipmi_intf *intf)
 
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "No valid response received");
+	} else if (rsp->ccode == 0xC1) {
+		lprintf(LOG_DEBUG, "Invalid completion code received: %s",
+			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->ccode != 0) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
