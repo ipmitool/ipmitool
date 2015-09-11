@@ -97,7 +97,7 @@ _ipmi_get_user_access(struct ipmi_intf *intf,
 }
 
 /* _ipmi_get_user_name - Fetch User Name for given User ID. User Name is stored
- * into passed structure. 
+ * into passed structure.
  *
  * @intf - ipmi interface
  * @user_name - user_name_t struct with UID set
@@ -171,7 +171,7 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else { 
+	} else {
 		return rsp->ccode;
 	}
 }
@@ -476,7 +476,7 @@ ipmi_user_build_password_prompt(uint8_t user_id)
  * @user_id: User ID which will be built-in into text
  *
  * @returns pointer to char with password
- */ 
+ */
 char *
 ask_password(uint8_t user_id)
 {
