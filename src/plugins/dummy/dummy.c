@@ -242,7 +242,7 @@ ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 			return NULL;
 		}
 	}
-	
+
 	memset(&rsp_dummy, 0, sizeof(rsp_dummy));
 	if (data_read(intf->fd, &rsp_dummy, sizeof(struct dummy_rs)) != 0) {
 		return NULL;
