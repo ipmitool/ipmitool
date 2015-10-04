@@ -193,25 +193,25 @@ vita_discover(struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "No valid response received");
 	} else if (rsp->ccode == 0xC1) {
-		lprintf(LOG_DEBUG, "Invalid completion code received: %s",
+		lprintf(LOG_INFO, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->ccode == 0xCC) {
 		lprintf(LOG_INFO, "Invalid data field received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->ccode != 0) {
-		lprintf(LOG_ERR, "Invalid completion code received: %s",
+		lprintf(LOG_INFO, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->data_len < 5) {
-		lprintf(LOG_ERR, "Invalid response length %d",
+		lprintf(LOG_INFO, "Invalid response length %d",
 			rsp->data_len);
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
-		lprintf(LOG_ERR, "Invalid group extension %#x",
+		lprintf(LOG_INFO, "Invalid group extension %#x",
 			rsp->data[0]);
 	} else if ((rsp->data[3] & 0x03) != 0) {
-		lprintf(LOG_ERR, "Unknown VSO Standard %d",
+		lprintf(LOG_INFO, "Unknown VSO Standard %d",
 			(rsp->data[3] & 0x03));
 	} else if ((rsp->data[4] & 0x0F) != 1) {
-		lprintf(LOG_ERR, "Unknown VSO Specification Revision %d.%d",
+		lprintf(LOG_INFO, "Unknown VSO Specification Revision %d.%d",
 			(rsp->data[4] & 0x0F), (rsp->data[4] >> 4));
 	} else {
 		vita_avail = 1;
