@@ -195,6 +195,9 @@ vita_discover(struct ipmi_intf *intf)
 	} else if (rsp->ccode == 0xC1) {
 		lprintf(LOG_DEBUG, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
+	} else if (rsp->ccode == 0xCC) {
+		lprintf(LOG_INFO, "Invalid data field received: %s",
+			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->ccode != 0) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
