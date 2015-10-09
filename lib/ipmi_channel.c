@@ -707,7 +707,10 @@ ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 		memset(&user_name, 0, sizeof(user_name));
 		user_name.user_id = curr_uid;
 		ccode = _ipmi_get_user_name(intf, &user_name);
-		if (eval_ccode(ccode) != 0) {
+		if (ccode == 0xCC) {
+			user_name.user_id = curr_uid;
+			memset(&user_name.user_name, '\0', 17);
+		} else if (eval_ccode(ccode) != 0) {
 			lprintf(LOG_ERR, "Unable to Get User Name (id %d)", curr_uid);
 			return (-1);
 		}

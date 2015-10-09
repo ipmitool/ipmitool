@@ -287,20 +287,18 @@ ipmi_print_user_list(struct ipmi_intf *intf, uint8_t channel_number)
 		memset(&user_name, 0, sizeof(user_name));
 		user_name.user_id = current_user_id;
 		ccode = _ipmi_get_user_name(intf, &user_name);
-		if (eval_ccode(ccode) != 0) {
+		if (ccode == 0xCC) {
+			user_name.user_id = current_user_id;
+			memset(&user_name.user_name, '\0', 17);
+		} else if (eval_ccode(ccode) != 0) {
 			return (-1);
 		}
-		if ((current_user_id == 0)
-				|| user_access.link_auth
-				|| user_access.ipmi_messaging
-				|| strcmp("", (char *)user_name.user_name)) {
-			if (csv_output) {
-				dump_user_access_csv((char *)user_name.user_name,
-						&user_access);
-			} else {
-				dump_user_access((char *)user_name.user_name,
-						&user_access);
-			}
+		if (csv_output) {
+			dump_user_access_csv((char *)user_name.user_name,
+					&user_access);
+		} else {
+			dump_user_access((char *)user_name.user_name,
+					&user_access);
 		}
 		++current_user_id;
 	} while ((current_user_id <= user_access.max_user_ids)
