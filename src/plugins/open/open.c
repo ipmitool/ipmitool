@@ -83,6 +83,9 @@
  */
 #define IPMI_OPENIPMI_MAX_RS_DATA_SIZE 35
 
+/* Timeout for reading data from BMC in seconds */
+#define IPMI_OPENIPMI_READ_TIMEOUT 15
+
 extern int verbose;
 
 static int
@@ -174,11 +177,13 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	};
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
+	struct timeval read_timeout;
 	static int curr_seq = 0;
 	fd_set rset;
 
 	uint8_t * data = NULL;
 	int data_len = 0;
+	int retval = 0;
 
 
 	if (intf == NULL || req == NULL)
@@ -327,14 +332,23 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 	FD_ZERO(&rset);
 	FD_SET(intf->fd, &rset);
-
-	if (select(intf->fd+1, &rset, NULL, NULL, NULL) < 0) {
+	read_timeout.tv_sec = IPMI_OPENIPMI_READ_TIMEOUT;
+	read_timeout.tv_usec = 0;
+	retval = select(intf->fd+1, &rset, NULL, NULL, &read_timeout);
+	if (retval < 0) {
 	   lperror(LOG_ERR, "I/O Error");
 	   if (data != NULL) {
 	      free(data);
 				data = NULL;
 		 }
 	   return NULL;
+	} else if (retval == 0) {
+		lprintf(LOG_ERR, "No data available");
+		if (data != NULL) {
+			free(data);
+			data = NULL;
+		}
+		return NULL;
 	}
 	if (FD_ISSET(intf->fd, &rset) == 0) {
 	   lprintf(LOG_ERR, "No data available");
