@@ -882,7 +882,7 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		if (argc == 3) {
-			if (is_ipmi_channel_num(argv[1], &channel) != 0) {
+			if (is_ipmi_channel_num(argv[2], &channel) != 0) {
 				return (-1);
 			}
 		}
