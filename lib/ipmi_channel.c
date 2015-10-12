@@ -776,7 +776,7 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 				channel, user_id);
 		return (-1);
 	}
-	for (i = 3; i < argc; i ++) {
+	for (i = 2; i < argc; i ++) {
 		if (strncmp(argv[i], "callin=", 7) == 0) {
 			if (strncmp(argv[i] + 7, "off", 3) == 0) {
 				user_access.callin_callback = 1;
