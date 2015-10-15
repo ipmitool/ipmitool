@@ -131,11 +131,7 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	while (1) {
 		/* Read line by line and search for "AMI" */
 		if (fgets(linebuf, 80, fp) == NULL) {
-			if (fp != NULL) {
-				fclose(fp);
-			}
-			/* Return 1 on error */
-			return 1;
+			break;
 		}
 
 		if (sscanf(linebuf, "%s", vendor) == 1) {
@@ -151,9 +147,7 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	}
 
 	*num_ami_devices = numdevfound;
-	if (fp != NULL) {
-		fclose(fp);
-	}
+	fclose(fp);
 
 	return 0;
 }
@@ -268,8 +262,8 @@ FindG2CDROM(struct ipmi_intf *intf)
 {
 	int err = 0;
 	char device[256];
-	int devarray[8];
-	int numdev = 8;
+	int devarray[16];
+	int numdev = 16;
 	int iter;
 	err = scsiProbeNew(&numdev, devarray);
 
