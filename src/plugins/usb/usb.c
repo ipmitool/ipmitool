@@ -147,7 +147,10 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	}
 
 	*num_ami_devices = numdevfound;
-	fclose(fp);
+	if (fp != NULL) {
+		fclose(fp);
+		fp = NULL;
+	}
 
 	return 0;
 }
