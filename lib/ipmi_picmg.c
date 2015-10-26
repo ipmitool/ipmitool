@@ -751,21 +751,19 @@ ipmi_picmg_fru_activation_policy_set(struct ipmi_intf * intf, int argc, char ** 
 	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
 		return (-1);
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0 || msg_data[2] > 1) {
+	if (str2uchar(argv[1], &msg_data[2]) != 0 || msg_data[2] > 3) {
 		/* FRU Lock Mask */
 		lprintf(LOG_ERR, "Given FRU Lock Mask '%s' is invalid.",
 				argv[1]);
 		return (-1);
 	}
-	if (str2uchar(argv[2], &msg_data[3]) != 0 || msg_data[3] > 1) {
+	if (str2uchar(argv[2], &msg_data[3]) != 0 || msg_data[3] > 3) {
 		/* FRU Act Policy */
 		lprintf(LOG_ERR,
 				"Given FRU Activation Policy '%s' is invalid.",
 				argv[2]);
 		return (-1);
 	}
-	msg_data[2]&= 0x03;
-	msg_data[3]&= 0x03;
 
 	rsp = intf->sendrecv(intf, &req);
 
