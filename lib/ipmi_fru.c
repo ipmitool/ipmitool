@@ -4772,13 +4772,12 @@ f_type, uint8_t f_index, char *f_string)
 
 		checksum = 0;
 		/* Calculate Header Checksum */
-		for( i = header_offset; i < header_offset
-						+ fru_section_len - 1; i ++ )
+		for (i = 0; i < fru_section_len - 1; i++)
 		{
 			checksum += fru_data[i];
 		}
 		checksum = (~checksum) + 1;
-		fru_data[header_offset + fru_section_len - 1] = checksum;
+		fru_data[fru_section_len - 1] = checksum;
 
 		/* Write the updated section to the FRU data; source offset => 0 */
 		if( write_fru_area(intf, &fru, fruId, 0,
