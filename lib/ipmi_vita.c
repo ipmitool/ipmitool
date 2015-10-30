@@ -592,7 +592,7 @@ ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
-	} else if (rsp->data_len < 5) {
+	} else if (rsp->data_len < 4) {
 		lprintf(LOG_ERR, "Invalid response length %d", rsp->data_len);
 		return -1;
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
