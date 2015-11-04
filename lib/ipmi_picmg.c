@@ -417,27 +417,6 @@ is_led_color(const char *argv_ptr, uint8_t *led_color_ptr)
 	lprintf(LOG_ERR, "LED Color must be from ranges: <1..6>, <0xE..0xF>");
 	return (-1);
 }
-/* is_led_duration - wrapper to convert user input into integer.
- * LED duration range is <1..127>
- *
- * @argv_ptr: source string to convert from; usually argv
- * @enable_ptr: pointer where to store result
- * returns: zero on success, other values mean error
- */
-int
-is_led_duration(const char *argv_ptr, uint8_t *led_duration_ptr)
-{
-	if (!argv_ptr || !led_duration_ptr) {
-		lprintf(LOG_ERR, "is_led_duration(): invalid argument(s).");
-		return (-1);
-	}
-	if (str2uchar(argv_ptr, led_duration_ptr) == 0
-			&& *led_duration_ptr > 0 && *led_duration_ptr <= 127) {
-		return 0;
-	}
-	lprintf(LOG_ERR, "Given LED Duration '%s' is invalid", argv_ptr);
-	return (-1);
-}
 /* is_led_function - wrapper to convert user input into integer.
  * LED functions, however, might differ by OEM:
  * - 0x00 - off override
@@ -1363,17 +1342,53 @@ ipmi_picmg_set_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(&req, 0, sizeof(req));
 
 	req.msg.netfn = IPMI_NETFN_PICMG;
-	req.msg.cmd	  = PICMG_SET_FRU_LED_STATE_CMD;
-	req.msg.data  = msg_data;
+	req.msg.cmd = PICMG_SET_FRU_LED_STATE_CMD;
+	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 
 	msg_data[0] = 0x00;									/* PICMG identifier */
 	if (is_fru_id(argv[0], &msg_data[1]) != 0
 			|| is_led_id(argv[1], &msg_data[2]) != 0
 			|| is_led_function(argv[2], &msg_data[3]) != 0
-			|| is_led_duration(argv[3], &msg_data[4]) != 0
 			|| is_led_color(argv[4], &msg_data[5]) != 0) {
 		return (-1);
+	}
+
+	/* Validating the LED duration is not as simple as the other arguments, as
+	 * the range of valid durations depends on the LED function.  From the spec:
+	 *
+	 * ``On-duration: LED on-time in tens of milliseconds if (1 <= Byte 4 <= FAh)
+	 * Lamp Test time in hundreds of milliseconds if (Byte 4 = FBh). Lamp Test
+	 * time value must be less than 128. Other values when Byte 4 = FBh are
+	 * reserved. Otherwise, this field is ignored and shall be set to 0h.''
+	 *
+	 * If we're doing a lamp test, then the allowed values are 0 -> 127.
+	 * Otherwise, the allowed values are 0 -> 255.  However, if the function is
+	 * not a lamp test (0xFB) and outside the range 0x01 -> 0xFA then the value
+	 * should be set to 0.
+	 *
+	 * Start by checking we have a parameter.
+	 */
+	if (!argv[3]) {
+		lprintf(LOG_ERR, "LED Duration: invalid argument(s).");
+		return (-1);
+	}
+	/* Next check we have a number. */
+	if (str2uchar(argv[3], &msg_data[4]) != 0) {
+		lprintf(LOG_ERR, "Given LED Duration '%s' is invalid", argv[3]);
+		return (-1);
+	}
+	/* If we have a lamp test, ensure it's not too long a duration. */
+	if (msg_data[3] == 0xFB && msg_data[4] > 127) {
+		lprintf(LOG_ERR, "Given LED Duration '%s' is invalid", argv[3]);
+		return (-1);
+	}
+	/* If we're outside the range that allows durations, set the duration to 0.
+	 * Warn the user that we're doing this.
+	 */
+	if (msg_data[4] != 0 && (msg_data[3] == 0 || msg_data[3] > 0xFB)) {
+		lprintf(LOG_WARN, "Setting LED Duration '%s' to '0'", argv[3]);
+		msg_data[4] = 0;
 	}
 
 	rsp = intf->sendrecv(intf, &req);
@@ -2127,8 +2142,8 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE,
 							"               252:     LED restore to local control");
 					lprintf(LOG_NOTICE, "               255:     LED ON override");
-					lprintf(LOG_NOTICE,
-							"   <duration>  1 - 127: LED Lamp Test / on duration");
+					lprintf(LOG_NOTICE, "   <duration>  0 - 127: LED Lamp Test duration");
+					lprintf(LOG_NOTICE, "               0 - 255: LED Lamp ON duration");
 					lprintf(LOG_NOTICE, "   <color>     0:   reserved");
 					lprintf(LOG_NOTICE, "               1:   BLUE");
 					lprintf(LOG_NOTICE, "               2:   RED");
