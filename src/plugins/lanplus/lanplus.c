@@ -3471,13 +3471,17 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		if (rc < 0) {
 			goto fail;
 		}
-	}
-	intf->manufacturer_id = ipmi_get_oem(intf);
 
-	/* automatically detect interface request and response sizes */
-	hpm2_detect_max_payload_size(intf);
+		/* automatically detect interface request and response sizes */
+		hpm2_detect_max_payload_size(intf);
+	}
 
 	bridgePossible = 1;
+
+	if (!ipmi_oem_active(intf, "i82571spt")) {
+		intf->manufacturer_id = ipmi_get_oem(intf);
+	}
+
 	return intf->fd;
 
  fail:

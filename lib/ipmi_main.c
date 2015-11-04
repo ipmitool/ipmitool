@@ -952,20 +952,23 @@ ipmi_main(int argc, char ** argv,
 			goto out_free;
 		}
 	}
-	/*
-	 * Attempt picmg/vita discovery of the actual interface address unless
-	 * the users specified an address.
-	 *	Address specification always overrides discovery
-	 */
-	if (picmg_discover(ipmi_main_intf)) {
-		ipmi_main_intf->picmg_avail = 1;
-	} else if (vita_discover(ipmi_main_intf)) {
-		ipmi_main_intf->vita_avail = 1;
+
+	if (!ipmi_oem_active(ipmi_main_intf, "i82571spt")) {
+		/*
+		 * Attempt picmg/vita discovery of the actual interface
+		 * address, unless the users specified an address.
+		 * Address specification always overrides discovery
+		 */
+		if (picmg_discover(ipmi_main_intf)) {
+			ipmi_main_intf->picmg_avail = 1;
+		} else if (vita_discover(ipmi_main_intf)) {
+			ipmi_main_intf->vita_avail = 1;
+		}
 	}
 
 	if (arg_addr) {
 		addr = arg_addr;
-	} else {
+	} else if (!ipmi_oem_active(ipmi_main_intf, "i82571spt")) {
 		lprintf(LOG_DEBUG, "Acquire IPMB address");
 		addr = ipmi_acquire_ipmb_address(ipmi_main_intf);
 		lprintf(LOG_INFO,  "Discovered IPMB address 0x%x", addr);
