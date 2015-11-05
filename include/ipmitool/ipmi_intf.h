@@ -176,6 +176,7 @@ struct ipmi_intf {
 	int picmg_avail;
 	int vita_avail;
 	IPMI_OEM manufacturer_id;
+	int ai_family;
 
 	struct ipmi_session_params ssn_params;
 	struct ipmi_session * session;

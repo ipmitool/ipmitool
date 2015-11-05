@@ -350,7 +350,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	sprintf(service, "%d", params->port);
 	/* Obtain address(es) matching host/port */
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family   = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+	hints.ai_family   = intf->ai_family;    /* Allow IPv4 or IPv6 */
 	hints.ai_socktype = SOCK_DGRAM;   /* Datagram socket */
 	hints.ai_flags    = 0;            /* use AI_NUMERICSERV for no name resolution */
 	hints.ai_protocol = IPPROTO_UDP; /*  */

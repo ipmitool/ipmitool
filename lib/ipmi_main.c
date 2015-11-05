@@ -75,9 +75,9 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:"
+# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:"
 #else
-# define OPTION_STRING	"I:hVvcH:f:U:p:d:S:D:"
+# define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
 #endif
 
 extern int verbose;
@@ -228,6 +228,8 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -S sdr         Use local file for remote SDR cache");
 	lprintf(LOG_NOTICE, "       -D tty:b[:s]   Specify the serial device, baud rate to use");
 	lprintf(LOG_NOTICE, "                      and, optionally, specify that interface is the system one");
+	lprintf(LOG_NOTICE, "       -4             Use only IPv4");
+	lprintf(LOG_NOTICE, "       -6             Use only IPv6");
 #ifdef ENABLE_ALL_OPTIONS
 	lprintf(LOG_NOTICE, "       -a             Prompt for remote password");
 	lprintf(LOG_NOTICE, "       -Y             Prompt for the Kg key for IPMIv2 authentication");
@@ -401,6 +403,7 @@ ipmi_main(int argc, char ** argv,
 	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
 	int argflag, i, found;
 	int rc = -1;
+	int ai_family = AF_UNSPEC;
 	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
 	char * devfile  = NULL;
 
@@ -623,6 +626,38 @@ ipmi_main(int argc, char ** argv,
 			devfile = strdup(optarg);
 			if (devfile == NULL) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
+			}
+			break;
+		case '4':
+			/* IPv4 only */
+			if (ai_family == AF_UNSPEC) {
+				ai_family = AF_INET;
+			} else {
+				if (ai_family == AF_INET6) {
+					lprintf(LOG_ERR,
+						"Parameter is mutually exclusive with -6.");
+				} else {
+					lprintf(LOG_ERR,
+						"Multiple -4 parameters given.");
+				}
+				rc = (-1);
+				goto out_free;
+			}
+			break;
+		case '6':
+			/* IPv6 only */
+			if (ai_family == AF_UNSPEC) {
+				ai_family = AF_INET6;
+			} else {
+				if (ai_family == AF_INET) {
+					lprintf(LOG_ERR,
+						"Parameter is mutually exclusive with -4.");
+				} else {
+					lprintf(LOG_ERR,
+						"Multiple -6 parameters given.");
+				}
+				rc = (-1);
 				goto out_free;
 			}
 			break;
@@ -909,6 +944,7 @@ ipmi_main(int argc, char ** argv,
 	/* setup device file if given */
 	ipmi_main_intf->devfile = devfile;
 
+	ipmi_main_intf->ai_family = ai_family;
 	/* Open the interface with the specified or default IPMB address */
 	ipmi_main_intf->my_addr = arg_addr ? arg_addr : IPMI_BMC_SLAVE_ADDR;
 	if (ipmi_main_intf->open != NULL) {
