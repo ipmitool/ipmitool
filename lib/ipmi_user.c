@@ -602,6 +602,7 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	/* Disable / Enable */
 	uint8_t user_id;
 	uint8_t operation;
+	uint8_t ccode;
 
 	if (argc != 2) {
 		print_user_usage();
@@ -613,8 +614,14 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	operation = (strncmp(argv[0], "disable", 7) == 0) ?
 		IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
 
-	return _ipmi_set_user_password(intf, user_id, operation,
+	ccode = _ipmi_set_user_password(intf, user_id, operation,
 			(char *)NULL, 0);
+	if (eval_ccode(ccode) != 0) {
+		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
+			user_id);
+		return (-1);
+	}
+	return 0;
 }
 
 int
