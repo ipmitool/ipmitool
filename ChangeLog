@@ -1,3 +1,152 @@
+version 1.8.16 2015-11-22
+	* Add _ipmi_get_channel_access() and _ipmi_get_channel_info()
+	* Add _ipmi_get_user_access() and _ipmi_set_user_access()
+	* Add _ipmi_get_user_name()
+	* Add _ipmi_set_channel_access() function
+	* Add _ipmi_set_user_password() function
+	* Add limits check in get_cmdline_macaddr()
+	* Change expression in ipmi_pef_get_info() in order to silence Coverity
+	* Change expression in ipmi_pef_list_policies() in order to silence Coverity
+	* Code cleanup in ipmi_user_main()
+	* Create ask_password() and re-use code
+	* Delete dead code from ipmi_sunoem_echo() - CID#1261338
+	* Don't output pidfile before parsing command line arguments
+	* Don't use tmp variable since it's not necessary in ipmi_user_test()
+	* Fix 'user help' output
+	* Fix Assign instead of compare in KfwumGetDeviceInfo() - CID#1149034
+	* Fix Identical code for different branches in ipmi_tsol_main() -
+	  CID#1261346
+	* Fix big parameter passed by value in ipmi_sel_oem_match() - CID#1261347
+	* Fix dead code in ipmi_firewall_reset() - CID#1261342
+	* Fix eval logic in ipmi_user_priv()
+	* Fix file descriptor leak in ipmi_exec_main() - CID#1149040
+	* Fix identical code for diff branches in DellOEM - CID#1261326
+	* Fix memory leak in get_supermicro_evt_desc()
+	* Fix memory leak in ipmi_ek_display_board_info_area() - CID#1149051
+	* Fix missing return in ipmi_kontronoem_main() - CID#1261317
+	* Fix of previous commit - memset() expects pointer
+	* Fix out-of-bound-reads in get_supermicro_evt_desc()
+	* Fix resource leak in fru_area_print_board() - CDI#1149048
+	* Fix resource leak in fru_area_print_chassis() - CID#1149047
+	* Fix resource leak in fru_area_print_product() - CID#1149046
+	* Fix resource leak in ipmi_kontron_set_serial_number() - CID#1149041
+	* Fix typo vlan->VLAN in ipmi_lan_set_vlan_id() and
+	  ipmi_lan_set_vlan_priority()
+	* Fix uninitialized struct in ipmi_fru_upg_ekeying() - CID#1149065
+	* Fix user input validation in Channel and User sub-commands
+	* Fix wrong size argument in ipmi_sdr_list_cache_fromfile() - CID#1149056
+	* Fix/remove pointer cast in _ipmi_set_user_access()
+	* Hook functions in ipmi_user to _ipmi_set_user_password()
+	* Hook ipmi_get_channel_info() to _ipmi_get_*()
+	* Hook ipmi_get_channel_medium() to new _ipmi_get_*() functions
+	* Hook ipmi_lan_set_password() to _ipmi_set_user_password()
+	* Hook ipmi_print_user_list() and friends to _ipmi_* functions
+	* Hook ipmi_set_alert_enable() to _ipmi_*()
+	* Hook ipmi_set_user_access() to _ipmi_set_user_access()
+	* Hook ipmi_user_priv() to _ipmi_set_user_access()
+	* ID:307 - Intel I82751 super pass through mode fixup
+	* ID:355 - Fix compiler warnings for Dummy Interface
+	* ID:380 - raw commands override retry and timeout values
+	* ID:319 - Interface safe re-open
+	* ID:320 - Add VITA 46.11 support
+	* ID:333 - Set read timeout to 15s in OpenIPMI interface
+	* ID:336 - ipmitool does not fall back to IPv4 for IPMI v2 / RMCP+ sessions
+	* ID:343 - Print actual sensor thresholds in 'sensors' comand
+	* ID:343 - Remove AC_FUNC_MALLOC
+	* ID:344 - Fix HPM.2 long message support
+	* ID:345 - Do not do several close session retries when catching SIGINT
+	* ID:346 - lib/ipmi_sdradd.c ipmi_sdr_read_record has a file descriptor leak
+	* ID:347 - Incorrect reserved channel number
+	* ID:348 - Add support for the "System Firmware Version"
+	* ID:349 - user set password - add option to choose 16/20 byte password
+	* ID:354 - Replace obsolete u_int with uint32_t in dimm_spd.c
+	* ID:354 - Replace obsolete u_int[0-9]+_t with standardized types in Free
+	  iface
+	* ID:354 - forcefully switch to C99 and more strict CFLAGS
+	* ID:354 - replace/drop caddr_t in IMB
+	* ID:354 - struct member h_addr has been replaced
+	* ID:354 - uint8_t >= 0 is always true, don't test it
+	* ID:355 - Fix Enumeration value not handled in ipmi_get_event_desc()
+	* ID:355 - Fix ``ISO C forbids omitting the middle term of a ?: expression''
+	* ID:355 - Fix ``obsolete use of designated initializer with ¿:¿'' warning
+	* ID:355 - Fix comparison of unsigned expression
+	* ID:355 - Fix compiler warnings
+	* ID:355 - Fix compiler warnings in dimm_spd.c
+	* ID:355 - Fix couple compiler warnings in ipmi_lanp.h
+	* ID:355 - Fix formatting warning in get_cmdline_ipaddr()
+	* ID:355 - Fix zero-length format string warning in
+	  get_supermicro_evt_desc()
+	* ID:355 - Remove defined but unused variable in _set_command_enables()
+	* ID:355 - remove unused variables from ipmi_dcmi.c
+	* ID:357 - out-of-bound access in DDR4 code ID:356 -  DIMM4 Die Count is
+	  unreachable
+	* ID:357 - out-of-bound access in DDR4 code
+	* ID:358 - check data length in else branch of ipmi_spd_print()
+	* ID:361 - Add a OEM IANA information
+	* ID:363 - Node Manager feature patch.
+	* ID:363 - fix Coverity issues in NM implementation
+	* ID:364 - Fix for serial-basic interface bridging
+	* ID:365 - Fix for ipmitool crash when using serial-terminal interface
+	* ID:366 - Properly clean LAN and LAN+ interfaces on close
+	* ID:367 - Fix building of non-bridged LAN interface commands
+	* ID:368 - Fix handling of bridging-related parameters
+	* ID:369 - Fix lanplus interface bridging and response matching
+	* ID:370 - add anonymous union support in CFLAGS for older gcc
+	* ID:371 - add ericsson oem
+	* ID:373 - Fix compilation of IMB on Windows
+	* ID:374 - Check/set LED Duration correctly
+	* ID:376 - Add means to configure "Bad Password Threshold"
+	* ID:381 - Script to log installation status as SEL events
+	* ID:382 - Fix memcpy() params in HpmFwupgActionUploadFirmware()
+	* ID:383 - Fix compile-time error in src/plugins/lan/lan.c
+	* ID:384 - Fix compilation under cygwin64
+	* ID:388 - Fix Error message always printed if BMC does not support VITA
+	* ID:388 - Handle ccode 0xCC as well in VITA discovery
+	* ID:388 - Turn all messages into LOG_INFO in VITA discovery
+	* ID:389 - Add on of Advantech IANA number
+	* ID:390 - Support for new Communication Interface (USB Medium)
+	* ID:391 - changing data_len from 17 to 16 according to ipmi spec 22.29,
+	  first byte is completion code
+	* ID:392 - _ipmi_get_user_name() work-around for some BMCs
+	* ID:393 - ipmitool man page addition for Node Manager support.
+	* ID:394 - close fp if isn't NULL and set it NULL afterwards in USB plugin
+	* ID:394 - plugins/usb: Fix probe for SCSI devices
+	* ID:395 - Fix fru string without resizing it
+	* ID:396 - Fixed invalid length check in picmg led cap command.
+	* ID:397 - Fixed picmg policy set command.
+	* ID:398 - Fixed channel setaccess command.
+	* ID:399 - Fixed channel getciphers command.
+	* ID:401 - Fixed 30 second delay when activating SOL on 'dumb' Intel MACs.
+	* ID:402 - Misguiding error print-out when using some 'lan' commands.
+	* Init user_access_t struct in ipmi_user_priv()
+	* Make user User Privilege Limit is within range
+	* Node Manager Feature, correct 1268194 missing break.
+	* Output pidfile only in verbose mode
+	* Print error message to STDERR in ipmi_channel.c
+	* Re-work 'channel getaccess' and 'channel setaccess'
+	* Re-work ccode eval in ipmi_get_channel_medium()
+	* Remove commented-out code in ipmi_picmg_clk_set() - CID#1261339
+	* Remove dead code - rsp can't be NULL at this point - CID#1149005
+	* Remove dead code in fru_area_print_board() - CID#1149001
+	* Remove dead code in fru_area_print_chassis() - CID#1149000
+	* Remove dead code in fru_area_print_product() - CID#1148999
+	* Remove dead(duplicate) code from ipmi_sol_main() - CID#1148996
+	* Remove get_channel_access_rsp and get_channel_info_rsp structs
+	* Remove ipmi_user_set_password()
+	* Remove length checks in get_supermicro_evt_desc()
+	* Remove redundant user-input conversion from ipmi_sel_delete()
+	* Remove trailing white-spaces in ipmi_user.c
+	* Remove trailing white-spaces in ipmi_user.c
+	* Remove trailing white-spaces in src/plugins/dummy/dummy.c
+	* Remove unused variable from ipmi_get_channel_cipher_suites()
+	* Replace deprecated bzero() with memset()
+	* Replace s6_addr16 with s6_addr since Mac OS X does not have it
+	* Rewrite ipmi_set_channel_access()
+	* Split ipmi_user_main() into smaller functions
+	* ipmi_print_user_summary() to utilize _ipmi_get_user_access()
+	* ipmitool delloem: ipmitool delloem extension always return success - fix
+	  it
+
 version 1.8.15 2014-11-24
 	* ID: 340 - ipmitool sol session improperly closes on packet retry
 	* ID: 277 - support for hostnames longer than 64 chars
