@@ -419,7 +419,12 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 		memset(&sel_event, 0, sizeof(struct sel_event_record));
 		sel_event.record_id = 0x0000;
 		sel_event.record_type = 0x02;
-		sel_event.sel_type.standard_type.gen_id = 0x00;
+		/*
+		 * IPMI spec §32.1 generator ID
+		 * Bit 0   = 1 "Software defined"
+		 * Bit 1-7: SWID (IPMI spec §5.5), using 2 = "System management software"
+		 */
+		sel_event.sel_type.standard_type.gen_id = 0x41;
 		sel_event.sel_type.standard_type.evm_rev = rqdata[0];
 		sel_event.sel_type.standard_type.sensor_type = rqdata[1];
 		sel_event.sel_type.standard_type.sensor_num = rqdata[2];
