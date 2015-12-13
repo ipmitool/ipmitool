@@ -5042,6 +5042,11 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			header.offset.product += change_size_by_8;
 		}
 
+		if ((f_type == 'c' ) || (f_type == 'b' ) || (f_type == 'p' )) {
+			printf("Change multi offset from %d to %d\n", header.offset.multi, header.offset.multi + change_size_by_8);
+			header.offset.multi += change_size_by_8;
+		}
+
 		/* Adjust length of the section */
 		if (f_type == 'c')
 		{
