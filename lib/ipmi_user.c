@@ -590,7 +590,7 @@ ipmi_user_priv(struct ipmi_intf *intf, int argc, char **argv)
 				user_access.user_id);
 		return (-1);
 	} else {
-		printf("Set Privilege Level command successful (user %d)",
+		printf("Set Privilege Level command successful (user %d)\n",
 				user_access.user_id);
 		return 0;
 	}
