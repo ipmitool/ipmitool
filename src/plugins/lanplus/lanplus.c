@@ -662,6 +662,21 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 
 	read_session_data(rsp, &offset, intf->session);
 
+	/*
+	 * Skip packets that are not intended for this session
+	 */
+	if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE)    &&
+		 (rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
+		 (rsp->session.id != intf->session->v2_data.console_id))
+	{
+		lprintf(LOG_INFO, "packet session id 0x%x does not "
+			"match active session 0x%0x",
+			rsp->session.id, intf->session->v2_data.console_id);
+		lprintf(LOG_ERR, "ERROR: Received an Unexpected message ID");
+		/* read one more packet */
+		return (struct ipmi_rs *)1;
+	}
+
 	if (lanplus_has_valid_auth_code(rsp, intf->session) == 0) {
 		lprintf(LOG_ERR, "ERROR: Received message with invalid authcode!");
 		return NULL;
@@ -1160,19 +1175,6 @@ read_session_data_v2x(
 	#if WORDS_BIGENDIAN
 	rsp->session.id = BSWAP_32(rsp->session.id);
 	#endif
-
-
-	/*
-	 * Verify that the session ID is what we think it should be
-	 */
-	if ((s->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
-		(rsp->session.id != s->v2_data.console_id))
-	{
-		lprintf(LOG_ERR, "packet session id 0x%x does not "
-			"match active session 0x%0x",
-			rsp->session.id, s->v2_data.console_id);
-		assert(0);
-	}
 
 
 	/* Ignored, so far */
