@@ -2255,7 +2255,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 
 	if (count < 0) {
 		/** Show only the most recent 'count' records. */
-		int delta;
+		int i;
 		uint16_t entries;
 
 		req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
@@ -2273,15 +2273,20 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		if (-count > entries)
 			count = -entries;
 
-		/* Get first record. */
-		next_id = ipmi_sel_get_std_entry(intf, 0, &evt);
-
-		delta = next_id - evt.record_id;
-
-		/* Get last record. */
-		next_id = ipmi_sel_get_std_entry(intf, 0xffff, &evt);
-
-		next_id = evt.record_id + count * delta + delta;
+		for(i = 0; i < entries + count; i++) {
+			next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+			if (next_id == 0) {
+				/*
+				 * usually next_id of zero means end but
+				 * retry because some hardware has quirks
+				 * and will return 0 randomly.
+				 */
+				next_id = ipmi_sel_get_std_entry(intf, next_id, &evt);
+				if (next_id == 0) {
+					break;
+				}
+			}
+		}
 	}
 
 	if (savefile != NULL) {
