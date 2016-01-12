@@ -128,7 +128,7 @@ int hpm2_get_capabilities(struct ipmi_intf * intf,
 #endif
 
 	/* check HPM.2 revision */
-	if (caps->hpm2_revision_id != HPM2_REVISION) {
+	if (caps->hpm2_revision_id == 0) {
 		lprintf(LOG_NOTICE, "Bad HPM.2 revision, rev=%d",
 				caps->hpm2_revision_id);
 		return -1;
