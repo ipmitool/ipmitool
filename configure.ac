@@ -89,6 +89,7 @@ solaris*)
 	xenable_intf_open=no
 	xenable_intf_lipmi=no
 	xenable_intf_bmc=no
+	xenable_intf_usb=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
