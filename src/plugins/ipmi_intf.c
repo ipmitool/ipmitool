@@ -451,7 +451,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						}
 
 						/* OK, now try to connect with the scope id from this interface address */
-						if (addr6->sin6_scope_id != 0) {
+						if (addr6->sin6_scope_id != 0 || !IN6_IS_ADDR_LINKLOCAL(&tmp6->sin6_addr)) {
 							if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
 								hints.ai_family = rp->ai_family;
 								lprintf(LOG_DEBUG, "Successful connected on %s interface with scope id %d", ifa->ifa_name, tmp6->sin6_scope_id);
