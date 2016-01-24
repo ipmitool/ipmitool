@@ -202,9 +202,9 @@ fi
 dnl enable IPMI USB interface
 AC_ARG_ENABLE([intf-usb],
 	[AC_HELP_STRING([--enable-intf-usb],
-			[enable IPMI USB interface [default=yes]])],
+			[enable IPMI USB interface [default=auto]])],
 		[xenable_intf_usb=$enableval],
-		[xenable_intf_usb=yes])
+		[xenable_intf_usb=$xenable_intf_usb])
 if test "x$xenable_intf_usb" = "xstatic" || test "x$xenable_intf_usb" = "xplugin"; then
    xenable_intf_usb=yes
 fi
