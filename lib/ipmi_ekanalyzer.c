@@ -2868,7 +2868,6 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 		return (-1);
 	}
 
-	fread(&data, 1, 1, input_file);
 	printf("Language Code: %d\n", data);
 	len--;
 	/* Product Mfg */
