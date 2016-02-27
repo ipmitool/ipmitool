@@ -2101,7 +2101,7 @@ ipmi_lanplus_send_payload(
 						  struct ipmi_v2_payload * payload)
 {
 	struct ipmi_rs      * rsp = NULL;
-	uint8_t             * msg_data;
+	uint8_t             * msg_data = NULL;
 	int                   msg_length;
 	struct ipmi_session * session = intf->session;
 	struct ipmi_rq_entry * entry = NULL;
@@ -2341,6 +2341,7 @@ ipmi_lanplus_send_payload(
 	case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
 	case IPMI_PAYLOAD_TYPE_RAKP_1:
 	case IPMI_PAYLOAD_TYPE_RAKP_3:
+	case IPMI_PAYLOAD_TYPE_SOL:
 		free(msg_data);
 		msg_data = NULL;
 		break;
