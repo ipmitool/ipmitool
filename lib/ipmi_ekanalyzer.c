@@ -2425,7 +2425,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		return (-1);
 	}
 	/*** Display FRU Internal Use Info ***/
-	if (!feof(input_file)) {
+	if (header.offset.internal != 0) {
 		unsigned char format_version;
 		unsigned long len = 0;
 
