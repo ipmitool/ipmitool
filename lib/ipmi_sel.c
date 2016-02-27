@@ -43,6 +43,7 @@
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_sel_supermicro.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
