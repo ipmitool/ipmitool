@@ -671,7 +671,7 @@ chk_nm_rsp(struct ipmi_rs * rsp)
 	 * some issue and cannot complete the command
 	 */
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "\n    No reponse to NM request");
+		lprintf(LOG_ERR, "\n    No response to NM request");
 		return 1;
 	}
 	/* if the completion code is greater than zero there was an error.  We'll
@@ -1426,7 +1426,7 @@ ipmi_dcmi_getthermalpolicy(struct ipmi_intf * intf, uint8_t entityID,
 	/* rsp->data[0] is equal to response data byte 2 in spec */
 	memcpy(&val, rsp->data, sizeof (val));
 	printf("\n");
-	printf("    Persistance flag is:                      %s\n",
+	printf("    Persistence flag is:                      %s\n",
 			((val.exceptionActions & 0x80) ? "set" : "notset"));
 	printf("    Exception Actions, taken if the Temperature Limit exceeded:\n");
 	printf("        Hard Power Off system and log event:  %s\n",
@@ -3163,7 +3163,7 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 				return -1;
 			}
 			if (str2ushort(argv[0], &thresh.thresholds[i++]) < 0) {
-				lprintf(LOG_ERR,"threshold value %d count must be a positve integer.\n", i);
+				lprintf(LOG_ERR,"threshold value %d count must be a positive integer.\n", i);
 				return -1;
 			}
 		default:

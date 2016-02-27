@@ -24,7 +24,7 @@ Background
 ==========
 I originally wrote ipmitool while between projects and employeed at Sun
 Microsystems.  Sun had just embarked on a new line of general-purpose x86
-servers that inclued an OEM Intel board with an IPMIv1.5 BMC on board.
+servers that included an OEM Intel board with an IPMIv1.5 BMC on board.
 It started with an idea that remote chassis power control would be a handy
 feature for my systems in the lab and from there it grew into a multi-
 purpose tool that lots of people found useful.  I decided to release it

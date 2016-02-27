@@ -2021,13 +2021,13 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 		memcpy(&pCtx->resp, rsp->data,
 				sizeof(struct HpmfwupgQueryRollbackStatusResp));
 		if (pCtx->resp.rollbackComp.ComponentBits.byte != 0) {
-			/* Rollback occured */
+			/* Rollback occurred */
 			lprintf(LOG_NOTICE,
-					"Rollback occured on component mask: 0x%02x",
+					"Rollback occurred on component mask: 0x%02x",
 					pCtx->resp.rollbackComp.ComponentBits.byte);
 		} else {
 			lprintf(LOG_NOTICE,
-					"No Firmware rollback occured");
+					"No Firmware rollback occurred");
 		}
 	} else if (rsp->ccode == 0x81) {
 		lprintf(LOG_ERR,

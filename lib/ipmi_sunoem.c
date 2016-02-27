@@ -469,7 +469,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 		ledtype = str2val(argv[1], sunoem_led_type_vals);
 		if (ledtype == 0xFF)
 			lprintf(LOG_ERR,
-					"Unknow ledtype, will use data from the SDR oem field");
+					"Unknown ledtype, will use data from the SDR oem field");
 	}
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {
@@ -676,7 +676,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 		ledtype = str2val(argv[2], sunoem_led_type_vals);
 		if (ledtype == 0xFF)
 			lprintf(LOG_ERR,
-					"Unknow ledtype, will use data from the SDR oem field");
+					"Unknown ledtype, will use data from the SDR oem field");
 	}
 
 	if (strncasecmp(argv[0], "all", 3) == 0) {

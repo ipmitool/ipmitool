@@ -194,7 +194,7 @@ static struct ipmi_event_sensor_types oem_kontron_event_types[] __attribute__((u
    { 0xC7 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Rollback(error)" },
    { 0xC7 , 0x02 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Errors (watchdog)" },
    { 0xC7 , 0x03 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "First Boot After Manual Rollback" },
-   { 0xC7 , 0x08 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "Firmware Watchdog Bite, reset occured" },
+   { 0xC7 , 0x08 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "FWUM Status", "Firmware Watchdog Bite, reset occurred" },
 
    { 0xC8 , 0x00 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Not Loaded" },
    { 0xC8 , 0x01 , 0xff, IPMI_EVENT_CLASS_DISCRETE , "Switch Mngt Software Status", "Initializing" },

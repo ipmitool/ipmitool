@@ -970,7 +970,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	// Example: We have to send command 23 and 2d.
 	// If we send command,seq as 23,10 and if we dont get any response it will 
 	// retry 4 times with 23,10 and then come out here and indicate that there is no
-	// reponse from the remote controller and will send the next command for 
+	// response from the remote controller and will send the next command for
 	// ie 2d,11. And if the BMC is slow to respond and returns 23,10 then it 
 	// will match it in the list and will take response of command 23 as response 
 	// for command 2d and return success. So ideally when retries are done and 

@@ -606,7 +606,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
  * Receive whatever comes back.  Ignore received packets that don't correspond
  * to a request we've sent.
  *
- * Returns: the ipmi_rs packet describing the/a reponse we expect.
+ * Returns: the ipmi_rs packet describing the/a response we expect.
  */
 static struct ipmi_rs *
 ipmi_lan_poll_single(struct ipmi_intf * intf)
@@ -651,7 +651,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 	 *
 	 * 1) An IPMI 1.5 packet (the response to our GET CHANNEL
 	 *    AUTHENTICATION CAPABILITIES request)
-	 * 2) An RMCP+ message with an IPMI reponse payload
+	 * 2) An RMCP+ message with an IPMI response payload
 	 * 3) AN RMCP+ open session response
 	 * 4) An RAKP-2 message (response to an RAKP 1 message)
 	 * 5) An RAKP-4 message (response to an RAKP 3 message)
@@ -681,7 +681,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 	}
 
 	/*
-	 * Handle IPMI responses (case #1 and #2) -- all IPMI reponses
+	 * Handle IPMI responses (case #1 and #2) -- all IPMI responses
 	 */
 	if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_IPMI) {
 		struct ipmi_rq_entry * entry;
@@ -863,7 +863,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
  * Receive whatever comes back.  Ignore received packets that don't correspond
  * to a request we've sent.
  *
- * Returns: the ipmi_rs packet describing the/a reponse we expect.
+ * Returns: the ipmi_rs packet describing the/a response we expect.
  */
 static struct ipmi_rs *
 ipmi_lan_poll_recv(struct ipmi_intf * intf)
@@ -881,7 +881,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 
 
 /*
- * read_open_session_reponse
+ * read_open_session_response
  *
  * Initialize the ipmi_rs from the IPMI 2.x open session response data.
  *
@@ -903,7 +903,7 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
 	 /*  Message tag */
 	 rsp->payload.open_session_response.message_tag = rsp->data[offset];
 
-	 /* RAKP reponse code */
+	 /* RAKP response code */
 	 rsp->payload.open_session_response.rakp_return_code = rsp->data[offset + 1];
 
 	 /* Maximum privilege level */
@@ -970,7 +970,7 @@ read_rakp2_message(
 	 /*  Message tag */
 	 rsp->payload.rakp2_message.message_tag = rsp->data[offset];
 
-	 /* RAKP reponse code */
+	 /* RAKP response code */
 	 rsp->payload.rakp2_message.rakp_return_code = rsp->data[offset + 1];
 
 	 /* Console session ID */
@@ -1051,7 +1051,7 @@ read_rakp4_message(
 	 /*  Message tag */
 	 rsp->payload.rakp4_message.message_tag = rsp->data[offset];
 
-	 /* RAKP reponse code */
+	 /* RAKP response code */
 	 rsp->payload.rakp4_message.rakp_return_code = rsp->data[offset + 1];
 
 	 /* Console session ID */
@@ -3417,7 +3417,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!ipmi_oem_active(intf, "i82571spt") &&
 			ipmi_get_auth_capabilities_cmd(intf, &auth_cap)) {
 		lprintf(LOG_INFO, "Error issuing Get Channel "
-			"Authentication Capabilies request");
+			"Authentication Capabilities request");
 		goto fail;
 	}
 

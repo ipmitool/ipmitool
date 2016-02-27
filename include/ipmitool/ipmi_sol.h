@@ -64,7 +64,7 @@ struct sol_config_parameters {
 
 
 /*
- * The ACTIVATE PAYLOAD command reponse structure
+ * The ACTIVATE PAYLOAD command response structure
  * From table 24-2 of the IPMI v2.0 spec
  */
 #ifdef PRAGMA_PACK

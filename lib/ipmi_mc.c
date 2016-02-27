@@ -779,7 +779,7 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Reset Watchdog Timer command failed: %s",
 			(rsp->ccode == IPM_WATCHDOG_RESET_ERROR) ?
-				"Attempt to reset unitialized watchdog" :
+				"Attempt to reset uninitialized watchdog" :
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
