@@ -71,6 +71,30 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_ERICSSON,               "Ericsson AB"},
    { IPMI_OEM_QUANTA,                 "Quanta" },
    { IPMI_OEM_ADVANTECH,              "Advantech" },
+   /************************************************************************
+    * Add ID String for IANA Enterprise Number of IBM & ADLINK
+    * https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
+    *  2
+    *    IBM
+    *      Kristine Adamson
+    *        adamson&us.ibm.com
+    *  4769
+    *    IBM Corporation
+    *      Victor Sample
+    *        vsample&us.ibm.com
+    *  20301
+    *    IBM eServer X
+    *      Lynn Fore
+    *        sls&us.ibm.com
+    *  24339
+    *    ADLINK TECHNOLOGY INC.
+    *      Ryan Hsu
+    *        ryan.hsu&adlinktech.com
+    ************************************************************************/
+   { IPMI_OEM_IBM_2,                  "IBM" },
+   { IPMI_OEM_IBM_4769,               "IBM Corporation" },
+   { IPMI_OEM_IBM_20301,              "IBM eServer X" },
+   { IPMI_OEM_ADLINK_24339,           "ADLINK Technology Inc." },
    { 0xffff , NULL },
 };
 
@@ -202,6 +226,62 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_ADVANTECH, 0x9212, "ESP-9212" },
    { IPMI_OEM_ADVANTECH, 0x6000, "CGS-6000" },
    { IPMI_OEM_ADVANTECH, 0x6010, "CGS-6010" },
+   /* ADLINK Technology Inc. */
+   /* AdvancedTCA Processor Blades */
+   { IPMI_OEM_ADLINK_24339, 0x3100, "aTCA-3100" },
+   { IPMI_OEM_ADLINK_24339, 0x3110, "aTCA-3110" },
+   { IPMI_OEM_ADLINK_24339, 0x3150, "aTCA-3150" },
+   { IPMI_OEM_ADLINK_24339, 0x3420, "aTCA-3420" },
+   { IPMI_OEM_ADLINK_24339, 0x3710, "aTCA-3710" },
+   { IPMI_OEM_ADLINK_24339, 0x6100, "aTCA-6100" },
+   { IPMI_OEM_ADLINK_24339, 0x6200, "aTCA-6200" },
+   { IPMI_OEM_ADLINK_24339, 0x6250, "aTCA-6250/6250STW" },
+   { IPMI_OEM_ADLINK_24339, 0x6270, "aTCA-R6270" },
+   { IPMI_OEM_ADLINK_24339, 0x6280, "aTCA-R6280" },
+   { IPMI_OEM_ADLINK_24339, 0x6890, "aTCA-6890" },
+   { IPMI_OEM_ADLINK_24339, 0x6891, "aTCA-6891" },
+   { IPMI_OEM_ADLINK_24339, 0x6900, "aTCA-6900" },
+   { IPMI_OEM_ADLINK_24339, 0x6905, "aTCA-R6905" },
+   { IPMI_OEM_ADLINK_24339, 0x690A, "aTCA-R6900" },
+   { IPMI_OEM_ADLINK_24339, 0x8214, "aTCA-8214" },
+   { IPMI_OEM_ADLINK_24339, 0x8606, "aTCA-8606" },
+   { IPMI_OEM_ADLINK_24339, 0x9300, "aTCA-9300" },
+   { IPMI_OEM_ADLINK_24339, 0x9700, "aTCA-9700" },
+   { IPMI_OEM_ADLINK_24339, 0x9700, "aTCA-R9700" },
+   { IPMI_OEM_ADLINK_24339, 0x970D, "aTCA-9700D" },
+   { IPMI_OEM_ADLINK_24339, 0x9710, "aTCA-9710" },
+   { IPMI_OEM_ADLINK_24339, 0x9710, "aTCA-R9710" },
+   { IPMI_OEM_ADLINK_24339, 0xF001, "aTCA-FN001" },
+   { IPMI_OEM_ADLINK_24339, 0xF2A0, "aTCA-F2AX" },
+   { IPMI_OEM_ADLINK_24339, 0xF5A0, "aTCA-F5AX" },
+   /* CompactPCI Blades */
+   { IPMI_OEM_ADLINK_24339, 0x3510, "cPCI-3510" },
+   { IPMI_OEM_ADLINK_24339, 0x3970, "cPCI-3970" },
+   { IPMI_OEM_ADLINK_24339, 0x6010, "cPCI-6010" },
+   { IPMI_OEM_ADLINK_24339, 0x6210, "cPCI-6210" },
+   { IPMI_OEM_ADLINK_24339, 0x6510, "cPCI-6510" },
+   { IPMI_OEM_ADLINK_24339, 0x6520, "cPCI-6520" },
+   { IPMI_OEM_ADLINK_24339, 0x6525, "cPCI-6525" },
+   { IPMI_OEM_ADLINK_24339, 0x6530, "cPCI-6530/6530BL" },
+   { IPMI_OEM_ADLINK_24339, 0x6600, "cPCI-6600" },
+   { IPMI_OEM_ADLINK_24339, 0x6840, "cPCI-6840" },
+   { IPMI_OEM_ADLINK_24339, 0x6870, "cPCI-6870" },
+   { IPMI_OEM_ADLINK_24339, 0x6880, "cPCI-6880" },
+   { IPMI_OEM_ADLINK_24339, 0x6910, "cPCI-6910" },
+   { IPMI_OEM_ADLINK_24339, 0x6920, "cPCI-6920" },
+   { IPMI_OEM_ADLINK_24339, 0x6930, "cPCI-6930" },
+   { IPMI_OEM_ADLINK_24339, 0x6940, "cPCI-6940" },
+   /* VPX Blades */
+   { IPMI_OEM_ADLINK_24339, 0x3000, "VPX3000" },
+   { IPMI_OEM_ADLINK_24339, 0x3001, "VPX3001" },
+   { IPMI_OEM_ADLINK_24339, 0x3002, "VPX3002" },
+   { IPMI_OEM_ADLINK_24339, 0x3010, "VPX3010" },
+   { IPMI_OEM_ADLINK_24339, 0x3F10, "VPX3G10" },
+   { IPMI_OEM_ADLINK_24339, 0x6000, "VPX6000" },
+   /* Network Appliance */
+   { IPMI_OEM_ADLINK_24339, 0x0410, "MXN-0410" },
+   { IPMI_OEM_ADLINK_24339, 0x2600, "MCN-2600" },
+   { IPMI_OEM_ADLINK_24339, 0x1500, "MCN-1500" },
 
    { 0xffffff        , 0xffff , NULL },
  };

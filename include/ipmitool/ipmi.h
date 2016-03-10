@@ -251,8 +251,15 @@ struct ipmi_rs {
 
 
 /* These values are IANA numbers */
+/************************************************************************
+* Add ID String for IANA Enterprise Number of IBM & ADLINK
+* https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
+************************************************************************/
+
 typedef enum IPMI_OEM {
      IPMI_OEM_UNKNOWN    = 0,
+     /* 2 for [IBM] */
+     IPMI_OEM_IBM_2      = 2,
      IPMI_OEM_HP         = 11,
      IPMI_OEM_SUN        = 42,
      IPMI_OEM_NOKIA      = 94,
@@ -268,6 +275,8 @@ typedef enum IPMI_OEM {
      IPMI_OEM_LMC        = 2168,
      IPMI_OEM_RADISYS    = 4337,
      IPMI_OEM_BROADCOM   = 4413,
+     /* 4769 for [IBM Corporation] */
+     IPMI_OEM_IBM_4769   = 4769,
      IPMI_OEM_MAGNUM     = 5593,
      IPMI_OEM_TYAN       = 6653,
      IPMI_OEM_QUANTA     = 7244,
@@ -283,7 +292,11 @@ typedef enum IPMI_OEM {
      IPMI_OEM_RARITAN    = 13742,
      IPMI_OEM_KONTRON    = 15000,
      IPMI_OEM_PPS        = 16394,
+     /* 20301 for [IBM eServer X] */
+     IPMI_OEM_IBM_20301  = 20301,
      IPMI_OEM_AMI        = 20974,
+     /* 24339 for [ADLINK TECHNOLOGY INC.] */
+     IPMI_OEM_ADLINK_24339 = 24339,
      IPMI_OEM_NOKIA_SIEMENS_NETWORKS = 28458,
      IPMI_OEM_SUPERMICRO_47488 = 47488
 } IPMI_OEM;
