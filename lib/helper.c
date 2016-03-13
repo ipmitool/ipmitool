@@ -30,6 +30,11 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 #define _POSIX_SOURCE
+#define /* glibc 2.19 and earlier */ _BSD_SOURCE || \
+	/* Since glibc 2.20 */_DEFAULT_SOURCE || \
+	_XOPEN_SOURCE >= 500 || \
+	_XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED || \
+	/* Since glibc 2.10: */ _POSIX_C_SOURCE >= 200112L \
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -30,6 +30,10 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
+#define _BSD_SOURCE || \
+	(_XOPEN_SOURCE >= 500 || \
+                       _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED) && \
+	!(_POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700)
 
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
@@ -38,9 +42,11 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/log.h>
 #include "../src/plugins/lan/md5.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>

@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>

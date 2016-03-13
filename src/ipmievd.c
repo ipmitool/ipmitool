@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 #define _XOPEN_SOURCE 700
+#define _BSD_SOURCE
 
 #include <stdio.h>
 #include <fcntl.h>
