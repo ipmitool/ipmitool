@@ -98,6 +98,7 @@ solaris*)
 	xenable_intf_lipmi=no
 	xenable_intf_bmc=no
 	xenable_ipmishell=no
+	xenable_intf_usb=no
 	;;
 *freebsd*)
 	xenable_intf_imb=no
