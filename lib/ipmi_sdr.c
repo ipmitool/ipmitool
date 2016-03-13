@@ -865,15 +865,9 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 	 * situation, we cheat and put the original record id back in.
 	 * Otherwise, a later Get SDR Record command will fail with
 	 * completion code CBh = "Requested Sensor, data, or record
-	 * not present"
+	 * not present". Exception is if 'Record ID' is specified as 0000h.
+	 * For further information see IPMI v2.0 Spec, Section 33.12
 	 */
-	/*****************************************************************
-	* Need to add one conditional statement for First Record ID 0x0000
-	* IPMI v2.0 Spec, Section 33.12
-        * If ‘Record ID’ is specified as 0000h, this command returns 
-	* the Record Header for the ‘first’ SDR in the repository. 
-	* Therefore the Record ID will not equal
-        ******************************************************************/
 	if ((itr->next != 0x0000) &&
 		(sdr_rs.id != itr->next)) {
 		lprintf(LOG_DEBUG, "SDR record id mismatch: 0x%04x", sdr_rs.id);
