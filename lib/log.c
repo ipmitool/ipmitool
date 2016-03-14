@@ -99,7 +99,7 @@ void lperror(int level, const char * format, ...)
 	return;
 }
 
-/* 
+/*
  * open connection to syslog if daemon
  */
 void log_init(const char * name, int isdaemon, int verbose)
@@ -118,7 +118,7 @@ void log_init(const char * name, int isdaemon, int verbose)
 
 	if (logpriv->name == NULL)
 		fprintf(stderr, "ipmitool: malloc failure\n");
-	
+
 	logpriv->daemon = isdaemon;
 	logpriv->level = verbose + LOG_NOTICE;
 
