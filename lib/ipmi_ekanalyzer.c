@@ -458,7 +458,6 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = ERROR_STATUS;
 	int file_type[MAX_FILE_NUMBER];
-	int tmp_ret = 0;
 	char *filename[MAX_FILE_NUMBER];
 	unsigned int argument_offset = 0;
 	unsigned int type_offset = 0;
@@ -508,7 +507,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = ipmi_ek_display_fru_header (filename[type_offset]);
 			if (rc != ERROR_STATUS) {
 				/* Display FRU header info in detail record */
-				tmp_ret = ipmi_ek_display_fru_header_detail(filename[type_offset]);
+				rc = ipmi_ek_display_fru_header_detail(filename[type_offset]);
 				/* Convert from binary data into multi record structure */
 				rc = ipmi_ekanalyzer_fru_file2structure (filename[type_offset],
 						&list_head, &list_record, &list_last );

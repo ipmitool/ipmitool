@@ -430,11 +430,9 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
 
          if(currentPercent != shownPercent)
          {
-            uint16_t timeElapsedSecond;
             shownPercent = currentPercent;
             printf("Percent: %02i,  ", shownPercent);
             time(&current);
-            timeElapsedSecond = (current-start) + ((current-start)%60);
             printf("Elapsed time %02ld:%02ld\r",((current-start)/60), ((current-start)%60));
             fflush(stdout);
 

@@ -545,7 +545,7 @@ SendTimedI2cRequest (
 	if( status != TRUE ) {
 		DWORD error;
 		error = GetLastError();
-		return ACCESN_ERROR;
+		return error;
 	}
 	if( respLength == 0 ) {
 		return ACCESN_ERROR;
@@ -1134,7 +1134,7 @@ SendTimedImbpRequest (
 	if( status != TRUE ) {
 		DWORD error;
 		error = GetLastError();
-		return ACCESN_ERROR;
+		return error;
 	}
 	if( respLength == 0 ) {
 		return ACCESN_ERROR;
@@ -1211,7 +1211,7 @@ SendAsyncImbpRequest (
 	if( status != TRUE ) {
 		DWORD error;
 		error = GetLastError();
-		return ACCESN_ERROR;
+		return error;
 	}
 	if( respLength != 2 ) {
 		return ACCESN_ERROR;

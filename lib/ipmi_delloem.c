@@ -2783,8 +2783,6 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 static int
 ipmi_powermgmt(struct ipmi_intf * intf)
 {
-	time_t now;
-	struct tm* tm;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
@@ -2810,9 +2808,6 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	int ampReadingRemainder;
 	int remainder;
 	int wattReading;
-
-	now = time(0);
-	tm = gmtime(&now);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -2893,7 +2888,6 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	ipmi_time_to_str(ampPeakTimeConv, ampPeakTime);
 	ipmi_time_to_str(wattPeakTimeConv, wattPeakTime);
 	ipmi_time_to_str(bmctimeconv, bmctime);
-	now = time(0);
 
 	remainder = (cumReadingConv % 1000);
 	cumReadingConv = cumReadingConv / 1000;
@@ -3645,7 +3639,6 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 	uint8_t data[13], *rdata;
 	uint16_t powercapval;
 	uint64_t maxpowerbtuphr;
-	uint64_t maxpowerbtuphr1;
 	uint64_t minpowerbtuphr;
 	IPMI_POWER_CAP ipmipowercap;
 
@@ -3733,11 +3726,10 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 				|| (val > ipmipowercap.MaximumPowerConsmp)) && (unit == btuphr)) {
 		minpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
 		maxpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
-		maxpowerbtuphr1 = watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
 		lprintf(LOG_ERR,
 				"Cap value is out of boundary conditon it should be between %d",
 				minpowerbtuphr);
-		lprintf(LOG_ERR, " -%d", maxpowerbtuphr1);
+		lprintf(LOG_ERR, " -%d", maxpowerbtuphr);
 		return -1;
 	}
 	rc = ipmi_mc_setsysinfo(intf, 13, data);

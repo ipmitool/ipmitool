@@ -300,7 +300,6 @@ HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 	struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
 	int rc = HPMFWUPG_SUCCESS;
 	int componentId = 0;
-	int flagColdReset = FALSE;
 	struct ipm_devid_rsp devIdrsp;
 	struct HpmfwupgGetComponentPropertiesCtx getCompProp;
 	int mode = 0;
@@ -436,13 +435,6 @@ HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 				gVersionInfo[componentId].deferredAux[1] = 0xff;
 				gVersionInfo[componentId].deferredAux[2] = 0xff;
 				gVersionInfo[componentId].deferredAux[3] = 0xff;
-			}
-			if (gVersionInfo[componentId].coldResetRequired) {
-				/*
-				 * If any of the component indicates that the Payload Cold reset is required
-				 * then set the flag
-				 */
-				flagColdReset = TRUE;
 			}
 			if (option & VIEW_MODE) {
 				HpmDisplayVersion(mode,
@@ -1002,14 +994,11 @@ HpmfwupgUpgradeStage(struct ipmi_intf *intf,
 	struct HpmfwupgActionRecord* pActionRecord;
 	int rc = HPMFWUPG_SUCCESS;
 	unsigned char *pImagePtr;
-	unsigned int actionsSize;
 	int flagColdReset = FALSE;
 	/* Put pointer after image header */
 	pImagePtr = (unsigned char*)
 		(pFwupgCtx->pImageData + sizeof(struct HpmfwupgImageHeader) +
 		pImageHeader->oemDataLength + sizeof(unsigned char)/*checksum*/);
-	/* Deternime actions size */
-	actionsSize = pFwupgCtx->imageSize - sizeof(struct HpmfwupgImageHeader);
 	if (!(option & VIEW_MODE)) {
 		HpmDisplayUpgradeHeader();
 	}

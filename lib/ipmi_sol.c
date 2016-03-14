@@ -97,7 +97,6 @@ static struct termios _saved_tio;
 static int            _in_raw_mode = 0;
 static int            _disable_keepalive = 0;
 static int            _use_sol_for_keepalive = 0;
-static int            _keepalive_retries = 0;
 
 extern int verbose;
 

@@ -810,12 +810,11 @@ fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 			uint8_t id, uint32_t offset)
 {
 	uint8_t * fru_data = NULL;
-	uint32_t fru_len, i;
+	uint32_t i;
 	struct fru_multirec_header * h;
 	uint32_t last_off, len;
 
 	i = last_off = offset;
-	fru_len = 0;
 
 	fru_data = malloc(fru->size + 1);
 	if (fru_data == NULL) {
@@ -1592,7 +1591,6 @@ static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
 			printf("Kontron OEM Information Record\n");
 			version = oh->record_version;
 
-			int blockstart;
 			uint8_t blockCount;
 			uint8_t blockIndex=0;
 
@@ -1613,7 +1611,6 @@ static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
 				void * pRecordData;
 				uint8_t nameLen;
 
-				blockstart = offset;
 				nameLen = ( fru_data[offset++] &= 0x3F );
 				printf("  Name: %*.*s\n",nameLen, nameLen, (const char *)(fru_data+offset));
 
@@ -1743,7 +1740,6 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 			version = oh->record_version;
 
 			if( version == formatVersion  ){
-				int blockstart;
 				uint8_t blockCount;
 				uint8_t blockIndex=0;
 
@@ -1764,8 +1760,6 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 				for(blockIndex=0;blockIndex<blockCount;blockIndex++){
 					void * pRecordData;
 					uint8_t nameLen;
-
-					blockstart = offset;
 
 					nameLen = ( fru_data[offset++] & 0x3F );
 
@@ -3357,6 +3351,9 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, id, &fruInfo,
 								&offFruMultiRec,
 								&fruMultiRecSize);
+	if (retStatus != 0) {
+		return retStatus;
+	}
 
 
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
@@ -3406,14 +3403,13 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 
 	{
 		uint8_t * fru_data;
-		uint32_t fru_len, i;
+		uint32_t i;
 		uint32_t offset= offFruMultiRec;
 		struct fru_multirec_header * h;
 		uint32_t last_off, len;
 		uint8_t error=0;
 
 		i = last_off = offset;
-		fru_len = 0;
 
 		memset(&fru, 0, sizeof(fru));
 		fru_data = malloc(fru.size + 1);
@@ -3560,6 +3556,9 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 	retStatus = ipmi_fru_get_multirec_location_from_fru(intf, id, &fruInfo,
 								&offFruMultiRec,
 								&fruMultiRecSize);
+	if (retStatus != 0) {
+		return retStatus;
+	}
 
 
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
@@ -3609,14 +3608,13 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 
 	{
 		uint8_t * fru_data;
-		uint32_t fru_len, i;
+		uint32_t i;
 		uint32_t offset= offFruMultiRec;
 		struct fru_multirec_header * h;
 		uint32_t last_off, len;
 		uint8_t error=0;
 
 		i = last_off = offset;
-		fru_len = 0;
 
 		fru_data = malloc(fru.size + 1);
 		if (fru_data == NULL) {
@@ -4851,7 +4849,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint8_t *fru_data_new = NULL;
 	uint8_t *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
-	uint32_t fru_section_len, old_section_len, header_offset;
+	uint32_t fru_section_len, header_offset;
 	uint32_t chassis_offset, board_offset, product_offset;
 	uint32_t chassis_len, board_len, product_len, product_len_new;
 	int      num_byte_change = 0, padding_len = 0;
@@ -4924,9 +4922,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		rc = (-1);
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
-
-	/* Keep length for future old section display */
-	old_section_len = fru_section_len;
 
 	/*************************
 	3) Seek to field index */
