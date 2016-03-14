@@ -1769,16 +1769,6 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	uint32_t lvalue = 0;
 
 	rsp = ipmi_dcmi_pwr_glimit(intf); /* get the power limit settings */
-# if 0
-	{
-		unsigned char counter = 0;
-		printf("DATA (%d): ", rsp->data_len);
-		for(counter = 0; counter < rsp->data_len; counter ++) {
-			printf("%02X ", rsp->data[counter]);
-		}
-		printf("\n");
-	}
-# endif
 	/* rsp can be a null so check response before any operation on it to
 	 * avoid sig segv
 	 */

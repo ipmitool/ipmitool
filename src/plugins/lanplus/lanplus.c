@@ -1401,10 +1401,6 @@ void getIpmiPayloadWireRep(
 			msg[len++] = IPMI_REMOTE_SWID;
 			msg[len++] = curr_seq << 2;
 			msg[len++] = 0x34;			/* Send Message rqst */
-	#if 0  /* From lan.c example */
-			entry->req.msg.target_cmd = entry->req.msg.cmd;	/* Save target command */
-			entry->req.msg.cmd = 0x34;		/* (fixup request entry) */
-	#endif
 			msg[len++] = (0x40|intf->target_channel); /* Track request*/
 
 			payload->payload_length += 7;

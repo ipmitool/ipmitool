@@ -5141,31 +5141,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		#ifdef DBG_RESIZE_FRU
 		printf("Calculate New Checksum: %x\n", (0 - cksum));
 		#endif
-
-		/****** ENABLE to show section modified before and after ********/
-		#if 0
-		printf("Section: ");
-		for( counter = 0; counter <old_section_len; counter ++ )
-		{
-			if((counter %16) == 0)
-			{
-				printf("\n");
-			}
-			printf( "%02X ", *(fru_data_old + header_offset + counter) );
-		}
-		printf("\n");
-
-		printf("Section: ");
-		for( counter = 0; counter <fru_section_len; counter ++ )
-		{
-			if((counter %16) == 0)
-			{
-				printf("\n");
-			}
-			printf( "%02X ", *(fru_data_new + header_offset + counter) );
-		}
-		printf("\n");
-		#endif
 	}
 	else
 	{
