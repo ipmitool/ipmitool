@@ -32,6 +32,7 @@
 #define _BSD_SOURCE
 
 #include <string.h>
+#include <strings.h>
 #include <math.h>
 #define __USE_XOPEN /* glibc2 needs this for strptime */
 #include <time.h>
