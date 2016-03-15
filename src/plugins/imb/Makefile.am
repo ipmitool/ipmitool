@@ -30,7 +30,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-INCLUDES 		= -I$(top_srcdir)/include
+AM_CPPFLAGS 		= -I$(top_srcdir)/include
 
 EXTRA_LTLIBRARIES	= libintf_imb.la
 noinst_LTLIBRARIES	= @INTF_IMB_LIB@
