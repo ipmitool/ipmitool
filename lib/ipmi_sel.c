@@ -2739,24 +2739,26 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	{
 		//modify UTC time to local time expressed in number of seconds from 1/1/70 0:0:0 1970 GMT
 		struct tm * tm_tmp = {0};
-		int gt_year,gt_yday,gt_hour,lt_year,lt_yday,lt_hour;
+		int gt_year,gt_yday,gt_hour,gt_min,lt_year,lt_yday,lt_hour,lt_min;
 		int delta_hour;
 		tm_tmp=gmtime(&t);
 		gt_year=tm_tmp->tm_year;
 		gt_yday=tm_tmp->tm_yday;
 		gt_hour=tm_tmp->tm_hour;
+		gt_min=tm_tmp->tm_min;
 		memset(&*tm_tmp, 0, sizeof(struct tm));
 		tm_tmp=localtime(&t);
 		lt_year=tm_tmp->tm_year;
 		lt_yday=tm_tmp->tm_yday;
 		lt_hour=tm_tmp->tm_hour;
+		lt_min=tm_tmp->tm_min;
 		delta_hour=lt_hour - gt_hour;
 		if ( (lt_year > gt_year) || ((lt_year == gt_year) && (lt_yday > gt_yday)) )
 			delta_hour += 24;
 		if ( (lt_year < gt_year) || ((lt_year == gt_year) && (lt_yday < gt_yday)) )
 			delta_hour -= 24;
 
-		t += (delta_hour * 60 * 60);
+		t += (delta_hour * 60 * 60) + (lt_min - gt_min) * 60;
 	}
 
 	timei = (uint32_t)t;
