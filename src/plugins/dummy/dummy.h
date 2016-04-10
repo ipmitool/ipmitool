@@ -1,8 +1,6 @@
 #ifndef IPMI_DUMMYIPMI_H
 # define IPMI_DUMMYIPMI_H
 
-# define DUMMY_SOCKET_PATH "/tmp/.ipmi_dummy"
-
 struct dummy_rq {
 	struct {
 		uint8_t netfn;

@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -175,6 +176,14 @@ ipmi_dummyipmi_open(struct ipmi_intf *intf)
 	struct sockaddr_un address;
 	int len;
 	int rc;
+	char *dummy_sock_path;
+
+	dummy_sock_path = getenv("IPMI_DUMMY_SOCK");
+	if (dummy_sock_path == NULL) {
+		lprintf(LOG_DEBUG, "No IPMI_DUMMY_SOCK set. Dummy mode ON.");
+		intf->opened = 1;
+		return intf->fd;
+	}
 
 	if (intf->opened == 1) {
 		return intf->fd;
@@ -185,7 +194,7 @@ ipmi_dummyipmi_open(struct ipmi_intf *intf)
 		return (-1);
 	}
 	address.sun_family = AF_UNIX;
-	strcpy(address.sun_path, DUMMY_SOCKET_PATH);
+	strcpy(address.sun_path, dummy_sock_path);
 	len = sizeof(address);
 	rc = connect(intf->fd, (struct sockaddr *)&address, len);
 	if (rc != 0) {
@@ -209,6 +218,12 @@ ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	static struct ipmi_rs rsp;
 	struct dummy_rq req_dummy;
 	struct dummy_rs rsp_dummy;
+	char *dummy_sock_path;
+	dummy_sock_path = getenv("IPMI_DUMMY_SOCK");
+	if (dummy_sock_path == NULL) {
+		lprintf(LOG_DEBUG, "No IPMI_DUMMY_SOCK set. Dummy mode ON.");
+		return NULL;
+	}
 	if (intf == NULL || intf->fd < 0 || intf->opened != 1) {
 		lprintf(LOG_ERR, "dummy failed on intf check.");
 		return NULL;
