@@ -31,7 +31,7 @@
 DOCDIR = $(datadir)/doc/$(PACKAGE)
 DOCLIST = $(top_srcdir)/README $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
 
-EXTRA_DIST = $(DOCLIST)
+EXTRA_DIST = $(DOCLIST) bootstrap
 
 AUTOMAKE_OPTIONS = dist-bzip2
 
