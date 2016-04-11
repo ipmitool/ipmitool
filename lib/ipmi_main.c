@@ -342,7 +342,7 @@ ipmi_parse_hex(const char *str)
 		else /* it's A-F or a-f */
 			b = (*p | 0x20) - 'a' + 10; /* convert to lowercase and to 10-15 */
 
-		*q = *q + b << shift;
+		*q = *q + (b << shift);
 		if (shift)
 			shift = 0;
 		else {
