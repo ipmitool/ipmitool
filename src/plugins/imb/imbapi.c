@@ -97,7 +97,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #endif
 #include "imbapi.h"
-#include <asm/socket.h>
+#include <sys/socket.h>
 
 #ifdef SCO_UW
 #define NO_MACRO_ARGS  1
