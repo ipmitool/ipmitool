@@ -251,6 +251,9 @@ static int ipmi_setled_state(struct ipmi_intf *intf, int bayId, int slotId,
 		int state);
 static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
 		int *bayId, int *slotId);
+static int
+get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
+		char ** argv, char *nic_set);
 
 /* Function Name:       ipmi_delloem_main
  *
@@ -2051,7 +2054,7 @@ IsLANSupported()
 	return 1;
 }
 
-int
+static int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set)
 {
