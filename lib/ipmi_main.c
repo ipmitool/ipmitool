@@ -73,6 +73,8 @@
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_picmg.h>
+#include <ipmitool/ipmi_kontronoem.h>
+#include <ipmitool/ipmi_vita.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -83,6 +85,10 @@
 #else
 # define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
 #endif
+
+/* From src/plugins/ipmi_intf.c: */
+void
+ipmi_intf_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size);
 
 extern int verbose;
 extern int csv_output;
