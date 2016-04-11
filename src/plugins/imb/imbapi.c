@@ -105,9 +105,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IMB_DEVICE "/dev/instru/mismic"
 #else
 #define IMB_DEVICE "/dev/imb"
-#ifndef PAGESIZE
-# define PAGESIZE EXEC_PAGESIZE
 #endif
+
+#if !defined(PAGESIZE) && defined(PAGE_SIZE)
+#  define PAGESIZE PAGE_SIZE
+#endif
+
+#if !defined(_SC_PAGESIZE) && defined(_SC_PAGE_SIZE)
+#  define _SC_PAGESIZE _SC_PAGE_SIZE
 #endif
 
 /*Just to make the DEBUG code cleaner.*/
@@ -1985,6 +1990,16 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	off_t 				startpAddress = (off_t)startAddress;
 	unsigned int 		diff;
 	char 				*startvAddress;
+#if defined(PAGESIZE)
+	long int pagesize = PAGESIZE;
+#elif defined(_SC_PAGESIZE)
+	long int pagesize = sysconf(_SC_PAGESIZE);
+	if (pagesize < 1) {
+		perror("Invalid pagesize");
+	}
+#else
+#  error PAGESIZE unsupported
+#endif
 
 	if ((startAddress == 0) || (addressLength <= 0))
 		return ACCESN_ERROR;
@@ -1999,7 +2014,7 @@ MapPhysicalMemory(int startAddress,int addressLength, int *virtualAddress )
 	}
 
 	/* aliging the offset to a page boundary and adjusting the length */
-	diff = (int)startpAddress % PAGESIZE;
+	diff = (int)startpAddress % pagesize;
 	startpAddress -= diff;
 	length += diff;
 
@@ -2043,9 +2058,19 @@ ACCESN_STATUS
 UnmapPhysicalMemory( int virtualAddress, int Length )
 {
 	unsigned int diff = 0;
+#if defined(PAGESIZE)
+	long int pagesize = PAGESIZE;
+#elif defined(_SC_PAGESIZE)
+	long int pagesize = sysconf(_SC_PAGESIZE);
+	if (pagesize < 1) {
+		perror("Invalid pagesize");
+	}
+#else
+#  error PAGESIZE unsupported
+#endif
 
 	/* page align the virtual address and adjust length accordingly  */
-	diff = 	((unsigned int) virtualAddress) % PAGESIZE;
+	diff = 	((unsigned int) virtualAddress) % pagesize;
 	virtualAddress -= diff;
 	Length += diff;
 #ifndef NO_MACRO_ARGS
