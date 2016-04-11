@@ -46,10 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #ifndef WIN32   
 /* WIN32 defines this in stdio.h */
-#ifndef _WCHAR_T
-#define _WCHAR_T
-typedef long    wchar_t;
-#endif
+#include <wchar.h>
 #endif
 #define far
 #define near
