@@ -52,6 +52,10 @@
 # include <config.h>
 #endif
 
+/* From src/plugins/ipmi_intf.c: */
+uint16_t
+ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
+
 extern int verbose;
 
 int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
@@ -112,6 +116,10 @@ int HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		struct ipmi_intf *intf,
 		int option,
 		int *pFlagColdReset);
+int
+HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
+		struct HpmfwupgUpgradeCtx *pFwupgCtx,
+		int componentMask, int option);
 
 /* HpmGetuserInput - get input from user
  *
