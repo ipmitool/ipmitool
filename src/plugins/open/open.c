@@ -44,6 +44,7 @@
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_sel.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 
