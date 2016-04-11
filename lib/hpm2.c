@@ -36,6 +36,12 @@
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
 
+/* From src/plugins/ipmi_intf.c: */
+void
+ipmi_intf_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size);
+void
+ipmi_intf_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size);
+
 #if HAVE_PRAGMA_PACK
 # pragma pack(push, 1)
 #endif
