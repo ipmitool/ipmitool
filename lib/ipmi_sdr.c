@@ -70,6 +70,10 @@ static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
 void printf_sdr_usage();
 
+/* From src/plugins/ipmi_intf.c: */
+uint16_t
+ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf);
+
 /* ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
  * @pct:	units are a percentage
