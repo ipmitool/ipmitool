@@ -57,6 +57,7 @@
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/hpm2.h>
 #include <ipmitool/bswap.h>
