@@ -50,6 +50,16 @@
 
 #define FRU_MULTIREC_CHUNK_SIZE     (255 + sizeof(struct fru_multirec_header))
 
+/* From lib/dimm_spd.c: */
+int
+ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id);
+
+/* From src/plugins/ipmi_intf.c: */
+void
+ipmi_intf_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size);
+void
+ipmi_intf_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size);
+
 extern int verbose;
 
 static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
