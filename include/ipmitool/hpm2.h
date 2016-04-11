@@ -43,7 +43,7 @@
  * MSN = present revision,
  * LSN = oldest revision parameter is
  * backward compatible with. */
-#define LAN_PARAM_REV(x, y)	((x) << 4 | (y) & 0xF)
+#define LAN_PARAM_REV(x, y)	(((x) << 4) | ((y) & 0xF))
 
 /* HPM.2 capabilities */
 #define HPM2_CAPS_SOL_EXTENSION		0x01
