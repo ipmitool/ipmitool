@@ -45,7 +45,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <termios.h>
 
 #include <ipmitool/ipmi.h>

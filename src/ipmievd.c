@@ -71,7 +71,7 @@
 # else
 #  include "plugins/open/open.h"
 # endif
-#  include <sys/poll.h>
+#  include <poll.h>
 #endif /* IPMI_INTF_OPEN */
 
 #include <ipmitool/helper.h>
