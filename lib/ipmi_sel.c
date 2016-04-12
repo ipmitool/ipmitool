@@ -1469,11 +1469,14 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return -1;
-	}
-	if (rsp->ccode > 0) {
+	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
+	} else if (rsp->data_len != 14) {
+		lprintf(LOG_ERR, "Get SEL Info command failed: "
+			"Invalid data length %d", rsp->data_len);
+		return (-1);
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
