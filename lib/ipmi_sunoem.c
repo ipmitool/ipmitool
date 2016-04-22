@@ -48,6 +48,7 @@
 #include <sys/time.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <sys/select.h>
 
 #include <termios.h>
 
