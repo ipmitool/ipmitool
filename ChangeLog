@@ -1,3 +1,79 @@
+version 1.8.17 2016-05-01
+	* Add INSTALL and NEWS, mandated by autoconf
+	* Added missing ipmi_sel_supermicro.h to template Makefile.am
+	* Check rsp->data_len in ipmi_sel_get_info()
+	* Fix "redirecting incorrect #include <sys/poll.h> to <poll.h>"
+	warning with musl libc
+	* Fix automake compatibility warnings
+	* Fix implicit declaration of function
+	'get_nic_selection_mode_12g' in lib/ipmi_delloem.c
+	* Fix implicit declaration of function 'ipmi_get_oem' in
+	src/plugins/imb/imb.c
+	* Fix implicit declaration of function 'ipmi_get_oem' in
+	src/plugins/lanplus/lanplus.c
+	* Fix implicit declaration of function 'ipmi_get_oem' in
+	src/plugins/open/open.c
+	* Fix implicit declarations of functions 'HpmfwupgPreUpgradeCheck'
+	and 'ipmi_intf_get_max_request_data_size' in lib/ipmi_hpmfwupg.c
+	* Fix implicit declarations of functions
+	'ipmi_intf_set_max_request_data_size' and
+	'ipmi_intf_set_max_response_data_size' in lib/hpm2.c
+	* Fix implicit function declaration of
+	ipmi_intf_get_max_response_data_size in lib/ipmi_sdr.c
+	* Fix several implicit declarations of functions in
+	lib/ipmi_main.c
+	* Fix several implicit function declarations in lib/ipmi_fru.c
+	* Fix warning: suggest parentheses around '+' inside '<<'
+	in lib/ipmi_main.c
+	* Fix warning: suggest parentheses around arithmetic in operand of
+	'|' in include/ipmitool/hpm2
+	* Get rid of old INCLUDES macro, use AM_CPPFLAGS instead.
+	* ID 440 - Fix 'unknown type name fd_set" error.
+	* ID 440 - remove obsolete headers from lib/ipmi_sunoem.c
+	* ID:322 - let 'ekanalyzer frushow' run without a working
+	IPMI target
+	* ID:355 - Add #include <strings.h> to lib/ipmi_sel.c
+	* ID:355 - Add macros and #include and reduce number of warnings
+	* ID:355 - Change CFLAG -std=c99 to -std=gnu99
+	* ID:355 - Move Super Micro stuff into dedicated header file
+	* ID:355 - Remove declared, but not used variables
+	* ID:404 - Edit FRU information update problem
+	* ID:405 - Use meaningful Generator ID for "ipmitool sel add"
+	* ID:407 - Avoid assert on mismatched session ID
+	* ID:409 - Fix IPv6 socket creation on Windows/Cygwin.
+	* ID:410 - Disable USB interface for Windows/Cygwin by default.
+	* ID:410 - Enable/disable USB interface by "auto"
+	* ID:411 - Fix HPM.2 revision check for R1.1 and subsequent
+	specification revisions.
+	* ID:412 - Check errors when setting a user password.
+	* ID:413 - Print new line chne character when setting user
+	privilege.
+	* ID:414 - ekanalyzer frushow fails to show 'Product Info'
+	correctly
+	* ID:417 - Fix some typos
+	* ID:418 - Fix Compiling under Mac OS X
+	* ID:419 - List dummy.h in Makefile.am, so it gets included in
+	a release tarball
+	* ID:421 - Fix memleak for sol output
+	* ID:423 - Don't assume internal use area is present in ekanalyzer
+	* ID:424 - Update dimm_spd.c with data from the latest JEDEC List
+	* ID:425 - Disable USB interface for OS X/darwin
+	* ID:426 - Fallback to run-time detection of PAGESIZE if
+	compile-time detection is not supported
+	* ID:426 - Include sys/socket.h instead of asm/socket.h
+	* ID:426 - Include wchar.h instead of defining wchar_t ourselves
+	* ID:427 - Cleanup comment in ipmi_sdr_get_header()
+	* ID:427 - The first two bytes of dumped raw SDR data is wrong.
+	* ID:428 - Update IANA numbers / Product Name for IBM and ADLINK
+	* ID:430 - Change Nokia Siemens Networks to Nokia Solutions
+	and Networks
+	* ID:431 - Fix correct interpretation of led states
+	* ID:437 - sel: Fix "sel time set <time>"
+	* Make bootstrap script part of dist packages
+	* Remove #if 0 code aka not-compiled-in
+	* Remove trailing white-spaces in lib/log.c
+	* git-ignore autoconf-generated files
+
 version 1.8.16 2015-11-22
 	* Add _ipmi_get_channel_access() and _ipmi_get_channel_info()
 	* Add _ipmi_get_user_access() and _ipmi_set_user_access()
