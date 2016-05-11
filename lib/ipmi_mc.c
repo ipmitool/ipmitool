@@ -462,76 +462,77 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	return 0;
 }
 
-/* Structure follow the IPMI V.2 Rev 1.0
- * See Table 20-10 */
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(1)
-#endif
-
-struct ipmi_guid {
-	uint32_t  time_low;	/* timestamp low field */
-	uint16_t  time_mid;	/* timestamp middle field */
-	uint16_t  time_hi_and_version; /* timestamp high field and version number */
-	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
-	uint8_t   clock_seq_low; /* clock sequence low field */
-	uint8_t   node[6];	/* node */
-} ATTRIBUTE_PACKING;
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(0)
-#endif
-
-/* ipmi_mc_get_guid  -  print this MC GUID
+/* _ipmi_mc_get_guid - Gets BMCs GUID according to (22.14)
  *
  * @intf:	ipmi interface
+ * @guid:       pointer where to store BMC GUID
  *
- * returns 0 on success
- * returns -1 on error
+ * returns - negative number means error, positive is a ccode.
  */
-static int
-ipmi_mc_get_guid(struct ipmi_intf * intf)
+int
+_ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	struct ipmi_guid guid;
+	if (guid == NULL) {
+		return (-3);
+	}
 
+	memset(guid, 0, sizeof(struct ipmi_guid_t));
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = BMC_GET_GUID;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get GUID command failed");
-		return -1;
+		return (-1);
+	} else if (rsp->ccode > 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 16
+			|| rsp->data_len != sizeof(struct ipmi_guid_t)) {
+		return (-2);
 	}
-	if (rsp->ccode > 0) {
-		lprintf(LOG_ERR, "Get GUID command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	if (rsp->data_len == sizeof(struct ipmi_guid)) {
-		char tbuf[40];
-		time_t s;
-		memset(tbuf, 0, 40);
-		memset(&guid, 0, sizeof(struct ipmi_guid));
-		memcpy(&guid, rsp->data, rsp->data_len);
-
-		/* Kipp - changed order of last field (node) to follow specification */
-		printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-		       guid.time_low, guid.time_mid, guid.time_hi_and_version,
-		       guid.clock_seq_hi_variant << 8 | guid.clock_seq_low,
-		       guid.node[0], guid.node[1], guid.node[2],
-		       guid.node[3], guid.node[4], guid.node[5]);
-
-		s = (time_t)guid.time_low; /* Kipp - removed the BSWAP_32, it was not needed here */
-		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
-		printf("Timestamp    : %s\n", tbuf);
-	}
-	else {
-		lprintf(LOG_ERR, "Invalid GUID length %d", rsp->data_len);
-	}
-
+	memcpy(guid, &rsp->data[0], sizeof(struct ipmi_guid_t));
 	return 0;
+}
+
+/* ipmi_mc_print_guid - print-out given BMC GUID
+ *
+ * @guid - struct with GUID.
+ *
+ * returns 0
+ */
+static int
+ipmi_mc_print_guid(struct ipmi_guid_t guid)
+{
+	char tbuf[40];
+	time_t s;
+	memset(tbuf, 0, 40);
+	/* Kipp - changed order of last field (node) to follow specification */
+	printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
+	       guid.time_low, guid.time_mid, guid.time_hi_and_version,
+	       guid.clock_seq_hi_variant << 8 | guid.clock_seq_low,
+	       guid.node[0], guid.node[1], guid.node[2],
+	       guid.node[3], guid.node[4], guid.node[5]);
+
+	s = (time_t)guid.time_low; /* Kipp - removed the BSWAP_32, it was not needed here */
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+	printf("Timestamp    : %s\n", tbuf);
+	return 0;
+}
+
+/* ipmi_mc_get_guid - Gets and prints-out System GUID */
+int
+ipmi_mc_get_guid(struct ipmi_intf *intf)
+{
+	struct ipmi_guid_t guid;
+	int rc;
+	rc = _ipmi_mc_get_guid(intf, &guid);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	}
+	rc = ipmi_mc_print_guid(guid);
+	return rc;
 }
 
 /* ipmi_mc_get_selftest -  returns and print selftest results

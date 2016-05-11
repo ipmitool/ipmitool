@@ -89,6 +89,25 @@ struct ipm_devid_rsp {
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 
+/* Structure follow the IPMI V.2 Rev 1.0
+ * See Table 20-10 */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+struct ipmi_guid_t {
+	uint32_t  time_low;	/* timestamp low field */
+	uint16_t  time_mid;	/* timestamp middle field */
+	uint16_t  time_hi_and_version; /* timestamp high field and version number */
+	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
+	uint8_t   clock_seq_low; /* clock sequence low field */
+	uint8_t   node[6];	/* node */
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+
+int _ipmi_mc_get_guid(struct ipmi_intf *, struct ipmi_guid_t *);
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
