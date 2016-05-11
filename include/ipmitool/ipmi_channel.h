@@ -131,6 +131,8 @@ struct get_channel_auth_cap_rsp {
 int _ipmi_get_channel_access(struct ipmi_intf *intf,
 		struct channel_access_t *channel_access,
 		uint8_t get_volatile_settings);
+int _ipmi_get_channel_info(struct ipmi_intf *intf,
+        struct channel_info_t *channel_info);
 int _ipmi_set_channel_access(struct ipmi_intf *intf,
 		struct channel_access_t channel_access, uint8_t access_option,
 		uint8_t privilege_option);
