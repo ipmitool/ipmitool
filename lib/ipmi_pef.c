@@ -36,10 +36,13 @@
 
 #include <ipmitool/bswap.h>
 #include <ipmitool/helper.h>
-#include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_pef.h>
+#include <ipmitool/ipmi_sel.h>
+#include <ipmitool/log.h>
 
 extern int verbose;
 /*
@@ -74,6 +77,8 @@ static const char * pef_flag_fmts[][3] = {
 	{"abled",     "dis",      "en"},
 };
 static const char * listitem[] =	{" | %s", ",%s", "%s"};
+
+static int ipmi_pef2_list_filters(struct ipmi_intf *);
 
 const char * 
 ipmi_pef_bit_desc(struct bit_desc_map * map, uint32_t value)
@@ -184,6 +189,31 @@ ipmi_pef_print_1xd(const char * text, uint32_t val)
 	ipmi_pef_print_field(pef_fld_fmts[F_1XD], text, val);
 }
 
+/* ipmi_pef_print_guid - print-out GUID. */
+static int
+ipmi_pef_print_guid(uint8_t *guid)
+{
+	if (guid == NULL) {
+		return (-1);
+	}
+
+	if (verbose) {
+		printf("%-*s : %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
+				KYWD_LENGTH, "System GUID",
+				guid[0], guid[1], guid[2], guid[3], guid[4],
+				guid[5], guid[6], guid[7], guid[8], guid[9],
+				guid[10],guid[11], guid[12], guid[13], guid[14],
+				guid[15]);
+	} else {
+		printf(" | %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+				guid[0], guid[1], guid[2], guid[3], guid[4],
+				guid[5], guid[6], guid[7], guid[8], guid[9],
+				guid[10], guid[11], guid[12], guid[13], guid[14],
+				guid[15]);
+	}
+	return 0;
+}
+
 static struct ipmi_rs * 
 ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 {	/*
@@ -204,58 +234,423 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 	return(rsp);
 }
 
-static uint8_t
-ipmi_pef_get_policy_table(struct ipmi_intf * intf,
-									struct pef_cfgparm_policy_table_entry ** table)
-{	/*
-	// get the PEF policy table: allocate space, fillin, and return its size 
-	//  NB: the caller must free the returned area (when returned size > 0)
-	*/
-	struct ipmi_rs * rsp;
+/* _ipmi_get_pef_capabilities - Requests and returns result of (30.1) Get PEF
+ * Capabilities.
+ *
+ * @pcap - pointer where to store results.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+int
+_ipmi_get_pef_capabilities(struct ipmi_intf *intf,
+		struct pef_capabilities *pcap)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	if (pcap == NULL) {
+		return (-3);
+	}
+
+	memset(pcap, 0, sizeof(struct pef_capabilities));
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CAPABILITIES;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 3) {
+		return (-2);
+	}
+	pcap->version = rsp->data[0];
+	pcap->actions = rsp->data[1];
+	pcap->event_filter_count = rsp->data[2];
+	return 0;
+}
+
+/* _ipmi_get_pef_filter_entry - Fetches one Entry from Event Filter Table
+ * identified by Filter ID.
+ *
+ * @filter_id - Filter ID of Entry in Event Filter Table.
+ * @filter_entry - Pointer where to copy Filter Entry data.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_get_pef_filter_entry(struct ipmi_intf *intf, uint8_t filter_id,
+		struct pef_cfgparm_filter_table_entry *filter_entry)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t data[3];
+	uint8_t data_len = 3 * sizeof(uint8_t);
+	int dest_size;
+	if (filter_entry == NULL) {
+		return (-3);
+	}
+
+	dest_size = (int)sizeof(struct pef_cfgparm_filter_table_entry);
+	memset(filter_entry, 0, dest_size);
+	memset(&data, 0, data_len);
+	data[0] = PEF_CFGPARM_ID_PEF_FILTER_TABLE_ENTRY;
+	data[1] = filter_id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&data;
+	req.msg.data_len = data_len;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 22 || (rsp->data_len - 1) != dest_size) {
+		return (-2);
+	}
+	memcpy(filter_entry, &rsp->data[1], dest_size);
+	return 0;
+}
+
+/* _ipmi_get_pef_filter_entry_cfg - Fetches configuration of one Entry from
+ * Event Filter Table identified by Filter ID.
+ *
+ * @filter_id - Filter ID of Entry in Event Filter Table.
+ * @filter_entry_cfg - Pointer where to copy Filter Entry configuration.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+int
+_ipmi_get_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
+		struct pef_cfgparm_filter_table_data_1 *filter_cfg)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t data[3];
+	uint8_t data_len = 3 * sizeof(uint8_t);
+	int dest_size;
+	if (filter_cfg == NULL) {
+		return (-3);
+	}
+
+	dest_size = (int)sizeof(struct pef_cfgparm_filter_table_data_1);
+	memset(filter_cfg, 0, dest_size);
+	memset(&data, 0, data_len);
+	data[0] = PEF_CFGPARM_ID_PEF_FILTER_TABLE_DATA_1;
+	data[1] = filter_id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&data;
+	req.msg.data_len = data_len;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 3 || (rsp->data_len - 1) != dest_size) {
+		return (-2);
+	}
+	memcpy(filter_cfg, &rsp->data[1], dest_size);
+	return 0;
+}
+
+/* _ipmi_get_pef_policy_entry - Fetches one Entry from Alert Policy Table
+ * identified by Policy ID.
+ *
+ * @policy_id - Policy ID of Entry in Alert Policy Table.
+ * @policy_entry - Pointer where to copy Policy Entry data.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_get_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
+		struct pef_cfgparm_policy_table_entry *policy_entry)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t data[3];
+	uint8_t data_len = 3 * sizeof(uint8_t);
+	int dest_size;
+	if (policy_entry == NULL) {
+		return (-3);
+	}
+
+	dest_size = (int)sizeof(struct pef_cfgparm_policy_table_entry);
+	memset(policy_entry, 0, dest_size);
+	memset(&data, 0, data_len);
+	data[0] = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
+	data[1] = policy_id & 0x7F;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&data;
+	req.msg.data_len = data_len;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 5 || (rsp->data_len - 1) != dest_size) {
+		return (-2);
+	}
+	memcpy(policy_entry, &rsp->data[1], dest_size);
+	return 0;
+}
+
+/* _ipmi_get_pef_filter_table_size - Fetch the Number of Event Filter Entries.
+ * If the number is 0, it means feature is not supported.
+ *
+ * @table_size - ptr to where to store number of entries.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_get_pef_filter_table_size(struct ipmi_intf *intf, uint8_t *table_size)
+{
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
-	struct pef_cfgparm_policy_table_entry * ptbl, * ptmp;
-	uint32_t i;
-	uint8_t tbl_size;
 
+	if (table_size == NULL) {
+		return (-3);
+	}
+
+	*table_size = 0;
+	memset(&psel, 0, sizeof(psel));
+	psel.id = PEF_CFGPARM_ID_PEF_FILTER_TABLE_SIZE;
+	memset(&req, 0, sizeof(req));
+
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&psel;
+	req.msg.data_len = sizeof(psel);
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 2) {
+		return (-2);
+	}
+	*table_size = rsp->data[1] & 0x7F;
+	return 0;
+}
+
+/* _ipmi_get_pef_policy_table_size - Fetch the Number of Alert Policy Entries. If the
+ * number is 0, it means feature is not supported.
+ *
+ * @table_size - ptr to where to store number of entries.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_get_pef_policy_table_size(struct ipmi_intf *intf, uint8_t *table_size)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct pef_cfgparm_selector psel;
+
+	if (table_size == NULL) {
+		return (-3);
+	}
+
+	*table_size = 0;
 	memset(&psel, 0, sizeof(psel));
 	psel.id = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_SIZE;
+	memset(&req, 0, sizeof(req));
+
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&psel;
+	req.msg.data_len = sizeof(psel);
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 2) {
+		return (-2);
+	}
+	*table_size = rsp->data[1] & 0x7F;
+	return 0;
+}
+
+/* _ipmi_get_pef_system_guid - Fetches System GUID from PEF. This configuration
+ * parameter is optional. If data1 is 0x0, then this GUID is ignored by BMC.
+ *
+ * @system_guid - pointer where to store received data.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+int
+_ipmi_get_pef_system_guid(struct ipmi_intf *intf,
+		struct pef_cfgparm_system_guid *system_guid)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct pef_cfgparm_selector psel;
+	if (system_guid == NULL) {
+		return (-3);
+	}
+
+	memset(system_guid, 0, sizeof(struct pef_cfgparm_system_guid));
+	memset(&psel, 0, sizeof(psel));
+	psel.id = PEF_CFGPARM_ID_SYSTEM_GUID;
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
 	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
-	rsp = ipmi_pef_msg_exchange(intf, &req, "Alert policy table size");
-	if (!rsp)
-		return(0);
-	tbl_size = (rsp->data[1] & PEF_POLICY_TABLE_SIZE_MASK);
-	i = (tbl_size * sizeof(struct pef_cfgparm_policy_table_entry));
-	if (!i
-	|| (ptbl = (struct pef_cfgparm_policy_table_entry *)malloc(i)) == NULL)
-		return(0);
 
-	memset(&psel, 0, sizeof(psel));
-	psel.id = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
-	for (ptmp=ptbl, i=1; i<=tbl_size; i++) {
-		psel.set = (i & PEF_POLICY_TABLE_ID_MASK);
-		rsp = ipmi_pef_msg_exchange(intf, &req, "Alert policy table entry");
-		if (!rsp
-		|| i != (rsp->data[1] & PEF_POLICY_TABLE_ID_MASK)) {
-			lprintf(LOG_ERR, " **Error retrieving %s",
-				"Alert policy table entry");
-			free(ptbl);
-			ptbl = NULL;
-			tbl_size = 0;
-			break;
-		}
-		memcpy(ptmp, &rsp->data[1], sizeof(*ptmp));
-		ptmp++;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	} else if (rsp->data_len != 18
+			|| (rsp->data_len - 2) != sizeof(system_guid->guid)) {
+		return (-2);
 	}
-
-	*table = ptbl;
-	return(tbl_size);
+	system_guid->data1 = rsp->data[1] & 0x1;
+	memcpy(system_guid->guid, &rsp->data[2], sizeof(system_guid->guid));
+	return 0;
 }
 
+/* _ipmi_set_pef_filter_entry_cfg - Sets/updates configuration of Entry in Event
+ * Filter Table identified by Filter ID.
+ *
+ * @filter_id - ID of Entry in Event Filter Table to be updated
+ * @filter_cfg - Pointer to configuration data.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_set_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
+		struct pef_cfgparm_filter_table_data_1 *filter_cfg)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t data[3];
+	uint8_t data_len = 3 * sizeof(uint8_t);
+	if (filter_cfg == NULL) {
+		return (-3);
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_SET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&data;
+	req.msg.data_len = data_len;
+
+	memset(&data, 0, data_len);
+	data[0] = PEF_CFGPARM_ID_PEF_FILTER_TABLE_DATA_1;
+	data[1] = filter_id;
+	data[2] = filter_cfg->cfg;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	}
+	return 0;
+}
+
+/* _ipmi_set_pef_policy_entry - Sets/updates Entry in Alert Policy Table identified by
+ * Policy ID.
+ *
+ * @policy_id - Policy ID of Entry in Alert Policy Table to be updated
+ * @policy_entry - Pointer to data.
+ *
+ * returns - negative number means error, positive is a ccode.
+ */
+static int
+_ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
+		struct pef_cfgparm_policy_table_entry *policy_entry)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct pef_cfgparm_set_policy_table_entry payload;
+	if (policy_entry == NULL) {
+		return (-3);
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.cmd = IPMI_CMD_SET_PEF_CONFIG_PARMS;
+	req.msg.data = (uint8_t *)&payload;
+	req.msg.data_len = sizeof(payload);
+
+	memset(&payload, 0, sizeof(payload));
+	payload.param_selector = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
+	payload.policy_id = policy_id & 0x3F;
+	memcpy(&payload.entry, &policy_entry->entry,
+			sizeof(policy_entry->entry));
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		return (-1);
+	} else if (rsp->ccode != 0) {
+		return rsp->ccode;
+	}
+	return 0;
+}
+
+static void
+ipmi_pef_print_oem_lan_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
+{
+	char address[128];
+	int len;
+	int rc;
+	int rlen;
+	int set;
+	uint8_t data[32];
+
+	if (ipmi_get_oem(intf) != IPMI_OEM_DELL) {
+		return;
+	}
+	/* Get # of IPV6 trap destinations */
+	rc = ipmi_mc_getsysinfo(intf, IPMI_SYSINFO_DELL_IPV6_COUNT, 0x00, 0x00, 4, data);
+	if (rc != 0 || dest > data[0]) {
+		return;
+	}
+	ipmi_pef_print_str("Alert destination type", "xxx");
+	ipmi_pef_print_str("PET Community", "xxx");
+	ipmi_pef_print_dec("ACK timeout/retry (secs)", 0);
+	ipmi_pef_print_dec("Retries", 0);
+
+	/* Get IPv6 destination string (may be in multiple sets) */
+	memset(address, 0, sizeof(address));
+	memset(data, 0, sizeof(data));
+	rc = ipmi_mc_getsysinfo(intf, IPMI_SYSINFO_DELL_IPV6_DESTADDR, 0x00, dest, 19, data);
+	if (rc != 0) {
+		return;
+	}
+	/* Total length of IPv6 string */
+	len = data[4];
+	if ((rlen = len) > (IPMI_SYSINFO_SET0_SIZE-3)) {
+		/* First set has 11 bytes */
+		rlen = IPMI_SYSINFO_SET0_SIZE - 3;
+	}
+	memcpy(address, data + 8, rlen);
+	for (set = 1; len > 11; set++) {
+		rc = ipmi_mc_getsysinfo(intf, IPMI_SYSINFO_DELL_IPV6_DESTADDR, set, dest, 19, data);
+		if ((rlen = len - 11) >= (IPMI_SYSINFO_SETN_SIZE - 2)) {
+			/* Remaining sets have 14 bytes */
+			rlen = IPMI_SYSINFO_SETN_SIZE - 2;
+		}
+		memcpy(address + (set * 11), data + 3, rlen);
+		len -= rlen+3;
+	}
+	ipmi_pef_print_str("IPv6 Address", address);
+}
+
+/* TODO - rewrite */
 static void
 ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 {	/*
@@ -333,8 +728,8 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 }
 
 static void
-ipmi_pef_print_serial_dest_dial(struct ipmi_intf * intf, char * label,
-											struct pef_serial_cfgparm_selector * ssel)
+ipmi_pef_print_serial_dest_dial(struct ipmi_intf *intf, char *label,
+		struct pef_serial_cfgparm_selector *ssel)
 {	/*
 	// print a dial string
 	*/
@@ -381,8 +776,8 @@ ipmi_pef_print_serial_dest_dial(struct ipmi_intf * intf, char * label,
 }
 
 static void
-ipmi_pef_print_serial_dest_tap(struct ipmi_intf * intf,
-											struct pef_serial_cfgparm_selector * ssel)
+ipmi_pef_print_serial_dest_tap(struct ipmi_intf *intf,
+		struct pef_serial_cfgparm_selector *ssel)
 {	/*
 	// print TAP destination info
 	*/
@@ -431,28 +826,21 @@ ipmi_pef_print_serial_dest_tap(struct ipmi_intf * intf,
 	/* TODO : additional TAP settings? */
 }
 
+/*
 static void
-ipmi_pef_print_serial_dest_ppp(struct ipmi_intf * intf, 
-											struct pef_serial_cfgparm_selector * ssel)
-{	/*
-	// print PPP destination info
-	*/
-
-	/* TODO */
+ipmi_pef_print_serial_dest_ppp(struct ipmi_intf *intf,
+		struct pef_serial_cfgparm_selector *ssel)
+{
 }
 
 static void
-ipmi_pef_print_serial_dest_callback(struct ipmi_intf * intf,
-												struct pef_serial_cfgparm_selector * ssel)
-{	/*
-	// print callback destination info
-	*/
-
-	/* TODO */
+ipmi_pef_print_serial_dest_callback(struct ipmi_intf *intf,
+		struct pef_serial_cfgparm_selector *ssel)
 }
+*/
 
 static void
-ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
+ipmi_pef_print_serial_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
 {	/*
 	// print Serial/PPP alert destination info
 	*/
@@ -479,6 +867,10 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 	tbl_size = (rsp->data[1] & PEF_SERIAL_DEST_TABLE_SIZE_MASK);
 	if (!dest || tbl_size == 0)	/* Page alerting not supported */
 		return;
+	if (dest > tbl_size) {
+		ipmi_pef_print_oem_lan_dest(intf, ch, dest - tbl_size);
+		return;
+	}
 
 	ssel.id = PEF_SERIAL_CFGPARM_ID_DESTINFO;
 	ssel.set = dest;
@@ -503,11 +895,11 @@ ipmi_pef_print_serial_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 				ipmi_pef_print_serial_dest_tap(intf, &ssel);
 				break;
 			case PEF_SERIAL_DEST_TYPE_PPP:
-				ipmi_pef_print_serial_dest_ppp(intf, &ssel);
+				/* ipmi_pef_print_serial_dest_ppp(intf, &ssel); */
 				break;
 			case PEF_SERIAL_DEST_TYPE_BASIC_CALLBACK:
 			case PEF_SERIAL_DEST_TYPE_PPP_CALLBACK:
-				ipmi_pef_print_serial_dest_callback(intf, &ssel);
+				/* ipmi_pef_print_serial_dest_callback(intf, &ssel); */
 				break;
 		}
 	}
@@ -529,7 +921,7 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 	static char * classes[] = {"Discrete", "Threshold", "OEM"};
 	uint16_t offmask;
 	char * p;
-	int i;
+	unsigned int i;
 	uint8_t t;
 
 	ipmi_pef_print_str("Event severity", 
@@ -574,170 +966,234 @@ ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry * pef, char * bu
 	ipmi_pef_print_str("Event trigger(s)", buf);
 }
 
+/* ipmi_pef_print_filter_entry - Print-out Entry of Event Filter Table. */
 static void
-ipmi_pef_print_entry(struct ipmi_rs * rsp, uint8_t id,
-							struct pef_cfgparm_filter_table_entry * pef)
-{	/*
-	// print a PEF table entry
-	*/
-	uint8_t wrk, set;
+ipmi_pef_print_filter_entry(struct pef_cfgparm_filter_table_entry *filter_entry)
+{
 	char buf[128];
+	uint8_t filter_enabled;
+	uint8_t set;
 
-	ipmi_pef_print_dec("PEF table entry", id);
+	ipmi_pef_print_dec("PEF Filter Table entry", filter_entry->data1);
 
-	wrk = !!(pef->entry.config & PEF_CONFIG_ENABLED);
-	sprintf(buf, "%sactive", (wrk ? "" : "in"));
-	if (pef->entry.config & PEF_CONFIG_PRECONFIGURED)
+	filter_enabled = filter_entry->entry.config & PEF_CONFIG_ENABLED;
+	sprintf(buf, "%sabled", (filter_enabled ? "en" : "dis"));
+
+	switch (filter_entry->entry.config & 0x60) {
+	case 0x40:
 		strcat(buf, ", pre-configured");
-
+		break;
+	case 0x00:
+		strcat(buf, ", configurable");
+		break;
+	default:
+		/* Covers 0x60 and 0x20 which are reserved */
+		strcat(buf, ", reserved");
+		break;
+	}
 	ipmi_pef_print_str("Status", buf);
 
-	if (wrk != 0) {
-		ipmi_pef_print_1xd("Version", rsp->data[0]);
-		ipmi_pef_print_str("Sensor type",
-					ipmi_pef_bit_desc(&pef_b2s_sensortypes, pef->entry.sensor_type));
-
-		if (pef->entry.sensor_number == PEF_SENSOR_NUMBER_MATCH_ANY)
-			ipmi_pef_print_str("Sensor number", "Any");
-		else
-			ipmi_pef_print_dec("Sensor number", pef->entry.sensor_number);
-
-		ipmi_pef_print_event_info(pef, buf);
-		ipmi_pef_print_str("Action",
-					ipmi_pef_bit_desc(&pef_b2s_actions, pef->entry.action));
-
-		if (pef->entry.action & PEF_ACTION_ALERT) {
-			set = (pef->entry.policy_number & PEF_POLICY_NUMBER_MASK);
-			ipmi_pef_print_int("Policy set", set);
-		}
-	}
-}
-
-static void
-ipmi_pef_list_entries(struct ipmi_intf * intf)
-{	/*
-	// list all PEF table entries
-	*/
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	struct pef_cfgparm_selector psel;
-	struct pef_cfgparm_filter_table_entry * pcfg;
-	uint32_t i;
-	uint8_t max_filters;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = IPMI_CMD_GET_PEF_CAPABILITIES;
-	rsp = ipmi_pef_msg_exchange(intf, &req, "PEF capabilities");
-	if (!rsp
-	|| (max_filters = ((struct pef_capabilities *)rsp->data)->tblsize) == 0)
-		return;	/* sssh, not supported */
-
-	memset(&psel, 0, sizeof(psel));
-	psel.id = PEF_CFGPARM_ID_PEF_FILTER_TABLE_ENTRY;
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (uint8_t *)&psel;
-	req.msg.data_len = sizeof(psel);
-	for (i=1; i<=max_filters; i++) {
-		if (i > 1)
-			printf("\n");
-		psel.set = (i & PEF_FILTER_TABLE_ID_MASK);
-		rsp = ipmi_pef_msg_exchange(intf, &req, "PEF table entry");
-		if (!rsp
-		|| (psel.set != (rsp->data[1] & PEF_FILTER_TABLE_ID_MASK))) {
-			lprintf(LOG_ERR, " **Error retrieving %s",
-				"PEF table entry");
-			continue;
-		}
-		pcfg = (struct pef_cfgparm_filter_table_entry *)&rsp->data[1];
-		first_field = 1;
-		ipmi_pef_print_entry(rsp, psel.set, pcfg);
-	}
-}
-
-static void
-ipmi_pef_list_policies(struct ipmi_intf * intf)
-{	/*
-	// list PEF alert policies
-	*/
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	struct pef_cfgparm_policy_table_entry * ptbl = NULL;
-	struct pef_cfgparm_policy_table_entry * ptmp = NULL;
-	uint32_t i;
-	uint8_t wrk, ch, medium, tbl_size;
-
-	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
-	if (!tbl_size) {
-		if (ptbl != NULL) {
-			free(ptbl);
-			ptbl = NULL;
-		}
+	if (!filter_enabled) {
 		return;
 	}
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_APP;
-	req.msg.cmd = IPMI_CMD_GET_CHANNEL_INFO;
-	req.msg.data = &ch;
-	req.msg.data_len = sizeof(ch);
-	for (ptmp=ptbl, i=1; i<=tbl_size; i++, ptmp++) {
-		if ((ptmp->entry.policy & PEF_POLICY_ENABLED) == PEF_POLICY_ENABLED) {
-			if (i > 1)
-				printf("\n");
-			first_field = 1;
-			ipmi_pef_print_dec("Alert policy table entry",
-						(ptmp->data1 & PEF_POLICY_TABLE_ID_MASK));
-			ipmi_pef_print_dec("Policy set",
-						(ptmp->entry.policy & PEF_POLICY_ID_MASK) >> PEF_POLICY_ID_SHIFT);
-			ipmi_pef_print_str("Policy entry rule",
-						ipmi_pef_bit_desc(&pef_b2s_policies, (ptmp->entry.policy & PEF_POLICY_FLAGS_MASK)));
 
-			if (ptmp->entry.alert_string_key & PEF_POLICY_EVENT_SPECIFIC) {
-				ipmi_pef_print_str("Event-specific", "true");
-//				continue;
-			}			
-			wrk = ptmp->entry.chan_dest;
+	ipmi_pef_print_str("Sensor type",
+				ipmi_pef_bit_desc(&pef_b2s_sensortypes,
+					filter_entry->entry.sensor_type));
 
-			/* channel/description */
-			ch = (wrk & PEF_POLICY_CHANNEL_MASK) >> PEF_POLICY_CHANNEL_SHIFT;
-			rsp = ipmi_pef_msg_exchange(intf, &req, "Channel info");
-			if (!rsp || rsp->data[0] != ch) {
-				lprintf(LOG_ERR, " **Error retrieving %s",
-					"Channel info");
-				continue;
-			}
-			medium = rsp->data[1];
-			ipmi_pef_print_dec("Channel number", ch);
-			ipmi_pef_print_str("Channel medium",
-						ipmi_pef_bit_desc(&pef_b2s_ch_medium, medium));
-
-			/* destination/description */
-			wrk &= PEF_POLICY_DESTINATION_MASK;
-			switch (medium) {
-				case PEF_CH_MEDIUM_TYPE_LAN:
-					ipmi_pef_print_lan_dest(intf, ch, wrk);
-					break;
-				case PEF_CH_MEDIUM_TYPE_SERIAL:
-					ipmi_pef_print_serial_dest(intf, ch, wrk);
-					break;
-				default:
-					ipmi_pef_print_dest(intf, ch, wrk);
-					break;
-			}
-		}
+	if (filter_entry->entry.sensor_number == PEF_SENSOR_NUMBER_MATCH_ANY) {
+		ipmi_pef_print_str("Sensor number", "Any");
+	} else {
+		ipmi_pef_print_dec("Sensor number",
+				filter_entry->entry.sensor_number);
 	}
-	free(ptbl);
-	ptbl = NULL;
+
+	ipmi_pef_print_event_info(filter_entry, buf);
+	ipmi_pef_print_str("Action",
+				ipmi_pef_bit_desc(&pef_b2s_actions,
+					filter_entry->entry.action));
+
+	if (filter_entry->entry.action & PEF_ACTION_ALERT) {
+		set = (filter_entry->entry.policy_number & PEF_POLICY_NUMBER_MASK);
+		ipmi_pef_print_int("Policy set", set);
+	}
 }
 
-static void
-ipmi_pef_get_status(struct ipmi_intf * intf)
-{	/*
-	// report the PEF status
-	*/
-	struct ipmi_rs * rsp;
+/* ipmi_pef2_filter_enable - Enable/Disable specific PEF Event Filter.
+ *
+ * @enable - enable(1) or disable(0) PEF Event Filter.
+ * @filter_id - Filter ID of Entry in Event Filter Table.
+ *
+ * returns - 0 on success, any other value means error.
+ */
+static int
+ipmi_pef2_filter_enable(struct ipmi_intf *intf, uint8_t enable, uint8_t filter_id)
+{
+	struct pef_cfgparm_filter_table_data_1 filter_cfg;
+	int rc;
+	uint8_t filter_table_size;
+
+	rc = _ipmi_get_pef_filter_table_size(intf, &filter_table_size);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	} else if (filter_table_size == 0) {
+		lprintf(LOG_ERR, "PEF Filter isn't supported.");
+		return (-1);
+	} else if (filter_id > filter_table_size) {
+		lprintf(LOG_ERR,
+				"PEF Filter ID out of range. Valid range is (1..%d).",
+				filter_table_size);
+		return (-1);
+	}
+
+	memset(&filter_cfg, 0, sizeof(filter_cfg));
+	rc = _ipmi_set_pef_filter_entry_cfg(intf, filter_id, &filter_cfg);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	}
+
+	if (enable != 0) {
+		/* Enable */
+		filter_cfg.cfg |= PEF_FILTER_ENABLED;
+	} else {
+		/* Disable */
+		filter_cfg.cfg &= PEF_FILTER_DISABLED;
+	}
+	rc = _ipmi_set_pef_filter_entry_cfg(intf, filter_id, &filter_cfg);
+	if (eval_ccode(rc) != 0) {
+		lprintf(LOG_ERR, "Failed to %s PEF Filter ID %d.",
+				enable ? "enable" : "disable",
+				filter_id);
+		return (-1);
+	}
+	printf("PEF Filter ID %" PRIu8 " is %s now.\n", filter_id,
+			enable ? "enabled" : "disabled");
+	return rc;
+}
+
+void
+ipmi_pef2_filter_help(void)
+{
+	lprintf(LOG_NOTICE,
+"usage: pef filter help");
+	lprintf(LOG_NOTICE,
+"	pef filter list");
+	lprintf(LOG_NOTICE,
+"       pef filter enable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef filter disable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef filter create <id = 1..n> <params>");
+	lprintf(LOG_NOTICE,
+"       pef filter delete <id = 1..n>");
+}
+
+/* ipmi_pef2_filter - Handle processing of "filter" CLI args. */
+int
+ipmi_pef2_filter(struct ipmi_intf *intf, int argc, char **argv)
+{
+	int rc = 0;
+
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		ipmi_pef2_filter_help();
+		rc = (-1);
+	} else if (!strncmp(argv[0], "help\0", 5)) {
+		ipmi_pef2_filter_help();
+		rc = 0;
+	} else if (!strncmp(argv[0], "list\0", 5)) {
+		rc = ipmi_pef2_list_filters(intf);
+	} else if (!strncmp(argv[0], "enable\0", 7)
+			||(!strncmp(argv[0], "disable\0", 8))) {
+		uint8_t enable;
+		uint8_t filter_id;
+		if (argc != 2) {
+			lprintf(LOG_ERR, "Not enough arguments given.");
+			ipmi_pef2_filter_help();
+			return (-1);
+		}
+		if (str2uchar(argv[1], &filter_id) != 0) {
+			lprintf(LOG_ERR, "Invalid PEF Event Filter ID given: %s", argv[1]);
+			return (-1);
+		} else if (filter_id < 1) {
+			lprintf(LOG_ERR, "PEF Event Filter ID out of range. "
+					"Valid range is <1..255>.");
+			return (-1);
+		}
+		if (!strncmp(argv[0], "enable\0", 7)) {
+			enable = 1;
+		} else {
+			enable = 0;
+		}
+		rc = ipmi_pef2_filter_enable(intf, enable, filter_id);
+	} else if (!strncmp(argv[0], "create\0", 7)) {
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else if (!strncmp(argv[0], "delete\0", 7)) {
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else {
+		lprintf(LOG_ERR, "Invalid PEF Filter command: %s", argv[0]);
+		ipmi_pef2_filter_help();
+		rc = 1;
+	}
+	return rc;
+}
+
+/* ipmi_pef2_get_info - Reports PEF capabilities + System GUID */
+static int
+ipmi_pef2_get_info(struct ipmi_intf *intf)
+{
+	struct pef_capabilities pcap;
+	struct pef_cfgparm_system_guid psys_guid;
+	struct ipmi_guid_t guid;
+	int rc;
+	uint8_t *guid_ptr = NULL;
+	uint8_t policy_table_size;
+
+	rc = _ipmi_get_pef_policy_table_size(intf, &policy_table_size);
+	if (eval_ccode(rc) != 0) {
+		lprintf(LOG_WARN, "Failed to get size of PEF Policy Table.");
+		policy_table_size = 0;
+	}
+	rc = _ipmi_get_pef_capabilities(intf, &pcap);
+	if (eval_ccode(rc) != 0) {
+		lprintf(LOG_ERR, "Failed to get PEF Capabilities.");
+		return (-1);
+	}
+
+	ipmi_pef_print_1xd("Version", pcap.version);
+	ipmi_pef_print_dec("PEF Event Filter count",
+			pcap.event_filter_count);
+	ipmi_pef_print_dec("PEF Alert Policy Table size",
+			policy_table_size);
+
+	rc = _ipmi_get_pef_system_guid(intf, &psys_guid);
+	if (rc != 0x80 && eval_ccode(rc) != 0) {
+		lprintf(LOG_ERR, "Failed to get PEF System GUID. %i", rc);
+		return (-1);
+	} else if (psys_guid.data1 == 0x1) {
+		/* IPMI_CMD_GET_SYSTEM_GUID */
+		guid_ptr = &psys_guid.guid[0];
+	} else {
+		rc = _ipmi_mc_get_guid(intf, &guid);
+		if (rc == 0) {
+			guid_ptr = (uint8_t *)&guid;
+		}
+	}
+	/* Got GUID? */
+	if (guid_ptr) {
+		ipmi_pef_print_guid(guid_ptr);
+	}
+	ipmi_pef_print_flags(&pef_b2s_actions, P_SUPP, pcap.actions);
+	return 0;
+}
+
+/* ipmi_pef2_get_status - TODO rewrite - report the PEF status */
+static int
+ipmi_pef2_get_status(struct ipmi_intf *intf)
+{
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 	char tbuf[40];
@@ -751,7 +1207,7 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	if (!rsp) {
 		lprintf(LOG_ERR, " **Error retrieving %s",
 			"Last S/W processed ID");
-		return;
+		return (-1);
 	}
 	memcpy(&timei, rsp->data, sizeof(timei));
 #if WORDS_BIGENDIAN
@@ -777,7 +1233,7 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	if (!rsp) {
 		lprintf(LOG_ERR, " **Error retrieving %s",
 			"PEF control");
-		return;
+		return (-1);
 	}
 	ipmi_pef_print_flags(&pef_b2s_control, P_ABLE, rsp->data[1]);
 
@@ -786,102 +1242,312 @@ ipmi_pef_get_status(struct ipmi_intf * intf)
 	if (!rsp) {
 		lprintf(LOG_ERR, " **Error retrieving %s",
 			"PEF action");
-		return;
+		return (-1);
 	}
 	ipmi_pef_print_flags(&pef_b2s_actions, P_ACTV, rsp->data[1]);
+	return 0;
 }
 
-static void
-ipmi_pef_get_info(struct ipmi_intf * intf)
-{	/*
-	// report PEF capabilities + System GUID
-	*/
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	struct pef_capabilities * pcap;
-	struct pef_cfgparm_selector psel;
-	struct pef_cfgparm_policy_table_entry * ptbl = NULL;
-	uint8_t * uid;
-	uint8_t actions, tbl_size;
+/* ipmi_pef2_list_filters - List all entries in PEF Event Filter Table. */
+static int
+ipmi_pef2_list_filters(struct ipmi_intf *intf)
+{
+	struct pef_capabilities pcap;
+	struct pef_cfgparm_filter_table_entry filter_entry;
+	int rc;
+	uint8_t i;
 
-	tbl_size = ipmi_pef_get_policy_table(intf, &ptbl);
-	if (ptbl != NULL) {
-		free(ptbl);
-		ptbl = NULL;
+	rc = _ipmi_get_pef_capabilities(intf, &pcap);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	} else if (pcap.event_filter_count == 0) {
+		lprintf(LOG_ERR, "PEF Event Filtering isn't supported.");
+		return (-1);
 	}
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = IPMI_CMD_GET_PEF_CAPABILITIES;
-	rsp = ipmi_pef_msg_exchange(intf, &req, "PEF capabilities");
-	if (!rsp)
-		return;
-	pcap = (struct pef_capabilities *)rsp->data;
-
-	ipmi_pef_print_1xd("Version", pcap->version);
-	ipmi_pef_print_dec("PEF table size", pcap->tblsize);
-	ipmi_pef_print_dec("Alert policy table size", tbl_size);
-	actions = pcap->actions;
-
-	memset(&psel, 0, sizeof(psel));
-	psel.id = PEF_CFGPARM_ID_SYSTEM_GUID;
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = IPMI_CMD_GET_PEF_CONFIG_PARMS;
-	req.msg.data = (uint8_t *)&psel;
-	req.msg.data_len = sizeof(psel);
-	rsp = ipmi_pef_msg_exchange(intf, &req, "System GUID");
-	uid = NULL;
-	if (rsp && (rsp->data[1] & PEF_SYSTEM_GUID_USED_IN_PET))
-		uid = &rsp->data[2];
-	else {
-		memset(&req, 0, sizeof(req));
-		req.msg.netfn = IPMI_NETFN_APP;
-		req.msg.cmd = IPMI_CMD_GET_SYSTEM_GUID;
-		rsp = ipmi_pef_msg_exchange(intf, &req, "System GUID");
-		if (rsp)
-			uid = &rsp->data[0];
-	}
-	if (uid) {		/* got GUID? */
-		if (verbose)
-			printf(pef_fld_fmts[F_UID][0], KYWD_LENGTH, "System GUID",
-					uid[0], uid[1], uid[2], uid[3], uid[4], uid[5], uid[6], uid[7],
-					uid[8], uid[9], uid[10],uid[11],uid[12],uid[13],uid[14],uid[15]);
-		else
-			printf(pef_fld_fmts[F_UID][1],
-					uid[0], uid[1], uid[2], uid[3], uid[4], uid[5], uid[6], uid[7],
-					uid[8], uid[9], uid[10],uid[11],uid[12],uid[13],uid[14],uid[15]);
-	}
-	ipmi_pef_print_flags(&pef_b2s_actions, P_SUPP, actions);
-}
-
-int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv)
-{	/*
-	// PEF subcommand handling
-	*/
-	int help = 0;
-    int rc = 0;
-
-	if (!argc || !strncmp(argv[0], "info", 4))
-		ipmi_pef_get_info(intf);
-	else if (!strncmp(argv[0], "help", 4))
-		help = 1;
-	else if (!strncmp(argv[0], "status", 6))
-		ipmi_pef_get_status(intf);
-	else if (!strncmp(argv[0], "policy", 6))
-		ipmi_pef_list_policies(intf);
-	else if (!strncmp(argv[0], "list", 4))
-		ipmi_pef_list_entries(intf);
-	else {
-		help = 1;
-        rc   = -1;
-		lprintf(LOG_ERR, "Invalid PEF command: '%s'\n", argv[0]);
-	}
-
-	if (help)
-		lprintf(LOG_NOTICE, "PEF commands: info status policy list");
-	else if (!verbose)
+	for (i = 1; i <= pcap.event_filter_count; i++) {
+		first_field = 1;
+		rc = _ipmi_get_pef_filter_entry(intf, i, &filter_entry);
+		if (eval_ccode(rc) != 0) {
+			lprintf(LOG_ERR, "Failed to get PEF Event Filter Entry %i.",
+					i);
+			continue;
+		}
+		ipmi_pef_print_filter_entry(&filter_entry);
 		printf("\n");
+	}
+	return 0;
+}
 
+/* ipmi_pef2_list_policies - List Entries in PEF Alert Policy Table. */
+static int
+ipmi_pef2_list_policies(struct ipmi_intf *intf)
+{
+	struct channel_info_t channel_info;
+	struct pef_cfgparm_policy_table_entry entry;
+	int rc;
+	uint8_t dest;
+	uint8_t i;
+	uint8_t policy_table_size;
+
+	rc = _ipmi_get_pef_policy_table_size(intf, &policy_table_size);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	} else if (policy_table_size == 0) {
+		lprintf(LOG_ERR, "PEF Alert Policy isn't supported.");
+		return (-1);
+	}
+
+	for (i = 1; i <= policy_table_size; i++) {
+		first_field = 1;
+		rc = _ipmi_get_pef_policy_entry(intf, i, &entry);
+		if (eval_ccode(rc) != 0) {
+			continue;
+		}
+
+		ipmi_pef_print_dec("Alert policy table entry",
+				   (entry.data1 & PEF_POLICY_TABLE_ID_MASK));
+		ipmi_pef_print_dec("Policy set",
+				   (entry.entry.policy & PEF_POLICY_ID_MASK) >> PEF_POLICY_ID_SHIFT);
+		ipmi_pef_print_str("State",
+				   entry.entry.policy & PEF_POLICY_ENABLED ? "enabled" : "disabled");
+		ipmi_pef_print_str("Policy entry rule",
+				   ipmi_pef_bit_desc(&pef_b2s_policies,
+					   (entry.entry.policy & PEF_POLICY_FLAGS_MASK)));
+
+		if (entry.entry.alert_string_key & PEF_POLICY_EVENT_SPECIFIC) {
+			ipmi_pef_print_str("Event-specific", "true");
+		}
+		channel_info.channel = ((entry.entry.chan_dest &
+					PEF_POLICY_CHANNEL_MASK) >>
+					PEF_POLICY_CHANNEL_SHIFT);
+		rc = _ipmi_get_channel_info(intf, &channel_info);
+		if (eval_ccode(rc) != 0) {
+			continue;
+		}
+		ipmi_pef_print_dec("Channel number", channel_info.channel);
+		ipmi_pef_print_str("Channel medium",
+				   ipmi_pef_bit_desc(&pef_b2s_ch_medium,
+					   channel_info.medium));
+		dest = entry.entry.chan_dest & PEF_POLICY_DESTINATION_MASK;
+		switch (channel_info.medium) {
+		case PEF_CH_MEDIUM_TYPE_LAN:
+			ipmi_pef_print_lan_dest(intf, channel_info.channel,
+					dest);
+			break;
+		case PEF_CH_MEDIUM_TYPE_SERIAL:
+			ipmi_pef_print_serial_dest(intf, channel_info.channel,
+					dest);
+			break;
+		default:
+			ipmi_pef_print_dest(intf, channel_info.channel, dest);
+			break;
+		}
+		printf("\n");
+	}
+	return 0;
+}
+
+void
+ipmi_pef2_policy_help(void)
+{
+	lprintf(LOG_NOTICE,
+"usage: pef policy help");
+	lprintf(LOG_NOTICE,
+"       pef policy list");
+	lprintf(LOG_NOTICE,
+"       pef policy enable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef policy disable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef policy create <id = 1..n> <params>");
+	lprintf(LOG_NOTICE,
+"       pef policy delete <id = 1..n>");
+}
+
+/* ipmi_pef2_policy_enable - Enable/Disable specific PEF policy
+ *
+ * @enable - enable(1) or disable(0) PEF Alert Policy
+ * @policy_id - Policy ID of Entry in Alert Policy Table.
+ *
+ * returns - 0 on success, any other value means error.
+ */
+static int
+ipmi_pef2_policy_enable(struct ipmi_intf *intf, int enable, uint8_t policy_id)
+{
+	struct pef_cfgparm_policy_table_entry policy_entry;
+	int rc;
+	uint8_t policy_table_size;
+
+	rc = _ipmi_get_pef_policy_table_size(intf, &policy_table_size);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	} else if (policy_table_size == 0) {
+		lprintf(LOG_ERR, "PEF Policy isn't supported.");
+		return (-1);
+	} else if (policy_id > policy_table_size) {
+		lprintf(LOG_ERR,
+				"PEF Policy ID out of range. Valid range is (1..%d).",
+				policy_table_size);
+		return (-1);
+	}
+
+	memset(&policy_entry, 0, sizeof(policy_entry));
+	rc = _ipmi_get_pef_policy_entry(intf, policy_id, &policy_entry);
+	if (eval_ccode(rc) != 0) {
+		return (-1);
+	}
+
+	if (enable != 0) {
+		/* Enable */
+		policy_entry.entry.policy |= PEF_POLICY_ENABLED;
+	} else {
+		/* Disable */
+		policy_entry.entry.policy &= PEF_POLICY_DISABLED;
+	}
+	rc = _ipmi_set_pef_policy_entry(intf, policy_id, &policy_entry);
+	if (eval_ccode(rc) != 0) {
+		lprintf(LOG_ERR, "Failed to %s PEF Policy ID %d.",
+				enable ? "enable" : "disable",
+				policy_id);
+		return (-1);
+	}
+	printf("PEF Policy ID %" PRIu8 " is %s now.\n", policy_id,
+			enable ? "enabled" : "disabled");
+	return rc;
+}
+
+/* ipmi_pef2_policy - Handle processing of "policy" CLI args. */
+int
+ipmi_pef2_policy(struct ipmi_intf *intf, int argc, char **argv)
+{
+	int rc = 0;
+
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		ipmi_pef2_policy_help();
+		rc = (-1);
+	} else if (!strncmp(argv[0], "help\0", 5)) {
+		ipmi_pef2_policy_help();
+		rc = 0;
+	} else if (!strncmp(argv[0], "list\0", 5)) {
+		rc = ipmi_pef2_list_policies(intf);
+	} else if (!strncmp(argv[0], "enable\0", 7)
+			|| !strncmp(argv[0], "disable\0", 8)) {
+		uint8_t enable;
+		uint8_t policy_id;
+		if (argc != 2) {
+			lprintf(LOG_ERR, "Not enough arguments given.");
+			ipmi_pef2_policy_help();
+			return (-1);
+		}
+		if (str2uchar(argv[1], &policy_id) != 0) {
+			lprintf(LOG_ERR, "Invalid PEF Policy ID given: %s", argv[1]);
+			return (-1);
+		} else if (policy_id < 1 || policy_id > 127) {
+			lprintf(LOG_ERR, "PEF Policy ID out of range. Valid range is <1..127>.");
+			return (-1);
+		}
+		if (!strncmp(argv[0], "enable\0", 7)) {
+			enable = 1;
+		} else {
+			enable = 0;
+		}
+		rc = ipmi_pef2_policy_enable(intf, enable, policy_id);
+	} else if (!strncmp(argv[0], "create\0", 7)) {
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else if (!strncmp(argv[0], "delete\0", 7)) {
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else {
+		lprintf(LOG_ERR, "Invalid PEF Policy command: %s", argv[0]);
+		ipmi_pef2_policy_help();
+		rc = 1;
+	}
+	return rc;
+}
+
+/* ipmi_pef2_help - print-out help text. */
+void
+ipmi_pef2_help(void)
+{
+	lprintf(LOG_NOTICE,
+"usage: pef help");
+	lprintf(LOG_NOTICE,
+"       pef capabilities");
+	lprintf(LOG_NOTICE,
+"       pef event <params>");
+	lprintf(LOG_NOTICE,
+"       pef filter list");
+	lprintf(LOG_NOTICE,
+"       pef filter enable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef filter disable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef filter create <id = 1..n> <params>");
+	lprintf(LOG_NOTICE,
+"       pef filter delete <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef info");
+	lprintf(LOG_NOTICE,
+"       pef policy list");
+	lprintf(LOG_NOTICE,
+"       pef policy enable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef policy disable <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef policy create <id = 1..n> <params>");
+	lprintf(LOG_NOTICE,
+"       pef policy delete <id = 1..n>");
+	lprintf(LOG_NOTICE,
+"       pef pet ack <params>");
+	lprintf(LOG_NOTICE,
+"       pef status");
+	lprintf(LOG_NOTICE,
+"       pef timer get");
+	lprintf(LOG_NOTICE,
+"       pef timer set <0x00-0xFF>");
+}
+
+int ipmi_pef_main(struct ipmi_intf *intf, int argc, char **argv)
+{
+	int rc = 0;
+
+	if (argc < 1) {
+		lprintf(LOG_ERR, "Not enough parameters given.");
+		ipmi_pef2_help();
+		rc = (-1);
+	} else if (!strncmp(argv[0], "help\0", 5)) {
+		ipmi_pef2_help();
+		rc = 0;
+	} else if (!strncmp(argv[0], "capabilities\0", 13)) {
+		/* rc = ipmi_pef2_get_capabilities(intf); */
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else if (!strncmp(argv[0], "event\0", 6)) {
+		/* rc = ipmi_pef2_event(intf, (argc - 1), ++argv); */
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else if (!strncmp(argv[0], "filter\0", 7)) {
+		rc = ipmi_pef2_filter(intf, (argc - 1), ++argv);
+	} else if (!strncmp(argv[0], "info\0", 5)) {
+		rc = ipmi_pef2_get_info(intf);
+	} else if (!strncmp(argv[0], "pet\0", 4)) {
+		/* rc = ipmi_pef2_pet(intf, (argc - 1), ++argv); */
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else if (!strncmp(argv[0], "policy\0", 7)) {
+		rc = ipmi_pef2_policy(intf, (argc - 1), ++argv);
+	} else if (!strncmp(argv[0], "status\0", 7)) {
+		rc = ipmi_pef2_get_status(intf);
+	} else if (!strncmp(argv[0], "timer\0", 6)) {
+		/* rc = ipmi_pef2_timer(intf, (argc - 1), ++argv); */
+		lprintf(LOG_ERR, "Not implemented.");
+		rc = 1;
+	} else {
+		lprintf(LOG_ERR, "Invalid PEF command: '%s'\n", argv[0]);
+		rc = (-1);
+	}
 	return rc;
 }

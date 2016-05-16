@@ -40,7 +40,7 @@
 struct pef_capabilities {		/* "get pef capabilities" response */
 	uint8_t version;
 	uint8_t actions;						/* mapped by PEF_ACTION_xxx */
-	uint8_t tblsize;
+	uint8_t event_filter_count;
 };
 
 typedef enum {
@@ -336,6 +336,7 @@ pef_b2s_generic_ER[] __attribute__((unused)) = {
 struct pef_policy_entry {
 #define PEF_POLICY_ID_MASK 0xf0
 #define PEF_POLICY_ID_SHIFT 4
+#define PEF_POLICY_DISABLED 0xF7
 #define PEF_POLICY_ENABLED 0x08
 #define PEF_POLICY_FLAGS_MASK 0x07
 #define PEF_POLICY_FLAGS_MATCH_ALWAYS 0
@@ -510,7 +511,9 @@ struct pef_cfgparm_filter_table_size {
 #pragma pack(1)
 #endif
 struct pef_cfgparm_filter_table_entry {
-#define PEF_FILTER_TABLE_ID_MASK 0x7f
+# define PEF_FILTER_DISABLED 0x7F
+# define PEF_FILTER_ENABLED 0x80
+# define PEF_FILTER_TABLE_ID_MASK 0x7F
 	uint8_t data1;
 	struct pef_table_entry entry;
 } ATTRIBUTE_PACKING;
@@ -522,8 +525,8 @@ struct pef_cfgparm_filter_table_entry {
 #pragma pack(1)
 #endif
 struct pef_cfgparm_filter_table_data_1 {
-	uint8_t data1;
-	uint8_t data2;
+	uint8_t id;
+	uint8_t cfg;
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -936,12 +939,20 @@ BIT_DESC_MAP_LIST,
 #endif
 
 #define IPMI_CMD_GET_PEF_CAPABILITIES 0x10
+#define IPMI_CMD_SET_PEF_CONFIG_PARMS 0x12
 #define IPMI_CMD_GET_PEF_CONFIG_PARMS 0x13
 #define IPMI_CMD_GET_LAST_PROCESSED_EVT_ID 0x15
 #define IPMI_CMD_GET_SYSTEM_GUID 0x37
 #define IPMI_CMD_GET_CHANNEL_INFO 0x42
 #define IPMI_CMD_LAN_GET_CONFIG 0x02
 #define IPMI_CMD_SERIAL_GET_CONFIG 0x11
+
+struct pef_cfgparm_set_policy_table_entry
+{
+	uint8_t param_selector;
+	uint8_t policy_id;
+	struct pef_policy_entry entry;
+} ATTRIBUTE_PACKING;
 
 const char * ipmi_pef_bit_desc(struct bit_desc_map * map, uint32_t val);
 void ipmi_pef_print_flags(struct bit_desc_map * map, flg_e type, uint32_t val);
