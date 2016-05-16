@@ -1344,7 +1344,6 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 	if (spd_data[2] == 0x0B)	/* DDR3 SDRAM */
 	{
 		int iPN;
-		char *pchPN = spd_data+128;
 		int sdram_cap = 0;
 		int pri_bus_width = 0;
 		int sdram_width = 0;
@@ -1424,9 +1423,8 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		spd_data[122], spd_data[123], spd_data[124], spd_data[125]);
 
 		printf(" Part Number           : ");
-		for (iPN=0; iPN < 19; iPN++)
-		{
-			printf( "%c", *pchPN++ );
+		for (iPN = 128; iPN < 146; iPN++) {
+			printf("%c", spd_data[iPN]);
 		}
 		printf("\n");
 	} else if (spd_data[2] == 0x0C)	/* DDR4 SDRAM */
