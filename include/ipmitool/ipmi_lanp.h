@@ -127,7 +127,7 @@ static struct lan_param {
 	{ IPMI_LANP_DHCP_SERVER_MAC,	6,	"DHDP Server MAC", NULL, 0},
 	{ IPMI_LANP_DHCP_ENABLE,	1,	"DHCP Enable", NULL, 0 }, /* 30 */
 	{ IPMI_LANP_CHAN_ACCESS_MODE,	2,	"Channel Access Mode", NULL, 0 },
-	{ -1 }
+	{ -1, -1, "", NULL, -1 }
 };
 
 int  ipmi_lanp_main(struct ipmi_intf *, int, char **);
