@@ -1340,7 +1340,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 	printf(" Memory Type           : %s\n",
 	       val2str(spd_data[2], spd_memtype_vals));
-	
+
 	if (spd_data[2] == 0x0B)	/* DDR3 SDRAM */
 	{
 		int iPN;
@@ -1353,7 +1353,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 		if (len < 148)
 			return -1; /* we need first 91 bytes to do our thing */
-	
+
 
 		sdram_cap = ldexp(256,(spd_data[4]&15));
 		pri_bus_width = ldexp(8,(spd_data[8]&7));
@@ -1366,7 +1366,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		printf(" SDRAM Device Width    : %d bits\n", sdram_width );
 		printf(" Number of Ranks       : %d\n", ranks );
 		printf(" Memory size           : %d MB\n", mem_size );
-		
+
 		/* printf(" Memory Density        : %s\n", val2str(spd_data[4]&15, ddr3_density_vals)); */
 		printf(" 1.5 V Nominal Op      : %s\n", (((spd_data[6]&1) != 0) ? "No":"Yes" ) );
 		printf(" 1.35 V Nominal Op     : %s\n", (((spd_data[6]&2) != 0) ? "No":"Yes" ) );
@@ -1417,15 +1417,15 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 		}
 
-		printf(" Manufacture Date      : year %c%c week %c%c\n", 
+		printf(" Manufacture Date      : year %c%c week %c%c\n",
 		'0'+(spd_data[120]>>4), '0'+(spd_data[120]&15), '0'+(spd_data[121]>>4), '0'+(spd_data[121]&15) );
-	
+
 		printf(" Serial Number         : %02x%02x%02x%02x\n",
 		spd_data[122], spd_data[123], spd_data[124], spd_data[125]);
-	
+
 		printf(" Part Number           : ");
 		for (iPN=0; iPN < 19; iPN++)
-		{	
+		{
 			printf( "%c", *pchPN++ );
 		}
 		printf("\n");
@@ -1552,7 +1552,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		val2str(spd_data[8], spd_voltage_vals));
 		printf(" Error Detect/Cor      : %s\n",
 		val2str(spd_data[11], spd_config_vals));
-	
+
 		/* handle jedec table bank continuation values */
 		printf(" Manufacturer          : ");
 		if (spd_data[64] != 0x7f)
@@ -1603,7 +1603,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 			part[18] = 0;
 			printf(" Part Number           : %s\n", part);
 		}
-	
+
 		printf(" Serial Number         : %02x%02x%02x%02x\n",
 		spd_data[95], spd_data[96], spd_data[97], spd_data[98]);
 	}
