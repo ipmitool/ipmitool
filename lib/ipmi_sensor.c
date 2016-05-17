@@ -200,14 +200,14 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 			printf(" Entity ID             : %d.%d\n",
 			       sensor->entity.id, sensor->entity.instance);
 			printf(" Sensor Type (Discrete): %s\n",
-			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
+			       ipmi_get_sensor_type(intf, sensor->sensor.
 							     type));
 			if( sr->s_reading_valid )
 			{
 				if (sr->s_has_analog_value) {
 					printf(" Sensor Reading        : %s %s\n", sr->s_a_str, sr->s_a_units);
 				}
-				ipmi_sdr_print_discrete_state("States Asserted",
+				ipmi_sdr_print_discrete_state(intf, "States Asserted",
 							sensor->sensor.type,
 							sensor->event_type,
 							sr->s_data2,
@@ -315,7 +315,7 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 			       sensor->entity.id, sensor->entity.instance);
 
 			printf(" Sensor Type (Threshold)  : %s\n",
-			       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
+			       ipmi_get_sensor_type(intf, sensor->sensor.
 							     type));
 
 			printf(" Sensor Reading        : ");

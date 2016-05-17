@@ -689,32 +689,6 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 	return rsp;
 }
 
-/* ipmi_sdr_get_sensor_type_desc  -  Get sensor type descriptor
- *
- * @type:	ipmi sensor type
- *
- * returns
- *   string from sensor_type_desc
- *   or "reserved"
- *   or "OEM reserved"
- */
-const char *
-ipmi_sdr_get_sensor_type_desc(const uint8_t type)
-{
-	static char desc[32];
-	memset(desc, 0, 32);
-	if (type <= SENSOR_TYPE_MAX)
-		return sensor_type_desc[type];
-	if (type < 0xc0)
-		snprintf(desc, 32, "reserved #%02x", type);
-	else
-   {
-      snprintf(desc, 32, oemval2str(sdriana,type,ipmi_oem_sdr_type_vals),
-                                                                   type);
-   }
-	return desc;
-}
-
 /* ipmi_sdr_get_thresh_status  -  threshold status indicator
  *
  * @rsp:		response from Get Sensor Reading comand
@@ -1014,21 +988,21 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 	switch (numeric_fmt) {
 	case DISCRETE_SENSOR:
 		if (rsp->data_len == 2) {
-			ipmi_sdr_print_discrete_state("Assertion Events",
+			ipmi_sdr_print_discrete_state(intf, "Assertion Events",
 						      sensor_type, event_type,
 						      rsp->data[1], 0);
 		} else if (rsp->data_len > 2) {
-			ipmi_sdr_print_discrete_state("Assertion Events",
+			ipmi_sdr_print_discrete_state(intf, "Assertion Events",
 						      sensor_type, event_type,
 						      rsp->data[1],
 						      rsp->data[2]);
 		}
 		if (rsp->data_len == 4) {
-			ipmi_sdr_print_discrete_state("Deassertion Events",
+			ipmi_sdr_print_discrete_state(intf, "Deassertion Events",
 						      sensor_type, event_type,
 						      rsp->data[3], 0);
 		} else if (rsp->data_len > 4) {
-			ipmi_sdr_print_discrete_state("Deassertion Events",
+			ipmi_sdr_print_discrete_state(intf, "Deassertion Events",
 						      sensor_type, event_type,
 						      rsp->data[3],
 						      rsp->data[4]);
@@ -1081,22 +1055,23 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 }
 
 static int
-ipmi_sdr_print_sensor_mask(struct sdr_record_mask *mask,
-			   uint8_t sensor_type,
-			   uint8_t event_type, int numeric_fmt)
+ipmi_sdr_print_sensor_mask(struct ipmi_intf *intf,
+			struct sdr_record_mask *mask,
+			uint8_t sensor_type,
+			uint8_t event_type, int numeric_fmt)
 {
 	/* iceblink - don't print some event status fields - CVS rev1.53 */
 	return 0;
 
 	switch (numeric_fmt) {
 	case DISCRETE_SENSOR:
-		ipmi_sdr_print_discrete_state("Assert Event Mask", sensor_type,
+		ipmi_sdr_print_discrete_state(intf, "Assert Event Mask", sensor_type,
 					      event_type,
 					      mask->type.discrete.
 					      assert_event & 0xff,
 					      (mask->type.discrete.
 					       assert_event & 0xff00) >> 8);
-		ipmi_sdr_print_discrete_state("Deassert Event Mask",
+		ipmi_sdr_print_discrete_state(intf, "Deassert Event Mask",
 					      sensor_type, event_type,
 					      mask->type.discrete.
 					      deassert_event & 0xff,
@@ -1224,21 +1199,21 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 	case DISCRETE_SENSOR:
 		/* discrete */
 		if (rsp->data_len == 2) {
-			ipmi_sdr_print_discrete_state("Assertions Enabled",
+			ipmi_sdr_print_discrete_state(intf, "Assertions Enabled",
 						      sensor_type, event_type,
 						      rsp->data[1], 0);
 		} else if (rsp->data_len > 2) {
-			ipmi_sdr_print_discrete_state("Assertions Enabled",
+			ipmi_sdr_print_discrete_state(intf, "Assertions Enabled",
 						      sensor_type, event_type,
 						      rsp->data[1],
 						      rsp->data[2]);
 		}
 		if (rsp->data_len == 4) {
-			ipmi_sdr_print_discrete_state("Deassertions Enabled",
+			ipmi_sdr_print_discrete_state(intf, "Deassertions Enabled",
 						      sensor_type, event_type,
 						      rsp->data[3], 0);
 		} else if (rsp->data_len > 4) {
-			ipmi_sdr_print_discrete_state("Deassertions Enabled",
+			ipmi_sdr_print_discrete_state(intf, "Deassertions Enabled",
 						      sensor_type, event_type,
 						      rsp->data[3],
 						      rsp->data[4]);
@@ -1381,8 +1356,9 @@ print_sensor_min_max(struct sdr_record_full_sensor *full)
  * returns void
  */
 static void
-print_csv_discrete(struct sdr_record_common_sensor    *sensor,
-		   const struct sensor_reading *sr)
+print_csv_discrete(struct ipmi_intf *intf,
+		struct sdr_record_common_sensor *sensor,
+		const struct sensor_reading *sr)
 {
 	if (!sr->s_reading_valid  || sr->s_reading_unavailable) {
 		printf("%02Xh,ns,%d.%d,No Reading",
@@ -1400,7 +1376,7 @@ print_csv_discrete(struct sdr_record_common_sensor    *sensor,
 	printf("ok,%d.%d,",
 	       sensor->entity.id,
 	       sensor->entity.instance);
-	ipmi_sdr_print_discrete_state_mini(NULL, ", ",
+	ipmi_sdr_print_discrete_state_mini(intf, NULL, ", ",
 		sensor->sensor.type,
 		sensor->event_type,
 		sr->s_data2,
@@ -1567,7 +1543,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		printf("%s,", sr->s_id);
 		if (!IS_THRESHOLD_SENSOR(sensor)) {
 			/* Discrete/Non-Threshold */
-			print_csv_discrete(sensor, sr);
+			print_csv_discrete(intf, sensor, sr);
 			printf("\n");
 		}
 		else {
@@ -1581,7 +1557,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 					printf("%s,%s", sr->s_a_units,
 					       ipmi_sdr_get_thresh_status(sr, "ns"));
 				} else { /* Discrete/Threshold */
-					print_csv_discrete(sensor, sr);
+					print_csv_discrete(intf, sensor, sr);
 				}
 			} else {
 				printf(",,ns");
@@ -1589,10 +1565,9 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 
 			if (verbose) {
 				printf(",%d.%d,%s,%s,",
-				       sensor->entity.id, sensor->entity.instance,
-				       val2str(sensor->entity.id, entity_id_vals),
-				       ipmi_sdr_get_sensor_type_desc(sensor->sensor.
-								     type));
+					sensor->entity.id, sensor->entity.instance,
+					val2str(sensor->entity.id, entity_id_vals),
+					ipmi_get_sensor_type(intf, sensor->sensor.type));
 
 				if (sr->full) {
 					SENSOR_PRINT_CSV(sr->full, sr->full->analog_flag.nominal_read,
@@ -1712,7 +1687,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 					printf("%s %s", sr->s_a_str, sr->s_a_units);
 					header = ", ";
 				}
-				ipmi_sdr_print_discrete_state_mini(header, ", ",
+				ipmi_sdr_print_discrete_state_mini(intf, header, ", ",
 								   sensor->sensor.type,
 								   sensor->event_type,
 								   sr->s_data2,
@@ -1740,7 +1715,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 	if (!IS_THRESHOLD_SENSOR(sensor)) {
 		/* Discrete */
 		printf(" Sensor Type (Discrete): %s (0x%02x)\n",
-				ipmi_sdr_get_sensor_type_desc(sensor->sensor.type),
+				ipmi_get_sensor_type(intf, sensor->sensor.type),
 				sensor->sensor.type);
 		lprintf(LOG_DEBUG, " Event Type Code       : 0x%02x",
 			sensor->event_type);
@@ -1776,12 +1751,12 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 			break;
 		}
 
-		ipmi_sdr_print_discrete_state("States Asserted",
+		ipmi_sdr_print_discrete_state(intf, "States Asserted",
 					      sensor->sensor.type,
 					      sensor->event_type,
 					      sr->s_data2,
 					      sr->s_data3);
-		ipmi_sdr_print_sensor_mask(&sensor->mask, sensor->sensor.type,
+		ipmi_sdr_print_sensor_mask(intf, &sensor->mask, sensor->sensor.type,
 					   sensor->event_type, DISCRETE_SENSOR);
 		ipmi_sdr_print_sensor_event_status(intf,
 						   sensor->keys.sensor_num,
@@ -1804,7 +1779,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		return 0;	/* done */
 	}
 	printf(" Sensor Type (Threshold)  : %s (0x%02x)\n",
-		ipmi_sdr_get_sensor_type_desc(sensor->sensor.type),
+		ipmi_get_sensor_type(intf, sensor->sensor.type),
 		sensor->sensor.type);
 
 	printf(" Sensor Reading        : ");
@@ -1945,7 +1920,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 		printf("\n");
 	}
 
-	ipmi_sdr_print_sensor_mask(&sensor->mask,
+	ipmi_sdr_print_sensor_mask(intf, &sensor->mask,
 				   sensor->sensor.type,
 				   sensor->event_type, ANALOG_SENSOR);
 	ipmi_sdr_print_sensor_event_status(intf,
@@ -1988,46 +1963,43 @@ get_offset(uint8_t x)
  * no meaningful return value
  */
 void
-ipmi_sdr_print_discrete_state_mini(const char *header, const char *separator,
+ipmi_sdr_print_discrete_state_mini(struct ipmi_intf *intf,
+				   const char *header, const char *separator,
 				   uint8_t sensor_type, uint8_t event_type,
 				   uint8_t state1, uint8_t state2)
 {
-	uint8_t typ;
-	struct ipmi_event_sensor_types *evt;
+	const struct ipmi_event_sensor_types *evt;
 	int pre = 0, c = 0;
 
 	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
 
-	if (event_type == 0x6f) {
-		evt = sensor_specific_types;
-		typ = sensor_type;
-	} else {
-		evt = generic_event_types;
-		typ = event_type;
-	}
-
 	if (header)
 		printf("%s", header);
 
-	for (; evt->type != NULL; evt++) {
-		if ((evt->code != typ) ||
-			(evt->data != 0xFF))
+	for (evt = ipmi_get_first_event_sensor_type(intf, sensor_type, event_type);
+			evt != NULL; evt = ipmi_get_next_event_sensor_type(evt)) {
+		if (evt->data != 0xFF) {
 			continue;
+		}
 
 		if (evt->offset > 7) {
 			if ((1 << (evt->offset - 8)) & (state2 & 0x7f)) {
-				if (pre++ != 0)
+				if (pre++ != 0) {
 					printf("%s", separator);
-				if (evt->desc)
+				}
+				if (evt->desc) {
 					printf("%s", evt->desc);
+				}
 			}
 		} else {
 			if ((1 << evt->offset) & state1) {
-				if (pre++ != 0)
+				if (pre++ != 0) {
 					printf("%s", separator);
-				if (evt->desc)
+				}
+				if (evt->desc) {
 					printf("%s", evt->desc);
+				}
 			}
 		}
 		c++;
@@ -2045,32 +2017,24 @@ ipmi_sdr_print_discrete_state_mini(const char *header, const char *separator,
  * no meaningful return value
  */
 void
-ipmi_sdr_print_discrete_state(const char *desc,
+ipmi_sdr_print_discrete_state(struct ipmi_intf *intf, const char *desc,
 			      uint8_t sensor_type, uint8_t event_type,
 			      uint8_t state1, uint8_t state2)
 {
-	uint8_t typ;
-	struct ipmi_event_sensor_types *evt;
+	const struct ipmi_event_sensor_types *evt;
 	int pre = 0, c = 0;
 
 	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
 
-	if (event_type == 0x6f) {
-		evt = sensor_specific_types;
-		typ = sensor_type;
-	} else {
-		evt = generic_event_types;
-		typ = event_type;
-	}
-
-	for (; evt->type != NULL; evt++) {
-		if ((evt->code != typ) ||
-			(evt->data != 0xFF))
+	for (evt = ipmi_get_first_event_sensor_type(intf, sensor_type, event_type);
+			evt != NULL; evt = ipmi_get_next_event_sensor_type(evt)) {
+		if (evt->data != 0xFF) {
 			continue;
+		}
 
 		if (pre == 0) {
-			printf(" %-21s : %s\n", desc, evt->type);
+			printf(" %-21s : %s\n", desc, ipmi_get_sensor_type(intf, sensor_type));
 			pre = 1;
 		}
 
@@ -2129,7 +2093,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 		       sensor->entity.id, sensor->entity.instance,
 		       val2str(sensor->entity.id, entity_id_vals));
 		printf("Sensor Type            : %s (0x%02x)\n",
-			ipmi_sdr_get_sensor_type_desc(sensor->sensor_type),
+			ipmi_get_sensor_type(intf, sensor->sensor_type),
 			sensor->sensor_type);
 		lprintf(LOG_DEBUG, "Event Type Code        : 0x%02x",
 			sensor->event_type);
@@ -2509,8 +2473,8 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
  * returns -1 on error
  */
 int
-ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id, 
-                                  uint8_t type,uint8_t * raw)
+ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf, uint16_t id,
+                                  uint8_t type, uint8_t *raw)
 {
    union {
       struct sdr_record_full_sensor *full;

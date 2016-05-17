@@ -68,8 +68,7 @@ extern const struct oemvalstr picmg_busres_shmc_status_vals[];
 /* these are similar, expect that the lookup takes the IANA number
    as first parameter */
 extern const struct oemvalstr ipmi_oem_product_info[];
-extern const struct oemvalstr ipmi_oem_sdr_type_vals[];
-
-
+extern const char *ipmi_generic_sensor_type_vals[];
+extern const struct oemvalstr ipmi_oem_sensor_type_vals[];
 
 #endif /*IPMI_STRINGS_H*/

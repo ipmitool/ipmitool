@@ -239,8 +239,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		return;
 	}
 
-	type = ipmi_sel_get_sensor_type_offset(evt->sel_type.standard_type.sensor_type,
-					       evt->sel_type.standard_type.event_data[0]);
+	type = ipmi_get_sensor_type(intf, evt->sel_type.standard_type.sensor_type);
 
 	ipmi_get_event_desc(intf, evt, &desc);
 

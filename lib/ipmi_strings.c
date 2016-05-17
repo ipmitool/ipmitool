@@ -70,6 +70,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_BROADCOM,               "Broadcom Corporation" },
    { IPMI_OEM_ERICSSON,               "Ericsson AB"},
    { IPMI_OEM_QUANTA,                 "Quanta" },
+   { IPMI_OEM_VITA,                   "VITA" },
    { IPMI_OEM_ADVANTECH,              "Advantech" },
    /************************************************************************
     * Add ID String for IANA Enterprise Number of IBM & ADLINK
@@ -286,34 +287,63 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { 0xffffff        , 0xffff , NULL },
  };
 
-const struct oemvalstr ipmi_oem_sdr_type_vals[] = {
+const char *ipmi_generic_sensor_type_vals[] = {
+    "reserved",
+    "Temperature", "Voltage", "Current", "Fan",
+    "Physical Security", "Platform Security", "Processor",
+    "Power Supply", "Power Unit", "Cooling Device", "Other",
+    "Memory", "Drive Slot / Bay", "POST Memory Resize",
+    "System Firmwares", "Event Logging Disabled", "Watchdog1",
+    "System Event", "Critical Interrupt", "Button",
+    "Module / Board", "Microcontroller", "Add-in Card",
+    "Chassis", "Chip Set", "Other FRU", "Cable / Interconnect",
+    "Terminator", "System Boot Initiated", "Boot Error",
+    "OS Boot", "OS Critical Stop", "Slot / Connector",
+    "System ACPI Power State", "Watchdog2", "Platform Alert",
+    "Entity Presence", "Monitor ASIC", "LAN",
+    "Management Subsys Health", "Battery", "Session Audit",
+    "Version Change", "FRU State",
+    NULL
+};
+
+const struct oemvalstr ipmi_oem_sensor_type_vals[] = {
    /* Keep OEM grouped together */
-   { IPMI_OEM_KONTRON , 0xC0 , "OEM Firmware Info" },
-   { IPMI_OEM_KONTRON , 0xC2 , "OEM Init Agent" },
-   { IPMI_OEM_KONTRON , 0xC3 , "OEM IPMBL Link State" },
-   { IPMI_OEM_KONTRON , 0xC4 , "OEM Board Reset" },
-   { IPMI_OEM_KONTRON , 0xC5 , "OEM FRU Information Agent" },
-   { IPMI_OEM_KONTRON , 0xC6 , "OEM POST Value Sensor" },
-   { IPMI_OEM_KONTRON , 0xC7 , "OEM FWUM Status" },
-   { IPMI_OEM_KONTRON , 0xC8 , "OEM Switch Mngt Software Status" },
-   { IPMI_OEM_KONTRON , 0xC9 , "OEM OEM Diagnostic Status" },
-   { IPMI_OEM_KONTRON , 0xCA , "OEM Component Firmware Upgrade" },
-   { IPMI_OEM_KONTRON , 0xCB , "OEM FRU Over Current" },
-   { IPMI_OEM_KONTRON , 0xCC , "OEM FRU Sensor Error" },
-   { IPMI_OEM_KONTRON , 0xCD , "OEM FRU Power Denied" },
-   { IPMI_OEM_KONTRON , 0xCE , "OEM Reserved" },
-   { IPMI_OEM_KONTRON , 0xCF , "OEM Board Reset" },
-   { IPMI_OEM_KONTRON , 0xD0 , "OEM Clock Resource Control" },
-   { IPMI_OEM_KONTRON , 0xD1 , "OEM Power State" },
-   { IPMI_OEM_KONTRON , 0xD2 , "OEM FRU Mngt Power Failure" },
-   { IPMI_OEM_KONTRON , 0xD3 , "OEM Jumper Status" },
-   { IPMI_OEM_KONTRON , 0xF2 , "OEM RTM Module Hotswap" },
+   { IPMI_OEM_KONTRON, 0xC0, "Firmware Info" },
+   { IPMI_OEM_KONTRON, 0xC2, "Init Agent" },
+   { IPMI_OEM_KONTRON, 0xC2, "Board Reset(cPCI)" },
+   { IPMI_OEM_KONTRON, 0xC3, "IPMBL Link State" },
+   { IPMI_OEM_KONTRON, 0xC4, "Board Reset" },
+   { IPMI_OEM_KONTRON, 0xC5, "FRU Information Agent" },
+   { IPMI_OEM_KONTRON, 0xC6, "POST Value Sensor" },
+   { IPMI_OEM_KONTRON, 0xC7, "FWUM Status" },
+   { IPMI_OEM_KONTRON, 0xC8, "Switch Mngt Software Status" },
+   { IPMI_OEM_KONTRON, 0xC9, "OEM Diagnostic Status" },
+   { IPMI_OEM_KONTRON, 0xCA, "Component Firmware Upgrade" },
+   { IPMI_OEM_KONTRON, 0xCB, "FRU Over Current" },
+   { IPMI_OEM_KONTRON, 0xCC, "FRU Sensor Error" },
+   { IPMI_OEM_KONTRON, 0xCD, "FRU Power Denied" },
+   { IPMI_OEM_KONTRON, 0xCE, "Reserved" },
+   { IPMI_OEM_KONTRON, 0xCF, "Board Reset" },
+   { IPMI_OEM_KONTRON, 0xD0, "Clock Resource Control" },
+   { IPMI_OEM_KONTRON, 0xD1, "Power State" },
+   { IPMI_OEM_KONTRON, 0xD2, "FRU Mngt Power Failure" },
+   { IPMI_OEM_KONTRON, 0xD3, "Jumper Status" },
+   { IPMI_OEM_KONTRON, 0xF2, "RTM Module Hotswap" },
+   /* PICMG Sensor Types */
+   { IPMI_OEM_PICMG, 0xF0, "FRU Hot Swap" },
+   { IPMI_OEM_PICMG, 0xF1,"IPMB Physical Link" },
+   { IPMI_OEM_PICMG, 0xF2, "Module Hot Swap" },
+   { IPMI_OEM_PICMG, 0xF3, "Power Channel Notification" },
+   { IPMI_OEM_PICMG, 0xF4, "Telco Alarm Input" },
+   /* VITA 46.11 Sensor Types */
+   { IPMI_OEM_VITA, 0xF0, "FRU State" },
+   { IPMI_OEM_VITA, 0xF1, "System IPMB Link" },
+   { IPMI_OEM_VITA, 0xF2, "FRU Health" },
+   { IPMI_OEM_VITA, 0xF3, "FRU Temperature" },
+   { IPMI_OEM_VITA, 0xF4, "Payload Test Results" },
+   { IPMI_OEM_VITA, 0xF5, "Payload Test Status" },
 
-   { IPMI_OEM_PICMG   , 0xF0 , "PICMG FRU Hotswap" },
-   { IPMI_OEM_PICMG   , 0xF1 , "PICMG IPMB0 Link State" },
-   { IPMI_OEM_PICMG   , 0xF2 , "PICMG Module Hotswap" },
-
-   { 0xffffff,            0x00,  NULL }
+   { 0xffffff,      0x00,  NULL }
 };
 
 const struct valstr ipmi_netfn_vals[] = {

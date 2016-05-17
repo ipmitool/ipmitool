@@ -207,18 +207,20 @@ ipmi_send_platform_event_num(struct ipmi_intf * intf, int num)
 }
 
 static int
-ipmi_event_find_offset(uint8_t code,
-		       struct ipmi_event_sensor_types * evt,
-		       char * desc)
+ipmi_event_find_offset(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t event_type, char *desc)
 {
-	if (desc == NULL || code == 0)
-		return 0x00;
+	const struct ipmi_event_sensor_types *evt;
 
-	while (evt->type) {
-		if (evt->code == code && evt->desc != NULL &&
-		    strncasecmp(desc, evt->desc, __maxlen(desc, evt->desc)) == 0)
+	if (desc == NULL || sensor_type == 0  || event_type == 0) {
+		return 0x00;
+	}
+
+	for (evt = ipmi_get_first_event_sensor_type(intf, sensor_type, event_type);
+			evt != NULL; evt = ipmi_get_next_event_sensor_type(evt)) {
+		if (evt->desc != NULL &&
+			strncasecmp(desc, evt->desc, __maxlen(desc, evt->desc)) == 0) {
 			return evt->offset;
-		evt++;
+		}
 	}
 
 	lprintf(LOG_WARN, "Unable to find matching event offset for '%s'", desc);
@@ -226,11 +228,11 @@ ipmi_event_find_offset(uint8_t code,
 }
 
 static void
-print_sensor_states(uint8_t sensor_type, uint8_t event_type)
+print_sensor_states(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t event_type)
 {
-	ipmi_sdr_print_discrete_state_mini(
+	ipmi_sdr_print_discrete_state_mini(intf,
 			"Sensor States: \n  ", "\n  ", sensor_type,
-					   event_type, 0xff, 0xff);
+			event_type, 0xff, 0xff);
 	printf("\n");
 }
 
@@ -400,7 +402,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		 * print list of available states for this sensor
 		 */
 		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
-			print_sensor_states(emsg.sensor_type, emsg.event_type);
+			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			printf("Sensor State Shortcuts:\n");
 			for (x = 0; x < sizeof(digi_on)/sizeof(*digi_on); x++) {
 				printf("  %-9s  %-9s\n", digi_on[x], digi_off[x]);
@@ -422,8 +424,8 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 			}
 		}
 		if (off == 0) {
-			off = ipmi_event_find_offset(
-				emsg.event_type, generic_event_types, state);
+			off = ipmi_event_find_offset(intf,
+				emsg.sensor_type, emsg.event_type, state);
 			if (off < 0)
 				return -1;
 			emsg.event_data[0] = off;
@@ -440,11 +442,11 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		 * print list of available states for this sensor
 		 */
 		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
-			print_sensor_states(emsg.sensor_type, emsg.event_type);
+			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
-		off = ipmi_event_find_offset(
-			emsg.event_type, generic_event_types, state);
+		off = ipmi_event_find_offset(intf,
+			emsg.sensor_type, emsg.event_type, state);
 		if (off < 0)
 			return -1;
 		emsg.event_data[0] = off;
@@ -460,11 +462,11 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		 * print list of available states for this sensor
 		 */
 		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
-			print_sensor_states(emsg.sensor_type, emsg.event_type);
+			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
-		off = ipmi_event_find_offset(
-			emsg.sensor_type, sensor_specific_types, state);
+		off = ipmi_event_find_offset(intf,
+			emsg.sensor_type, emsg.event_type, state);
 		if (off < 0)
 			return -1;
 		emsg.event_data[0] = off;
