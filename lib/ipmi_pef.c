@@ -383,7 +383,7 @@ _ipmi_get_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	memset(policy_entry, 0, dest_size);
 	memset(&data, 0, data_len);
 	data[0] = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
-	data[1] = policy_id & 0x7F;
+	data[1] = policy_id & PEF_POLICY_TABLE_ID_MASK;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
@@ -588,7 +588,7 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 
 	memset(&payload, 0, sizeof(payload));
 	payload.param_selector = PEF_CFGPARM_ID_PEF_ALERT_POLICY_TABLE_ENTRY;
-	payload.policy_id = policy_id & 0x3F;
+	payload.policy_id = policy_id & PEF_POLICY_TABLE_ID_MASK;
 	memcpy(&payload.entry, &policy_entry->entry,
 			sizeof(policy_entry->entry));
 
