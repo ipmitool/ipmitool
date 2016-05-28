@@ -59,7 +59,7 @@ enum LANPLUS_SESSION_STATE {
 
 
 #define IPMI_AUTHCODE_BUFFER_SIZE 20
-#define IPMI_SIK_BUFFER_SIZE      20
+#define IPMI_SIK_BUFFER_SIZE      IPMI_MAX_MD_SIZE
 #define IPMI_KG_BUFFER_SIZE       21 /* key plus null byte */
 
 struct ipmi_session_params {
@@ -131,10 +131,13 @@ struct ipmi_session {
 		uint8_t requested_role;   /* As sent in the RAKP 1 message */
 		uint8_t rakp2_return_code;
 
-		uint8_t sik[IPMI_SIK_BUFFER_SIZE]; /* Session integrity key */
-		uint8_t kg[IPMI_KG_BUFFER_SIZE];   /* BMC key */
-		uint8_t k1[20];   /* Used for Integrity checking? */
-		uint8_t k2[20];   /* First 16 bytes used for AES  */
+		uint8_t  sik[IPMI_SIK_BUFFER_SIZE]; /* Session integrity key */
+		uint8_t sik_len;                   /* Session Integrity key length */
+		uint8_t  kg[IPMI_KG_BUFFER_SIZE];   /* BMC key */
+		uint8_t  k1[IPMI_MAX_MD_SIZE];      /* Used for Integrity checking? */
+		uint8_t k1_len;                    /* K1 key length */
+		uint8_t  k2[IPMI_MAX_MD_SIZE];      /* First 16 bytes used for AES  */
+		uint8_t k2_len;                    /* K2 key length */
 	} v2_data;
 
 

@@ -99,7 +99,8 @@ lanplus_rand(uint8_t * buffer, uint32_t num_bytes)
 /*
  * lanplus_HMAC
  *
- * param mac specifies the algorithm to be used, currently only SHA1 is supported
+ * param mac specifies the algorithm to be used, currently SHA1, SHA256 and MD5
+ *     are supported
  * param key is the key used for HMAC generation
  * param key_len is the lenght of key
  * param d is the data to be MAC'd
@@ -123,6 +124,14 @@ lanplus_HMAC(uint8_t        mac,
 	if ((mac == IPMI_AUTH_RAKP_HMAC_SHA1) ||
 		(mac == IPMI_INTEGRITY_HMAC_SHA1_96))
 		evp_md = EVP_sha1();
+	else if ((mac == IPMI_AUTH_RAKP_HMAC_MD5) ||
+			 (mac == IPMI_INTEGRITY_HMAC_MD5_128))
+		evp_md = EVP_md5();
+#ifdef HAVE_CRYPTO_SHA256
+	else if ((mac == IPMI_AUTH_RAKP_HMAC_SHA256) ||
+			 (mac == IPMI_INTEGRITY_HMAC_SHA256_128))
+		evp_md = EVP_sha256();
+#endif /* HAVE_CRYPTO_SHA256 */
 	else
 	{
 		lprintf(LOG_DEBUG, "Invalid mac type 0x%x in lanplus_HMAC\n", mac);

@@ -621,6 +621,9 @@ const struct valstr ipmi_auth_algorithms[] = {
 	{ IPMI_AUTH_RAKP_NONE,      "none"      },
 	{ IPMI_AUTH_RAKP_HMAC_SHA1, "hmac_sha1" },
 	{ IPMI_AUTH_RAKP_HMAC_MD5,  "hmac_md5"  },
+#ifdef HAVE_CRYPTO_SHA256
+	{ IPMI_AUTH_RAKP_HMAC_SHA256, "hmac_sha256" },
+#endif /* HAVE_CRYPTO_SHA256 */
 	{ 0x00, NULL }
 };
 
@@ -629,6 +632,9 @@ const struct valstr ipmi_integrity_algorithms[] = {
 	{ IPMI_INTEGRITY_HMAC_SHA1_96, "hmac_sha1_96" },
 	{ IPMI_INTEGRITY_HMAC_MD5_128, "hmac_md5_128" },
 	{ IPMI_INTEGRITY_MD5_128 ,     "md5_128"      },
+#ifdef HAVE_CRYPTO_SHA256
+	{ IPMI_INTEGRITY_HMAC_SHA256_128, "sha256_128" },
+#endif /* HAVE_CRYPTO_SHA256 */
 	{ 0x00, NULL }
 };
 

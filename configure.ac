@@ -164,6 +164,16 @@ AC_CHECK_LIB([crypto], [EVP_aes_128_cbc],
 	fi],
 	[have_crypto=no], [-lcrypto])
 
+AC_CHECK_LIB([crypto], [EVP_sha256],
+	[if test "x$xenable_internal_sha256" != "xyes"; then
+		if test "x$have_crypto" != "xyes"; then
+			LIBS="$LIBS -lcrypto"
+		have_sha256=yes
+		fi
+		AC_DEFINE(HAVE_CRYPTO_SHA256, [1], [Define to 1 if libcrypto supports SHA256.])
+	fi],
+	[], [-lcrypto])
+
 AC_CHECK_LIB([crypto], [MD5_Init],
 	[if test "x$xenable_internal_md5" != "xyes"; then
 	    if test "x$have_crypto" != "xyes"; then

@@ -96,12 +96,20 @@
 #define IPMI_MAX_CONF_HEADER_SIZE   0x20
 #define IPMI_MAX_PAYLOAD_SIZE       0xFFFF /* Includes confidentiality header/trailer */
 #define IPMI_MAX_CONF_TRAILER_SIZE  0x20
-#define IPMI_MAX_INTEGRITY_PAD_SIZE 0x20
-#define IPMI_MAX_AUTH_CODE_SIZE     0x20
+#define IPMI_MAX_INTEGRITY_PAD_SIZE IPMI_MAX_MD_SIZE
+#define IPMI_MAX_AUTH_CODE_SIZE     IPMI_MAX_MD_SIZE
 
 #define IPMI_REQUEST_MESSAGE_SIZE   0x07
-#define IPMI_MAX_MAC_SIZE           0x14 /* The largest mac we ever expect to generate */
-#define IPMI_SHA1_AUTHCODE_SIZE     0x0C
+#define IPMI_MAX_MAC_SIZE           IPMI_MAX_MD_SIZE /* The largest mac we ever expect to generate */
+
+#define IPMI_SHA1_AUTHCODE_SIZE          12
+#define IPMI_HMAC_MD5_AUTHCODE_SIZE      16
+#define IPMI_MD5_AUTHCODE_SIZE           16
+#define IPMI_HMAC_SHA256_AUTHCODE_SIZE   16
+
+#define IPMI_SHA_DIGEST_LENGTH                20
+#define IPMI_MD5_DIGEST_LENGTH                16
+#define IPMI_SHA256_DIGEST_LENGTH             32
 
 /*
  *This is accurate, as long as we're only passing 1 auth algorithm,
@@ -109,7 +117,7 @@
  */
 #define IPMI_OPEN_SESSION_REQUEST_SIZE 32
 #define IPMI_RAKP1_MESSAGE_SIZE        44
-#define IPMI_RAKP3_MESSAGE_MAX_SIZE    28
+#define IPMI_RAKP3_MESSAGE_MAX_SIZE    (8 + IPMI_MAX_MD_SIZE)
 
 #define IPMI_MAX_USER_NAME_LENGTH      16
 

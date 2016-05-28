@@ -169,9 +169,14 @@ int lanplus_get_requested_ciphers(int       cipher_suite_id,
 								  uint8_t * integrity_alg,
 								  uint8_t * crypt_alg)
 {
+#ifdef HAVE_CRYPTO_SHA256
+	if ((cipher_suite_id < 0) || (cipher_suite_id > 17)) {
+		return 1;
+	}
+#else
 	if ((cipher_suite_id < 0) || (cipher_suite_id > 14))
 		return 1;
-
+#endif /* HAVE_CRYPTO_SHA256 */
 		/* See table 22-19 for the source of the statement */
 	switch (cipher_suite_id)
 	{
@@ -250,6 +255,23 @@ int lanplus_get_requested_ciphers(int       cipher_suite_id,
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
+#ifdef HAVE_CRYPTO_SHA256
+	case 15:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
+		*integrity_alg = IPMI_INTEGRITY_NONE;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 16:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
+		*crypt_alg     = IPMI_CRYPT_NONE;
+		break;
+	case 17:
+		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
+		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
+		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
+		break;
+#endif /* HAVE_CRYPTO_SHA256 */
 	}
 
 	return 0;
@@ -1022,15 +1044,34 @@ read_rakp2_message(
 		 break;
 
 	 case IPMI_AUTH_RAKP_HMAC_SHA1:
-		 /* We need to copy 20 bytes */
-		 for (i = 0; i < 20; ++i)
-			 rsp->payload.rakp2_message.key_exchange_auth_code[i] =
-				 rsp->data[offset + 40 + i];
-		 break;
+		/* We need to copy 20 bytes */
+		for (i = 0; i < IPMI_SHA_DIGEST_LENGTH; ++i) {
+			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
+				rsp->data[offset + 40 + i];
+		}
+		break;
 
 	 case IPMI_AUTH_RAKP_HMAC_MD5:
-		lprintf(LOG_ERR, "read_rakp2_message: no support for "
-				"IPMI_AUTH_RAKP_HMAC_MD5");
+		/* We need to copy 16 bytes */
+		for (i = 0; i < IPMI_MD5_DIGEST_LENGTH; ++i) {
+			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
+				rsp->data[offset + 40 + i];
+		}
+		break;
+
+#ifdef HAVE_CRYPTO_SHA256
+	 case IPMI_AUTH_RAKP_HMAC_SHA256:
+		/* We need to copy 32 bytes */
+		for (i = 0; i < IPMI_SHA256_DIGEST_LENGTH; ++i) {
+			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
+				rsp->data[offset + 40 + i];
+		}
+		break;
+#endif /* HAVE_CRYPTO_SHA256 */
+
+	 default:
+		lprintf(LOG_ERR, "read_rakp2_message: no support "
+			"for authentication algorithm 0x%x", auth_alg);
 		 assert(0);
 		 break;
 	 }
@@ -1088,13 +1129,32 @@ read_rakp4_message(
 		 break;
 
 	 case IPMI_AUTH_RAKP_HMAC_SHA1:
-		 /* We need to copy 12 bytes */
-		 for (i = 0; i < 12; ++i)
-			 rsp->payload.rakp4_message.integrity_check_value[i] =
-				 rsp->data[offset + 8 + i];
-		 break;
+		/* We need to copy 12 bytes */
+		for (i = 0; i < IPMI_SHA1_AUTHCODE_SIZE; ++i) {
+			rsp->payload.rakp4_message.integrity_check_value[i] =
+				rsp->data[offset + 8 + i];
+		}
+		break;
 
 	 case IPMI_AUTH_RAKP_HMAC_MD5:
+		/* We need to copy 16 bytes */
+		for (i = 0; i < IPMI_HMAC_MD5_AUTHCODE_SIZE; ++i) {
+			rsp->payload.rakp4_message.integrity_check_value[i] =
+				rsp->data[offset + 8 + i];
+		}
+		break;
+
+#ifdef HAVE_CRYPTO_SHA256
+	 case IPMI_AUTH_RAKP_HMAC_SHA256:
+		/* We need to copy 16 bytes */
+		for (i = 0; i < IPMI_HMAC_SHA256_AUTHCODE_SIZE; ++i) {
+			rsp->payload.rakp4_message.integrity_check_value[i] =
+				rsp->data[offset + 8 + i];
+		}
+		break;
+#endif /* HAVE_CRYPTO_SHA256 */
+
+	 default:
 		 lprintf(LOG_ERR, "read_rakp4_message: no support "
 			 "for authentication algorithm 0x%x", auth_alg);
 		 assert(0);
@@ -1760,7 +1820,11 @@ ipmi_lanplus_build_v2x_msg(
 	if ((session->v2_data.session_state == LANPLUS_STATE_ACTIVE) &&
 		(session->v2_data.integrity_alg != IPMI_INTEGRITY_NONE))
 	{
-		uint32_t i, hmac_length, integrity_pad_size = 0, hmac_input_size;
+		uint32_t i;
+		uint32_t hmac_length;
+		uint32_t auth_length = 0;
+		uint32_t integrity_pad_size = 0;
+		uint32_t hmac_input_size;
 		uint8_t * hmac_output;
 		uint32_t start_of_session_trailer =
 			IPMI_LANPLUS_OFFSET_PAYLOAD +
@@ -1818,22 +1882,43 @@ ipmi_lanplus_build_v2x_msg(
 		/* Auth Code */
 		lanplus_HMAC(session->v2_data.integrity_alg,
 					 session->v2_data.k1,                /* key        */
-					 20,                                 /* key length */
+					 session->v2_data.k1_len,            /* key length */
 					 msg + IPMI_LANPLUS_OFFSET_AUTHTYPE, /* hmac input */
 					 hmac_input_size,
 					 hmac_output,
 					 &hmac_length);
 
-		assert(hmac_length == 20);
+		switch(session->v2_data.integrity_alg) {
+			case IPMI_INTEGRITY_HMAC_SHA1_96:
+				assert(hmac_length == IPMI_SHA_DIGEST_LENGTH);
+				auth_length = IPMI_SHA1_AUTHCODE_SIZE;
+				break;
+			case IPMI_INTEGRITY_HMAC_MD5_128 :
+				assert(hmac_length == IPMI_MD5_DIGEST_LENGTH);
+				auth_length = IPMI_HMAC_MD5_AUTHCODE_SIZE;
+				break;
+#ifdef HAVE_CRYPTO_SHA256
+			case IPMI_INTEGRITY_HMAC_SHA256_128:
+				assert(hmac_length == IPMI_SHA256_DIGEST_LENGTH);
+				auth_length = IPMI_HMAC_SHA256_AUTHCODE_SIZE;
+				break;
+#endif /* HAVE_CRYPTO_SHA256 */
+			default:
+				assert(0);
+				break;
+		}
 
 		if (verbose > 2)
-			printbuf(hmac_output, 12, "authcode output");
+			printbuf(hmac_output, auth_length, "authcode output");
 
 		/* Set session_trailer_length appropriately */
 		session_trailer_length =
 			integrity_pad_size +
 			2                  + /* pad length + next header */
-			12;                  /* Size of the authcode (we only use the first 12 bytes) */
+			auth_length;         /* Size of the authcode. We only
+			                      * use the first 12(SHA1) or
+			                      * 16(MD5/SHA256) bytes.
+			                      */
 	}
 
 

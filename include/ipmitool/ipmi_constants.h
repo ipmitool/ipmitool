@@ -118,12 +118,14 @@
 #define IPMI_AUTH_RAKP_NONE         0x00
 #define IPMI_AUTH_RAKP_HMAC_SHA1    0x01
 #define IPMI_AUTH_RAKP_HMAC_MD5     0x02
+#define IPMI_AUTH_RAKP_HMAC_SHA256  0x03
 
 /* From table 13-18 of the IPMI v2 specification */
 #define IPMI_INTEGRITY_NONE         0x00
 #define IPMI_INTEGRITY_HMAC_SHA1_96 0x01
 #define IPMI_INTEGRITY_HMAC_MD5_128 0x02
 #define IPMI_INTEGRITY_MD5_128      0x03
+#define IPMI_INTEGRITY_HMAC_SHA256_128 0x04
 
 /* From table 13-19 of the IPMI v2 specfication */
 #define IPMI_CRYPT_NONE             0x00

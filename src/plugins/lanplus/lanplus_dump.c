@@ -31,6 +31,7 @@
  */
 
 #include "lanplus.h"
+#include "lanplus_crypt.h"
 #include "lanplus_dump.h"
 
 extern const struct valstr ipmi_rakp_return_codes[];
@@ -127,16 +128,27 @@ void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 		break;
 	case IPMI_AUTH_RAKP_HMAC_SHA1:
 		printf("%s  Key exchange auth code [sha1] : 0x", DUMP_PREFIX_INCOMING);
-		for (i = 0; i < 20; ++i)
+		for (i = 0; i < IPMI_SHA_DIGEST_LENGTH; ++i) {
 			printf("%02x", rsp->payload.rakp2_message.key_exchange_auth_code[i]);
-		printf("\n");	
+		}
+		printf("\n");
 		break;
 	case IPMI_AUTH_RAKP_HMAC_MD5:
 		printf("%s  Key exchange auth code [md5]   : 0x", DUMP_PREFIX_INCOMING);
-		for (i = 0; i < 16; ++i)
+		for (i = 0; i < IPMI_MD5_DIGEST_LENGTH; ++i) {
 			printf("%02x", rsp->payload.rakp2_message.key_exchange_auth_code[i]);
-		printf("\n");	
+		}
+		printf("\n");
 		break;
+#ifdef HAVE_CRYPTO_SHA256
+	case IPMI_AUTH_RAKP_HMAC_SHA256:
+		printf("%s  Key exchange auth code [sha256]: 0x", DUMP_PREFIX_INCOMING);
+		for (i = 0; i < IPMI_SHA256_DIGEST_LENGTH; ++i) {
+			printf("%02x", rsp->payload.rakp2_message.key_exchange_auth_code[i]);
+		}
+		printf("\n");
+		break;
+#endif /* HAVE_CRYPTO_SHA256 */
 	default:
 		printf("%s  Key exchange auth code         : invalid", DUMP_PREFIX_INCOMING);
 	}
@@ -174,16 +186,27 @@ void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, uint8_t auth_alg)
 		break;
 	case IPMI_AUTH_RAKP_HMAC_SHA1:
 		printf("%s  Key exchange auth code [sha1] : 0x", DUMP_PREFIX_INCOMING);
-		for (i = 0; i < 12; ++i)
+		for (i = 0; i < IPMI_SHA1_AUTHCODE_SIZE; ++i) {
 			printf("%02x", rsp->payload.rakp4_message.integrity_check_value[i]);
-		printf("\n");	
+		}
+		printf("\n");
 		break;
 	case IPMI_AUTH_RAKP_HMAC_MD5:
 		printf("%s  Key exchange auth code [md5]   : 0x", DUMP_PREFIX_INCOMING);
-		for (i = 0; i < 12; ++i)
+		for (i = 0; i < IPMI_HMAC_MD5_AUTHCODE_SIZE; ++i) {
 			printf("%02x", rsp->payload.rakp4_message.integrity_check_value[i]);
-		printf("\n");	
+		}
+		printf("\n");
 		break;
+#ifdef HAVE_CRYPTO_SHA256
+	case IPMI_AUTH_RAKP_HMAC_SHA256:
+		printf("%s  Key exchange auth code [sha256]: 0x", DUMP_PREFIX_INCOMING);
+		for (i = 0; i < IPMI_HMAC_SHA256_AUTHCODE_SIZE; ++i) {
+			printf("%02x", rsp->payload.rakp4_message.integrity_check_value[i]);
+		}
+		printf("\n");
+		break;
+#endif /* HAVE_CRYPTO_SHA256 */
 	default:
 		printf("%s  Key exchange auth code         : invalid", DUMP_PREFIX_INCOMING);
 	}
