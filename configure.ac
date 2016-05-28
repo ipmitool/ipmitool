@@ -56,14 +56,14 @@ dnl
 dnl set default option values
 dnl
 
-xenable_intf_bmc=no
-xenable_intf_imb=yes
-xenable_intf_open=yes
-xenable_intf_usb=no
-xenable_intf_lipmi=yes
-#xenable_intf_serial=yes
-xenable_intf_dummy=no
 xenable_all_options=yes
+xenable_intf_bmc=no
+xenable_intf_dummy=no
+xenable_intf_imb=yes
+xenable_intf_lipmi=yes
+xenable_intf_open=yes
+#xenable_intf_serial=yes
+xenable_intf_usb=no
 xenable_ipmishell=yes
 
 dnl set some things so we build with GNU tools on Solaris
@@ -88,25 +88,21 @@ solaris*)
 	xenable_intf_imb=no
 	xenable_intf_open=no
 	xenable_intf_lipmi=no
-	xenable_intf_bmc=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
 	xenable_intf_imb=no
 	xenable_intf_open=no
 	xenable_intf_lipmi=no
-	xenable_intf_bmc=no
 	xenable_ipmishell=no
 	;;
 *freebsd*)
 	xenable_intf_imb=no
 	xenable_intf_lipmi=no
-	xenable_intf_bmc=no
 	;;
 *netbsd*)
 	xenable_intf_imb=no
 	xenable_intf_lipmi=no
-	xenable_intf_bmc=no
 	xenable_intf_open=no
 	;;
 gnu*)
