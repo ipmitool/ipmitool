@@ -59,7 +59,7 @@ dnl
 xenable_intf_bmc=no
 xenable_intf_imb=yes
 xenable_intf_open=yes
-xenable_intf_usb=yes
+xenable_intf_usb=no
 xenable_intf_lipmi=yes
 #xenable_intf_serial=yes
 xenable_intf_dummy=no
@@ -89,7 +89,6 @@ solaris*)
 	xenable_intf_open=no
 	xenable_intf_lipmi=no
 	xenable_intf_bmc=no
-	xenable_intf_usb=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
@@ -98,7 +97,6 @@ solaris*)
 	xenable_intf_lipmi=no
 	xenable_intf_bmc=no
 	xenable_ipmishell=no
-	xenable_intf_usb=no
 	;;
 *freebsd*)
 	xenable_intf_imb=no
@@ -115,6 +113,7 @@ gnu*)
 	# disable the linux and solaris-specific interfaces on Hurd
 	xenable_intf_imb=no
 	xenable_intf_open=no
+	xenable_intf_usb=yes
 	;;
 esac
 
