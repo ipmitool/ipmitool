@@ -610,13 +610,6 @@ typedef struct ipmi_fru_bloc {
 	uint8_t  blocId[32];
 } t_ipmi_fru_bloc;
 
-static const char *section_id[4] = {
-	"Internal Use Section",
-	"Chassis Section",
-	"Board Section",
-	"Product Section"
-};
-
 int ipmi_fru_main(struct ipmi_intf *intf, int argc, char **argv);
 int ipmi_fru_print(struct ipmi_intf *intf, struct sdr_record_fru_locator *fru);
 

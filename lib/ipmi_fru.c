@@ -50,6 +50,13 @@
 
 #define FRU_MULTIREC_CHUNK_SIZE     (255 + sizeof(struct fru_multirec_header))
 
+static const char *section_id[4] = {
+	"Internal Use Section",
+	"Chassis Section",
+	"Board Section",
+	"Product Section"
+};
+
 /* From lib/dimm_spd.c: */
 int
 ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id);
