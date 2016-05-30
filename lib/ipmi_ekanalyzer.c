@@ -3363,7 +3363,7 @@ ipmi_ek_display_board_p2p_record(struct ipmi_ek_multi_header *record)
 		printf("\n");
 		offset += sizeof(struct fru_picmgext_guid);
 	}
-	for (offset;
+	for (offset = offset;
 			offset < record->header.len;
 			offset += sizeof(struct fru_picmgext_link_desc)) {
 		/* to solve little endian/big endian problem */
@@ -3522,7 +3522,7 @@ ipmi_ek_display_radial_ipmb0_record(struct ipmi_ek_multi_header *record)
 	if (record->data[offset] < 1) {
 		return;
 	}
-	for (offset; offset < record->header.len;) {
+	for (offset = offset; offset < record->header.len;) {
 		unsigned char entry_count = 0;
 		printf("   IPMB-0 Hub Descriptor\n");
 		printf("\tHardware Address: 0x%02x\n",
