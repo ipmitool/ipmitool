@@ -2301,7 +2301,7 @@ uint8_t
 ipmi_picmg_ipmb_address(struct ipmi_intf *intf) {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	char msg_data;
+	uint8_t msg_data;
 
 	if (!intf->picmg_avail) {
 		return 0;
@@ -2341,7 +2341,7 @@ picmg_discover(struct ipmi_intf *intf) {
 	/* First, check if PICMG extension is available and supported */
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	char msg_data;
+	uint8_t msg_data;
 	uint8_t picmg_avail = 0;
 
 	memset(&req, 0, sizeof(req));
