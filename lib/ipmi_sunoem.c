@@ -1436,7 +1436,7 @@ ipmi_sunoem_echo(struct ipmi_intf * intf, int argc, char *argv[])
 
 		received++;
 		if (!quiet_mode) {
-			printf("Receive %u Bytes - Seq. # %d time=%d ms\n",
+			printf("Receive %lu Bytes - Seq. # %d time=%d ms\n",
 					sizeof(sunoem_echo_msg_t), echo_rsp->seq_num, resp_time);
 		}
 	} /* for (i = 0; i < num; i++) */
