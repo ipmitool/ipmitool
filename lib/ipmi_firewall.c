@@ -899,7 +899,7 @@ static int
 ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int ret = 0;
-	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
+	struct ipmi_function_params p = {0xe, -1, -1, -1, -1, 0};
 	struct bmc_fn_support * bmc_fn_support;
 	unsigned int l, n, c;
 
@@ -1012,7 +1012,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char ** argv)
 {
-	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
+	struct ipmi_function_params p = {0xe, -1, -1, -1, -1, 0};
 	struct bmc_fn_support * bmc_fn_support;
 	int ret;
 	unsigned int l, n, c;
@@ -1103,7 +1103,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 static int
 ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	struct ipmi_function_params p = {0xe, -1, -1, -1, -1};
+	struct ipmi_function_params p = {0xe, -1, -1, -1, -1, 0};
 	struct bmc_fn_support * bmc_fn_support;
 	int ret;
 	unsigned int l, n, c;
