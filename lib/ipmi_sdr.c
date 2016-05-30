@@ -1406,7 +1406,7 @@ ipmi_sdr_read_sensor_value(struct ipmi_intf *intf,
 	memset(&sr, 0, sizeof(sr));
 
 	switch (sdr_record_type) {
-		int idlen;
+		unsigned int idlen;
 		case (SDR_RECORD_TYPE_FULL_SENSOR):
 			sr.full = (struct sdr_record_full_sensor *)sensor;
 			idlen = sr.full->id_code & 0x1f;
@@ -1518,7 +1518,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 			   uint8_t sdr_record_type)
 {
 	char sval[16];
-	int i = 0;
+	unsigned int i = 0;
 	uint8_t target, lun, channel;
 	struct sensor_reading *sr;
 
