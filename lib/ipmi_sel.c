@@ -2403,7 +2403,7 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			evt.sel_type.standard_type.evm_rev = 4;
 
 			/* FIXME: convert*/
-			evt.sel_type.standard_type.timestamp;
+			/* evt.sel_type.standard_type.timestamp; */
 
 			/* skip timestamp */
 			cursor = index((const char *)cursor, ';');
