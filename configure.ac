@@ -99,6 +99,7 @@ solaris*)
 *freebsd*)
 	xenable_intf_imb=no
 	xenable_intf_lipmi=no
+	CFLAGS="$CFLAGS -D__BSD_VISIBLE"
 	;;
 *netbsd*)
 	xenable_intf_imb=no

@@ -33,7 +33,9 @@
 
 /* Serial Interface, Terminal Mode plugin. */
 
+#if defined HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
