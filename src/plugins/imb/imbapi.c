@@ -80,48 +80,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IMB_API
 
 #ifdef WIN32
-#define NO_MACRO_ARGS  1
-#include <windows.h>
-#include <stdio.h>
-
+# define NO_MACRO_ARGS  1
+# include <stdio.h>
+# include <windows.h>
 #else  /* LINUX, SCO_UW, UNIX */
-#include <unistd.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <string.h>
+# include <fcntl.h>
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
+# include <sys/ioctl.h>
+# include <sys/mman.h>
+# include <sys/param.h>
+# include <sys/stat.h>
+# include <sys/types.h>
+# include <unistd.h>
 #endif
+
 #include "imbapi.h"
 #include <sys/socket.h>
 
 #ifdef SCO_UW
-#define NO_MACRO_ARGS  1
-#define __FUNCTION__ "func"
-#define IMB_DEVICE "/dev/instru/mismic"
+# define NO_MACRO_ARGS  1
+# define __FUNCTION__ "func"
+# define IMB_DEVICE "/dev/instru/mismic"
 #else
-#define IMB_DEVICE "/dev/imb"
+# define IMB_DEVICE "/dev/imb"
 #endif
 
 #if !defined(PAGESIZE) && defined(PAGE_SIZE)
-#  define PAGESIZE PAGE_SIZE
+# define PAGESIZE PAGE_SIZE
 #endif
 
 #if !defined(_SC_PAGESIZE) && defined(_SC_PAGE_SIZE)
-#  define _SC_PAGESIZE _SC_PAGE_SIZE
+# define _SC_PAGESIZE _SC_PAGE_SIZE
 #endif
 
 /*Just to make the DEBUG code cleaner.*/
 #ifndef NO_MACRO_ARGS
-#ifdef LINUX_DEBUG
-#define DEBUG(format, args...) printf(format, ##args)
-#else
-#define DEBUG(format, args...)  
-#endif
+# ifdef LINUX_DEBUG
+#  define DEBUG(format, args...) printf(format, ##args)
+# else
+#  define DEBUG(format, args...)
+# endif
 #endif
 
 /* uncomment out the #define below or use -DLINUX_DEBUG_MAX in the makefile 
