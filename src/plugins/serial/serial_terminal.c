@@ -79,7 +79,7 @@ struct ipmb_msg_hdr {
 	unsigned char rqSA;
 	unsigned char rqSeq;	/* RQ SEQ | RQ LUN */
 	unsigned char cmd;
-	unsigned char data[0];
+	unsigned char data[];
 };
 
 /*
@@ -101,7 +101,7 @@ struct ipmi_get_message_rp {
 	unsigned char rsSA;
 	unsigned char rqSeq;
 	unsigned char cmd;
-	unsigned char data[0];
+	unsigned char data[];
 };
 
 /*

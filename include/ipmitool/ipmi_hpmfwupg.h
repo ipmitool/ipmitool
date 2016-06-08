@@ -437,7 +437,7 @@ struct HpmfwupgInitiateUpgradeActionCtx {
 struct HpmfwupgUploadFirmwareBlockReq {
 	unsigned char picmgId;
 	unsigned char blockNumber;
-	unsigned char data[0];
+	unsigned char data[];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 # pragma pack(0)
