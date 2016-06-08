@@ -373,8 +373,9 @@ recv_response(struct ipmi_intf * intf, unsigned char *data, int len)
 		}
 		p += rv;
 		resp_len += rv;
-		if (*(p - 2) == ']' && (*(p - 1) == '\n' || *(p - 1) == '\r')) {
-			*p = 0;
+		if (resp_len >= 2 && *(p - 2) == ']'
+			&& (*(p - 1) == '\n' || *(p - 1) == '\r')) {
+			*(p - 1) = 0; /* overwrite EOL */
 			break;
 		}
 	}
