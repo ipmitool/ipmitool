@@ -1399,7 +1399,12 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 		return HPMFWUPG_ERROR;
 	}
 	/* Get the raw data in file */
-	fseek(pImageFile, 0, SEEK_END);
+	ret = fseek(pImageFile, 0, SEEK_END);
+	if (ret != 0) {
+		lprintf(LOG_ERR, "Failed to seek in the image file '%s'",
+				imageFilename);
+		return HPMFWUPG_ERROR;
+	}
 	pFwupgCtx->imageSize  = ftell(pImageFile);
 	pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
 	if (pFwupgCtx->pImageData == NULL) {
