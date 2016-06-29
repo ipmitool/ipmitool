@@ -1648,15 +1648,11 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 			else if (FD_ISSET(intf->fd, &read_fds))
 			{
 				struct ipmi_rs * rs =intf->recv_sol(intf);
-				if ( rs)
-				{
+				if (rs) {
 					output(rs);
+				} else {
+					bShouldExit = bBmcClosedSession = 1;
 				}
-				/*
-				 * Should recv_sol come back null, the incoming packet was not ours.
-				 * Just fall through, the keepalive logic will determine if
-				 * the BMC has dropped the session.
-				 */
  			}
 
 
