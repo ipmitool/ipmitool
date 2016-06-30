@@ -51,6 +51,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -138,6 +139,80 @@ const char *
 buf2str(const uint8_t *buf, int len)
 {
 	return buf2str_extended(buf, len, NULL);
+}
+
+/* ipmi_parse_hex - convert hexadecimal numbers to ascii string
+ *                  Input string must be composed of two-characer
+ *                  hexadecimal numbers.
+ *                  There is no separator between the numbers. Each number
+ *                  results in one byte of the converted string.
+ *
+ *                  Example: ipmi_parse_hex("50415353574F5244")
+ *                  returns 'PASSWORD'
+ *
+ * @param str:  input string. It must contain only even number
+ *              of '0'-'9','a'-'f' and 'A-F' characters.
+ * @param out: pointer to output data
+ * @param size: size of the output buffer
+ * @returns 0 for empty input string
+ *         -1 for string with odd length
+ *         -2 if out is NULL
+ *         -3 if there is non-hexadecimal char in string
+ *         >0 length of resulting binary data even if it is > size
+ */
+int
+ipmi_parse_hex(const char *str, uint8_t *out, int size)
+{
+	const char *p;
+	uint8_t *q;
+	uint8_t d = 0;
+	uint8_t b = 0;
+	int shift = 4;
+	int len;
+
+	len = strlen(str);
+	if (len == 0) {
+		return 0;
+	}
+
+	if (len % 2 != 0) {
+		return -1;
+	}
+
+	len /= 2; /* out bytes */
+	if (out == NULL) {
+		return -2;
+	}
+
+	for (p = str, q = out; *p; p++) {
+		if (!isxdigit(*p)) {
+			return -3;
+		}
+
+		if (*p < 'A') {
+			/* it must be 0-9 */
+			d = *p - '0';
+		} else {
+			/* it's A-F or a-f */
+			/* convert to lowercase and to 10-15 */
+			d = (*p | 0x20) - 'a' + 10;
+		}
+
+		if (q < (out + size)) {
+			/* there is space, store */
+			b += d << shift;
+			if (shift) {
+				shift = 0;
+			} else {
+				shift = 4;
+				*q = b;
+				b = 0;
+				q++;
+			}
+		}
+	}
+
+	return len;
 }
 
 void printbuf(const uint8_t * buf, int len, const char * desc)

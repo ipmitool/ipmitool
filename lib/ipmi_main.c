@@ -291,67 +291,40 @@ void ipmi_catch_sigint()
 	exit(-1);
 }
 
-/* ipmi_parse_hex - convert hexadecimal numbers to ascii string
- *                  Input string must be composed of two-characer hexadecimal numbers.
- *                  There is no separator between the numbers. Each number results in one character
- *                  of the converted string.
+/* ipmi_parse_hex_KG - get hexadecimal key value
+ *                  Input string must be composed of two-characer
+ *                  hexadecimal numbers.
+ *                  There is no separator between the numbers. Each number
+ *                  results in one byte of the converted string.
  *
- *                  Example: ipmi_parse_hex("50415353574F5244") returns 'PASSWORD'
+ *                  Example: ipmi_parse_hex("50415353574F5244")
+ *                  returns 'PASSWORD'
  *
- * @param str:  input string. It must contain only even number of '0'-'9','a'-'f' and 'A-F' characters.
- * @returns converted ascii string
- * @returns NULL on error
+ * @param str:  input string. It must contain only even number
+ *              of '0'-'9','a'-'f' and 'A-F' characters.
+ * @returns obtained key or NULL on error
  */
-static unsigned char *
-ipmi_parse_hex(const char *str)
+static uint8_t *
+ipmi_parse_hex_KG(const char *str)
 {
-	const char * p;
-	unsigned char * out, *q;
-	unsigned char b = 0;
-	int shift = 4;
+	int rc;
+	uint8_t *out;
 
-	if (strlen(str) == 0)
-		return NULL;
+	out = calloc(IPMI_KG_BUFFER_SIZE, sizeof(uint8_t));
+	rc = ipmi_parse_hex(str, out, IPMI_KG_BUFFER_SIZE - 1);
 
-	if (strlen(str) % 2 != 0) {
+	if (rc == -1) {
 		lprintf(LOG_ERR, "Number of hex_kg characters is not even");
-		return NULL;
-	}
-
-	if (strlen(str) > (IPMI_KG_BUFFER_SIZE-1)*2) {
-		lprintf(LOG_ERR, "Kg key is too long");
-		return NULL;
-	}
-
-	out = calloc(IPMI_KG_BUFFER_SIZE, sizeof(unsigned char));
-	if (out == NULL) {
+	} else if (rc == -2) {
 		lprintf(LOG_ERR, "malloc failure");
-		return NULL;
+	} else if (rc == -3) {
+		lprintf(LOG_ERR, "Kg_hex is not hexadecimal number");
+	} else if (rc > (IPMI_KG_BUFFER_SIZE-1)) {
+		lprintf(LOG_ERR, "Kg key is too long");
+		free(out);
+		out = NULL;
 	}
-
-	for (p = str, q = out; *p; p++) {
-		if (!isxdigit(*p)) {
-			lprintf(LOG_ERR, "Kg_hex is not hexadecimal number");
-			free(out);
-			out = NULL;
-			return NULL;
-		}
-
-		if (*p < 'A') /* it must be 0-9 */
-			b = *p - '0';
-		else /* it's A-F or a-f */
-			b = (*p | 0x20) - 'a' + 10; /* convert to lowercase and to 10-15 */
-
-		*q = *q + (b << shift);
-		if (shift)
-			shift = 0;
-		else {
-			shift = 4;
-			q++;
-		}
-	}
-
-	return out;
+	return (unsigned char *)out;
 }
 
 static uint8_t
@@ -577,7 +550,7 @@ ipmi_main(int argc, char ** argv,
 				free(kgkey);
 				kgkey = NULL;
 			}
-			kgkey = ipmi_parse_hex(optarg);
+			kgkey = ipmi_parse_hex_KG(optarg);
 			if (kgkey == NULL) {
 				goto out_free;
 			}
