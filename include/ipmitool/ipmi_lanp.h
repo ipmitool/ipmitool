@@ -132,4 +132,6 @@ static struct lan_param {
 
 int  ipmi_lanp_main(struct ipmi_intf *, int, char **);
 
+uint8_t find_lan_channel(struct ipmi_intf *intf, uint8_t start);
+
 #endif /*IPMI_LANP_H*/

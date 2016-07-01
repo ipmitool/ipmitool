@@ -104,7 +104,7 @@ is_lan_channel(struct ipmi_intf * intf, uint8_t chan)
  * @intf:    ipmi interface handle
  * @start:   channel number to start searching from
  */
-static uint8_t
+uint8_t
 find_lan_channel(struct ipmi_intf * intf, uint8_t start)
 {
 	uint8_t chan = 0;
