@@ -130,7 +130,7 @@ struct  serial_bm_parse_ctx{
  *	Receiving context
  */
 struct serial_bm_recv_ctx {
-	char buffer[SERIAL_BM_MAX_BUFFER_SIZE];
+	uint8_t buffer[SERIAL_BM_MAX_BUFFER_SIZE];
 	size_t buffer_size;
 	size_t max_buffer_size;
 };
