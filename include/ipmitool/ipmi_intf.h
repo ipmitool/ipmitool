@@ -220,7 +220,7 @@ void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
 void ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit);
 void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id);
 void ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char);
-void ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey);
+void ipmi_intf_session_set_kgkey(struct ipmi_intf *intf, const uint8_t *kgkey);
 void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);
 void ipmi_intf_session_set_authtype(struct ipmi_intf * intf, uint8_t authtype);
 void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);

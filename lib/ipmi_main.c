@@ -291,42 +291,6 @@ void ipmi_catch_sigint()
 	exit(-1);
 }
 
-/* ipmi_parse_hex_KG - get hexadecimal key value
- *                  Input string must be composed of two-characer
- *                  hexadecimal numbers.
- *                  There is no separator between the numbers. Each number
- *                  results in one byte of the converted string.
- *
- *                  Example: ipmi_parse_hex("50415353574F5244")
- *                  returns 'PASSWORD'
- *
- * @param str:  input string. It must contain only even number
- *              of '0'-'9','a'-'f' and 'A-F' characters.
- * @returns obtained key or NULL on error
- */
-static uint8_t *
-ipmi_parse_hex_KG(const char *str)
-{
-	int rc;
-	uint8_t *out;
-
-	out = calloc(IPMI_KG_BUFFER_SIZE, sizeof(uint8_t));
-	rc = ipmi_parse_hex(str, out, IPMI_KG_BUFFER_SIZE - 1);
-
-	if (rc == -1) {
-		lprintf(LOG_ERR, "Number of hex_kg characters is not even");
-	} else if (rc == -2) {
-		lprintf(LOG_ERR, "malloc failure");
-	} else if (rc == -3) {
-		lprintf(LOG_ERR, "Kg_hex is not hexadecimal number");
-	} else if (rc > (IPMI_KG_BUFFER_SIZE-1)) {
-		lprintf(LOG_ERR, "Kg key is too long");
-		free(out);
-		out = NULL;
-	}
-	return (unsigned char *)out;
-}
-
 static uint8_t
 ipmi_acquire_ipmb_address(struct ipmi_intf * intf)
 {
@@ -379,7 +343,7 @@ ipmi_main(int argc, char ** argv,
 	char * progname = NULL;
 	char * oemtype  = NULL;
 	char * sdrcache = NULL;
-	unsigned char * kgkey = NULL;
+	uint8_t kgkey[IPMI_KG_BUFFER_SIZE];
 	char * seloem   = NULL;
 	int port = 0;
 	int devnum = 0;
@@ -394,6 +358,7 @@ ipmi_main(int argc, char ** argv,
 	progname = strrchr(argv[0], '/');
 	progname = ((progname == NULL) ? argv[0] : progname+1);
 	signal(SIGINT, ipmi_catch_sigint);
+	memset(kgkey, 0, sizeof(kgkey));
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
@@ -520,38 +485,29 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'k':
-			if (kgkey) {
-				free(kgkey);
-				kgkey = NULL;
-			}
-			kgkey = strdup(optarg);
-			if (kgkey == NULL) {
-				lprintf(LOG_ERR, "%s: malloc failure", progname);
-				goto out_free;
-			}
+			memset(kgkey, 0, sizeof(kgkey));
+			strncpy((char *)kgkey, optarg, sizeof(kgkey) - 1);
 			break;
 		case 'K':
 			if ((tmp_env = getenv("IPMI_KGKEY"))) {
-				if (kgkey) {
-					free(kgkey);
-					kgkey = NULL;
-				}
-				kgkey = strdup(tmp_env);
-				if (kgkey == NULL) {
-					lprintf(LOG_ERR, "%s: malloc failure", progname);
-					goto out_free;
-				}
+				memset(kgkey, 0, sizeof(kgkey));
+				strncpy((char *)kgkey, tmp_env,
+					sizeof(kgkey) - 1);
 			} else {
 				lprintf(LOG_WARN, "Unable to read kgkey from environment");
 			}
 			break;
 		case 'y':
-			if (kgkey) {
-				free(kgkey);
-				kgkey = NULL;
-			}
-			kgkey = ipmi_parse_hex_KG(optarg);
-			if (kgkey == NULL) {
+			memset(kgkey, 0, sizeof(kgkey));
+			rc = ipmi_parse_hex(optarg, kgkey, sizeof(kgkey) - 1);
+
+			if (rc == -1) {
+				lprintf(LOG_ERR, "Number of Kg key characters is not even");
+			} else if (rc == -3) {
+				lprintf(LOG_ERR, "Kg key is not hexadecimal number");
+				goto out_free;
+			} else if (rc > (IPMI_KG_BUFFER_SIZE-1)) {
+				lprintf(LOG_ERR, "Kg key is too long");
 				goto out_free;
 			}
 			break;
@@ -562,16 +518,10 @@ ipmi_main(int argc, char ** argv,
 			tmp_pass = getpass("Key: ");
 #endif
 			if (tmp_pass != NULL) {
-				if (kgkey) {
-					free(kgkey);
-					kgkey = NULL;
-				}
-				kgkey = strdup(tmp_pass);
+				memset(kgkey, 0, sizeof(kgkey));
+				strncpy((char *)kgkey, tmp_pass,
+					sizeof(kgkey) - 1);
 				tmp_pass = NULL;
-				if (kgkey == NULL) {
-					lprintf(LOG_ERR, "%s: malloc failure", progname);
-					goto out_free;
-				}
 			}
 			break;
 		case 'U':
@@ -901,8 +851,7 @@ ipmi_main(int argc, char ** argv,
 		ipmi_intf_session_set_username(ipmi_main_intf, username);
 	if (password != NULL)
 		ipmi_intf_session_set_password(ipmi_main_intf, password);
-	if (kgkey != NULL)
-		ipmi_intf_session_set_kgkey(ipmi_main_intf, kgkey);
+	ipmi_intf_session_set_kgkey(ipmi_main_intf, kgkey);
 	if (port > 0)
 		ipmi_intf_session_set_port(ipmi_main_intf, port);
 	if (authtype >= 0)
@@ -1095,10 +1044,6 @@ ipmi_main(int argc, char ** argv,
 	if (seloem != NULL) {
 		free(seloem);
 		seloem = NULL;
-	}
-	if (kgkey != NULL) {
-		free(kgkey);
-		kgkey = NULL;
 	}
 	if (sdrcache != NULL) {
 		free(sdrcache);

@@ -264,15 +264,9 @@ ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_c
 }
 
 void
-ipmi_intf_session_set_kgkey(struct ipmi_intf * intf, char * kgkey)
+ipmi_intf_session_set_kgkey(struct ipmi_intf *intf, const uint8_t *kgkey)
 {
-	memset(intf->ssn_params.kg, 0, IPMI_KG_BUFFER_SIZE);
-
-	if (kgkey == NULL)
-		return;
-
-	memcpy(intf->ssn_params.kg, kgkey,
-	       __min(strlen(kgkey), IPMI_KG_BUFFER_SIZE));
+	memcpy(intf->ssn_params.kg, kgkey, IPMI_KG_BUFFER_SIZE);
 }
 
 void
