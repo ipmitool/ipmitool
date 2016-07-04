@@ -99,13 +99,8 @@ print_session_info_csv(const struct  get_session_info_rsp * session_info,
 						 buffer,
 						 16));
 
-		printf(",%02x:%02x:%02x:%02x:%02x:%02x",
-			   session_info->channel_data.lan_data.console_mac[0],
-			   session_info->channel_data.lan_data.console_mac[1],
-			   session_info->channel_data.lan_data.console_mac[2],
-			   session_info->channel_data.lan_data.console_mac[3],
-			   session_info->channel_data.lan_data.console_mac[4],
-			   session_info->channel_data.lan_data.console_mac[5]);
+		printf(",%s", mac2str(
+			session_info->channel_data.lan_data.console_mac));
 
 		console_port_tmp = session_info->channel_data.lan_data.console_port;
 		#if WORDS_BIGENDIAN
@@ -187,13 +182,8 @@ print_session_info_verbose(const struct  get_session_info_rsp * session_info,
 						 buffer,
 						 16));
 
-		printf("console mac                   : %02x:%02x:%02x:%02x:%02x:%02x\n",
-			   session_info->channel_data.lan_data.console_mac[0],
-			   session_info->channel_data.lan_data.console_mac[1],
-			   session_info->channel_data.lan_data.console_mac[2],
-			   session_info->channel_data.lan_data.console_mac[3],
-			   session_info->channel_data.lan_data.console_mac[4],
-			   session_info->channel_data.lan_data.console_mac[5]);
+		printf("console mac                   : %s\n", mac2str(
+			session_info->channel_data.lan_data.console_mac));
 
 		console_port_tmp = session_info->channel_data.lan_data.console_port;
 		#if WORDS_BIGENDIAN

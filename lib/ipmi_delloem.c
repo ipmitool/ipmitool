@@ -1652,11 +1652,7 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 		printf("\niDRAC6 MAC Address ");
 	}
 
-	for (j = 0; j < 5; j++) {
-		printf("%02x:", VirtualMacAddress[j]);
-	}
-	printf("%02x", VirtualMacAddress[j]);
-	printf("\n");
+	printf("%s\n", mac2str(VirtualMacAddress));
 	return 0;
 }
 /*
@@ -1724,11 +1720,7 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 		printf("\niDRAC6 MAC Address ");
 	}
 
-	for (j = 0; j < 5; j++) {
-		printf("%02x:", iDRAC6MacAddressByte[j]);
-	}
-	printf("%02x", iDRAC6MacAddressByte[j]);
-	printf("\n");
+	printf("%s\n", mac2str(iDRAC6MacAddressByte));
 	return 0;
 }
 /*
@@ -1786,13 +1778,8 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 		for (i = 0; i < Total_No_NICs; i++) {
 			if ((0xff == NicNum) || (i == NicNum)) {
 				printf("\n%d",i);
-				printf("\t\t");
-				for (j = 0 ; j < 5; j++) {
-					printf("%02x:",
-							EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j]);
-				}
-				printf("%02x",
-						EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j]);
+				printf("\t\t%s",
+					mac2str(EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte));
 			}
 		}
 		printf("\n");
@@ -1889,13 +1876,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 				if ((0xff==NicNum)
 						|| (NicNum == EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber)) {
 					printf("\n%d",EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber);
-					printf("\t\t");
-					for (j = 0; j < 5; j++) {
-						printf("%02x:",
-								EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte[j]);
-					}
-					printf("%02x",
-							EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte[j]);
+					printf("\t\t%s", mac2str(EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte));
 
 					if (LOM_ETHERNET_ENABLED
 							== EmbeddedNICMacAddress.LOMMacAddress[i].EthernetStatus) {

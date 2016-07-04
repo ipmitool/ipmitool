@@ -234,6 +234,53 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 	fprintf(stderr, "\n");
 }
 
+/* str2mac - parse-out MAC address from given string and store it
+ * into buffer.
+ *
+ * @arg: string to be parsed.
+ * @buf: buffer of 6 to hold parsed MAC address.
+ *
+ * returns zero on success, (-1) on error and error message is printed-out.
+ */
+int
+str2mac(const char *arg, uint8_t *buf)
+{
+	unsigned int m1 = 0;
+	unsigned int m2 = 0;
+	unsigned int m3 = 0;
+	unsigned int m4 = 0;
+	unsigned int m5 = 0;
+	unsigned int m6 = 0;
+	if (sscanf(arg, "%02x:%02x:%02x:%02x:%02x:%02x",
+		   &m1, &m2, &m3, &m4, &m5, &m6) != 6) {
+		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
+		return -1;
+	}
+	if (m1 > UINT8_MAX || m2 > UINT8_MAX
+			|| m3 > UINT8_MAX || m4 > UINT8_MAX
+			|| m5 > UINT8_MAX || m6 > UINT8_MAX) {
+		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
+		return -1;
+	}
+	buf[0] = (uint8_t)m1;
+	buf[1] = (uint8_t)m2;
+	buf[2] = (uint8_t)m3;
+	buf[3] = (uint8_t)m4;
+	buf[4] = (uint8_t)m5;
+	buf[5] = (uint8_t)m6;
+	return 0;
+}
+
+/* mac2str   -- return MAC address as a string
+ *
+ * @buf: buffer of 6 to hold parsed MAC address.
+ */
+const char *
+mac2str(const uint8_t *buf)
+{
+	return buf2str_extended(buf, 6, ":");
+}
+
 const char * val2str(uint16_t val, const struct valstr *vs)
 {
 	static char un_str[32];

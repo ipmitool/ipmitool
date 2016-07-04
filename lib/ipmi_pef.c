@@ -720,10 +720,7 @@ ipmi_pef_print_lan_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
 					pinfo->ip[0], pinfo->ip[1], pinfo->ip[2], pinfo->ip[3]);
 		ipmi_pef_print_str("IP address", buf);
 
-		sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", 
-					pinfo->mac[0], pinfo->mac[1], pinfo->mac[2], 
-					pinfo->mac[3], pinfo->mac[4], pinfo->mac[5]);
-		ipmi_pef_print_str("MAC address", buf);
+		ipmi_pef_print_str("MAC address", mac2str(pinfo->mac));
 	}
 }
 

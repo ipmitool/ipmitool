@@ -100,6 +100,8 @@ uint32_t buf2long(uint8_t * buf);
 #define BUF2STR_MAXIMUM_OUTPUT_SIZE	(3*1024 + 1)
 const char * buf2str_extended(const uint8_t *buf, int len, const char *sep);
 const char * buf2str(const uint8_t *buf, int len);
+int str2mac(const char *arg, uint8_t *buf);
+const char * mac2str(const uint8_t *buf);
 int ipmi_parse_hex(const char *str, uint8_t *out, int size);
 void printbuf(const uint8_t * buf, int len, const char * desc);
 uint8_t ipmi_csum(uint8_t * d, int s);

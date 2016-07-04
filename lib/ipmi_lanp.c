@@ -704,8 +704,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	if (p == NULL)
 		return -1;
 	if (p->data != NULL)
-		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
+		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SNMP_STRING);
 	if (p == NULL)
@@ -744,8 +743,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	if (p == NULL)
 		return -1;
 	if (p->data != NULL)
-		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
+		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_IP);
 	if (p == NULL)
@@ -758,8 +756,7 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	if (p == NULL)
 		return -1;
 	if (p->data != NULL)
-		printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3], p->data[4], p->data[5]);
+		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
 	if (p != NULL && p->data != NULL) {
@@ -1103,42 +1100,6 @@ ipmi_set_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 	}
 }
 
-/* get_cmdline_macaddr - parse-out MAC address from given string and store it
- * into buffer.
- *
- * @arg: string to be parsed.
- * @buf: buffer of 6 to hold parsed MAC address.
- *
- * returns zero on success, (-1) on error and error message is printed-out. 
- */
-static int
-get_cmdline_macaddr(char *arg, uint8_t *buf)
-{
-	uint32_t m1 = 0;
-	uint32_t m2 = 0;
-	uint32_t m3 = 0;
-	uint32_t m4 = 0;
-	uint32_t m5 = 0;
-	uint32_t m6 = 0;
-	if (sscanf(arg, "%02x:%02x:%02x:%02x:%02x:%02x",
-		   &m1, &m2, &m3, &m4, &m5, &m6) != 6) {
-		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
-		return -1;
-	}
-	if (m1 > UINT8_MAX || m2 > UINT8_MAX
-			|| m3 > UINT8_MAX || m4 > UINT8_MAX
-			|| m5 > UINT8_MAX || m6 > UINT8_MAX) {
-		lprintf(LOG_ERR, "Invalid MAC address: %s", arg);
-		return -1;
-	}
-	buf[0] = (uint8_t)m1;
-	buf[1] = (uint8_t)m2;
-	buf[2] = (uint8_t)m3;
-	buf[3] = (uint8_t)m4;
-	buf[4] = (uint8_t)m5;
-	buf[5] = (uint8_t)m6;
-	return 0;
-}
 
 
 static int
@@ -1540,11 +1501,11 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			print_lan_set_usage();
 			return -1;
 		}
-		rc = get_cmdline_macaddr(argv[2], data);
+		rc = str2mac(argv[2], data);
 		if (rc == 0) {
-			printf("Setting LAN %s to %02x:%02x:%02x:%02x:%02x:%02x\n",
-		       		ipmi_lan_params[IPMI_LANP_MAC_ADDR].desc,
-		       		data[0], data[1], data[2], data[3], data[4], data[5]);
+			printf("Setting LAN %s to %s\n",
+				ipmi_lan_params[IPMI_LANP_MAC_ADDR].desc,
+				mac2str(data));
 			rc = set_lan_param(intf, chan, IPMI_LANP_MAC_ADDR, data, 6);
 		}
 	}
@@ -1566,10 +1527,10 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_IP, data, 4);
 		}
 		else if ((strncmp(argv[2], "macaddr", 7) == 0) &&
-			 (get_cmdline_macaddr(argv[3], data) == 0)) {
-			printf("Setting LAN %s to %02x:%02x:%02x:%02x:%02x:%02x\n",
-			       ipmi_lan_params[IPMI_LANP_DEF_GATEWAY_MAC].desc,
-			       data[0], data[1], data[2], data[3], data[4], data[5]);
+			 (str2mac(argv[3], data) == 0)) {
+			printf("Setting LAN %s to %s\n",
+				ipmi_lan_params[IPMI_LANP_DEF_GATEWAY_MAC].desc,
+				mac2str(data));
 			rc = set_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_MAC, data, 6);
 		}
 		else {
@@ -1595,10 +1556,10 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_IP, data, 4);
 		}
 		else if ((strncmp(argv[2], "macaddr", 7) == 0) &&
-			 (get_cmdline_macaddr(argv[3], data) == 0)) {
-			printf("Setting LAN %s to %02x:%02x:%02x:%02x:%02x:%02x\n",
-			       ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_MAC].desc,
-			       data[0], data[1], data[2], data[3], data[4], data[5]);
+			 (str2mac(argv[3], data) == 0)) {
+			printf("Setting LAN %s to %s\n",
+				ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_MAC].desc,
+				mac2str(data));
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC, data, 6);
 		}
 		else {
@@ -1776,9 +1737,8 @@ ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 	printf("%-24s: %d.%d.%d.%d\n", "Alert IP Address",
 			paddr[3], paddr[4], paddr[5], paddr[6]);
 
-	printf("%-24s: %02x:%02x:%02x:%02x:%02x:%02x\n", "Alert MAC Address",
-			paddr[7], paddr[8], paddr[9],
-			paddr[10], paddr[11], paddr[12]);
+	printf("%-24s: %s\n", "Alert MAC Address",
+			mac2str(&paddr[7]));
 
 	printf("\n");
 	return 0;
@@ -1843,7 +1803,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	}
 	/* alert destination mac address */
 	else if (strncasecmp(argv[0], "macaddr", 7) == 0 &&
-		 (get_cmdline_macaddr(argv[1], temp) == 0)) {
+		 (str2mac(argv[1], temp) == 0)) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
 		if (p == NULL) {
@@ -1853,8 +1813,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		/* set new macaddr */
 		memcpy(data+7, temp, 6);
 		printf("Setting LAN Alert %d MAC Address to "
-		       "%02x:%02x:%02x:%02x:%02x:%02x\n", alert,
-		       data[7], data[8], data[9], data[10], data[11], data[12]);
+		       "%s\n", alert, mac2str(&data[7]));
 		rc = set_lan_param_nowait(intf, chan, IPMI_LANP_DEST_ADDR, data, p->data_len);
 	}
 	/* alert destination gateway selector */
