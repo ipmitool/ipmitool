@@ -77,6 +77,7 @@ extern int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
+extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
 
 int csv_output = 0;
@@ -122,6 +123,7 @@ struct ipmi_cmd ipmitool_cmd_list[] = {
 	{ ipmi_ekanalyzer_main,"ekanalyzer", "run FRU-Ekeying analyzer using FRU files"},
 	{ ipmi_ime_main,          "ime", "Update Intel Manageability Engine Firmware"},
 	{ ipmi_vita_main,   "vita",   "Run a VITA 46.11 extended cmd"},
+	{ ipmi_lan6_main,   "lan6",   "Configure IPv6 LAN Channels"},
 	{ NULL },
 };
 
