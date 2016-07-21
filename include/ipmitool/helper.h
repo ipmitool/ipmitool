@@ -97,7 +97,9 @@ void print_valstr_2col(const struct valstr * vs, const char * title, int logleve
 
 uint16_t buf2short(uint8_t * buf);
 uint32_t buf2long(uint8_t * buf);
-const char * buf2str(uint8_t * buf, int len);
+#define BUF2STR_MAXIMUM_OUTPUT_SIZE	(3*1024 + 1)
+const char * buf2str_extended(const uint8_t *buf, int len, const char *sep);
+const char * buf2str(const uint8_t *buf, int len);
 void printbuf(const uint8_t * buf, int len, const char * desc);
 uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);

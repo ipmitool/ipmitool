@@ -79,22 +79,65 @@ uint16_t buf2short(uint8_t * buf)
 	return (uint16_t)(buf[1] << 8 | buf[0]);
 }
 
-const char * buf2str(uint8_t * buf, int len)
+/* buf2str_extended - convert sequence of bytes to hexadecimal string with
+ * optional separator
+ *
+ * @param buf - data to convert
+ * @param len - size of data
+ * @param sep - optional separator (can be NULL)
+ *
+ * @returns     buf representation in hex, possibly truncated to fit
+ *              allocated static memory
+ */
+const char *
+buf2str_extended(const uint8_t *buf, int len, const char *sep)
 {
-	static char str[2049];
+	static char str[BUF2STR_MAXIMUM_OUTPUT_SIZE];
+	char *cur;
 	int i;
+	int sz;
+	int left;
+	int sep_len;
 
-	if (len <= 0 || len > 1024)
-		return NULL;
-
-	memset(str, 0, 2049);
-
-	for (i=0; i<len; i++)
-		sprintf(str+i+i, "%2.2x", buf[i]);
-
-	str[len*2] = '\0';
+	if (buf == NULL) {
+		snprintf(str, sizeof(str), "<NULL>");
+		return (const char *)str;
+	}
+	cur = str;
+	left = sizeof(str);
+	if (sep) {
+		sep_len = strlen(sep);
+	} else {
+		sep_len = 0;
+	}
+	for (i = 0; i < len; i++) {
+		/* may return more than 2, depending on locale */
+		sz = snprintf(cur, left, "%2.2x", buf[i]);
+		if (sz >= left) {
+			/* buffer overflow, truncate */
+			break;
+		}
+		cur += sz;
+		left -= sz;
+		/* do not write separator after last byte */
+		if (sep && i != (len - 1)) {
+			if (sep_len >= left) {
+				break;
+			}
+			strncpy(cur, sep, left - sz);
+			cur += sep_len;
+			left -= sep_len;
+		}
+	}
+	*cur = '\0';
 
 	return (const char *)str;
+}
+
+const char *
+buf2str(const uint8_t *buf, int len)
+{
+	return buf2str_extended(buf, len, NULL);
 }
 
 void printbuf(const uint8_t * buf, int len, const char * desc)
