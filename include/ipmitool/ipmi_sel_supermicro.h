@@ -34,6 +34,18 @@
 #ifndef IPMI_SEL_SUPERMICRO_H
 # define IPMI_SEL_SUPERMICRO_H
 
+static uint16_t supermicro_x10OBi[] = {
+		0x0923, 0xFFFF
+};
+
+static uint16_t supermicro_x10QRH_X10QBL[] = {
+		0x0872, 0x0853, 0xFFFF
+};
+
+static uint16_t supermicro_brickland[] = {
+		0x0726, 0x083A, 0xFFFF
+};
+
 static uint16_t supermicro_x9dal[] = {
 		0x0635, 0xFFFF
 };
