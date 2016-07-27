@@ -2336,6 +2336,7 @@ picmg_discover(struct ipmi_intf *intf) {
 	 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
 	 *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
 	 *  PICMG Extension Version 4.1 (PICMG 3.0 Revision 3.0 AMC)
+	 *  PICMG Extension Version 5.0 (MTCA.0 R1.0)
 	 */
 
 	/* First, check if PICMG extension is available and supported */
@@ -2366,8 +2367,9 @@ picmg_discover(struct ipmi_intf *intf) {
 	} else if (rsp->data[0] != 0) {
 	    lprintf(LOG_INFO,"Invalid Get PICMG Properties group extension %#x",
 		    rsp->data[0]);
-	} else if ((rsp->data[1] & 0x0F) != PICMG_ATCA_MAJOR_VERSION
-		&& (rsp->data[1] & 0x0F) != PICMG_AMC_MAJOR_VERSION) {
+	} else if ((rsp->data[1] & 0x0F) != PICMG_EXTENSION_ATCA_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_EXTENSION_AMC0_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_EXTENSION_UTCA_MAJOR_VERSION) {
 	    lprintf(LOG_INFO,"Unknown PICMG Extension Version %d.%d",
 		    (rsp->data[1] & 0x0F), (rsp->data[1] >> 4));
 	} else {
