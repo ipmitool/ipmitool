@@ -499,10 +499,11 @@ ipmi_main(int argc, char ** argv,
 			break;
 		case 'y':
 			memset(kgkey, 0, sizeof(kgkey));
-			rc = ipmi_parse_hex(optarg, kgkey, sizeof(kgkey) - 1);
 
+			rc = ipmi_parse_hex(optarg, kgkey, sizeof(kgkey) - 1);
 			if (rc == -1) {
 				lprintf(LOG_ERR, "Number of Kg key characters is not even");
+				goto out_free;
 			} else if (rc == -3) {
 				lprintf(LOG_ERR, "Kg key is not hexadecimal number");
 				goto out_free;
