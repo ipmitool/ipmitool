@@ -1381,7 +1381,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else {
-		lprintf(LOG_ERR, "Invalid Chassis command: %s", argv[0]);
+		lprintf(LOG_ERR, "Invalid chassis command: %s", argv[0]);
 		return -1;
 	}
 
