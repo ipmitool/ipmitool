@@ -2369,6 +2369,10 @@ ipmi_lanplus_send_payload(
 
 			rsp = ipmi_lanplus_recv_sol(intf); /* Grab the next packet */
 
+			if (!is_sol_packet(rsp)) {
+				break;
+			}
+
 			if (sol_response_acks_packet(rsp, payload))
 				break;
 
@@ -2381,6 +2385,7 @@ ipmi_lanplus_send_payload(
 				intf->session->sol_data.sol_input_handler(rsp);
 				/* In order to avoid duplicate output, just set data_len to 0 */
 				rsp->data_len = 0;
+				break;
 			}
 		}
 
