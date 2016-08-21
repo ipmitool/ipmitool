@@ -646,6 +646,14 @@ const struct valstr ipmi_encryption_algorithms[] = {
 	{ 0x00, NULL }
 };
 
+const struct valstr ipmi_user_enable_status_vals[] = {
+	{ 0x00, "unknown" },
+	{ 0x40, "enabled" },
+	{ 0x80, "disabled" },
+	{ 0xC0, "reserved" },
+	{ 0xFF, NULL },
+};
+
 const struct valstr picmg_frucontrol_vals[] = {
 	{ 0, "Cold Reset" },
 	{ 1, "Warm Reset"  },

@@ -52,6 +52,7 @@ extern const struct valstr ipmi_auth_algorithms[];
 extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
 extern const struct valstr ipmi_oem_info[];
+extern const struct valstr ipmi_user_enable_status_vals[];
 
 extern const struct valstr picmg_frucontrol_vals[];
 extern const struct valstr picmg_clk_family_vals[];

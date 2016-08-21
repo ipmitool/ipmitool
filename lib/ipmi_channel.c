@@ -734,7 +734,8 @@ ipmi_get_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 		       (user_access.ipmi_messaging) ? "en" : "dis");
 		printf("Privilege Level      : %s\n",
 		       val2str(user_access.privilege_limit, ipmi_privlvl_vals));
-
+		printf("Enable Status        : %s\n",
+			val2str(user_access.enable_status, ipmi_user_enable_status_vals));
 		curr_uid ++;
 	} while (!user_id && curr_uid <= max_uid);
 
