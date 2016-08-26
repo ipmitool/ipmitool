@@ -684,9 +684,9 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			break;
 		}
 		if (rsp->ccode > 0) {
-			/* if we get C8h or CAh completion code then we requested too
+			/* if we get C7h or C8h or CAh return code then we requested too
 			* many bytes at once so try again with smaller size */
-			if ((rsp->ccode == 0xc8 || rsp->ccode == 0xca)
+			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca)
 					&& fru->max_read_size > 8) {
 				if (fru->max_read_size > 32) {
 					/* subtract read length more aggressively */
