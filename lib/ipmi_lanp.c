@@ -1204,12 +1204,27 @@ get_cmdline_ipaddr(char * arg, uint8_t * buf)
 static int
 ipmi_lan_set_vlan_id(struct ipmi_intf *intf,  uint8_t chan, char *string)
 {
+	struct lan_param *p;
 	uint8_t data[2];
 	int rc;
 
 	if (string == NULL) {
-		data[0] = 0;
-		data[1] = 0;
+		lprintf(LOG_DEBUG, "Get current VLAN ID from BMC.");
+		p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
+		if (p != NULL && p->data != NULL && p->data_len > 1) {
+			int id = ((p->data[1] & 0x0f) << 8) + p->data[0];
+			if (id < 1 || id > 4094) {
+				lprintf(LOG_ERR,
+						"Retrieved VLAN ID %i is out of range <1..4094>.",
+						id);
+				return (-1);
+			}
+			data[0] = p->data[0];
+			data[1] = p->data[1] & 0x0F;
+		} else {
+			data[0] = 0;
+			data[1] = 0;
+		}
 	}
 	else {
 		int id = 0;
