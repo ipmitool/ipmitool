@@ -580,7 +580,7 @@ static const struct ipmi_event_sensor_types sensor_specific_event_types[] = {
     { 0xF1, 0x01, 0xff, "IPMB-A enabled, IPMB-B disabled" },
     { 0xF1, 0x02, 0xff, "IPMB-A disabled, IPMB-B enabled" },
     { 0xF1, 0x03, 0xff, "IPMB-A enabled, IPMP-B enabled" },
-    /* PICNG Moduke Hot Swap */
+    /* PICMG Module Hot Swap */
     { 0xF2, 0x00, 0xff, "Module Handle Closed" },
     { 0xF2, 0x01, 0xff, "Module Handle Opened" },
     { 0xF2, 0x02, 0xff, "Quiesced" },
