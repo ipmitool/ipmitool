@@ -579,7 +579,7 @@ static const struct ipmi_event_sensor_types sensor_specific_event_types[] = {
     { 0xF1, 0x00, 0xff, "IPMB-A disabled, IPMB-B disabled" },
     { 0xF1, 0x01, 0xff, "IPMB-A enabled, IPMB-B disabled" },
     { 0xF1, 0x02, 0xff, "IPMB-A disabled, IPMB-B enabled" },
-    { 0xF1, 0x03, 0xff, "IPMB-A enabled, IPMP-B enabled" },
+    { 0xF1, 0x03, 0xff, "IPMB-A enabled, IPMB-B enabled" },
     /* PICMG Module Hot Swap */
     { 0xF2, 0x00, 0xff, "Module Handle Closed" },
     { 0xF2, 0x01, 0xff, "Module Handle Opened" },
@@ -599,7 +599,7 @@ static const struct ipmi_event_sensor_types vita_sensor_event_types[] = {
     { 0xF1, 0x00, 0xFF, "IPMB-A disabled, IPMB-B disabled" },
     { 0xF1, 0x01, 0xFF, "IPMB-A enabled, IPMB-B disabled" },
     { 0xF1, 0x02, 0xFF, "IPMB-A disabled, IPMB-B enabled" },
-    { 0xF1, 0x03, 0xFF, "IPMB-A enabled, IPMP-B enabled" },
+    { 0xF1, 0x03, 0xFF, "IPMB-A enabled, IPMB-B enabled" },
     /* VITA FRU Temperature */
     { 0xF3, 0x00, 0xff, "At or below Lower Non-critical" },
     { 0xF3, 0x01, 0xff, "At or below Lower Critical" },
