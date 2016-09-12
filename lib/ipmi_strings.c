@@ -64,7 +64,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_TOSHIBA,                "Toshiba" },
    { IPMI_OEM_HITACHI_116,            "Hitachi" },
    { IPMI_OEM_HITACHI_399,            "Hitachi" },
-   { IPMI_OEM_NOKIA_SOLUTIONS_AND_NETWORKS, "Nokia Solutions and Networks (formerly 'Nokia Siemens Networks')" },
+   { IPMI_OEM_NOKIA_SOLUTIONS_AND_NETWORKS, "Nokia Solutions and Networks" },
    { IPMI_OEM_BULL,                   "Bull Company" },
    { IPMI_OEM_PPS,                    "Pigeon Point Systems" },
    { IPMI_OEM_BROADCOM,               "Broadcom Corporation" },
