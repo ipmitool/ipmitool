@@ -332,7 +332,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 		break;
 
 	default:
-		lprintf(LOG_NOTICE, "%s%s sensor - %s",
+		lprintf(LOG_NOTICE, "%s%s sensor (0x%02x) - %s",
 			eintf->prefix, type,
 			evt->sel_type.standard_type.sensor_num, desc ? desc : "");
 		break;
