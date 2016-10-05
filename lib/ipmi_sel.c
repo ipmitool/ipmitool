@@ -548,7 +548,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	char *desc = NULL;
-	int chipset_type = 1;
+	int chipset_type = 4;
 	int data1;
 	int data2;
 	int data3;
@@ -614,6 +614,18 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					break;
 				}
 			}
+			for (i = 0; supermicro_older[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_older[i]) {
+					chipset_type = 0;
+					break;
+				}
+			}
+			for (i = 0; supermicro_romely[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_romely[i]) {
+					chipset_type = 1;
+					break;
+				}
+			}
 			for (i = 0; supermicro_x9[i] != 0xFFFF; i++) {
 				if (oem_id == supermicro_x9[i]) {
 					chipset_type = 2;
@@ -626,8 +638,14 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					break;
 				}
 			}
-			for (i = 0; supermicro_x10QRH_X10QBL[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_x10QRH_X10QBL[i]) {
+			for (i = 0; supermicro_x10QRH[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_x10QRH[i]) {
+					chipset_type = 4;
+					break;
+				}
+			}
+			for (i = 0; supermicro_x10QBL[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_x10QBL[i]) {
 					chipset_type = 4;
 					break;
 				}
