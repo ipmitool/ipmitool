@@ -12,6 +12,7 @@
 #define PICMG_CPCI_MAJOR_VERSION                   1
 #define PICMG_ATCA_MAJOR_VERSION                   2
 #define PICMG_AMC_MAJOR_VERSION                    4
+#define PICMG_UTCA_MAJOR_VERSION                   5
 
 /* PICMG commands */
 #define PICMG_GET_PICMG_PROPERTIES_CMD             0x00

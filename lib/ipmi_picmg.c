@@ -37,11 +37,6 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/log.h>
 
-#define PICMG_EXTENSION_ATCA_MAJOR_VERSION  2
-#define PICMG_EXTENSION_AMC0_MAJOR_VERSION  4
-#define PICMG_EXTENSION_UTCA_MAJOR_VERSION  5
-
-
 #define PICMG_EKEY_MODE_QUERY          0
 #define PICMG_EKEY_MODE_PRINT_ALL      1
 #define PICMG_EKEY_MODE_PRINT_ENABLED  2
@@ -2367,9 +2362,9 @@ picmg_discover(struct ipmi_intf *intf) {
 	} else if (rsp->data[0] != 0) {
 	    lprintf(LOG_INFO,"Invalid Get PICMG Properties group extension %#x",
 		    rsp->data[0]);
-	} else if ((rsp->data[1] & 0x0F) != PICMG_EXTENSION_ATCA_MAJOR_VERSION
-		&& (rsp->data[1] & 0x0F) != PICMG_EXTENSION_AMC0_MAJOR_VERSION
-		&& (rsp->data[1] & 0x0F) != PICMG_EXTENSION_UTCA_MAJOR_VERSION) {
+	} else if ((rsp->data[1] & 0x0F) != PICMG_ATCA_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_AMC_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_UTCA_MAJOR_VERSION) {
 	    lprintf(LOG_INFO,"Unknown PICMG Extension Version %d.%d",
 		    (rsp->data[1] & 0x0F), (rsp->data[1] >> 4));
 	} else {
