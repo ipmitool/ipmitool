@@ -1,3 +1,67 @@
+version 1.8.18 2016-10-08
+	* Add mac2str() and str2mac() to print/parse MAC address
+	* Change formatting, remove commented-out code in
+	src/plugins/imb/imbapi.c
+	* Export find_lan_channel() as global
+	* Expose _ipmi_get_channel_info()
+	* Extend buf2str to allow separator
+	* Fix indentation of #define in src/plugins/imb/imbapi.c
+	* Fix missing `goto out_free;` when ipmi_parse_hex() returns (-1)
+	* Fix warning for buf2str argument
+	* ID 408 - fix sel list last X listing
+	* ID: 38 - Protocol violating SOL retries when talking to
+	SIMSO-HTC
+	* ID: 459 - Fix reading FRU on Artesyn (Emerson) shelf manager,
+	MF105.
+	* ID: 464 - ipmievd crash fix in log_event
+	* ID:230 - check return value of malloc() in lib/ipmi_ekanalyzer.c
+	* ID:261 - Fix err. output consistency for % ipmitool chassis
+	INV_PARAM;
+	* ID:287 - Fix print-out of DDR3 SDRAM Serial Number
+	* ID:287 - Remove trailing white-spaces from dimm_spd.c
+	* ID:289 - bmx-snmp-proxy: PEF alerting does not work for
+	multiple destinations
+	* ID:312 - BREAKING CHANGE - Re-design of PEF user interface
+	* ID:312 - Fix bitmask in _ipmi_set_pef_policy_entry()
+	* ID:335 - Check return value of fseek(), prevent segfault
+	* ID:335 - Check return value of fseek(), prevent segfault
+	* ID:355 - Comment out statement without effect in lib/ipmi_sel.c
+	* ID:355 - Fix 'missing initializer' in struct lan_param
+	* ID:355 - Fix ``warning: ISO C forbids zero-size array 'data'''
+	* ID:355 - Fix different pointer type in lib/ipmi_picmg.c
+	* ID:355 - Fix missing struct initializers in lib/ipmi_firewall.c
+	* ID:355 - Fix printf format in lib/ipmi_sunoem.c
+	* ID:355 - Fix printf() related warnings in lib/ipmi_delloem.c
+	* ID:355 - Fix signedness warnings in lib/ipmi_sdr.c
+	* ID:355 - Fix statements without effect in lib/ipmi_ekanalyzer.c
+	* ID:355 - Move section_id from ipmi_fru. to ipmi_fru.c
+	* ID:355 - Replace DEBUG() macro with lprintf(LOG_DEBUG, ...)
+	* ID:375 - Add lan6 subcommand to handle IPv6 LAN parameters
+	* ID:400 - Add support for VITA-specific sensor types and events.
+	* ID:441 - Add support for HMAC_MD5 and HMAC_SHA256
+	* ID:443 - Disable USB driver by default on non-Linux systems
+	* ID:444 - Cleanup of defaults in configure.ac
+	* ID:445 - Fix of compilation on FreeBSD
+	* ID:446 - Fix broken firewall reset iterator
+	* ID:447 - Fix access beyond array limits in serial_terminal
+	* ID:449 - ipmitool close console session for sol deactivate
+	command
+	* ID:451 - Modify the memory ecc error display of SEL for new
+	supermicro motherboards.
+	* ID:452 - Add PICMG extension 5.x for PICMG extension check
+	* ID:454 - Add support for PICMG 3.1 R2.0 Link Types and Link
+	Classes.
+	* ID:456 - Unable to disable the VLAN ID using ipmitool
+	* ID:457 - Display User ID enable/disable status
+	* ID:463 - Removal of Nokia Siemens Networks
+	* ID:465 - Supermicro memory ecc Modify the memory ecc error
+	display of SEL for new supermicro boards.
+	* Moved ipmi_parse_hex() to helper.c
+	* Re-work ipmi_mc_get_guid() and turn it into reusable code
+	* Revert "ID:335 - Check return value of fseek(), prevent
+	segfault"
+	* Rewrite code with the notion that Kg is binary data, not string
+
 version 1.8.17 2016-05-01
 	* Add INSTALL and NEWS, mandated by autoconf
 	* Added missing ipmi_sel_supermicro.h to template Makefile.am
