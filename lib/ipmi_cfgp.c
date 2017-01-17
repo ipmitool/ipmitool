@@ -30,7 +30,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <malloc.h>
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
+#else
+# include <stdlib.h>
+#endif
 #include <string.h>
 
 #include <ipmitool/helper.h>
