@@ -37,6 +37,7 @@
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_fru.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -2702,6 +2703,12 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	}
 	file_offset = ftell(input_file);
 
+	/*
+	 * TODO: This whole file's code is extremely dirty and wicked.
+	 *       Must eventually switch to using ipmi_fru.c code or some
+	 *       specialized FRU library.
+	 */
+
 	/* Board length*/
 	ret = fread(&len, 1, 1, input_file);
 	if ((ret != 1) || ferror(input_file)) {
@@ -2717,14 +2724,15 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		goto out;
 	}
 	if (strncmp(board_type, "Custom", 6 ) != 0) {
-		unsigned char *data;
+		unsigned char *data, *str;
 		unsigned int i = 0;
-		data = malloc(size_board);
+		data = malloc(size_board + 1); /* Make room for type/length field */
 		if (data == NULL) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (size_t)(-1);
 		}
-		ret = fread(data, size_board, 1, input_file);
+		data[0] = len; /* Save the type/length byte in 'data' */
+		ret = fread(data + 1, size_board, 1, input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid board type size!");
 			free(data);
@@ -2733,17 +2741,11 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		}
 		printf("%s type: 0x%02x\n", board_type, len);
 		printf("%s: ", board_type);
-		for (i = 0; i < size_board; i++) {
-			if ((len & TYPE_CODE) == TYPE_CODE) {
-				printf("%c", data[i]);
-			} else {
-				/* other than language code (binary, BCD,
-				 * ASCII 6 bit...) is not supported
-				 */
-				printf("%02x", data[i]);
-			}
-		}
-		printf("\n");
+		i = 0;
+		str = (unsigned char *)get_fru_area_str(data, &i);
+		printf("%s\n", str);
+		free(str);
+		str = NULL;
 		free(data);
 		data = NULL;
 		(*board_length) -= size_board;
@@ -2772,14 +2774,15 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		}
 		printf("Additional Custom Mfg. length: 0x%02x\n", len);
 		if ((size_board > 0) && (size_board < (*board_length))) {
-			unsigned char * additional_data = NULL;
+			unsigned char *additional_data, *str;
 			unsigned int i = 0;
-			additional_data = malloc(size_board);
+			additional_data = malloc(size_board + 1); /* Make room for type/length field */
 			if (additional_data == NULL) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
 				return (size_t)(-1);
 			}
-			ret = fread(additional_data, size_board, 1, input_file);
+			additional_data[0] = len;
+			ret = fread(additional_data + 1, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
 				if (additional_data != NULL) {
@@ -2788,14 +2791,15 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 				}
 				goto out;
 			}
-			printf("Additional Custom Mfg. Data: %02x",
-					additional_data[0]);
-			for (i = 1; i < size_board; i++) {
-				printf("-%02x", additional_data[i]);
-			}
-			printf("\n");
+			printf("Additional Custom Mfg. Data: ");
+			i = 0;
+			str = (unsigned char *)get_fru_area_str(additional_data, &i);
+			printf("%s\n", str);
+			free(str);
+			str = NULL;
 			free(additional_data);
 			additional_data = NULL;
+
 			(*board_length) -= size_board;
 		}
 		else {
