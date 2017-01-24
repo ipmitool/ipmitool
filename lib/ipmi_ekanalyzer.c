@@ -2697,6 +2697,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	int ret = 0;
 	unsigned char len = 0;
 	unsigned int size_board = 0;
+	int custom_fields = 0;
 	if (input_file == NULL || board_type == NULL
 			|| board_length == NULL) {
 		return (size_t)(-1);
@@ -2758,7 +2759,12 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			/* take the rest of data in the area minus 1 byte of 
 			 * checksum
 			 */
-			printf("Additional Custom Mfg. length: 0x%02x\n", len);
+			if (custom_fields) {
+				printf("End of Custom Mfg. fields (0x%02x)\n", len);
+			} else {
+				printf("No Additional Custom Mfg. fields (0x%02x)\n", len);
+			}
+
 			padding = (*board_length) - 1;
 			if ((padding > 0) && (!feof(input_file))) {
 				printf("Unused space: %d (bytes)\n", padding);
@@ -2772,6 +2778,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			printf("Checksum: 0x%02x\n", checksum);
 			goto out;
 		}
+		custom_fields++;
 		printf("Additional Custom Mfg. length: 0x%02x\n", len);
 		if ((size_board > 0) && (size_board < (*board_length))) {
 			unsigned char *additional_data, *str;
@@ -2801,9 +2808,17 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			additional_data = NULL;
 
 			(*board_length) -= size_board;
+			ret = fread(&len, 1, 1, input_file);
+			if ((ret != 1) || ferror(input_file)) {
+				lprintf(LOG_ERR, "Invalid Length!");
+				goto out;
+			}
+			(*board_length)--;
+			size_board = (len & 0x3f);
 		}
 		else {
-			printf("No Additional Custom Mfg. %d\n", *board_length);
+			printf("ERROR: File has insufficient data (%d bytes) for the "
+			       "Additional Custom Mfg. field\n", *board_length);
 			goto out;
 		}
 	}
