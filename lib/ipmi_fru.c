@@ -107,7 +107,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 {
 	static const char bcd_plus[] = "0123456789 -.:,_";
 	char * str;
-	int len, off, size, i, j, k, typecode;
+	int len, off, size, i, j, k, typecode, char_idx;
 	union {
 		uint32_t bits;
 		char chars[4];
@@ -126,15 +126,15 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 
 	switch (typecode) {
 	case 0:           /* 00b: binary/unspecified */
-		/* hex dump -> 2x length */
-		size = (len*2);
+	case 1:           /* 01b: BCD plus */
+		/* hex dump or BCD -> 2x length */
+		size = (len * 2);
 		break;
 	case 2:           /* 10b: 6-bit ASCII */
 		/* 4 chars per group of 1-3 bytes */
-		size = ((((len+2)*4)/3) & ~3);
+		size = (((len * 4 + 2) / 3) & ~3);
 		break;
 	case 3:           /* 11b: 8-bit ASCII */
-	case 1:           /* 01b: BCD plus */
 		/* no length adjustment */
 		size = len;
 		break;
@@ -149,7 +149,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 		return NULL;
 	memset(str, 0, size+1);
 
-	if (len == 0) {
+	if (size == 0) {
 		str[0] = '\0';
 		*offset = off;
 		return str;
@@ -157,30 +157,30 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 
 	switch (typecode) {
 	case 0:        /* Binary */
-		strncpy(str, buf2str(&data[off], len), len*2);
+		strncpy(str, buf2str(&data[off], len), size);
 		break;
 
 	case 1:        /* BCD plus */
-		for (k=0; k<len; k++)
-			str[k] = bcd_plus[(data[off+k] & 0x0f)];
+		for (k = 0; k < size; k++)
+			str[k] = bcd_plus[((data[off + k / 2] >> ((k % 2) ? 0 : 4)) & 0x0f)];
 		str[k] = '\0';
 		break;
 
 	case 2:        /* 6-bit ASCII */
-		for (i=j=0; i<len; i+=3) {
+		for (i = j = 0; i < len; i += 3) {
 			u.bits = 0;
-			k = ((len-i) < 3 ? (len-i) : 3);
+			k = ((len - i) < 3 ? (len - i) : 3);
 #if WORDS_BIGENDIAN
 			u.chars[3] = data[off+i];
 			u.chars[2] = (k > 1 ? data[off+i+1] : 0);
 			u.chars[1] = (k > 2 ? data[off+i+2] : 0);
-#define CHAR_IDX 3
+			char_idx = 3;
 #else
 			memcpy((void *)&u.bits, &data[off+i], k);
-#define CHAR_IDX 0
+			char_idx = 0;
 #endif
 			for (k=0; k<4; k++) {
-				str[j++] = ((u.chars[CHAR_IDX] & 0x3f) + 0x20);
+				str[j++] = ((u.chars[char_idx] & 0x3f) + 0x20);
 				u.bits >>= 6;
 			}
 		}
@@ -188,8 +188,8 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 		break;
 
 	case 3:
-		memcpy(str, &data[off], len);
-		str[len] = '\0';
+		memcpy(str, &data[off], size);
+		str[size] = '\0';
 		break;
 	}
 
