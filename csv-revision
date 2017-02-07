@@ -1,0 +1,10 @@
+#!/bin/sh
+
+git describe --first-parent --tags 2>/dev/null | (
+	IFS=- read tag rev hash
+	if [ $? ] && [ -n "$rev" ]; then
+		echo .$rev.$hash
+	elif [ -d .git ]; then
+		echo .0.gsnapshot
+	fi
+)

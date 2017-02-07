@@ -1,8 +1,8 @@
 dnl
 dnl autoconf for ipmitool
 dnl
-m4_define([git_suffix], m4_esyscmd_s(git describe --always --dirty=wc 2>/dev/null || echo git_snapshot))
-AC_INIT([ipmitool], [1.8.18.git_suffix])
+m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
+AC_INIT([ipmitool], [1.8.18git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([foreign])
