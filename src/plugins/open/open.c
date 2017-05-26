@@ -91,7 +91,7 @@ extern int verbose;
 static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
 {
-	int i = 0;
+	int i = 1;
 
 	char ipmi_dev[16];
 	char ipmi_devfs[16];
