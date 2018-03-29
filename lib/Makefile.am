@@ -31,6 +31,7 @@
 AUTOMAKE_OPTIONS		= subdir-objects
 AM_CPPFLAGS			= -I$(top_srcdir)/include
 MAINTAINERCLEANFILES		= Makefile.in
+PEN_LIST			= $(srcdir)/ipmi_pen_list.inc.c
 
 noinst_LTLIBRARIES		= libipmitool.la
 libipmitool_la_SOURCES	= helper.c ipmi_sdr.c ipmi_sel.c ipmi_sol.c ipmi_pef.c \
@@ -47,4 +48,9 @@ libipmitool_la_SOURCES	= helper.c ipmi_sdr.c ipmi_sel.c ipmi_sol.c ipmi_pef.c \
 libipmitool_la_LDFLAGS		= -export-dynamic
 libipmitool_la_LIBADD		= -lm
 libipmitool_la_DEPENDENCIES	= 
+
+$(PEN_LIST):
+	$(srcdir)/create_pen_list $(PEN_LIST)
+
+ipmi_strings.lo: $(PEN_LIST)
 

@@ -39,63 +39,10 @@
 const struct valstr ipmi_oem_info[] = {
 
    { IPMI_OEM_UNKNOWN,                "Unknown" },
-   { IPMI_OEM_HP,                     "Hewlett-Packard" },
-   { IPMI_OEM_SUN,                    "Sun Microsystems" },
-   { IPMI_OEM_INTEL,                  "Intel Corporation" },
-   { IPMI_OEM_LMC,                    "LMC" },
-   { IPMI_OEM_RADISYS,                "RadiSys Corporation" },
-   { IPMI_OEM_TYAN,                   "Tyan Computer Corporation" },
-   { IPMI_OEM_NEWISYS,                "Newisys" },
-   { IPMI_OEM_SUPERMICRO,             "Supermicro" },
-   { IPMI_OEM_GOOGLE,                 "Google" },
-   { IPMI_OEM_KONTRON,                "Kontron" },
-   { IPMI_OEM_NOKIA,                  "Nokia" },
-   { IPMI_OEM_PICMG,                  "PICMG" },
-   { IPMI_OEM_PEPPERCON,              "Peppercon AG" },
-   { IPMI_OEM_DELL,                   "DELL Inc" },
-   { IPMI_OEM_NEC,                    "NEC" },
-   { IPMI_OEM_MAGNUM,                 "Magnum Technologies" },
-   { IPMI_OEM_FUJITSU_SIEMENS,        "Fujitsu Siemens" },
-   { IPMI_OEM_TATUNG,                 "Tatung" },
-   { IPMI_OEM_AMI,                    "AMI" },
-   { IPMI_OEM_RARITAN,                "Raritan" },
-   { IPMI_OEM_AVOCENT,                "Avocent" },
-   { IPMI_OEM_OSA,                    "OSA" },
-   { IPMI_OEM_TOSHIBA,                "Toshiba" },
-   { IPMI_OEM_HITACHI_116,            "Hitachi" },
-   { IPMI_OEM_HITACHI_399,            "Hitachi" },
-   { IPMI_OEM_NOKIA_SOLUTIONS_AND_NETWORKS, "Nokia Solutions and Networks" },
-   { IPMI_OEM_BULL,                   "Bull Company" },
-   { IPMI_OEM_PPS,                    "Pigeon Point Systems" },
-   { IPMI_OEM_BROADCOM,               "Broadcom Corporation" },
-   { IPMI_OEM_ERICSSON,               "Ericsson AB"},
-   { IPMI_OEM_QUANTA,                 "Quanta" },
-   { IPMI_OEM_VITA,                   "VITA" },
-   { IPMI_OEM_ADVANTECH,              "Advantech" },
-   /************************************************************************
-    * Add ID String for IANA Enterprise Number of IBM & ADLINK
-    * https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
-    *  2
-    *    IBM
-    *      Kristine Adamson
-    *        adamson&us.ibm.com
-    *  4769
-    *    IBM Corporation
-    *      Victor Sample
-    *        vsample&us.ibm.com
-    *  20301
-    *    IBM eServer X
-    *      Lynn Fore
-    *        sls&us.ibm.com
-    *  24339
-    *    ADLINK TECHNOLOGY INC.
-    *      Ryan Hsu
-    *        ryan.hsu&adlinktech.com
-    ************************************************************************/
-   { IPMI_OEM_IBM_2,                  "IBM" },
-   { IPMI_OEM_IBM_4769,               "IBM Corporation" },
-   { IPMI_OEM_IBM_20301,              "IBM eServer X" },
-   { IPMI_OEM_ADLINK_24339,           "ADLINK Technology Inc." },
+
+/* The included file is auto-generated from offical IANA PEN list */
+#include "ipmi_pen_list.inc.c"
+
    { 0xffff , NULL },
 };
 
