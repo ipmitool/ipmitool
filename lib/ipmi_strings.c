@@ -48,6 +48,7 @@ const struct valstr ipmi_oem_info[] = {
 
 const struct oemvalstr ipmi_oem_product_info[] = {
    /* Keep OEM grouped together */
+
    /* Intel stuff, thanks to Tim Bell */
    { IPMI_OEM_INTEL, 0x000C, "TSRLT2" },
    { IPMI_OEM_INTEL, 0x001B, "TIGPR2U" },
@@ -61,6 +62,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_INTEL, 0x0808, "MPCBL0001" },
    { IPMI_OEM_INTEL, 0x0811, "TIGW1U" },
    { IPMI_OEM_INTEL, 0x4311, "NSI2U" },
+
    /* Kontron */
    { IPMI_OEM_KONTRON,4000, "AM4000 AdvancedMC" },
    { IPMI_OEM_KONTRON,4001, "AM4001 AdvancedMC" },
@@ -88,10 +90,13 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_KONTRON,5007, "AT8050" },
    { IPMI_OEM_KONTRON,5301, "AT8400" },
    { IPMI_OEM_KONTRON,5303, "AT8901" },
+
    /* Broadcom */
    { IPMI_OEM_BROADCOM, 5725, "BCM5725" },
+
    /* Ericsson */
    { IPMI_OEM_ERICSSON, 0x0054, "Phantom" },
+
    /* Advantech */
    /* ATCA Blades */
    { IPMI_OEM_ADVANTECH, 0x3393, "MIC-3393" },
@@ -174,6 +179,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_ADVANTECH, 0x9212, "ESP-9212" },
    { IPMI_OEM_ADVANTECH, 0x6000, "CGS-6000" },
    { IPMI_OEM_ADVANTECH, 0x6010, "CGS-6010" },
+
    /* ADLINK Technology Inc. */
    /* AdvancedTCA Processor Blades */
    { IPMI_OEM_ADLINK_24339, 0x3100, "aTCA-3100" },
@@ -230,6 +236,9 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_ADLINK_24339, 0x0410, "MXN-0410" },
    { IPMI_OEM_ADLINK_24339, 0x2600, "MCN-2600" },
    { IPMI_OEM_ADLINK_24339, 0x1500, "MCN-1500" },
+
+   /* YADRO */
+   { IPMI_OEM_YADRO, 0x0001, "VESNIN BMC" },
 
    { 0xffffff        , 0xffff , NULL },
  };
