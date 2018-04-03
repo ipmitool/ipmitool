@@ -48,6 +48,8 @@
 # include <config.h>
 #endif
 
+#define IPMI_DUMMY_MAX_RESPONSE_SIZE 65536
+
 extern int verbose;
 
 /* data_read - read data from socket
@@ -215,8 +217,10 @@ static struct ipmi_rs*
 ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 {
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_DUMMY_MAX_RESPONSE_SIZE];
 	struct dummy_rq req_dummy;
 	struct dummy_rs rsp_dummy;
+	rsp.data = rsp_data;
 
 	if (intf == NULL || intf->fd < 0 || intf->opened != 1) {
 		lprintf(LOG_ERR, "dummy failed on intf check.");
@@ -257,8 +261,9 @@ ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		return NULL;
 	}
 	if (rsp_dummy.data_len > 0) {
-		if (data_read(intf->fd, (uint8_t *)&rsp.data,
-					rsp_dummy.data_len) != 0) {
+		if (rsp_dummy.data_len > IPMI_DUMMY_MAX_RESPONSE_SIZE)
+			return NULL;
+		if (data_read(intf->fd, rsp.data, rsp_dummy.data_len) != 0) {
 			return NULL;
 		}
 	}

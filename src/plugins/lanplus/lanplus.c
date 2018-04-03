@@ -70,11 +70,12 @@
 #include "asf.h"
 
 /*
- * LAN interface is required to support 45 byte request transactions and
- * 42 byte response transactions.
+ * RMCP+ does not have any minimum byte size requirements
+ * but the protocol can support up to nearly 64kB
+ * (less udp/rmcp+ overhead); call it 63kB.
  */
-#define IPMI_LAN_MAX_REQUEST_SIZE	38	/* 45 - 7 */
-#define IPMI_LAN_MAX_RESPONSE_SIZE	34	/* 42 - 8 */
+#define IPMI_LANPLUS_MAX_REQUEST_SIZE	(63 * 1024)
+#define IPMI_LANPLUS_MAX_RESPONSE_SIZE	(63 * 1024)
 
 extern const struct valstr ipmi_rakp_return_codes[];
 extern const struct valstr ipmi_priv_levels[];
@@ -410,10 +411,12 @@ struct ipmi_rs *
 ipmi_lan_recv_packet(struct ipmi_intf * intf)
 {
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_LANPLUS_MAX_RESPONSE_SIZE];
 	fd_set read_set, err_set;
 	struct timeval tmout;
 	int ret;
 
+	rsp.data = rsp_data;
 	FD_ZERO(&read_set);
 	FD_SET(intf->fd, &read_set);
 
@@ -437,7 +440,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * regardless of the order they were sent out.  (unless the
 	 * response is read before the connection refused is returned)
 	 */
-	ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+	ret = recv(intf->fd, rsp.data, intf->max_response_data_size, 0);
 
 	if (ret < 0) {
 		FD_ZERO(&read_set);
@@ -453,7 +456,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
 			return NULL;
 
-		ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+		ret = recv(intf->fd, rsp.data, intf->max_response_data_size, 0);
 		if (ret < 0)
 			return NULL;
 	}
@@ -3660,8 +3663,8 @@ static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 		return -1;
 
     /* setup default LAN maximum request and response sizes */
-    intf->max_request_data_size = IPMI_LAN_MAX_REQUEST_SIZE;
-    intf->max_response_data_size = IPMI_LAN_MAX_RESPONSE_SIZE;
+    intf->max_request_data_size = IPMI_LANPLUS_MAX_REQUEST_SIZE;
+    intf->max_response_data_size = IPMI_LANPLUS_MAX_RESPONSE_SIZE;
 
 	return 0;
 }

@@ -782,6 +782,7 @@ static struct ipmi_rs *
 ipmi_serial_term_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_SERIAL_MAX_RESPONSE];
 	uint8_t msg[IPMI_SERIAL_MAX_RESPONSE], * resp = msg;
 	struct serial_term_request_ctx req_ctx[2];
 	int retry, rv, msg_len, bridging_level;
@@ -790,6 +791,7 @@ ipmi_serial_term_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		return NULL;
 	}
 
+	rsp.data = rsp_data;
 	/* Send the message and receive the answer */
 	for (retry = 0; retry < intf->ssn_params.retry; retry++) {
 		/* build output message */

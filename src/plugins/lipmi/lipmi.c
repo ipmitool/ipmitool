@@ -74,8 +74,9 @@ static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi
 {
 	struct strioctl istr;
 	static struct lipmi_reqrsp reqrsp;
-	static struct ipmi_rs rsp;	
 	static int curr_seq = 0;
+	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[RECV_MAX_PAYLOAD_SIZE];
 
 	if (!intf || !req)
 		return NULL;
@@ -109,6 +110,7 @@ static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi
 	}
 
 	memset(&rsp, 0, sizeof(struct ipmi_rs));
+	rsp.data = rsp_data;
 	rsp.ccode = reqrsp.rsp.ccode;
 	rsp.data_len = reqrsp.rsp.datalength;
 

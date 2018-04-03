@@ -74,8 +74,14 @@
  * LAN interface is required to support 45 byte request transactions and
  * 42 byte response transactions.
  */
-#define IPMI_LAN_MAX_REQUEST_SIZE	38	/* 45 - 7 */
-#define IPMI_LAN_MAX_RESPONSE_SIZE	34	/* 42 - 8 */
+#define IPMI_LAN_MIN_REQUEST_SIZE	38	/* 45 - 7 */
+#define IPMI_LAN_MIN_RESPONSE_SIZE	34	/* 42 - 8 */
+/*
+ * LAN interface CAN support up to 255 bytes in the protocol layer
+ * and this should support packets up to that size. The BMC
+ * is only required to support the minimum, but most likely support more */
+#define IPMI_LAN_MAX_REQUEST_SIZE	(255-7)
+#define IPMI_LAN_MAX_RESPONSE_SIZE	(255-8)
 
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
@@ -249,11 +255,13 @@ static struct ipmi_rs *
 ipmi_lan_recv_packet(struct ipmi_intf * intf)
 {
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_LAN_MAX_RESPONSE_SIZE];
 	fd_set read_set;
 	fd_set err_set;
 	struct timeval tmout;
 	int ret;
 
+	rsp.data = rsp_data;
 	FD_ZERO(&read_set);
 	FD_SET(intf->fd, &read_set);
 
@@ -277,7 +285,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * regardless of the order they were sent out.  (unless the
 	 * response is read before the connection refused is returned)
 	 */
-	ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+	ret = recv(intf->fd, rsp.data, intf->max_response_data_size, 0);
 
 	if (ret < 0) {
 		FD_ZERO(&read_set);
@@ -293,7 +301,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
 			return NULL;
 
-		ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+		ret = recv(intf->fd, rsp.data, IPMI_BUF_SIZE, 0);
 		if (ret < 0)
 			return NULL;
 	}
@@ -652,7 +660,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		if (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_IPMI)
 			rsp->data_len -= 1; /* We don't want the checksum */
 		memmove(rsp->data, rsp->data + x, rsp->data_len);
-		memset(rsp->data + rsp->data_len, 0, IPMI_BUF_SIZE - rsp->data_len);
+		memset(rsp->data + rsp->data_len, 0, intf->max_response_data_size - rsp->data_len);
 	}
 
 	return rsp;

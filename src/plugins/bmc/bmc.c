@@ -133,6 +133,9 @@ ipmi_bmc_send_cmd_ioctl(struct ipmi_intf *intf, struct ipmi_rq *req)
 	struct strioctl istr;
 	static struct bmc_reqrsp reqrsp;
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[RECV_MAX_PAYLOAD_SIZE];
+
+	rsp.data = rsp_data;
 
 	memset(&reqrsp, 0, sizeof (reqrsp));
 	reqrsp.req.fn = req->msg.netfn;
@@ -196,6 +199,7 @@ ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf, struct ipmi_rq *req)
 	bmc_req_t *request = (bmc_req_t *)&msg->msg[0];
 	bmc_rsp_t *response;
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[MESSAGE_BUFSIZE];
 	struct ipmi_rs *ret = NULL;
 
 	msg->m_type = BMC_MSG_REQUEST;
@@ -254,6 +258,7 @@ ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf, struct ipmi_rq *req)
 		}
 
 		memset(&rsp, 0, sizeof (struct ipmi_rs));
+		rsp.data = rsp_data;
 		rsp.ccode = response->ccode;
 		rsp.data_len = response->datalength;
 
