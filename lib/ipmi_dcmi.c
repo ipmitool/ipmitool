@@ -363,7 +363,7 @@ const struct dcmi_cmd nm_ctl_cmds[] = {
 const struct dcmi_cmd nm_ctl_domain[] = {
 	{ 0x00, "global",     "" },
 	{ 0x02, "per_domain", "<platform|CPU|Memory> (default is platform)" },
-	{ 0x04, "per_policy", "<0-7>" },
+	{ 0x04, "per_policy", "<0-255>" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -411,7 +411,7 @@ const struct  dcmi_cmd nm_policy_type_vals[] = {
 
 const struct dcmi_cmd nm_stats_opts[] = {
 	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
-	{ 0x02, "policy_id", "<0-7>" },
+	{ 0x02, "policy_id", "<0-255>" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -432,14 +432,14 @@ const struct dcmi_cmd nm_stats_mode[] = {
 };
 
 const struct dcmi_cmd nm_policy_action[] = {
-	{ 0x00, "get",      "nm policy get policy_id <0-7> "
+	{ 0x00, "get",      "nm policy get policy_id <0-255> "
 	                      "[domain <platform|CPU|Memory>]" },
-	{ 0x04, "add",      "nm policy add policy_id <0-7> "
+	{ 0x04, "add",      "nm policy add policy_id <0-255> "
 	                      "[domain <platform|CPU|Memory>] "
 	                       "correction auto|soft|hard power <watts> | "
 	                       "inlet <temp> trig_lim <param> "
 	                       "stats <seconds> enable|disable" },
-	{ 0x05, "remove",   "nm policy remove policy_id <0-7> "
+	{ 0x05, "remove",   "nm policy remove policy_id <0-255> "
 	                      "[domain <platform|CPU|Memory>]" },
 	{ 0x06, "limiting", "nm policy limiting [domain <platform|CPU|Memory>]" },
 
@@ -545,7 +545,7 @@ const struct dcmi_cmd nm_thresh_cmds[] = {
 
 const struct dcmi_cmd nm_thresh_param[] = {
 	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
-	{ 0x02, "policy_id", "<0-7>" },
+	{ 0x02, "policy_id", "<0-255>" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -2588,6 +2588,7 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t option;
 	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 	struct nm_get_policy policy;
 
 	memset(&policy, 0, sizeof(policy));
@@ -2609,9 +2610,10 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x0B:   /* policy id */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"    Policy ID must be a positive integer 0-7.\n");
+				lprintf(LOG_ERR,"    Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			break;
 		default:
 			printf("    Unknown command 0x%x, skipping.\n", option);
@@ -2620,7 +2622,7 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 		argc--;
 		argv++;
 	}
-	if (policy_id == 0xFF) {
+	if (!have_policy_id) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -2679,6 +2681,7 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t correction;
 	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 	uint16_t power, period, inlet;
 	uint16_t cores;
 	uint32_t limit;
@@ -2763,10 +2766,11 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x0B:   /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				printf("Policy ID must be a positive integer 0-7.\n");
+				printf("Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			policy.policy_id = policy_id;
+			have_policy_id = TRUE;
 			break;
 		case 0x0C:   /* volatile */
 			policy.policy_type |= 0x80;
@@ -2796,7 +2800,7 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 		printf("limit %x\n", limit);
 		return 0;
 	}
-	if (policy_id == 0xFF) {
+	if (!have_policy_id) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -2815,6 +2819,7 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t scope = 0;   /* default control scope of global */
 	uint8_t domain = 0;  /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 
 	argv++;
 	argc--;
@@ -2844,15 +2849,16 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 			}
 		} else if (scope == 0x04) { /* per_policy */
 			if (str2uchar(argv[0], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
+				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			break;
 		}
 		argc--;
 		argv++;
 	}
-	if ((scope == 0x04) && (policy_id == 0xFF)) {
+	if ((scope == 0x04) && !have_policy_id) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -2868,6 +2874,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t option;
 	uint8_t domain = 0;   /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 	int     policy_mode = 0;
 	int     cut;
 	char   *units = "";
@@ -2899,9 +2906,10 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x02:   /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
+				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			break;
 		default:
 			break;
@@ -2925,7 +2933,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	case 0x13:
 		policy_mode = 1;
 		units = (mode == 0x11) ? "Watts" : (mode == 0x12) ? "Celsius" : " %";
-		if (policy_id == 0xFF) {
+		if (!have_policy_id) {
 			print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 			return -1;
 		}
@@ -2998,6 +3006,7 @@ ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t option;
 	uint8_t domain = 0;   /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 
 	argv++;
 	if ((argv[0] == NULL) ||
@@ -3022,9 +3031,10 @@ ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x02:   /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
+				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			break;
 		default:
 			break;
@@ -3032,7 +3042,7 @@ ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
 		argc--;
 		argv++;
 	}
-	if (mode && (policy_id == 0xFF)) {
+	if (mode && !have_policy_id) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -3220,6 +3230,7 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t action;
 	uint8_t domain = 0;   /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 	struct nm_thresh thresh;
 	int i = 0;
 
@@ -3248,9 +3259,10 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x02:   /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
+				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			argc--;
 			argv++;
 			break;
@@ -3267,7 +3279,7 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		}
 	}
-	if (policy_id == 0xFF) {
+	if (!have_policy_id) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -3337,6 +3349,7 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t action;
 	uint8_t domain = 0;   /* default domain of platform */
 	uint8_t policy_id = -1;
+	uint8_t have_policy_id = FALSE;
 	uint8_t count = 0;
 	struct nm_suspend suspend;
 	int i;
@@ -3366,9 +3379,10 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x02:   /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
+				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
+			have_policy_id = TRUE;
 			argc--;
 			argv++;
 			break;
@@ -3401,6 +3415,12 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		}
 	}
+
+	if (!have_policy_id) {
+		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
+		return -1;
+	}
+
 	if (action == 0x02) /* get */
 		return (ipmi_nm_get_suspend(intf, domain, policy_id));
 
