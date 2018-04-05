@@ -74,7 +74,12 @@ static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id);
  * to change a lot of the code in the main().                                  *
  ******************************************************************************/
 
-#define DCMI_CMD_END { 0xFF, NULL, NULL }
+/*
+ * This is a termination macro for all struct dcmi_cmd arrays,
+ * def argument is the default value returned by str2val2()
+ * when string is not found in the array
+ */
+#define DCMI_CMD_END(def) { (def), NULL, NULL }
 
 /* Main set of DCMI commands */
 const struct dcmi_cmd dcmi_cmd_vals[] = {
@@ -90,7 +95,8 @@ const struct dcmi_cmd dcmi_cmd_vals[] = {
 	{ 0x09, "get_conf_param", "     Get DCMI Config Parameters"                   },
 	{ 0x0A, "set_conf_param", "     Set DCMI Config Parameters"                   },
 	{ 0x0B, "oob_discover", "       Ping/Pong Message for DCMI Discovery"         },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* get capabilites */
@@ -100,7 +106,8 @@ const struct dcmi_cmd dcmi_capable_vals[] = {
 		"temperature attributes"                                    },
 	{ 0x03, "optional_attributes", " Lists power capabilities"      },
 	{ 0x04, "managebility access", " Lists OOB channel information" },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* platform capabilities
@@ -112,13 +119,14 @@ const struct dcmi_cmd dcmi_mandatory_platform_capabilities[] = {
 	{ 0x02, "SEL logging available", ""            },
 	{ 0x03, "Chassis power available", ""          },
 	{ 0x04, "Temperature monitor available", ""  },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* optional capabilities */
 const struct dcmi_cmd dcmi_optional_platform_capabilities[] = {
 	{ 0x01, "Power management available", ""       },
-	DCMI_CMD_END
+	DCMI_CMD_END(0xFF)
 };
 
 /* access capabilties */
@@ -129,7 +137,8 @@ const struct dcmi_cmd dcmi_management_access_capabilities[] = {
 	{ 0x04, "Out-of-band primary LAN channel available", ""   },
 	{ 0x05, "SOL enabled", ""                       },
 	{ 0x06, "VLAN capable", ""      },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* identification capabilities */
@@ -137,7 +146,8 @@ const struct dcmi_cmd dcmi_id_capabilities_vals[] = {
 	{ 0x01, "GUID", ""          },
 	{ 0x02, "DHCP hostname", "" },
 	{ 0x03, "Asset tag", ""    },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* Configuration parameters*/
@@ -147,7 +157,8 @@ const struct dcmi_cmd dcmi_conf_param_vals[] = {
 	{ 0x03, "init",            "\t\tInitial timeout interval"  },
 	{ 0x04, "timeout",         "\t\tServer contact timeout interval"  },
 	{ 0x05, "retry",           "\t\tServer contact retry interval"  },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 
@@ -156,7 +167,8 @@ const struct dcmi_cmd dcmi_temp_monitoring_vals[] = {
 	{ 0x01, "inlet", "    Inlet air temperature sensors"  },
 	{ 0x02, "cpu", "      CPU temperature sensors"        },
 	{ 0x03, "baseboard", "Baseboard temperature sensors"  },
-	{ 0xff, NULL, NULL }
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* These are not comands.  These are the DCMI temp sensors and their numbers
@@ -167,7 +179,8 @@ const struct dcmi_cmd dcmi_discvry_snsr_vals[] = {
 	{ 0x40, "Inlet", "    Inlet air temperature sensors"  },
 	{ 0x41, "CPU", "      CPU temperature sensors"        },
 	{ 0x42, "Baseboard", "Baseboard temperature sensors"  },
-	{ 0xff, NULL, NULL }
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* Temperature Readings */
@@ -175,7 +188,8 @@ const struct dcmi_cmd dcmi_temp_read_vals[] = {
 	{ 0x40, "Inlet",        "Inlet air temperature(40h)         " },
 	{ 0x41, "CPU",          "CPU temperature sensors(41h)       " },
 	{ 0x42, "Baseboard",    "Baseboard temperature sensors(42h) " },
-	{ 0xff, NULL, NULL }
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* power management/control commands */
@@ -185,7 +199,8 @@ const struct dcmi_cmd dcmi_pwrmgmt_vals[] = {
 	{ 0x02, "set_limit", " Set a power limit option"                   },
 	{ 0x03, "activate", "  Activate the set power limit"               },
 	{ 0x04, "deactivate", "Deactivate the set power limit"             },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* set power limit commands */
@@ -194,7 +209,8 @@ const struct dcmi_cmd dcmi_pwrmgmt_set_usage_vals[] = {
 	{ 0x01, "limit", "     <number in Watts>" },
 	{ 0x02, "correction", "<number in milliseconds>" },
 	{ 0x03, "sample", "    <number in seconds>" },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* power management/get action commands */
@@ -219,7 +235,8 @@ const struct dcmi_cmd dcmi_pwrmgmt_get_action_vals[] = {
 	{ 0x10, "OEM reserved (10h)", ""},
 
 	{ 0x11, "Log Event to SEL", ""},
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* power management/set action commands */
@@ -244,21 +261,23 @@ const struct dcmi_cmd dcmi_pwrmgmt_action_vals[] = {
 	{ 0x0f, "oem_0f", "OEM reserved (0fh)"},
 	{ 0x10, "oem_10", "OEM reserved (10h)"},
 
-	DCMI_CMD_END
+	DCMI_CMD_END(0xFF)
 };
 
 /* thermal policy action commands */
 const struct dcmi_cmd dcmi_thermalpolicy_vals[] = {
 	{ 0x00, "get", "Get thermal policy"  },
 	{ 0x01, "set", "Set thermal policy"  },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* thermal policy action commands */
 const struct dcmi_cmd dcmi_confparameters_vals[] = {
 	{ 0x00, "get", "Get configuration parameters"  },
 	{ 0x01, "set", "Set configuration parameters"  },
-	DCMI_CMD_END
+
+	DCMI_CMD_END(0xFF)
 };
 
 /* entityIDs used in thermap policy */
@@ -270,7 +289,8 @@ const struct dcmi_cmd dcmi_thermalpolicy_set_parameters_vals[] = {
 	{ 0x01, "sel", "        Log event to SEL"   },
 	{ 0x00, "nosel", "      No 'Log event to SEL' action"   },
 	{ 0x00, "disabled", "   Disabled"   },
-	{ 0x00, NULL, NULL }
+
+	DCMI_CMD_END(0)
 };
 
 
@@ -312,7 +332,8 @@ const struct dcmi_cmd dcmi_sampling_vals[] = {
 	{ 0x4F, "15_min", "" },
 	{ 0x5E, "30_min", "" },
 	{ 0x81, "1_hour", ""},
-	{ 0x00, NULL, NULL },
+
+	DCMI_CMD_END(0)
 };
 
 /* Primary Node Manager commands */
@@ -327,20 +348,23 @@ const struct dcmi_cmd nm_cmd_vals[] = {
 	{ 0x07, "reset", "Reset Statistics" },
 	{ 0x08, "alert", "Set/Get/Clear Alert destination" },
 	{ 0x09, "threshold", "Set/Get Alert Thresholds" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_ctl_cmds[] = {
 	{ 0x01, "enable", " <control scope>" },
 	{ 0x00, "disable", "<control scope>"},
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_ctl_domain[] = {
 	{ 0x00, "global", "" },
 	{ 0x02, "per_domain", "<platform|CPU|Memory> (default is platform)" },
 	{ 0x04, "per_policy", "<0-7>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 /* Node Manager Domain codes */
@@ -350,7 +374,8 @@ const struct dcmi_cmd nm_domain_vals[] = {
 	{ 0x02, "Memory", "" },
 	{ 0x03, "protection", "" },
 	{ 0x04, "I/O", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_version_vals[] = {
@@ -359,7 +384,8 @@ const struct dcmi_cmd nm_version_vals[] = {
 	{ 0x03, "2.0", "" },
 	{ 0x04, "2.5", "" },
 	{ 0x05, "3.0", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_capability_opts[] = {
@@ -368,7 +394,8 @@ const struct dcmi_cmd nm_capability_opts[] = {
 	{ 0x03, "missing", "Missing Power reading trigger" },
 	{ 0x04, "reset", "Time after Host reset trigger" },
 	{ 0x05, "boot", "Boot time policy" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct  dcmi_cmd nm_policy_type_vals[] = {
@@ -377,13 +404,15 @@ const struct  dcmi_cmd nm_policy_type_vals[] = {
 	{ 0x02, "Missing Power reading trigger", "" },
 	{ 0x03, "Time after Host reset trigger", "" },
 	{ 0x04, "number of cores to disable at boot time", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_stats_opts[] = {
 	{ 0x01, "domain", "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-7>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_stats_mode[] = {
@@ -397,7 +426,8 @@ const struct dcmi_cmd nm_stats_mode[] = {
 	{ 0x1D, "cpu_throttling", "CPU throttling" },
 	{ 0x1E, "mem_throttling", "memory throttling" },
 	{ 0x1F, "comm_fail", "host communication failures" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_policy_action[] = {
@@ -405,7 +435,8 @@ const struct dcmi_cmd nm_policy_action[] = {
 	{ 0x04, "add", "nm policy add policy_id <0-7> [domain <platform|CPU|Memory>] correction auto|soft|hard power <watts>|inlet <temp> trig_lim <param> stats <seconds> enable|disable" },
 	{ 0x05, "remove", "nm policy remove policy_id <0-7> [domain <platform|CPU|Memory>]" },
 	{ 0x06, "limiting", "nm policy limiting [domain <platform|CPU|Memory>]" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 const struct dcmi_cmd nm_policy_options[] = {
 	{ 0x01, "enable", "" },
@@ -419,7 +450,8 @@ const struct dcmi_cmd nm_policy_options[] = {
 	{ 0x0B, "policy_id", "policy number" },
 	{ 0x0C, "volatile", "save policy in volatiel memory" },
 	{ 0x0D, "cores_off", "at boot time, disable N cores" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 /* if "trigger" command used from nm_policy_options */
@@ -428,7 +460,8 @@ const struct dcmi_cmd nm_trigger[] = {
 	{ 0x01, "temp", "" },
 	{ 0x02, "reset", "" },
 	{ 0x03, "boot", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 /* if "correction" used from nm_policy_options */
@@ -436,7 +469,8 @@ const struct dcmi_cmd nm_correction[] = {
 	{ 0x00, "auto", "" },
 	{ 0x01, "soft", "" },
 	{ 0x02, "hard", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 /* returned codes from get policy */
@@ -444,7 +478,8 @@ const struct dcmi_cmd nm_correction_vals[] = {
 	{ 0x00, "no T-state use", "" },
 	{ 0x01, "no T-state use", "" },
 	{ 0x02, "use T-states", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 /* if "exception" used from nm_policy_options */
@@ -452,7 +487,8 @@ const struct dcmi_cmd nm_exception[] = {
 	{ 0x00, "none", "" },
 	{ 0x01, "alert", "" },
 	{ 0x02, "shutdown", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_reset_mode[] = {
@@ -463,46 +499,53 @@ const struct dcmi_cmd nm_reset_mode[] = {
 	{ 0x1D, "throttling", "" },
 	{ 0x1E, "memory", "", },
 	{ 0x1F, "comm", "" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_power_range[] = {
 	{ 0x01, "domain", "domain <platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "min", " min <integer value>" },
 	{ 0x03, "max", "max <integer value>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_alert_opts[] = {
 	{ 0x01, "set", "nm alert set chan <chan> dest <dest> string <string>" },
 	{ 0x02, "get", "nm alert get" },
 	{ 0x03, "clear", "nm alert clear dest <dest>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_set_alert_param[] = {
 	{ 0x01, "chan", "chan <channel>" },
 	{ 0x02, "dest", "dest <destination>" },
 	{ 0x03, "string", "string <string>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_thresh_cmds[] = {
 	{ 0x01, "set", "nm thresh set [domain <platform|CPU|Memory>] policy_id <policy> thresh_array" },
 	{ 0x02, "get", "nm thresh get [domain <platform|CPU|Memory>] policy_id <policy>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_thresh_param[] = {
 	{ 0x01, "domain", "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-7>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_suspend_cmds[] = {
 	{ 0x01, "set", "nm suspend set [domain <platform|CPU|Memory]> policy_id <policy> <start> <stop> <pattern>" },
 	{ 0x02, "get", "nm suspend get [domain <platform|CPU|Memory]> policy_id <policy>" },
-	DCMI_CMD_END,
+
+	DCMI_CMD_END(0xFF),
 };
 
 const struct valstr nm_ccode_vals[] = {
