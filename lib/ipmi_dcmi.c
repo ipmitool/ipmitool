@@ -83,29 +83,29 @@ static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id);
 
 /* Main set of DCMI commands */
 const struct dcmi_cmd dcmi_cmd_vals[] = {
-	{ 0x00, "discover", "           Used to discover supported DCMI capabilities" },
-	{ 0x01, "power", "              Platform power limit command options"         },
-	{ 0x02, "sensors", "            Prints the available DCMI sensors"            },
-	{ 0x03, "asset_tag", "          Prints the platform's asset tag"              },
-	{ 0x04, "set_asset_tag", "      Sets the platform's asset tag"                },
-	{ 0x05, "get_mc_id_string", "   Get management controller ID string"          },
-	{ 0x06, "set_mc_id_string", "   Set management controller ID string"          },
-	{ 0x07, "thermalpolicy", "      Thermal policy get/set"                       },
-	{ 0x08, "get_temp_reading", "   Get Temperature Readings"                     },
-	{ 0x09, "get_conf_param", "     Get DCMI Config Parameters"                   },
-	{ 0x0A, "set_conf_param", "     Set DCMI Config Parameters"                   },
-	{ 0x0B, "oob_discover", "       Ping/Pong Message for DCMI Discovery"         },
+	{ 0x00, "discover",         "Used to discover supported DCMI capabilities" },
+	{ 0x01, "power",            "Platform power limit command options" },
+	{ 0x02, "sensors",          "Prints the available DCMI sensors" },
+	{ 0x03, "asset_tag",        "Prints the platform's asset tag" },
+	{ 0x04, "set_asset_tag",    "Sets the platform's asset tag" },
+	{ 0x05, "get_mc_id_string", "Get management controller ID string" },
+	{ 0x06, "set_mc_id_string", "Set management controller ID string" },
+	{ 0x07, "thermalpolicy",    "Thermal policy get/set" },
+	{ 0x08, "get_temp_reading", "Get Temperature Readings" },
+	{ 0x09, "get_conf_param",   "Get DCMI Config Parameters" },
+	{ 0x0A, "set_conf_param",   "Set DCMI Config Parameters" },
+	{ 0x0B, "oob_discover",     "Ping/Pong Message for DCMI Discovery" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* get capabilites */
 const struct dcmi_cmd dcmi_capable_vals[] = {
-	{ 0x01, "platform", "            Lists the system capabilities" },
+	{ 0x01, "platform",             "Lists the system capabilities" },
 	{ 0x02, "mandatory_attributes", "Lists SEL, identification and"
-		"temperature attributes"                                    },
-	{ 0x03, "optional_attributes", " Lists power capabilities"      },
-	{ 0x04, "managebility access", " Lists OOB channel information" },
+	                                "temperature attributes" },
+	{ 0x03, "optional_attributes",  "Lists power capabilities" },
+	{ 0x04, "managebility access",  "Lists OOB channel information" },
 
 	DCMI_CMD_END(0xFF)
 };
@@ -116,47 +116,48 @@ const struct dcmi_cmd dcmi_capable_vals[] = {
  */
 const struct dcmi_cmd dcmi_mandatory_platform_capabilities[] = {
 	{ 0x01, "Identification support available", "" },
-	{ 0x02, "SEL logging available", ""            },
-	{ 0x03, "Chassis power available", ""          },
-	{ 0x04, "Temperature monitor available", ""  },
+	{ 0x02, "SEL logging available",            "" },
+	{ 0x03, "Chassis power available",          "" },
+	{ 0x04, "Temperature monitor available",    "" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* optional capabilities */
 const struct dcmi_cmd dcmi_optional_platform_capabilities[] = {
-	{ 0x01, "Power management available", ""       },
+	{ 0x01, "Power management available", "" },
+
 	DCMI_CMD_END(0xFF)
 };
 
 /* access capabilties */
 const struct dcmi_cmd dcmi_management_access_capabilities[] = {
-	{ 0x01, "In-band KCS channel available", ""               },
-	{ 0x02, "Out-of-band serial TMODE available", ""          },
+	{ 0x01, "In-band KCS channel available", "" },
+	{ 0x02, "Out-of-band serial TMODE available", "" },
 	{ 0x03, "Out-of-band secondary LAN channel available", "" },
-	{ 0x04, "Out-of-band primary LAN channel available", ""   },
-	{ 0x05, "SOL enabled", ""                       },
-	{ 0x06, "VLAN capable", ""      },
+	{ 0x04, "Out-of-band primary LAN channel available", "" },
+	{ 0x05, "SOL enabled", "" },
+	{ 0x06, "VLAN capable", "" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* identification capabilities */
 const struct dcmi_cmd dcmi_id_capabilities_vals[] = {
-	{ 0x01, "GUID", ""          },
+	{ 0x01, "GUID", "" },
 	{ 0x02, "DHCP hostname", "" },
-	{ 0x03, "Asset tag", ""    },
+	{ 0x03, "Asset tag", "" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* Configuration parameters*/
 const struct dcmi_cmd dcmi_conf_param_vals[] = {
-	{ 0x01, "activate_dhcp",   "\tActivate DHCP"},
-	{ 0x02, "dhcp_config",     "\tDHCP Configuration" },
-	{ 0x03, "init",            "\t\tInitial timeout interval"  },
-	{ 0x04, "timeout",         "\t\tServer contact timeout interval"  },
-	{ 0x05, "retry",           "\t\tServer contact retry interval"  },
+	{ 0x01, "activate_dhcp", "\tActivate DHCP" },
+	{ 0x02, "dhcp_config",   "\tDHCP Configuration" },
+	{ 0x03, "init",          "\t\tInitial timeout interval" },
+	{ 0x04, "timeout",       "\t\tServer contact timeout interval" },
+	{ 0x05, "retry",         "\t\tServer contact retry interval" },
 
 	DCMI_CMD_END(0xFF)
 };
@@ -164,9 +165,9 @@ const struct dcmi_cmd dcmi_conf_param_vals[] = {
 
 /* temperature monitoring capabilities */
 const struct dcmi_cmd dcmi_temp_monitoring_vals[] = {
-	{ 0x01, "inlet", "    Inlet air temperature sensors"  },
-	{ 0x02, "cpu", "      CPU temperature sensors"        },
-	{ 0x03, "baseboard", "Baseboard temperature sensors"  },
+	{ 0x01, "inlet",     "Inlet air temperature sensors" },
+	{ 0x02, "cpu",       "CPU temperature sensors" },
+	{ 0x03, "baseboard", "Baseboard temperature sensors" },
 
 	DCMI_CMD_END(0xFF)
 };
@@ -176,119 +177,119 @@ const struct dcmi_cmd dcmi_temp_monitoring_vals[] = {
  * sensor number
  */
 const struct dcmi_cmd dcmi_discvry_snsr_vals[] = {
-	{ 0x40, "Inlet", "    Inlet air temperature sensors"  },
-	{ 0x41, "CPU", "      CPU temperature sensors"        },
-	{ 0x42, "Baseboard", "Baseboard temperature sensors"  },
+	{ 0x40, "Inlet",     "Inlet air temperature sensors" },
+	{ 0x41, "CPU",       "CPU temperature sensors" },
+	{ 0x42, "Baseboard", "Baseboard temperature sensors" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* Temperature Readings */
 const struct dcmi_cmd dcmi_temp_read_vals[] = {
-	{ 0x40, "Inlet",        "Inlet air temperature(40h)         " },
-	{ 0x41, "CPU",          "CPU temperature sensors(41h)       " },
-	{ 0x42, "Baseboard",    "Baseboard temperature sensors(42h) " },
+	{ 0x40, "Inlet",     "Inlet air temperature(40h)" },
+	{ 0x41, "CPU",       "CPU temperature sensors(41h)" },
+	{ 0x42, "Baseboard", "Baseboard temperature sensors(42h)" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* power management/control commands */
 const struct dcmi_cmd dcmi_pwrmgmt_vals[] = {
-	{ 0x00, "reading", "   Get power related readings from the system" },
-	{ 0x01, "get_limit", " Get the configured power limits"            },
-	{ 0x02, "set_limit", " Set a power limit option"                   },
-	{ 0x03, "activate", "  Activate the set power limit"               },
-	{ 0x04, "deactivate", "Deactivate the set power limit"             },
+	{ 0x00, "reading",    "Get power related readings from the system" },
+	{ 0x01, "get_limit",  "Get the configured power limits" },
+	{ 0x02, "set_limit",  "Set a power limit option" },
+	{ 0x03, "activate",   "Activate the set power limit" },
+	{ 0x04, "deactivate", "Deactivate the set power limit" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* set power limit commands */
 const struct dcmi_cmd dcmi_pwrmgmt_set_usage_vals[] = {
-	{ 0x00, "action", "    <no_action | sel_logging | power_off>" },
-	{ 0x01, "limit", "     <number in Watts>" },
+	{ 0x00, "action",     "<no_action | sel_logging | power_off>" },
+	{ 0x01, "limit",      "<number in Watts>" },
 	{ 0x02, "correction", "<number in milliseconds>" },
-	{ 0x03, "sample", "    <number in seconds>" },
+	{ 0x03, "sample",     "<number in seconds>" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* power management/get action commands */
 const struct dcmi_cmd dcmi_pwrmgmt_get_action_vals[] = {
-	{ 0x00, "No Action", ""},
-	{ 0x01, "Hard Power Off & Log Event to SEL", ""},
+	{ 0x00, "No Action", "" },
+	{ 0x01, "Hard Power Off & Log Event to SEL", "" },
 
-	{ 0x02, "OEM reserved (02h)", ""},
-	{ 0x03, "OEM reserved (03h)", ""},
-	{ 0x04, "OEM reserved (04h)", ""},
-	{ 0x05, "OEM reserved (05h)", ""},
-	{ 0x06, "OEM reserved (06h)", ""},
-	{ 0x07, "OEM reserved (07h)", ""},
-	{ 0x08, "OEM reserved (08h)", ""},
-	{ 0x09, "OEM reserved (09h)", ""},
-	{ 0x0a, "OEM reserved (0ah)", ""},
-	{ 0x0b, "OEM reserved (0bh)", ""},
-	{ 0x0c, "OEM reserved (0ch)", ""},
-	{ 0x0d, "OEM reserved (0dh)", ""},
-	{ 0x0e, "OEM reserved (0eh)", ""},
-	{ 0x0f, "OEM reserved (0fh)", ""},
-	{ 0x10, "OEM reserved (10h)", ""},
+	{ 0x02, "OEM reserved (02h)", "" },
+	{ 0x03, "OEM reserved (03h)", "" },
+	{ 0x04, "OEM reserved (04h)", "" },
+	{ 0x05, "OEM reserved (05h)", "" },
+	{ 0x06, "OEM reserved (06h)", "" },
+	{ 0x07, "OEM reserved (07h)", "" },
+	{ 0x08, "OEM reserved (08h)", "" },
+	{ 0x09, "OEM reserved (09h)", "" },
+	{ 0x0a, "OEM reserved (0ah)", "" },
+	{ 0x0b, "OEM reserved (0bh)", "" },
+	{ 0x0c, "OEM reserved (0ch)", "" },
+	{ 0x0d, "OEM reserved (0dh)", "" },
+	{ 0x0e, "OEM reserved (0eh)", "" },
+	{ 0x0f, "OEM reserved (0fh)", "" },
+	{ 0x10, "OEM reserved (10h)", "" },
 
-	{ 0x11, "Log Event to SEL", ""},
+	{ 0x11, "Log Event to SEL", "" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* power management/set action commands */
 const struct dcmi_cmd dcmi_pwrmgmt_action_vals[] = {
-	{ 0x00, "no_action",   "No Action"},
-	{ 0x01, "power_off",   "Hard Power Off & Log Event to SEL"},
-	{ 0x11, "sel_logging", "Log Event to SEL"},
+	{ 0x00, "no_action",   "No Action" },
+	{ 0x01, "power_off",   "Hard Power Off & Log Event to SEL" },
+	{ 0x11, "sel_logging", "Log Event to SEL" },
 
-	{ 0x02, "oem_02", "OEM reserved (02h)"},
-	{ 0x03, "oem_03", "OEM reserved (03h)"},
-	{ 0x04, "oem_04", "OEM reserved (04h)"},
-	{ 0x05, "oem_05", "OEM reserved (05h)"},
-	{ 0x06, "oem_06", "OEM reserved (06h)"},
-	{ 0x07, "oem_07", "OEM reserved (07h)"},
-	{ 0x08, "oem_08", "OEM reserved (08h)"},
-	{ 0x09, "oem_09", "OEM reserved (09h)"},
-	{ 0x0a, "oem_0a", "OEM reserved (0ah)"},
-	{ 0x0b, "oem_0b", "OEM reserved (0bh)"},
-	{ 0x0c, "oem_0c", "OEM reserved (0ch)"},
-	{ 0x0d, "oem_0d", "OEM reserved (0dh)"},
-	{ 0x0e, "oem_0e", "OEM reserved (0eh)"},
-	{ 0x0f, "oem_0f", "OEM reserved (0fh)"},
-	{ 0x10, "oem_10", "OEM reserved (10h)"},
+	{ 0x02, "oem_02", "OEM reserved (02h)" },
+	{ 0x03, "oem_03", "OEM reserved (03h)" },
+	{ 0x04, "oem_04", "OEM reserved (04h)" },
+	{ 0x05, "oem_05", "OEM reserved (05h)" },
+	{ 0x06, "oem_06", "OEM reserved (06h)" },
+	{ 0x07, "oem_07", "OEM reserved (07h)" },
+	{ 0x08, "oem_08", "OEM reserved (08h)" },
+	{ 0x09, "oem_09", "OEM reserved (09h)" },
+	{ 0x0a, "oem_0a", "OEM reserved (0ah)" },
+	{ 0x0b, "oem_0b", "OEM reserved (0bh)" },
+	{ 0x0c, "oem_0c", "OEM reserved (0ch)" },
+	{ 0x0d, "oem_0d", "OEM reserved (0dh)" },
+	{ 0x0e, "oem_0e", "OEM reserved (0eh)" },
+	{ 0x0f, "oem_0f", "OEM reserved (0fh)" },
+	{ 0x10, "oem_10", "OEM reserved (10h)" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* thermal policy action commands */
 const struct dcmi_cmd dcmi_thermalpolicy_vals[] = {
-	{ 0x00, "get", "Get thermal policy"  },
-	{ 0x01, "set", "Set thermal policy"  },
+	{ 0x00, "get", "Get thermal policy" },
+	{ 0x01, "set", "Set thermal policy" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* thermal policy action commands */
 const struct dcmi_cmd dcmi_confparameters_vals[] = {
-	{ 0x00, "get", "Get configuration parameters"  },
-	{ 0x01, "set", "Set configuration parameters"  },
+	{ 0x00, "get", "Get configuration parameters" },
+	{ 0x01, "set", "Set configuration parameters" },
 
 	DCMI_CMD_END(0xFF)
 };
 
 /* entityIDs used in thermap policy */
 const struct dcmi_cmd dcmi_thermalpolicy_set_parameters_vals[] = {
-	{ 0x00, "volatile", "   Current Power Cycle"        },
-	{ 0x01, "nonvolatile", "Set across power cycles"        },
-	{ 0x01, "poweroff", "   Hard Power Off system"          },
-	{ 0x00, "nopoweroff", " No 'Hard Power Off' action"         },
-	{ 0x01, "sel", "        Log event to SEL"   },
-	{ 0x00, "nosel", "      No 'Log event to SEL' action"   },
-	{ 0x00, "disabled", "   Disabled"   },
+	{ 0x00, "volatile",    "Current Power Cycle" },
+	{ 0x01, "nonvolatile", "Set across power cycles" },
+	{ 0x01, "poweroff",    "Hard Power Off system" },
+	{ 0x00, "nopoweroff",  "No 'Hard Power Off' action" },
+	{ 0x01, "sel",         "Log event to SEL" },
+	{ 0x00, "nosel",       "No 'Log event to SEL' action" },
+	{ 0x00, "disabled",    "Disabled" },
 
 	DCMI_CMD_END(0)
 };
@@ -323,44 +324,44 @@ const struct valstr dcmi_ccode_vals[] = {
  */
 
 const struct dcmi_cmd dcmi_sampling_vals[] = {
-	{ 0x05, "5_sec", "" },
+	{ 0x05, "5_sec",  "" },
 	{ 0x0f, "15_sec", "" },
 	{ 0x1E, "30_sec", "" },
-	{ 0x41, "1_min", "" },
-	{ 0x43, "3_min", "" },
-	{ 0x47, "7_min", "" },
+	{ 0x41, "1_min",  "" },
+	{ 0x43, "3_min",  "" },
+	{ 0x47, "7_min",  "" },
 	{ 0x4F, "15_min", "" },
 	{ 0x5E, "30_min", "" },
-	{ 0x81, "1_hour", ""},
+	{ 0x81, "1_hour", "" },
 
 	DCMI_CMD_END(0)
 };
 
 /* Primary Node Manager commands */
 const struct dcmi_cmd nm_cmd_vals[] = {
-	{ 0x00, "discover", "Discover Node Manager " },
+	{ 0x00, "discover",   "Discover Node Manager" },
 	{ 0x01, "capability", "Get Node Manager Capabilities" },
-	{ 0x02, "control", "Enable/Disable Policy Control" },
-	{ 0x03, "policy", "Add/Remove Policies" },
+	{ 0x02, "control",    "Enable/Disable Policy Control" },
+	{ 0x03, "policy",     "Add/Remove Policies" },
 	{ 0x04, "statistics", "Get Statistics" },
-	{ 0x05, "power", "Set Power Draw Range" },
-	{ 0x06, "suspend", "Set/Get Policy suspend periods" },
-	{ 0x07, "reset", "Reset Statistics" },
-	{ 0x08, "alert", "Set/Get/Clear Alert destination" },
-	{ 0x09, "threshold", "Set/Get Alert Thresholds" },
+	{ 0x05, "power",      "Set Power Draw Range" },
+	{ 0x06, "suspend",    "Set/Get Policy suspend periods" },
+	{ 0x07, "reset",      "Reset Statistics" },
+	{ 0x08, "alert",      "Set/Get/Clear Alert destination" },
+	{ 0x09, "threshold",  "Set/Get Alert Thresholds" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_ctl_cmds[] = {
-	{ 0x01, "enable", " <control scope>" },
-	{ 0x00, "disable", "<control scope>"},
+	{ 0x01, "enable",  "<control scope>" },
+	{ 0x00, "disable", "<control scope>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_ctl_domain[] = {
-	{ 0x00, "global", "" },
+	{ 0x00, "global",     "" },
 	{ 0x02, "per_domain", "<platform|CPU|Memory> (default is platform)" },
 	{ 0x04, "per_policy", "<0-7>" },
 
@@ -369,11 +370,11 @@ const struct dcmi_cmd nm_ctl_domain[] = {
 
 /* Node Manager Domain codes */
 const struct dcmi_cmd nm_domain_vals[] = {
-	{ 0x00, "platform", ""  },
-	{ 0x01, "CPU", ""  },
-	{ 0x02, "Memory", "" },
+	{ 0x00, "platform",   "" },
+	{ 0x01, "CPU",        "" },
+	{ 0x02, "Memory",     "" },
 	{ 0x03, "protection", "" },
-	{ 0x04, "I/O", "" },
+	{ 0x04, "I/O",        "" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -389,66 +390,72 @@ const struct dcmi_cmd nm_version_vals[] = {
 };
 
 const struct dcmi_cmd nm_capability_opts[] = {
-	{ 0x01, "domain", "<platform|CPU|Memory> (default is platform)" },
-	{ 0x02, "inlet", "Inlet temp trigger" },
+	{ 0x01, "domain",  "<platform|CPU|Memory> (default is platform)" },
+	{ 0x02, "inlet",   "Inlet temp trigger" },
 	{ 0x03, "missing", "Missing Power reading trigger" },
-	{ 0x04, "reset", "Time after Host reset trigger" },
-	{ 0x05, "boot", "Boot time policy" },
+	{ 0x04, "reset",   "Time after Host reset trigger" },
+	{ 0x05, "boot",    "Boot time policy" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct  dcmi_cmd nm_policy_type_vals[] = {
-	{ 0x00, "No trigger, use Power Limit", "" },
-	{ 0x01, "Inlet temp trigger", "" },
-	{ 0x02, "Missing Power reading trigger", "" },
-	{ 0x03, "Time after Host reset trigger", "" },
+	{ 0x00, "No trigger, use Power Limit",             "" },
+	{ 0x01, "Inlet temp trigger",                      "" },
+	{ 0x02, "Missing Power reading trigger",           "" },
+	{ 0x03, "Time after Host reset trigger",           "" },
 	{ 0x04, "number of cores to disable at boot time", "" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_stats_opts[] = {
-	{ 0x01, "domain", "<platform|CPU|Memory> (default is platform)" },
+	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-7>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_stats_mode[] = {
-	{ 0x01, "power", "global power" },
-	{ 0x02, "temps", "inlet temperature" },
-	{ 0x11, "policy_power", "per policy power" },
-	{ 0x12, "policy_temps", "per policy inlet temp" },
-	{ 0x13, "policy_throt", "per policy throttling stats" },
-	{ 0x1B, "requests", "unhandled requests" },
-	{ 0x1C, "response", "response time" },
+	{ 0x01, "power",          "global power" },
+	{ 0x02, "temps",          "inlet temperature" },
+	{ 0x11, "policy_power",   "per policy power" },
+	{ 0x12, "policy_temps",   "per policy inlet temp" },
+	{ 0x13, "policy_throt",   "per policy throttling stats" },
+	{ 0x1B, "requests",       "unhandled requests" },
+	{ 0x1C, "response",       "response time" },
 	{ 0x1D, "cpu_throttling", "CPU throttling" },
 	{ 0x1E, "mem_throttling", "memory throttling" },
-	{ 0x1F, "comm_fail", "host communication failures" },
+	{ 0x1F, "comm_fail",      "host communication failures" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_policy_action[] = {
-	{ 0x00, "get", "nm policy get policy_id <0-7> [domain <platform|CPU|Memory>]" },
-	{ 0x04, "add", "nm policy add policy_id <0-7> [domain <platform|CPU|Memory>] correction auto|soft|hard power <watts>|inlet <temp> trig_lim <param> stats <seconds> enable|disable" },
-	{ 0x05, "remove", "nm policy remove policy_id <0-7> [domain <platform|CPU|Memory>]" },
+	{ 0x00, "get",      "nm policy get policy_id <0-7> "
+	                      "[domain <platform|CPU|Memory>]" },
+	{ 0x04, "add",      "nm policy add policy_id <0-7> "
+	                      "[domain <platform|CPU|Memory>] "
+	                       "correction auto|soft|hard power <watts> | "
+	                       "inlet <temp> trig_lim <param> "
+	                       "stats <seconds> enable|disable" },
+	{ 0x05, "remove",   "nm policy remove policy_id <0-7> "
+	                      "[domain <platform|CPU|Memory>]" },
 	{ 0x06, "limiting", "nm policy limiting [domain <platform|CPU|Memory>]" },
 
 	DCMI_CMD_END(0xFF),
 };
 const struct dcmi_cmd nm_policy_options[] = {
-	{ 0x01, "enable", "" },
-	{ 0x02, "disable", "" },
-	{ 0x03, "domain", "" },
-	{ 0x04, "inlet", "inlet air temp full limiting (SCRAM)"},
-	{ 0x06, "correction", "auto, soft, hard" },
-	{ 0x08, "power", "power limit in watts" },
-	{ 0x09, "trig_lim", "time to send alert" },
-	{ 0x0A, "stats", "moving window averaging time" },
+	{ 0x01, "enable",    "" },
+	{ 0x02, "disable",   "" },
+	{ 0x03, "domain",    "" },
+	{ 0x04, "inlet",     "inlet air temp full limiting (SCRAM)" },
+	{ 0x06, "correction" "auto, soft, hard" },
+	{ 0x08, "power",     "power limit in watts" },
+	{ 0x09, "trig_lim",  "time to send alert" },
+	{ 0x0A, "stats",     "moving window averaging time" },
 	{ 0x0B, "policy_id", "policy number" },
-	{ 0x0C, "volatile", "save policy in volatiel memory" },
+	{ 0x0C, "volatile",  "save policy in volatiel memory" },
 	{ 0x0D, "cores_off", "at boot time, disable N cores" },
 
 	DCMI_CMD_END(0xFF),
@@ -456,10 +463,10 @@ const struct dcmi_cmd nm_policy_options[] = {
 
 /* if "trigger" command used from nm_policy_options */
 const struct dcmi_cmd nm_trigger[] = {
-	{ 0x00, "none", "" },
-	{ 0x01, "temp", "" },
+	{ 0x00, "none",  "" },
+	{ 0x01, "temp",  "" },
 	{ 0x02, "reset", "" },
-	{ 0x03, "boot", "" },
+	{ 0x03, "boot",  "" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -477,92 +484,97 @@ const struct dcmi_cmd nm_correction[] = {
 const struct dcmi_cmd nm_correction_vals[] = {
 	{ 0x00, "no T-state use", "" },
 	{ 0x01, "no T-state use", "" },
-	{ 0x02, "use T-states", "" },
+	{ 0x02, "use T-states",   "" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 /* if "exception" used from nm_policy_options */
 const struct dcmi_cmd nm_exception[] = {
-	{ 0x00, "none", "" },
-	{ 0x01, "alert", "" },
+	{ 0x00, "none",     "" },
+	{ 0x01, "alert",    "" },
 	{ 0x02, "shutdown", "" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_reset_mode[] = {
-	{ 0x00, "global", "" },
+	{ 0x00, "global",     "" },
 	{ 0x01, "per_policy", "" },
-	{ 0x1B, "requests", "" },
-	{ 0x1C, "response", "" },
+	{ 0x1B, "requests",   "" },
+	{ 0x1C, "response",   "" },
 	{ 0x1D, "throttling", "" },
-	{ 0x1E, "memory", "", },
-	{ 0x1F, "comm", "" },
+	{ 0x1E, "memory",     "" },
+	{ 0x1F, "comm",       "" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_power_range[] = {
 	{ 0x01, "domain", "domain <platform|CPU|Memory> (default is platform)" },
-	{ 0x02, "min", " min <integer value>" },
-	{ 0x03, "max", "max <integer value>" },
+	{ 0x02, "min",    "min <integer value>" },
+	{ 0x03, "max",    "max <integer value>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_alert_opts[] = {
-	{ 0x01, "set", "nm alert set chan <chan> dest <dest> string <string>" },
-	{ 0x02, "get", "nm alert get" },
+	{ 0x01, "set",   "nm alert set chan <chan> dest <dest> string <string>" },
+	{ 0x02, "get",   "nm alert get" },
 	{ 0x03, "clear", "nm alert clear dest <dest>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_set_alert_param[] = {
-	{ 0x01, "chan", "chan <channel>" },
-	{ 0x02, "dest", "dest <destination>" },
+	{ 0x01, "chan",   "chan <channel>" },
+	{ 0x02, "dest",   "dest <destination>" },
 	{ 0x03, "string", "string <string>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_thresh_cmds[] = {
-	{ 0x01, "set", "nm thresh set [domain <platform|CPU|Memory>] policy_id <policy> thresh_array" },
-	{ 0x02, "get", "nm thresh get [domain <platform|CPU|Memory>] policy_id <policy>" },
+	{ 0x01, "set", "nm thresh set [domain <platform|CPU|Memory>] "
+	                              "policy_id <policy> thresh_array" },
+	{ 0x02, "get", "nm thresh get [domain <platform|CPU|Memory>] "
+	                              "policy_id <policy>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_thresh_param[] = {
-	{ 0x01, "domain", "<platform|CPU|Memory> (default is platform)" },
+	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-7>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct dcmi_cmd nm_suspend_cmds[] = {
-	{ 0x01, "set", "nm suspend set [domain <platform|CPU|Memory]> policy_id <policy> <start> <stop> <pattern>" },
-	{ 0x02, "get", "nm suspend get [domain <platform|CPU|Memory]> policy_id <policy>" },
+	{ 0x01, "set", "nm suspend set [domain <platform|CPU|Memory]> "
+	                               "policy_id <policy> <start> "
+		                                     "<stop> <pattern>" },
+	{ 0x02, "get", "nm suspend get [domain <platform|CPU|Memory]> "
+	                               "policy_id <policy>" },
 
 	DCMI_CMD_END(0xFF),
 };
 
 const struct valstr nm_ccode_vals[] = {
-	{ 0x80, "Policy ID Invalid"},
-	{ 0x81, "Domain ID Invalid"},
-	{ 0x82, "Unknown policy trigger type"},
-	{ 0x84, "Power Limit out of range"},
-	{ 0x85, "Correction Time out of range"},
-	{ 0x86, "Policy Trigger value out of range"},
-	{ 0x88, "Invalid Mode"},
-	{ 0x89, "Statistics Reporting Period out of range"},
-	{ 0x8B, "Invalid value for Aggressive CPU correction field"},
-	{ 0xA1, "No policy is currently limiting for the specified domain ID"},
-	{ 0xC4, "No space available"},
-	{ 0xD4, "Insufficient privledge level due wrong responder LUN"},
-	{ 0xD5, "Policy exists and param unchangeable while enabled"},
-	{ 0xD6, "Command subfunction disabled or unavailable"},
+	{ 0x80, "Policy ID Invalid" },
+	{ 0x81, "Domain ID Invalid" },
+	{ 0x82, "Unknown policy trigger type" },
+	{ 0x84, "Power Limit out of range" },
+	{ 0x85, "Correction Time out of range" },
+	{ 0x86, "Policy Trigger value out of range" },
+	{ 0x88, "Invalid Mode" },
+	{ 0x89, "Statistics Reporting Period out of range" },
+	{ 0x8B, "Invalid value for Aggressive CPU correction field" },
+	{ 0xA1, "No policy is currently limiting for the specified domain ID" },
+	{ 0xC4, "No space available" },
+	{ 0xD4, "Insufficient privledge level due wrong responder LUN" },
+	{ 0xD5, "Policy exists and param unchangeable while enabled" },
+	{ 0xD6, "Command subfunction disabled or unavailable" },
 	{ 0xFF, NULL },
 };
 
@@ -582,7 +594,7 @@ const struct valstr nm_ccode_vals[] = {
  */
 void
 print_strs(const struct dcmi_cmd * vs, const char * title, int loglevel,
-		int verthorz)
+           int verthorz)
 {
 	int i;
 
@@ -643,10 +655,8 @@ str2val2(const char *str, const struct dcmi_cmd *vs)
 		return 0;
 	}
 	for (i = 0; vs[i].str != NULL; i++) {
-		if (strncasecmp(vs[i].str, str,
-					__maxlen(str, vs[i].str)) == 0) {
+		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
 			return vs[i].val;
-		}
 	}
 	return vs[i].val;
 }
@@ -696,16 +706,17 @@ chk_rsp(struct ipmi_rs * rsp)
 	 */
 	if ((rsp->ccode >= 0x80) && (rsp->ccode <= 0x8F)) {
 		lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
-				val2str(rsp->ccode, dcmi_ccode_vals), rsp->ccode);
+		        val2str(rsp->ccode, dcmi_ccode_vals), rsp->ccode);
 		return 1;
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
-				val2str(rsp->ccode, completion_code_vals), rsp->ccode);
+		        val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return 1;
 	}
 	/* check to make sure this is a DCMI firmware */
 	if(rsp->data[0] != IPMI_DCMI) {
-		printf("\n    A valid DCMI command was not returned! (%x)", rsp->data[0]);
+		printf("\n    A valid DCMI command was not returned! (%x)",
+		       rsp->data[0]);
 		return 1;
 	}
 	return 0;
@@ -835,7 +846,7 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 
 	if (intf->fd < 0) {
 		lperror(LOG_ERR, "Connect to %s failed",
-			p->hostname);
+		        p->hostname);
 		intf->close(intf);
 		return -1;
 	}
@@ -871,16 +882,17 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 	memcpy(&reply, rsp->data, sizeof (reply));
 	/* check to make sure that this is a 1.0/1.1/1.5 command */
 	if ((cape.conformance != IPMI_DCMI_CONFORM)
-			&& (cape.conformance != IPMI_DCMI_1_1_CONFORM)
-			&& (cape.conformance != IPMI_DCMI_1_5_CONFORM)) {
+	    && (cape.conformance != IPMI_DCMI_1_1_CONFORM)
+	    && (cape.conformance != IPMI_DCMI_1_5_CONFORM))
+	{
 		lprintf(LOG_ERR,
-				"ERROR!  This command is not available on this platform");
+		        "ERROR!  This command is not available on this platform");
 		return -1;
 	}
 	/* check to make sure that this is a rev .01 or .02 */
 	if (cape.revision != 0x01 && cape.revision != 0x02) {
 		lprintf(LOG_ERR,
-				"ERROR!  This command is not compatible with this version");
+		        "ERROR!  This command is not compatible with this version");
 		return -1;
 	}
 	/* 0x01 - platform capabilities
@@ -897,20 +909,20 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 		 * struct
 		 */
 		printf("\n         Mandatory platform capabilties\n");
-		display_capabilities_attributes(
-				dcmi_mandatory_platform_capabilities, cape.data_byte1);
+		display_capabilities_attributes(dcmi_mandatory_platform_capabilities,
+		                                cape.data_byte1);
 		/* loop through each of the entries in the second byte from the
 		 * struct
 		 */
 		printf("\n         Optional platform capabilties\n");
-		display_capabilities_attributes(
-				dcmi_optional_platform_capabilities, cape.data_byte2);
+		display_capabilities_attributes(dcmi_optional_platform_capabilities,
+		                                cape.data_byte2);
 		/* loop through each of the entries in the third byte from the
 		 * struct
 		 */
 		printf("\n         Managebility access capabilties\n");
-		display_capabilities_attributes(
-				dcmi_management_access_capabilities, cape.data_byte3);
+		display_capabilities_attributes(dcmi_management_access_capabilities,
+		                                cape.data_byte3);
 		break;
 	case 0x02:
 		printf("\n    Mandatory platform attributes:\n");
@@ -934,12 +946,12 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 		printf("\n               %d SEL entries\n", sel_entries & 0xFFF);
 		/* byte 3 data */
 		printf("\n         Identification Attributes: \n");
-		display_capabilities_attributes(
-				dcmi_id_capabilities_vals, cape.data_byte3);
+		display_capabilities_attributes(dcmi_id_capabilities_vals,
+		                                cape.data_byte3);
 		/* byte 4 data */
 		printf("\n         Temperature Monitoring Attributes: \n");
 		display_capabilities_attributes(dcmi_temp_monitoring_vals,
-				cape.data_byte4);
+		                                cape.data_byte4);
 		break;
 	case 0x03:
 		printf("\n    Optional Platform Attributes: \n");
@@ -949,19 +961,19 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 			printf("                Slave address of device: 20h (BMC)\n" );
 		} else {
 			printf("                Slave address of device: %xh (8bits)"
-					"(Satellite/External controller)\n",
-					cape.data_byte1);
+			       "(Satellite/External controller)\n",
+			       cape.data_byte1);
 		}
 		/* Controller channel number (4-7) bits */
 		if ((cape.data_byte2>>4) == 0x00) {
 			printf("                Channel number is 0h (Primary BMC)\n");
 		} else {
 			printf("                Channel number is %xh \n",
-					(cape.data_byte2>>4));
+			       (cape.data_byte2 >> 4));
 		}
 		/* Device revision (0-3) */
 		printf("                    Device revision is %d \n",
-				cape.data_byte2 &0xf);
+		       cape.data_byte2 & 0xf);
 		break;
 	case 0x04:
 		/* LAN */
@@ -970,20 +982,20 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 			printf("         Primary LAN channel is not available for OOB\n");
 		} else {
 			printf("         Primary LAN channel number: %d is available\n",
-					cape.data_byte1);
+			       cape.data_byte1);
 		}
 		if (cape.data_byte2 == 0xFF) {
 			printf("         Secondary LAN channel is not available for OOB\n");
 		} else {
 			printf("         Secondary LAN channel number: %d is available\n",
-					cape.data_byte2);
+			       cape.data_byte2);
 		}
 		/* serial */
 		if (cape.data_byte3 == 0xFF) {
 			printf("         No serial channel is available\n");
 		} else {
 			printf("         Serial channel number: %d is available\n",
-					cape.data_byte3);
+			       cape.data_byte3);
 		}
 		break;
 	case 0x05:
@@ -1057,8 +1069,9 @@ ipmi_dcmi_prnt_getassettag(struct ipmi_intf * intf)
 	taglength = rsp->data[1];
 	printf("\n Asset tag: ");
 	while (taglength) {
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ?
-			DCMI_MAX_BYTE_SIZE : taglength%DCMI_MAX_BYTE_SIZE;
+		/* TODO: Add parentheses for clarity */
+		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
+		                                           : taglength % DCMI_MAX_BYTE_SIZE;
 		rsp = ipmi_dcmi_getassettag(intf, offset, getlength);
 		/* macro has no effect here where can generate sig segv
 		 * if rsp occurs with null
@@ -1130,8 +1143,9 @@ ipmi_dcmi_prnt_setassettag(struct ipmi_intf * intf, uint8_t * data)
 	}
 	printf("\n Set Asset Tag: ");
 	while (taglength) {
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ?
-			DCMI_MAX_BYTE_SIZE : taglength%DCMI_MAX_BYTE_SIZE;
+		/* TODO: Use a macro or an inline for this repeating calculation */
+		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
+		                                           : taglength % DCMI_MAX_BYTE_SIZE;
 		memcpy(tmpData, data + offset, getlength);
 		rsp = ipmi_dcmi_setassettag(intf, offset, getlength, tmpData);
 		if (chk_rsp(rsp)) {
@@ -1195,8 +1209,9 @@ ipmi_dcmi_prnt_getmngctrlids(struct ipmi_intf * intf)
 
 	printf("\n Get Management Controller Identifier String: ");
 	while (taglength) {
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ?
-			DCMI_MAX_BYTE_SIZE : taglength%DCMI_MAX_BYTE_SIZE;
+		/* TODO: Use a macro or an inline for this repeating calculation */
+		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
+		                                           : taglength % DCMI_MAX_BYTE_SIZE;
 		rsp = ipmi_dcmi_getmngctrlids(intf, offset, getlength);
 
 		if (chk_rsp(rsp)) {
@@ -1272,8 +1287,9 @@ ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
 
 	printf("\n Set Management Controller Identifier String Command: ");
 	while (taglength) {
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ?
-			DCMI_MAX_BYTE_SIZE : taglength%DCMI_MAX_BYTE_SIZE;
+		/* TODO: Use a macro or an inline for this repeating calculation */
+		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
+		                                           : taglength % DCMI_MAX_BYTE_SIZE;
 		memcpy(tmpData, data + offset, getlength);
 		rsp = ipmi_dcmi_setmngctrlids(intf, offset, getlength, tmpData);
 		/* because after call "Set mc id string" RMCP+ will go down
@@ -1348,9 +1364,9 @@ ipmi_dcmi_prnt_discvry_snsr(struct ipmi_intf * intf, uint8_t isnsr)
 	}
 	instances = rsp->data[1];
 	printf("\n%s: %d temperature sensor%s found:\n",
-			val2str2(isnsr, dcmi_discvry_snsr_vals),
-			instances,
-			(instances > 1) ? "s" : "");
+	       val2str2(isnsr, dcmi_discvry_snsr_vals),
+	       instances,
+	       (instances > 1) ? "s" : "");
 	while(instances > 0) {
 		ipmi_dcmi_discvry_snsr(intf, isnsr, offset);
 		if (chk_rsp(rsp)) {
@@ -1418,15 +1434,15 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	gmtime_r(&t, &tm_t);
 	printf("\n");
 	printf("    Instantaneous power reading:              %8d Watts\n",
-			val.curr_pwr);
+	       val.curr_pwr);
 	printf("    Minimum during sampling period:           %8d Watts\n",
-			val.min_sample);
+	       val.min_sample);
 	printf("    Maximum during sampling period:           %8d Watts\n",
-			val.max_sample);
+	       val.max_sample);
 	printf("    Average power reading over sample period: %8d Watts\n",
-			val.avg_pwr);
+	       val.avg_pwr);
 	printf("    IPMI timestamp:                           %s",
-			asctime(&tm_t));
+	       asctime(&tm_t));
 	printf("    Sampling period:                          ");
 	if (sample_time)
 		printf("%s \n", val2str2(val.sample,dcmi_sampling_vals));
@@ -1477,16 +1493,16 @@ ipmi_dcmi_getthermalpolicy(struct ipmi_intf * intf, uint8_t entityID,
 	memcpy(&val, rsp->data, sizeof (val));
 	printf("\n");
 	printf("    Persistence flag is:                      %s\n",
-			((val.exceptionActions & 0x80) ? "set" : "notset"));
+	       ((val.exceptionActions & 0x80) ? "set" : "notset"));
 	printf("    Exception Actions, taken if the Temperature Limit exceeded:\n");
 	printf("        Hard Power Off system and log event:  %s\n",
-			((val.exceptionActions & 0x40) ? "active":"inactive"));
+	       ((val.exceptionActions & 0x40) ? "active":"inactive"));
 	printf("        Log event to SEL only:                %s\n",
-			((val.exceptionActions & 0x20) ? "active":"inactive"));
+	       ((val.exceptionActions & 0x20) ? "active":"inactive"));
 	printf("    Temperature Limit                         %d degrees\n",
-			val.tempLimit);
+	       val.tempLimit);
 	printf("    Exception Time                            %d seconds\n",
-			val.exceptionTime);
+	       val.exceptionTime);
 	printf("\n\n");
 	return 0;
 }
@@ -1497,14 +1513,14 @@ ipmi_dcmi_getthermalpolicy(struct ipmi_intf * intf, uint8_t entityID,
  */
 int
 ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
-		uint8_t entityID,
-		uint8_t entityInst,
-		uint8_t persistanceFlag,
-		uint8_t actionHardPowerOff,
-		uint8_t actionLogToSEL,
-		uint8_t tempLimit,
-		uint8_t samplingTimeLSB,
-		uint8_t samplingTimeMSB)
+                           uint8_t entityID,
+                           uint8_t entityInst,
+                           uint8_t persistanceFlag,
+                           uint8_t actionHardPowerOff,
+                           uint8_t actionLogToSEL,
+                           uint8_t tempLimit,
+                           uint8_t samplingTimeLSB,
+                           uint8_t samplingTimeMSB)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1515,8 +1531,8 @@ ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
 	msg_data[2] = entityInst; /* Entity Instance */
 	/* persistance and actions or disabled if no actions */
 	msg_data[3] = (((persistanceFlag ? 1 : 0) << 7) |
-			((actionHardPowerOff? 1 : 0) << 6) |
-			((actionLogToSEL ? 1 : 0) << 5));
+	               ((actionHardPowerOff? 1 : 0) << 6) |
+	               ((actionLogToSEL ? 1 : 0) << 5));
 	msg_data[4] = tempLimit;
 	msg_data[5] = samplingTimeLSB;
 	msg_data[6] = samplingTimeMSB;
@@ -1535,7 +1551,7 @@ ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
 	}
 	/* rsp->data[0] is equal to response data byte 2 in spec */
 	printf("\nThermal policy %d for %0Xh entity successfully set.\n\n",
-			entityInst, entityID);
+	       entityInst, entityID);
 	return 0;
 }
 
@@ -1547,9 +1563,9 @@ ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
  */
 struct ipmi_rs *
 ipmi_dcmi_get_temp_readings(struct ipmi_intf * intf,
-		uint8_t entityID,
-		uint8_t entityInst,
-		uint8_t entityInstStart)
+                            uint8_t entityID,
+                            uint8_t entityInst,
+                            uint8_t entityInstStart)
 {
 	struct ipmi_rq req;
 	uint8_t msg_data[5]; /* number of request data bytes */
@@ -1579,7 +1595,8 @@ ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 	for (i = 0; dcmi_temp_read_vals[i].str != NULL; i++) {
 		/* get all of the information about this sensor */
 		rsp = ipmi_dcmi_get_temp_readings(intf,
-				dcmi_temp_read_vals[i].val, 0, 0);
+		                                  dcmi_temp_read_vals[i].val,
+		                                  0, 0);
 		if (chk_rsp(rsp)) {
 			continue;
 		}
@@ -1588,10 +1605,11 @@ ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 		tota_inst = rsp->data[1];
 		while (tota_inst > 0) {
 			get_inst = ((tota_inst / DCMI_MAX_BYTE_TEMP_READ_SIZE) ?
-					DCMI_MAX_BYTE_TEMP_READ_SIZE :
-					(tota_inst % DCMI_MAX_BYTE_TEMP_READ_SIZE));
+			            DCMI_MAX_BYTE_TEMP_READ_SIZE :
+			            (tota_inst % DCMI_MAX_BYTE_TEMP_READ_SIZE));
 			rsp = ipmi_dcmi_get_temp_readings(intf,
-					dcmi_temp_read_vals[i].val, offset, 0);
+			                                  dcmi_temp_read_vals[i].val,
+			                                  offset, 0);
 			if (chk_rsp(rsp)) {
 				continue;
 			}
@@ -1602,8 +1620,9 @@ ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 				/* Print Instance temperature info */
 				printf("\n%s",dcmi_temp_read_vals[i].desc);
 				printf("\t\t%i\t\t%c%i C", rsp->data[j+4],
-						((rsp->data[j+3]) >> 7) ?
-						'-' : '+', (rsp->data[j+3] & 127));
+				       ((rsp->data[j+3]) >> 7) ? '-'
+				                               : '+',
+				       (rsp->data[j+3] & 127));
 			}
 			offset += get_inst;
 			tota_inst -= get_inst;
@@ -1648,8 +1667,10 @@ ipmi_dcmi_prnt_getconfparam(struct ipmi_intf * intf)
 	int param_selector;
 	uint16_t tmp_value = 0;
 	/* We are not interested in parameter 1 which always will return 0 */
-	for (param_selector = 2 ; param_selector <= dcmi_conf_params;
-			param_selector++) {
+	for (param_selector = 2;
+	     param_selector <= dcmi_conf_params;
+	     param_selector++)
+	{
 		rsp = ipmi_dcmi_getconfparam(intf, param_selector);
 		if (chk_rsp(rsp)) {
 			return -1;
@@ -1660,9 +1681,10 @@ ipmi_dcmi_prnt_getconfparam(struct ipmi_intf * intf)
 			tmp_value = (rsp->data[4])& 1;
 			printf("\n\tDHCP Discovery method\t: ");
 			printf("\n\t\tManagement Controller ID String is %s",
-					tmp_value ? "enabled" : "disabled");
-			printf("\n\t\tVendor class identifier DCMI IANA and Vendor class-specific Informationa are %s",
-					((rsp->data[4])& 2) ? "enabled" : "disabled" );
+			       tmp_value ? "enabled" : "disabled");
+			printf("\n\t\tVendor class identifier DCMI IANA and Vendor "
+			       "class-specific Informationa are %s",
+			       ((rsp->data[4])& 2) ? "enabled" : "disabled" );
 			break;
 		case 3:
 			printf("\n\tInitial timeout interval\t: %i seconds",
@@ -1670,11 +1692,11 @@ ipmi_dcmi_prnt_getconfparam(struct ipmi_intf * intf)
 			break;
 		case 4:
 			printf("\n\tServer contact timeout interval\t: %i seconds",
-					rsp->data[4] + (rsp->data[5]<<8));
+			       rsp->data[4] + (rsp->data[5]<<8));
 			break;
 		case 5:
 			printf("\n\tServer contact retry interval\t: %i seconds",
-					rsp->data[4] + (rsp->data[5] << 8));
+			       rsp->data[4] + (rsp->data[5] << 8));
 			break;
 		default:
 			printf("\n\tConfiguration Parameter not supported.");
@@ -1784,10 +1806,10 @@ ipmi_dcmi_pwr_prnt_glimit(struct ipmi_intf * intf)
 	/* printf("Group Extension Identification: %02x\n", rsp->data[0]); */
 	memcpy(&val, rsp->data, sizeof (val));
 	printf("\n    Current Limit State: %s\n",
-			(realCc == 0) ?
-			"Power Limit Active" : "No Active Power Limit");
+	       (realCc == 0) ?
+	       "Power Limit Active" : "No Active Power Limit");
 	printf("    Exception actions:   %s\n",
-			val2str2(val.action, dcmi_pwrmgmt_get_action_vals));
+	       val2str2(val.action, dcmi_pwrmgmt_get_action_vals));
 	printf("    Power Limit:         %i Watts\n", val.limit);
 	printf("    Correction time:     %i milliseconds\n", val.correction);
 	printf("    Sampling period:     %i seconds\n", val.sample);
@@ -1845,8 +1867,8 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	 * val.sample = *(uint16_t*)(&rsp->data[12]);
 	 */
 	lprintf(LOG_INFO,
-			"DCMI IN  Limit=%d Correction=%d Action=%d Sample=%d\n",
-			val.limit, val.correction, val.action, val.sample);
+	        "DCMI IN  Limit=%d Correction=%d Action=%d Sample=%d\n",
+	        val.limit, val.correction, val.action, val.sample);
 	switch (str2val2(option, dcmi_pwrmgmt_set_usage_vals)) {
 	case 0x00:
 		/* action */
@@ -1926,7 +1948,7 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 		case 0xFF:
 			/* error - not a string we knew what to do with */
 			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
-					option, value);
+			        option, value);
 			return -1;
 		}
 		break;
@@ -1934,7 +1956,7 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 		/* limit */
 		if (str2uint(value, &lvalue) != 0) {
 			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
-					option, value);
+			        option, value);
 			return (-1);
 		}
 		val.limit = *(uint16_t*)(&lvalue);
@@ -1943,7 +1965,7 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 		/* correction */
 		if (str2uint(value, &lvalue) != 0) {
 			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
-					option, value);
+			        option, value);
 			return (-1);
 		}
 		val.correction = *(uint32_t*)(&lvalue);
@@ -1952,7 +1974,7 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 		/* sample */
 		if (str2uint(value, &lvalue) != 0) {
 			lprintf(LOG_ERR, "Given %s '%s' is invalid.",
-					option, value);
+			        option, value);
 			return (-1);
 		}
 		val.sample = *(uint16_t*)(&lvalue);
@@ -2073,7 +2095,8 @@ _ipmi_nm_discover(struct ipmi_intf * intf, struct nm_discover *disc)
  * @caps:   fills in capability struct
  */
 static int
-_ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain, uint8_t trigger, struct nm_capability *caps)
+_ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain,
+                         uint8_t trigger, struct nm_capability *caps)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2098,7 +2121,8 @@ _ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain, uint8_t trigge
 }
 
 static int
-_ipmi_nm_get_policy(struct ipmi_intf * intf, uint8_t domain, uint8_t policy_id, struct nm_get_policy *policy)
+_ipmi_nm_get_policy(struct ipmi_intf * intf, uint8_t domain,
+                    uint8_t policy_id, struct nm_get_policy *policy)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2132,7 +2156,9 @@ _ipmi_nm_set_policy(struct ipmi_intf * intf, struct nm_policy *policy)
 	req.msg.cmd = IPMI_NM_SET_POLICY;
 	req.msg.data = (uint8_t *)policy;
 	req.msg.data_len = sizeof(struct nm_policy);
-	policy->intel_id[0] = 0x57; policy->intel_id[1] =1; policy->intel_id[2] =0;
+	policy->intel_id[0] = 0x57;
+	policy->intel_id[1] = 1;
+	policy->intel_id[2] = 0;
 	rsp = intf->sendrecv(intf, &req);
 	if (chk_nm_rsp(rsp)) {
 		return -1;
@@ -2166,7 +2192,8 @@ _ipmi_nm_policy_limiting(struct ipmi_intf * intf, uint8_t domain)
 }
 
 static int
-_ipmi_nm_control(struct ipmi_intf * intf, uint8_t scope, uint8_t domain, uint8_t policy_id)
+_ipmi_nm_control(struct ipmi_intf * intf, uint8_t scope,
+                 uint8_t domain, uint8_t policy_id)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2200,7 +2227,8 @@ _ipmi_nm_control(struct ipmi_intf * intf, uint8_t scope, uint8_t domain, uint8_t
  * @selector: Parameter selector
  */
 static int
-_ipmi_nm_statistics(struct ipmi_intf * intf, uint8_t mode, uint8_t domain, uint8_t policy_id, struct nm_statistics *caps)
+_ipmi_nm_statistics(struct ipmi_intf * intf, uint8_t mode, uint8_t domain,
+                    uint8_t policy_id, struct nm_statistics *caps)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2226,7 +2254,8 @@ _ipmi_nm_statistics(struct ipmi_intf * intf, uint8_t mode, uint8_t domain, uint8
 }
 
 static int
-_ipmi_nm_reset_stats(struct ipmi_intf * intf, uint8_t mode, uint8_t domain, uint8_t policy_id)
+_ipmi_nm_reset_stats(struct ipmi_intf * intf, uint8_t mode,
+                     uint8_t domain, uint8_t policy_id)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2251,7 +2280,8 @@ _ipmi_nm_reset_stats(struct ipmi_intf * intf, uint8_t mode, uint8_t domain, uint
 }
 
 static int
-_nm_set_range(struct ipmi_intf * intf, uint8_t domain, uint16_t minimum, uint16_t maximum)
+_nm_set_range(struct ipmi_intf * intf, uint8_t domain,
+              uint16_t minimum, uint16_t maximum)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2333,7 +2363,8 @@ _ipmi_nm_set_alert(struct ipmi_intf * intf, struct nm_set_alert *alert)
  * This array is filled in for valid thresholds returned.
  */
 static int
-_ipmi_nm_get_thresh(struct ipmi_intf * intf, uint8_t domain, uint8_t policy_id, uint16_t *list)
+_ipmi_nm_get_thresh(struct ipmi_intf * intf, uint8_t domain,
+                    uint8_t policy_id, uint16_t *list)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2406,7 +2437,8 @@ _ipmi_nm_set_thresh(struct ipmi_intf * intf, struct nm_thresh * thresh)
  *
  */
 static int
-_ipmi_nm_get_suspend(struct ipmi_intf * intf, uint8_t domain, uint8_t policy_id, int *count, struct nm_period *periods)
+_ipmi_nm_get_suspend(struct ipmi_intf * intf, uint8_t domain,
+                     uint8_t policy_id, int *count, struct nm_period *periods)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -2449,9 +2481,12 @@ _ipmi_nm_set_suspend(struct ipmi_intf * intf, struct nm_suspend *suspend)
 	msg_data[1] = 1;
 	msg_data[2] = 0;
 	msg_data[3] = suspend->domain;
-        msg_data[4] = suspend->policy_id;
+	msg_data[4] = suspend->policy_id;
 	msg_data[5] = suspend->count;
-	for (i = 0, periods = &suspend->period[0]; i < (suspend->count*3); i += 3, periods++) {
+	for (i = 0, periods = &suspend->period[0];
+	     i < (suspend->count*3);
+	     i += 3, periods++)
+	{
 		msg_data[6+i] = periods->start;
 		msg_data[7+i] = periods->stop;
 		msg_data[8+i] = periods->repeat;
@@ -2461,8 +2496,8 @@ _ipmi_nm_set_suspend(struct ipmi_intf * intf, struct nm_suspend *suspend)
 	req.msg.netfn = IPMI_NETFN_OEM;
 	req.msg.cmd = IPMI_NM_SET_SUSPEND;
 	req.msg.data = msg_data;
-        rsp = intf->sendrecv(intf, &req);
-        if (chk_nm_rsp(rsp)) {
+	rsp = intf->sendrecv(intf, &req);
+	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -2476,7 +2511,7 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t trigger = 0; /* default power policy (no trigger) */
 	struct nm_capability caps;
 
-        while (--argc > 0) {
+	while (--argc > 0) {
 		argv++;
 		if (argv[0] == NULL) break;
 		if ((option = str2val2(argv[0], nm_capability_opts)) == 0xFF) {
@@ -2514,35 +2549,35 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 		return -1;
 	if (csv_output) {
 		printf("%d,%u,%u,%u,%u,%u,%u,%s\n",
-			caps.max_settings, caps.max_value,caps.min_value,
-			caps.min_corr/1000, caps.max_corr/1000,
-			caps.min_stats, caps.max_stats,
-			val2str2(caps.scope&0xF, nm_domain_vals));
+		       caps.max_settings, caps.max_value,caps.min_value,
+		       caps.min_corr/1000, caps.max_corr/1000,
+		       caps.min_stats, caps.max_stats,
+		       val2str2(caps.scope&0xF, nm_domain_vals));
 		return 0;
 	}
 	printf("    power policies:\t\t%d\n", caps.max_settings);
 	switch (trigger&0xF) {
 	case 0:  /* power */
 		printf("    max_power\t\t%7u Watts\n    min_power\t\t%7u Watts\n",
-				caps.max_value, caps.min_value);
+		       caps.max_value, caps.min_value);
 		break;
 	case 1:  /* Inlet */
 		printf("    max_temp\t\t%7u C\n    min_temp\t\t%7u C\n",
-				caps.max_value, caps.min_value);
+		       caps.max_value, caps.min_value);
 		break;
 	case 2: /* Missing reading time */
 	case 3: /* Time after host reset */
 		printf("    max_time\t\t%7u Secs\n    min_time\t\t%7u Secs\n",
-				caps.max_value/10, caps.min_value/10);
+		       caps.max_value/10, caps.min_value/10);
 		break;
 	case 4: /* boot time policy does not use these values */
 	default:
 		break;
 	}
 	printf("    min_corr\t\t%7u secs\n    max_corr\t\t%7u secs\n",
-				caps.min_corr/1000, caps.max_corr/1000);
+	       caps.min_corr/1000, caps.max_corr/1000);
 	printf("    min_stats\t\t%7u secs\n    max_stats\t\t%7u secs\n",
-				caps.min_stats, caps.max_stats);
+	       caps.min_stats, caps.max_stats);
 	printf("    domain scope:\t%s\n", val2str2(caps.scope&0xF, nm_domain_vals));
 	return 0;
 }
@@ -2585,53 +2620,54 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 		argc--;
 		argv++;
 	}
-        if (policy_id == 0xFF) {
+	if (policy_id == 0xFF) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
-                return -1;
-        }
+		return -1;
+	}
 	if (_ipmi_nm_get_policy(intf, policy.domain, policy_id, &policy))
 		return -1;
 	if (csv_output) {
 		printf("%s,0x%x,%s,%s,%s,%u,%u,%u,%u,%s\n",
-			val2str2(policy.domain&0xF, nm_domain_vals),
-			policy.domain,
-			(policy.policy_type & 0x10) ? "power" : "nopower ",
-			val2str2(policy.policy_type & 0xF, nm_policy_type_vals),
-			val2str2(policy.policy_exception, nm_exception),
-			policy.policy_limits,
-			policy.corr_time,
-			policy.trigger_limit,
-			policy.stats_period,
-			policy.policy_type & 0x80 ? "volatile" : "non-volatile");
+		       val2str2(policy.domain&0xF, nm_domain_vals),
+		       policy.domain,
+		       (policy.policy_type & 0x10) ? "power" : "nopower ",
+		       val2str2(policy.policy_type & 0xF, nm_policy_type_vals),
+		       val2str2(policy.policy_exception, nm_exception),
+		       policy.policy_limits,
+		       policy.corr_time,
+		       policy.trigger_limit,
+		       policy.stats_period,
+		       policy.policy_type & 0x80 ? "volatile" : "non-volatile");
 		return 0;
 	}
 	printf("    Power domain:                             %s\n",
-		val2str2(policy.domain&0xF, nm_domain_vals));
+	       val2str2(policy.domain&0xF, nm_domain_vals));
 	printf("    Policy is %s %s%s%s\n",
-		policy.domain&0x10 ? "enabled" : "not enabled",
-		policy.domain&0x20 ? "per Domain " : "",
-		policy.domain&0x40 ? "Globally " : "",
-		policy.domain&0x80 ? "via DCMI api " : "");
-	printf("    Policy is %sa power control type.\n", (policy.policy_type & 0x10) ? "" : "not ");
+	       policy.domain&0x10 ? "enabled" : "not enabled",
+	       policy.domain&0x20 ? "per Domain " : "",
+	       policy.domain&0x40 ? "Globally " : "",
+	       policy.domain&0x80 ? "via DCMI api " : "");
+	printf("    Policy is %sa power control type.\n",
+	       (policy.policy_type & 0x10) ? "" : "not ");
 	printf("    Policy Trigger Type:                      %s\n",
-		val2str2(policy.policy_type & 0xF, nm_policy_type_vals));
+	       val2str2(policy.policy_type & 0xF, nm_policy_type_vals));
 	printf("    Correction Aggressiveness:                %s\n",
-		val2str2((policy.policy_type>> 5) & 0x3, nm_correction_vals));
+	       val2str2((policy.policy_type>> 5) & 0x3, nm_correction_vals));
 	printf("    Policy Exception Actions:                 %s\n",
-		val2str2(policy.policy_exception, nm_exception));
+	       val2str2(policy.policy_exception, nm_exception));
 	printf("    Power Limit:                              %u Watts\n",
-		policy.policy_limits);
+	       policy.policy_limits);
 	printf("    Correction Time Limit:                    %u milliseconds\n",
-		policy.corr_time);
+	       policy.corr_time);
 	printf("    Trigger Limit:                            %u units\n",
-		policy.trigger_limit);
+	       policy.trigger_limit);
 	printf("    Statistics Reporting Period:              %u seconds\n",
-		policy.stats_period);
+	       policy.stats_period);
 	printf("    Policy retention:                         %s\n",
-		policy.policy_type & 0x80 ? "volatile" : "non-volatile");
+	       policy.policy_type & 0x80 ? "volatile" : "non-volatile");
 	if ( (policy_id == 0) && ((policy.domain & 0xf) == 0x3) )
 		printf("    HW Prot Power domain:                     %s\n",
-			policy.policy_type & 0x80 ? "Secondary" : "Primary");
+		       policy.policy_type & 0x80 ? "Secondary" : "Primary");
 	return 0;
 }
 
@@ -2659,7 +2695,9 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 		return (ipmi_nm_get_policy(intf, argc, argv));
 	memset(&policy, 0, sizeof(policy));
 	/*
-	 * nm policy add [domain <param>] enable|disable  policy_id <param> correction <opt> power <watts> limit <param> period <param>
+	 * nm policy add [domain <param>] enable|disable  policy_id <param>
+	 *                correction <opt> power <watts> limit <param>
+	 *                period <param>
 	 * nm policy remove [domain <param>]  policy_id <param>
 	 * nm policy limiting {domain <param>]
 	 */
@@ -2782,7 +2820,8 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 	argc--;
 	/* nm_ctl_cmds returns 0 for disable, 1 for enable */
 	if ((argv[0] == NULL) ||
-			((action = str2val2(argv[0], nm_ctl_cmds)) == 0xFF)) {
+	    ((action = str2val2(argv[0], nm_ctl_cmds)) == 0xFF))
+	{
 		print_strs(nm_ctl_cmds, "Control parameters:", LOG_ERR, 0);
 		print_strs(nm_ctl_domain, "control Scope (required):", LOG_ERR, 0);
 		return -1;
@@ -2791,7 +2830,8 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 	while (--argc) {
 		/* nm_ctl_domain returns correct bit field except for action */
 		if ((argv[0] == NULL) ||
-				((scope = str2val2(argv[0], nm_ctl_domain)) == 0xFF)) {
+		    ((scope = str2val2(argv[0], nm_ctl_domain)) == 0xFF))
+		{
 			print_strs(nm_ctl_domain, "Control Scope (required):", LOG_ERR, 0);
 			return -1;
 		}
@@ -2803,7 +2843,6 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 				return -1;
 			}
 		} else if (scope == 0x04) { /* per_policy */
-
 			if (str2uchar(argv[0], &policy_id) < 0) {
 				lprintf(LOG_ERR,"Policy ID must be a positive integer.\n");
 				return -1;
@@ -2813,7 +2852,7 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 		argc--;
 		argv++;
 	}
-        if ((scope == 0x04) && (policy_id == 0xFF)) {
+	if ((scope == 0x04) && (policy_id == 0xFF)) {
 		print_strs(nm_stats_opts, "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
@@ -2839,7 +2878,8 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 
 	argv++;
 	if ((argv[0] == NULL) ||
-			((mode = str2val2(argv[0], nm_stats_mode)) == 0xFF)) {
+	    ((mode = str2val2(argv[0], nm_stats_mode)) == 0xFF))
+	{
 		print_strs(nm_stats_mode, "Statistics commands", LOG_ERR, 0);
 		return -1;
 	}
@@ -2847,7 +2887,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 		argv++;
 		if (argv[0] == NULL) break;
 		if ((option = str2val2(argv[0], nm_stats_opts)) == 0xFF) {
-				print_strs(nm_stats_opts, "Control Scope options", LOG_ERR, 0);
+			print_strs(nm_stats_opts, "Control Scope options", LOG_ERR, 0);
 			return -1;
 		}
 		switch (option) {
@@ -2902,40 +2942,51 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	datebuf[cut] = 0;
 	if (csv_output) {
 		printf("%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%d\n",
-			val2str2(stats.id_state & 0xF, nm_domain_vals),
-			((stats.id_state >> 4) & 1) ? (policy_mode ? "Policy Enabled" : "Globally Enabled") : "Disabled" ,
-			((stats.id_state >> 5) & 1) ? "active" : "suspended",
-			((stats.id_state >> 6) & 1) ? "in progress" : "suspended",
-			((stats.id_state >> 7) & 1) ? "triggered" : "not triggered",
-			stats.curr_value,
-			stats.min_value,
-			stats.max_value,
-			stats.ave_value,
-			datebuf,
-			stats.stat_period);
+		       val2str2(stats.id_state & 0xF, nm_domain_vals),
+		       ((stats.id_state >> 4) & 1) ? (policy_mode ? "Policy Enabled"
+		                                                  : "Globally Enabled")
+		                                   : "Disabled" ,
+		       ((stats.id_state >> 5) & 1) ? "active"
+		                                   : "suspended",
+		       ((stats.id_state >> 6) & 1) ? "in progress"
+		                                   : "suspended",
+		       ((stats.id_state >> 7) & 1) ? "triggered"
+		                                   : "not triggered",
+		       stats.curr_value,
+		       stats.min_value,
+		       stats.max_value,
+		       stats.ave_value,
+		       datebuf,
+		       stats.stat_period);
 		return 0;
 	}
 	printf("    Power domain:                             %s\n",
-		val2str2(stats.id_state & 0xF, nm_domain_vals));
+	       val2str2(stats.id_state & 0xF, nm_domain_vals));
 	printf("    Policy/Global Admin state                 %s\n",
-		((stats.id_state >> 4) & 1) ? (policy_mode ? "Policy Enabled" : "Globally Enabled") : "Disabled" );
+	       ((stats.id_state >> 4) & 1) ? (policy_mode ? "Policy Enabled"
+	                                                  : "Globally Enabled")
+	                                   : "Disabled" );
 	printf("    Policy/Global Operational state           %s\n",
-		((stats.id_state >> 5) & 1) ? "active" : "suspended");
+	       ((stats.id_state >> 5) & 1) ? "active"
+	                                   : "suspended");
 	printf("    Policy/Global Measurement state           %s\n",
-		((stats.id_state >> 6) & 1) ? "in progress" : "suspended");
+	       ((stats.id_state >> 6) & 1) ? "in progress"
+	                                   : "suspended");
 	printf("    Policy Activation state                   %s\n",
-		((stats.id_state >> 7) & 1) ? "triggered" : "not triggered");
+	       ((stats.id_state >> 7) & 1) ? "triggered"
+	                                   : "not triggered");
 	printf("    Instantaneous reading:                    %8d %s\n",
-		stats.curr_value, units);
+	       stats.curr_value, units);
 	printf("    Minimum during sampling period:           %8d %s\n",
-		stats.min_value, units);
+	       stats.min_value, units);
 	printf("    Maximum during sampling period:           %8d %s\n",
-		stats.max_value, units);
+	       stats.max_value, units);
 	printf("    Average reading over sample period:       %8d %s\n",
-		stats.ave_value, units);
+	       stats.ave_value, units);
 	printf("    IPMI timestamp:                           %s\n",
-		datebuf);
-	printf("    Sampling period:                          %08d Seconds.\n", stats.stat_period);
+	       datebuf);
+	printf("    Sampling period:                          %08d Seconds.\n",
+	       stats.stat_period);
 	printf("\n");
 	return 0;
 }
@@ -2950,7 +3001,8 @@ ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
 
 	argv++;
 	if ((argv[0] == NULL) ||
-			((mode = str2val2(argv[0], nm_reset_mode)) == 0xFF)) {
+	    ((mode = str2val2(argv[0], nm_reset_mode)) == 0xFF))
+	{
 		print_strs(nm_reset_mode, "Reset Statistics Modes:", LOG_ERR, 0);
 		return -1;
 	}
@@ -3030,7 +3082,8 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 		argv++;
 	}
 	if ((minimum == 0xFFFF) || (maximum == 0xFFFF)) {
-		lprintf(LOG_ERR,"Missing parameters: nm power range min <minimum> max <maximum>.\n");
+		lprintf(LOG_ERR,"Missing parameters: nm power range min <minimum> "
+		                                                   "max <maximum>.\n");
 		return -1;
 	}
 	if (_nm_set_range(intf, domain, minimum, maximum) < 0)
@@ -3048,23 +3101,25 @@ ipmi_nm_get_alert(struct ipmi_intf * intf)
 		return -1;
 	if (csv_output) {
 		printf("%d,%s,0x%x,%s,0x%x\n",
-				alert.chan&0xF,
-				(alert.chan >> 7) ? "not registered" : "registered",
-				alert.dest,
-				(alert.string >> 7) ? "yes" : "no",
-				alert.string & 0x7F);
+		       alert.chan & 0xF,
+		       (alert.chan >> 7) ? "not registered"
+		                         : "registered",
+		       alert.dest,
+		       (alert.string >> 7) ? "yes"
+		                           : "no",
+		       alert.string & 0x7F);
 		return 0;
 	}
 	printf("    Alert Chan:                                  %d\n",
-		alert.chan&0xF);
+	       alert.chan & 0xF);
 	printf("    Alert Receiver:                              %s\n",
-		(alert.chan >> 7) ? "not registered" : "registered");
+	       (alert.chan >> 7) ? "not registered" : "registered");
 	printf("    Alert Lan Destination:                       0x%x\n",
-		alert.dest);
+	       alert.dest);
 	printf("    Use Alert String:                            %s\n",
-		(alert.string >> 7) ? "yes" : "no");
+	       (alert.string >> 7) ? "yes" : "no");
 	printf("    Alert String Selector:                       0x%x\n",
-		alert.string & 0x7F);
+	       alert.string & 0x7F);
 	return 0;
 }
 
@@ -3081,7 +3136,8 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 	argv++;
 	argc--;
 	if ((argv[0] == NULL) ||
-			((action = str2val2(argv[0], nm_alert_opts)) == 0xFF)) {
+	    ((action = str2val2(argv[0], nm_alert_opts)) == 0xFF))
+	{
 		print_strs(nm_alert_opts, "Alert commands", LOG_ERR, 0);
 		return -1;
 	}
@@ -3145,15 +3201,15 @@ ipmi_nm_get_thresh(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 		return -1;
 
 	printf("    Alert Threshold domain:                   %s\n",
-			val2str2(domain, nm_domain_vals));
+	       val2str2(domain, nm_domain_vals));
 	printf("    Alert Threshold Policy ID:                %d\n",
-			policy_id);
+	       policy_id);
 	printf("    Alert Threshold 1:                        %d\n",
-			list[0]);
+	       list[0]);
 	printf("    Alert Threshold 2:                        %d\n",
-			list[1]);
+	       list[1]);
 	printf("    Alert Threshold 3:                        %d\n",
-			list[2]);
+	       list[2]);
 	return 0;
 }
 
@@ -3171,7 +3227,8 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 	argc--;
 	/* set or get */
 	if ((argv[0] == NULL) || (argc < 3) ||
-			((action = str2val2(argv[0], nm_thresh_cmds)) == 0xFF)) {
+	    ((action = str2val2(argv[0], nm_thresh_cmds)) == 0xFF))
+	{
 		print_strs(nm_thresh_cmds, "Theshold commands", LOG_ERR, 0);
 		return -1;
 	}
@@ -3262,9 +3319,10 @@ ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 	}
 	for (i = 0; i < count; i++) {
 		printf("    Suspend Period %d:                         %02d:%02d to %02d:%02d",
-			i, click2hour(periods[i].start), click2min(periods[i].start),
-			click2hour(periods[i].stop), click2min(periods[i].stop));
-		if (periods[i].repeat) printf(", ");
+		       i, click2hour(periods[i].start), click2min(periods[i].start),
+		       click2hour(periods[i].stop), click2min(periods[i].stop));
+		if (periods[i].repeat)
+			printf(", ");
 		for (j = 0; j < 7; j++)
 			printf("%s",  (periods[i].repeat >> j)&1 ? days[j] : "");
 		printf("\n");
@@ -3287,7 +3345,8 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 	argc--;
 	/* set or get */
 	if ((argv[0] == NULL) || (argc < 3) ||
-			((action = str2val2(argv[0], nm_suspend_cmds)) == 0xFF)) {
+	    ((action = str2val2(argv[0], nm_suspend_cmds)) == 0xFF))
+	{
 		print_strs(nm_suspend_cmds, "Suspend commands", LOG_ERR, 0);
 		return -1;
 	}
@@ -3313,7 +3372,7 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			argc--;
 			argv++;
 			break;
-                case 0xFF:   /* process periods */
+		case 0xFF:   /* process periods */
 			for (i = 0; count < IPMI_NM_SUSPEND_PERIOD_MAX; i += 3, count++) {
 				if (argc < 3) {
 					lprintf(LOG_ERR,"Error: suspend period requires a start, stop, and repeat values.\n");
@@ -3338,10 +3397,10 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			if (argc <= 0)
 				break;
 			break;
-                default:
-                        break;
-                }
-        }
+		default:
+			break;
+		}
+	}
 	if (action == 0x02) /* get */
 		return (ipmi_nm_get_suspend(intf, domain, policy_id));
 
@@ -3398,7 +3457,7 @@ ipmi_dcmi_set_limit(struct ipmi_intf * intf, int argc, char **argv)
 		case 0xFF:
 			/* error - not a string we knew what to do with */
 			lprintf(LOG_ERR, "Given Action '%s' is invalid.",
-				argv[2]);
+			        argv[2]);
 			return -1;
 		}
 		/* limit */
@@ -3413,8 +3472,8 @@ ipmi_dcmi_set_limit(struct ipmi_intf * intf, int argc, char **argv)
 		/* correction */
 		if (str2uint(argv[6], &correction) != 0) {
 			lprintf(LOG_ERR,
-				"Given Correction '%s' is invalid.",
-				argv[6]);
+			        "Given Correction '%s' is invalid.",
+			        argv[6]);
 			return (-1);
 		}
 		data[7] = correction >> 0;
@@ -3426,8 +3485,8 @@ ipmi_dcmi_set_limit(struct ipmi_intf * intf, int argc, char **argv)
 		/* sample */
 		if (str2ushort(argv[8], &sample) != 0) {
 			lprintf(LOG_ERR,
-				"Given Sample '%s' is invalid.",
-				argv[8]);
+			        "Given Sample '%s' is invalid.",
+			        argv[8]);
 			return (-1);
 		}
 		data[13] = sample >> 0;
@@ -3444,7 +3503,7 @@ ipmi_dcmi_set_limit(struct ipmi_intf * intf, int argc, char **argv)
 			/* catch any error that the set limit function returned */
 			if (rc > 0) {
 				print_strs(dcmi_pwrmgmt_set_usage_vals,
-					"set_limit <parameter> <value>", LOG_ERR, 0);
+				           "set_limit <parameter> <value>", LOG_ERR, 0);
 				return -1;
 			}
 			/* the first argument is the command and the second is the
@@ -3468,8 +3527,8 @@ ipmi_dcmi_parse_power(struct ipmi_intf * intf, int argc, char **argv)
 		if (argv[1] != NULL) {
 			if (!(sample_time = str2val2(argv[1], dcmi_sampling_vals))) {
 				print_strs(dcmi_sampling_vals,
-					"Invalid sample time. Valid times are: ",
-					LOG_ERR, 1);
+				           "Invalid sample time. Valid times are: ",
+				           LOG_ERR, 1);
 				printf("\n");
 				return -1;
 			}
@@ -3488,8 +3547,8 @@ ipmi_dcmi_parse_power(struct ipmi_intf * intf, int argc, char **argv)
 		/* set limit */
 		if (argc < 4) {
 			print_strs(dcmi_pwrmgmt_set_usage_vals,
-				"set_limit <parameter> <value>",
-				LOG_ERR, 0);
+			           "set_limit <parameter> <value>",
+			           LOG_ERR, 0);
 			return -1;
 		}
 		if (ipmi_dcmi_set_limit(intf, argc, argv) < 0)
@@ -3507,7 +3566,7 @@ ipmi_dcmi_parse_power(struct ipmi_intf * intf, int argc, char **argv)
 	default:
 		/* no valid options */
 		print_strs(dcmi_pwrmgmt_vals,
-			"power <command>", LOG_ERR, 0);
+		           "power <command>", LOG_ERR, 0);
 		break;
 	}
 	return rc;
@@ -3537,14 +3596,14 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 		}
 		if (str2uchar(argv[2], &entityID) != 0) {
 			lprintf(LOG_ERR,
-					"Given Entity ID '%s' is invalid.",
-					argv[2]);
+			        "Given Entity ID '%s' is invalid.",
+			        argv[2]);
 			return (-1);
 		}
 		if (str2uchar(argv[3], &entityInst) != 0) {
 			lprintf(LOG_ERR,
-					"Given Instance ID '%s' is invalid.",
-					argv[3]);
+			        "Given Instance ID '%s' is invalid.",
+			        argv[3]);
 			return (-1);
 		}
 		rc = ipmi_dcmi_getthermalpolicy(intf,  entityID, entityInst);
@@ -3554,24 +3613,24 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 			lprintf(LOG_NOTICE, "Set <entityID> <instanceID>");
 			return -1;
 		} else if (argc < 9) {
-		print_strs(dcmi_thermalpolicy_set_parameters_vals,
-				"Set thermalpolicy instance parameters: "
-					"<volatile/nonvolatile/disabled> "
-					"<poweroff/nopoweroff/disabled> "
-					"<sel/nosel/disabled> <templimitByte> <exceptionTime>",
-					LOG_ERR, 0);
+			print_strs(dcmi_thermalpolicy_set_parameters_vals,
+			           "Set thermalpolicy instance parameters: "
+			           "<volatile/nonvolatile/disabled> "
+			           "<poweroff/nopoweroff/disabled> "
+			           "<sel/nosel/disabled> <templimitByte> <exceptionTime>",
+			           LOG_ERR, 0);
 			return -1;
 		}
 		if (str2uchar(argv[2], &entityID) != 0) {
 			lprintf(LOG_ERR,
-					"Given Entity ID '%s' is invalid.",
-					argv[2]);
+			        "Given Entity ID '%s' is invalid.",
+			        argv[2]);
 			return (-1);
 		}
 		if (str2uchar(argv[3], &entityInst) != 0) {
 			lprintf(LOG_ERR,
-					"Given Instance ID '%s' is invalid.",
-					argv[3]);
+			        "Given Instance ID '%s' is invalid.",
+			        argv[3]);
 			return (-1);
 		}
 		persistanceFlag = (uint8_t) str2val2(argv[4], dcmi_thermalpolicy_set_parameters_vals);
@@ -3579,14 +3638,14 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 		actionLogToSEL = (uint8_t) str2val2(argv[6], dcmi_thermalpolicy_set_parameters_vals);
 		if (str2uchar(argv[7], &tempLimit) != 0) {
 			lprintf(LOG_ERR,
-					"Given Temp Limit '%s' is invalid.",
-					argv[7]);
+			        "Given Temp Limit '%s' is invalid.",
+			        argv[7]);
 			return (-1);
 		}
 		if (str2ushort(argv[8], &samplingTime) != 0) {
 			lprintf(LOG_ERR,
-					"Given Sampling Time '%s' is invalid.",
-					argv[8]);
+			        "Given Sampling Time '%s' is invalid.",
+			        argv[8]);
 			return (-1);
 		}
 		samplingTimeLSB =  (samplingTime & 0xFF);
@@ -3605,8 +3664,8 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 		break;
 	default:
 		print_strs(dcmi_thermalpolicy_vals,
-				"thermalpolicy <command>",
-				LOG_ERR, 0);
+		           "thermalpolicy <command>",
+		           LOG_ERR, 0);
 		return -1;
 	}
 	return rc;
@@ -3627,8 +3686,8 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
 		print_strs(dcmi_cmd_vals,
-				"Data Center Management Interface commands",
-				LOG_ERR, 0);
+		           "Data Center Management Interface commands",
+		           LOG_ERR, 0);
 		return -1;
 	}
 	/* start the cmd requested */
@@ -3638,7 +3697,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		for (i = 1; dcmi_capable_vals[i-1].str != NULL; i++) {
 			if (ipmi_dcmi_prnt_getcapabilities(intf, i) < 0) {
 				lprintf(LOG_ERR,"Error discovering %s capabilities!\n",
-						val2str2(i, dcmi_capable_vals));
+				        val2str2(i, dcmi_capable_vals));
 				return -1;
 			}
 		}
@@ -3648,7 +3707,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		argv++;
 		if (argv[0] == NULL) {
 			print_strs(dcmi_pwrmgmt_vals, "power <command>",
-					LOG_ERR, 0);
+			           LOG_ERR, 0);
 			return -1;
 		}
 		rc = ipmi_dcmi_parse_power(intf, argc, argv);
@@ -3663,7 +3722,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		for (i = 0; dcmi_discvry_snsr_vals[i].str != NULL; i++) {
 			/* get all of the information about this sensor */
 			rc = ipmi_dcmi_prnt_discvry_snsr(intf,
-					dcmi_discvry_snsr_vals[i].val);
+			                                 dcmi_discvry_snsr_vals[i].val);
 		}
 		break;
 		/* end sensor print */
@@ -3680,8 +3739,8 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		/* set asset tag */
 		if (argc == 1 ) {
 			print_strs(dcmi_cmd_vals,
-					"Data Center Management Interface commands",
-					LOG_ERR, 0);
+			           "Data Center Management Interface commands",
+			           LOG_ERR, 0);
 			return -1;
 		}
 		if (ipmi_dcmi_prnt_setassettag(intf, (uint8_t *)argv[1]) < 0) {
@@ -3695,7 +3754,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		/* get management controller identifier string */
 		if (ipmi_dcmi_prnt_getmngctrlids(intf) < 0) {
 			lprintf(LOG_ERR,
-					"Error getting management controller identifier string!");
+			        "Error getting management controller identifier string!");
 			return -1;
 		}
 		break;
@@ -3705,13 +3764,13 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		/* set management controller identifier string */
 		if (argc == 1 ) {
 			print_strs(dcmi_cmd_vals,
-					"Data Center Management Interface commands",
-					LOG_ERR, 0);
+			           "Data Center Management Interface commands",
+			           LOG_ERR, 0);
 			return -1;
 		}
 		if (ipmi_dcmi_prnt_setmngctrlids(intf, (uint8_t *)argv[1]) < 0) {
 			lprintf(LOG_ERR,
-					"Error setting management controller identifier string!");
+			        "Error setting management controller identifier string!");
 			return -1;
 		}
 		break;
@@ -3724,14 +3783,14 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	case 0x08:
 		if(ipmi_dcmi_prnt_get_temp_readings(intf) < 0 ) {
 			lprintf(LOG_ERR,
-					"Error get temperature readings!");
+			        "Error get temperature readings!");
 			return -1;
 		}
 		break;
 	case 0x09:
 		if(ipmi_dcmi_prnt_getconfparam(intf) < 0 ) {
 			lprintf(LOG_ERR,
-					"Error Get DCMI Configuration Parameters!");
+			        "Error Get DCMI Configuration Parameters!");
 			return -1;
 		};
 		break;
@@ -3741,16 +3800,16 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		case 2:
 			if (strncmp(argv[1], "activate_dhcp", 13) != 0) {
 				print_strs( dcmi_conf_param_vals,
-						"DCMI Configuration Parameters",
-						LOG_ERR, 0);
+				            "DCMI Configuration Parameters",
+				            LOG_ERR, 0);
 				return -1;
 			}
 			break;
 		default:
 			if (argc != 3 || strncmp(argv[1], "help", 4) == 0) {
 				print_strs(dcmi_conf_param_vals,
-						"DCMI Configuration Parameters",
-						LOG_ERR, 0);
+				           "DCMI Configuration Parameters",
+				           LOG_ERR, 0);
 				return -1;
 			}
 		}
@@ -3759,18 +3818,16 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 		} else {
 			uint16_t tmp_val = 0;
 			if (str2ushort(argv[2], &tmp_val) != 0) {
-				lprintf(LOG_ERR,
-						"Given %s '%s' is invalid.",
-						argv[1], argv[2]);
+				lprintf(LOG_ERR, "Given %s '%s' is invalid.",
+				                 argv[1], argv[2]);
 				return (-1);
 			}
 			rsp = ipmi_dcmi_setconfparam(intf,
-					str2val2(argv[1], dcmi_conf_param_vals),
-					tmp_val);
+			                             str2val2(argv[1], dcmi_conf_param_vals),
+			                             tmp_val);
 		}
 		if (chk_rsp(rsp)) {
-			lprintf(LOG_ERR,
-					"Error Set DCMI Configuration Parameters!");
+			lprintf(LOG_ERR, "Error Set DCMI Configuration Parameters!");
 		}
 		break;
 	}
@@ -3778,7 +3835,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	{
 		if (intf->session == NULL) {
 			lprintf(LOG_ERR,
-					"\nOOB discovery is available only via RMCP interface.");
+			        "\nOOB discovery is available only via RMCP interface.");
 			return -1;
 		}
 		if(ipmi_dcmi_prnt_oobDiscover(intf) < 0) {
@@ -3790,8 +3847,8 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	default:
 		/* couldn't detect what the user entered */
 		print_strs(dcmi_cmd_vals,
-				"Data Center Management Interface commands",
-				LOG_ERR, 0);
+		           "Data Center Management Interface commands",
+		           LOG_ERR, 0);
 		return -1;
 		break;
 	}
@@ -3812,8 +3869,8 @@ ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
 		print_strs(nm_cmd_vals,
-			"Node Manager Interface commands",
-			LOG_ERR, 0);
+		           "Node Manager Interface commands",
+		           LOG_ERR, 0);
 		return -1;
 	}
 
@@ -3824,7 +3881,7 @@ ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
 			return -1;
 		printf("    Node Manager Version %s\n", val2str2(disc.nm_version, nm_version_vals));
 		printf("    revision %d.%d%d  patch version %d\n", disc.major_rev,
-				disc.minor_rev>>4, disc.minor_rev&0xf, disc.patch_version);
+		       disc.minor_rev>>4, disc.minor_rev&0xf, disc.patch_version);
 		break;
 	/* capability */
 	case 0x01:
@@ -3918,9 +3975,10 @@ ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
 		return (-1);
 	}
 	if ((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
-			(header->type == SDR_RECORD_TYPE_COMPACT_SENSOR)) {
+	    (header->type == SDR_RECORD_TYPE_COMPACT_SENSOR))
+	{
 		rc = ipmi_sdr_print_rawentry(intf, header->type,
-				rec, header->length);
+		                             rec, header->length);
 	} else {
 		rc = (-1);
 	}
