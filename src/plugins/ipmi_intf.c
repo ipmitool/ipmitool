@@ -249,11 +249,14 @@ ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit)
 	intf->ssn_params.lookupbit = lookupbit;
 }
 
+#ifdef IPMI_INTF_LANPLUS
 void
-ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id)
+ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf,
+		enum cipher_suite_ids cipher_suite_id)
 {
 	intf->ssn_params.cipher_suite_id = cipher_suite_id;
 }
+#endif /* IPMI_INTF_LANPLUS */
 
 void
 ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char)

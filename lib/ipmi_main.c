@@ -342,7 +342,10 @@ ipmi_main(int argc, char ** argv,
 	char * seloem   = NULL;
 	int port = 0;
 	int devnum = 0;
-	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
+#ifdef IPMI_INTF_LANPLUS
+	/* lookup best cipher suite available */
+	enum cipher_suite_ids cipher_suite_id = IPMI_LANPLUS_CIPHER_SUITE_RESERVED;
+#endif /* IPMI_INTF_LANPLUS */
 	int argflag, i, found;
 	int rc = -1;
 	int ai_family = AF_UNSPEC;
@@ -420,6 +423,7 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
+#ifdef IPMI_INTF_LANPLUS
 		case 'C':
 			if (str2int(optarg, &cipher_suite_id) != 0) {
 				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-C'.");
@@ -433,6 +437,7 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
+#endif /* IPMI_INTF_LANPLUS */
 		case 'v':
 			verbose++;
 			break;
@@ -868,7 +873,9 @@ ipmi_main(int argc, char ** argv,
 
 	ipmi_intf_session_set_lookupbit(ipmi_main_intf, lookupbit);
 	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
+#ifdef IPMI_INTF_LANPLUS
 	ipmi_intf_session_set_cipher_suite_id(ipmi_main_intf, cipher_suite_id);
+#endif /* IPMI_INTF_LANPLUS */
 
 	ipmi_main_intf->devnum = devnum;
 
