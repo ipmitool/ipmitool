@@ -37,6 +37,7 @@
 # include <config.h>
 #endif
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_intf.h>
 
 
 #define IPMI_GET_CHANNEL_AUTH_CAP      0x38
@@ -76,6 +77,50 @@ struct channel_access_t {
 	uint8_t privilege_limit;
 	uint8_t user_level_auth;
 };
+
+/*
+ * The Cipher Suite Record Format from table 22-18 of the IPMI v2.0 spec
+ */
+enum cipher_suite_format_tag {
+	STANDARD_CIPHER_SUITE = 0xc0,
+	OEM_CIPHER_SUITE = 0xc1,
+};
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+struct std_cipher_suite_record_t {
+	uint8_t start_of_record;
+	uint8_t cipher_suite_id;
+	uint8_t auth_alg;
+	uint8_t integrity_alg;
+	uint8_t crypt_alg;
+} ATTRIBUTE_PACKING;
+struct oem_cipher_suite_record_t {
+	uint8_t start_of_record;
+	uint8_t cipher_suite_id;
+	uint8_t iana[3];
+	uint8_t auth_alg;
+	uint8_t integrity_alg;
+	uint8_t crypt_alg;
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+#define CIPHER_ALG_MASK 0x3f
+#define MAX_CIPHER_SUITE_RECORD_OFFSET 0x40
+#define MAX_CIPHER_SUITE_DATA_LEN 0x10
+#define LIST_ALGORITHMS_BY_CIPHER_SUITE 0x80
+
+/* Below is the theoretical maximum number of cipher suites that could be
+ * reported by a BMC. That is with the Get Channel Cipher Suites Command, at 16
+ * bytes at a time and 0x40 requests, it can report 1024 bytes, which is about
+ * 204 standard records or 128 OEM records. Really, we probably don't need more
+ * than about 20, which is the full set of standard records plus a few OEM
+ * records.
+ */
+#define MAX_CIPHER_SUITE_COUNT (MAX_CIPHER_SUITE_RECORD_OFFSET * \
+		MAX_CIPHER_SUITE_DATA_LEN / \
+		sizeof(struct std_cipher_suite_record_t))
 
 /*
  * The Get Authentication Capabilities response structure
@@ -131,6 +176,8 @@ struct get_channel_auth_cap_rsp {
 int _ipmi_get_channel_access(struct ipmi_intf *intf,
 		struct channel_access_t *channel_access,
 		uint8_t get_volatile_settings);
+int ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
+		uint8_t channel, struct cipher_suite_info *suites, size_t *count);
 int _ipmi_get_channel_info(struct ipmi_intf *intf,
         struct channel_info_t *channel_info);
 int _ipmi_set_channel_access(struct ipmi_intf *intf,

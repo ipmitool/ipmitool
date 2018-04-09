@@ -163,114 +163,109 @@ extern int verbose;
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_get_requested_ciphers(int       cipher_suite_id,
+int lanplus_get_requested_ciphers(enum cipher_suite_ids cipher_suite_id,
 								  uint8_t * auth_alg,
 								  uint8_t * integrity_alg,
 								  uint8_t * crypt_alg)
 {
-#ifdef HAVE_CRYPTO_SHA256
-	if ((cipher_suite_id < 0) || (cipher_suite_id > 17)) {
-		return 1;
-	}
-#else
-	if ((cipher_suite_id < 0) || (cipher_suite_id > 14))
-		return 1;
-#endif /* HAVE_CRYPTO_SHA256 */
 		/* See table 22-19 for the source of the statement */
 	switch (cipher_suite_id)
 	{
-	case 0:
+	case IPMI_LANPLUS_CIPHER_SUITE_0:
 		*auth_alg      = IPMI_AUTH_RAKP_NONE;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 1:
+	case IPMI_LANPLUS_CIPHER_SUITE_1:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 2:
+	case IPMI_LANPLUS_CIPHER_SUITE_2:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 3:
+	case IPMI_LANPLUS_CIPHER_SUITE_3:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 4:
+	case IPMI_LANPLUS_CIPHER_SUITE_4:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 5:
+	case IPMI_LANPLUS_CIPHER_SUITE_5:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
-	case 6:
+	case IPMI_LANPLUS_CIPHER_SUITE_6:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 7:
+	case IPMI_LANPLUS_CIPHER_SUITE_7:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 8:
+	case IPMI_LANPLUS_CIPHER_SUITE_8:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 9:
+	case IPMI_LANPLUS_CIPHER_SUITE_9:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 10:
+	case IPMI_LANPLUS_CIPHER_SUITE_10:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
-	case 11:
+	case IPMI_LANPLUS_CIPHER_SUITE_11:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 12:
+	case IPMI_LANPLUS_CIPHER_SUITE_12:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 13:
+	case IPMI_LANPLUS_CIPHER_SUITE_13:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 14:
+	case IPMI_LANPLUS_CIPHER_SUITE_14:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
 #ifdef HAVE_CRYPTO_SHA256
-	case 15:
+	case IPMI_LANPLUS_CIPHER_SUITE_15:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 16:
+	case IPMI_LANPLUS_CIPHER_SUITE_16:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 17:
+	case IPMI_LANPLUS_CIPHER_SUITE_17:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
 #endif /* HAVE_CRYPTO_SHA256 */
+	case IPMI_LANPLUS_CIPHER_SUITE_RESERVED:
+	default:
+		return 1;
 	}
 
 	return 0;
@@ -3381,6 +3376,57 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	return 0;
 }
 
+static uint8_t
+ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
+{
+	enum cipher_suite_ids best_suite = IPMI_LANPLUS_CIPHER_SUITE_RESERVED;
+#ifdef HAVE_CRYPTO_SHA256
+	struct cipher_suite_info suites[MAX_CIPHER_SUITE_COUNT];
+	size_t nr_suites = ARRAY_SIZE(suites);
+	/* cipher suite best order is chosen with this criteria:
+	 * HMAC-MD5 and MD5 are BAD; xRC4 is bad; AES128 is required
+	 * HMAC-SHA256 > HMAC-SHA1
+	 * secure authentication > encrypted content
+	 *
+	 * With xRC4 out, all cipher suites with MD5 out, and cipher suite 3 being
+	 * required by the spec, the only better defined standard cipher suite is
+	 * 17. So if SHA256 is available, we should try to use that, otherwise,
+	 * fall back to 3.
+	 */
+	const enum cipher_suite_ids cipher_order_preferred[] = {
+		IPMI_LANPLUS_CIPHER_SUITE_17,
+		IPMI_LANPLUS_CIPHER_SUITE_3,
+	};
+	const size_t nr_preferred = ARRAY_SIZE(cipher_order_preferred);
+	size_t ipref, i;
+
+	if (ipmi_get_channel_cipher_suites(intf, "ipmi", IPMI_LAN_CHANNEL_E,
+	                                   suites, &nr_suites) < 0)
+	{
+		/* default legacy behavior - cipher suite 3 if none is requested */
+		return IPMI_LANPLUS_CIPHER_SUITE_3;
+	}
+	for (ipref = 0; ipref < nr_preferred &&
+	                IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite; ipref++)
+	{
+		for (i = 0; i < nr_suites; i++) {
+			if (cipher_order_preferred[ipref] == suites[i].cipher_suite_id) {
+				best_suite = cipher_order_preferred[ipref];
+				break;
+			}
+		}
+	}
+#endif /* HAVE_CRYPTO_SHA256 */
+	if (IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite) {
+		/* IPMI 2.0 spec requires that cipher suite 3 is implemented
+		 * so we should always be able to fall back to that if better
+		 * options are not available. */
+		best_suite = IPMI_LANPLUS_CIPHER_SUITE_3;
+	}
+	lprintf(LOG_INFO, "Using best available cipher suite %d\n", best_suite);
+	return best_suite;
+}
+
 /**
  * ipmi_lanplus_open
  */
@@ -3453,6 +3499,16 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available) {
 		lprintf(LOG_INFO, "This BMC does not support IPMI v2 / RMCP+");
 		goto fail;
+	}
+	/*
+	 * If no cipher suite was provided, query the channel cipher suite list and
+	 * pick the best one available
+	 */
+	if (IPMI_LANPLUS_CIPHER_SUITE_RESERVED ==
+	    intf->ssn_params.cipher_suite_id)
+	{
+		ipmi_intf_session_set_cipher_suite_id(intf,
+			ipmi_find_best_cipher_suite(intf));
 	}
 
 	/*
@@ -3666,7 +3722,7 @@ static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 
 static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
 {
-	if (intf->ssn_params.cipher_suite_id == 3) {
+	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*
 		 * encrypted payload can only be multiple of 16 bytes
 		 */
@@ -3684,7 +3740,7 @@ static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t siz
 
 static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
 {
-	if (intf->ssn_params.cipher_suite_id == 3) {
+	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*
 		 * encrypted payload can only be multiple of 16 bytes
 		 */
