@@ -2348,13 +2348,13 @@ picmg_discover(struct ipmi_intf *intf) {
 	req.msg.data_len = 1;
 	msg_data = 0;
 
-	lprintf(LOG_INFO, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
+	lprintf(LOG_DEBUG, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
 		intf->my_addr, intf->transit_addr, intf->target_addr);
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
-	    lprintf(LOG_INFO,"No response from Get PICMG Properties");
+	    lprintf(LOG_DEBUG,"No response from Get PICMG Properties");
 	} else if (rsp->ccode != 0) {
-	    lprintf(LOG_INFO,"Error response %#x from Get PICMG Properities",
+	    lprintf(LOG_DEBUG,"Error response %#x from Get PICMG Properities",
 		    rsp->ccode);
 	} else if (rsp->data_len < 4) {
 	    lprintf(LOG_INFO,"Invalid Get PICMG Properties response length %d",
@@ -2369,7 +2369,7 @@ picmg_discover(struct ipmi_intf *intf) {
 		    (rsp->data[1] & 0x0F), (rsp->data[1] >> 4));
 	} else {
 	    picmg_avail = 1;
-	    lprintf(LOG_INFO, "Discovered PICMG Extension Version %d.%d",
+	    lprintf(LOG_DEBUG, "Discovered PICMG Extension Version %d.%d",
 		    (rsp->data[1] & 0x0f), (rsp->data[1] >> 4));
 	}
 
