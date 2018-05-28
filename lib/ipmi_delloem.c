@@ -10,10 +10,10 @@
  * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
  * - Neither the name of Dell Inc nor the names of its contributors
- * may be used to endorse or promote products derived from this software 
+ * may be used to endorse or promote products derived from this software
  * without specific prior written permission.
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
  * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
@@ -138,13 +138,34 @@ static uint8_t LcdSupported=0;
 static uint8_t SetLEDSupported=0;
 
 volatile uint8_t IMC_Type = IMC_IDRAC_10G;
+struct FW_VER{
+	uint8_t major_ver;
+	uint8_t minor_ver;
+	uint8_t build_no_msb;
+	uint8_t build_no_lsb;
+	uint8_t pla_data_msb;
+	uint8_t pla_data_lsb;
+	uint8_t lc_ver_msb;
+	uint8_t lc_ver_lsb;
+};
 
 POWER_HEADROOM powerheadroom;
 
 uint8_t PowercapSetable_flag=0;
 uint8_t PowercapstatusFlag=0;
+int BoardOffsetPtr;
+int ProductOffsetPtr;
 
 static void usage(void);
+/* Systeminfo Function prototypes */
+static int ipmi_delloem_sysinfo_main (struct ipmi_intf * intf, int argc, char ** argv);
+static char*  ipmi_get_bib_info(uint8_t * fru_data, uint8_t bib_type);
+static int ipmi_sysinfo_get_tag(struct ipmi_intf * intf,char* tagstring, uint8_t tag_type, uint8_t length);
+static void ipmi_sysinfo_print_board(struct ipmi_intf * intf, struct fru_info * fru,
+				uint8_t id, uint32_t offset, uint8_t ipmi_version);
+static int ipmi_sysinfo_fru(struct ipmi_intf * intf, uint8_t id, uint8_t ipmi_version);
+static int ipmi_sysinfo_id(struct ipmi_intf * intf, int type);
+static void ipmi_sysinfo_usage(void);
 /* LCD Function prototypes */
 static int ipmi_delloem_lcd_main(struct ipmi_intf *intf, int argc,
 		char **argv);
@@ -271,11 +292,16 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 	current_arg = 0;
+    ipmi_idracvalidator_command(intf);
 	if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) {
 		usage();
 		return 0;
 	}
-	if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
+    /* System information */
+	if (strncmp(argv[current_arg], "sysinfo\0", 8) == 0) {
+        rc = ipmi_delloem_sysinfo_main (intf,argc,argv);
+	}
+	else if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
 		rc = ipmi_delloem_lcd_main(intf,argc,argv);
 	} else if (strncmp(argv[current_arg], "mac\0", 4) == 0) {
 		/* mac address*/
@@ -319,6 +345,7 @@ usage(void)
 "");
 	lprintf(LOG_NOTICE,
 "commands:");
+	lprintf(LOG_NOTICE, "    sysinfo");
 	lprintf(LOG_NOTICE,
 "    lcd");
 	lprintf(LOG_NOTICE,
@@ -337,6 +364,689 @@ usage(void)
 "For help on individual commands type:");
 	lprintf(LOG_NOTICE,
 "delloem <command> help");
+}
+/*****************************************************************
+* Function Name:       ipmi_delloem_sysinfo_main
+*
+* Description:         This function processes the delloem sysinfo command
+* Input:               intf    - ipmi interface
+                       argc    - no of arguments
+                       argv    - argument string array
+* Output:
+*
+* Return:              return code     0 - success
+*                         -1 - failure
+*
+******************************************************************/
+
+static int ipmi_delloem_sysinfo_main (struct ipmi_intf * intf, int argc, char ** argv)
+{
+    int rc = 0;
+	current_arg++;
+
+	if (argc <= current_arg) {
+		rc = ipmi_sysinfo_id(intf, 0);
+	} else {
+		ipmi_sysinfo_usage();
+	}
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_get_bib_info
+*
+* Description:	This function retrieves following info from BIB (BIOS information block)
+			section of the FRU:
+*              		o PDRODUCT_MODEL
+*              		o ASSET_TAG
+*              		o SERVICE_TAG
+*              		o BIOS_VERSION
+*
+* Input: 		fru_data - pointer to fru area
+*			bib_type - Product / Asset tag / Service tag / Bios version
+* Output:
+*
+* Return:		bib_data - BIOS information block data
+*
+******************************************************************/
+static char*  ipmi_get_bib_info(uint8_t * fru_data, uint8_t bib_type)
+{
+	uint16_t bib_offset, bib_info_area, bib_length, bib_end, length;
+	uint32_t offset;
+	char * bib_data;
+
+	/* get BIB fields */
+	if (fru_data[0x66] == 0xc3) {
+		bib_offset = (fru_data[0x68] << 8) | fru_data[0x67];
+	} else if (fru_data[0x69] == 0xc3) {
+		bib_offset = (fru_data[0x6B] << 8) | fru_data[0x6A];
+	}
+
+
+	bib_info_area = bib_offset + 6;
+	bib_length = (fru_data[bib_info_area+2]<<8) | fru_data[bib_info_area+1];
+	bib_end = bib_info_area + bib_length;
+
+	/* find BIB field */
+	offset = bib_info_area;
+	while ((fru_data[offset] != bib_type) && (offset <= bib_end)) {
+		offset += fru_data[offset+1]+3;
+	}
+	if (fru_data[offset] == bib_type) {	/* bib info found */
+		if (bib_type == BIB_TYPE_PDRODUCT_MODEL) {
+			length = fru_data[offset+1]-6;
+		} else {
+			length = fru_data[offset+1];
+		}
+
+		bib_data = malloc(length+1);
+		memset(bib_data, 0, length+1);
+		if (bib_type == BIB_TYPE_PDRODUCT_MODEL) {
+			memcpy(bib_data, &fru_data[offset+8], length);
+		} else {
+			memcpy(bib_data, &fru_data[offset+2], length);
+		}
+		bib_data[length] = '\0';
+/*		printf("BIOS version: %s\n", bib_data);*/
+	} else {
+		bib_data = NULL;
+	}
+	return bib_data;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_sysinfo_get_tag
+*
+* Description:	This function retrieves tag string
+*
+* Input: 		intf 		- pointer to interface
+*			tag_type - either assettag / servicetag
+*			length	- length of the tagstring
+* Output: 	tagstring - assettag  / servicetag string
+*
+* Return:		0
+*
+******************************************************************/
+
+static int ipmi_sysinfo_get_tag(struct ipmi_intf * intf,
+					char* tagstring, uint8_t tag_type, uint8_t length)
+{
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0,0,0,0,0,0};
+	uint8_t data[4] = {0};
+	IPMI_DELL_TAG * tagblock;
+
+		memset (&req,0,sizeof(req));
+
+		req.msg.netfn = IPMI_NETFN_APP;
+		req.msg.lun = 0;
+		req.msg.cmd = IPMI_GET_SYS_INFO;
+		req.msg.data_len = 4;
+		req.msg.data = data;
+		data[0] = 0;		/* get parameter*/
+		data[1] = tag_type;	/* get asset tag*/
+		data[2] = 0;
+		data[3] = 0;
+
+		rsp = intf->sendrecv(intf, &req);
+
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, " Error getting asset tag");
+			return -1;
+		} else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, " Error getting asset tag: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+
+		tagblock = (IPMI_DELL_TAG *) (void *) rsp->data;
+		memset(tagstring, 0,tagblock->length);
+		memcpy (tagstring, &tagblock->tag, tagblock->length);
+		tagstring[tagblock->length] = '\0' ;
+
+		return 0;
+
+}
+/*****************************************************************
+* Function Name: 	ipmi_sysinfo_print_board
+*
+* Description:	This function prints FRU Board Area for sysinfo command
+* Input: 		intf 			- pointer to ipmi interface
+*			fru			- pointer to fru area
+*			id			- fru id
+*			offset		- offset to fru area
+*			ipmi_version	- ipmi version
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static void
+ipmi_sysinfo_print_board(struct ipmi_intf * intf, struct fru_info * fru,
+		     uint8_t id, uint32_t offset, uint8_t ipmi_version)
+{
+	char * fru_area;
+	uint8_t * fru_data, *fru_data_tmp;
+	uint8_t language;
+	uint32_t fru_len, area_len, i, j;
+	uint16_t length;
+
+    fru_area=NULL;
+	j = 0;
+
+	i = offset;
+	fru_len = 0;
+
+
+	fru_data_tmp = fru_data = malloc(fru->size + 1);
+	if (fru_data == NULL) {
+		lprintf(LOG_ERR, " Out of memory!");
+		return;
+	}
+	memset(fru_data, 0, fru->size + 1);
+
+	/* read enough to check length field */
+	if (read_fru_area(intf, fru, id, i, 2, fru_data_tmp) == 0)
+//		fru_len = 8 * fru_data[i + 1];
+		fru_len = 8 * fru_data[1];
+	if (fru_len <= 0) {
+		free(fru_data);
+		return;
+	}
+
+	fru_len = 0x200;
+	i = 0;
+	/* read in the full fru */
+	if (read_fru_area(intf, fru, id, i, fru_len, fru_data_tmp) < 0) {
+		free(fru_data);
+		return;
+	}
+	BoardOffsetPtr = (fru_data[BOARD_OFFSET])*OFFSETMULTIPLIER;
+	ProductOffsetPtr = (fru_data[PRODUCT_OFFSET])*OFFSETMULTIPLIER;
+	if(iDRAC_FLAG == IDRAC_14G)
+		language = fru_data[BoardOffsetPtr+BOARDLANGOFFSET];
+	else if (iDRAC_FLAG == IDRAC_13G)
+		language = fru_data[10];
+
+	if (language == 0x00) {
+		printf("Board Language Code : English\n");
+	} else {
+		printf("Board Language Code : Unknown\n");
+	}
+
+	if(iDRAC_FLAG == IDRAC_14G)
+		i=BoardOffsetPtr+BOARDPRODUCTMANFLENOFFSET;
+	else if (iDRAC_FLAG == IDRAC_13G) {
+
+	i = 8;
+
+	i++;	/* skip fru area version */
+	area_len = fru_data[i++] * 8; /* fru area length */
+	i++;	/* skip fru board language */
+	i += 3;	/* skip mfg. date time */
+
+	}
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0) {
+		free(fru_area);
+	}
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0) {
+		printf("Board Product Name  : %s\n", fru_area);
+
+		free(fru_area);
+	}
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0) {
+		printf("Board Serial Number : %s\n", fru_area);
+
+
+		free(fru_area);
+	}
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0)
+	{
+		printf("Board Part Number   : %s\n", fru_area);
+		free(fru_area);
+	}
+
+	fru_area = get_fru_area_str(fru_data, &i);
+	if (fru_area != NULL && strlen(fru_area) > 0)
+	{
+		if (*fru_area<48)
+			*fru_area='\0';
+        printf("Board FRU File ID   : %s\n", fru_area);
+		free(fru_area);
+	}
+
+	/* read any extra fields */
+	while ((fru_data[i] != 0xc1) && (i < offset + area_len))
+	{
+		int j = i;
+		fru_area = get_fru_area_str(fru_data, &i);
+		if (fru_area != NULL && strlen(fru_area) > 0) {
+			printf(" Board Extra           : %s\n", fru_area);
+			free(fru_area);
+		}
+		if (i == j)
+			break;
+	}
+
+	if (ipmi_version == 0x51) {
+
+
+		/* get host name */
+		length = (fru_data[0x72] << 8) | (fru_data[0x71]);
+		fru_area = malloc(length+1);
+		memset(fru_area, 0, length+1);
+		memcpy(fru_area, &fru_data[0x75], length);
+		fru_area[length] = '\0';
+		printf("Host Name           : %s\n", fru_area);
+		free(fru_area);
+
+		fru_area = ipmi_get_bib_info(fru_data, BIB_TYPE_PDRODUCT_MODEL);
+		if (fru_area != NULL && strlen(fru_area) > 0) {
+			printf("Product Model       : %s\n", fru_area);
+			free(fru_area);
+		}
+		fru_area = ipmi_get_bib_info(fru_data, BIB_TYPE_ASSET_TAG);
+		if (fru_area != NULL && strlen(fru_area) > 0) {
+			printf("Asset Tag           : %s\n", fru_area);
+			free(fru_area);
+		}
+		fru_area = ipmi_get_bib_info(fru_data, BIB_TYPE_SERVICE_TAG);
+		if (fru_area != NULL && strlen(fru_area) > 0) {
+			printf("Service Tag         : %s\n", fru_area);
+			free(fru_area);
+		}
+		fru_area = ipmi_get_bib_info(fru_data, BIB_TYPE_BIOS_VERSION);
+		if (fru_area != NULL && strlen(fru_area) > 0) {
+			printf("BIOS version        : %s\n", fru_area);
+			free(fru_area);
+		}
+    }
+
+
+	free(fru_data);
+}
+
+
+/*****************************************************************
+* Function Name: 	ipmi_sysinfo_fru
+*
+* Description:	This function prints the 'fru' portion of the sysinfo command
+* Input: 		intf 			- pointer to ipmi interface
+*			id			- fru id
+*			ipmi_version	- ipmi version
+* Output:
+*
+* Return:		0
+*
+******************************************************************/
+static int
+ipmi_sysinfo_fru(struct ipmi_intf * intf, uint8_t id, uint8_t ipmi_version)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+	struct fru_info fru;
+	struct fru_header header;
+	uint8_t msg_data[4] = {0};
+
+
+
+	memset(&fru, 0, sizeof(struct fru_info));
+	memset(&header, 0, sizeof(struct fru_header));
+
+	/*
+	 * get info about this FRU
+	 */
+	memset(msg_data, 0, 4);
+	msg_data[0] = id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+
+	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
+		fru.size, fru.access ? "words" : "bytes");
+
+	if (fru.size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
+		return -1;
+	}
+
+	/*
+	 * retrieve the FRU header
+	 */
+	msg_data[0] = id;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return 1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return 1;
+	}
+
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	if (header.version != 1)
+	{
+		lprintf(LOG_ERR, " Unknown FRU header version 0x%02x",
+			header.version);
+		return -1;
+	}
+
+	/* offsets need converted to bytes
+	 * but that conversion is not done to the structure
+	 * because we may end up with offset > 255
+	 * which would overflow our 1-byte offset field */
+
+
+#define IPMI_DELL_OS_NAME_LENGTH_MAX 254
+
+	char assettag[IPMI_DELL_SYSINFO_ASSET_TAG_LENGTH] = {0};
+	char servicetag[IPMI_DELL_SYSINFO_SERVICE_TAG_LENGTH] = {0};
+	char hostname[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char productModel[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char osName[IPMI_DELL_OS_NAME_LENGTH_MAX+1] = {0};
+	char biosversion[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char osVersion[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+
+	/* Print board area */
+	if ((header.offset.board*8) >= sizeof(struct fru_header))
+		ipmi_sysinfo_print_board(intf, &fru, id, header.offset.board*8, ipmi_version);
+
+	/* Print the rest of the sysinfo command */
+	if (ipmi_version == 0x51) {
+
+/*		all the remaining info for ipmi 1.5 systems is printed in the ipmi_sysinfo_print_board
+		function call above. */
+	} else {
+		/* for IPMI 2.0 we get the remaining info from the "get system info" IPMI command rather
+		 * than from the 'get fru data' command */
+
+
+		ipmi_lcd_get_platform_model_name(intf, hostname, IPMI_DELL_LCD_STRING_LENGTH_MAX,
+							IPMI_DELL_SYSINFO_HOST_NAME);
+		printf("Host Name           : %s\n", hostname);
+
+
+		ipmi_lcd_get_platform_model_name(intf, productModel, IPMI_DELL_LCD_STRING_LENGTH_MAX,
+						  IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR);
+		printf("Product Model       : %s\n", productModel);
+
+		ipmi_sysinfo_get_tag(intf, assettag, IPMI_DELL_SYSINFO_ASSET_TAG,
+										  IPMI_DELL_SYSINFO_ASSET_TAG_LENGTH);
+		printf("Asset Tag           : %s\n", assettag);
+
+		ipmi_sysinfo_get_tag(intf, servicetag, IPMI_DELL_SYSINFO_SERVICE_TAG,
+										  IPMI_DELL_SYSINFO_SERVICE_TAG_LENGTH);
+		printf("Service Tag         : %s\n", servicetag);
+
+		ipmi_lcd_get_platform_model_name(intf, biosversion, IPMI_DELL_LCD_STRING_LENGTH_MAX,
+											 IPMI_DELL_SYSINFO_BIOS_VERSION);
+		printf("BIOS Version        : %s\n", biosversion);
+
+		ipmi_lcd_get_platform_model_name(intf, osName, IPMI_DELL_OS_NAME_LENGTH_MAX,
+											 IPMI_DELL_SYSINFO_OS_NAME);
+		printf("System OS Name      : %s\n", osName);
+
+		ipmi_lcd_get_platform_model_name(intf, osVersion, IPMI_DELL_OS_NAME_LENGTH_MAX,
+											 IPMI_DELL_SYSINFO_OS_VERSION_NUMBER);
+		printf("System OS Version   : %s\n", osVersion);
+
+
+	}
+
+
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_sysinfo_id
+*
+* Description:	This function prints the 'id' portion of the sysinfo command
+* Input: 		intf 			- pointer to ipmi interface
+*			type			- fru type
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static int
+ipmi_sysinfo_id(struct ipmi_intf * intf, int type)
+{
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0,0,0,0,0,0};
+	int rc = 0;
+	struct ipm_devid_rsp * dev_id;
+	struct sdr_repo_info_rs * repo_info;
+	uint8_t ipmi_version;
+	uint8_t data[4]={0};
+	struct FW_VER firmware_ver;
+
+	/* 20 80 01 52 51 9f a2 02 00 00 00 00 00 00 00 <- raw data*/
+	memset(&req, 0, sizeof(req));
+
+	if( (iDRAC_FLAG == IDRAC_12G) || (iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) ) {
+		req.msg.netfn = DELL_OEM_NETFN;
+		req.msg.lun = 0;
+		req.msg.cmd = 0xbf;
+		req.msg.data = data;
+		req.msg.data_len = 1;
+		if((iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G))
+			data[0] = 0x04;
+		else
+			data[0] = 0x01;
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+				printf(" Error Getting the Firmware version \n");
+				return -1;
+		}
+		if (rsp->ccode == 0xc1) {
+			memset(&firmware_ver,0,sizeof(struct FW_VER));
+		}
+		else if (rsp->ccode > 0) {
+				printf(" Error getting device ID (%s)\n",
+					val2str(rsp->ccode, completion_code_vals));
+				return -1;
+		}
+		else
+			memcpy(&firmware_ver,(struct FW_VER*)rsp->data,sizeof(struct FW_VER));
+	}
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Error getting device ID (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Error getting device ID (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	dev_id = (struct ipm_devid_rsp *)(void *)rsp->data;
+
+	printf("Device ID           : %0.2d\n", dev_id->device_id);
+	printf("Device Revision     : %0.2d\n", dev_id->device_revision & 0x7F);
+	if( (iDRAC_FLAG == IDRAC_12G) || (iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) {
+		if(firmware_ver.major_ver == 0) {
+			printf("Firmware Version    : %d.%0.2d(Build %02d)\n", dev_id->fw_rev1 & 0x7F,
+				dev_id->fw_rev2,dev_id->aux_fw_rev[1]);
+		} else {
+			if((iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) {
+				printf("Firmware Version    : %d.%0.2d.%02d.%02d(Build %02d)\n", firmware_ver.major_ver,
+				firmware_ver.minor_ver,(firmware_ver.pla_data_msb << 8 | firmware_ver.pla_data_lsb),
+				(firmware_ver.lc_ver_msb << 8 | firmware_ver.lc_ver_lsb),
+				(firmware_ver.build_no_msb << 8 | firmware_ver.build_no_lsb));
+			} else {
+				printf("Firmware Version    : %d.%0.2d.%02d(Build %02d)\n", firmware_ver.major_ver,
+				firmware_ver.minor_ver,(firmware_ver.pla_data_msb << 8 | firmware_ver.pla_data_lsb),
+				(firmware_ver.build_no_msb << 8 | firmware_ver.build_no_lsb));
+			}
+		}
+	}else {
+		// DF427387 Fix for Build Version Number
+		//	Byte:	  13				14		   15	       16
+		//	Data: <platform ID> <Build Number> <RES> <RES>
+		printf("Firmware Version    : %d.%0.2x.%02d\n", dev_id->fw_rev1 & 0x7F,
+			dev_id->fw_rev2,dev_id->aux_fw_rev[1]);
+	}
+
+	/* BCD value. byte->hex conversion used.*/
+	printf("IPMI Version        : %d.%d\n", dev_id->ipmi_version & 0x0F, dev_id->ipmi_version >> 4);
+	ipmi_version = dev_id->ipmi_version;
+
+
+	printf("Manufacturer ID     : %lu\n",
+		(uint32_t)(dev_id->manufacturer_id[2] & 0x0f) * 65536 +
+		(uint32_t)(dev_id->manufacturer_id[1] * 256) +
+		(uint32_t)dev_id->manufacturer_id[0]);
+	printf("Product ID          : %d\n", dev_id->product_id[1]*256 + dev_id->product_id[0]);
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_SELF_TEST;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+	rsp = intf->sendrecv(intf, &req);
+
+	if (rsp->data[0] == 0x55) {
+	printf("Status              : No error\n",-1);
+	}else if (rsp->data[0] == 0x56) {
+	printf("Status              : Self Test Function not implemented in this controller\n");
+	}else if (rsp->data[0] == 0x58)
+	{ printf("Status              : Fatal Hardware Error (BMC is inoperative)\n");
+	}else if (rsp->data[0] == 0x57) {
+		printf("Status              : ");
+		if (rsp->data[1] & 0x01) {printf("Controller operational firmware corrupte "); }
+		if (rsp->data[1] & 0x02) {printf("Controller update 'boot block' firmware corrupte "); }
+		if (rsp->data[1] & 0x04) {printf("Internal Use Area of BMC FRU corrupted "); }
+		if (rsp->data[1] & 0x08) {printf("SDR Repository Empty "); }
+		if (rsp->data[1] & 0x10) {printf("IPMB signal lines do not respond "); }
+		if (rsp->data[1] & 0x20) {printf("Cannot access BMC FRU device "); }
+		if (rsp->data[1] & 0x40) {printf("Cannot access SDR Repository "); }
+		if (rsp->data[1] & 0x80) {printf("Cannot access SEL device"); }
+		printf("\n");
+	}
+	else if (rsp->data[0] != 0xFF) { printf("Status              : Internal Failure. Refer to particular device's specification for definition\n"); }
+	else { printf("Status              : \n"); }
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR_REPO_INFO;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Error getting SDR version (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Error getting SDR version (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	repo_info = (struct sdr_repo_info_rs *)(void *)rsp->data;
+	printf("SDR Version         : %d.%d\n", repo_info->version & 0x0F, repo_info->version >> 4);
+
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_GUID;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Error getting device GUID (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Error getting device GUID (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	printf("GUID                : %.2X%.2X%.2X%.2X-%.2X%.2X-%.2X%.2X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X\n",
+		rsp->data[15], rsp->data[14], rsp->data[13], rsp->data[12],
+		rsp->data[11], rsp->data[10], rsp->data[9], rsp->data[8],
+		rsp->data[7], rsp->data[6], rsp->data[5], rsp->data[4],
+		rsp->data[3], rsp->data[2], rsp->data[1], rsp->data[0]);
+
+
+	rc = ipmi_sysinfo_fru(intf, 0, ipmi_version);
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	ipmi_sysinfo_usage
+*
+* Description: 	This function prints help message for sysinfo command
+* Input:
+* Output:
+*
+* Return:
+*
+******************************************************************/
+
+static void
+ipmi_sysinfo_usage(void)
+{
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sysinfo");
+	lprintf(LOG_NOTICE, "      Show system information");
 }
 /*
  * Function Name:       ipmi_delloem_lcd_main
@@ -682,6 +1392,12 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
 			|| (IMC_IDRAC_13G_MODULAR == data[10])
 			|| (IMC_IDRAC_13G_DCS == data[10])) {
 		iDRAC_FLAG=IDRAC_13G;
+		iDRAC_FLAG_ALL = 1;
+		iDRAC_FLAG_12_13 = 1;
+	} else if ((IMC_IDRAC_14G_MONOLITHIC == data[10])
+				|| (IMC_IDRAC_14G_MODULAR == data[10])
+				|| (IMC_IDRAC_14G_DCS == data[10])) {
+		iDRAC_FLAG=IDRAC_14G;
 		iDRAC_FLAG_ALL = 1;
 		iDRAC_FLAG_12_13 = 1;
 	} else {

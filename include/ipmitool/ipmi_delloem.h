@@ -73,6 +73,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define	IDRAC_11G					1
 #define	IDRAC_12G					2
 #define	IDRAC_13G					3
+#define	IDRAC_14G					4
 // Return Error code for license
 #define	LICENSE_NOT_SUPPORTED		0x6F
 #define	VFL_NOT_LICENSED			0x33
@@ -80,6 +81,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #define watt                0x00
 #define IPMI_DELL_POWER_CAP 0xEA
 #define percent             0x03 
+
+/*14g fru arch*/
+
+#define COMMON_OFFSET 	0x00
+#define INTERNAL_OFFSET 0x01
+#define CHASSIS_OFFSET 	0x02
+#define BOARD_OFFSET 	0x03
+#define PRODUCT_OFFSET 	0x04
+#define OFFSETMULTIPLIER 0x08
+#define BOARDLANGOFFSET  0x02
+#define BOARDPRODUCTMANFLENOFFSET 0x06
+
 
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
@@ -94,6 +107,19 @@ typedef struct _tag_ipmi_dell_lcd_caps
 #define IPMI_DELL_LCD_STRING_LENGTH_MAX 62      /* Valid for 9G. Glacier ??. */
 #define IPMI_DELL_LCD_STRING1_SIZE      14
 #define IPMI_DELL_LCD_STRINGN_SIZE      16
+#define IPMI_DELL_SYSINFO_HOST_NAME		0x02
+#define IPMI_DELL_SYSINFO_ASSET_TAG		0xC4
+#define IPMI_DELL_SYSINFO_ASSET_TAG_LENGTH		64
+#define IPMI_DELL_SYSINFO_SERVICE_TAG	0xC5
+#define IPMI_DELL_SYSINFO_SERVICE_TAG_LENGTH	64
+#define IPMI_DELL_SYSINFO_OS_NAME		0x03
+#define IPMI_DELL_SYSINFO_BIOS_VERSION	0x01
+#define	IPMI_DELL_SYSINFO_OS_VERSION_NUMBER	0x0E4
+/* BIB field type definitions */
+#define	BIB_TYPE_BIOS_VERSION	0x00
+#define BIB_TYPE_SERVICE_TAG	0x01
+#define BIB_TYPE_ASSET_TAG		0x02
+#define BIB_TYPE_PDRODUCT_MODEL	0x1A
 
 /* vFlash subcommands */
 #define IPMI_GET_EXT_SD_CARD_INFO 0xA4
@@ -187,7 +213,11 @@ typedef struct _lcd_mode
 
 #define IMC_IDRAC_13G_MONOLITHIC 	(uint8_t) (0x20)
 #define IMC_IDRAC_13G_MODULAR 		(uint8_t) (0x21)
-#define IMC_IDRAC_13G_DCS			(uint8_t) (0x22)
+#define IMC_IDRAC_13G_DCS	 		(uint8_t) (0x22)
+
+#define IMC_IDRAC_14G_MONOLITHIC 	(uint8_t) (0x30)
+#define IMC_IDRAC_14G_MODULAR 		(uint8_t) (0x31)
+#define IMC_IDRAC_14G_DCS	 		(uint8_t) (0x32)
 
 
 typedef struct
@@ -249,6 +279,14 @@ typedef struct
 #define GET_PWR_HEADROOM_CMD	    (uint8_t)(0xBB)
 #define GET_PWR_CONSUMPTION_CMD	    (uint8_t)(0xB3)
 #define	GET_FRONT_PANEL_INFO_CMD		(uint8_t)0xb5
+
+
+typedef struct _tag_ipmi_dell_asset_tag
+{
+	uint8_t parm_rev;					/* 0x11 for IPMI 2.0 */
+	uint8_t length;
+	uint8_t tag[64];
+} __attribute__ ((packed))  IPMI_DELL_TAG;
 
 
 typedef struct _ipmi_power_monitor
