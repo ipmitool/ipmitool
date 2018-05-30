@@ -48,6 +48,9 @@
 #define IPMI_USER_ENABLE_DISABLED 0x80
 #define IPMI_USER_ENABLE_RESERVED 0xC0
 
+#define IPMI_UID_MASK 0x3F /* The user_id is 6-bit and is usually in bits [5:0] */
+#define IPMI_UID(id) ((id) & IPMI_UID_MASK)
+
 /* (22.27) Get and (22.26) Set User Access */
 struct user_access_t {
 	uint8_t callin_callback;

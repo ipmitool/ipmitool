@@ -76,7 +76,7 @@ _ipmi_get_user_access(struct ipmi_intf *intf,
 		return (-3);
 	}
 	data[0] = user_access_rsp->channel & 0x0F;
-	data[1] = user_access_rsp->user_id & 0x3F;
+	data[1] = IPMI_UID(user_access_rsp->user_id);
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = IPMI_GET_USER_ACCESS;
 	req.msg.data = data;
@@ -89,10 +89,10 @@ _ipmi_get_user_access(struct ipmi_intf *intf,
 	} else if (rsp->data_len != 4) {
 		return (-2);
 	}
-	user_access_rsp->max_user_ids = rsp->data[0] & 0x3F;
+	user_access_rsp->max_user_ids = IPMI_UID(rsp->data[0]);
 	user_access_rsp->enable_status = rsp->data[1] & 0xC0;
-	user_access_rsp->enabled_user_ids = rsp->data[1] & 0x3F;
-	user_access_rsp->fixed_user_ids = rsp->data[2] & 0x3F;
+	user_access_rsp->enabled_user_ids = IPMI_UID(rsp->data[1]);
+	user_access_rsp->fixed_user_ids = IPMI_UID(rsp->data[2]);
 	user_access_rsp->callin_callback = rsp->data[3] & 0x40;
 	user_access_rsp->link_auth = rsp->data[3] & 0x20;
 	user_access_rsp->ipmi_messaging = rsp->data[3] & 0x10;
@@ -117,7 +117,7 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
 	if (user_name_ptr == NULL) {
 		return (-3);
 	}
-	data[0] = user_name_ptr->user_id & 0x3F;
+	data[0] = IPMI_UID(user_name_ptr->user_id);
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = IPMI_GET_USER_NAME;
 	req.msg.data = data;
@@ -165,7 +165,7 @@ _ipmi_set_user_access(struct ipmi_intf *intf,
 		data[0] |= 0x10;
 	}
 	data[0] |= (user_access_req->channel & 0x0F);
-	data[1] = user_access_req->user_id & 0x3F;
+	data[1] = IPMI_UID(user_access_req->user_id);
 	data[2] = user_access_req->privilege_limit & 0x0F;
 	data[3] = user_access_req->session_limit & 0x0F;
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -205,7 +205,7 @@ _ipmi_set_user_password(struct ipmi_intf *intf, uint8_t user_id,
 	}
 	memset(data, 0, data_len);
 	data[0] = (is_twenty_byte) ? 0x80 : 0x00;
-	data[0] |= (0x0F & user_id);
+	data[0] |= IPMI_UID(user_id);
 	data[1] = 0x03 & operation;
 	if (password != NULL) {
 		size_t copy_len = strlen(password);
@@ -370,6 +370,8 @@ ipmi_user_set_username(
 	req.msg.data     = msg_data;
 	req.msg.data_len = sizeof(msg_data);
 	memset(msg_data, 0, sizeof(msg_data));
+
+	user_id = IPMI_UID(user_id);
 
 	/* The channel number will remain constant throughout this function */
 	msg_data[0] = user_id;
