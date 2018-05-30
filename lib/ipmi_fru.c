@@ -2872,27 +2872,32 @@ static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length)
 	}
 }
 
-
-/* __ipmi_fru_print  -  Do actual work to print a FRU by its ID
-*
-* @intf:   ipmi interface
-* @id:     fru id
-*
-* returns -1 on error
-* returns 0 if successful
-* returns 1 if device not present
-*/
-static int
-__ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
+/** __ipmi_get_fru_hdr - read FRU info and header from IPMI interface
+ *
+ * @param[in]  intf   ipmi interface
+ * @param[in]  id     fru id
+ * @param[out] fru    fru info structure pointer
+ * @param[out] size   size of the allocated fru structure
+ *
+ * @retval  0         error
+ * @retval  1         success
+ */
+static int __ipmi_get_fru_hdr(struct ipmi_intf *intf,
+                              uint8_t id,
+                              struct fru_info *fru,
+                              struct fru_header *header)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	struct fru_info fru;
-	struct fru_header header;
 	uint8_t msg_data[4];
 
-	memset(&fru, 0, sizeof(struct fru_info));
-	memset(&header, 0, sizeof(struct fru_header));
+	/* Sanity checks */
+	if (!fru) return 0;
+	if (!header) return 0;
+	if (!intf) return 0;
+
+	memset(fru, 0, sizeof(*fru));
+	memset(header, 0, sizeof(*header));
 
 	/*
 	* get info about this FRU
@@ -2909,66 +2914,63 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		printf(" Device not present (No Response)\n");
-		return -1;
+		return 0;
 	}
 	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		       val2str(rsp->ccode, completion_code_vals));
+		return 0;
 	}
 
-	memset(&fru, 0, sizeof(fru));
-	fru.size = (rsp->data[1] << 8) | rsp->data[0];
-	fru.access = rsp->data[2] & 0x1;
+	fru->size = (rsp->data[1] << 8) | rsp->data[0];
+	fru->access = rsp->data[2] & 0x1;
 
 	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
-		fru.size, fru.access ? "words" : "bytes");
+	        fru->size, fru->access ? "words" : "bytes");
 
-	if (fru.size < 1) {
-		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
-		return -1;
+	if (fru->size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru->size);
+		return 0;
 	}
 
-	/*
-	* retrieve the FRU header
-	*/
-	msg_data[0] = id;
-	msg_data[1] = 0;
-	msg_data[2] = 0;
-	msg_data[3] = 8;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_DATA;
-	req.msg.data = msg_data;
-	req.msg.data_len = 4;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf(" Device not present (No Response)\n");
-		return 1;
-	}
-	if (rsp->ccode) {
-		printf(" Device not present (%s)\n",
-				val2str(rsp->ccode, completion_code_vals));
-		return 1;
+	/* Read the FRU header */
+	if (read_fru_area(intf, fru, id, 0, sizeof(*header), header)) {
+		lprintf(LOG_ERR, " Failed to read FRU header");
+		return 0;
 	}
 
-	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
-
-	memcpy(&header, rsp->data + 1, 8);
-
-	if (header.version != 1) {
+	if (header->version != 1) {
 		lprintf(LOG_ERR, " Unknown FRU header version 0x%02x",
-			header.version);
+			header->version);
+		return 0;
+	}
+
+	return 1;
+}
+
+/* __ipmi_fru_print  -  Do actual work to print a FRU by its ID
+*
+* @intf:   ipmi interface
+* @id:     fru id
+*
+* returns -1 on error
+* returns 0 if successful
+* returns 1 if device not present
+*/
+static int
+__ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
+{
+	struct fru_info fru;
+	struct fru_header header;
+
+	if (!__ipmi_get_fru_hdr(intf, id, &fru, &header)) {
 		return -1;
 	}
 
 	/* offsets need converted to bytes
-	* but that conversion is not done to the structure
-	* because we may end up with offset > 255
-	* which would overflow our 1-byte offset field */
+	 * but that conversion is not done to the structure
+	 * because we may end up with offset > 255
+	 * which would overflow our 1-byte offset field */
 
 	lprintf(LOG_DEBUG, "fru.header.version:         0x%x",
 		header.version);
@@ -4056,91 +4058,19 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 * returns 1 if device not present
 */
 static int
-ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
-											uint8_t id,
-											struct fru_info * fru,
-											uint16_t * size,
-											uint16_t * offset)
+ipmi_fru_get_internal_use_info(struct ipmi_intf *intf,
+                               uint8_t id,
+                               struct fru_info *fru,
+                               uint16_t *size,
+                               uint16_t *offset)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
 	struct fru_header header;
-	uint8_t msg_data[4];
 
 	// Init output value
 	* offset = 0;
 	* size = 0;
 
-	memset(fru, 0, sizeof(struct fru_info));
-	memset(&header, 0, sizeof(struct fru_header));
-
-	/*
-	* get info about this FRU
-	*/
-	memset(msg_data, 0, 4);
-	msg_data[0] = id;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_INFO;
-	req.msg.data = msg_data;
-	req.msg.data_len = 1;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf(" Device not present (No Response)\n");
-		return -1;
-	}
-	if (rsp->ccode) {
-		printf(" Device not present (%s)\n",
-			val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
-	fru->size = (rsp->data[1] << 8) | rsp->data[0];
-	fru->access = rsp->data[2] & 0x1;
-
-	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
-		fru->size, fru->access ? "words" : "bytes");
-
-	if (fru->size < 1) {
-		lprintf(LOG_ERR, " Invalid FRU size %d", fru->size);
-		return -1;
-	}
-
-	/*
-	* retrieve the FRU header
-	*/
-	msg_data[0] = id;
-	msg_data[1] = 0;
-	msg_data[2] = 0;
-	msg_data[3] = 8;
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = GET_FRU_DATA;
-	req.msg.data = msg_data;
-	req.msg.data_len = 4;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		printf(" Device not present (No Response)\n");
-		return 1;
-	}
-	if (rsp->ccode) {
-		printf(" Device not present (%s)\n",
-				val2str(rsp->ccode, completion_code_vals));
-		return 1;
-	}
-
-	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
-
-	memcpy(&header, rsp->data + 1, 8);
-
-	if (header.version != 1) {
-		lprintf(LOG_ERR, " Unknown FRU header version 0x%02x",
-			header.version);
+	if (!__ipmi_get_fru_hdr(intf, id, fru, &header)) {
 		return -1;
 	}
 
