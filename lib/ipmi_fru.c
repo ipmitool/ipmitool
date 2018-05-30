@@ -4095,7 +4095,6 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 		return -1;
 	}
 
-	memset(&fru, 0, sizeof(fru));
 	fru->size = (rsp->data[1] << 8) | rsp->data[0];
 	fru->access = rsp->data[2] & 0x1;
 
