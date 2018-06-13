@@ -28,3 +28,4 @@ control/prototype
 control/rpmmacros
 src/ipmievd
 src/ipmitool
+cscope.out
