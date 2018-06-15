@@ -335,7 +335,9 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	FD_SET(intf->fd, &rset);
 	read_timeout.tv_sec = IPMI_OPENIPMI_READ_TIMEOUT;
 	read_timeout.tv_usec = 0;
-	retval = select(intf->fd+1, &rset, NULL, NULL, &read_timeout);
+	do {
+		retval = select(intf->fd+1, &rset, NULL, NULL, &read_timeout);
+	} while (retval < 0 && errno == EINTR);
 	if (retval < 0) {
 	   lperror(LOG_ERR, "I/O Error");
 	   if (data != NULL) {
