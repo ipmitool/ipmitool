@@ -34,6 +34,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <limits.h>
+#include <stdbool.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -230,10 +232,33 @@ printf_sysinfo_usage(int full_help)
 static void
 print_watchdog_usage(void)
 {
-	lprintf(LOG_NOTICE, "usage: watchdog <command>:");
-	lprintf(LOG_NOTICE, "   get    :  Get Current Watchdog settings");
-	lprintf(LOG_NOTICE, "   reset  :  Restart Watchdog timer based on most recent settings");
-	lprintf(LOG_NOTICE, "   off    :  Shut off a running Watchdog timer");
+	lprintf(LOG_NOTICE,
+"usage: watchdog <command>:\n"
+"\n"
+"   set <option[=value]> [<option[=value]> ...]\n"
+"     Set Watchdog settings\n"
+"     Options: (* = mandatory)\n"
+"       timeout=<1-6553>                    - [0] Initial countdown value, sec\n"
+"       pretimeout=<1-255>                  - [0] Pre-timeout interval, sec\n"
+"       int=<smi|nmi|msg>                   - [-] Pre-timeout interrupt type\n"
+"       use=<frb2|post|osload|sms|oem>      - [-] Timer use\n"
+"       clear=<frb2|post|osload|sms|oem>    - [-] Clear timer use expiration\n"
+"                                                 flag, can be specified\n"
+"                                                 multiple times\n"
+"       action=<reset|poweroff|cycle|none>  - [none] Timer action\n"
+"       nolog                               - [-] Don't log the timer use\n"
+"       dontstop                            - [-] Don't stop the timer\n"
+"                                                 while applying settings\n"
+"\n"
+"   get\n"
+"     Get Current settings\n"
+"\n"
+"   reset\n"
+"     Restart Watchdog timer based on the most recent settings\n"
+"\n"
+"   off\n"
+"     Shut off a running Watchdog timer"
+    );
 }
 
 /* ipmi_mc_get_enables  -  print out MC enables
@@ -625,6 +650,63 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 	return rv;
 }
 
+struct wdt_string_s {
+	const char *get; /* The name of 'timer use' for `watchdog get` command */
+	const char *set; /* The name of 'timer use' for `watchdog set` command */
+};
+
+
+#define WDTS(g,s) &(const struct wdt_string_s){ (g), (s) }
+
+const struct wdt_string_s *wdt_use[] = {
+	WDTS("Reserved", "none"),
+	WDTS("BIOS FRB2", "frb2"),
+	WDTS("BIOS/POST", "post"),
+	WDTS("OS Load", "osload"),
+	WDTS("SMS/OS", "sms"),
+	WDTS("OEM", "oem"),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	NULL
+};
+
+const struct wdt_string_s *wdt_int[] = {
+	WDTS("None", "none"),
+	WDTS("SMI", "smi"),
+	WDTS("NMI/Diagnostic", "nmi"),
+	WDTS("Messaging", "msg"),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	NULL
+};
+
+const struct wdt_string_s *wdt_action[] = {
+	WDTS("No action", "none"),
+	WDTS("Hard Reset", "reset"),
+	WDTS("Power Down", "poweroff"),
+	WDTS("Power Cycle", "cycle"),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	WDTS("Reserved", NULL),
+	NULL
+};
+
+int find_set_wdt_string(const struct wdt_string_s *w[], const char *s)
+{
+	int val = 0;
+	while (w[val]) {
+		if (!strcmp(s, w[val]->set)) break;
+		++val;
+	}
+	if (!w[val]) {
+		return -1;
+	}
+	return val;
+}
+
 /* ipmi_mc_get_watchdog
  *
  * @intf:	ipmi interface
@@ -632,29 +714,6 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
  * returns 0 on success
  * returns -1 on error
  */
-
-const char *wdt_use_string[8] = {
-	"Reserved",
-	"BIOS FRB2",
-	"BIOS/POST",
-	"OS Load",
-	"SMS/OS",
-	"OEM",
-	"Reserved",
-	"Reserved"
-};
-
-const char *wdt_action_string[8] = {
-	"No action",
-	"Hard Reset",
-	"Power Down",
-	"Power Cycle",
-	"Reserved",
-	"Reserved",
-	"Reserved",
-	"Reserved"
-};
-
 static int
 ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 {
@@ -682,11 +741,11 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 
 	printf("Watchdog Timer Use:     %s (0x%02x)\n",
-			wdt_use_string[(wdt_res->timer_use & 0x07 )], wdt_res->timer_use);
+			wdt_use[(wdt_res->timer_use & 0x07 )]->get, wdt_res->timer_use);
 	printf("Watchdog Timer Is:      %s\n",
 		wdt_res->timer_use & 0x40 ? "Started/Running" : "Stopped");
 	printf("Watchdog Timer Actions: %s (0x%02x)\n",
-		 wdt_action_string[(wdt_res->timer_actions&0x07)], wdt_res->timer_actions);
+		 wdt_action[(wdt_res->timer_actions&0x07)]->get, wdt_res->timer_actions);
 	printf("Pre-timeout interval:   %d seconds\n", wdt_res->pre_timeout);
 	printf("Timer Expiration Flags: 0x%02x\n", wdt_res->timer_use_exp);
 	printf("Initial Countdown:      %i sec\n",
@@ -695,6 +754,167 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 			(((wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb)) / 10);
 
 	return 0;
+}
+
+/* ipmi_mc_set_watchdog
+ *
+ * @intf:	ipmi interface
+ * @argc:	argument count
+ * @argv:	arguments
+ *
+ * returns 0 on success
+ * returns non-zero (-1 or IPMI completion code) on error
+ */
+static int
+ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
+{
+	const int MAX_TIMEOUT = 6553; /* Seconds, makes almost USHRT_MAX when
+	                                 converted to 100ms intervals */
+	const int MAX_PRETIMEOUT = 255; /* Seconds */
+
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req = {0};
+	unsigned char msg_data[6] = {0};
+	struct ipm_get_watchdog_rsp * wdt_res;
+	uint16_t timeout = 0;
+	uint8_t pretimeout = 0;
+	uint8_t intr = 0;
+	uint8_t use = 0;
+	uint8_t clear = 0;
+	uint8_t action = 0;
+	bool nolog = false;
+	bool dontstop = false;
+	int rc = -1;
+	bool options_error = true;
+	int i;
+
+	if (!argc || !strcmp(argv[0], "help")) {
+		goto out;
+	}
+
+	for (i = 0; i < argc; ++i) {
+		unsigned long val;
+		int j;
+		char *vstr = strchr(argv[i], '=');
+		if (vstr)
+			vstr++; /* Point to the value */
+
+		switch (argv[i][0]) { /* only check the first letter to allow for
+		                         shortcuts */
+		case 't': /* timeout */
+			val = strtoul(vstr, NULL, 10);
+			if (val < 1 || val > MAX_TIMEOUT) {
+				lprintf(LOG_ERR, "Timeout value %lu is out of range (1-%d)\n",
+				        val, MAX_TIMEOUT);
+				goto out;
+			}
+			timeout = val * 10; /* Convert seconds to 100ms intervals */
+			break;
+		case 'p': /* pretimeout */
+			val = strtoul(vstr, NULL, 10);
+			if (val < 1 || val > MAX_PRETIMEOUT) {
+				lprintf(LOG_ERR, "Pretimeout value %lu is out of range (1-%d)\n",
+				        val, MAX_PRETIMEOUT);
+				goto out;
+			}
+			pretimeout = val; /* Convert seconds to 100ms intervals */
+			break;
+		case 'i': /* int */
+			if (0 > (val = find_set_wdt_string(wdt_int, vstr))) {
+				lprintf(LOG_ERR, "Interrupt type '%s' is not valid\n", vstr);
+				goto out;
+			}
+			intr = val;
+			break;
+		case 'u': /* use */
+			if (0 > (val = find_set_wdt_string(wdt_use, vstr))) {
+				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
+				goto out;
+			}
+			use = val;
+			break;
+		case 'a': /* action */
+			if (0 > (val = find_set_wdt_string(wdt_action, vstr))) {
+				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
+				goto out;
+			}
+			action = val;
+			break;
+		case 'c': /* clear */
+			if (0 > (val = find_set_wdt_string(wdt_use, vstr))) {
+				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
+				goto out;
+			}
+			clear |= 1 << val;
+			break;
+		case 'n': /* nolog */
+			nolog = true;
+			break;
+		case 'd': /* dontstop */
+			dontstop = true;
+			break;
+
+		default:
+			lprintf(LOG_ERR, "Invalid option '%s'", argv[i]);
+			break;
+		}
+	}
+
+	options_error = false;
+
+	/* Fill data bytes according to IPMI 2.0 Spec section 27.6 */
+	msg_data[0] = nolog << IPMI_WDT_USE_NOLOG_SHIFT;
+	msg_data[0] |= dontstop << IPMI_WDT_USE_DONTSTOP_SHIFT;
+	msg_data[0] |= use & IPMI_WDT_USE_MASK;
+
+	msg_data[1] = (intr & IPMI_WDT_INTR_MASK) << IPMI_WDT_INTR_SHIFT;
+	msg_data[1] = action & IPMI_WDT_ACTION_MASK;
+
+	msg_data[2] = pretimeout;
+
+	msg_data[3] = clear;
+
+	msg_data[4] = timeout & 0xFF; /* LSB */
+	msg_data[5] = timeout >> 8;   /* MSB */
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_SET_WATCHDOG_TIMER;
+	req.msg.data_len = 6;
+	req.msg.data = msg_data;
+
+	lprintf(LOG_INFO,
+	        "Sending Set Watchdog command [%02X %02X %02X %02X %02X %02X]:"
+	        , msg_data[0], msg_data[1], msg_data[2]
+	        , msg_data[3], msg_data[4], msg_data[5]
+	       );
+	lprintf(LOG_INFO, "  - nolog      = %d", nolog);
+	lprintf(LOG_INFO, "  - dontstop   = %d", dontstop);
+	lprintf(LOG_INFO, "  - use        = 0x%02hhX", use);
+	lprintf(LOG_INFO, "  - intr       = 0x%02hhX", intr);
+	lprintf(LOG_INFO, "  - action     = 0x%02hhX", action);
+	lprintf(LOG_INFO, "  - pretimeout = %hhu", pretimeout);
+	lprintf(LOG_INFO, "  - clear      = 0x%02hhX", clear);
+	lprintf(LOG_INFO, "  - timeout    = %hu", timeout);
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Set Watchdog Timer command failed");
+		goto out;
+	}
+
+	rc = rsp->ccode;
+	if (rc) {
+		lprintf(LOG_ERR, "Set Watchdog Timer command failed: %s",
+		        val2str(rsp->ccode, completion_code_vals));
+		goto out;
+	}
+
+	lprintf(LOG_NOTICE, "Watchdog Timer was successfully configured");
+
+out:
+	if (options_error) print_watchdog_usage();
+
+	return rc;
 }
 
 /* ipmi_mc_shutoff_watchdog
@@ -858,6 +1078,16 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else if (strncmp(argv[1], "help", 4) == 0) {
 			print_watchdog_usage();
 			rc = 0;
+		}
+		else if (strncmp(argv[1], "set", 3) == 0) {
+			if (argc < 3) { /* Requires options */
+				lprintf(LOG_ERR, "Not enough parameters given.");
+				print_watchdog_usage();
+				rc = (-1);
+			}
+			else {
+				rc = ipmi_mc_set_watchdog(intf, argc - 2, &(argv[2]));
+			}
 		}
 		else if (strncmp(argv[1], "get", 3) == 0) {
 			rc = ipmi_mc_get_watchdog(intf);

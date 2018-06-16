@@ -170,6 +170,19 @@ struct ipm_get_watchdog_rsp {
 #define IPM_WATCHDOG_CLEAR_BIOS_POST	0x04
 #define IPM_WATCHDOG_CLEAR_BIOS_FRB2	0x02
 
+/* Use */
+#define IPMI_WDT_USE_NOLOG_SHIFT    7
+#define IPMI_WDT_USE_DONTSTOP_SHIFT 6
+#define IPMI_WDT_USE_MASK           0x07
+
+/* Pre-timeout interrupt type */
+#define IPMI_WDT_INTR_SHIFT     4
+#define IPMI_WDT_INTR_MASK      0x07 /* Apply to the intr value, not to the data byte */
+
+/* Action */
+#define IPMI_WDT_ACTION_MASK    0x07
+
+
 /* IPMI 2.0 command for system information*/
 #define IPMI_SET_SYS_INFO                  0x58
 #define IPMI_GET_SYS_INFO                  0x59
