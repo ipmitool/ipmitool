@@ -36,6 +36,7 @@
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <endian.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -720,6 +721,9 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipm_get_watchdog_rsp * wdt_res;
+	double init_cnt;
+	double pres_cnt;
+	int i;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -740,18 +744,36 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 
+	/* Convert 100ms intervals to seconds */
+	init_cnt = (double)ipmi16toh(wdt_res->init_cnt_le) / 10.0;
+	pres_cnt = (double)ipmi16toh(wdt_res->pres_cnt_le) / 10.0;
+
 	printf("Watchdog Timer Use:     %s (0x%02x)\n",
-			wdt_use[(wdt_res->timer_use & 0x07 )]->get, wdt_res->timer_use);
+	       wdt_use[IPMI_WDT_GET(wdt_res->use, USE)]->get, wdt_res->use);
 	printf("Watchdog Timer Is:      %s\n",
-		wdt_res->timer_use & 0x40 ? "Started/Running" : "Stopped");
-	printf("Watchdog Timer Actions: %s (0x%02x)\n",
-		 wdt_action[(wdt_res->timer_actions&0x07)]->get, wdt_res->timer_actions);
+	       IS_WDT_BIT(wdt_res->use, USE_RUNNING)
+	       ? "Started/Running"
+	       : "Stopped");
+	printf("Watchdog Timer Logging: %s\n",
+	       IS_WDT_BIT(wdt_res->use, USE_NOLOG)
+	       ? "Off"
+	       : "On");
+	printf("Watchdog Timer Action:  %s (0x%02x)\n",
+	       wdt_action[IPMI_WDT_GET(wdt_res->intr_action, ACTION)]->get,
+	       wdt_res->intr_action);
+	printf("Pre-timeout interrupt:  %s\n",
+	       wdt_int[IPMI_WDT_GET(wdt_res->intr_action, INTR)]->get);
 	printf("Pre-timeout interval:   %d seconds\n", wdt_res->pre_timeout);
-	printf("Timer Expiration Flags: 0x%02x\n", wdt_res->timer_use_exp);
-	printf("Initial Countdown:      %i sec\n",
-			((wdt_res->initial_countdown_msb << 8) | wdt_res->initial_countdown_lsb)/10);
-	printf("Present Countdown:      %i sec\n",
-			(((wdt_res->present_countdown_msb << 8) | wdt_res->present_countdown_lsb)) / 10);
+	printf("Timer Expiration Flags: %s(0x%02x)\n",
+	       wdt_res->exp_flags ? "" : "None ",
+	       wdt_res->exp_flags);
+	for (i = 0; i < sizeof(wdt_res->exp_flags) * CHAR_BIT; ++i) {
+		if (IS_SET(wdt_res->exp_flags, i)) {
+			printf("                        * %s\n", wdt_use[i]->get);
+		}
+	}
+	printf("Initial Countdown:      %0.1f sec\n", init_cnt);
+	printf("Present Countdown:      %0.1f sec\n", pres_cnt);
 
 	return 0;
 }

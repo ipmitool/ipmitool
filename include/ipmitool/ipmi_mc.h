@@ -34,6 +34,7 @@
 #define IPMI_MC_H
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/helper.h>
 
 #define BMC_GET_DEVICE_ID	0x01
 #define BMC_COLD_RESET		0x02
@@ -138,14 +139,24 @@ struct ipm_selftest_rsp {
 #pragma pack(1)
 #endif
 struct ipm_get_watchdog_rsp {
-	unsigned char timer_use;
-	unsigned char timer_actions;
+	unsigned char use;
+	unsigned char intr_action;
 	unsigned char pre_timeout;
-	unsigned char timer_use_exp;
-	unsigned char initial_countdown_lsb;
-	unsigned char initial_countdown_msb;
-	unsigned char present_countdown_lsb;
-	unsigned char present_countdown_msb;
+	unsigned char exp_flags;
+	union {
+		struct {
+			unsigned char initial_countdown_lsb;
+			unsigned char initial_countdown_msb;
+		};
+		uint16_t init_cnt_le;
+	};
+	union {
+		struct {
+			unsigned char present_countdown_lsb;
+			unsigned char present_countdown_msb;
+		};
+		uint16_t pres_cnt_le;
+	};
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -172,7 +183,9 @@ struct ipm_get_watchdog_rsp {
 
 /* Use */
 #define IPMI_WDT_USE_NOLOG_SHIFT    7
-#define IPMI_WDT_USE_DONTSTOP_SHIFT 6
+#define IPMI_WDT_USE_DONTSTOP_SHIFT 6 /* For 'set' */
+#define IPMI_WDT_USE_RUNNING_SHIFT  6 /* For 'get' */
+#define IPMI_WDT_USE_SHIFT          0
 #define IPMI_WDT_USE_MASK           0x07
 
 /* Pre-timeout interrupt type */
@@ -180,8 +193,12 @@ struct ipm_get_watchdog_rsp {
 #define IPMI_WDT_INTR_MASK      0x07 /* Apply to the intr value, not to the data byte */
 
 /* Action */
+#define IPMI_WDT_ACTION_SHIFT   0
 #define IPMI_WDT_ACTION_MASK    0x07
 
+#define IPMI_WDT_GET(b, s) (((b) >> (IPMI_WDT_##s##_SHIFT)) & (IPMI_WDT_##s##_MASK))
+
+#define IS_WDT_BIT(b, s) IS_SET((b), IPMI_WDT_##s##_SHIFT)
 
 /* IPMI 2.0 command for system information*/
 #define IPMI_SET_SYS_INFO                  0x58

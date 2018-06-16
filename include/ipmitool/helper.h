@@ -109,6 +109,21 @@ FILE * ipmi_open_file(const char * file, int rw);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
+#define IS_SET(v, b) ((v) & (1 << (b)))
+
+/* le16toh() doesn't exist for Windows or Apple */
+/* For portability, let's simply define our own version of it here */
+static inline uint16_t ipmi16toh(uint16_t le)
+{
+	uint8_t *data = (uint8_t *)&le;
+	uint16_t h;
+
+	h = data[1] << 8; /* MSB */
+	h |= data[0]; /* LSB */
+
+	return h;
+}
+
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
 
