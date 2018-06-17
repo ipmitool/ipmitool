@@ -778,36 +778,26 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	return 0;
 }
 
-/* ipmi_mc_set_watchdog
- *
- * @intf:	ipmi interface
- * @argc:	argument count
- * @argv:	arguments
- *
- * returns 0 on success
- * returns non-zero (-1 or IPMI completion code) on error
- */
-static int
-ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
+/* Configuration to set with ipmi_mc_set_watchdog() */
+typedef struct ipmi_mc_set_wdt_conf_s {
+	uint16_t timeout;
+	uint8_t pretimeout;
+	uint8_t intr;
+	uint8_t use;
+	uint8_t clear;
+	uint8_t action;
+	bool nolog;
+	bool dontstop;
+} wdt_conf_t;
+
+/* Options parser for ipmi_mc_set_watchdog() */
+static bool
+parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 {
 	const int MAX_TIMEOUT = 6553; /* Seconds, makes almost USHRT_MAX when
 	                                 converted to 100ms intervals */
 	const int MAX_PRETIMEOUT = 255; /* Seconds */
-
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req = {0};
-	unsigned char msg_data[6] = {0};
-	struct ipm_get_watchdog_rsp * wdt_res;
-	uint16_t timeout = 0;
-	uint8_t pretimeout = 0;
-	uint8_t intr = 0;
-	uint8_t use = 0;
-	uint8_t clear = 0;
-	uint8_t action = 0;
-	bool nolog = false;
-	bool dontstop = false;
-	int rc = -1;
-	bool options_error = true;
+	bool error = true;
 	int i;
 
 	if (!argc || !strcmp(argv[0], "help")) {
@@ -830,50 +820,51 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 				        val, MAX_TIMEOUT);
 				goto out;
 			}
-			timeout = val * 10; /* Convert seconds to 100ms intervals */
+			conf->timeout = val * 10; /* Convert seconds to 100ms intervals */
 			break;
 		case 'p': /* pretimeout */
 			val = strtoul(vstr, NULL, 10);
 			if (val < 1 || val > MAX_PRETIMEOUT) {
-				lprintf(LOG_ERR, "Pretimeout value %lu is out of range (1-%d)\n",
+				lprintf(LOG_ERR,
+				        "Pretimeout value %lu is out of range (1-%d)\n",
 				        val, MAX_PRETIMEOUT);
 				goto out;
 			}
-			pretimeout = val; /* Convert seconds to 100ms intervals */
+			conf->pretimeout = val; /* Convert seconds to 100ms intervals */
 			break;
 		case 'i': /* int */
 			if (0 > (val = find_set_wdt_string(wdt_int, vstr))) {
 				lprintf(LOG_ERR, "Interrupt type '%s' is not valid\n", vstr);
 				goto out;
 			}
-			intr = val;
+			conf->intr = val;
 			break;
 		case 'u': /* use */
 			if (0 > (val = find_set_wdt_string(wdt_use, vstr))) {
 				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
 				goto out;
 			}
-			use = val;
+			conf->use = val;
 			break;
 		case 'a': /* action */
 			if (0 > (val = find_set_wdt_string(wdt_action, vstr))) {
 				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
 				goto out;
 			}
-			action = val;
+			conf->action = val;
 			break;
 		case 'c': /* clear */
 			if (0 > (val = find_set_wdt_string(wdt_use, vstr))) {
 				lprintf(LOG_ERR, "Use '%s' is not valid\n", vstr);
 				goto out;
 			}
-			clear |= 1 << val;
+			conf->clear |= 1 << val;
 			break;
 		case 'n': /* nolog */
-			nolog = true;
+			conf->nolog = true;
 			break;
 		case 'd': /* dontstop */
-			dontstop = true;
+			conf->dontstop = true;
 			break;
 
 		default:
@@ -882,22 +873,45 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 		}
 	}
 
-	options_error = false;
+	error = false;
+
+out:
+	return error;
+}
+
+/* ipmi_mc_set_watchdog
+ *
+ * @intf:	ipmi interface
+ * @argc:	argument count
+ * @argv:	arguments
+ *
+ * returns 0 on success
+ * returns non-zero (-1 or IPMI completion code) on error
+ */
+static int
+ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req = {0};
+	unsigned char msg_data[6] = {0};
+	struct ipm_get_watchdog_rsp * wdt_res;
+	int rc = -1;
+	wdt_conf_t conf;
+	bool options_error = parse_set_wdt_options(&conf, argc, argv);
 
 	/* Fill data bytes according to IPMI 2.0 Spec section 27.6 */
-	msg_data[0] = nolog << IPMI_WDT_USE_NOLOG_SHIFT;
-	msg_data[0] |= dontstop << IPMI_WDT_USE_DONTSTOP_SHIFT;
-	msg_data[0] |= use & IPMI_WDT_USE_MASK;
+	msg_data[0] = conf.nolog << IPMI_WDT_USE_NOLOG_SHIFT;
+	msg_data[0] |= conf.dontstop << IPMI_WDT_USE_DONTSTOP_SHIFT;
+	msg_data[0] |= conf.use & IPMI_WDT_USE_MASK;
 
-	msg_data[1] = (intr & IPMI_WDT_INTR_MASK) << IPMI_WDT_INTR_SHIFT;
-	msg_data[1] |= action & IPMI_WDT_ACTION_MASK;
+	msg_data[1] = (conf.intr & IPMI_WDT_INTR_MASK) << IPMI_WDT_INTR_SHIFT;
+	msg_data[1] |= conf.action & IPMI_WDT_ACTION_MASK;
 
-	msg_data[2] = pretimeout;
+	msg_data[2] = conf.pretimeout;
 
-	msg_data[3] = clear;
+	msg_data[3] = conf.clear;
 
-	msg_data[4] = timeout & 0xFF; /* LSB */
-	msg_data[5] = timeout >> 8;   /* MSB */
+	htoipmi16(conf.timeout, &msg_data[4]);
 
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = BMC_SET_WATCHDOG_TIMER;
@@ -909,14 +923,14 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	        , msg_data[0], msg_data[1], msg_data[2]
 	        , msg_data[3], msg_data[4], msg_data[5]
 	       );
-	lprintf(LOG_INFO, "  - nolog      = %d", nolog);
-	lprintf(LOG_INFO, "  - dontstop   = %d", dontstop);
-	lprintf(LOG_INFO, "  - use        = 0x%02hhX", use);
-	lprintf(LOG_INFO, "  - intr       = 0x%02hhX", intr);
-	lprintf(LOG_INFO, "  - action     = 0x%02hhX", action);
-	lprintf(LOG_INFO, "  - pretimeout = %hhu", pretimeout);
-	lprintf(LOG_INFO, "  - clear      = 0x%02hhX", clear);
-	lprintf(LOG_INFO, "  - timeout    = %hu", timeout);
+	lprintf(LOG_INFO, "  - nolog      = %d", conf.nolog);
+	lprintf(LOG_INFO, "  - dontstop   = %d", conf.dontstop);
+	lprintf(LOG_INFO, "  - use        = 0x%02hhX", conf.use);
+	lprintf(LOG_INFO, "  - intr       = 0x%02hhX", conf.intr);
+	lprintf(LOG_INFO, "  - action     = 0x%02hhX", conf.action);
+	lprintf(LOG_INFO, "  - pretimeout = %hhu", conf.pretimeout);
+	lprintf(LOG_INFO, "  - clear      = 0x%02hhX", conf.clear);
+	lprintf(LOG_INFO, "  - timeout    = %hu", conf.timeout);
 
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {

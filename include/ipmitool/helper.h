@@ -111,8 +111,8 @@ uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
 #define IS_SET(v, b) ((v) & (1 << (b)))
 
-/* le16toh() doesn't exist for Windows or Apple */
-/* For portability, let's simply define our own version of it here */
+/* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
+/* For portability, let's simply define our own versions here */
 static inline uint16_t ipmi16toh(uint16_t le)
 {
 	uint8_t *data = (uint8_t *)&le;
@@ -122,6 +122,12 @@ static inline uint16_t ipmi16toh(uint16_t le)
 	h |= data[0]; /* LSB */
 
 	return h;
+}
+
+static inline void htoipmi16(uint16_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = h >> 8; /* MSB */
 }
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
