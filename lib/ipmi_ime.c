@@ -240,8 +240,7 @@ static int ImeGetInfo(struct ipmi_intf *intf)
    {
       rc = IME_SUCCESS;
       printf("Manufacturer Name          : %s\n",
-               val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id), 
-               ipmi_oem_info) );
+             OEM_MFG_STRING(devid->manufacturer_id));
 
       printf("Product ID                 : %u (0x%02x%02x)\n",
          buf2short((uint8_t *)(devid->product_id)),

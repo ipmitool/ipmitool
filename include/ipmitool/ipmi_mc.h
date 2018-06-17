@@ -35,6 +35,13 @@
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_strings.h>
+
+#define OEM_MFG_STRING(oem) val2str(IPM_DEV_MANUFACTURER_ID(oem),\
+                                    ipmi_oem_info)
+#define OEM_PROD_STRING(oem, p) oemval2str(IPM_DEV_MANUFACTURER_ID(oem),\
+                                           ipmi16toh(p),\
+                                           ipmi_oem_product_info)
 
 #define BMC_GET_DEVICE_ID	0x01
 #define BMC_COLD_RESET		0x02
@@ -85,8 +92,8 @@ struct ipm_devid_rsp {
 #define IPM_DEV_IPMI_VERSION_MINOR(x) \
 	((x & IPM_DEV_IPMI_VER_MINOR_MASK) >> IPM_DEV_IPMI_VER_MINOR_SHIFT)
 
-#define IPM_DEV_MANUFACTURER_ID(x) \
-	((uint32_t) ((x[2] & 0x0F) << 16 | x[1] << 8 | x[0]))
+#define IPM_DEV_MANUFACTURER_ID_MASK 0x0FFFFF
+#define IPM_DEV_MANUFACTURER_ID(x) (ipmi24toh(x) & IPM_DEV_MANUFACTURER_ID_MASK)
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 

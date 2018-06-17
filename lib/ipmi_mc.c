@@ -91,7 +91,7 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 		return (-1);
 	} else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "MC reset command failed: %s",
-				val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return (-1);
 	}
 
@@ -287,7 +287,7 @@ ipmi_mc_get_enables(struct ipmi_intf * intf)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get Global Enables command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -337,7 +337,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get Global Enables command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -379,7 +379,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Set Global Enables command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -429,7 +429,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	}
 	if (rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -447,16 +447,13 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	printf("Manufacturer ID           : %lu\n",
 		(long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id));
 	printf("Manufacturer Name         : %s\n",
-			val2str( (long)IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id),
-				ipmi_oem_info) );
+	       OEM_MFG_STRING(devid->manufacturer_id));
 
 	printf("Product ID                : %u (0x%02x%02x)\n",
 		buf2short((uint8_t *)(devid->product_id)),
 		devid->product_id[1], devid->product_id[0]);
 
-	product=oemval2str(IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id),
-							 (devid->product_id[1]<<8)+devid->product_id[0],
-							 ipmi_oem_product_info);
+	product = OEM_PROD_STRING(devid->manufacturer_id, devid->product_id);
 
 	if (product!=NULL) {
 		printf("Product Name              : %s\n", product);
@@ -585,7 +582,7 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Bad response: (%s)",
-				val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -738,15 +735,15 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Watchdog Timer command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
 	wdt_res = (struct ipm_get_watchdog_rsp *) rsp->data;
 
 	/* Convert 100ms intervals to seconds */
-	init_cnt = (double)ipmi16toh(wdt_res->init_cnt_le) / 10.0;
-	pres_cnt = (double)ipmi16toh(wdt_res->pres_cnt_le) / 10.0;
+	init_cnt = (double)ipmi16toh(&wdt_res->init_cnt_le) / 10.0;
+	pres_cnt = (double)ipmi16toh(&wdt_res->pres_cnt_le) / 10.0;
 
 	printf("Watchdog Timer Use:     %s (0x%02x)\n",
 	       wdt_use[IPMI_WDT_GET(wdt_res->use, USE)]->get, wdt_res->use);
@@ -941,7 +938,7 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	rc = rsp->ccode;
 	if (rc) {
 		lprintf(LOG_ERR, "Set Watchdog Timer command failed: %s",
-		        val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		goto out;
 	}
 
@@ -1000,7 +997,7 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Watchdog Timer Shutoff command failed! %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -1035,9 +1032,9 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Reset Watchdog Timer command failed: %s",
-			(rsp->ccode == IPM_WATCHDOG_RESET_ERROR) ?
-				"Attempt to reset uninitialized watchdog" :
-				val2str(rsp->ccode, completion_code_vals));
+		        (rsp->ccode == IPM_WATCHDOG_RESET_ERROR)
+		        ? "Attempt to reset uninitialized watchdog"
+		        : CC_STRING(rsp->ccode));
 		return -1;
 	}
 
@@ -1375,7 +1372,7 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 	}
 	else if (rc > 0) {
 		lprintf(LOG_ERR, "%s command failed: %s", argv[0],
-				val2str(rc, completion_code_vals));
+		        CC_STRING(rc));
 	}
 	return rc;
 }

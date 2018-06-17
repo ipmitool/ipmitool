@@ -35,6 +35,8 @@
 
 #include <ipmitool/helper.h>
 
+#define CC_STRING(cc) val2str(cc, completion_code_vals)
+
 extern const struct valstr completion_code_vals[];
 extern const struct valstr entity_id_vals[];
 extern const struct valstr entity_device_type_vals[];
