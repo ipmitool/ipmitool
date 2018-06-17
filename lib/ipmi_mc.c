@@ -890,7 +890,7 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	msg_data[0] |= use & IPMI_WDT_USE_MASK;
 
 	msg_data[1] = (intr & IPMI_WDT_INTR_MASK) << IPMI_WDT_INTR_SHIFT;
-	msg_data[1] = action & IPMI_WDT_ACTION_MASK;
+	msg_data[1] |= action & IPMI_WDT_ACTION_MASK;
 
 	msg_data[2] = pretimeout;
 
