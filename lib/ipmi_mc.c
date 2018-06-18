@@ -1367,12 +1367,16 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "%s %s set %d command failed", argv[0], argv[1], set);
 	}
-	else if (rc == 0x80) {
-		lprintf(LOG_ERR, "%s %s parameter not supported", argv[0], argv[1]);
-	}
 	else if (rc > 0) {
-		lprintf(LOG_ERR, "%s command failed: %s", argv[0],
-		        CC_STRING(rc));
+		if (rc == 0x80) {
+			lprintf(LOG_ERR, "%s %s parameter not supported", argv[0],
+				argv[1]);
+		}
+		else {
+			lprintf(LOG_ERR, "%s command failed: %s", argv[0],
+			        CC_STRING(rc));
+		}
+		rc = -rc;
 	}
 	return rc;
 }
