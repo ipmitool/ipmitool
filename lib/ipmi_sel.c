@@ -49,6 +49,7 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_quantaoem.h>
 
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
@@ -1242,6 +1243,9 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_SUPERMICRO_47488:
 		desc = get_supermicro_evt_desc(intf, rec);
 		break;
+	case IPMI_OEM_QUANTA:
+		desc = oem_qct_get_evt_desc(intf, rec);
+		break;
 	case IPMI_OEM_UNKNOWN:
 	default:
 		break;
@@ -1347,6 +1351,9 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					sfx = ipmi_get_oem_desc(intf, rec);
 					break;
 				 /* add your oem sensor assignation here */
+				case IPMI_OEM_QUANTA:
+					sfx = ipmi_get_oem_desc(intf, rec);
+					break;
 				default:
 					lprintf(LOG_DEBUG, "oem sensor type %x  using standard type supplied description",
 						rec->sel_type.standard_type.sensor_type );
@@ -1357,9 +1364,12 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 				case IPMI_OEM_SUPERMICRO:
 				case IPMI_OEM_SUPERMICRO_47488:
 					sfx = ipmi_get_oem_desc(intf, rec);
-				 break;
+					break;
+				case IPMI_OEM_QUANTA:
+					sfx = ipmi_get_oem_desc(intf, rec);
+					break;
 				default:
-				 break;
+					break;
 			}
 		}
 		/*
@@ -1984,9 +1994,12 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			case IPMI_OEM_SUPERMICRO:
 			case IPMI_OEM_SUPERMICRO_47488:
 				print_sensor = 0;
-			 break;
+				break;
+			case IPMI_OEM_QUANTA:
+				print_sensor = 0;
+				break;
 			default:
-			 break;
+				break;
 		}
 		/*
 		 * Sensor-Specific Discrete

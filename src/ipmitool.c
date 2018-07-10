@@ -66,6 +66,7 @@
 #include <ipmitool/ipmi_ime.h>
 #include <ipmitool/ipmi_dcmi.h>
 #include <ipmitool/ipmi_vita.h>
+#include <ipmitool/ipmi_quantaoem.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
