@@ -39,6 +39,7 @@
 
 static int ipmi_oem_supermicro(struct ipmi_intf * intf);
 static int ipmi_oem_ibm(struct ipmi_intf * intf);
+static int ipmi_oem_quanta(struct ipmi_intf * intf);
 
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
@@ -71,6 +72,11 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		.name = "kontron",
 		.desc = "Kontron OEM big buffer support"
 	},
+	{
+		.name = "quanta",
+		.desc = "Quanta IPMIv1.5 BMC with OEM LAN authentication support",
+		.setup = ipmi_oem_quanta,
+	},
 	{ 0 }
 };
 
@@ -91,6 +97,14 @@ ipmi_oem_ibm(struct ipmi_intf * intf)
 		return -1;
 	}
 	return ipmi_sel_oem_init((const char *)filename);
+}
+
+/* Quanta IPMIv2 BMCs use OEM authtype */
+static int
+ipmi_oem_quanta(struct ipmi_intf * intf)
+{
+	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	return 0;
 }
 
 /* ipmi_oem_print  -  print list of OEM handles
