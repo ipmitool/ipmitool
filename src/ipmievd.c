@@ -90,6 +90,7 @@ char pidfile[64];
 /* global variables */
 int verbose = 0;
 int csv_output = 0;
+int time_in_utc = 0;
 uint16_t selwatch_count = 0;	/* number of entries in the SEL */
 uint16_t selwatch_lastid = 0;	/* current last entry in the SEL */
 int selwatch_pctused = 0;	/* current percent usage in the SEL */

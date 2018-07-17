@@ -81,7 +81,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:"
+# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
 #else
 # define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
 #endif
@@ -90,8 +90,6 @@
 void
 ipmi_intf_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size);
 
-extern int verbose;
-extern int csv_output;
 extern const struct valstr ipmi_privlvl_vals[];
 extern const struct valstr ipmi_authtype_session_vals[];
 
@@ -263,6 +261,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -O seloem      Use file for OEM SEL event descriptions");
 	lprintf(LOG_NOTICE, "       -N seconds     Specify timeout for lan [default=2] / lanplus [default=1] interface");
 	lprintf(LOG_NOTICE, "       -R retry       Set the number of retries for lan/lanplus interface [default=4]");
+	lprintf(LOG_NOTICE, "       -Z             Display all dates in UTC");
 #endif
 	lprintf(LOG_NOTICE, "");
 
@@ -762,6 +761,9 @@ ipmi_main(int argc, char ** argv,
 				rc = -1;
 				goto out_free;
 			}
+			break;
+		case 'Z':
+			time_in_utc = 1;
 			break;
 #endif
 		default:

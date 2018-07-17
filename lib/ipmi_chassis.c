@@ -704,6 +704,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 			unsigned long timestamp;
 			char time_buf[40];
 			time_t out_time;
+			struct tm *strtm;
 
 			session_id  = ((unsigned long) rsp->data[3]);
 			session_id |= (((unsigned long) rsp->data[4])<<8);
@@ -716,10 +717,15 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 			timestamp |= (((unsigned long) rsp->data[10])<<24);
 
 			memset(time_buf, 0, 40);
+			if(time_in_utc)
+				strtm = gmtime(&out_time);
+			else
+				strtm = localtime(&out_time);
+
 			strftime(
 					time_buf,
 					sizeof(time_buf),
-					"%m/%d/%Y %H:%M:%S", localtime(&out_time)
+					"%m/%d/%Y %H:%M:%S", strtm
 			);
 
 			printf(" Boot Initiator Info :\n");

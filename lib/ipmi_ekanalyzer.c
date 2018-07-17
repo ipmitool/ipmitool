@@ -2420,6 +2420,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	unsigned char lan_code = 0;
 	unsigned char mfg_date[SIZE_MFG_DATE];
 	unsigned int board_length = 0;
+	struct tm *strtm;
 
 	input_file = fopen(filename, "r");
 	if (input_file == NULL) {
@@ -2546,8 +2547,11 @@ ipmi_ek_display_fru_header_detail(char *filename)
 				+ (mfg_date[0]));
 		tval = tval * 60;
 		tval = tval + secs_from_1970_1996;
-		printf("Board Mfg Date: %ld, %s", tval,
-				asctime(localtime(&tval)));
+		if(time_in_utc)
+			strtm = gmtime(&tval);
+		else
+			strtm = localtime(&tval);
+		printf("Board Mfg Date: %ld, %s", tval, asctime(strtm));
 		board_length -= SIZE_MFG_DATE;
 		/* Board Mfg */
 		file_offset = ipmi_ek_display_board_info_area(
