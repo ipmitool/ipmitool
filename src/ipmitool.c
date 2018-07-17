@@ -81,6 +81,7 @@ extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
 
 int csv_output = 0;
+int time_in_utc = 0;
 int verbose = 0;
 
 struct ipmi_cmd ipmitool_cmd_list[] = {

@@ -997,6 +997,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	uint32_t i;
 	time_t tval;
 	uint8_t tmp[2];
+	struct tm *strtm;
 
 	fru_len = 0;
 
@@ -1034,7 +1035,11 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	tval=((fru_data[i+2] << 16) + (fru_data[i+1] << 8) + (fru_data[i]));
 	tval=tval * 60;
 	tval=tval + secs_from_1970_1996;
-	printf(" Board Mfg Date        : %s", asctime(localtime(&tval)));
+	if(time_in_utc)
+		strtm = gmtime(&tval);
+	else
+		strtm = localtime(&tval);
+	printf(" Board Mfg Date        : %s", asctime(strtm));
 	i += 3;  /* skip mfg. date time */
 
 	fru_area = get_fru_area_str(fru_data, &i);

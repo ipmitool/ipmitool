@@ -51,7 +51,6 @@
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_strings.h>
 
-extern int verbose;
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
 
@@ -2802,7 +2801,10 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 		gt_hour=tm_tmp->tm_hour;
 		gt_min=tm_tmp->tm_min;
 		memset(&*tm_tmp, 0, sizeof(struct tm));
-		tm_tmp=localtime(&t);
+		if(time_in_utc)
+			tm_tmp=gmtime(&t);
+		else
+			tm_tmp=localtime(&t);
 		lt_year=tm_tmp->tm_year;
 		lt_yday=tm_tmp->tm_yday;
 		lt_hour=tm_tmp->tm_hour;
