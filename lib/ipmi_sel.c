@@ -2722,13 +2722,12 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get SEL Time command failed");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
+	if (rsp == NULL || rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Get SEL Time command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        rsp
+		        ? val2str(rsp->ccode, completion_code_vals)
+		        : "Unknown"
+		       );
 		return -1;
 	}
 	if (rsp->data_len != 4) {
@@ -2827,13 +2826,12 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 #endif
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Set SEL Time command failed");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
+	if (rsp == NULL || rsp->ccode > 0) {
 		lprintf(LOG_ERR, "Set SEL Time command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        rsp
+		        ? val2str(rsp->ccode, completion_code_vals)
+		        : "Unknown"
+		       );
 		return -1;
 	}
 
@@ -2841,8 +2839,6 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 	return 0;
 }
-
-
 
 static int
 ipmi_sel_clear(struct ipmi_intf * intf)
