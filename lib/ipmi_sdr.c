@@ -4274,50 +4274,25 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 		break;
 	}
 
-	if(sdr_repository_info.delete_sdr_supported && sdr_repository_info.partial_add_sdr_supported)
+	printf("Most recent Addition                : ");
+	if (sdr_repository_info.partial_add_sdr_supported)
 	{
-		timestamp =
-			(sdr_repository_info.most_recent_addition_timestamp[3] << 24) |
-			(sdr_repository_info.most_recent_addition_timestamp[2] << 16) |
-			(sdr_repository_info.most_recent_addition_timestamp[1] << 8) |
-			sdr_repository_info.most_recent_addition_timestamp[0];
-		printf("Most recent Addition                : %s\n",
-			   ipmi_sdr_timestamp(timestamp));
+		timestamp = ipmi32toh(sdr_repository_info
+		                      .most_recent_addition_timestamp);
+		printf("%s\n", ipmi_sdr_timestamp(timestamp));
+	}
+	else {
+		printf("NA\n");
+	}
 
-	   timestamp =
-			(sdr_repository_info.most_recent_erase_timestamp[3] << 24) |
-			(sdr_repository_info.most_recent_erase_timestamp[2] << 16) |
-			(sdr_repository_info.most_recent_erase_timestamp[1] << 8) |
-			sdr_repository_info.most_recent_erase_timestamp[0];
-		printf("Most recent Erase                   : %s\n",
-			   ipmi_sdr_timestamp(timestamp));
+	printf("Most recent Erase                   : ");
+	if(sdr_repository_info.delete_sdr_supported) {
+		timestamp = ipmi32toh(sdr_repository_info
+		                      .most_recent_erase_timestamp);
+		printf("%s\n", ipmi_sdr_timestamp(timestamp));
 	}
-	else if (sdr_repository_info.partial_add_sdr_supported)
-	{
-		timestamp =
-			(sdr_repository_info.most_recent_addition_timestamp[3] << 24) |
-			(sdr_repository_info.most_recent_addition_timestamp[2] << 16) |
-			(sdr_repository_info.most_recent_addition_timestamp[1] << 8) |
-			sdr_repository_info.most_recent_addition_timestamp[0];
-		printf("Most recent Addition                : %s\n",
-			   ipmi_sdr_timestamp(timestamp));
-		printf("Most recent Erase                   : NA\n");
-	}
-	else if(sdr_repository_info.delete_sdr_supported)
-	{
-		printf("Most recent Addition                : NA\n");
-		timestamp =
-			(sdr_repository_info.most_recent_erase_timestamp[3] << 24) |
-			(sdr_repository_info.most_recent_erase_timestamp[2] << 16) |
-			(sdr_repository_info.most_recent_erase_timestamp[1] << 8) |
-			sdr_repository_info.most_recent_erase_timestamp[0];
-		printf("Most recent Erase                   : %s\n",
-			   ipmi_sdr_timestamp(timestamp));
-	}
-	else
-	{
-		printf("Most recent Addition                : NA\n");
-		printf("Most recent Erase                   : NA\n");
+	else {
+		printf("NA\n");
 	}
 
 	printf("SDR overflow                        : %s\n",
@@ -4351,7 +4326,7 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 	       reserve_sdr_repository_supported ? "yes" : "no");
 	printf("SDR Repository Alloc info supported : %s\n",
 	       sdr_repository_info.
-				 get_sdr_repository_allo_info_supported ? "yes" : "no");
+	       get_sdr_repository_allo_info_supported ? "yes" : "no");
 
 	return 0;
 }
