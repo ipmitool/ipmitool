@@ -531,7 +531,7 @@ ipmi_mc_print_guid(struct ipmi_guid_t guid)
 	char tbuf[40];
 	time_t s;
 	memset(tbuf, 0, 40);
-	struct tm *strtm;
+	struct tm *tm;
 
 	/* Kipp - changed order of last field (node) to follow specification */
 	printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
@@ -542,10 +542,10 @@ ipmi_mc_print_guid(struct ipmi_guid_t guid)
 
 	s = (time_t)guid.time_low; /* Kipp - removed the BSWAP_32, it was not needed here */
 	if(time_in_utc)
-		strtm = gmtime(&s);
+		tm = gmtime(&s);
 	else
-		strtm = localtime(&s);
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", localtime(&s));
+		tm = localtime(&s);
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
 	printf("Timestamp    : %s\n", tbuf);
 	return 0;
 }
