@@ -30,8 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _BSD_SOURCE
-
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>

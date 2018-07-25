@@ -36,7 +36,6 @@
  * This code conforms to the 1.0 DCMI Specification
  *  released by Hari Ramachandran of the Intel Corporation
  */
-#define _BSD_SOURCE
 
 #include <stdlib.h>
 #include <string.h>
