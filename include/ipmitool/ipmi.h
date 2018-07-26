@@ -260,6 +260,8 @@ struct ipmi_rs {
 
 typedef enum IPMI_OEM {
      IPMI_OEM_UNKNOWN    = 0,
+     IPMI_OEM_DEBUG      = 0xFFFFFE, /* Hoping IANA won't hit this soon */
+     IPMI_OEM_RESERVED   = 0x0FFFFF, /* As per IPMI 2.0 specification */
      /* 2 for [IBM] */
      IPMI_OEM_IBM_2      = 2,
      IPMI_OEM_HP         = 11,
