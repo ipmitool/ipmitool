@@ -38,6 +38,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_time.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -2415,13 +2416,12 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	FILE *input_file;
 	size_t file_offset = 0;
 	struct fru_header header;
-	time_t tval;
+	time_t ts;
 	int ret = 0;
 	unsigned char data = 0;
 	unsigned char lan_code = 0;
 	unsigned char mfg_date[SIZE_MFG_DATE];
 	unsigned int board_length = 0;
-	struct tm *strtm;
 
 	input_file = fopen(filename, "r");
 	if (!input_file) {
@@ -2544,36 +2544,36 @@ ipmi_ek_display_fru_header_detail(char *filename)
 			fclose(input_file);
 			return (-1);
 		}
-		tval = ((mfg_date[2] << 16) + (mfg_date[1] << 8)
-				+ (mfg_date[0]));
-		tval = tval * 60;
-		tval = tval + secs_from_1970_1996;
-		if(time_in_utc)
-			strtm = gmtime(&tval);
-		else
-			strtm = localtime(&tval);
-		printf("Board Mfg Date: %ld, %s", tval, asctime(strtm));
+
+		ts = ipmi_fru2time_t(mfg_date);
+		printf("Board Mfg Date: %ld, %s\n", ts, ipmi_timestamp_numeric(ts));
 		board_length -= SIZE_MFG_DATE;
+
 		/* Board Mfg */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Manufacture Data", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Product */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Product Name", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Serial */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Serial Number", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Part */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Part Number", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* FRU file ID */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "FRU File ID", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Additional Custom Mfg. */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Custom", &board_length);

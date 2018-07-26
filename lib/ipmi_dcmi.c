@@ -56,6 +56,7 @@
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_time.h>
 
 #include "../src/plugins/lanplus/lanplus.h"
 
@@ -1399,11 +1400,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct power_reading val;
-	struct tm tm_t;
-	time_t t;
 	uint8_t msg_data[4]; /* number of request data bytes */
-	memset(&tm_t, 0, sizeof(tm_t));
-	memset(&t, 0, sizeof(t));
 
 	msg_data[0] = IPMI_DCMI; /* Group Extension Identification */
 	if (sample_time) {
@@ -1429,8 +1426,6 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	/* rsp->data[0] is equal to response data byte 2 in spec */
 	/* printf("Group Extension Identification: %02x\n", rsp->data[0]); */
 	memcpy(&val, rsp->data, sizeof (val));
-	t = val.time_stamp;
-	gmtime_r(&t, &tm_t);
 	printf("\n");
 	printf("    Instantaneous power reading:              %8d Watts\n",
 	       val.curr_pwr);
@@ -1441,7 +1436,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	printf("    Average power reading over sample period: %8d Watts\n",
 	       val.avg_pwr);
 	printf("    IPMI timestamp:                           %s",
-	       asctime(&tm_t));
+	       ipmi_timestamp_numeric(ipmi32toh(&val.time_stamp)));
 	printf("    Sampling period:                          ");
 	if (sample_time)
 		printf("%s \n", val2str2(val.sample,dcmi_sampling_vals));
@@ -2876,12 +2871,8 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 	int     policy_mode = 0;
-	int     cut;
 	char   *units = "";
-	char    datebuf[27];
 	struct nm_statistics stats;
-	struct tm tm_t;
-	time_t t;
 
 	argv++;
 	if (!argv[0] ||
@@ -2943,11 +2934,6 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	}
 	if (_ipmi_nm_statistics(intf, mode, domain, policy_id, &stats))
 		return -1;
-	t = stats.time_stamp;
-	gmtime_r(&t, &tm_t);
-	sprintf(datebuf, "%s", asctime(&tm_t));
-	cut = strlen(datebuf) -1;
-	datebuf[cut] = 0;
 	if (csv_output) {
 		printf("%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%d\n",
 		       val2str2(stats.id_state & 0xF, nm_domain_vals),
@@ -2964,7 +2950,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 		       stats.min_value,
 		       stats.max_value,
 		       stats.ave_value,
-		       datebuf,
+		       ipmi_timestamp_numeric(ipmi32toh(&stats.time_stamp)),
 		       stats.stat_period);
 		return 0;
 	}
@@ -2992,7 +2978,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	printf("    Average reading over sample period:       %8d %s\n",
 	       stats.ave_value, units);
 	printf("    IPMI timestamp:                           %s\n",
-	       datebuf);
+	       ipmi_timestamp_numeric(ipmi32toh(&stats.time_stamp)));
 	printf("    Sampling period:                          %08d Seconds.\n",
 	       stats.stat_period);
 	printf("\n");

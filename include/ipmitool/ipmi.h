@@ -67,7 +67,6 @@
 #define IPMI_PAYLOAD_TYPE_RAKP_4             0x15
 
 extern int verbose;
-extern int time_in_utc;
 extern int csv_output;
 
 struct ipmi_rq {

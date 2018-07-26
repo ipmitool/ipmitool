@@ -52,6 +52,7 @@
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_time.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -4209,24 +4210,6 @@ ipmi_sdr_get_info(struct ipmi_intf *intf,
 	return 0;
 }
 
-/* ipmi_sdr_timestamp  -  return string from timestamp value
- *
- * @stamp:	32bit timestamp
- *
- * returns pointer to static buffer
- */
-static char *
-ipmi_sdr_timestamp(time_t stamp)
-{
-	static char tbuf[40];
-	time_t s = (time_t) stamp;
-	memset(tbuf, 0, 40);
-	if (stamp)
-		strftime(tbuf, sizeof (tbuf), "%m/%d/%Y %H:%M:%S",
-			 gmtime(&s));
-	return tbuf;
-}
-
 /*
  * ipmi_sdr_print_info
  *
@@ -4278,7 +4261,7 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 	{
 		timestamp = ipmi32toh(sdr_repository_info
 		                      .most_recent_addition_timestamp);
-		printf("%s\n", ipmi_sdr_timestamp(timestamp));
+		printf("%s\n", ipmi_timestamp_numeric(timestamp));
 	}
 	else {
 		printf("NA\n");
@@ -4288,7 +4271,7 @@ ipmi_sdr_print_info(struct ipmi_intf *intf)
 	if(sdr_repository_info.delete_sdr_supported) {
 		timestamp = ipmi32toh(sdr_repository_info
 		                      .most_recent_erase_timestamp);
-		printf("%s\n", ipmi_sdr_timestamp(timestamp));
+		printf("%s\n", ipmi_timestamp_numeric(timestamp));
 	}
 	else {
 		printf("NA\n");

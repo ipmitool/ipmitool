@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_time.h>
 #include <ipmitool/log.h>
 
 extern int verbose;
@@ -1193,8 +1194,6 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
-	char tbuf[40];
-	uint32_t timei;
 	time_t ts;
 
 	memset(&req, 0, sizeof(req));
@@ -1206,15 +1205,9 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 			"Last S/W processed ID");
 		return (-1);
 	}
-	memcpy(&timei, rsp->data, sizeof(timei));
-#if WORDS_BIGENDIAN
-	timei = BSWAP_32(timei);
-#endif
-	ts = (time_t)timei;
 
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&ts));
-
-	ipmi_pef_print_str("Last SEL addition", tbuf);
+	ts = ipmi32toh(rsp->data);
+	ipmi_pef_print_str("Last SEL addition", ipmi_timestamp_numeric(ts));
 	ipmi_pef_print_2xd("Last SEL record ID", rsp->data[5], rsp->data[4]);
 	ipmi_pef_print_2xd("Last S/W processed ID", rsp->data[7], rsp->data[6]);
 	ipmi_pef_print_2xd("Last BMC processed ID", rsp->data[9], rsp->data[8]);

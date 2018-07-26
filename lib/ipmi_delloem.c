@@ -62,6 +62,7 @@
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_time.h>
 
 #define DELL_OEM_NETFN	(uint8_t)(0x30)
 #define GET_IDRAC_VIRTUAL_MAC	(uint8_t)(0xC9)
@@ -201,7 +202,6 @@ static int ipmi_lan_set_nic_selection_12g(struct ipmi_intf *intf,
 /* Power monitor Function prototypes */
 static int ipmi_delloem_powermonitor_main(struct ipmi_intf *intf, int argc,
 		char **argv);
-static void ipmi_time_to_str(time_t rawTime, char *strTime);
 static int ipmi_get_sensor_reading(struct ipmi_intf *intf,
 		unsigned char sensorNumber, SensorReadingType *pSensorReadingData);
 static int ipmi_get_power_capstatus_command(struct ipmi_intf *intf);
@@ -2601,24 +2601,7 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	return rc;
 }
-/*
- * Function Name:     ipmi_time_to_str
- *
- * Description:       This function converts ipmi time format into gmtime format
- * Input:             rawTime  - ipmi time format
- * Output:            strTime  - gmtime format
- *
- * Return:
- */
-static void
-ipmi_time_to_str(time_t rawTime, char * strTime)
-{
-	struct tm *tm;
-	char *temp;
-	tm = gmtime(&rawTime);
-	temp = asctime(tm);
-	strcpy(strTime,temp);
-}
+
 /*
  * Function Name:      ipmi_get_sensor_reading
  *
@@ -2768,23 +2751,14 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
-	uint32_t cumStartTimeConv;
-	uint32_t cumReadingConv;
-	uint32_t maxPeakStartTimeConv;
-	uint32_t ampPeakTimeConv;
-	uint16_t ampReadingConv;
-	uint32_t wattPeakTimeConv;
-	uint32_t wattReadingConv;
-	uint32_t bmctimeconv;
-	uint32_t * bmctimeconvval;
+	uint32_t cumStartTime;
+	uint32_t cumReading;
+	uint32_t maxPeakStartTime;
+	uint32_t ampPeakTime;
+	uint32_t wattPeakTime;
+	uint32_t bmctime;
 
 	IPMI_POWER_MONITOR * pwrMonitorInfo;
-
-	char cumStartTime[26];
-	char maxPeakStartTime[26];
-	char ampPeakTime[26];
-	char wattPeakTime[26];
-	char bmctime[26];
 
 	int ampReading;
 	int ampReadingRemainder;
@@ -2807,12 +2781,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 				rsp->ccode);
 		return -1;
 	}
-	bmctimeconvval=(uint32_t*)rsp->data;
-# if WORDS_BIGENDIAN
-	bmctimeconv=BSWAP_32(*bmctimeconvval);
-# else
-	bmctimeconv=*bmctimeconvval;
-# endif
+	bmctime = ipmi32toh(rsp->data);
 
 	/* get powermanagement info*/
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2847,54 +2816,35 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	}
 
 	pwrMonitorInfo = (IPMI_POWER_MONITOR*)rsp->data;
-# if WORDS_BIGENDIAN
-	cumStartTimeConv = BSWAP_32(pwrMonitorInfo->cumStartTime);
-	cumReadingConv = BSWAP_32(pwrMonitorInfo->cumReading);
-	maxPeakStartTimeConv = BSWAP_32(pwrMonitorInfo->maxPeakStartTime);
-	ampPeakTimeConv = BSWAP_32(pwrMonitorInfo->ampPeakTime);
-	ampReadingConv = BSWAP_16(pwrMonitorInfo->ampReading);
-	wattPeakTimeConv = BSWAP_32(pwrMonitorInfo->wattPeakTime);
-	wattReadingConv = BSWAP_16(pwrMonitorInfo->wattReading);
-# else
-	cumStartTimeConv = pwrMonitorInfo->cumStartTime;
-	cumReadingConv = pwrMonitorInfo->cumReading;
-	maxPeakStartTimeConv = pwrMonitorInfo->maxPeakStartTime;
-	ampPeakTimeConv = pwrMonitorInfo->ampPeakTime;
-	ampReadingConv = pwrMonitorInfo->ampReading;
-	wattPeakTimeConv = pwrMonitorInfo->wattPeakTime;
-	wattReadingConv = pwrMonitorInfo->wattReading;
-# endif
+	cumStartTime = ipmi32toh(&pwrMonitorInfo->cumStartTime);
+	cumReading = ipmi32toh(&pwrMonitorInfo->cumReading);
+	maxPeakStartTime = ipmi32toh(&pwrMonitorInfo->maxPeakStartTime);
+	ampPeakTime = ipmi32toh(&pwrMonitorInfo->ampPeakTime);
+	ampReading = ipmi16toh(&pwrMonitorInfo->ampReading);
+	wattPeakTime = ipmi32toh(&pwrMonitorInfo->wattPeakTime);
+	wattReading = ipmi16toh(&pwrMonitorInfo->wattReading);
 
-	ipmi_time_to_str(cumStartTimeConv, cumStartTime);
-	ipmi_time_to_str(maxPeakStartTimeConv, maxPeakStartTime);
-	ipmi_time_to_str(ampPeakTimeConv, ampPeakTime);
-	ipmi_time_to_str(wattPeakTimeConv, wattPeakTime);
-	ipmi_time_to_str(bmctimeconv, bmctime);
-
-	remainder = (cumReadingConv % 1000);
-	cumReadingConv = cumReadingConv / 1000;
+	remainder = (cumReading % 1000);
+	cumReading = cumReading / 1000;
 	remainder = (remainder + 50) / 100;
 
-	ampReading = ampReadingConv;
-	ampReadingRemainder = ampReading%10;
-	ampReading = ampReading/10;
-
-	wattReading = wattReadingConv;
+	ampReadingRemainder = ampReading % 10;
+	ampReading = ampReading / 10;
 
 	printf("Power Tracking Statistics\n");
 	printf("Statistic      : Cumulative Energy Consumption\n");
-	printf("Start Time     : %s", cumStartTime);
-	printf("Finish Time    : %s", bmctime);
-	printf("Reading        : %d.%d kWh\n\n", cumReadingConv, remainder);
+	printf("Start Time     : %s", ipmi_timestamp_numeric(cumStartTime));
+	printf("Finish Time    : %s", ipmi_timestamp_numeric(bmctime));
+	printf("Reading        : %d.%d kWh\n\n", cumReading, remainder);
 
 	printf("Statistic      : System Peak Power\n");
-	printf("Start Time     : %s", maxPeakStartTime);
-	printf("Peak Time      : %s", wattPeakTime);
+	printf("Start Time     : %s", ipmi_timestamp_numeric(maxPeakStartTime));
+	printf("Peak Time      : %s", ipmi_timestamp_numeric(wattPeakTime));
 	printf("Peak Reading   : %d W\n\n", wattReading);
 
 	printf("Statistic      : System Peak Amperage\n");
-	printf("Start Time     : %s", maxPeakStartTime);
-	printf("Peak Time      : %s", ampPeakTime);
+	printf("Start Time     : %s", ipmi_timestamp_numeric(maxPeakStartTime));
+	printf("Peak Time      : %s", ipmi_timestamp_numeric(ampPeakTime));
 	printf("Peak Reading   : %d.%d A\n", ampReading, ampReadingRemainder);
 	return 0;
 }
@@ -3394,12 +3344,7 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 static int
 ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 {
-	char timestr[30];
-	uint32_t lastminutepeakpower;
-	uint32_t lasthourpeakpower;
-	uint32_t lastdaypeakpower;
-	uint32_t lastweekpeakpower;
-	uint64_t tempbtuphrconv;
+	uint64_t tmp;
 	int rc = 0;
 
 	IPMI_AVGPOWER_CONSUMP_HISTORY avgpower;
@@ -3430,95 +3375,85 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 			"Last Day     Last Week\n\n");
 	if (unit == btuphr) {
 		printf("Average Power Consumption  ");
-		tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(avgpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n", tempbtuphrconv);
+		tmp = watt_to_btuphr_conversion(avgpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tmp);
+		tmp = watt_to_btuphr_conversion(avgpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tmp);
+		tmp = watt_to_btuphr_conversion(avgpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tmp);
+		tmp = watt_to_btuphr_conversion(avgpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n", tmp);
 
 		printf("Max Power Consumption      ");
-		tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stPeakpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n", tempbtuphrconv);
+		tmp = watt_to_btuphr_conversion(stPeakpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tmp);
+		tmp = watt_to_btuphr_conversion(stPeakpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tmp);
+		tmp = watt_to_btuphr_conversion(stPeakpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tmp);
+		tmp = watt_to_btuphr_conversion(stPeakpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n", tmp);
 
 		printf("Min Power Consumption      ");
-		tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
-		tempbtuphrconv = watt_to_btuphr_conversion(stMinpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n\n", tempbtuphrconv);
+		tmp = watt_to_btuphr_conversion(stMinpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tmp);
+		tmp = watt_to_btuphr_conversion(stMinpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tmp);
+		tmp = watt_to_btuphr_conversion(stMinpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tmp);
+		tmp = watt_to_btuphr_conversion(stMinpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n\n", tmp);
 	} else {
 		printf("Average Power Consumption  ");
-		tempbtuphrconv = (avgpower.lastminutepower);
-		printf("%4" PRId64 " W          ", tempbtuphrconv);
-		tempbtuphrconv = (avgpower.lasthourpower);
-		printf("%4" PRId64 " W        ", tempbtuphrconv);
-		tempbtuphrconv = (avgpower.lastdaypower);
-		printf("%4" PRId64 " W       ", tempbtuphrconv);
-		tempbtuphrconv=(avgpower.lastweakpower);
-		printf("%4" PRId64 " W   \n", tempbtuphrconv);
+		tmp = avgpower.lastminutepower;
+		printf("%4" PRId64 " W          ", tmp);
+		tmp = avgpower.lasthourpower;
+		printf("%4" PRId64 " W        ", tmp);
+		tmp = avgpower.lastdaypower;
+		printf("%4" PRId64 " W       ", tmp);
+		tmp = avgpower.lastweakpower;
+		printf("%4" PRId64 " W   \n", tmp);
 
 		printf("Max Power Consumption      ");
-		tempbtuphrconv = (stPeakpower.lastminutepower);
-		printf("%4" PRId64 " W          ", tempbtuphrconv);
-		tempbtuphrconv = (stPeakpower.lasthourpower);
-		printf("%4" PRId64 " W        ", tempbtuphrconv);
-		tempbtuphrconv = (stPeakpower.lastdaypower);
-		printf("%4" PRId64 " W       ", tempbtuphrconv);
-		tempbtuphrconv = (stPeakpower.lastweakpower);
-		printf("%4" PRId64 " W   \n", tempbtuphrconv);
+		tmp = stPeakpower.lastminutepower;
+		printf("%4" PRId64 " W          ", tmp);
+		tmp = stPeakpower.lasthourpower;
+		printf("%4" PRId64 " W        ", tmp);
+		tmp = stPeakpower.lastdaypower;
+		printf("%4" PRId64 " W       ", tmp);
+		tmp = stPeakpower.lastweakpower;
+		printf("%4" PRId64 " W   \n", tmp);
 
 		printf("Min Power Consumption      ");
-		tempbtuphrconv = (stMinpower.lastminutepower);
-		printf("%4" PRId64 " W          ", tempbtuphrconv);
-		tempbtuphrconv = (stMinpower.lasthourpower);
-		printf("%4" PRId64 " W        ", tempbtuphrconv);
-		tempbtuphrconv = (stMinpower.lastdaypower);
-		printf("%4" PRId64 " W       ", tempbtuphrconv);
-		tempbtuphrconv = (stMinpower.lastweakpower);
-		printf("%4" PRId64 " W   \n\n", tempbtuphrconv);
+		tmp = stMinpower.lastminutepower;
+		printf("%4" PRId64 " W          ", tmp);
+		tmp = stMinpower.lasthourpower;
+		printf("%4" PRId64 " W        ", tmp);
+		tmp = stMinpower.lastdaypower;
+		printf("%4" PRId64 " W       ", tmp);
+		tmp = stMinpower.lastweakpower;
+		printf("%4" PRId64 " W   \n\n", tmp);
 	}
 
-	lastminutepeakpower = stPeakpower.lastminutepowertime;
-	lasthourpeakpower = stPeakpower.lasthourpowertime;
-	lastdaypeakpower = stPeakpower.lastdaypowertime;
-	lastweekpeakpower = stPeakpower.lastweekpowertime;
-
 	printf("Max Power Time\n");
-	ipmi_time_to_str(lastminutepeakpower, timestr);
-	printf("Last Minute     : %s",timestr);
-	ipmi_time_to_str(lasthourpeakpower, timestr);
-	printf("Last Hour       : %s",timestr);
-	ipmi_time_to_str(lastdaypeakpower, timestr);
-	printf("Last Day        : %s",timestr);
-	ipmi_time_to_str(lastweekpeakpower, timestr);
-	printf("Last Week       : %s",timestr);
-
-	lastminutepeakpower=stMinpower.lastminutepowertime;
-	lasthourpeakpower=stMinpower.lasthourpowertime;
-	lastdaypeakpower=stMinpower.lastdaypowertime;
-	lastweekpeakpower=stMinpower.lastweekpowertime;
+	printf("Last Minute     : %s",
+	       ipmi_timestamp_numeric(stPeakpower.lastminutepowertime));
+	printf("Last Hour       : %s",
+	       ipmi_timestamp_numeric(stPeakpower.lasthourpowertime));
+	printf("Last Day        : %s",
+	       ipmi_timestamp_numeric(stPeakpower.lastdaypowertime));
+	printf("Last Week       : %s",
+	       ipmi_timestamp_numeric(stPeakpower.lastweekpowertime));
 
 	printf("Min Power Time\n");
-	ipmi_time_to_str(lastminutepeakpower, timestr);
-	printf("Last Minute     : %s", timestr);
-	ipmi_time_to_str(lasthourpeakpower, timestr);
-	printf("Last Hour       : %s", timestr);
-	ipmi_time_to_str(lastdaypeakpower, timestr);
-	printf("Last Day        : %s", timestr);
-	ipmi_time_to_str(lastweekpeakpower, timestr);
-	printf("Last Week       : %s", timestr);
+	printf("Last Minute     : %s",
+	       ipmi_timestamp_numeric(stMinpower.lastminutepowertime));
+	printf("Last Hour       : %s",
+	       ipmi_timestamp_numeric(stMinpower.lasthourpowertime));
+	printf("Last Day        : %s",
+	       ipmi_timestamp_numeric(stMinpower.lastdaypowertime));
+	printf("Last Week       : %s",
+	       ipmi_timestamp_numeric(stMinpower.lastweekpowertime));
 	return rc;
 }
 /*

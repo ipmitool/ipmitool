@@ -38,6 +38,7 @@
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>  /* IANA id strings */
+#include <ipmitool/ipmi_time.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -997,9 +998,8 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	uint8_t * fru_data;
 	uint32_t fru_len;
 	uint32_t i;
-	time_t tval;
+	time_t ts;
 	uint8_t tmp[2];
-	struct tm *strtm;
 
 	fru_len = 0;
 
@@ -1034,14 +1034,8 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	 */
 	i = 3;
 
-	tval=((fru_data[i+2] << 16) + (fru_data[i+1] << 8) + (fru_data[i]));
-	tval=tval * 60;
-	tval=tval + secs_from_1970_1996;
-	if(time_in_utc)
-		strtm = gmtime(&tval);
-	else
-		strtm = localtime(&tval);
-	printf(" Board Mfg Date        : %s", asctime(strtm));
+	ts = ipmi_fru2time_t(&fru_data[i]);
+	printf(" Board Mfg Date        : %s\n", ipmi_timestamp_string(ts));
 	i += 3;  /* skip mfg. date time */
 
 	fru_area = get_fru_area_str(fru_data, &i);

@@ -37,6 +37,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -50,6 +51,7 @@
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_quantaoem.h>
+#include <ipmitool/ipmi_time.h>
 
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
@@ -234,34 +236,6 @@ ipmi_get_event_type(uint8_t code)
         if (code >= 0x70 && code <= 0x7f)
                 return "OEM";
         return "Reserved";
-}
-
-static char *
-ipmi_sel_timestamp(uint32_t stamp)
-{
-	static char tbuf[40];
-	time_t s = (time_t)stamp;
-	memset(tbuf, 0, 40);
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&s));
-	return tbuf;
-}
-
-static char *
-ipmi_sel_timestamp_date(uint32_t stamp)
-{
-	static char tbuf[11];
-	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y", gmtime(&s));
-	return tbuf;
-}
-
-static char *
-ipmi_sel_timestamp_time(uint32_t stamp)
-{
-	static char tbuf[9];
-	time_t s = (time_t)stamp;
-	strftime(tbuf, sizeof(tbuf), "%H:%M:%S", gmtime(&s));
-	return tbuf;
 }
 
 static char *
@@ -1592,14 +1566,14 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		printf("Last Add Time    : Not Available\n");
 	else
 		printf("Last Add Time    : %s\n",
-			   ipmi_sel_timestamp(buf2long(rsp->data + 5)));
+			   ipmi_timestamp_numeric(buf2long(rsp->data + 5)));
 
 	if ((!memcmp(rsp->data + 9, &fs,    4)) ||
 		(!memcmp(rsp->data + 9, &zeros, 4)))
 		printf("Last Del Time    : Not Available\n");
 	else
 		printf("Last Del Time    : %s\n",
-			   ipmi_sel_timestamp(buf2long(rsp->data + 9)));
+			   ipmi_timestamp_numeric(buf2long(rsp->data + 9)));
 
 
 	printf("Overflow         : %s\n",
@@ -1837,18 +1811,19 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		}
 		else {
 			if (evt->record_type < 0xc0)
-				printf("%s", ipmi_sel_timestamp_date(evt->sel_type.standard_type.timestamp));
+				printf("%s", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp));
 			else
-        			printf("%s", ipmi_sel_timestamp_date(evt->sel_type.oem_ts_type.timestamp));
+				printf("%s", ipmi_timestamp_date(evt->sel_type.oem_ts_type.timestamp));
+
 			if (csv_output)
 				printf(",");
 			else
 				printf(" | ");
-				
+
 			if (evt->record_type < 0xc0)
-				printf("%s", ipmi_sel_timestamp_time(evt->sel_type.standard_type.timestamp));
+				printf("%s", ipmi_timestamp_time(evt->sel_type.standard_type.timestamp));
 			else
-        			printf("%s", ipmi_sel_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
+				printf("%s", ipmi_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
 
 			if (csv_output)
 				printf(",");
@@ -2055,11 +2030,11 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	{
 		printf(" Timestamp             : ");
 		if (evt->record_type < 0xc0)
-			printf("%s %s", ipmi_sel_timestamp_date(evt->sel_type.standard_type.timestamp),
-				ipmi_sel_timestamp_time(evt->sel_type.standard_type.timestamp));
+			printf("%s %s", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp),
+				ipmi_timestamp_time(evt->sel_type.standard_type.timestamp));
 		else
-			printf("%s %s", ipmi_sel_timestamp_date(evt->sel_type.oem_ts_type.timestamp),
-				ipmi_sel_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
+			printf("%s %s", ipmi_timestamp_date(evt->sel_type.oem_ts_type.timestamp),
+				ipmi_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
 		printf("\n");
 	}
 
@@ -2145,8 +2120,8 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 	if (evt->record_type < 0xe0)
 	{
 		printf(" Timestamp             : ");
-		printf("%s %s\n", ipmi_sel_timestamp_date(evt->sel_type.standard_type.timestamp),
-		ipmi_sel_timestamp_time(evt->sel_type.standard_type.timestamp));
+		printf("%s %s\n", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp),
+		ipmi_timestamp_time(evt->sel_type.standard_type.timestamp));
 	}
 
 
@@ -2725,8 +2700,6 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	static char tbuf[40];
-	uint32_t timei;
 	time_t time;
 
 	memset(&req, 0, sizeof(req));
@@ -2749,15 +2722,8 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	memcpy(&timei, rsp->data, 4);
-#if WORDS_BIGENDIAN
-	time = (time_t)(BSWAP_32(timei));
-#else
-	time = (time_t)timei;
-#endif
-
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&time));
-	printf("%s\n", tbuf);
+	time = ipmi32toh(rsp->data);
+	printf("%s\n", ipmi_timestamp_numeric(time));
 
 	return 0;
 }
@@ -2773,12 +2739,11 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 static int
 ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 {
-	struct ipmi_rs     * rsp;
-	struct ipmi_rq       req;
-	struct tm            tm = {0};
-	time_t               t;
-	uint32_t	     timei;
-	const char *         time_format = "%m/%d/%Y %H:%M:%S";
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct tm tm = {0};
+	time_t t;
+	const char *time_format = "%x %X"; /* Use locale-defined format */
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn    = IPMI_NETFN_STORAGE;
@@ -2787,56 +2752,42 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	/* See if user requested set to current client system time */
 	if (strncasecmp(time_string, "now", 3) == 0) {
 		t = time(NULL);
+		/*
+		 * Now we have local time in t, but BMC requires UTC
+		 */
+		t = ipmi_localtime2utc(t);
 	}
 	else {
-		/* Now how do we get our time_t from our ascii version? */
-		if (strptime(time_string, time_format, &tm) == 0) {
+		bool error = true; /* Assume the string is invalid */
+		/* Now let's extract time_t from the supplied string */
+		if (!strptime(time_string, time_format, &tm)) {
+			tm.tm_isdst = (-1); /* look up DST information */
+			t = mktime(&tm);
+			if (t >= 0) {
+				/* Surprisingly, the user hasn't mistaken ;) */
+				error = false;
+			}
+		}
+
+		if (error) {
 			lprintf(LOG_ERR, "Specified time could not be parsed");
 			return -1;
 		}
-		tm.tm_isdst = (-1); /* look up DST information */
-		t = mktime(&tm);
-		if (t < 0) {
-			lprintf(LOG_ERR, "Specified time could not be parsed");
-			return -1;
+
+		/*
+		 * If `-c` wasn't specified then t we've just got is in local timesone
+		 */
+		if (!time_in_utc) {
+			t = ipmi_localtime2utc(t);
 		}
 	}
 
-	{
-		//modify UTC time to local time expressed in number of seconds from 1/1/70 0:0:0 1970 GMT
-		struct tm * tm_tmp = {0};
-		int gt_year,gt_yday,gt_hour,gt_min,lt_year,lt_yday,lt_hour,lt_min;
-		int delta_hour;
-		tm_tmp=gmtime(&t);
-		gt_year=tm_tmp->tm_year;
-		gt_yday=tm_tmp->tm_yday;
-		gt_hour=tm_tmp->tm_hour;
-		gt_min=tm_tmp->tm_min;
-		memset(&*tm_tmp, 0, sizeof(struct tm));
-		if(time_in_utc)
-			tm_tmp=gmtime(&t);
-		else
-			tm_tmp=localtime(&t);
-		lt_year=tm_tmp->tm_year;
-		lt_yday=tm_tmp->tm_yday;
-		lt_hour=tm_tmp->tm_hour;
-		lt_min=tm_tmp->tm_min;
-		delta_hour=lt_hour - gt_hour;
-		if ( (lt_year > gt_year) || ((lt_year == gt_year) && (lt_yday > gt_yday)) )
-			delta_hour += 24;
-		if ( (lt_year < gt_year) || ((lt_year == gt_year) && (lt_yday < gt_yday)) )
-			delta_hour -= 24;
+	/*
+	 * At this point `t` is UTC. Convert it to LE and send.
+	 */
 
-		t += (delta_hour * 60 * 60) + (lt_min - gt_min) * 60;
-	}
-
-	timei = (uint32_t)t;
-	req.msg.data = (uint8_t *)&timei;
+	htoipmi32(t, req.msg.data);
 	req.msg.data_len = 4;
-
-#if WORDS_BIGENDIAN
-	timei = BSWAP_32(timei);
-#endif
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {

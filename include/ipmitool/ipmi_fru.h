@@ -591,7 +591,10 @@ struct fru_picmgext_amc_link_desc_record {
 #endif
 
 /* FRU Board manufacturing date */
-static const uint64_t secs_from_1970_1996 = 820454400;
+static inline time_t ipmi_fru2time_t(void *mfg_date) {
+	const uint64_t secs_from_1970_1996 = 820454400;
+	return ipmi24toh(mfg_date) * 60 + secs_from_1970_1996;
+}
 static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Unspecified", "Other", "Unknown",
 	"Desktop", "Low Profile Desktop", "Pizza Box",
