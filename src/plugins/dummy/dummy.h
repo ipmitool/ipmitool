@@ -1,6 +1,8 @@
 #ifndef IPMI_DUMMYIPMI_H
 # define IPMI_DUMMYIPMI_H
 
+#define IPMI_DUMMY_DEFAULTSOCK "/tmp/.ipmi_dummy"
+
 struct dummy_rq {
 	struct {
 		uint8_t netfn;
