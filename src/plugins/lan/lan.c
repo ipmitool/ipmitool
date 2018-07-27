@@ -94,7 +94,6 @@ static struct ipmi_rs * ipmi_lan_recv_sol(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_send_sol(struct ipmi_intf * intf,
 					  struct ipmi_v2_payload * payload);
 static struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
-static int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 static int ipmi_lan_open(struct ipmi_intf * intf);
 static void ipmi_lan_close(struct ipmi_intf * intf);
 static int ipmi_lan_ping(struct ipmi_intf * intf);
@@ -108,7 +107,6 @@ struct ipmi_intf ipmi_lan_intf = {
 	.open = ipmi_lan_open,
 	.close = ipmi_lan_close,
 	.sendrecv = ipmi_lan_send_cmd,
-	.sendrsp = ipmi_lan_send_rsp,
 	.recv_sol = ipmi_lan_recv_sol,
 	.send_sol = ipmi_lan_send_sol,
 	.keepalive = ipmi_lan_keepalive,
@@ -1079,42 +1077,6 @@ ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
 
 	*llen = len;
 	return msg;
-}
-
-static int
-ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
-{
-	uint8_t * msg;
-	int len = 0;
-	int rv;
-
-	msg = ipmi_lan_build_rsp(intf, rsp, &len);
-	if (len <= 0 || msg == NULL) {
-		lprintf(LOG_ERR, "Invalid response packet");
-		if (msg != NULL) {
-			free(msg);
-			msg = NULL;
-		}
-		return -1;
-	}
-
-	rv = sendto(intf->fd, msg, len, 0,
-		    (struct sockaddr *)&intf->session->addr,
-		    intf->session->addrlen);
-	if (rv < 0) {
-		lprintf(LOG_ERR, "Packet send failed");
-		if (msg != NULL) {
-			free(msg);
-			msg = NULL;
-		}
-		return -1;
-	}
-
-	if (msg != NULL) {
-		free(msg);
-		msg = NULL;
-	}
-	return 0;
 }
 
 /*
