@@ -103,12 +103,17 @@ struct ipm_devid_rsp {
 #pragma pack(1)
 #endif
 struct ipmi_guid_t {
-	uint32_t  time_low;	/* timestamp low field */
-	uint16_t  time_mid;	/* timestamp middle field */
-	uint16_t  time_hi_and_version; /* timestamp high field and version number */
-	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
-	uint8_t   clock_seq_low; /* clock sequence low field */
 	uint8_t   node[6];	/* node */
+	union {
+		struct {
+			uint8_t   clock_seq_low; /* clock sequence low field */
+			uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
+		};
+		uint16_t clock_seq_variant;
+	};
+	uint16_t  time_hi_and_version; /* timestamp high field and version number */
+	uint16_t  time_mid;	/* timestamp middle field */
+	uint32_t  time_low;	/* timestamp low field */
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)

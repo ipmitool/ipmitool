@@ -533,14 +533,21 @@ ipmi_mc_print_guid(struct ipmi_guid_t guid)
 	memset(tbuf, 0, 40);
 	struct tm *tm;
 
-	/* Kipp - changed order of last field (node) to follow specification */
 	printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-	       guid.time_low, guid.time_mid, guid.time_hi_and_version,
-	       guid.clock_seq_hi_variant << 8 | guid.clock_seq_low,
-	       guid.node[0], guid.node[1], guid.node[2],
-	       guid.node[3], guid.node[4], guid.node[5]);
+	       /* We're displaying GUID as hex integers. Thus we need them to be
+	        * in host byte order before we display them. However, according to
+	        * IPMI 2.0, all GUID fields are in LSB first (Little Endian)
+	        * format. Hence the ipmiXtoh() calls:
+	        */
+	       ipmi32toh(&guid.time_low),
+	       ipmi16toh(&guid.time_mid),
+	       ipmi16toh(&guid.time_hi_and_version),
+	       ipmi16toh(&guid.clock_seq_variant),
+	       /* The node part is shown as bytes, so no additional conversion */
+	       guid.node[5], guid.node[4], guid.node[3],
+	       guid.node[2], guid.node[1], guid.node[0]);
 
-	s = (time_t)guid.time_low; /* Kipp - removed the BSWAP_32, it was not needed here */
+	s = (time_t)ipmi32toh(&guid.time_low);
 	if(time_in_utc)
 		tm = gmtime(&s);
 	else
