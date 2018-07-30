@@ -132,6 +132,12 @@ main(int argc, char ** argv)
 {
 	int rc;
 
+#ifdef WORDS_BIGENDIAN
+	printf("BIG ENDIAN\n");
+#else
+	printf("LITTLE ENDIAN\n");
+#endif
+
 	rc = ipmi_main(argc, argv, ipmitool_cmd_list, NULL);
 
 	if (rc < 0)

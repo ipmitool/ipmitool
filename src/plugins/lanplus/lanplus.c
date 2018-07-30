@@ -909,46 +909,38 @@ void
 read_open_session_response(struct ipmi_rs * rsp, int offset)
 {
 	memset(&rsp->payload.open_session_response, 0,
-			 sizeof(rsp->payload.open_session_response));
+	       sizeof(rsp->payload.open_session_response));
 
-	 /*  Message tag */
-	 rsp->payload.open_session_response.message_tag = rsp->data[offset];
+	/*  Message tag */
+	rsp->payload.open_session_response.message_tag = rsp->data[offset];
 
-	 /* RAKP response code */
-	 rsp->payload.open_session_response.rakp_return_code = rsp->data[offset + 1];
+	/* RAKP response code */
+	rsp->payload.open_session_response.rakp_return_code = rsp->data[offset + 1];
 
-	 /* Maximum privilege level */
-	 rsp->payload.open_session_response.max_priv_level = rsp->data[offset + 2];
+	/* Maximum privilege level */
+	rsp->payload.open_session_response.max_priv_level = rsp->data[offset + 2];
 
-	 /*** offset + 3 is reserved ***/
+	/*** offset + 3 is reserved ***/
 
-	 /* Remote console session ID */
-	 memcpy(&(rsp->payload.open_session_response.console_id),
-			rsp->data + offset + 4,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.open_session_response.console_id =
-		 BSWAP_32(rsp->payload.open_session_response.console_id);
-	 #endif
+	/* Remote console session ID */
+	rsp->payload.open_session_response.console_id
+		= ipmi32toh(&rsp->data[offset + 4]);
 
 	/* only tag, status, privlvl, and console id are returned if error */
-	 if (rsp->payload.open_session_response.rakp_return_code !=
-		  IPMI_RAKP_STATUS_NO_ERRORS)
-		 return;
+	if (rsp->payload.open_session_response.rakp_return_code
+	    != IPMI_RAKP_STATUS_NO_ERRORS)
+	{
+		return;
+	}
 
-	 /* BMC session ID */
-	 memcpy(&(rsp->payload.open_session_response.bmc_id),
-			rsp->data + offset + 8,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.open_session_response.bmc_id =
-		 BSWAP_32(rsp->payload.open_session_response.bmc_id);
-	 #endif
+	/* BMC session ID */
+	rsp->payload.open_session_response.bmc_id
+		= ipmi32toh(&rsp->data[offset + 8]);
 
-	 /* And of course, our negotiated algorithms */
-	 rsp->payload.open_session_response.auth_alg      = rsp->data[offset + 16];
-	 rsp->payload.open_session_response.integrity_alg = rsp->data[offset + 24];
-	 rsp->payload.open_session_response.crypt_alg     = rsp->data[offset + 32];
+	/* And of course, our negotiated algorithms */
+	rsp->payload.open_session_response.auth_alg = rsp->data[offset + 16];
+	rsp->payload.open_session_response.integrity_alg = rsp->data[offset + 24];
+	rsp->payload.open_session_response.crypt_alg = rsp->data[offset + 32];
 }
 
 
@@ -976,13 +968,13 @@ read_rakp2_message(
 					int offset,
 					uint8_t auth_alg)
 {
-	 int i;
+	int i;
 
-	 /*  Message tag */
-	 rsp->payload.rakp2_message.message_tag = rsp->data[offset];
+	/*  Message tag */
+	rsp->payload.rakp2_message.message_tag = rsp->data[offset];
 
-	 /* RAKP response code */
-	 rsp->payload.rakp2_message.rakp_return_code = rsp->data[offset + 1];
+	/* RAKP response code */
+	rsp->payload.rakp2_message.rakp_return_code = rsp->data[offset + 1];
 
 	/* Console session ID */
 	rsp->payload.rakp2_message.console_id = ipmi32toh(&rsp->data[offset + 4]);
@@ -1004,38 +996,39 @@ read_rakp2_message(
 		 /* Nothing to do here */
 		 break;
 
-	 case IPMI_AUTH_RAKP_HMAC_SHA1:
-		/* We need to copy 20 bytes */
-		for (i = 0; i < IPMI_SHA_DIGEST_LENGTH; ++i) {
-			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
-				rsp->data[offset + 40 + i];
-		}
-		break;
+		case IPMI_AUTH_RAKP_HMAC_SHA1:
+			/* We need to copy 20 bytes */
+			for (i = 0; i < IPMI_SHA_DIGEST_LENGTH; ++i) {
+				rsp->payload.rakp2_message.key_exchange_auth_code[i]
+					= rsp->data[offset + 40 + i];
+			}
+			break;
 
-	 case IPMI_AUTH_RAKP_HMAC_MD5:
-		/* We need to copy 16 bytes */
-		for (i = 0; i < IPMI_MD5_DIGEST_LENGTH; ++i) {
-			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
-				rsp->data[offset + 40 + i];
-		}
-		break;
+		case IPMI_AUTH_RAKP_HMAC_MD5:
+			/* We need to copy 16 bytes */
+			for (i = 0; i < IPMI_MD5_DIGEST_LENGTH; ++i) {
+				rsp->payload.rakp2_message.key_exchange_auth_code[i]
+					= rsp->data[offset + 40 + i];
+			}
+			break;
 
 #ifdef HAVE_CRYPTO_SHA256
-	 case IPMI_AUTH_RAKP_HMAC_SHA256:
-		/* We need to copy 32 bytes */
-		for (i = 0; i < IPMI_SHA256_DIGEST_LENGTH; ++i) {
-			rsp->payload.rakp2_message.key_exchange_auth_code[i] =
-				rsp->data[offset + 40 + i];
-		}
-		break;
+		case IPMI_AUTH_RAKP_HMAC_SHA256:
+			/* We need to copy 32 bytes */
+			for (i = 0; i < IPMI_SHA256_DIGEST_LENGTH; ++i) {
+				rsp->payload.rakp2_message.key_exchange_auth_code[i]
+					= rsp->data[offset + 40 + i];
+			}
+			break;
 #endif /* HAVE_CRYPTO_SHA256 */
 
-	 default:
-		lprintf(LOG_ERR, "read_rakp2_message: no support "
-			"for authentication algorithm 0x%x", auth_alg);
-		 assert(0);
-		 break;
-	 }
+		default:
+			lprintf(LOG_ERR,
+			        "read_rakp2_message: no support "
+			        "for authentication algorithm 0x%x", auth_alg);
+			assert(0);
+			break;
+	}
 }
 
 

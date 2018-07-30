@@ -241,6 +241,15 @@ struct ipmi_intf {
 	void (*set_max_response_data_size)(struct ipmi_intf * intf, uint16_t size);
 };
 
+/* Interface method wrappers to perform any host-specific actions */
+struct ipmi_rs *ipmi_sendrecv(struct ipmi_intf * intf, struct ipmi_rq * req);
+struct ipmi_rs *ipmi_recv_sol(struct ipmi_intf * intf);
+struct ipmi_rs *ipmi_send_sol(struct ipmi_intf * intf, struct ipmi_v2_payload * payload);
+int ipmi_keepalive(struct ipmi_intf * intf);
+int ipmi_set_my_addr(struct ipmi_intf * intf, uint8_t addr);
+void ipmi_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size);
+void ipmi_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size);
+
 struct ipmi_intf * ipmi_intf_load(char * name);
 void ipmi_intf_print(struct ipmi_intf_support * intflist);
 

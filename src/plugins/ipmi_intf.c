@@ -623,3 +623,53 @@ ipmi_intf_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size)
 		intf->max_response_data_size = size;
 	}
 }
+
+/*
+ * Interface method wrappers.
+ * Do any host-specific things like byteswapping here.
+ * Command-specific data manipulation is not done here,
+ * only the common headers are mangled.
+ */
+struct ipmi_rs *ipmi_sendrecv(struct ipmi_intf * intf, struct ipmi_rq * req)
+{
+	struct ipmi_rs *rsp;
+
+	/* Data length must be in IPMI order (LE) */
+	htoipmi16(req->msg.data_len, &req->msg.data_len);
+	rsp = intf->sendrecv(intf, req);
+	if (rsp) {
+		rsp->data_len = ipmi16toh(&rsp->data_len);
+	}
+
+	return rsp;
+}
+
+struct ipmi_rs *ipmi_recv_sol(struct ipmi_intf * intf)
+{
+	return intf->recv_sol(intf);
+}
+
+struct ipmi_rs *ipmi_send_sol(struct ipmi_intf * intf, struct ipmi_v2_payload * payload)
+{
+	return intf->send_sol(intf, payload);
+}
+
+int ipmi_keepalive(struct ipmi_intf * intf)
+{
+	return intf->keepalive(intf);
+}
+
+int ipmi_set_my_addr(struct ipmi_intf * intf, uint8_t addr)
+{
+	return intf->set_my_addr(intf, addr);
+}
+
+void ipmi_set_max_request_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	intf->set_max_request_data_size(intf, size);
+}
+
+void ipmi_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size)
+{
+	intf->set_max_response_data_size(intf, size);
+}
