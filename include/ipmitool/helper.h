@@ -113,36 +113,23 @@ uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
 /* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
 /* For portability, let's simply define our own versions here */
+
+/* IPMI is always little-endian */
 static inline uint16_t ipmi16toh(void *ipmi16)
 {
 	uint8_t *ipmi = (uint8_t *)ipmi16;
 	uint16_t h;
 
-	/*
-	 * ipmi16 address may be word-wise misaligned, so don't
-	 * use type-pun and instead explicity shift corresponding bytes
-	 * to where they belong.
-	 */
-#if WORDS_BIGENDIAN
-	h = ipmi[0] << 8; /* MSB */
-	h |= ipmi[1]; /* LSB */
-#else
 	h = ipmi[1] << 8; /* MSB */
 	h |= ipmi[0]; /* LSB */
-#endif
 
 	return h;
 }
 
 static inline void htoipmi16(uint16_t h, uint8_t *ipmi)
 {
-#if WORDS_BIGENDIAN
 	ipmi[0] = h & 0xFF; /* LSB */
 	ipmi[1] = h >> 8; /* MSB */
-#else
-	ipmi[1] = h & 0xFF; /* LSB */
-	ipmi[0] = h >> 8; /* MSB */
-#endif
 }
 
 static inline uint32_t ipmi24toh(void *ipmi24)
@@ -150,15 +137,9 @@ static inline uint32_t ipmi24toh(void *ipmi24)
 	uint8_t *ipmi = (uint8_t *)ipmi24;
 	uint32_t h = 0;
 
-#if WORDS_BIGENDIAN
-	h = ipmi[0] << 16; /* LSB */
+	h = ipmi[2] << 16; /* MSB */
 	h |= ipmi[1] << 8;
-	h |= ipmi[2]; /* MSB */
-#else
-	h = ipmi[2] << 16; /* LSB */
-	h |= ipmi[1] << 8;
-	h |= ipmi[0]; /* MSB */
-#endif
+	h |= ipmi[0]; /* LSB */
 
 	return h;
 }
@@ -168,38 +149,20 @@ static inline uint32_t ipmi32toh(void *ipmi32)
 	uint8_t *ipmi = ipmi32;
 	uint32_t h;
 
-	/*
-	 * ipmi32 address may be dword-wise misaligned, so don't
-	 * use type-pun and instead explicity shift corresponding bytes
-	 * to where they belong.
-	 */
-#if WORDS_BIGENDIAN
-	h = ipmi[0] << 24; /* LSB */
-	h |= ipmi[1] << 16;
-	h |= ipmi[2] << 8;
-	h |= ipmi[3]; /* MSB */
-#else
-	h = ipmi[3] << 24; /* LSB */
+	h = ipmi[3] << 24; /* MSB */
 	h |= ipmi[2] << 16;
 	h |= ipmi[1] << 8;
-	h |= ipmi[0]; /* MSB */
-#endif
+	h |= ipmi[0]; /* LSB */
+
 	return h;
 }
 
 static inline void htoipmi32(uint32_t h, uint8_t *ipmi)
 {
-#if WORDS_BIGENDIAN
 	ipmi[0] = h & 0xFF; /* LSB */
 	ipmi[1] = (h >> 8) & 0xFF;
 	ipmi[2] = (h >> 16) & 0xFF;
 	ipmi[3] = (h >> 24) & 0xFF; /* MSB */
-#else
-	ipmi[3] = h & 0xFF; /* LSB */
-	ipmi[2] = (h >> 8) & 0xFF;
-	ipmi[1] = (h >> 16) & 0xFF;
-	ipmi[0] = (h >> 24) & 0xFF; /* MSB */
-#endif
 }
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
