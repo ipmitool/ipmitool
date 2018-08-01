@@ -165,6 +165,7 @@ static inline void htoipmi32(uint32_t h, uint8_t *ipmi)
 	ipmi[3] = (h >> 24) & 0xFF; /* MSB */
 }
 
+uint8_t *array_byteswap(uint8_t *buffer, size_t length);
 uint8_t *array_ntoh(uint8_t *buffer, size_t length);
 uint8_t *array_letoh(uint8_t *buffer, size_t length);
 

@@ -231,7 +231,7 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 /*
  * Unconditionally reverse the order of arbitrarily long strings of bytes
  */
-static uint8_t *_ipmi_byteswap(uint8_t *buffer, size_t length)
+uint8_t *array_byteswap(uint8_t *buffer, size_t length)
 {
 	size_t i;
 	uint8_t temp;
@@ -254,7 +254,7 @@ uint8_t *array_ntoh(uint8_t *buffer, size_t length)
 	return buffer;
 #else
 	/* Little-endian host needs conversion from big-endian network */
-	return _ipmi_byteswap(buffer, length);
+	return array_byteswap(buffer, length);
 #endif
 }
 
@@ -263,7 +263,7 @@ uint8_t *array_letoh(uint8_t *buffer, size_t length)
 {
 #if WORDS_BIGENDIAN
 	/* Big-endian host needs conversion from little-endian IPMI */
-	return _ipmi_byteswap(buffer, length);
+	return array_byteswap(buffer, length);
 #else
 	/* Little-endian host doesn't need conversion from little-endian IPMI */
 	return buffer;
