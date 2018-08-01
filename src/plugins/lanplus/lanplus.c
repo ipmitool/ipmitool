@@ -276,28 +276,6 @@ int lanplus_get_requested_ciphers(int       cipher_suite_id,
 	return 0;
 }
 
-
-
-/*
- * Reverse the order of arbitrarily long strings of bytes
- */
-void lanplus_swap(
-				  uint8_t * buffer,
-						int             length)
-{
-	int i;
-	uint8_t temp;
-
-	for (i =0; i < length/2; ++i)
-	{
-		temp = buffer[i];
-		buffer[i] = buffer[length - 1 - i];
-		buffer[length - 1 - i] = temp;
-	}
-}
-
-
-
 static const struct valstr plus_payload_types_vals[] = {
 	 { IPMI_PAYLOAD_TYPE_IPMI,              "IPMI (0)" },	// IPMI Message
 	 { IPMI_PAYLOAD_TYPE_SOL,               "SOL  (1)" },	// SOL (Serial over LAN)
@@ -1010,31 +988,19 @@ read_rakp2_message(
 	 /* RAKP response code */
 	 rsp->payload.rakp2_message.rakp_return_code = rsp->data[offset + 1];
 
-	 /* Console session ID */
-	 memcpy(&(rsp->payload.rakp2_message.console_id),
-			rsp->data + offset + 4,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.rakp2_message.console_id =
-		 BSWAP_32(rsp->payload.rakp2_message.console_id);
-	 #endif
+	/* Console session ID */
+	rsp->payload.rakp2_message.console_id = ipmi32toh(&rsp->data[offset + 4]);
 
-	 /* BMC random number */
-	 memcpy(&(rsp->payload.rakp2_message.bmc_rand),
-			rsp->data + offset + 8,
-			16);
-	 #if WORDS_BIGENDIAN
-	 lanplus_swap(rsp->payload.rakp2_message.bmc_rand, 16);
-	 #endif
+	/* BMC random number */
+	memcpy(&(rsp->payload.rakp2_message.bmc_rand),
+	       array_letoh(&rsp->data[offset + 8], 16),
+	       16);
 
-	 /* BMC GUID */
-	 memcpy(&(rsp->payload.rakp2_message.bmc_guid),
-			rsp->data + offset + 24,
-			16);
-	 #if WORDS_BIGENDIAN
-	 lanplus_swap(rsp->payload.rakp2_message.bmc_guid, 16);
-	 #endif
-	 
+	/* BMC GUID */
+	memcpy(&(rsp->payload.rakp2_message.bmc_guid),
+	       array_letoh(&rsp->data[offset + 24], 16),
+	       16);
+
 	 /* Key exchange authentication code */
 	 switch (auth_alg)
 	 {
@@ -1110,16 +1076,9 @@ read_rakp4_message(
 	 /* RAKP response code */
 	 rsp->payload.rakp4_message.rakp_return_code = rsp->data[offset + 1];
 
-	 /* Console session ID */
-	 memcpy(&(rsp->payload.rakp4_message.console_id),
-			rsp->data + offset + 4,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.rakp4_message.console_id =
-		 BSWAP_32(rsp->payload.rakp4_message.console_id);
-	 #endif
+	/* Console session ID */
+	rsp->payload.rakp4_message.console_id = ipmi32toh(&rsp->data[offset + 4]);
 
-	 
 	 /* Integrity check value */
 	 switch (auth_alg)
 	 {
@@ -1230,25 +1189,15 @@ read_session_data_v2x(
 	rsp->session.payloadtype = rsp->data[(*offset)++] & 0x3F;
 
 	/* Session ID */
-	memcpy(&rsp->session.id, rsp->data + *offset, 4);
+	rsp->session.id = ipmi32toh(&rsp->data[*offset]);
 	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.id = BSWAP_32(rsp->session.id);
-	#endif
-
 
 	/* Ignored, so far */
-	memcpy(&rsp->session.seq, rsp->data + *offset, 4);
+	rsp->session.seq = ipmi32toh(&rsp->data[*offset]);
 	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.seq = BSWAP_32(rsp->session.seq);
-	#endif		
 
-	memcpy(&rsp->session.msglen, rsp->data + *offset, 2);
+	rsp->session.msglen = ipmi16toh(&rsp->data[*offset]);
 	*offset += 2;
-	#if WORDS_BIGENDIAN
-	rsp->session.msglen = BSWAP_16(rsp->session.msglen);
-	#endif
 }
 
 
@@ -2807,7 +2756,6 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
-	uint32_t bmc_session_lsbf;
 	uint8_t backupBridgePossible;
 
 	if (intf->session == NULL
@@ -2819,12 +2767,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
 	bridgePossible = 0;
 
-	bmc_session_lsbf = intf->session->v2_data.bmc_id;
-#if WORDS_BIGENDIAN
-	bmc_session_lsbf = BSWAP_32(bmc_session_lsbf);
-#endif
-
-	memcpy(&msg_data, &bmc_session_lsbf, 4);
+	htoipmi32(intf->session->v2_data.bmc_id, msg_data);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -3101,9 +3044,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		return 1;
 	}
 	memcpy(msg + 8, session->v2_data.console_rand, 16);
-	#if WORDS_BIGENDIAN
-	lanplus_swap(msg + 8, 16);
-	#endif
+	array_letoh(msg + 8, 16);
 
 	if (verbose > 1)
 		printbuf(session->v2_data.console_rand, 16,

@@ -165,6 +165,9 @@ static inline void htoipmi32(uint32_t h, uint8_t *ipmi)
 	ipmi[3] = (h >> 24) & 0xFF; /* MSB */
 }
 
+uint8_t *array_ntoh(uint8_t *buffer, size_t length);
+uint8_t *array_letoh(uint8_t *buffer, size_t length);
+
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)
 

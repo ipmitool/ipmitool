@@ -228,6 +228,48 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 	fprintf(stderr, "\n");
 }
 
+/*
+ * Unconditionally reverse the order of arbitrarily long strings of bytes
+ */
+static uint8_t *_ipmi_byteswap(uint8_t *buffer, size_t length)
+{
+	size_t i;
+	uint8_t temp;
+	size_t max = length - 1;
+
+	for (i = 0; i < length / 2; ++i) {
+		temp = buffer[i];
+		buffer[i] = buffer[max - i];
+		buffer[max - i] = temp;
+	}
+
+	return buffer;
+}
+
+/* Convert data array from network (big-endian) to host byte order */
+uint8_t *array_ntoh(uint8_t *buffer, size_t length)
+{
+#if WORDS_BIGENDIAN
+	/* Big-endian host doesn't need conversion from big-endian network */
+	return buffer;
+#else
+	/* Little-endian host needs conversion from big-endian network */
+	return _ipmi_byteswap(buffer, length);
+#endif
+}
+
+/* Convert data array from little-endian to host byte order */
+uint8_t *array_letoh(uint8_t *buffer, size_t length)
+{
+#if WORDS_BIGENDIAN
+	/* Big-endian host needs conversion from little-endian IPMI */
+	return _ipmi_byteswap(buffer, length);
+#else
+	/* Little-endian host doesn't need conversion from little-endian IPMI */
+	return buffer;
+#endif
+}
+
 /* str2mac - parse-out MAC address from given string and store it
  * into buffer.
  *
