@@ -726,7 +726,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	struct ipm_get_watchdog_rsp * wdt_res;
 	double init_cnt;
 	double pres_cnt;
-	int i;
+	size_t i;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -808,8 +808,7 @@ parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 	}
 
 	for (i = 0; i < argc; ++i) {
-		unsigned long val;
-		int j;
+		long val;
 		char *vstr = strchr(argv[i], '=');
 		if (vstr)
 			vstr++; /* Point to the value */
@@ -817,7 +816,7 @@ parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 		switch (argv[i][0]) { /* only check the first letter to allow for
 		                         shortcuts */
 		case 't': /* timeout */
-			val = strtoul(vstr, NULL, 10);
+			val = strtol(vstr, NULL, 10);
 			if (val < 1 || val > MAX_TIMEOUT) {
 				lprintf(LOG_ERR, "Timeout value %lu is out of range (1-%d)\n",
 				        val, MAX_TIMEOUT);
@@ -826,7 +825,7 @@ parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 			conf->timeout = val * 10; /* Convert seconds to 100ms intervals */
 			break;
 		case 'p': /* pretimeout */
-			val = strtoul(vstr, NULL, 10);
+			val = strtol(vstr, NULL, 10);
 			if (val < 1 || val > MAX_PRETIMEOUT) {
 				lprintf(LOG_ERR,
 				        "Pretimeout value %lu is out of range (1-%d)\n",
@@ -897,9 +896,8 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req = {0};
 	unsigned char msg_data[6] = {0};
-	struct ipm_get_watchdog_rsp * wdt_res;
 	int rc = -1;
-	wdt_conf_t conf;
+	wdt_conf_t conf = {0};
 	bool options_error = parse_set_wdt_options(&conf, argc, argv);
 
 	/* Fill data bytes according to IPMI 2.0 Spec section 27.6 */
@@ -1291,7 +1289,7 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 {
 	char *str;
 	unsigned char  infostr[256];
-	unsigned char  paramdata[18];
+	char paramdata[18];
 	int len, maxset, param, pos, rc, set;
 
 	if (argc == 2 && strcmp(argv[1], "help") == 0) {
