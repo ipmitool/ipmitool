@@ -110,6 +110,25 @@ typedef enum {
 
 #define GUID_NODE_SZ 6
 
+#define GUID_VER_MASK 0x0F
+#define GUID_VER_SHIFT 12
+#define GUID_VERSION(t_hi) (((t_hi) >> GUID_VER_SHIFT) & GUID_VER_MASK)
+#define GUID_TIME_HI(t_hi) ((t_hi) & ~(GUID_VER_MASK << GUID_VER_SHIFT))
+
+typedef enum {
+	GUID_VERSION_UNKNOWN = 0, /* Not valid according to any specification */
+
+	/* The following are according to IPMI/SMBIOS/RFC4122 */
+	GUID_VERSION_TIME, /* Time-based, recommended for IPMI */
+	GUID_VERSION_DCE,  /* DCE Security with POSIX UIDs, not for IPMI */
+	GUID_VERSION_MD5,  /* Name-based, using MD5 */
+	GUID_VERSION_RND,  /* Randomly generated */
+	GUID_VERSION_SHA1, /* Name-based, using SHA-1 */
+
+	GUID_VERSION_MAX = GUID_VERSION_SHA1, /* The maximum supported version */
+	GUID_VERSION_COUNT /* The number of supported versions */
+} guid_version_t;
+
 /* The structure follows IPMI v2.0, rev 1.1
  * See section 20.8 */
 #ifdef HAVE_PRAGMA_PACK

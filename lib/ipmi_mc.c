@@ -540,9 +540,19 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 	uint8_t node[GUID_NODE_SZ]; /* MSB first */
 	/* These are host architecture specific */
 	uint16_t clock_seq_and_rsvd;
-	uint16_t time_hi_and_version;
-	uint16_t time_mid;
-	uint32_t time_low;
+	uint64_t time_hi_and_version;
+	uint64_t time_mid;
+	uint64_t time_low;
+
+	guid_version_t guid_ver;
+	const char *guid_ver_str[GUID_VERSION_COUNT] = {
+		[GUID_VERSION_UNKNOWN] = "Unknown/unsupported",
+		[GUID_VERSION_TIME] = "Time-based",
+		[GUID_VERSION_DCE] = "DCE Security with POSIX UIDs (not for IPMI)",
+		[GUID_VERSION_MD5] = "Name-based using MD5",
+		[GUID_VERSION_RND] = "Random or pseudo-random",
+		[GUID_VERSION_SHA1] = "Name-based using SHA-1"
+	};
 
 	char tbuf[40] = { 0 };
 	struct tm *tm;
@@ -592,16 +602,47 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 	}
 
 	printf("%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-	       time_low, time_mid, time_hi_and_version,
+	       (int)time_low, (int)time_mid, (int)time_hi_and_version,
 	       clock_seq_and_rsvd,
 	       node[0], node[1], node[2], node[3], node[4], node[5]);
 
-	if(time_in_utc)
-		tm = gmtime(&time_low);
-	else
-		tm = localtime(&time_low);
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
-	printf("Timestamp    : %s\n", tbuf);
+	guid_ver = GUID_VERSION(time_hi_and_version);
+
+	if (guid_ver > GUID_VERSION_MAX) {
+		/* Reset any unsupported value fto UNKNOWN */
+		guid_ver = GUID_VERSION_UNKNOWN;
+	}
+
+	printf("GUID Version : %s", guid_ver_str[guid_ver]);
+	if (GUID_VERSION_UNKNOWN == guid_ver)
+		printf(" (%d)", GUID_VERSION((int)time_hi_and_version));
+	printf("\n");
+
+	if (GUID_VERSION_TIME == guid_ver) {
+		/* GUID time-stamp is a 60-bit value representing the
+		 * count of 100ns intervals since 00:00:00.00, 15 Oct 1582 */
+
+		const uint64_t t100ns_in_sec = 10000000LL;
+
+		/* Seconds from 15 Oct 1582 to 1 Jan 1970 00:00:00 */
+		uint64_t epoch_since_gregorian = 12219292800;
+
+		/* 100ns intervals since 15 Oct 1582 00:00:00 */
+		uint64_t gregorian = (GUID_TIME_HI(time_hi_and_version) << 48)
+		                     | (time_mid << 32)
+		                     | time_low;
+		time_t unixtime; /* We need timestamp in seconds since UNIX epoch */
+
+		gregorian /= t100ns_in_sec; /* Convert to seconds */
+		unixtime = gregorian - epoch_since_gregorian;
+
+		if(time_in_utc)
+			tm = gmtime(&unixtime);
+		else
+			tm = localtime(&unixtime);
+		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
+		printf("Timestamp    : %s\n", tbuf);
+	}
 	return 0;
 }
 
