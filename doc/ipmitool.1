@@ -2017,9 +2017,50 @@ The default will clear statistics on the first found LAN channel.
 
 Instructs the BMC to perform a warm or cold reset.
 .TP 
-\fIguid\fP
+\fIguid\fP [\fBsmbios\fR|\fBrfc4122\fR|\fBipmi\fR|\fBdump\fR]
 
 Display the Management Controller Globally Unique IDentifier.
+
+.RS
+.TP
+\fIsmbios\fP
+.br
+
+This is the default behavior for ipmitool for the sake of compatibility
+with old versions and broken BMC implementations whose number is legion.
+
+Decode GUID as if it was sent by BMC as prescribed by SMBIOS specification.
+
+\fBNOTE:\fR This is a violation of IPMI specification, but many BMC implementations do
+it this way. If your BMC's GUID is shown correctly using this option, you
+may want to inform your BMC manufacturer that they have a bug.
+
+.TP
+\fIrfc4122\fP or \fIrfc\fP
+.br
+
+Decode GUID as if it was sent by BMC as prescribed by RFC4122 specification.
+
+\fBNOTE:\fR This is a violation of IPMI specification.
+If your BMC's GUID is shown correctly using this option, you
+may want to inform your BMC manufacturer that they have a bug.
+
+.TP
+\fIipmi\fP
+.br
+
+Decode GUID according to IPMI specification. It MUST show the correct GUID.
+If it doesn't, try other options above and inform your BMC manufacturer of the bug.
+
+.TP
+\fIdump\fP
+.br
+
+Dump as hex the data received from BMC in response to Get Device GUID command.
+No decoding or interpretation is performed. First received byte is dumped first.
+
+.RE
+
 .TP 
 \fIinfo\fP
 .br

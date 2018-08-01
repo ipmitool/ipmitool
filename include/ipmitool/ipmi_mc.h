@@ -97,23 +97,58 @@ struct ipm_devid_rsp {
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 
-/* Structure follow the IPMI V.2 Rev 1.0
- * See Table 20-10 */
+/* There are lots of BMC implementations that don't follow the IPMI
+ * specification for GUID encoding. Some send data encoded as in
+ * RFC4122, some follow SMBIOS specification. We support all users
+ * of those buggy implementations here */
+typedef enum {
+	GUID_IPMI,
+	GUID_SMBIOS,
+	GUID_RFC4122,
+	GUID_DUMP
+} ipmi_guid_mode_t;
+
+#define GUID_NODE_SZ 6
+
+/* The structure follows IPMI v2.0, rev 1.1
+ * See section 20.8 */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
 struct ipmi_guid_t {
-	uint8_t   node[6];	/* node */
+	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is LSB */
 	union {
 		struct {
-			uint8_t   clock_seq_low; /* clock sequence low field */
-			uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
+			uint8_t clock_seq_low; /* clock sequence low field */
+			uint8_t clock_seq_hi_and_rsvd;/* clock sequence high field */
 		};
-		uint16_t clock_seq_variant;
+		uint16_t clock_seq_and_rsvd;
 	};
-	uint16_t  time_hi_and_version; /* timestamp high field and version number */
-	uint16_t  time_mid;	/* timestamp middle field */
-	uint32_t  time_low;	/* timestamp low field */
+	uint16_t time_hi_and_version; /* timestamp high field and version number */
+	uint16_t time_mid; /* timestamp middle field */
+	uint32_t time_low; /* timestamp low field */
+} ATTRIBUTE_PACKING;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+
+/* The structure follows RFC4122 (section 4.1.2)
+ * and SMBIOS v3.0.0 (section 7.2.1) */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+struct rfc_guid_t {
+	uint32_t time_low; /* timestamp low field */
+	uint16_t time_mid; /* timestamp middle field */
+	uint16_t time_hi_and_version; /* timestamp high field and version number */
+	union {
+		struct {
+			uint8_t clock_seq_hi_and_rsvd;/* clock sequence high field */
+			uint8_t clock_seq_low; /* clock sequence low field */
+		};
+		uint16_t clock_seq_and_rsvd;
+	};
+	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is MSB */
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)

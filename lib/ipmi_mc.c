@@ -38,6 +38,8 @@
 #include <stdbool.h>
 #include <endian.h>
 
+#include <arpa/inet.h>
+
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
@@ -184,7 +186,7 @@ printf_mc_usage(void)
 	struct bitfield_data * bf;
 	lprintf(LOG_NOTICE, "MC Commands:");
 	lprintf(LOG_NOTICE, "  reset <warm|cold>");
-	lprintf(LOG_NOTICE, "  guid");
+	lprintf(LOG_NOTICE, "  guid [smbios|rfc4122|ipmi|dump]");
 	lprintf(LOG_NOTICE, "  info");
 	lprintf(LOG_NOTICE, "  watchdog <get|reset|off>");
 	lprintf(LOG_NOTICE, "  selftest");
@@ -521,54 +523,86 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 
 /* ipmi_mc_print_guid - print-out given BMC GUID
  *
- * @guid - struct with GUID.
+ * @param[in] intf - The IPMI interface to request GUID from
+ * @param[in] guid_mode - GUID decoding mode
  *
- * returns 0
+ * @returns status code
+ * @retval 0 - Success
+ * @retval -1 - Error
  */
 static int
-ipmi_mc_print_guid(struct ipmi_guid_t guid)
+ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 {
-	char tbuf[40];
-	time_t s;
-	memset(tbuf, 0, 40);
+	/* Field order is different for RFC4122/SMBIOS and for IPMI */
+	struct ipmi_guid_t ipmi_guid;
+	struct rfc_guid_t *rfc_guid; /* Alias pointer */
+
+	uint8_t node[GUID_NODE_SZ]; /* MSB first */
+	/* These are host architecture specific */
+	uint16_t clock_seq_and_rsvd;
+	uint16_t time_hi_and_version;
+	uint16_t time_mid;
+	uint32_t time_low;
+
+	char tbuf[40] = { 0 };
 	struct tm *tm;
-
-	printf("System GUID  : %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-	       /* We're displaying GUID as hex integers. Thus we need them to be
-	        * in host byte order before we display them. However, according to
-	        * IPMI 2.0, all GUID fields are in LSB first (Little Endian)
-	        * format. Hence the ipmiXtoh() calls:
-	        */
-	       ipmi32toh(&guid.time_low),
-	       ipmi16toh(&guid.time_mid),
-	       ipmi16toh(&guid.time_hi_and_version),
-	       ipmi16toh(&guid.clock_seq_variant),
-	       /* The node part is shown as bytes, so no additional conversion */
-	       guid.node[5], guid.node[4], guid.node[3],
-	       guid.node[2], guid.node[1], guid.node[0]);
-
-	s = (time_t)ipmi32toh(&guid.time_low);
-	if(time_in_utc)
-		tm = gmtime(&s);
-	else
-		tm = localtime(&s);
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
-	printf("Timestamp    : %s\n", tbuf);
-	return 0;
-}
-
-/* ipmi_mc_get_guid - Gets and prints-out System GUID */
-int
-ipmi_mc_get_guid(struct ipmi_intf *intf)
-{
-	struct ipmi_guid_t guid;
 	int rc;
-	rc = _ipmi_mc_get_guid(intf, &guid);
+
+	rc = _ipmi_mc_get_guid(intf, &ipmi_guid);
 	if (eval_ccode(rc) != 0) {
 		return (-1);
 	}
-	rc = ipmi_mc_print_guid(guid);
-	return rc;
+
+	printf("System GUID  : ");
+	if (GUID_DUMP == guid_mode) {
+		size_t i;
+		for (i = 0; i < sizeof(ipmi_guid); ++i) {
+			printf("%02X", ((uint8_t *)&ipmi_guid)[i]);
+		}
+		printf("\n");
+		return 0;
+	}
+
+	if (GUID_IPMI == guid_mode) {
+		/* In IPMI all fields are little-endian (LSB first) */
+		memcpy(node,
+		       array_byteswap(ipmi_guid.node, GUID_NODE_SZ),
+		       GUID_NODE_SZ);
+		clock_seq_and_rsvd = ipmi16toh(&ipmi_guid.clock_seq_and_rsvd);
+		time_low = ipmi32toh(&ipmi_guid.time_low);
+		time_mid = ipmi16toh(&ipmi_guid.time_mid);
+		time_hi_and_version = ipmi16toh(&ipmi_guid.time_hi_and_version);
+	} else {
+		/* For RFC4122 all fields are in network byte order (MSB first) */
+		rfc_guid = (struct rfc_guid_t *)(&ipmi_guid);
+		memcpy(node,
+		       rfc_guid->node,
+		       GUID_NODE_SZ);
+		clock_seq_and_rsvd = ntohs(rfc_guid->clock_seq_and_rsvd);
+		if (GUID_RFC4122 == guid_mode) {
+			time_low = ntohl(rfc_guid->time_low);
+			time_mid = ntohs(rfc_guid->time_mid);
+			time_hi_and_version = ntohs(rfc_guid->time_hi_and_version);
+		} else {
+			/* For SMBIOS time fields are little-endian (as in IPMI) */
+			time_low = ipmi32toh(&rfc_guid->time_low);
+			time_mid = ipmi16toh(&rfc_guid->time_mid);
+			time_hi_and_version = ipmi16toh(&rfc_guid->time_hi_and_version);
+		}
+	}
+
+	printf("%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
+	       time_low, time_mid, time_hi_and_version,
+	       clock_seq_and_rsvd,
+	       node[0], node[1], node[2], node[3], node[4], node[5]);
+
+	if(time_in_utc)
+		tm = gmtime(&time_low);
+	else
+		tm = localtime(&time_low);
+	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
+	printf("Timestamp    : %s\n", tbuf);
+	return 0;
 }
 
 /* ipmi_mc_get_selftest -  returns and print selftest results
@@ -1102,7 +1136,23 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_mc_get_deviceid(intf);
 	}
 	else if (strncmp(argv[0], "guid", 4) == 0) {
-		rc = ipmi_mc_get_guid(intf);
+		/* Most implementations like AMI MegaRAC do it the SMBIOS way.
+		 * This is the legacy behavior we don't want to break yet. */
+		ipmi_guid_mode_t guid_mode = GUID_SMBIOS;
+
+		/* Allow for 'rfc' and 'rfc4122' */
+		if (argc > 1) {
+			if (!strncmp(argv[1], "rfc", 3)) {
+				guid_mode = GUID_RFC4122;
+			}
+			else if (!strcmp(argv[1], "ipmi")) {
+				guid_mode = GUID_IPMI;
+			}
+			else if (!strcmp(argv[1], "dump")) {
+				guid_mode = GUID_DUMP;
+			}
+		}
+		rc = ipmi_mc_print_guid(intf, guid_mode);
 	}
 	else if (strncmp(argv[0], "getenables", 10) == 0) {
 		rc = ipmi_mc_get_enables(intf);
