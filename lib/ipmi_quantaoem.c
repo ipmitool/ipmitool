@@ -136,7 +136,7 @@ oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	if (rec->sel_type.standard_type.event_type != 0x6F) {
 		goto out;
 	}
-	/* Allocate mem for te Description string */
+	/* Allocate mem for the Description string */
 	desc = malloc(SIZE_OF_DESC);
 	if (desc == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");

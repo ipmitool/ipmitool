@@ -479,7 +479,7 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		printf("Number Of Memory Bank     : %u\n", pGetInfo->numBank);
 	}
 	*pNumBank = pGetInfo->numBank;
-	/* Determine wich type of download to use: */
+	/* Determine which type of download to use: */
 	/* Old FWUM or Old IPMC fw (data_len < 7)
 	 * --> Address with small buffer size
 	 */
@@ -598,12 +598,12 @@ KfwumGetStatus(struct ipmi_intf * intf)
 	if (verbose) {
 		printf(" Getting Status!\n");
 	}
-	/* Retreive the number of bank */
+	/* Retrieve the number of bank */
 	rc = KfwumGetInfo(intf, 0, &numBank);
 	for(counter = 0;
 			(counter < numBank) && (rc == 0);
 			counter ++) {
-		/* Retreive the status of each bank */
+		/* Retrieve the status of each bank */
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_FIRMWARE;
 		req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_STATUS;
@@ -950,7 +950,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 			(chunkIdx < TRACE_LOG_CHUNK_COUNT)
 			&& (rc == 0);
 			chunkIdx++) {
-		/* Retreive each log chunk and print it */
+		/* Retrieve each log chunk and print it */
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_FIRMWARE;
 		req.msg.cmd = KFWUM_CMD_ID_GET_TRACE_LOG;
@@ -971,7 +971,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 			break;
 		}
 		for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++) {
-			/* Don't diplay commands with an invalid state */
+			/* Don't display commands with an invalid state */
 			if ((rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1] != 0)
 					&& (rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx] < KFWUM_CMD_ID_STD_MAX_CMD)) {
 				printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
@@ -1001,7 +1001,7 @@ KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
 	}
 	offset = IN_FIRMWARE_INFO_OFFSET_LOCATION;
 
-	/* Now, fill the structure with read informations */
+	/* Now, fill the structure with read information */
 	pInfo->checksum = (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
 			offset + 0 + IN_FIRMWARE_INFO_OFFSET_CHECKSUM ) << 8;
 

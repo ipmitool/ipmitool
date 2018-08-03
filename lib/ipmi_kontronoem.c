@@ -85,7 +85,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		if (ipmi_kontron_set_serial_number(intf) > 0) {
-			printf("FRU serial number setted successfully\n");
+			printf("FRU serial number set successfully\n");
 		} else {
 			printf("FRU serial number set failed\n");
 			rc = (-1);
@@ -96,7 +96,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		if (ipmi_kontron_set_mfg_date(intf) > 0) {
-			printf("FRU manufacturing date setted successfully\n");
+			printf("FRU manufacturing date set successfully\n");
 		} else {
 			printf("FRU manufacturing date set failed\n");
 			rc = (-1);

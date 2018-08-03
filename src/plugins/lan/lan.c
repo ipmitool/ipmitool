@@ -733,7 +733,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 	}
 	else
 	{
-		// We dont have this request in the list so we can add it 
+		// We don't have this request in the list so we can add it
 		// to the list
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
 		if (entry == NULL)
@@ -965,14 +965,14 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	// This is the corner case where the remote controller responds very slowly.
 	//
 	// Example: We have to send command 23 and 2d.
-	// If we send command,seq as 23,10 and if we dont get any response it will 
+	// If we send command,seq as 23,10 and if we don't get any response it will
 	// retry 4 times with 23,10 and then come out here and indicate that there is no
 	// response from the remote controller and will send the next command for
 	// ie 2d,11. And if the BMC is slow to respond and returns 23,10 then it 
 	// will match it in the list and will take response of command 23 as response 
 	// for command 2d and return success. So ideally when retries are done and 
 	// are out of this function we should be clearing the list to be safe so that
-	// we dont match the old response with new request.
+	// we don't match the old response with new request.
 	//          [23, 10] --> BMC
 	//          [23, 10] --> BMC
 	//          [23, 10] --> BMC
@@ -1437,7 +1437,7 @@ check_sol_packet_for_new_data(struct ipmi_intf * intf,
 		}
 	
 		/*
-		 *Rember the data for next round
+		 * Remember the data for next round
 		 */
 		if (rsp && rsp->payload.sol_packet.packet_sequence_number)
 		{

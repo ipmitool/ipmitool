@@ -35,8 +35,8 @@ honored by ipmitool.
 
 Note that one way that SOL communication differs from standard IPMI
 commands, is that it is not simply a request response protocol.  Packets
-may be returned asyncrhonously from the BMC.  When establishing a SOL
-session, ipmitool registers a callback for asynchonously received data.
+may be returned asynchronously from the BMC.  When establishing a SOL
+session, ipmitool registers a callback for asynchronously received data.
 This call back simply prints text returned from the BMC.
 
 Once a user has chosen to exit the SOL session (with ~.) ipmitool sends the

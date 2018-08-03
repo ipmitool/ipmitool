@@ -732,7 +732,7 @@ ipmi_open_file(const char * file, int rw)
 	struct stat st1, st2;
 	FILE * fp;
 
-	/* verify existance */
+	/* verify existence */
 	if (lstat(file, &st1) < 0) {
 		if (rw) {
 			/* does not exist, ok to create */

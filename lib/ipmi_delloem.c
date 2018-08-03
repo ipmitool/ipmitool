@@ -1223,7 +1223,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
  *
  * Description:     This function sets lcd access mode
  * Input:           intf            - ipmi interface
- *                  lock    - View and modify / View only / Diabled
+ *                  lock    - View and modify / View only / Disabled
  * Output:
  * Return:          -1 on error
  *                  0 if successful
@@ -1605,14 +1605,14 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)
 			|| (IMC_IDRAC_13G_MODULAR == IMC_Type)
 			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
-		/* Get the Chasiss Assigned MAC Addresss for 12g Only */
+		/* Get the Chasiss Assigned MAC Address for 12g Only */
 		memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
 		for (i = 0; i < MACADDRESSLENGH; i++) {
 			if (VirtualMacAddress[i] != 0) {
 				UseVirtualMacAddress = 1;
 			}
 		}
-		/* Get the Server Assigned MAC Addresss for 12g Only */
+		/* Get the Server Assigned MAC Address for 12g Only */
 		if (!UseVirtualMacAddress) {
 			memcpy(VirtualMacAddress, ((rsp->data) + 1 + MACADDRESSLENGH),
 					MACADDRESSLENGH);
@@ -3426,7 +3426,7 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 		return rc;
 	}
 	printf("Power Consumption History\n\n");
-	/* The fields are alligned manually changing the spaces will alter
+	/* The fields are aligned manually changing the spaces will alter
 	 * the alignment*/
 	printf("Statistic                   Last Minute     Last Hour     "
 			"Last Day     Last Week\n\n");
@@ -3688,7 +3688,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		val = btuphr_to_watt_conversion(val);
 	} else if (unit == percent) {
 		if ((val < 0) || (val > 100)) {
-			lprintf(LOG_ERR, "Cap value is out of boundary conditon it "
+			lprintf(LOG_ERR, "Cap value is out of boundary condition it "
 					"should be between 0  - 100");
 			return -1;
 		}
@@ -3703,7 +3703,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 	if (((val < ipmipowercap.MinimumPowerConsmp)
 				|| (val > ipmipowercap.MaximumPowerConsmp)) && (unit == watt)) {
 		lprintf(LOG_ERR,
-				"Cap value is out of boundary conditon it should be between %d  - %d",
+				"Cap value is out of boundary condition it should be between %d  - %d",
 				ipmipowercap.MinimumPowerConsmp, ipmipowercap.MaximumPowerConsmp);
 		return -1;
 	} else if (((val < ipmipowercap.MinimumPowerConsmp)
@@ -3711,7 +3711,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		minpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
 		maxpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
 		lprintf(LOG_ERR,
-				"Cap value is out of boundary conditon it should be between %d",
+				"Cap value is out of boundary condition it should be between %d",
 				minpowerbtuphr);
 		lprintf(LOG_ERR, " -%d", maxpowerbtuphr);
 		return -1;

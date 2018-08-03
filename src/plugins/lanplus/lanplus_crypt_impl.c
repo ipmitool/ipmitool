@@ -102,7 +102,7 @@ lanplus_rand(uint8_t * buffer, uint32_t num_bytes)
  * param mac specifies the algorithm to be used, currently SHA1, SHA256 and MD5
  *     are supported
  * param key is the key used for HMAC generation
- * param key_len is the lenght of key
+ * param key_len is the length of key
  * param d is the data to be MAC'd
  * param n is the length of the data at d
  * param md is the result of the HMAC algorithm

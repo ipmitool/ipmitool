@@ -353,7 +353,7 @@ serial_flush(struct ipmi_intf * intf)
 /*
  *	Receive IPMI response from the device
  *	Len: buffer size
- *	Returns: -1 or response lenth on success
+ *	Returns: -1 or response length on success
  */
 static int
 recv_response(struct ipmi_intf * intf, unsigned char *data, int len)

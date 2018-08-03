@@ -42,7 +42,7 @@ const struct valstr ipmi_oem_info[] = {
    { IPMI_OEM_UNKNOWN, "Unknown" },
    { IPMI_OEM_RESERVED, "Unspecified" },
 
-/* The included file is auto-generated from offical IANA PEN list */
+/* The included file is auto-generated from official IANA PEN list */
 #include "ipmi_pen_list.inc.c"
 
 /*

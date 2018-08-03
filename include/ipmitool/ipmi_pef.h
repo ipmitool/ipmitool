@@ -178,7 +178,7 @@ BIT_DESC_MAP_LIST,
 	{"Entity presence",				37},
 	{"Monitor ASIC/IC",				38},
 	{"LAN",								39},
-	{"Management subsytem health",40},
+	{"Management subsystem health",40},
 	{"Battery",							41},
 	{NULL}
 }	};

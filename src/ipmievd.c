@@ -124,7 +124,7 @@ static int openipmi_wait(struct ipmi_event_intf * eintf);
 static int openipmi_read(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf openipmi_event_intf = {
 	.name = "open",
-	.desc = "OpenIPMI asyncronous notification of events",
+	.desc = "OpenIPMI asynchronous notification of events",
 	.prefix = "",
 	.setup = openipmi_setup,
 	.wait = openipmi_wait,
@@ -174,7 +174,7 @@ ipmievd_usage(void)
  *
  * @name:	interface name to try and load
  *
- * returns pointer to inteface structure if found
+ * returns pointer to interface structure if found
  * returns NULL on error
  */
 static struct ipmi_event_intf *
@@ -578,7 +578,7 @@ selwatch_setup(struct ipmi_event_intf * eintf)
 		/* save current last record ID */
 		selwatch_lastid = selwatch_get_lastid(eintf->intf);
 		lprintf(LOG_DEBUG, "Current SEL lastid is %04x", selwatch_lastid);
-		/* display alert/warning immediatly as startup if relevant */
+		/* display alert/warning immediately as startup if relevant */
 		if (selwatch_pctused >= WARNING_THRESHOLD) {
 			lprintf(LOG_WARNING, "SEL buffer used at %d%%, please consider clearing the SEL buffer", selwatch_pctused);
 		}
@@ -863,7 +863,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 struct ipmi_cmd ipmievd_cmd_list[] = {
 #ifdef IPMI_INTF_OPEN
-	{ ipmievd_open_main,	"open",   "Use OpenIPMI for asyncronous notification of events" },
+	{ ipmievd_open_main,	"open",   "Use OpenIPMI for asynchronous notification of events" },
 #endif
 	{ ipmievd_sel_main,	"sel",    "Poll SEL for notification of events" },
 	{ NULL }

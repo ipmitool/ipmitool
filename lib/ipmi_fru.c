@@ -3339,7 +3339,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 /* ipmi_fru_write_help() - print help text for 'write'
  *
- * retruns void
+ * returns void
  */
 void
 ipmi_fru_write_help()
@@ -3839,7 +3839,7 @@ ipmi_fru_get_multirec_size_from_file(char * pFileName,
 		return -1;
 	}
 
-	/* Retreive length */
+	/* Retrieve length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
 		((header.offset.internal * 8) < end))
 		end = (header.offset.internal * 8);
@@ -4026,7 +4026,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 
 	end = pFruInfo->size;
 
-	/* Retreive length */
+	/* Retrieve length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
 		((header.offset.internal * 8) < end))
 		end = (header.offset.internal * 8);
@@ -4049,7 +4049,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	return 0;
 }
 
-/* ipmi_fru_get_internal_use_offset -  Retreive internal use offset
+/* ipmi_fru_get_internal_use_offset -  Retrieve internal use offset
 *
 * @intf:   ipmi interface
 * @id:     fru id
@@ -4344,7 +4344,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 
 		if(fp)
 		{
-			/* Retreive file length, check if it's fits the Eeprom Size */
+			/* Retrieve file length, check if it's fits the Eeprom Size */
 			fseek(fp, 0 ,SEEK_END);
 			fileLength = ftell(fp);
 
@@ -5146,7 +5146,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		*(fru_data_new + fru_field_offset_tmp) = (0xc0 + strlen(f_string));
 		memcpy(fru_data_new + fru_field_offset_tmp + 1, f_string, strlen(f_string));
 
-		/* Copy remaing bytes in section */
+		/* Copy remaining bytes in section */
 #ifdef DBG_RESIZE_FRU
 		printf("Copying remaining of sections: %d \n",
 		 (int)((fru_data_old + header_offset + fru_section_len - 1) -
