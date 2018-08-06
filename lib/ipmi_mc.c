@@ -186,7 +186,7 @@ printf_mc_usage(void)
 	struct bitfield_data * bf;
 	lprintf(LOG_NOTICE, "MC Commands:");
 	lprintf(LOG_NOTICE, "  reset <warm|cold>");
-	lprintf(LOG_NOTICE, "  guid [smbios|rfc4122|ipmi|dump]");
+	lprintf(LOG_NOTICE, "  guid [auto|smbios|ipmi|rfc4122|dump]");
 	lprintf(LOG_NOTICE, "  info");
 	lprintf(LOG_NOTICE, "  watchdog <get|reset|off>");
 	lprintf(LOG_NOTICE, "  selftest");
@@ -495,7 +495,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
  * returns - negative number means error, positive is a ccode.
  */
 int
-_ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
+_ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -503,7 +503,7 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 		return (-3);
 	}
 
-	memset(guid, 0, sizeof(struct ipmi_guid_t));
+	memset(guid, 0, sizeof(ipmi_guid_t));
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
 	req.msg.cmd = BMC_GET_GUID;
@@ -514,11 +514,186 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 16
-			|| rsp->data_len != sizeof(struct ipmi_guid_t)) {
+			|| rsp->data_len != sizeof(ipmi_guid_t)) {
 		return (-2);
 	}
-	memcpy(guid, &rsp->data[0], sizeof(struct ipmi_guid_t));
+	memcpy(guid, &rsp->data[0], sizeof(ipmi_guid_t));
 	return 0;
+}
+
+/* A helper function to convert GUID time to time_t */
+static time_t _guid_time(uint64_t t_low, uint64_t t_mid, uint64_t t_hi)
+{
+	/* GUID time-stamp is a 60-bit value representing the
+	 * count of 100ns intervals since 00:00:00.00, 15 Oct 1582 */
+
+	const uint64_t t100ns_in_sec = 10000000LL;
+
+	/* Seconds from 15 Oct 1582 to 1 Jan 1970 00:00:00 */
+	uint64_t epoch_since_gregorian = 12219292800;
+
+	/* 100ns intervals since 15 Oct 1582 00:00:00 */
+	uint64_t gregorian = (GUID_TIME_HI(t_hi) << 48)
+	                     | (t_mid << 32)
+	                     | t_low;
+	time_t unixtime; /* We need timestamp in seconds since UNIX epoch */
+
+	gregorian /= t100ns_in_sec; /* Convert to seconds */
+	unixtime = gregorian - epoch_since_gregorian;
+
+	return unixtime;
+}
+
+#define TM_YEAR_BASE 1900
+#define EPOCH_YEAR 1970
+static bool _is_time_valid(time_t t)
+{
+	time_t t_now = time(NULL);
+	struct tm tm;
+	struct tm now;
+
+	gmtime_r(&t, &tm);
+	gmtime_r(&t_now, &now);
+
+	/* It's enought to check that the year fits in [Epoch .. now] interval */
+
+	if (tm.tm_year + TM_YEAR_BASE < EPOCH_YEAR)
+		return false;
+
+	if (tm.tm_year > now.tm_year) {
+		/* GUID timestamp can't be in future */
+		return false;
+	}
+
+	return true;
+}
+
+/** ipmi_mc_parse_guid - print-out given BMC GUID
+ *
+ * The function parses the raw guid data according to the requested encoding
+ * mode. If GUID_AUTO mode is requested, then automatic detection of encoding
+ * is attempted using the version nibble of the time_hi_and_version field of
+ * each of the supported encodings.
+ *
+ * Considering the rather random nature of GUIDs, it may happen that the
+ * version nibble is valid for multiple encodings at the same time. That's why
+ * if the version is 1 (time-based), the function will also check validity of
+ * the time stamp. If a valid time stamp is found for a given mode, the mode is
+ * considered detected and no further checks are performed. Otherwise other
+ * encodings are probed the same way. If in neither encoding the valid version
+ * nibble happened to indicate time-based version or no valid time-stamp has
+ * been found, then the last probed encoding with valid version nibble is
+ * considered detected.  If none of the probed encodings indicated a valid
+ * version nibble, then fall back to GUID_DUMP
+ *
+ * @param[in] guid - The original GUID data as received from BMC
+ * @param[in] mode - The requested mode/encoding
+ *
+ * @returns parsed GUID
+ */
+parsed_guid_t ipmi_parse_guid(void *guid, ipmi_guid_mode_t guid_mode)
+{
+	ipmi_guid_mode_t i;
+	ipmi_guid_t *ipmi_guid = guid;
+	rfc_guid_t *rfc_guid = guid;
+	parsed_guid_t parsed_guid = { 0 };
+	uint32_t t_low[GUID_REAL_MODES];
+	uint16_t t_mid[GUID_REAL_MODES];
+	uint16_t t_hi[GUID_REAL_MODES];
+	uint16_t clk[GUID_REAL_MODES];
+	time_t seconds[GUID_REAL_MODES];
+	bool detect = false;
+
+	/* Unless another mode is detected, default to dumping */
+	if (GUID_AUTO == guid_mode) {
+		detect = true;
+		guid_mode = GUID_DUMP;
+	}
+
+	/* Try to convert time using all possible methods to use
+	 * the result later if GUID_AUTO is requested */
+
+	/* For IPMI all fields are little-endian (LSB first) */
+	t_hi[GUID_IPMI] = ipmi16toh(&ipmi_guid->time_hi_and_version);
+	t_mid[GUID_IPMI] = ipmi16toh(&ipmi_guid->time_mid);
+	t_low[GUID_IPMI] = ipmi32toh(&ipmi_guid->time_low);
+	clk[GUID_IPMI] = ipmi16toh(&ipmi_guid->clock_seq_and_rsvd);
+
+	/* For RFC4122 all fields are in network byte order (MSB first) */
+	t_hi[GUID_RFC4122] = ntohs(rfc_guid->time_hi_and_version);
+	t_mid[GUID_RFC4122] = ntohs(rfc_guid->time_mid);
+	t_low[GUID_RFC4122] = ntohl(rfc_guid->time_low);
+	clk[GUID_RFC4122] = ntohs(rfc_guid->clock_seq_and_rsvd);
+
+	/* For SMBIOS time fields are little-endian (as in IPMI), the rest is
+	 * in network order (as in RFC4122) */
+	t_hi[GUID_SMBIOS] = ipmi16toh(&rfc_guid->time_hi_and_version);
+	t_mid[GUID_SMBIOS] = ipmi16toh(&rfc_guid->time_mid);
+	t_low[GUID_SMBIOS] = ipmi32toh(&rfc_guid->time_low);
+	clk[GUID_SMBIOS] = ntohs(rfc_guid->clock_seq_and_rsvd);
+
+	/* Using 0 here to allow for reordering of modes in ipmi_guid_mode_t */
+	for (i = 0; i < GUID_REAL_MODES; ++i) {
+		seconds[i] = _guid_time(t_low[i], t_mid[i], t_hi[i]);
+
+		/* If autodetection was initially requested and mode
+		 * hasn't been detected yet */
+		if (detect) {
+			guid_version_t ver = GUID_VERSION(t_hi[i]);
+			if (is_guid_version_valid(ver)) {
+				guid_mode = i;
+				if (GUID_VERSION_TIME == ver && _is_time_valid(seconds[i])) {
+					break;
+				}
+			}
+		}
+	}
+
+	if (guid_mode >= GUID_REAL_MODES) {
+		guid_mode = GUID_DUMP;
+		/* The endianness and field order are irrelevant for dump mode */
+		memcpy(&parsed_guid, guid, sizeof(ipmi_guid_t));
+		goto out;
+	}
+
+	/*
+	 * Return only a valid version in the parsed version field.
+	 * If one needs the raw value, they still may use
+	 * GUID_VERSION(parsed_guid.time_hi_and_version)
+	 */
+	parsed_guid.ver = GUID_VERSION(t_hi[guid_mode]);
+	if (parsed_guid.ver > GUID_VERSION_MAX) {
+		parsed_guid.ver = GUID_VERSION_UNKNOWN;
+	}
+
+	if (GUID_VERSION_TIME == parsed_guid.ver) {
+		parsed_guid.time = seconds[guid_mode];
+	}
+
+	if (GUID_IPMI == guid_mode) {
+		/*
+		 * In IPMI all fields are little-endian (LSB first)
+		 * That is, first byte last. Hence, swap before copying.
+		 */
+		memcpy(parsed_guid.node,
+		       array_byteswap(ipmi_guid->node, GUID_NODE_SZ),
+		       GUID_NODE_SZ);
+	} else {
+		/*
+		 * For RFC4122 and SMBIOS the node field is in network byte order.
+		 * That is first byte first. Hence, copy as is.
+		 */
+		memcpy(parsed_guid.node, rfc_guid->node, GUID_NODE_SZ);
+	}
+
+	parsed_guid.time_low = t_low[guid_mode];
+	parsed_guid.time_mid = t_mid[guid_mode];
+	parsed_guid.time_hi_and_version = t_hi[guid_mode];
+	parsed_guid.clock_seq_and_rsvd = clk[guid_mode];
+
+out:
+	parsed_guid.mode = guid_mode;
+	return parsed_guid;
 }
 
 /* ipmi_mc_print_guid - print-out given BMC GUID
@@ -533,18 +708,12 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 static int
 ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 {
-	/* Field order is different for RFC4122/SMBIOS and for IPMI */
-	struct ipmi_guid_t ipmi_guid;
-	struct rfc_guid_t *rfc_guid; /* Alias pointer */
+	/* Allocate a byte array for ease of use in dump mode */
+	uint8_t guid_data[sizeof(ipmi_guid_t)];
 
-	uint8_t node[GUID_NODE_SZ]; /* MSB first */
 	/* These are host architecture specific */
-	uint16_t clock_seq_and_rsvd;
-	uint64_t time_hi_and_version;
-	uint64_t time_mid;
-	uint64_t time_low;
+	parsed_guid_t guid;
 
-	guid_version_t guid_ver;
 	const char *guid_ver_str[GUID_VERSION_COUNT] = {
 		[GUID_VERSION_UNKNOWN] = "Unknown/unsupported",
 		[GUID_VERSION_TIME] = "Time-based",
@@ -554,95 +723,70 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 		[GUID_VERSION_SHA1] = "Name-based using SHA-1"
 	};
 
+	const char *guid_mode_str[GUID_TOTAL_MODES] = {
+		[GUID_IPMI] = "IPMI",
+		[GUID_RFC4122] = "RFC4122",
+		[GUID_SMBIOS] = "SMBIOS",
+		[GUID_AUTO] = "Automatic (if you see this, report a bug)",
+		[GUID_DUMP] = "Unknown (data dumped)"
+	};
+
 	char tbuf[40] = { 0 };
 	struct tm *tm;
 	int rc;
 
-	rc = _ipmi_mc_get_guid(intf, &ipmi_guid);
+	rc = _ipmi_mc_get_guid(intf, (ipmi_guid_t *)guid_data);
 	if (eval_ccode(rc) != 0) {
 		return (-1);
 	}
 
-	printf("System GUID  : ");
-	if (GUID_DUMP == guid_mode) {
+	printf("System GUID   : ");
+
+	guid = ipmi_parse_guid(guid_data, guid_mode);
+	if (GUID_DUMP == guid.mode) {
 		size_t i;
-		for (i = 0; i < sizeof(ipmi_guid); ++i) {
-			printf("%02X", ((uint8_t *)&ipmi_guid)[i]);
+		for (i = 0; i < sizeof(guid_data); ++i) {
+			printf("%02X", guid_data[i]);
 		}
 		printf("\n");
 		return 0;
 	}
 
-	if (GUID_IPMI == guid_mode) {
-		/* In IPMI all fields are little-endian (LSB first) */
-		memcpy(node,
-		       array_byteswap(ipmi_guid.node, GUID_NODE_SZ),
-		       GUID_NODE_SZ);
-		clock_seq_and_rsvd = ipmi16toh(&ipmi_guid.clock_seq_and_rsvd);
-		time_low = ipmi32toh(&ipmi_guid.time_low);
-		time_mid = ipmi16toh(&ipmi_guid.time_mid);
-		time_hi_and_version = ipmi16toh(&ipmi_guid.time_hi_and_version);
-	} else {
-		/* For RFC4122 all fields are in network byte order (MSB first) */
-		rfc_guid = (struct rfc_guid_t *)(&ipmi_guid);
-		memcpy(node,
-		       rfc_guid->node,
-		       GUID_NODE_SZ);
-		clock_seq_and_rsvd = ntohs(rfc_guid->clock_seq_and_rsvd);
-		if (GUID_RFC4122 == guid_mode) {
-			time_low = ntohl(rfc_guid->time_low);
-			time_mid = ntohs(rfc_guid->time_mid);
-			time_hi_and_version = ntohs(rfc_guid->time_hi_and_version);
-		} else {
-			/* For SMBIOS time fields are little-endian (as in IPMI) */
-			time_low = ipmi32toh(&rfc_guid->time_low);
-			time_mid = ipmi16toh(&rfc_guid->time_mid);
-			time_hi_and_version = ipmi16toh(&rfc_guid->time_hi_and_version);
-		}
-	}
-
 	printf("%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-	       (int)time_low, (int)time_mid, (int)time_hi_and_version,
-	       clock_seq_and_rsvd,
-	       node[0], node[1], node[2], node[3], node[4], node[5]);
+	       (int)guid.time_low,
+	       (int)guid.time_mid,
+	       (int)guid.time_hi_and_version,
+	       guid.clock_seq_and_rsvd,
+	       guid.node[0], guid.node[1], guid.node[2],
+	       guid.node[3], guid.node[4], guid.node[5]);
 
-	guid_ver = GUID_VERSION(time_hi_and_version);
-
-	if (guid_ver > GUID_VERSION_MAX) {
-		/* Reset any unsupported value fto UNKNOWN */
-		guid_ver = GUID_VERSION_UNKNOWN;
+	if (GUID_AUTO == guid_mode) {
+		/* ipmi_parse_guid() returns only valid modes in guid.ver */
+		printf("GUID Encoding : %s", guid_mode_str[guid.mode]);
+		if (GUID_IPMI != guid.mode) {
+			printf(" (WARNING: IPMI Specification violation!)");
+		}
+		printf("\n");
 	}
 
-	printf("GUID Version : %s", guid_ver_str[guid_ver]);
-	if (GUID_VERSION_UNKNOWN == guid_ver)
-		printf(" (%d)", GUID_VERSION((int)time_hi_and_version));
-	printf("\n");
+	printf("GUID Version  : %s", guid_ver_str[guid.ver]);
 
-	if (GUID_VERSION_TIME == guid_ver) {
-		/* GUID time-stamp is a 60-bit value representing the
-		 * count of 100ns intervals since 00:00:00.00, 15 Oct 1582 */
-
-		const uint64_t t100ns_in_sec = 10000000LL;
-
-		/* Seconds from 15 Oct 1582 to 1 Jan 1970 00:00:00 */
-		uint64_t epoch_since_gregorian = 12219292800;
-
-		/* 100ns intervals since 15 Oct 1582 00:00:00 */
-		uint64_t gregorian = (GUID_TIME_HI(time_hi_and_version) << 48)
-		                     | (time_mid << 32)
-		                     | time_low;
-		time_t unixtime; /* We need timestamp in seconds since UNIX epoch */
-
-		gregorian /= t100ns_in_sec; /* Convert to seconds */
-		unixtime = gregorian - epoch_since_gregorian;
-
+	switch (guid.ver) {
+	case GUID_VERSION_UNKNOWN:
+		printf(" (%d)\n", GUID_VERSION((int)guid.time_hi_and_version));
+		break;
+	case GUID_VERSION_TIME:
 		if(time_in_utc)
-			tm = gmtime(&unixtime);
+			tm = gmtime(&guid.time);
 		else
-			tm = localtime(&unixtime);
+			tm = localtime(&guid.time);
 		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
-		printf("Timestamp    : %s\n", tbuf);
+		printf("\nTimestamp     : %s\n", tbuf);
+		break;
+	default:
+		printf("\n");
 	}
+
 	return 0;
 }
 
@@ -1177,17 +1321,21 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_mc_get_deviceid(intf);
 	}
 	else if (strncmp(argv[0], "guid", 4) == 0) {
-		/* Most implementations like AMI MegaRAC do it the SMBIOS way.
-		 * This is the legacy behavior we don't want to break yet. */
-		ipmi_guid_mode_t guid_mode = GUID_SMBIOS;
+		ipmi_guid_mode_t guid_mode = GUID_AUTO;
 
 		/* Allow for 'rfc' and 'rfc4122' */
 		if (argc > 1) {
 			if (!strncmp(argv[1], "rfc", 3)) {
 				guid_mode = GUID_RFC4122;
 			}
+			else if (!strcmp(argv[1], "smbios")) {
+				guid_mode = GUID_SMBIOS;
+			}
 			else if (!strcmp(argv[1], "ipmi")) {
 				guid_mode = GUID_IPMI;
+			}
+			else if (!strcmp(argv[1], "auto")) {
+				guid_mode = GUID_AUTO;
 			}
 			else if (!strcmp(argv[1], "dump")) {
 				guid_mode = GUID_DUMP;

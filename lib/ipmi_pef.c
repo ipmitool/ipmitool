@@ -1143,7 +1143,7 @@ ipmi_pef2_get_info(struct ipmi_intf *intf)
 {
 	struct pef_capabilities pcap;
 	struct pef_cfgparm_system_guid psys_guid;
-	struct ipmi_guid_t guid;
+	ipmi_guid_t guid;
 	int rc;
 	uint8_t *guid_ptr = NULL;
 	uint8_t policy_table_size;

@@ -33,6 +33,8 @@
 #ifndef IPMI_MC_H
 #define IPMI_MC_H
 
+#include <stdbool.h>
+
 #include <ipmitool/ipmi.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_strings.h>
@@ -100,12 +102,28 @@ struct ipm_devid_rsp {
 /* There are lots of BMC implementations that don't follow the IPMI
  * specification for GUID encoding. Some send data encoded as in
  * RFC4122, some follow SMBIOS specification. We support all users
- * of those buggy implementations here */
+ * of those buggy implementations here.
+ *
+ * Most implementations like AMI MegaRAC do it the SMBIOS way.
+ * This is the legacy behavior we don't want to break yet.
+ * That's why the last real mode is GUID_SMBIOS. If automatic
+ * detection finds more than one possible candidate, and
+ * GUID_SMBIOS is one of them, then it will take precedence.
+ *
+ * For the same reason GUID_IPMI is right before GUID_SMBIOS.
+ * If both RFC4122 and IPMI encodings have a valid version
+ * field, then IPMI takes precedence.
+ */
 typedef enum {
+	/* Real modes, in reverse precedence order */
+	GUID_RFC4122,
 	GUID_IPMI,
 	GUID_SMBIOS,
-	GUID_RFC4122,
-	GUID_DUMP
+	GUID_REAL_MODES, /* Real mode count*/
+	/* Pseudo modes start here */
+	GUID_AUTO = GUID_REAL_MODES, /* Automatically detect mode */
+	GUID_DUMP, /* Just dump the data */
+	GUID_TOTAL_MODES
 } ipmi_guid_mode_t;
 
 #define GUID_NODE_SZ 6
@@ -129,12 +147,17 @@ typedef enum {
 	GUID_VERSION_COUNT /* The number of supported versions */
 } guid_version_t;
 
+static inline bool is_guid_version_valid(guid_version_t ver)
+{
+	return (ver > GUID_VERSION_UNKNOWN) && (ver <= GUID_VERSION_MAX);
+}
+
 /* The structure follows IPMI v2.0, rev 1.1
  * See section 20.8 */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct ipmi_guid_t {
+typedef struct {
 	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is LSB */
 	union {
 		struct {
@@ -146,7 +169,7 @@ struct ipmi_guid_t {
 	uint16_t time_hi_and_version; /* timestamp high field and version number */
 	uint16_t time_mid; /* timestamp middle field */
 	uint32_t time_low; /* timestamp low field */
-} ATTRIBUTE_PACKING;
+} ATTRIBUTE_PACKING ipmi_guid_t;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
@@ -156,7 +179,7 @@ struct ipmi_guid_t {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct rfc_guid_t {
+typedef struct {
 	uint32_t time_low; /* timestamp low field */
 	uint16_t time_mid; /* timestamp middle field */
 	uint16_t time_hi_and_version; /* timestamp high field and version number */
@@ -168,12 +191,28 @@ struct rfc_guid_t {
 		uint16_t clock_seq_and_rsvd;
 	};
 	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is MSB */
-} ATTRIBUTE_PACKING;
+} ATTRIBUTE_PACKING rfc_guid_t;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-int _ipmi_mc_get_guid(struct ipmi_intf *, struct ipmi_guid_t *);
+/* Parsed GUID structure */
+typedef struct {
+	uint8_t node[GUID_NODE_SZ]; /* MSB first */
+	/* These are architecture-specific for easy output with printf() */
+	uint16_t clock_seq_and_rsvd;
+	uint64_t time_hi_and_version;
+	uint64_t time_mid;
+	uint64_t time_low;
+	/* These are the parsed values */
+	time_t time;
+	ipmi_guid_mode_t mode;
+	guid_version_t ver; /* Version from time_hi_and_version, if valid */
+} parsed_guid_t;
+
+parsed_guid_t ipmi_parse_guid(void *guid, ipmi_guid_mode_t guid_mode);
+
+int _ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid);
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)

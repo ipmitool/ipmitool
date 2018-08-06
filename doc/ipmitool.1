@@ -2023,17 +2023,48 @@ Display the Management Controller Globally Unique IDentifier.
 
 .RS
 .TP
-\fIsmbios\fP
+\fIauto\fP
 .br
 
-This is the default behavior for ipmitool for the sake of compatibility
-with old versions and broken BMC implementations whose number is legion.
+This is the default behavior for
+.BR ipmitool (1).
+
+Try to automatically detect the encoding based on the value of the
+version field and (for version 1) the timestamp. The version is
+considered valid if it is 1 through 5, and the timestamp is valid
+if the year is past or equal to UNIX Epoch (1970) and is before or
+equal to the current year.
+
+If multiple encodings happen to have valid version fields, then
+precedence takes the one with version 1 and a valid timestamp. If
+neither one has that, then the precedence order is as follows:
+\fIsmbios\fP, \fIipmi\fP, \fIrfc4122\fP.
+
+If neither encoding yields a valid version field, then
+.BR ipmitool (1)
+defaults to \fIdump\fP mode.
+
+If this option is in use, then
+.BR ipmitool (1)
+will also print out the detected encoding and warn
+regarding IPMI specification violation if the encoding isn't \fIipmi\fP.
+
+.TP
+\fIsmbios\fP
+.br
 
 Decode GUID as if it was sent by BMC as prescribed by SMBIOS specification.
 
 \fBNOTE:\fR This is a violation of IPMI specification, but many BMC implementations do
 it this way. If your BMC's GUID is shown correctly using this option, you
 may want to inform your BMC manufacturer that they have a bug.
+
+.TP
+\fIipmi\fP
+.br
+
+Decode GUID according to IPMI specification. It MUST show the correct GUID.
+If it doesn't, try other options and inform your BMC manufacturer of the bug.
 
 .TP
 \fIrfc4122\fP or \fIrfc\fP
@@ -2044,13 +2075,6 @@ Decode GUID as if it was sent by BMC as prescribed by RFC4122 specification.
 \fBNOTE:\fR This is a violation of IPMI specification.
 If your BMC's GUID is shown correctly using this option, you
 may want to inform your BMC manufacturer that they have a bug.
-
-.TP
-\fIipmi\fP
-.br
-
-Decode GUID according to IPMI specification. It MUST show the correct GUID.
-If it doesn't, try other options above and inform your BMC manufacturer of the bug.
 
 .TP
 \fIdump\fP
