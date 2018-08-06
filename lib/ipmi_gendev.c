@@ -376,7 +376,7 @@ ipmi_gendev_write_file(
       
       if(fp)
       {
-         /* Retreive file length, check if it's fits the Eeprom Size */
+         /* Retrieve file length, check if it's fits the Eeprom Size */
          fseek(fp, 0 ,SEEK_END);
          fileLength = ftell(fp);
 

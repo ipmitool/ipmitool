@@ -225,7 +225,7 @@ iana_string(uint32_t iana)
  * ipmi_1_5_authtypes
  *
  * Create a string describing the supported authentication types as 
- * specificed by the parameter n
+ * specified by the parameter n
  */
 static const char *
 ipmi_1_5_authtypes(uint8_t n)

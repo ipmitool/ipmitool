@@ -264,7 +264,7 @@ print_watchdog_usage(void)
 
 /* ipmi_mc_get_enables  -  print out MC enables
  *
- * @intf:	ipmi inteface
+ * @intf:	ipmi interface
  *
  * returns 0 on success
  * returns -1 on error
@@ -301,7 +301,7 @@ ipmi_mc_get_enables(struct ipmi_intf * intf)
 
 /* ipmi_mc_set_enables  -  set MC enable flags
  *
- * @intf:	ipmi inteface
+ * @intf:	ipmi interface
  * @argc:	argument count
  * @argv:	argument list
  *
@@ -612,7 +612,7 @@ static int ipmi_mc_get_selftest(struct ipmi_intf * intf)
 			printf(" -> SEL device not accessible\n");
 		}
 		if (sft_res->test & IPM_SELFTEST_SDR_ERROR) {
-			printf(" -> SDR repository not accesible\n");
+			printf(" -> SDR repository not accessible\n");
 		}
 		if (sft_res->test & IPM_SELFTEST_FRU_ERROR) {
 			printf("FRU device not accessible\n");

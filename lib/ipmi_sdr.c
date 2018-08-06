@@ -137,8 +137,8 @@ sdr_sensor_has_analog_reading(struct ipmi_intf *intf,
 	 * But... HP didn't interpret this as meaning that "Only Threshold
 	 *        Sensors" can provide analog readings.  So, HP packed analog
 	 *        readings into some of their non-Threshold Sensor.   There is
-	 *	  nothing that explictly prohibits this in the spec, so if
-	 *	  an Analog reading is available in a Non-Threshod sensor and
+	 *	  nothing that explicitly prohibits this in the spec, so if
+	 *	  an Analog reading is available in a Non-Threshold sensor and
 	 *	  there are units specified for identifying the reading then
 	 *	  we do an analog conversion even though the sensor is
 	 *	  non-Threshold.   To be safe, we provide this extension for
@@ -690,7 +690,7 @@ ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf, uint8_t sensor,
 
 /* ipmi_sdr_get_thresh_status  -  threshold status indicator
  *
- * @rsp:		response from Get Sensor Reading comand
+ * @rsp:		response from Get Sensor Reading command
  * @validread:	validity of the status field argument
  * @invalidstr:	string to return if status field is not valid
  *
@@ -755,7 +755,7 @@ ipmi_sdr_get_thresh_status(struct sensor_reading *sr, const char *invalidstr)
 	return "ok";
 }
 
-/* ipmi_sdr_get_header  -  retreive SDR record header
+/* ipmi_sdr_get_header  -  retrieve SDR record header
  *
  * @intf:	ipmi interface
  * @itr:	sdr iterator
@@ -858,7 +858,7 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 	return &sdr_rs;
 }
 
-/* ipmi_sdr_get_next_header  -  retreive next SDR header
+/* ipmi_sdr_get_next_header  -  retrieve next SDR header
  *
  * @intf:	ipmi interface
  * @itr:	sdr iterator

@@ -194,7 +194,7 @@ struct ipmi_ek_amc_p2p_connectivity_record{
    struct fru_picmgext_amc_channel_desc_record * ch_desc;
    unsigned char link_desc_count;
    struct fru_picmgext_amc_link_desc_record * link_desc;
-   int * matching_result; /*For link descriptor comparision*/
+   int * matching_result; /*For link descriptor comparison*/
 };
 
 /*****************************************************************************
@@ -451,7 +451,7 @@ ipmi_ek_get_file_type(char *argument)
 *
 * Global: None
 *
-* Return:   OK_STATUS as succes or ERROR_STATUS as error
+* Return:   OK_STATUS as success or ERROR_STATUS as error
 *
 ***************************************************************************/
 int
@@ -590,7 +590,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 			for (i = 0; i < (argc-1); i++) {
 				file_type[i] = ipmi_ek_get_file_type (argv[index]);
 				if (file_type[i] == ERROR_STATUS) {
-					/* display the first 2 charactors (file type) of argument */
+					/* display the first 2 characters (file type) of argument */
 					lprintf(LOG_ERR, "Invalid file type: %c%c\n",
 							argv[index][0],
 							argv[index][1]);
@@ -725,7 +725,7 @@ ipmi_ekanalyzer_print(int argc, char *opt, char **filename, int *file_type)
 						}
 						return_value = ipmi_ek_display_carrier_connectivity(list_record[i]);
 					} else if (list_record[i]->data[PICMG_ID_OFFSET] == FRU_AMC_CARRIER_INFO) {
-						/*See AMC.0 specification Table3-3 for mor detail*/
+						/*See AMC.0 specification Table3-3 for more detail*/
 						#define COUNT_OFFSET 6
 						if (first_data) {
 							printf("From Carrier file: %s\n", filename[index_name[i]]);
@@ -1940,12 +1940,12 @@ ipmi_ek_compare_link_descriptor(
 *
 * Function name: ipmi_ek_compare_asym
 *
-* Description: This function compares 2 asymetric match of 2
+* Description: This function compares 2 asymmetric match of 2
 *               amc link descriptors
 *
 * Restriction: None
 *
-* Input:      asym[COMPARE_CANDIDATE]: Contain 2 asymetric match for comparison
+* Input:      asym[COMPARE_CANDIDATE]: Contain 2 asymmetric match for comparison
 *
 * Output: None
 *
@@ -2056,7 +2056,7 @@ ipmi_ek_compare_number_of_enable_port(
 *                 destination (its value = "To"). ( it is set to "" if it is not
 *                 a source nor destination
 *        link_desc: AMC link descriptor
-*        asym:  asymetric match
+*        asym:  asymmetric match
 *
 * Output: None
 *
@@ -2348,7 +2348,7 @@ ipmi_ek_get_resource_descriptor(int port_count, int index,
 *
 * Global: None
 *
-* Return: Return OK_STATUS on sucess, ERROR_STATUS on error
+* Return: Return OK_STATUS on success, ERROR_STATUS on error
 *
 ***************************************************************************/
 static int
@@ -2722,7 +2722,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	}
 	(*board_length)--;
 
-	/* Bit 5:0 of Board Mfg type represent legnth */
+	/* Bit 5:0 of Board Mfg type represent length */
 	size_board = (len & 0x3f);
 	if (size_board == 0) {
 		printf("%s: None\n", board_type);
@@ -3421,7 +3421,7 @@ ipmi_ek_display_board_p2p_record(struct ipmi_ek_multi_header *record)
 				printf("ShMC Cross-connect (two-pair)\n");
 				break;
 			default:
-				printf("Unknwon\n");
+				printf("Unknown\n");
 				break;
 			}
 		} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_ETHERNET) {
@@ -3436,17 +3436,17 @@ ipmi_ek_display_board_p2p_record(struct ipmi_ek_multi_header *record)
 				printf("FC-PI\n");
 				break;
 			default:
-				printf("Unknwon\n");
+				printf("Unknown\n");
 				break;
 			}
 		} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_INFINIBAND) {
-			printf("Unknwon\n");
+			printf("Unknown\n");
 		} else if (d->type == FRU_PICMGEXT_LINK_TYPE_FABRIC_STAR) {
-			printf("Unknwon\n");
+			printf("Unknown\n");
 		} else if (d->type == FRU_PICMGEXT_LINK_TYPE_PCIE) {
-			printf("Unknwon\n");
+			printf("Unknown\n");
 		} else {
-			printf("Unknwon\n");
+			printf("Unknown\n");
 		}
 		printf("\tLink Type:\t\t0x%02x - ", d->type);
 		if (d->type == 0 || d->type == 0xff) {
@@ -4030,7 +4030,7 @@ ipmi_ek_display_clock_config_record(struct ipmi_ek_multi_header *record)
 *
 * Restriction: None
 *
-* Input/Ouput: filename1: name of the file that contain FRU binary data
+* Input/Output: filename1: name of the file that contain FRU binary data
 *        record: a pointer to current record
 *        list_head: a pointer to header of the list
 *        list_last: a pointer to tale of the list
@@ -4144,7 +4144,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 *
 * Function name: ipmi_ek_add_record2list
 *
-* Description: this function adds a sigle FRU multi record to a linked list of
+* Description: this function adds a single FRU multi record to a linked list of
 *              FRU multi record.
 *
 * Restriction: None
@@ -4184,7 +4184,7 @@ ipmi_ek_add_record2list(struct ipmi_ek_multi_header **record,
 *
 * Function name: ipmi_ek_remove_record_from_list
 *
-* Description: this function removes a sigle FRU multi record from a linked
+* Description: this function removes a single FRU multi record from a linked
 *              list of FRU multi record.
 *
 * Restriction: None

@@ -564,7 +564,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	if (rec->sel_type.standard_type.event_type != 0x6F) {
 		return NULL;
 	}
-	/* Allocate mem for te Description string */
+	/* Allocate mem for the Description string */
 	desc = malloc(sizeof(char) * SIZE_OF_DESC);
 	if (desc == NULL) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
@@ -704,7 +704,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 
 /*
  * Function 	: Decoding the SEL OEM Bytes for the DELL Platforms.
- * Description  : The below fucntion will decode the SEL Events OEM Bytes for the Dell specific	Sensors only.
+ * Description  : The below function will decode the SEL Events OEM Bytes for the Dell specific Sensors only.
  * The below function will append the additional information Strings/description to the normal sel desc.
  * With this the SEL will display additional information sent via OEM Bytes of the SEL Record.
  * NOTE		: Specific to DELL Platforms only.
@@ -737,7 +737,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	if (0x6F == rec->sel_type.standard_type.event_type)
 		{
 		sensor_type = rec->sel_type.standard_type.sensor_type;
-		/* Allocate mem for te Description string */
+		/* Allocate mem for the Description string */
 		desc = (char*)malloc(SIZE_OF_DESC);
 		if(NULL == desc)
 			return NULL;
@@ -895,11 +895,11 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					if(SENSOR_TYPE_EVT_LOG == sensor_type)
 					{
 						if(0x03 == (data1 & MASK_LOWER_NIBBLE)) 
-							snprintf(desc,SIZE_OF_DESC,"All Even Logging Dissabled");
+							snprintf(desc,SIZE_OF_DESC,"All Even Logging Disabled");
 					}
 				}
 				/* 
- 				 * Based on the above error, we need to find whcih memory slot or 
+ 				 * Based on the above error, we need to find which memory slot or
  				 * Card has got the Errors/Sel Generated.
  				 */
 				if(data1 & OEM_CODE_IN_BYTE2 ) 
@@ -1041,7 +1041,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 				}	
 				
 			break;
-						/* This Event is for BMC to Othe Hardware or CPU . */
+						/* This Event is for BMC to other Hardware or CPU . */
 			case SENSOR_TYPE_VER_CHANGE:
 				if((0x02 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
 				{

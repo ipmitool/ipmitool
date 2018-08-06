@@ -655,7 +655,7 @@ serial_bm_build_msg(const struct ipmi_intf * intf,
 			/* inner send message request is further */
 			inner_rq = (outer_rq + 1);
 		} else {
-			/* there is only outer send message reuest */
+			/* there is only outer send message request */
 			inner_rq = outer_rq;
 		}
 

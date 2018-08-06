@@ -530,7 +530,7 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 	}
 	if (rc == HPMFWUPG_SUCCESS) {
 		if (option & VIEW_MODE) {
-		/* Dont display anything here in case we are just viewing it */
+		/* Don't display anything here in case we are just viewing it */
 		lprintf(LOG_NOTICE," ");
 		} else if (option & COMPARE_MODE) {
 			lprintf(LOG_NOTICE,
@@ -540,7 +540,7 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 					"\nFirmware upgrade procedure successful\n");
 		}
 	} else if (option & VIEW_MODE) {
-		/* Dont display anything here in case we are just viewing it */
+		/* Don't display anything here in case we are just viewing it */
 		lprintf(LOG_NOTICE," ");
 	} else if (option & COMPARE_MODE) {
 		lprintf(LOG_NOTICE,
@@ -649,7 +649,7 @@ HpmfwupgPreparationStage(struct ipmi_intf *intf,
 	if (rc != HPMFWUPG_SUCCESS) {
 		/* Giving one more chance to user to check whether its OK to continue even if the
 		 * product ID does not match. This is helpful as sometimes we just want to update
-		 * and dont care whether we have a different product Id. If the user says NO then
+		 * and don't care whether we have a different product Id. If the user says NO then
 		 * we need to just bail out from here
 		 */
 		if (!((option & FORCE_MODE) || (option & VIEW_MODE))) {
@@ -721,7 +721,7 @@ HpmfwupgPreparationStage(struct ipmi_intf *intf,
 					"\n    Some components present in the image file are not supported by the IPMC");
 			return HPMFWUPG_ERROR;
 		}
-		/* Make sure the upgrade is desirable rigth now */
+		/* Make sure the upgrade is desirable right now */
 		if (pFwupgCtx->targetCap.GlobalCapabilities.bitField.fwUpgUndesirable == 1) {
 			lprintf(LOG_NOTICE, "\n    Upgrade undesirable at this moment");
 			return HPMFWUPG_ERROR;
@@ -1300,7 +1300,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		HpmDisplayUpgrade(1,0,0,0);
 		if ((option & COMPARE_MODE)
 				&& !pFwupgCtx->genCompProp[pFwupgCtx->componentId].GeneralCompProperties.bitfield.comparisonSupport) {
-			printf("|    |Comparison isn't supported for given compenent.                        |\n");
+			printf("|    |Comparison isn't supported for given component.                        |\n");
 		}
 		*pImagePtr = pDataInitial + firmwareLength;
 	}
@@ -1503,7 +1503,7 @@ HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 				pCtx->resp.GlobalCapabilities.bitField.autRollbackOverride ? 'y' : 'n');
 		lprintf(LOG_NOTICE, "IPMC degraded...........[%c]   ",
 				pCtx->resp.GlobalCapabilities.bitField.ipmcDegradedDurinUpg ? 'y' : 'n');
-		lprintf(LOG_NOTICE, "Defered activation......[%c]   ",
+		lprintf(LOG_NOTICE, "Deferred activation.....[%c]   ",
 				pCtx->resp.GlobalCapabilities.bitField.deferActivation ? 'y' : 'n');
 		lprintf(LOG_NOTICE, "Service affected........[%c]   ",
 				pCtx->resp.GlobalCapabilities.bitField.servAffectDuringUpg ? 'y' : 'n');
@@ -2137,8 +2137,8 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	} else {
 		/* keeping the inaccessTimeout to 60 seconds results in almost 2900 retries
 		 * So if the target is not available it will be retrying the command for 2900
-		 * times which is not effecient -So reducing the Timout to 5 seconds which is
-		 * almost 200 retries if it continuously recieves 0xC3 as completion code.
+		 * times which is not efficient -So reducing the Timeout to 5 seconds which is
+		 * almost 200 retries if it continuously receives 0xC3 as completion code.
 		 */
 		inaccessTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
 		upgradeTimeout  = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
@@ -2275,7 +2275,7 @@ HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 					upgradeTimeout);
 		}
 	} else {
-		/* Try to retreive from Caps */
+		/* Try to retrieve from Caps */
 		struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
 		if(HpmfwupgGetTargetUpgCapabilities(intf, &targetCapCmd) != HPMFWUPG_SUCCESS) {
 			upgradeTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;

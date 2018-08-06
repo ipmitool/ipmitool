@@ -127,7 +127,7 @@
 #define IPMI_INTEGRITY_MD5_128      0x03
 #define IPMI_INTEGRITY_HMAC_SHA256_128 0x04
 
-/* From table 13-19 of the IPMI v2 specfication */
+/* From table 13-19 of the IPMI v2 specification */
 #define IPMI_CRYPT_NONE             0x00
 #define IPMI_CRYPT_AES_CBC_128      0x01
 #define IPMI_CRYPT_XRC4_128         0x02

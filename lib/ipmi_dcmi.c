@@ -98,7 +98,7 @@ const struct dcmi_cmd dcmi_cmd_vals[] = {
 	DCMI_CMD_END(0xFF)
 };
 
-/* get capabilites */
+/* get capabilities */
 const struct dcmi_cmd dcmi_capable_vals[] = {
 	{ 0x01, "platform",             "Lists the system capabilities" },
 	{ 0x02, "mandatory_attributes", "Lists SEL, identification and"
@@ -571,7 +571,7 @@ const struct valstr nm_ccode_vals[] = {
 	{ 0x8B, "Invalid value for Aggressive CPU correction field" },
 	{ 0xA1, "No policy is currently limiting for the specified domain ID" },
 	{ 0xC4, "No space available" },
-	{ 0xD4, "Insufficient privledge level due wrong responder LUN" },
+	{ 0xD4, "Insufficient privilege level due wrong responder LUN" },
 	{ 0xD5, "Policy exists and param unchangeable while enabled" },
 	{ 0xD6, "Command subfunction disabled or unavailable" },
 	{ 0xFF, NULL },
@@ -1314,7 +1314,7 @@ ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
  *
  * @intf:   ipmi interface handler
  * @isnsr:  entity ID
- * @offset:   offset (Entity instace start)
+ * @offset:   offset (Entity instance start)
  * 
  * returns ipmi_rs structure
  */
@@ -1328,7 +1328,7 @@ ipmi_dcmi_discvry_snsr(struct ipmi_intf * intf, uint8_t isnsr, uint8_t offset)
 	msg_data[1] = 0x01; /* Senser Type = Temp (01h) */
 	msg_data[2] = isnsr; /* Sensor Number */
 	msg_data[3] = 0x00; /* Entity Instance, set to read all instances */
-	msg_data[4] = offset; /* Entity instace start */
+	msg_data[4] = offset; /* Entity instance start */
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
@@ -1528,7 +1528,7 @@ ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
 	msg_data[0] = IPMI_DCMI; /* Group Extension Identification */
 	msg_data[1] = entityID; /* Inlet Temperature DCMI ID*/
 	msg_data[2] = entityInst; /* Entity Instance */
-	/* persistance and actions or disabled if no actions */
+	/* persistence and actions or disabled if no actions */
 	msg_data[3] = (((persistanceFlag ? 1 : 0) << 7) |
 	               ((actionHardPowerOff? 1 : 0) << 6) |
 	               ((actionLogToSEL ? 1 : 0) << 5));
@@ -3162,13 +3162,13 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 			return -1;
 		}
 		switch (param) {
-		case 0x01: /* channnel */
+		case 0x01: /* channel */
 			if (str2uchar(argv[1], &chan) < 0) {
 				lprintf(LOG_ERR,"Alert Lan chan must be a positive integer.\n");
 				return -1;
 			}
 			if (action == 0x03)  /* Clear */
-				chan |= 0x80;   /* deactivate alert reciever */
+				chan |= 0x80;   /* deactivate alert receiver */
 			break;
 		case 0x02:  /* dest */
 			if (str2uchar(argv[1], &dest) < 0) {
@@ -3239,7 +3239,7 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 	if ((argv[0] == NULL) || (argc < 3) ||
 	    ((action = str2val2(argv[0], nm_thresh_cmds)) == 0xFF))
 	{
-		print_strs(nm_thresh_cmds, "Theshold commands", LOG_ERR, 0);
+		print_strs(nm_thresh_cmds, "Threshold commands", LOG_ERR, 0);
 		return -1;
 	}
 	memset(&thresh, 0, sizeof(thresh));

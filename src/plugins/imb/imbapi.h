@@ -261,7 +261,7 @@ typedef struct {
 #define		SD_POWER_OFF				2
 #pragma pack(1)
 /*
- * This is the generic IMB packet format, the final checksum cant be
+ * This is the generic IMB packet format, the final checksum can't be
  * represented in this structure and will show up as the last data byte
  */
 typedef struct {
@@ -318,7 +318,7 @@ typedef struct {
 } ImbRequest;
 typedef struct {
    DWORD	flags;			/* request flags*/
-#define NO_RESPONSE_EXPECTED	0x01	/*dont wait around for an IMB response*/
+#define NO_RESPONSE_EXPECTED	0x01	/*don't wait around for an IMB response*/
    DWORD	timeOut;		/* in uSec units*/
    ImbRequest	req;			/* message buffer*/
 } ImbRequestBuffer;
@@ -541,7 +541,7 @@ typedef struct
 */
 #define ASYNC_SEQ_START		0
 /*
- * This is the generic IMB packet format, the final checksum cant be
+ * This is the generic IMB packet format, the final checksum can't be
  * represented in this structure and will show up as the last data byte
  */
 /*

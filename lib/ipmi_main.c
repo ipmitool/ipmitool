@@ -176,7 +176,7 @@ ipmi_cmd_print(struct ipmi_cmd * cmdlist)
  * @argc:	command argument count
  * @argv:	command argument list
  *
- * returns value from func() of that commnad if found
+ * returns value from func() of that command if found
  * returns -1 if command is not found
  */
 int

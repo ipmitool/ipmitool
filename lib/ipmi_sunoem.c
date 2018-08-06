@@ -434,14 +434,14 @@ sunoem_led_set_byentity(struct ipmi_intf * intf, uint8_t entity_id,
  *                       Access Address" field, 0x20 if the LED is local
  * [byte 3]  hwInfo      The OEM field from the SDR record
  * [byte 4]  force       1 = directly access the device
- *                       0 = go thru its controller
+ *                       0 = go through its controller
  *                       Ignored if LED is local
  *
  * The format below is for Sun Blade Modular systems only
  * [byte 4]  entityID    The entityID field from the SDR record
  * [byte 5]  entityIns   The entityIns field from the SDR record
  * [byte 6]  force       1 = directly access the device
- *                       0 = go thru its controller
+ *                       0 = go through its controller
  *                       Ignored if LED is local
  */
 static int
@@ -624,7 +624,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
  * [byte 3]  hwInfo      The OEM field from the SDR record
  * [byte 4]  mode        LED Mode: OFF, ON, STANDBY, SLOW, FAST
  * [byte 5]  force       TRUE - directly access the device
- *                       FALSE - go thru its controller
+ *                       FALSE - go through its controller
  *                       Ignored if LED is local
  * [byte 6]  role        Used by BMC for authorization purposes
  *
@@ -632,7 +632,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
  * [byte 5]  entityID    The entityID field from the SDR record
  * [byte 6]  entityIns   The entityIns field from the SDR record
  * [byte 7]  force       TRUE - directly access the device
- *                       FALSE - go thru its controller
+ *                       FALSE - go through its controller
  *                       Ignored if LED is local
  * [byte 8]  role        Used by BMC for authorization purposes
  *
@@ -1465,7 +1465,7 @@ typedef struct
 	/*
 	 * When adding new fields (using the spare bytes),
 	 * add it immediately after the spare field to
-	 * ensure backward compatability.
+	 * ensure backward compatibility.
 	 *
 	 * e.g.   char version[40];
 	 *        unsigned char spare[11];

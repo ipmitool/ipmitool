@@ -129,7 +129,7 @@ struct power_reading {
     uint8_t state;
 } __attribute__ ((packed));
 
-/* make a struct for the return from the capabilites command */
+/* make a struct for the return from the capabilities command */
 struct capabilities {
     uint8_t grp_id; /* first byte: Group Extension ID */
     uint16_t conformance;
@@ -183,7 +183,7 @@ struct nm_discover {
     uint8_t minor_rev;
 } __attribute__ ((packed));
 
-/* Node Manager get capabilites command */
+/* Node Manager get capabilities command */
 struct nm_capability {
     uint8_t  intel_id[3];
     uint8_t  max_settings;
@@ -236,7 +236,7 @@ struct nm_get_policy {
 /* Node Manager set alert destination */
 struct nm_set_alert {
     uint8_t  intel_id[3];
-    uint8_t  chan;           /* 0:3 BMC chan, 4:6 reserved, bit 7=0 register alert reciever =1 invalidate */
+    uint8_t  chan;           /* 0:3 BMC chan, 4:6 reserved, bit 7=0 register alert receiver =1 invalidate */
     uint8_t  dest;           /* lan destination */
     uint8_t  string;         /* alert string selector  */
 } __attribute__ ((packed));

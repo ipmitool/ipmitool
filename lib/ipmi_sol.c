@@ -2006,7 +2006,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		retval = ipmi_sol_activate(intf, 0, 0, instance);
 	} else if (!strncmp(argv[0], "deactivate", 10)) {
-		/* Dectivate */
+		/* Deactivate */
 		int i;
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
@@ -2025,7 +2025,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		retval = ipmi_sol_deactivate(intf, instance);
 	} else if (!strncmp(argv[0], "looptest", 8)) {
-		/* SOL loop test: Activate and then Dectivate */
+		/* SOL loop test: Activate and then Deactivate */
 		int cnt = 200;
 		int interval = 100; /* Unit is: ms */
 		uint8_t instance = 1;

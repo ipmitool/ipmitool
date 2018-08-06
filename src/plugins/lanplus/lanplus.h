@@ -113,7 +113,7 @@
 
 /*
  *This is accurate, as long as we're only passing 1 auth algorithm,
- * one integrity algorithm, and 1 encyrption alogrithm
+ * one integrity algorithm, and 1 encyrption algorithm
  */
 #define IPMI_OPEN_SESSION_REQUEST_SIZE 32
 #define IPMI_RAKP1_MESSAGE_SIZE        44

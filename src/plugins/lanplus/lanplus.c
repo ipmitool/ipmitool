@@ -967,7 +967,7 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
  *
  * param rsp [in/out] reading from the data variable and writing to the rakp 2
  *       section
- * param offset [in] tells us where hte rakp2 payload starts
+ * param offset [in] tells us where the rakp2 payload starts
  * param auth_alg [in] describes the authentication algorithm was agreed upon in
  *       the open session request/response phase.  We need to know that here so
  *       that we know how many bytes (if any) to read fromt the packet.
@@ -1054,7 +1054,7 @@ read_rakp2_message(
  *
  * param rsp [in/out] reading from the data variable and writing to the rakp
  *       4 section
- * param offset [in] tells us where hte rakp4 payload starts
+ * param offset [in] tells us where the rakp4 payload starts
  * param integrity_alg [in] describes the authentication algorithm was
  *       agreed upon in the open session request/response phase.  We need
  *       to know that here so that we know how many bytes (if any) to read
@@ -2571,7 +2571,7 @@ check_sol_packet_for_new_data(
 
 
 		/*
-		 *Rember the data for next round
+		 * Remember the data for next round
 		 */
 		if (rsp->payload.sol_packet.packet_sequence_number)
 		{

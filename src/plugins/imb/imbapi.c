@@ -281,7 +281,7 @@ ipmi_close_ia(void)
  * @lpcbBytesReturned, address of actual bytes of output
  * @lpoOverlapped address of overlapped struct
  *
- * returns - FALSE for fail and TRUE for success. Same as standarad NTOS call as
+ * returns - FALSE for fail and TRUE for success. Same as standard NTOS call as
  * it also sets Ntstatus.status.
  */
 static BOOL
@@ -312,7 +312,7 @@ DeviceIoControl(HANDLE dummey_hDevice, DWORD dwIoControlCode, LPVOID
 	s.cbOutBuffer = cbOutBuffer;
 	s.lpcbBytesReturned = lpcbBytesReturned;
 	s.lpoOverlapped = lpoOverlapped;
-	/* dummy place holder. Linux IMB driver doesnt return status or info
+	/* dummy place holder. Linux IMB driver doesn't return status or info
 	 * via it
 	 */
 	s.ntstatus = (LPVOID)&NTstatus;
@@ -434,7 +434,7 @@ SendTimedI2cRequest(I2CREQUESTDATA *reqPtr, int timeOut, BYTE *respDataPtr,
  * @responseDataLen
  * @timeOut - how long to wait, in mSec units
  *
- * retruns - OK  else error status code
+ * returns - OK  else error status code
  */
 ACCESN_STATUS
 SendTimedEmpMessageResponse (ImbPacket *ptr, char *responseDataBuf,
@@ -514,7 +514,7 @@ SendTimedEmpMessageResponse (ImbPacket *ptr, char *responseDataBuf,
  * @timeOut - how long to wait, in mSec units
  * @sessionHandle - This is introduced in IPMI1.5,this is required to be sent in
  * sendd message command as a parameter, which is then used by BMC
- * to identify the correct DPC session to send the mesage to.
+ * to identify the correct DPC session to send the message to.
  * @channelNumber - There are 3 different channels on which DPC communication
  * goes on:
  *   * Emp - 1
@@ -591,7 +591,7 @@ SendTimedEmpMessageResponse_Ex (ImbPacket *ptr, char *responseDataBuf, int
 	req->req.data[i++] = ((ptr->seqLn & 0xfc) | (ptr->nfLn & 0x3));
 	/* The next byte is the command like get software ID(00). */
 	req->req.data[i++] = ptr->cmd;
-	/* after the cmd the data, which is sent by DPC & is retrived using the
+	/* after the cmd the data, which is sent by DPC & is retrieved using the
 	 * get message earlier is sent back to DPC.
 	 */
 	for (j = 0; j < responseDataLen; ++j, ++i) {
@@ -728,7 +728,7 @@ SendTimedLanMessageResponse(ImbPacket *ptr, char *responseDataBuf,
  * @timeOut - how long to wait, in mSec units
  * @sessionHandle - This is introduced in IPMI1.5,this is required to be sent in
  * send message command as a parameter,which is then used by BMC to identify the
- * correct DPC session to send the mesage to.
+ * correct DPC session to send the message to.
  * @channelNumber - There are 3 different channels on which DPC communication
  * goes on:
  *	* Emp - 1
@@ -806,7 +806,7 @@ SendTimedLanMessageResponse_Ex(ImbPacket *ptr, char *responseDataBuf, int
 	req->req.data[i++] = ((ptr->seqLn & 0xfc) | (ptr->nfLn & 0x3));
 	/* The next byte is the command like get software ID(00). */
 	req->req.data[i++] = ptr->cmd;
-	/* After the cmd the data ,which is sent by DPC & is retrived using the
+	/* After the cmd the data ,which is sent by DPC & is retrieved using the
 	 * get message earlier is sent back to DPC.
 	 */
 	for (j = 0; j < responseDataLen; ++j, ++i) {
