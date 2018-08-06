@@ -2722,7 +2722,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	}
 	(*board_length)--;
 
-	/* Bit 5:0 of Board Mfg type represent legnth */
+	/* Bit 5:0 of Board Mfg type represent length */
 	size_board = (len & 0x3f);
 	if (size_board == 0) {
 		printf("%s: None\n", board_type);

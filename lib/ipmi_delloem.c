@@ -1201,7 +1201,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 	req.msg.data_len = 5;
 	req.msg.data = data;
 	data[0] = IPMI_DELL_LCD_STATUS_SELECTOR;
-	data[1] = status; /* active- incative*/
+	data[1] = status; /* active- inactive */
 	data[2] = lcdstatus.lock_status; /* full-veiw-locked */
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
@@ -1247,7 +1247,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 	req.msg.data_len = 5;
 	req.msg.data = data;
 	data[0] = IPMI_DELL_LCD_STATUS_SELECTOR;
-	data[1] = lcdstatus.vKVM_status; /* active- incative */
+	data[1] = lcdstatus.vKVM_status; /* active- inactive */
 	data[2] = lock; /* full- veiw-locked */
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
