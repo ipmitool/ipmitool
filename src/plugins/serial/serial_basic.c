@@ -241,12 +241,12 @@ serial_bm_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(rates); i++) {
 		if (rates[i].baudrate == rate) {
 			break;
 		}
 	}
-	if (i >= sizeof(rates) / sizeof(rates[0])) {
+	if (i >= ARRAY_SIZE(rates)) {
 		lprintf(LOG_ERR, "Unsupported baud rate %i specified", rate);
 		return -1;
 	}

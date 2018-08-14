@@ -1027,9 +1027,7 @@ static void lanp_print_usage(int cmd)
 		printf("\n   available parameters:\n");
 		/* 'save' shall use 'write' filter, since it outputs a block
 		 * of 'set's */
-		ipmi_cfgp_usage(lan_cfgp,
-			sizeof(lan_cfgp)/sizeof(lan_cfgp[0]),
-			cmd != LANP_CMD_PRINT);
+		ipmi_cfgp_usage(lan_cfgp, ARRAY_SIZE(lan_cfgp), cmd != LANP_CMD_PRINT);
 	}
 }
 
@@ -1161,8 +1159,8 @@ ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv)
 	 */
 
 	ipmi_cfgp_init(&ctx, lan_cfgp,
-		sizeof(lan_cfgp)/sizeof(lan_cfgp[0]), "lan6 set nolock",
-		lanp_ip6_cfgp, &lp);
+	               ARRAY_SIZE(lan_cfgp), "lan6 set nolock",
+	               lanp_ip6_cfgp, &lp);
 
 	ret = ipmi_cfgp_parse_sel(&ctx, argc, (const char **)argv, &sel);
 	if (ret == -1) {

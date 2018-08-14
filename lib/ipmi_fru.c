@@ -898,6 +898,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	uint8_t * fru_data;
 	uint32_t fru_len, i;
 	uint8_t tmp[2];
+	size_t chassis_type;
 
 	fru_len = 0;
 
@@ -931,10 +932,10 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	 */
 	i = 2;
 
-	printf(" Chassis Type          : %s\n",
- 		chassis_type_desc[fru_data[i] >
- 		(sizeof(chassis_type_desc)/sizeof(chassis_type_desc[0])) - 1 ?
- 		2 : fru_data[i]]);
+	chassis_type = (fru_data[i] > ARRAY_SIZE(chassis_type_desc) - 1)
+	               ? 2
+	               : fru_data[i];
+	printf(" Chassis Type          : %s\n", chassis_type_desc[chassis_type]);
 
  	i++;
 
