@@ -206,7 +206,7 @@ ipmi_sdr_repo_clear(struct ipmi_intf *intf)
       lprintf(LOG_ERR, "Unable to clear SDRR");
       return -1;
     }
-    if (rsp->ccode > 0) {
+    if (rsp->ccode) {
       lprintf(LOG_ERR, "Unable to clear SDRR: %s",
         val2str(rsp->ccode, completion_code_vals));
       return -1;

@@ -191,7 +191,7 @@ ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf *intf,
 	if (rsp == NULL)  {
 		printf("Cannot send large buffer command\n");
 		return(-1);
-	} else if (rsp->ccode > 0)  {
+	} else if (rsp->ccode)  {
 		printf("Invalid length for the selected interface (%s) %d\n",
 				val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return(-1);
@@ -246,7 +246,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		printf(" Device not present (No Response)\n");
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf(" This option is not implemented for this board\n");
 		return (-1);
 	}
@@ -274,7 +274,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		free(sn);
 		sn = NULL;
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		free(sn);
@@ -307,7 +307,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		free(sn);
 		sn = NULL;
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		free(sn);
@@ -535,7 +535,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	if (rsp == NULL)  {
 		printf("Device not present (No Response)\n");
 		return(-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf("This option is not implemented for this board\n");
 		return(-1);
 	}
@@ -557,7 +557,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		printf(" Device not present (No Response)\n");
 		return(-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return(-1);
@@ -585,7 +585,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		printf(" Device not present (No Response)\n");
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -693,7 +693,7 @@ ipmi_kontron_nextboot_set(struct ipmi_intf *intf, int argc, char **argv)
 	if (rsp == NULL) {
 		printf("Device not present (No Response)\n");
 		return(-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		printf("Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return (-1);

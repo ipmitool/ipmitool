@@ -1636,7 +1636,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1683,7 +1683,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
                         spd_data = NULL;
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
 

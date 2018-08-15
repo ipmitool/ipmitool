@@ -285,7 +285,7 @@ sunoem_led_get(struct ipmi_intf * intf,	struct sdr_record_generic_locator * dev,
 	if (rsp == NULL) {
 		*loc_rsp = NULL;
 		return (SUNOEM_EC_BMC_NOT_RESPONDING);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		*loc_rsp = rsp;
 		return (SUNOEM_EC_BMC_CCODE_NONZERO);
 	} else {
@@ -332,7 +332,7 @@ sunoem_led_set(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev,
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Sun OEM Set LED command failed.");
 		return NULL;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM Set LED command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return NULL;
@@ -692,7 +692,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 			if (a->record.genloc->entity.logical)
 				continue;
 			rsp = sunoem_led_set(intf, a->record.genloc, ledtype, ledmode);
-			if (rsp && rsp->ccode == 0)
+			if (rsp && !rsp->ccode)
 				led_print((const char *) a->record.genloc->id_string,
 						PRINT_NORMAL, ledmode);
 			else
@@ -724,7 +724,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 		 * handle physical entity
 		 */
 		rsp = sunoem_led_set(intf, sdr->record.genloc, ledtype, ledmode);
-		if (rsp && rsp->ccode == 0)
+		if (rsp && !rsp->ccode)
 			led_print(argv[0], PRINT_NORMAL, ledmode);
 		else
 			return (-1);
@@ -815,7 +815,7 @@ ipmi_sunoem_sshkey_del(struct ipmi_intf * intf, uint8_t uid)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Unable to delete ssh key for UID %d", uid);
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to delete ssh key for UID %d: %s", uid,
 				val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -937,7 +937,7 @@ ipmi_sunoem_sshkey_set(struct ipmi_intf * intf, uint8_t uid, char * ifile)
 
 			return (-1);
 		} /* if (rsp == NULL) */
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			printf("failed\n");
 			lprintf(LOG_ERR, "Unable to set ssh key for UID %d, %s.", uid,
 					val2str(rsp->ccode, completion_code_vals));
@@ -945,7 +945,7 @@ ipmi_sunoem_sshkey_set(struct ipmi_intf * intf, uint8_t uid, char * ifile)
 				fclose(fp);
 
 			return (-1);
-		} /* if (rsp->ccode != 0) */
+		}
 	}
 
 	printf("done\n");
@@ -1095,7 +1095,7 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 			return (-1);
 		}
 		cli_rsp = (sunoem_cli_msg_t *) rsp->data;
-		if ((cli_rsp->command_response != 0) || (rsp->ccode != 0)) {
+		if (cli_rsp->command_response || rsp->ccode) {
 			if (strncmp(cli_rsp->buf, SUNOEM_CLI_INVALID_VER_ERR,
 					sizeof(SUNOEM_CLI_INVALID_VER_ERR) - 1) == 0
 					|| strncmp(&(cli_rsp->buf[1]), SUNOEM_CLI_INVALID_VER_ERR,
@@ -1154,7 +1154,7 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 			return (-1);
 		}
 	}
-	while (rsp->ccode == 0 && cli_rsp->command_response == 0) {
+	while (!rsp->ccode && cli_rsp->command_response == 0) {
 		int rc = 0;
 		int count = 0;
 		cli_req.buf[0] = '\0';
@@ -1280,7 +1280,7 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 			fflush(NULL); /* Flush partial lines to stdout */
 			count = 0; /* Don't re-send the client's data */
 			if (cli_req.command_response == SUNOEM_CLI_CMD_EOF
-					&& cli_rsp->command_response != 0 && rsp->ccode == 0) {
+					&& cli_rsp->command_response != 0 && !rsp->ccode) {
 				cli_rsp->command_response = 1;
 			}
 		} while (cli_rsp->command_response == 0 && cli_rsp->buf[0] != '\0');
@@ -1380,7 +1380,7 @@ ipmi_sunoem_echo(struct ipmi_intf * intf, int argc, char *argv[])
 		gettimeofday(&end_time, NULL);
 		resp_time = ((end_time.tv_sec - start_time.tv_sec) * 1000)
 				+ ((end_time.tv_usec - start_time.tv_usec) / 1000);
-		if ((rsp == NULL) || (rsp->ccode != 0)) {
+		if ((rsp == NULL) || rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM echo command failed. Seq # %d",
 					echo_req.seq_num);
 			rc = (-2);
@@ -1504,7 +1504,7 @@ ipmi_sunoem_getversion(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Sun OEM Get SP Version Failed.");
 		return (-1);
 	}
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM Get SP Version Failed: %d", rsp->ccode);
 		return (-1);
 	}
@@ -1654,7 +1654,7 @@ ipmi_sunoem_nacname(struct ipmi_intf * intf, int argc, char *argv[])
 			lprintf(LOG_ERR, "Sun OEM nacname command failed.");
 			return (-1);
 		}
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM nacname command failed: %d", rsp->ccode);
 			return (-1);
 		}
@@ -1824,7 +1824,7 @@ ipmi_sunoem_getval(struct ipmi_intf * intf, int argc, char *argv[])
 		lprintf(LOG_ERR, "Sun OEM getval1 command failed.");
 		return (-1);
 	}
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM getval1 command failed: %d", rsp->ccode);
 		return (-1);
 	}
@@ -1847,7 +1847,7 @@ ipmi_sunoem_getval(struct ipmi_intf * intf, int argc, char *argv[])
 			return (-1);
 		}
 
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM getval2 command failed: %d", rsp->ccode);
 			return (-1);
 		}
@@ -1915,7 +1915,7 @@ send_luapi_prop_name(struct ipmi_intf * intf, int len, char *prop_name,
 			return (-1);
 		}
 
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM setval prop name: request failed: %d",
 					rsp->ccode);
 			return (-1);
@@ -1988,7 +1988,7 @@ send_luapi_prop_value(struct ipmi_intf * intf, int len,	char *prop_value,
 			return (-1);
 		}
 
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM setval prop value: request failed: %d",
 					rsp->ccode);
 			return (-1);
@@ -2081,7 +2081,7 @@ ipmi_sunoem_setval(struct ipmi_intf * intf, int argc, char *argv[])
 			return (-1);
 		}
 
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM setval command failed: %d", rsp->ccode);
 			return (-1);
 		}
@@ -2192,7 +2192,7 @@ ipmi_sunoem_getfile(struct ipmi_intf * intf, int argc, char *argv[])
 			fclose(fp);
 			return (-1);
 		}
-		if (rsp->ccode != 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM getfile command failed: %d", rsp->ccode);
 			fclose(fp);
 			return (-1);
@@ -2305,7 +2305,7 @@ ipmi_sunoem_getbehavior(struct ipmi_intf * intf, int argc, char *argv[])
 		return (-1);
 	}
 
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM getbehavior command failed: %d", rsp->ccode);
 		return (-1);
 	}

@@ -707,7 +707,7 @@ chk_rsp(struct ipmi_rs * rsp)
 		lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
 		        val2str(rsp->ccode, dcmi_ccode_vals), rsp->ccode);
 		return 1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "\n    DCMI request failed because: %s (%x)",
 		        val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return 1;
@@ -742,7 +742,7 @@ chk_nm_rsp(struct ipmi_rs * rsp)
 		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
 		val2str(rsp->ccode, nm_ccode_vals), rsp->ccode);
 		return 1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
 			val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return 1;

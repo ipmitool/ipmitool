@@ -89,7 +89,7 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	} else if (rsp == NULL) {
 		lprintf(LOG_ERR, "MC reset command failed.");
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "MC reset command failed: %s",
 		        CC_STRING(rsp->ccode));
 		return (-1);
@@ -285,7 +285,7 @@ ipmi_mc_get_enables(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Get Global Enables command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Global Enables command failed: %s",
 		        CC_STRING(rsp->ccode));
 		return -1;
@@ -335,7 +335,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Get Global Enables command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Global Enables command failed: %s",
 		        CC_STRING(rsp->ccode));
 		return -1;
@@ -377,7 +377,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Set Global Enables command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Global Enables command failed: %s",
 		        CC_STRING(rsp->ccode));
 		return -1;
@@ -427,7 +427,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %s",
 		        CC_STRING(rsp->ccode));
 		return -1;
@@ -509,7 +509,7 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 16
 			|| rsp->data_len != sizeof(struct ipmi_guid_t)) {
@@ -1239,7 +1239,7 @@ ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set,
 	if (rsp == NULL)
 		return (-1);
 
-	if (rsp->ccode == 0) {
+	if (!rsp->ccode) {
 		if (len > rsp->data_len)
 			len = rsp->data_len;
 		if (len && buffer)

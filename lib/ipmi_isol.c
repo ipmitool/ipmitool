@@ -91,7 +91,7 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "IPMI v1.5 Serial Over Lan (ISOL) not supported!");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -111,7 +111,7 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -131,7 +131,7 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -275,7 +275,7 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Error setting ISOL parameter '%s'", param);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting ISOL parameter '%s': %s",
 			   param, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -432,7 +432,7 @@ ipmi_isol_deactivate(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Error deactivating ISOL");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error deactivating ISOL: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;

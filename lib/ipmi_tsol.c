@@ -107,7 +107,7 @@ ipmi_tsol_command(struct ipmi_intf *intf, char *recvip, int port,
 		lprintf(LOG_ERR, "Unable to perform TSOL command");
 		return (-1);
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to perform TSOL command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -152,7 +152,7 @@ ipmi_tsol_send_keystroke(struct ipmi_intf *intf, char *buff, int length)
 			lprintf(LOG_ERR, "Unable to send keystroke");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Unable to send keystroke: %s",
 					val2str(rsp->ccode, completion_code_vals));
 			return -1;

@@ -206,7 +206,7 @@ static int ImeGetInfo(struct ipmi_intf *intf)
       lprintf(LOG_ERR, "Get Device ID command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "Get Device ID command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -513,7 +513,7 @@ static int ImeUpdatePrepare(struct ipmi_intf *intf)
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdatePrepare command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -548,7 +548,7 @@ static int ImeUpdateOpenArea(struct ipmi_intf *intf)
       lprintf(LOG_ERR, "UpdateOpenArea command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdateOpenArea command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -588,7 +588,7 @@ static int ImeUpdateWriteArea(
       lprintf(LOG_ERR, "UpdateWriteArea command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdateWriteArea command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       if( rsp->ccode == 0x80) // restart operation
@@ -635,7 +635,7 @@ static int ImeUpdateCloseArea(
       lprintf(LOG_ERR, "UpdateCloseArea command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdateCloseArea command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -669,7 +669,7 @@ static int ImeUpdateGetStatus(struct ipmi_intf *intf, tImeStatus *pStatus )
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdatePrepare command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -742,7 +742,7 @@ static int ImeUpdateGetCapabilities(struct ipmi_intf *intf, tImeCaps *pCaps )
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdatePrepare command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -782,7 +782,7 @@ static int ImeUpdateRegisterUpdate(struct ipmi_intf *intf, tImeUpdateType type)
       lprintf(LOG_ERR, "ImeUpdateRegisterUpdate command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "ImeUpdateRegisterUpdate command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
@@ -813,7 +813,7 @@ static int ImeUpdateShowStatus(struct ipmi_intf *intf)
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
-   if (rsp->ccode > 0) {
+   if (rsp->ccode) {
       lprintf(LOG_ERR, "UpdatePrepare command failed: %s",
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;

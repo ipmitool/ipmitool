@@ -1527,7 +1527,7 @@ ipmi_lan_keepalive(struct ipmi_intf * intf)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL)
 		return -1;
-	if (rsp->ccode > 0)
+	if (rsp->ccode)
 		return -1;
 
 	return 0;
@@ -1562,7 +1562,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "get_auth_capabilities");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get Auth Capabilities command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1677,7 +1677,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "get_session_challenge");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x81:
 			lprintf(LOG_ERR, "Invalid user name");
@@ -1844,7 +1844,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
@@ -1892,7 +1892,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 			"session ID %08lx", (long)session_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Close Session command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;

@@ -266,7 +266,7 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 				sensor->keys.sensor_num, sensor->keys.owner_id,
 				sensor->keys.lun, sensor->keys.channel);
 
-	if ((rsp == NULL) || (rsp->ccode > 0) || (rsp->data_len == 0))
+	if (!rsp || rsp->ccode || !rsp->data_len)
 		thresh_available = 0;
 
 	if (csv_output) {
@@ -485,7 +485,7 @@ __ipmi_sensor_set_threshold(struct ipmi_intf *intf,
 		lprintf(LOG_ERR, "Error setting threshold");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting threshold: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -721,7 +721,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 						sdr->record.common->keys.owner_id,
 						sdr->record.common->keys.lun,
 						sdr->record.common->keys.channel);
-		if ((rsp == NULL) || (rsp->ccode > 0)) {
+		if (!rsp || rsp->ccode) {
 			lprintf(LOG_ERR, "Sensor data record not found!");
 				return -1;
 		}

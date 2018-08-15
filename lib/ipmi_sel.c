@@ -318,7 +318,7 @@ ipmi_get_oem(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return IPMI_OEM_UNKNOWN;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
 			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		return IPMI_OEM_UNKNOWN;
@@ -351,7 +351,7 @@ ipmi_sel_add_entry(struct ipmi_intf * intf, struct sel_event_record * rec)
 		lprintf(LOG_ERR, "Add SEL Entry failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Add SEL Entry failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -510,7 +510,7 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 			lprintf(LOG_ERR, "Error issuing OEM command");
 		return NULL;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (verbose)
 			lprintf(LOG_ERR, "OEM command returned error code: %s",
 					val2str(rsp->ccode, completion_code_vals));
@@ -589,7 +589,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					desc = NULL;
 				}
 				return NULL;
-			} else if (rsp->ccode > 0) {
+			} else if (rsp->ccode) {
 				lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
 				if (desc != NULL) {
@@ -792,7 +792,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					}
 					return NULL;
 				} 
-				else if (rsp->ccode > 0)
+				else if (rsp->ccode)
 				{
 					lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
@@ -1548,7 +1548,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1631,7 +1631,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 				"Get SEL Allocation Info command failed");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR,
 				"Get SEL Allocation Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
@@ -1676,7 +1676,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 		lprintf(LOG_ERR, "Get SEL Entry %x command failed", id);
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Entry %x command failed: %s",
 			id, val2str(rsp->ccode, completion_code_vals));
 		return 0;
@@ -2283,7 +2283,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2305,7 +2305,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		lprintf(LOG_ERR, "Reserve SEL command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Reserve SEL command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2322,7 +2322,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 			lprintf(LOG_ERR, "Get SEL Info command failed");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			return -1;
@@ -2702,7 +2702,7 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 		lprintf(LOG_WARN, "Unable to reserve SEL");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf("Unable to reserve SEL: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return 0;
@@ -2734,7 +2734,7 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL || rsp->ccode > 0) {
+	if (rsp == NULL || rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Time command failed: %s",
 		        rsp
 		        ? val2str(rsp->ccode, completion_code_vals)
@@ -2838,7 +2838,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 #endif
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL || rsp->ccode > 0) {
+	if (rsp == NULL || rsp->ccode) {
 		lprintf(LOG_ERR, "Set SEL Time command failed: %s",
 		        rsp
 		        ? val2str(rsp->ccode, completion_code_vals)
@@ -2883,7 +2883,7 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Unable to clear SEL");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to clear SEL: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2937,7 +2937,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "Unable to delete entry %d", id);
 			rc = -1;
 		}
-		else if (rsp->ccode > 0) {
+		else if (rsp->ccode) {
 			lprintf(LOG_ERR, "Unable to delete entry %d: %s", id,
 				val2str(rsp->ccode, completion_code_vals));
 			rc = -1;

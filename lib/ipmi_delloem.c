@@ -1211,7 +1211,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting LCD status: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		rc= -1;
@@ -1257,7 +1257,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		rc = -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting LCD status: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		rc= -1;
@@ -1598,7 +1598,7 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	if (rsp == NULL) {
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		return -1;
 	}
 	if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
@@ -1694,7 +1694,7 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 		lprintf(LOG_ERR, "Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1760,7 +1760,7 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 		lprintf(LOG_ERR, "Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1834,7 +1834,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 		lprintf(LOG_ERR, "Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1865,7 +1865,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 				lprintf(LOG_ERR, "Error in getting MAC Address");
 				return -1;
 			}
-			if (rsp->ccode > 0) {
+			if (rsp->ccode) {
 				lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
 						val2str(rsp->ccode, completion_code_vals));
 				return -1;
@@ -2056,7 +2056,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in getting nic selection");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2278,7 +2278,7 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2306,7 +2306,7 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in setting nic selection");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2339,7 +2339,7 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in getting nic selection");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2395,7 +2395,7 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in getting Active LOM Status");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting Active LOM Status (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2414,7 +2414,7 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in getting Active LOM Status");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting Active LOM Status (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2652,12 +2652,12 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return 1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		return 1;
 	}
 	memcpy(pSensorReadingData, rsp->data, sizeof(SensorReadingType));
 	/* if there is an error transmitting ipmi command, return error */
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		rc = 1;
 	}
 	/* if sensor messages are disabled, return error*/
@@ -2697,7 +2697,7 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1; /* Return Error as unlicensed */
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error getting powercap statusr: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2748,7 +2748,7 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1; /* return unlicensed Error code */
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting powercap statusr: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2803,7 +2803,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Error getting BMC time info.");
 		return -1;
 	}
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error getting power management information, return code %x",
 				rsp->ccode);
@@ -2841,7 +2841,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Error getting power management information: "
 				"Command not supported on this system.");
 		return -1;
-	}else if (rsp->ccode != 0) {
+	}else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error getting power management information, return code %x",
 				rsp->ccode);
@@ -2944,7 +2944,7 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 		lprintf(LOG_ERR,
 				"Error clearing power values, command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error clearing power values: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3022,7 +3022,7 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 		lprintf(LOG_ERR, "Error getting power headroom status: "
 				"Command not supported on this system ");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error getting power headroom status: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3089,7 +3089,7 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 			sdr->record.common->keys.owner_id,
 			sdr->record.common->keys.lun,
 			sdr->record.common->keys.channel);
-	if (rsp == NULL || rsp->ccode != 0) {
+	if (rsp == NULL || rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error : Can not access the System Level sensor data");
 		return -1;
@@ -3156,7 +3156,7 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3874,7 +3874,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in getting SD Card Extended Information");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in getting SD Card Extended Information (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -4052,7 +4052,7 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
 	data[9] = 0x00;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL || rsp->ccode != 0) {
+	if (rsp == NULL || rsp->ccode) {
 		return;
 	}
 	SetLEDSupported = 1;
@@ -4097,7 +4097,7 @@ ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error issuing getdrivemap command.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error issuing getdrivemap command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -4152,7 +4152,7 @@ ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error issuing setled command.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error issuing setled command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;

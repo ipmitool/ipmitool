@@ -105,7 +105,7 @@ ipmi_master_write_read(struct ipmi_intf * intf, uint8_t bus, uint8_t addr,
 		lprintf(LOG_ERR, "I2C Master Write-Read command failed");
 		return NULL;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x81:
 			lprintf(LOG_ERR, "I2C Master Write-Read command failed: Lost Arbitration");
@@ -385,7 +385,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
 			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x rsp=0x%x): %s",
 			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd, rsp->ccode,

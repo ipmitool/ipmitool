@@ -80,7 +80,7 @@ _ipmi_get_user_access(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 4) {
 		return (-2);
@@ -121,7 +121,7 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 16) {
 		return (-2);
@@ -380,7 +380,7 @@ ipmi_user_set_username(
 			user_id, name);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set User Name command failed (user %d, name %s): %s",
 			user_id, name, val2str(rsp->ccode, completion_code_vals));
 		return -1;

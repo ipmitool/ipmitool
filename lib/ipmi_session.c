@@ -293,7 +293,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 			lprintf(LOG_ERR, "Get Session Info command failed");
 			retval = -1;
 		}
-		else if (rsp->ccode > 0)
+		else if (rsp->ccode)
 		{
 			lprintf(LOG_ERR, "Get Session Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
@@ -328,7 +328,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 				retval = -1;
 				break;
 			}
-			else if (rsp->ccode > 0 && rsp->ccode != 0xCC && rsp->ccode != 0xCB)
+			else if (rsp->ccode && rsp->ccode != 0xCC && rsp->ccode != 0xCB)
 			{
 				lprintf(LOG_ERR, "Get Session Info command failed: %s",
 					val2str(rsp->ccode, completion_code_vals));

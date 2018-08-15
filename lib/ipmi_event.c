@@ -112,7 +112,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 		lprintf(LOG_ERR, "Platform Event Message command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Platform Event Message command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -352,7 +352,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 			lprintf(LOG_ERR,
 					"Command Get Sensor Thresholds failed: invalid response.");
 			return (-1);
-		} else if (rsp->ccode != 0) {
+		} else if (rsp->ccode) {
 			lprintf(LOG_ERR, "Command Get Sensor Thresholds failed: %s",
 					val2str(rsp->ccode, completion_code_vals));
 			return (-1);
@@ -363,7 +363,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 		rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num,
 							target, lun, channel);
-		if (rsp != NULL && rsp->ccode == 0)
+		if (rsp != NULL && !rsp->ccode)
 			off = dir ? rsp->data[0] : rsp->data[1];
 		if (off <= 0)
 			off = 1;
@@ -578,7 +578,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			lprintf(LOG_ERR, "Platform Event Message command failed");
 			rc = -1;
 		}
-		else if (rsp->ccode > 0) {
+		else if (rsp->ccode) {
 			lprintf(LOG_ERR, "Platform Event Message command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			rc = -1;

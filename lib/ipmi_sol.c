@@ -129,7 +129,7 @@ ipmi_sol_payload_access(struct ipmi_intf * intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d",
 				enable ? "en" : "dis", userid, channel);
 		rc = (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d: %s",
 				enable ? "en" : "dis", userid, channel,
 				val2str(rsp->ccode, completion_code_vals));
@@ -1074,7 +1074,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	}
 
 	if (!(!strncmp(param, "set-in-progress", 15) && !strncmp(value, "commit-write", 12)) &&
-	    rsp->ccode > 0) {
+	    rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x80:
 			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "

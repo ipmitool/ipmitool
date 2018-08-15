@@ -276,7 +276,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id)
 		return NULL;
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR," Device not present (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return NULL;
@@ -567,7 +567,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			protected_bloc = 1;
 		}
 
-		if (rsp->ccode > 0)
+		if (rsp->ccode)
 			break;
 
 		if (protected_bloc == 0) {
@@ -683,7 +683,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			lprintf(LOG_NOTICE, "FRU Read failed");
 			break;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			/* if we get C7h or C8h or CAh return code then we requested too
 			* many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca)
@@ -789,7 +789,7 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			lprintf(LOG_NOTICE, "FRU Read failed");
 			break;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			/* if we get C7 or C8  or CA return code then we requested too
 			* many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
@@ -2895,7 +2895,7 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2932,7 +2932,7 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 		printf(" Device not present (No Response)\n");
 		return 1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return 1;
@@ -3111,7 +3111,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3230,7 +3230,7 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 	if (!rsp)
 		return;
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		return;
@@ -3421,7 +3421,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3626,7 +3626,7 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3977,7 +3977,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		else
@@ -4009,7 +4009,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 
 	if (!rsp)
 		return -1;
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout while reading FRU data. (Device not present?)\n");
 		return -1;
@@ -4095,7 +4095,7 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -4131,7 +4131,7 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 		printf(" Device not present (No Response)\n");
 		return 1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return 1;
@@ -4678,7 +4678,7 @@ f_type, uint8_t f_index, char *f_string)
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		rc = (-1);
@@ -4715,7 +4715,7 @@ f_type, uint8_t f_index, char *f_string)
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
 	}
-	if (rsp->ccode > 0)
+	if (rsp->ccode)
 	{
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));

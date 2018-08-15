@@ -1438,7 +1438,7 @@ HpmfwupgGetDeviceId(struct ipmi_intf *intf, struct ipm_devid_rsp *pGetDevId)
 		lprintf(LOG_ERR, "Error getting device ID.");
 		return HPMFWUPG_ERROR;
 	}
-	if (rsp->ccode != 0x00) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error getting device ID.");
 		lprintf(LOG_ERR, "compcode=0x%x: %s",
 				rsp->ccode,
@@ -1467,7 +1467,7 @@ HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 				"Error getting target upgrade capabilities.");
 		return HPMFWUPG_ERROR;
 	}
-	if (rsp->ccode != 0x00) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error getting target upgrade capabilities, ccode: 0x%x: %s",
 				rsp->ccode,
@@ -1544,7 +1544,7 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 				"Error getting component properties\n");
 		return HPMFWUPG_ERROR;
 	}
-	if (rsp->ccode != 0x00) {
+	if (rsp->ccode) {
 		lprintf(LOG_NOTICE,
 				"Error getting component properties");
 		lprintf(LOG_NOTICE,
@@ -1669,7 +1669,7 @@ HpmfwupgAbortUpgrade(struct ipmi_intf *intf,
 		lprintf(LOG_ERR, "Error - aborting upgrade.");
 		return HPMFWUPG_ERROR;
 	}
-	if (rsp->ccode != 0x00) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error aborting upgrade");
 		lprintf(LOG_ERR, "compcode=0x%x: %s",
 				rsp->ccode,
@@ -1701,7 +1701,7 @@ HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf,
 	/* Long duration command handling */
 	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
 		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-	} else if (rsp->ccode != 0x00) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_NOTICE,"Error initiating upgrade action");
 		lprintf(LOG_NOTICE, "compcode=0x%x: %s",
 				rsp->ccode,
@@ -1764,7 +1764,7 @@ HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf,
 	/* Long duration command handling */
 	if (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS) {
 		rc = HpmfwupgWaitLongDurationCmd(intf, pFwupgCtx);
-	} else if (rsp->ccode != 0x00)  {
+	} else if (rsp->ccode)  {
 		/* PATCH --> This validation is to handle retryables errors codes on IPMB bus.
 		 *           This will be fixed in the next release of open ipmi and this
 		 *           check will have to be removed. (Buggy version = 39)
@@ -1954,7 +1954,7 @@ HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
 		printf("Waiting firmware rollback...");
 		fflush(stdout);
 		rc = HpmfwupgQueryRollbackStatus(intf, &resCmd, &fwupgCtx);
-	} else if ( rsp->ccode != 0x00 ) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error sending manual rollback");
 		lprintf(LOG_ERR, "compcode=0x%x: %s",  
 				rsp->ccode,

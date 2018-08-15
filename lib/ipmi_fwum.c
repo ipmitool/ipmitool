@@ -454,7 +454,7 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Firmware Get Info Command.");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x",
 				rsp->ccode);
 		return (-1);
@@ -552,7 +552,7 @@ KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in Get Device Id Command");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device Id returned %x",
 				rsp->ccode);
 		return (-1);
@@ -671,7 +671,7 @@ KfwumManualRollback(struct ipmi_intf *intf)
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Manual Rollback Command returned %x",
 				rsp->ccode);
@@ -772,7 +772,7 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 				*pInBufLength = 0;
 				break;
 			} /* For other interface keep trying */
-		} else if (rsp->ccode != 0) {
+		} else if (rsp->ccode) {
 			if (rsp->ccode == 0xc0) {
 				sleep(1);
 			} else if ((rsp->ccode == 0xc7)
@@ -838,7 +838,7 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 		rsp = intf->sendrecv(intf, &req);
 	} while (rsp == NULL || rsp->ccode == 0xc0);
 
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"FWUM Firmware Finish Firmware Image Download returned %x",
 				rsp->ccode);

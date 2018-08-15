@@ -89,7 +89,7 @@ _ipmi_get_channel_access(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 2) {
 		return (-2);
@@ -130,7 +130,7 @@ _ipmi_get_channel_info(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 9) {
 		return (-2);
@@ -276,7 +276,7 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if ((rsp == NULL) || (rsp->ccode > 0)) {
+	if (!rsp || rsp->ccode) {
 		/*
 		 * It's very possible that this failed because we asked for IPMI v2 data
 		 * Ask again, without requesting IPMI v2 data
@@ -288,7 +288,7 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 			lprintf(LOG_ERR, "Unable to Get Channel Authentication Capabilities");
 			return (-1);
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get Channel Authentication Capabilities failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			return (-1);
@@ -378,7 +378,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 		lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Channel Cipher Suites failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -413,7 +413,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 			lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get Channel Cipher Suites failed: %s",
 					val2str(rsp->ccode, completion_code_vals));
 			return -1;
@@ -648,8 +648,9 @@ ipmi_get_channel_info(struct ipmi_intf *intf, uint8_t channel)
  *
  * @channel - IPMI Channel
  *
- * returns - IPMI Channel Medium, IPMI_CHANNEL_MEDIUM_RESERVED if ccode > 0,
- * 0 on error.
+ * @returns IPMI Channel Medium
+ * @retval IPMI_CHANNEL_MEDIUM_RESERVED if ccode was not IPMI_CC_OK
+ * @retval 0 on error
  */
 uint8_t
 ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
@@ -663,7 +664,7 @@ ipmi_get_channel_medium(struct ipmi_intf *intf, uint8_t channel)
 		return IPMI_CHANNEL_MEDIUM_RESERVED;
 	} else if (ccode < 0 && eval_ccode(ccode) != 0) {
 		return 0;
-	} else if (ccode > 0) {
+	} else if (ccode) {
 		lprintf(LOG_ERR, "Get Channel Info command failed: %s",
 				val2str(ccode, completion_code_vals));
 		return IPMI_CHANNEL_MEDIUM_RESERVED;

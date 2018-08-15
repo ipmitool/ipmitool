@@ -61,7 +61,7 @@ ipmi_chassis_power_status(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Unable to get Chassis Power Status");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Power Status failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -101,7 +101,7 @@ ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 				val2str(ctl, ipmi_chassis_power_control_vals));
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Chassis Power Control to %s failed: %s",
 				val2str(ctl, ipmi_chassis_power_control_vals),
 				val2str(rsp->ccode, completion_code_vals));
@@ -156,7 +156,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 		lprintf(LOG_ERR, "Unable to set Chassis Identify");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Chassis Identify failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		if (identify_data.force_on != 0) {
@@ -204,7 +204,7 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Unable to get Chassis Power-On-Hours");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Power-On-Hours failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -247,7 +247,7 @@ ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Unable to get Chassis Restart Cause");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Restart Cause failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -308,7 +308,7 @@ ipmi_chassis_status(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Error sending Chassis Status command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error sending Chassis Status command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -391,7 +391,7 @@ ipmi_chassis_selftest(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Error sending Get Self Test command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error sending Get Self Test command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -466,7 +466,7 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 		lprintf(LOG_ERR, "Error setting Chassis Boot Parameter %d", param);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (param != 0) {
 			lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
 					param, val2str(rsp->ccode, completion_code_vals));
@@ -512,7 +512,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 		lprintf(LOG_ERR, "Error Getting Chassis Boot Parameter %s", arg);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Boot Parameter %s failed: %s",
 				arg, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -855,7 +855,7 @@ ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
 			"Error Getting Chassis Boot Parameter %d", param_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Boot Parameter %d failed: %s",
 			param_id, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1063,7 +1063,7 @@ ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 		lprintf(LOG_ERR, "Error in Power Restore Policy command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Power Restore Policy command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;

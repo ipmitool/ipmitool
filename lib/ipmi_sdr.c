@@ -810,7 +810,7 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 					"Unable to renew SDR reservation");
 				return NULL;
 			}
-		} else if (rsp->ccode > 0) {
+		} else if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get SDR %04x command failed: %s",
 				itr->next, val2str(rsp->ccode,
 						   completion_code_vals));
@@ -964,7 +964,7 @@ ipmi_sdr_print_sensor_event_status(struct ipmi_intf *intf,
 			sensor_num);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_DEBUG,
 			"Error reading event status for sensor #%02x: %s",
 			sensor_num, val2str(rsp->ccode, completion_code_vals));
@@ -1178,7 +1178,7 @@ ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 			sensor_num);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_DEBUG,
 			"Error reading event enable for sensor #%02x: %s",
 			sensor_num, val2str(rsp->ccode, completion_code_vals));
@@ -2793,7 +2793,7 @@ ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
 	/* be slient for errors, they are handled by calling function */
 	if (rsp == NULL)
 		return -1;
-	if (rsp->ccode > 0)
+	if (rsp->ccode)
 		return -1;
 
 	*reserve_id = ((struct sdr_reserve_repo_rs *) &(rsp->data))->reserve_id;
@@ -2838,7 +2838,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 		itr = NULL;
 		return NULL;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
 			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		free(itr);
@@ -2880,7 +2880,7 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 			itr = NULL;
 			return NULL;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Error obtaining SDR info: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			free(itr);
@@ -3054,7 +3054,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		}
 
 		/* special completion codes handled above */
-		if (rsp->ccode > 0 || rsp->data_len == 0) {
+		if (rsp->ccode || rsp->data_len == 0) {
 			free(data);
 			data = NULL;
 			return NULL;
@@ -4195,7 +4195,7 @@ ipmi_sdr_get_info(struct ipmi_intf *intf,
 		lprintf(LOG_ERR, "Get SDR Repository Info command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SDR Repository Info command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;

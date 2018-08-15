@@ -1649,7 +1649,7 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, uint8_t clk_id, int8_t clk_res,
 		return -1;
 	}
 
-	if (rsp->ccode == 0 ) {
+	if (!rsp->ccode) {
 		enabled	 = (rsp->data[1]&0x8)!=0;
 		direction = (rsp->data[1]&0x4)!=0;
 
@@ -2353,7 +2353,7 @@ picmg_discover(struct ipmi_intf *intf) {
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 	    lprintf(LOG_DEBUG,"No response from Get PICMG Properties");
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 	    lprintf(LOG_DEBUG,"Error response %#x from Get PICMG Properties",
 		    rsp->ccode);
 	} else if (rsp->data_len < 4) {

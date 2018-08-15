@@ -366,7 +366,7 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Get BMC Global Enables command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get BMC Global Enables command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -382,7 +382,7 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Set BMC Global Enables command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set BMC Global Enables command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -511,7 +511,7 @@ selwatch_get_data(struct ipmi_intf * intf, struct sel_data *data)
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return 0;

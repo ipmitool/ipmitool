@@ -888,7 +888,7 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 int
 eval_ccode(const int ccode)
 {
-	if (ccode == 0) {
+	if (!ccode) {
 		return 0;
 	} else if (ccode < 0) {
 		switch (ccode) {
@@ -1052,7 +1052,7 @@ ipmi_get_oem_id(struct ipmi_intf *intf)
 		lprintf(LOG_ERR, "Get Board ID command failed");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Board ID command failed: %#x %s",
 			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		return 0;

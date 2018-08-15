@@ -2718,7 +2718,7 @@ ipmi_get_auth_capabilities_cmd(
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL || rsp->ccode > 0) {
+	if (rsp == NULL || rsp->ccode) {
 		/*
 		 * It's very possible that this failed because we asked for IPMI
 		 * v2 data. Ask again, without requesting IPMI v2 data.
@@ -2731,7 +2731,7 @@ ipmi_get_auth_capabilities_cmd(
 			lprintf(LOG_INFO, "Get Auth Capabilities error");
 			return 1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_INFO, "Get Auth Capabilities error: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			return 1;
@@ -2790,7 +2790,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 			(long)intf->session->v2_data.bmc_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Close Session command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3365,7 +3365,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
@@ -3641,7 +3641,7 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 
 	if (rsp == NULL)
 		return -1;
-	if (rsp->ccode > 0)
+	if (rsp->ccode)
 		return -1;
 
 	return 0;

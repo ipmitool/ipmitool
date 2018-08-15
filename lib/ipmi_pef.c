@@ -259,7 +259,7 @@ _ipmi_get_pef_capabilities(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 3) {
 		return (-2);
@@ -305,7 +305,7 @@ _ipmi_get_pef_filter_entry(struct ipmi_intf *intf, uint8_t filter_id,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 22 || (rsp->data_len - 1) != dest_size) {
 		return (-2);
@@ -349,7 +349,7 @@ _ipmi_get_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 3 || (rsp->data_len - 1) != dest_size) {
 		return (-2);
@@ -393,7 +393,7 @@ _ipmi_get_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 5 || (rsp->data_len - 1) != dest_size) {
 		return (-2);
@@ -432,7 +432,7 @@ _ipmi_get_pef_filter_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 2) {
 		return (-2);
@@ -471,7 +471,7 @@ _ipmi_get_pef_policy_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 2) {
 		return (-2);
@@ -510,7 +510,7 @@ _ipmi_get_pef_system_guid(struct ipmi_intf *intf,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	} else if (rsp->data_len != 18
 			|| (rsp->data_len - 2) != sizeof(system_guid->guid)) {
@@ -555,7 +555,7 @@ _ipmi_set_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	}
 	return 0;
@@ -595,7 +595,7 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		return rsp->ccode;
 	}
 	return 0;

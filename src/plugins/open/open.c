@@ -425,7 +425,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	rsp.data_len = recv.msg.data_len - 1;
 
 	/* save response data for caller */
-	if (rsp.ccode == 0 && rsp.data_len > 0) {
+	if (!rsp.ccode && rsp.data_len > 0) {
 	   memmove(rsp.data, rsp.data + 1, rsp.data_len);
 	   rsp.data[rsp.data_len] = 0;
 	}

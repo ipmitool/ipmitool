@@ -312,11 +312,11 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	req.msg.data_len = len+2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set LAN Parameter failed");
 		return -1;
 	}
-	if ((rsp->ccode > 0) && (wait != 0)) {
+	if (rsp->ccode && wait) {
 		lprintf(LOG_DEBUG, "Warning: Set LAN Parameter failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		if (rsp->ccode == 0xcc) {
@@ -328,9 +328,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 					break;
 				sleep(IPMI_LANP_TIMEOUT);
 				rsp = intf->sendrecv(intf, &req);
-				if (rsp == NULL)
-					continue;
-				if (rsp->ccode > 0)
+				if (!rsp || rsp->ccode)
 					continue;
 				return set_lan_param_wait(intf, chan, param, data, len);
 			}
@@ -341,7 +339,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 		}
 	}
 
-	if (wait == 0)
+	if (!wait)
 		return 0;
 	return set_lan_param_wait(intf, chan, param, data, len);
 }
@@ -2074,7 +2072,7 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 		return (-1);
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -2150,7 +2148,7 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 		return (-1);
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return (-1);
