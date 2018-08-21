@@ -258,7 +258,7 @@ ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 	unsigned short padding;
 	unsigned long fsize = 0;
 	unsigned char not_used;
-	if (file == NULL) {
+	if (!file) {
 		lprintf(LOG_ERR, "No file given.");
 		return (-1);
 	}
@@ -312,7 +312,7 @@ KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle = NULL;
 	pFileHandle = fopen(pFileName, "rb");
-	if (pFileHandle == NULL) {
+	if (!pFileHandle) {
 		return (-1);
 	}
 	if (fseek(pFileHandle, 0L , SEEK_END) == 0) {
@@ -342,7 +342,7 @@ KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 	int qty = 0;
 
 	pFileHandle = fopen(pFileName, "rb");
-	if (pFileHandle == NULL) {
+	if (!pFileHandle) {
 		lprintf(LOG_ERR, "Failed to open '%s' for reading.",
 				pFileName);
 		return (-1);
@@ -501,14 +501,14 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 			printf("Protocol Revision          :");
 			printf(" > 5 optimizing buffers\n");
 		}
-		if (strstr(intf->name,"lan") != NULL) {
+		if (strstr(intf->name,"lan")) {
 			/* also covers lanplus */
 			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
 			if (verbose) {
 				printf("IOL payload size           : %d\n",
 						save_fw_nfo.bufferSize);
 			}
-		} else if ((strstr(intf->name,"open")!= NULL)
+		} else if (strstr(intf->name,"open")
 				&& intf->target_addr != IPMI_BMC_SLAVE_ADDR 
 				&& (intf->target_addr !=  intf->my_addr)) {
 			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
@@ -549,7 +549,7 @@ KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get Device Id Command");
 		return (-1);
 	} else if (rsp->ccode) {
@@ -610,7 +610,7 @@ KfwumGetStatus(struct ipmi_intf * intf)
 		req.msg.data = &counter;
 		req.msg.data_len = 1;
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Get Status Command.");
 			rc = (-1);
@@ -668,7 +668,7 @@ KfwumManualRollback(struct ipmi_intf *intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
 		return (-1);
 	} else if (rsp->ccode) {
@@ -707,7 +707,7 @@ KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
 		req.msg.data_len = 6;
 	}
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Firmware Start Firmware Image Download Command.");
 		return (-1);
@@ -755,13 +755,13 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 			/* + 1 => sequenceNumber*/
 		}
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Save Firmware Image Download Command.");
 			/* We don't receive "C7" on errors with IOL,
 			 * instead we receive nothing
 			 */
-			if (strstr(intf->name, "lan") != NULL) {
+			if (strstr(intf->name, "lan")) {
 				no_rsp++;
 				if (no_rsp < FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT) {
 					*pInBufLength -= 1;
@@ -836,7 +836,7 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 	/* Infinite loop if BMC doesn't reply or replies 0xc0 every time. */
 	do {
 		rsp = intf->sendrecv(intf, &req);
-	} while (rsp == NULL || rsp->ccode == 0xc0);
+	} while (!rsp || rsp->ccode == 0xc0);
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR,
@@ -917,7 +917,7 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Firmware Start Firmware Upgrade Command");
 		rc = (-1);
@@ -958,7 +958,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 		req.msg.data_len = 1;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Get Trace Log Command");
 			rc = (-1);

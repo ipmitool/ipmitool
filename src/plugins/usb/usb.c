@@ -121,14 +121,14 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	FILE *fp;
 
 	fp = fopen("/proc/scsi/sg/device_strs", "r");
-	if (fp == NULL) {
+	if (!fp) {
 		/* Return 1 on error */
 		return 1;
 	}
 
 	while (1) {
 		/* Read line by line and search for "AMI" */
-		if (fgets(linebuf, 80, fp) == NULL) {
+		if (!fgets(linebuf, 80, fp)) {
 			break;
 		}
 
@@ -145,7 +145,7 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	}
 
 	*num_ami_devices = numdevfound;
-	if (fp != NULL) {
+	if (fp) {
 		fclose(fp);
 		fp = NULL;
 	}

@@ -288,7 +288,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 		}
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL)
+		if (!rsp)
 		{
 			lprintf(LOG_ERR, "Get Session Info command failed");
 			retval = -1;
@@ -322,7 +322,7 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 			rqdata[0] = i++;
 			rsp = intf->sendrecv(intf, &req);
 			
-			if (rsp == NULL)
+			if (!rsp)
 			{
 				lprintf(LOG_ERR, "Get Session Info command failed");
 				retval = -1;

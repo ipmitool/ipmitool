@@ -2351,7 +2351,7 @@ picmg_discover(struct ipmi_intf *intf) {
 	lprintf(LOG_DEBUG, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
 		intf->my_addr, intf->transit_addr, intf->target_addr);
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 	    lprintf(LOG_DEBUG,"No response from Get PICMG Properties");
 	} else if (rsp->ccode) {
 	    lprintf(LOG_DEBUG,"Error response %#x from Get PICMG Properties",

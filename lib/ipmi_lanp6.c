@@ -333,7 +333,7 @@ ipmi_lanp_err(const struct ipmi_rs *rsp, const struct ipmi_lanp *p,
 	int log_level = LOG_ERR;
 	int err;
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		reason = "No response";
 		err = -1;
 	} else {
@@ -354,7 +354,7 @@ ipmi_lanp_err(const struct ipmi_rs *rsp, const struct ipmi_lanp *p,
 			reason = val2str(rsp->ccode, lanp_cc_vals);
 		}
 
-		if (reason == NULL) {
+		if (!reason) {
 			/* print completion code value */
 			snprintf(cc_msg, sizeof(cc_msg), "CC=%02x", rsp->ccode);
 			reason = cc_msg;
@@ -403,7 +403,7 @@ ipmi_get_dynamic_oem_lanp(void *priv, const struct ipmi_lanp *param,
 		param->name, set_selector, block_selector);
 
 	rsp = lp->intf->sendrecv(lp->intf, &req);
-	if (rsp == NULL || rsp->ccode) {
+	if (!rsp || rsp->ccode) {
 		return ipmi_lanp_err(rsp, param, "get", quiet);
 	}
 
@@ -467,7 +467,7 @@ ipmi_set_dynamic_oem_lanp(void *priv, const struct ipmi_lanp *param,
 	lprintf(LOG_INFO, "Setting parameter '%s'", param->name);
 
 	rsp = lp->intf->sendrecv(lp->intf, &req);
-	if (rsp == NULL || rsp->ccode) {
+	if (!rsp || rsp->ccode) {
 		return ipmi_lanp_err(rsp, param, "set", 0);
 	}
 

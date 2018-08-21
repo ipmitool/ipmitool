@@ -84,9 +84,9 @@ ipmi_mc_reset(struct ipmi_intf * intf, int cmd)
 	if (cmd == BMC_COLD_RESET)
 		intf->abort = 1;
 
-	if (cmd == BMC_COLD_RESET && rsp == NULL) {
+	if (cmd == BMC_COLD_RESET && !rsp) {
 		/* This is expected. See 20.2 Cold Reset Command, p.243, IPMIv2.0 rev1.0 */
-	} else if (rsp == NULL) {
+	} else if (!rsp) {
 		lprintf(LOG_ERR, "MC reset command failed.");
 		return (-1);
 	} else if (rsp->ccode) {
@@ -190,7 +190,7 @@ printf_mc_usage(void)
 	lprintf(LOG_NOTICE, "  selftest");
 	lprintf(LOG_NOTICE, "  getenables");
 	lprintf(LOG_NOTICE, "  setenables <option=on|off> ...");
-	for (bf = mc_enables_bf; bf->name != NULL; bf++) {
+	for (bf = mc_enables_bf; bf->name; bf++) {
 		lprintf(LOG_NOTICE, "    %-20s  %s", bf->name, bf->desc);
 	}
 	printf_sysinfo_usage(0);
@@ -281,7 +281,7 @@ ipmi_mc_get_enables(struct ipmi_intf * intf)
 	req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Global Enables command failed");
 		return -1;
 	}
@@ -291,7 +291,7 @@ ipmi_mc_get_enables(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	for (bf = mc_enables_bf; bf->name != NULL; bf++) {
+	for (bf = mc_enables_bf; bf->name; bf++) {
 		printf("%-40s : %sabled\n", bf->desc,
 		       rsp->data[0] & bf->mask ? "en" : "dis");
 	}
@@ -331,7 +331,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Global Enables command failed");
 		return -1;
 	}
@@ -344,7 +344,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	en = rsp->data[0];
 
 	for (i = 0; i < argc; i++) {
-		for (bf = mc_enables_bf; bf->name != NULL; bf++) {
+		for (bf = mc_enables_bf; bf->name; bf++) {
 			int nl = strlen(bf->name);
 			if (strncmp(argv[i], bf->name, nl) != 0)
 				continue;
@@ -373,7 +373,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Global Enables command failed");
 		return -1;
 	}
@@ -423,7 +423,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return -1;
 	}
@@ -455,7 +455,7 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 
 	product = OEM_PROD_STRING(devid->manufacturer_id, devid->product_id);
 
-	if (product!=NULL) {
+	if (product) {
 		printf("Product Name              : %s\n", product);
 	}
 
@@ -497,7 +497,7 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	if (guid == NULL) {
+	if (!guid) {
 		return (-3);
 	}
 
@@ -507,7 +507,7 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, struct ipmi_guid_t *guid)
 	req.msg.cmd = BMC_GET_GUID;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -734,7 +734,7 @@ ipmi_mc_get_watchdog(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Watchdog Timer command failed");
 		return -1;
 	}
@@ -934,7 +934,7 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	lprintf(LOG_INFO, "  - timeout    = %hu", conf.timeout);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Watchdog Timer command failed");
 		goto out;
 	}
@@ -994,7 +994,7 @@ ipmi_mc_shutoff_watchdog(struct ipmi_intf * intf)
 	msg_data[5] = 0x0b;  /* countdown msb - 5 mins */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Watchdog Timer Shutoff command failed!");
 		return -1;
 	}
@@ -1029,7 +1029,7 @@ ipmi_mc_rst_watchdog(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Reset Watchdog Timer command failed!");
 		return -1;
 	}
@@ -1236,7 +1236,7 @@ ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set,
 	 *   u8 data0[14]
 	 */
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL)
+	if (!rsp)
 		return (-1);
 
 	if (!rsp->ccode) {
@@ -1278,7 +1278,7 @@ ipmi_mc_setsysinfo(struct ipmi_intf * intf, int len, void *buffer)
 	 *   u8 data1[16]
 	 */
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp != NULL) {
+	if (rsp) {
 		return rsp->ccode;
 	}
 	return -1;

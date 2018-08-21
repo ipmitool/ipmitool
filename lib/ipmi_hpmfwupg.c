@@ -1209,7 +1209,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH && !bufLengthIsSet) {
 					rc = HPMFWUPG_SUCCESS;
 					/* Retry with a smaller buffer length */
-					if (strstr(intf->name,"lan") != NULL && bufLength > 8) {
+					if (strstr(intf->name,"lan") && bufLength > 8) {
 						bufLength-= 8;
 						lprintf(LOG_INFO,
 								"Trying reduced buffer length: %d",
@@ -1389,7 +1389,7 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 	int rc = HPMFWUPG_SUCCESS;
 	int ret = 0;
 	FILE *pImageFile = fopen(imageFilename, "rb");
-	if (pImageFile == NULL) {
+	if (!pImageFile) {
 		lprintf(LOG_ERR, "Cannot open image file '%s'",
 				imageFilename);
 		return HPMFWUPG_ERROR;
@@ -1403,7 +1403,7 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 	}
 	pFwupgCtx->imageSize  = ftell(pImageFile);
 	pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
-	if (pFwupgCtx->pImageData == NULL) {
+	if (!pFwupgCtx->pImageData) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		fclose(pImageFile);
 		return HPMFWUPG_ERROR;
@@ -1434,7 +1434,7 @@ HpmfwupgGetDeviceId(struct ipmi_intf *intf, struct ipm_devid_rsp *pGetDevId)
 	req.msg.cmd = BMC_GET_DEVICE_ID;
 	req.msg.data_len = 0;
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error getting device ID.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1462,7 +1462,7 @@ HpmfwupgGetTargetUpgCapabilities(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgGetTargetUpgCapabilitiesReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 				"Error getting target upgrade capabilities.");
 		return HPMFWUPG_ERROR;
@@ -1539,7 +1539,7 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgGetComponentPropertiesReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_NOTICE,
 				"Error getting component properties\n");
 		return HPMFWUPG_ERROR;
@@ -1665,7 +1665,7 @@ HpmfwupgAbortUpgrade(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgAbortUpgradeReq);
 	rsp = HpmfwupgSendCmd(intf, req, NULL);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error - aborting upgrade.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1694,7 +1694,7 @@ HpmfwupgInitiateUpgradeAction(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgInitiateUpgradeActionReq);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error initiating upgrade action.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1728,7 +1728,7 @@ HpmfwupgUploadFirmwareBlock(struct ipmi_intf *intf,
 	/* 2 is the size of the upload struct - data */
 	req.msg.data_len = 2 + count;
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_NOTICE, "Error uploading firmware block.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1805,7 +1805,7 @@ HpmfwupgFinishFirmwareUpload(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgFinishFirmwareUploadReq);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error fininshing firmware upload.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1842,7 +1842,7 @@ HpmfwupgActivateFirmware(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof(struct HpmfwupgActivateFirmwareReq)
 		- (!pCtx->req.rollback_override ? 1 : 0);
 	rsp = HpmfwupgSendCmd(intf, req, pFwupgCtx);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error activating firmware.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1943,7 +1943,7 @@ HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgManualFirmwareRollbackReq);
 	rsp = HpmfwupgSendCmd(intf, req, &fwupgCtx);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error sending manual rollback.");
 		return HPMFWUPG_ERROR;
 	}
@@ -1981,7 +1981,7 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 	req.msg.data = (unsigned char*)&pCtx->req;
 	req.msg.data_len = sizeof(struct HpmfwupgQueryRollbackStatusReq);
 	/* If we are not in upgrade context, we use default timeout values */
-	if (pFwupgCtx != NULL) {
+	if (pFwupgCtx) {
 		struct HpmfwupgImageHeader *pImageHeader;
 		if (pFwupgCtx->pImageData) {
 			pImageHeader = (struct HpmfwupgImageHeader*)pFwupgCtx->pImageData;
@@ -2017,7 +2017,7 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 			&& ((rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS)
 				|| (rsp->ccode == IPMI_CC_TIMEOUT))
 			&& (timeoutSec2 - timeoutSec1 < rollbackTimeout));
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error getting upgrade status.");
 		return HPMFWUPG_ERROR;
 	}
@@ -2061,7 +2061,7 @@ HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelftest
 	unsigned int timeoutSec1, timeoutSec2;
 	pCtx->req.picmgId = HPMFWUPG_PICMG_IDENTIFIER;
 	/* If we are not in upgrade context, we use default timeout values */
-	if (pFwupgCtx != NULL) {
+	if (pFwupgCtx) {
 		/* Getting selftest timeout from new image */
 		struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 			pFwupgCtx->pImageData;
@@ -2097,7 +2097,7 @@ HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelftest
 	} while (rsp
 			&& (rsp->ccode == HPMFWUPG_COMMAND_IN_PROGRESS)
 			&& (timeoutSec2 - timeoutSec1 < selfTestTimeout));
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_NOTICE, "Error getting upgrade status\n");
 		return HPMFWUPG_ERROR;
 	}
@@ -2131,7 +2131,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	unsigned int  timeoutSec1, timeoutSec2;
 	unsigned char retry = 0;
 	/* If we are not in upgrade context, we use default timeout values */
-	if (pFwupgCtx != NULL) {
+	if (pFwupgCtx) {
 		inaccessTimeout = pFwupgCtx->targetCap.inaccessTimeout*5;
 		upgradeTimeout  = pFwupgCtx->targetCap.upgradeTimeout*5;
 	} else {
@@ -2147,10 +2147,10 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	do {
 		static unsigned char isValidSize = FALSE;
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			#define HPM_LAN_PACKET_RESIZE_LIMIT 6
 			/* also covers lanplus */
-			if (strstr(intf->name, "lan") != NULL) {
+			if (strstr(intf->name, "lan")) {
 				static int errorCount=0;
 				static struct ipmi_rs fakeRsp;
 				lprintf(LOG_DEBUG,
@@ -2215,7 +2215,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 			}
 		}
 		/* Handle inaccessibility timeout (rsp = NULL if IOL) */
-		if (rsp == NULL || rsp->ccode == 0xff || rsp->ccode == 0xc3 || rsp->ccode == 0xd3) {
+		if (!rsp || rsp->ccode == 0xff || rsp->ccode == 0xc3 || rsp->ccode == 0xd3) {
 			if (inaccessTimeoutCounter < inaccessTimeout) {
 				timeoutSec2 = time(NULL);
 				if (timeoutSec2 > timeoutSec1) {
@@ -2268,7 +2268,7 @@ HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 	unsigned int  timeoutSec1, timeoutSec2;
 	struct HpmfwupgGetUpgradeStatusCtx upgStatusCmd;
 	/* If we are not in upgrade context, we use default timeout values */
-	if (pFwupgCtx != NULL) {
+	if (pFwupgCtx) {
 		upgradeTimeout = (unsigned int)(pFwupgCtx->targetCap.upgradeTimeout*5);
 		if (verbose) {
 			printf("Use File Upgrade Capabilities: %i seconds\n",
@@ -2465,7 +2465,7 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 		return HPMFWUPG_SUCCESS;
 	} else if ((strcmp(argv[0], "check") == 0)) {
 		/* hpm check */
-		if (argv[1] == NULL) {
+		if (!argv[1]) {
 			rc = HpmfwupgTargetCheck(intf,VIEW_MODE);
 		} else {
 			/* hpm check <filename> */

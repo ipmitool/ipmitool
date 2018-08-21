@@ -62,7 +62,7 @@ ipmi_sensor_get_sensor_reading_factors(
 
 	char id[17];
 
-	if (intf == NULL || sensor == NULL)
+	if (!intf || !sensor)
 		return -1;
 
 	memset(id, 0, sizeof(id));
@@ -80,7 +80,7 @@ ipmi_sensor_get_sensor_reading_factors(
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error updating reading factor for sensor %s (#%02x)",
 			id, sensor->cmn.keys.sensor_num);
 		return -1;
@@ -164,7 +164,7 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 
 	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 3);
 
-	if (sr == NULL) {
+	if (!sr) {
 		return -1;
 	}
 
@@ -253,7 +253,7 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 
 	sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr_record_type, 3);
 
-	if (sr == NULL) {
+	if (!sr) {
 		return -1;
 	}
 
@@ -424,16 +424,16 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 	lprintf(LOG_DEBUG, "Querying SDR for sensor list");
 
 	itr = ipmi_sdr_start(intf, 0);
-	if (itr == NULL) {
+	if (!itr) {
 		lprintf(LOG_ERR, "Unable to open SDR for reading");
 		return -1;
 	}
 
-	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
+	while ((header = ipmi_sdr_get_next_header(intf, itr))) {
 		uint8_t *rec;
 
 		rec = ipmi_sdr_get_record(intf, header, itr);
-		if (rec == NULL) {
+		if (!rec) {
 			lprintf(LOG_DEBUG, "rec == NULL");
 			continue;
 		}
@@ -481,7 +481,7 @@ __ipmi_sensor_set_threshold(struct ipmi_intf *intf,
 	rsp = ipmi_sensor_set_sensor_thresholds(intf, num, mask, setting,
 				  target, lun, channel);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting threshold");
 		return -1;
 	}
@@ -612,7 +612,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 
 	/* lookup by sensor name */
 	sdr = ipmi_sdr_find_sdr_byid(intf, id);
-	if (sdr == NULL) {
+	if (!sdr) {
 		lprintf(LOG_ERR, "Sensor data record not found!");
 		return -1;
 	}
@@ -818,7 +818,7 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 
 	for (i = 0; i < argc; i++) {
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
-		if (sdr == NULL) {
+		if (!sdr) {
 			lprintf(LOG_ERR, "Sensor \"%s\" not found!",
 				argv[i]);
 			rc = -1;
@@ -833,7 +833,7 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 			struct sdr_record_common_sensor	*sensor = sdr->record.common;
 			sr = ipmi_sdr_read_sensor_value(intf, sensor, sdr->type, 3);
 
-			if (sr == NULL) {
+			if (!sr) {
 				rc = -1;
 				continue;
 			}
@@ -882,7 +882,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 	/* lookup by sensor name */
 	for (i = 0; i < argc; i++) {
 		sdr = ipmi_sdr_find_sdr_byid(intf, argv[i]);
-		if (sdr == NULL) {
+		if (!sdr) {
 			lprintf(LOG_ERR, "Sensor data record \"%s\" not found!",
 					argv[i]);
 			rc = -1;

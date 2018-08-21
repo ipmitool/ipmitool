@@ -53,7 +53,7 @@ ipmi_cfgp_init(struct ipmi_cfgp_ctx *ctx, const struct ipmi_cfgp *set,
 		unsigned int count, const char *cmdname,
 		ipmi_cfgp_handler_t handler, void *priv)
 {
-	if (ctx == NULL || set == NULL || handler == NULL || !cmdname) {
+	if (!ctx || !set || !handler || !cmdname) {
 		return -1;
 	}
 
@@ -78,7 +78,7 @@ ipmi_cfgp_uninit(struct ipmi_cfgp_ctx *ctx)
 {
 	struct ipmi_cfgp_data *d;
 
-	if (ctx == NULL) {
+	if (!ctx) {
 		return -1;
 	}
 
@@ -127,7 +127,7 @@ ipmi_cfgp_parse_sel(struct ipmi_cfgp_ctx *ctx,
 {
 	const struct ipmi_cfgp *p;
 
-	if (ctx == NULL || argv == NULL || sel == NULL) {
+	if (!ctx || !argv || !sel) {
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ ipmi_cfgp_parse_sel(struct ipmi_cfgp_ctx *ctx,
 	}
 
 	p = lookup_cfgp(ctx, argv[0]);
-	if (p == NULL) {
+	if (!p) {
 		lprintf(LOG_ERR, "invalid parameter");
 		return -1;
 	}
@@ -205,11 +205,11 @@ cfgp_add_data(struct ipmi_cfgp_ctx *ctx, struct ipmi_cfgp_data *data)
 static void
 cfgp_usage(const struct ipmi_cfgp *p, int write)
 {
-	if (p->name == NULL) {
+	if (!p->name) {
 		return;
 	}
 
-	if (write && p->format == NULL) {
+	if (write && !p->format) {
 		return;
 	}
 
@@ -231,7 +231,7 @@ ipmi_cfgp_usage(const struct ipmi_cfgp *set, int count, int write)
 	const struct ipmi_cfgp *p;
 	int i;
 
-	if (set == NULL) {
+	if (!set) {
 		return;
 	}
 
@@ -267,7 +267,7 @@ ipmi_cfgp_parse_data(struct ipmi_cfgp_ctx *ctx,
 	struct ipmi_cfgp_data *data;
 	struct ipmi_cfgp_action action;
 
-	if (ctx == NULL || sel == NULL || argv == NULL) {
+	if (!ctx || !sel || !argv) {
 		return -1;
 	}
 
@@ -294,7 +294,7 @@ ipmi_cfgp_parse_data(struct ipmi_cfgp_ctx *ctx,
 	}
 
 	data = malloc(sizeof(struct ipmi_cfgp_data) + p->size);
-	if (data == NULL) {
+	if (!data) {
 		return -1;
 	}
 
@@ -374,7 +374,7 @@ cfgp_get_param(struct ipmi_cfgp_ctx *ctx, const struct ipmi_cfgp *p,
 
 		do {
 			data = malloc(sizeof(struct ipmi_cfgp_data) + p->size);
-			if (data == NULL) {
+			if (!data) {
 				return -1;
 			}
 
@@ -426,7 +426,7 @@ ipmi_cfgp_get(struct ipmi_cfgp_ctx *ctx, const struct ipmi_cfgp_sel *sel)
 	int i;
 	int ret;
 
-	if (ctx == NULL || sel == NULL) {
+	if (!ctx || !sel) {
 		return -1;
 	}
 
@@ -465,7 +465,7 @@ cfgp_do_action(struct ipmi_cfgp_ctx *ctx, int action_type,
 	struct ipmi_cfgp_action action;
 	int ret;
 
-	if (ctx == NULL || sel == NULL) {
+	if (!ctx || !sel) {
 		return -1;
 	}
 
@@ -474,7 +474,7 @@ cfgp_do_action(struct ipmi_cfgp_ctx *ctx, int action_type,
 	action.argv = NULL;
 	action.file = file;
 
-	for (data = ctx->v; data != NULL; data = data->next) {
+	for (data = ctx->v; data; data = data->next) {
 		if (sel->param != -1 && sel->param != data->sel.param) {
 			continue;
 		}
@@ -527,7 +527,7 @@ int
 ipmi_cfgp_save(struct ipmi_cfgp_ctx *ctx,
 		const struct ipmi_cfgp_sel *sel, FILE *file)
 {
-	if (file == NULL) {
+	if (!file) {
 		return -1;
 	}
 
@@ -538,7 +538,7 @@ int
 ipmi_cfgp_print(struct ipmi_cfgp_ctx *ctx,
 		const struct ipmi_cfgp_sel *sel, FILE *file)
 {
-	if (file == NULL) {
+	if (!file) {
 		return -1;
 	}
 

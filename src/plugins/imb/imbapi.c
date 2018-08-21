@@ -117,7 +117,7 @@ open_imb(void)
 			OPEN_EXISTING,
 			FILE_ATTRIBUTE_NORMAL,
 			NULL);
-	if (hDevice == NULL || hDevice == INVALID_HANDLE_VALUE) {
+	if (!hDevice || INVALID_HANDLE_VALUE == hDevice) {
 		return 0;
 	}
 	/* Detect the IPMI version for processing requests later. This
@@ -1014,7 +1014,7 @@ GetAsyncImbpMessage_Ex(ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 	ImbAsyncRequest req;
 
 	while (1) {
-		if ((msgPtr == NULL) || (msgLen == NULL) || ( seqNo == NULL)) {
+		if (!msgPtr || !msgLen || !seqNo) {
 			return ACCESN_ERROR;
 		}
 
@@ -1150,7 +1150,7 @@ RegisterForImbAsyncMessageNotification(unsigned int *handleId)
 	DWORD respLength ;
 	int dummy;
 	/*allow  only one app to register  */
-	if ((handleId  == NULL ) || (AsyncEventHandle)) {
+	if (!handleId || AsyncEventHandle) {
 		return ACCESN_ERROR;
 	}
 	status = DeviceIoControl(hDevice, IOCTL_IMB_REGISTER_ASYNC_OBJ, &dummy,

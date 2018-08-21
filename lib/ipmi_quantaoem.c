@@ -106,7 +106,7 @@ oem_qct_get_platform_id(struct ipmi_intf *intf)
 	req.msg.data_len = sizeof(msg_data);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Platform ID command failed");
 		return 0;
 	}
@@ -138,7 +138,7 @@ oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	}
 	/* Allocate mem for the Description string */
 	desc = malloc(SIZE_OF_DESC);
-	if (desc == NULL) {
+	if (!desc) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		goto out;
 	}
@@ -154,7 +154,7 @@ oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 		req.msg.data_len = 0;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, " Error getting system info");
 			goto out;
 		} else if (rsp->ccode) {

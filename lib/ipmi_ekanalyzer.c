@@ -496,7 +496,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 			 */
 			filename[type_offset] = malloc(strlen(argv[argument_offset])
 					+ 1 - SIZE_OF_FILE_TYPE);
-			if (filename[type_offset] == NULL) {
+			if (!filename[type_offset]) {
 				lprintf(LOG_ERR, "malloc failure");
 				return (-1);
 			}
@@ -514,7 +514,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 						&list_head, &list_record, &list_last );
 				ipmi_ek_display_record(list_record, list_head, list_last);
 				/* Remove record of list */
-				while (list_head != NULL) {
+				while (list_head) {
 					ipmi_ek_remove_record_from_list(list_head,
 							&list_head,&list_last );
 					if (verbose > 1) {
@@ -604,7 +604,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 				filename_size = strlen(argv[index]) - SIZE_OF_FILE_TYPE + 1;
 				if (filename_size > 0) {
 					filename[i] = malloc( filename_size );
-					if (filename[i] != NULL) {
+					if (filename[i]) {
 						strcpy(filename[i], &argv[index][SIZE_OF_FILE_TYPE]);
 					} else {
 						lprintf(LOG_ERR, "ipmitool: malloc failure");
@@ -632,7 +632,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 							option, filename, file_type);
 				}
 				for (i = 0; i < (argc-1); i++) {
-					if (filename[i] != NULL) {
+					if (filename[i]) {
 						free(filename[i]);
 						filename[i] = NULL;
 					}
@@ -715,8 +715,9 @@ ipmi_ekanalyzer_print(int argc, char *opt, char **filename, int *file_type)
 				 */
 				tboolean first_data = TRUE;
 				for (list_record[i] = list_head[i];
-						list_record[i] != NULL;
-						list_record[i] = list_record[i]->next) {
+						list_record[i];
+						list_record[i] = list_record[i]->next)
+				{
 					if (list_record[i]->data[PICMG_ID_OFFSET] == FRU_AMC_CARRIER_P2P) {
 						if (first_data) {
 							printf("%s\n", STAR_LINE_LIMITER);
@@ -738,7 +739,7 @@ ipmi_ekanalyzer_print(int argc, char *opt, char **filename, int *file_type)
 			}
 			/*Destroy the list of record*/
 			for (i = 0; i < argc; i++) {
-				while (list_head[i] != NULL) {
+				while (list_head[i]) {
 					ipmi_ek_remove_record_from_list(list_head[i],
 							&list_head[i], &list_last[i]);
 				}
@@ -788,7 +789,7 @@ ipmi_ek_display_carrier_connectivity(struct ipmi_ek_multi_header *record)
 	int offset = START_DATA_OFFSET;
 	struct fru_picmgext_carrier_p2p_record rsc_desc;
 	struct fru_picmgext_carrier_p2p_descriptor *port_desc;
-	if (record == NULL) {
+	if (!record) {
 		lprintf(LOG_ERR, "P2P connectivity record is invalid\n");
 		return ERROR_STATUS;
 	}
@@ -916,11 +917,11 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
       return_value = ipmi_ekanalyzer_fru_file2structure( filename[num_file],
         &list_head[num_file], &list_record[num_file], &list_last[num_file]);
 
-      if ( list_head[num_file] != NULL ){
+      if (list_head[num_file]){
          for (    list_record[num_file] = list_head[num_file];
-                  list_record[num_file] != NULL;
-                  list_record[num_file] = list_record[num_file]->next
-            ){
+                  list_record[num_file];
+                  list_record[num_file] = list_record[num_file]->next)
+         {
             if ( ( strcmp(opt, "all") == 0 )
                   && ( file_type[num_file] == ON_CARRIER_FRU_FILE )
                ){
@@ -990,7 +991,7 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
          return_value = OK_STATUS;
          /*Destroy the list of record*/
          for ( index = 0; index < argc; index++ ){
-            while ( list_head[index] != NULL ){
+            while (list_head[index]) {
                ipmi_ek_remove_record_from_list ( list_head[index],
                         &list_head[index],&list_last[index] );
             }
@@ -1153,13 +1154,13 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
             /*Get Carrier p2p connectivity record for physical check*/
             for (num_file=0; num_file < argc; num_file++){
                if (file_type[num_file] == ON_CARRIER_FRU_FILE ){
-                  for ( pcarrier_p2p=list_head[num_file];
-                        pcarrier_p2p != NULL ;
-                        pcarrier_p2p = pcarrier_p2p->next
-                     ){
-                     if ( pcarrier_p2p->data[PICMG_ID_OFFSET]
-                           == FRU_AMC_CARRIER_P2P
-                        ){
+                  for (pcarrier_p2p = list_head[num_file];
+                       pcarrier_p2p;
+                       pcarrier_p2p = pcarrier_p2p->next)
+                  {
+                     if (FRU_AMC_CARRIER_P2P ==
+                         pcarrier_p2p->data[PICMG_ID_OFFSET])
+                     {
                         break;
                      }
                   }
@@ -1193,7 +1194,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
                match_pair ++;
             }
             for( num_file=0; num_file < argc; num_file++ ){
-               if (list_head[num_file] != NULL ){
+               if (list_head[num_file]) {
                   ipmi_ek_remove_record_from_list( list_head[num_file],
                            &list_record[num_file], &list_last[num_file]);
                }
@@ -1255,13 +1256,13 @@ static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       index2 = index_temp; /*index2 indcate an AMC*/
    }
    /*Calculate record size for Carrier file*/
-   for ( record=list_head[index1]; record != NULL;record = record->next ){
+   for (record = list_head[index1]; record; record = record->next ){
       if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
          num_amc_record2++;
       }
    }
    /*Calculate record size for amc file*/
-   for ( record=list_head[index2]; record != NULL;record = record->next){
+   for (record = list_head[index2]; record; record = record->next){
       if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
          num_amc_record1++;
       }
@@ -1279,17 +1280,17 @@ static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       amc_record2 = malloc ( num_amc_record2 * \
                            sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
 
-      for (record=list_head[index2]; record != NULL;record = record->next){
+      for (record = list_head[index2]; record; record = record->next) {
          if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
             result = ipmi_ek_create_amc_p2p_record( record,
                                        &amc_record1[index_record1] );
             if (result != ERROR_STATUS){
                struct ipmi_ek_multi_header * current_record = NULL;
 
-               for ( current_record=list_head[index1];
-                     current_record != NULL ;
-                     current_record = current_record->next
-                  ){
+               for (current_record=list_head[index1];
+                    current_record;
+                    current_record = current_record->next)
+               {
                   if ( current_record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
                      result = ipmi_ek_create_amc_p2p_record( current_record,
                                        &amc_record2[index_record2] );
@@ -1359,7 +1360,7 @@ ipmi_ek_check_physical_connectivity(
 {
    int return_status = OK_STATUS;
 
-   if ( record == NULL ){
+   if (!record){
       printf("NO Carrier p2p connectivity !\n");
       return_status = ERROR_STATUS;
    }
@@ -1424,7 +1425,7 @@ ipmi_ek_check_physical_connectivity(
                      rsc_desc.p2p_count );
       }
 
-      if ( (port_desc != NULL) && (return_status != ERROR_STATUS) ){
+      if (port_desc && return_status != ERROR_STATUS) {
          int j=0;
 
          for ( j = 0; j < rsc_desc.p2p_count; j++ ){
@@ -1524,7 +1525,7 @@ ipmi_ek_check_physical_connectivity(
          }
          return_status = ERROR_STATUS;
       }
-      if (port_desc != NULL){
+      if (port_desc) {
          free(port_desc);
          port_desc = NULL;
       }
@@ -2209,7 +2210,7 @@ ipmi_ek_create_amc_p2p_record(struct ipmi_ek_multi_header *record,
 		int index_oem = 0;
 		amc_record->oem_guid = malloc(amc_record->guid_count * \
 				sizeof(struct fru_picmgext_guid));
-		if (amc_record->oem_guid == NULL) {
+		if (!amc_record->oem_guid) {
 			return ERROR_STATUS;
 		}
 		for (index_oem = 0; index_oem < amc_record->guid_count;
@@ -2239,7 +2240,7 @@ ipmi_ek_create_amc_p2p_record(struct ipmi_ek_multi_header *record,
 		int ch_index = 0;
 		amc_record->ch_desc = malloc((amc_record->ch_count) * \
 				sizeof(struct fru_picmgext_amc_channel_desc_record));
-		if (amc_record->ch_desc == NULL) {
+		if (!amc_record->ch_desc) {
 			return ERROR_STATUS;
 		}
 		for (ch_index = 0; ch_index < amc_record->ch_count;
@@ -2265,7 +2266,7 @@ ipmi_ek_create_amc_p2p_record(struct ipmi_ek_multi_header *record,
 		int i=0;
 		amc_record->link_desc = malloc(amc_record->link_desc_count * \
 				sizeof(struct fru_picmgext_amc_link_desc_record));
-		if (amc_record->link_desc == NULL) {
+		if (!amc_record->link_desc) {
 			return ERROR_STATUS;
 		}
 		for (i = 0; i< amc_record->link_desc_count; i++) {
@@ -2359,7 +2360,7 @@ ipmi_ek_display_fru_header(char *filename)
 	int ret = 0;
 
 	input_file = fopen(filename, "r");
-	if (input_file == NULL) {
+	if (!input_file) {
 		lprintf(LOG_ERR, "File '%s' not found.", filename);
 		return (ERROR_STATUS);
 	}
@@ -2423,7 +2424,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	struct tm *strtm;
 
 	input_file = fopen(filename, "r");
-	if (input_file == NULL) {
+	if (!input_file) {
 		lprintf(LOG_ERR, "File '%s' not found.", filename);
 		return (-1);
 	}
@@ -2619,7 +2620,7 @@ ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 	unsigned char ch_type = 0;
 	unsigned int len;
 
-	if (input_file == NULL) {
+	if (!input_file) {
 		lprintf(LOG_ERR, "No file stream to read.");
 		return (-1);
 	}
@@ -2702,8 +2703,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	unsigned char len = 0;
 	unsigned int size_board = 0;
 	int custom_fields = 0;
-	if (input_file == NULL || board_type == NULL
-			|| board_length == NULL) {
+	if (!input_file || !board_type || !board_length) {
 		return (size_t)(-1);
 	}
 	file_offset = ftell(input_file);
@@ -2732,7 +2732,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		unsigned char *data, *str;
 		unsigned int i = 0;
 		data = malloc(size_board + 1); /* Make room for type/length field */
-		if (data == NULL) {
+		if (!data) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (size_t)(-1);
 		}
@@ -2788,7 +2788,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			unsigned char *additional_data, *str;
 			unsigned int i = 0;
 			additional_data = malloc(size_board + 1); /* Make room for type/length field */
-			if (additional_data == NULL) {
+			if (!additional_data) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
 				return (size_t)(-1);
 			}
@@ -2796,7 +2796,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			ret = fread(additional_data + 1, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
-				if (additional_data != NULL) {
+				if (additional_data) {
 					free(additional_data);
 					additional_data = NULL;
 				}
@@ -2861,7 +2861,7 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 	unsigned char data = 0;
 	unsigned int len = 0;
 
-	if (input_file == NULL) {
+	if (!input_file) {
 		lprintf(LOG_ERR, "No file stream to read.");
 		return (-1);
 	}
@@ -2961,14 +2961,14 @@ ipmi_ek_display_record(struct ipmi_ek_multi_header *record,
 		struct ipmi_ek_multi_header *list_head,
 		struct ipmi_ek_multi_header *list_last)
 {
-	if (list_head == NULL) {
+	if (!list_head) {
 		printf("***empty list***\n");
 		return;
 	}
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("FRU Multi Info area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-	for (record = list_head; record != NULL; record = record->next) {
+	for (record = list_head; record; record = record->next) {
 		printf("Record Type ID: 0x%02x\n", record->header.type);
 		printf("Record Format version: 0x%02x\n",
 				record->header.format);
@@ -4054,7 +4054,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 	int ret = 0;
 
 	input_file = fopen(filename, "r");
-	if (input_file == NULL) {
+	if (!input_file) {
 		lprintf(LOG_ERR, "File: '%s' is not found", filename);
 		return ERROR_STATUS;
 	}
@@ -4081,7 +4081,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 	fseek(input_file, multi_offset, SEEK_SET);
 	while (!feof(input_file)) {
 		*list_record = malloc(sizeof(struct ipmi_ek_multi_header));
-		if (*list_record == NULL) {
+		if (!(*list_record)) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return ERROR_STATUS;
 		}
@@ -4099,7 +4099,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 			continue;
 		}
 		(*list_record)->data = malloc((*list_record)->header.len);
-		if ((*list_record)->data == NULL) {
+		if (!(*list_record)->data) {
 			lprintf(LOG_ERR, "Failed to allocation memory size %d\n",
 					(*list_record)->header.len);
 			record_count++;
@@ -4163,17 +4163,17 @@ ipmi_ek_add_record2list(struct ipmi_ek_multi_header **record,
 		struct ipmi_ek_multi_header **list_head,
 		struct ipmi_ek_multi_header **list_last)
 {
-	if (*list_head == NULL) {
-		*list_head = *record;
-		(*record)->prev = NULL;
-		if (verbose > 2) {
-			printf("Adding first record to list\n");
-		}
-	} else {
+	if (*list_head) {
 		(*list_last)->next = *record;
 		(*record)->prev = *list_last;
 		if (verbose > 2) {
 			printf("Add 1 record to list\n");
+		}
+	} else {
+		*list_head = *record;
+		(*record)->prev = NULL;
+		if (verbose > 2) {
+			printf("Adding first record to list\n");
 		}
 	}
 	*list_last = *record;
@@ -4203,12 +4203,12 @@ ipmi_ek_remove_record_from_list(struct ipmi_ek_multi_header *record,
 		struct ipmi_ek_multi_header **list_head,
 		struct ipmi_ek_multi_header **list_last)
 {
-	if (record->prev == NULL) {
+	if (!record->prev) {
 		*list_head = record->next;
 	} else {
 		record->prev->next = record->next;
 	}
-	if (record->next == NULL) {
+	if (!record->next) {
 		(*list_last) = record->prev;
 	} else {
 		record->next->prev = record->prev;

@@ -94,7 +94,7 @@ buf2str_extended(const uint8_t *buf, int len, const char *sep)
 	int left;
 	int sep_len;
 
-	if (buf == NULL) {
+	if (!buf) {
 		snprintf(str, sizeof(str), "<NULL>");
 		return (const char *)str;
 	}
@@ -174,7 +174,7 @@ ipmi_parse_hex(const char *str, uint8_t *out, int size)
 	}
 
 	len /= 2; /* out bytes */
-	if (out == NULL) {
+	if (!out) {
 		return -2;
 	}
 
@@ -322,7 +322,7 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 	static char un_str[32];
 	int i;
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (vs[i].val == val)
 			return vs[i].str;
 	}
@@ -339,7 +339,7 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 	static char un_str[32];
 	int i;
 
-	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str; i++) {
 		/* FIXME: for now on we assume PICMG capability on all IANAs */
 		if ( (vs[i].oem == oem || vs[i].oem == IPMI_OEM_PICMG) &&
 				vs[i].val == val ) {
@@ -599,7 +599,7 @@ uint16_t str2val(const char *str, const struct valstr *vs)
 {
 	int i;
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
 			return vs[i].val;
 	}
@@ -618,10 +618,10 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 {
 	int i;
 
-	if (vs == NULL)
+	if (!vs)
 		return;
 
-	if (title != NULL) {
+	if (title) {
 		if (loglevel < 0)
 			printf("\n%s:\n\n", title);
 		else
@@ -636,7 +636,7 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 		lprintf(loglevel, "==============================================");
 	}
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (loglevel < 0) {
 			if (vs[i].val < 256)
 				printf("  %d\t0x%02x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
@@ -667,18 +667,18 @@ print_valstr_2col(const struct valstr * vs, const char * title, int loglevel)
 {
 	int i;
 
-	if (vs == NULL)
+	if (!vs)
 		return;
 
-	if (title != NULL) {
+	if (title) {
 		if (loglevel < 0)
 			printf("\n%s:\n\n", title);
 		else
 			lprintf(loglevel, "\n%s:\n", title);
 	}
 
-	for (i = 0; vs[i].str != NULL; i++) {
-		if (vs[i+1].str == NULL) {
+	for (i = 0; vs[i].str; i++) {
+		if (!vs[i+1].str) {
 			/* last one */
 			if (loglevel < 0) {
 				printf("  %4d  %-32s\n", vs[i].val, vs[i].str);
@@ -737,7 +737,7 @@ ipmi_open_file(const char * file, int rw)
 		if (rw) {
 			/* does not exist, ok to create */
 			fp = fopen(file, "w");
-			if (fp == NULL) {
+			if (!fp) {
 				lperror(LOG_ERR, "Unable to open file %s "
 					"for write", file);
 				return NULL;
@@ -754,7 +754,7 @@ ipmi_open_file(const char * file, int rw)
 	if (!rw) {
 		/* on read skip the extra checks */
 		fp = fopen(file, "r");
-		if (fp == NULL) {
+		if (!fp) {
 			lperror(LOG_ERR, "Unable to open file %s", file);
 			return NULL;
 		}
@@ -777,7 +777,7 @@ ipmi_open_file(const char * file, int rw)
 	}
 
 	fp = fopen(file, rw ? "w+" : "r");
-	if (fp == NULL) {
+	if (!fp) {
 		lperror(LOG_ERR, "Unable to open file %s", file);
 		return NULL;
 	}
@@ -1048,7 +1048,7 @@ ipmi_get_oem_id(struct ipmi_intf *intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Board ID command failed");
 		return 0;
 	}

@@ -108,12 +108,12 @@ void log_init(const char * name, int isdaemon, int verbose)
 	if (!logpriv)
 		return;
 
-	if (name != NULL)
+	if (name)
 		logpriv->name = strdup(name);
 	else
 		logpriv->name = strdup(LOG_NAME_DEFAULT);
 
-	if (logpriv->name == NULL)
+	if (!logpriv->name)
 		fprintf(stderr, "ipmitool: malloc failure\n");
 
 	logpriv->daemon = isdaemon;

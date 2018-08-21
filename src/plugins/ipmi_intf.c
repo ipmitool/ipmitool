@@ -137,9 +137,9 @@ void ipmi_intf_print(struct ipmi_intf_support * intflist)
 
 	for (intf = ipmi_intf_table; intf && *intf; intf++) {
 
-		if (intflist != NULL) {
+		if (intflist) {
 			found = 0;
-			for (sup=intflist; sup->name != NULL; sup++) {
+			for (sup=intflist; sup->name; sup++) {
 				if (strncmp(sup->name, (*intf)->name, strlen(sup->name)) == 0 &&
 				    strncmp(sup->name, (*intf)->name, strlen((*intf)->name)) == 0 &&
 				    sup->supported == 1)
@@ -170,9 +170,9 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 	struct ipmi_intf ** intf;
 	struct ipmi_intf * i;
 
-	if (name == NULL) {
+	if (!name) {
 		i = ipmi_intf_table[0];
-		if (i->setup != NULL && (i->setup(i) < 0)) {
+		if (i->setup && (i->setup(i) < 0)) {
 			lprintf(LOG_ERR, "Unable to setup "
 				"interface %s", name);
 			return NULL;
@@ -181,11 +181,12 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 	}
 
 	for (intf = ipmi_intf_table;
-	     ((intf != NULL) && (*intf != NULL));
-	     intf++) {
+	     intf && *intf;
+	     intf++)
+	{
 		i = *intf;
 		if (strncmp(name, i->name, strlen(name)) == 0) {
-			if (i->setup != NULL && (i->setup(i) < 0)) {
+			if (i->setup && (i->setup(i) < 0)) {
 				lprintf(LOG_ERR, "Unable to setup "
 					"interface %s", name);
 				return NULL;
@@ -200,11 +201,11 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 void
 ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 {
-	if (intf->ssn_params.hostname != NULL) {
+	if (intf->ssn_params.hostname) {
 		free(intf->ssn_params.hostname);
 		intf->ssn_params.hostname = NULL;
 	}
-	if (hostname == NULL) {
+	if (!hostname) {
 		return;
 	}
 	intf->ssn_params.hostname = strdup(hostname);
@@ -215,7 +216,7 @@ ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 {
 	memset(intf->ssn_params.username, 0, 17);
 
-	if (username == NULL)
+	if (!username)
 		return;
 
 	memcpy(intf->ssn_params.username, username, __min(strlen(username), 16));
@@ -226,7 +227,7 @@ ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password)
 {
 	memset(intf->ssn_params.authcode_set, 0, IPMI_AUTHCODE_BUFFER_SIZE);
 
-	if (password == NULL) {
+	if (!password) {
 		intf->ssn_params.password = 0;
 		return;
 	}
@@ -299,7 +300,7 @@ ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry)
 void
 ipmi_intf_session_cleanup(struct ipmi_intf *intf)
 {
-	if (intf->session == NULL) {
+	if (!intf->session) {
 		return;
 	}
 
@@ -331,7 +332,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 
 	params = &intf->ssn_params;
 
-	if (params->hostname == NULL || strlen((const char *)params->hostname) == 0) {
+	if (!params->hostname || strlen((const char *)params->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -359,7 +360,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 	 * and) try the next address.
 	 */
 
-	for (rp = rp0; rp != NULL; rp = rp->ai_next) {
+	for (rp = rp0; rp; rp = rp->ai_next) {
 		/* We are only interested in IPv4 and IPv6 */
 		if ((rp->ai_family != AF_INET6) && (rp->ai_family != AF_INET)) {
 			continue;
@@ -403,8 +404,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 					break;
 				}
 
-				for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-					if (ifa->ifa_addr == NULL) {
+				for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
+					if (!ifa->ifa_addr) {
 						continue;
 					}
 
@@ -421,7 +422,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						len = sizeof(struct sockaddr_in6);
 						if ( getnameinfo((struct sockaddr *)tmp6, len, hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST) == 0) {
 							lprintf(LOG_DEBUG, "Testing %s interface address: %s scope=%d",
-								ifa->ifa_name != NULL ? ifa->ifa_name : "???",
+								ifa->ifa_name ? ifa->ifa_name : "???",
 								hbuf,
 								tmp6->sin6_scope_id);
 						}

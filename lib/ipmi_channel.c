@@ -75,7 +75,7 @@ _ipmi_get_channel_access(struct ipmi_intf *intf,
 	struct ipmi_rq req = {0};
 	uint8_t data[2];
 
-	if (channel_access == NULL) {
+	if (!channel_access) {
 		return (-3);
 	}
 	data[0] = channel_access->channel & 0x0F;
@@ -87,7 +87,7 @@ _ipmi_get_channel_access(struct ipmi_intf *intf,
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -118,7 +118,7 @@ _ipmi_get_channel_info(struct ipmi_intf *intf,
 	struct ipmi_rq req = {0};
 	uint8_t data[1];
 
-	if (channel_info == NULL) {
+	if (!channel_info) {
 		return (-3);
 	}
 	data[0] = channel_info->channel & 0x0F;
@@ -128,7 +128,7 @@ _ipmi_get_channel_info(struct ipmi_intf *intf,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -202,7 +202,7 @@ _ipmi_set_channel_access(struct ipmi_intf *intf,
 	req.msg.data_len = 3;
 	
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	}
 	return rsp->ccode;
@@ -284,7 +284,7 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 		msg_data[0] &= 0x7F;
 		
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to Get Channel Authentication Capabilities");
 			return (-1);
 		}
@@ -374,7 +374,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	rqdata[2] = 0x80;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
 		return -1;
 	}
@@ -409,7 +409,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 		rqdata[2] =  (rqdata[2] & 0x80) + list_index; 
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
 			return -1;
 		}

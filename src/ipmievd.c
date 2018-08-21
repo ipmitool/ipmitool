@@ -183,14 +183,15 @@ ipmi_event_intf_load(char * name)
 	struct ipmi_event_intf ** intf;
 	struct ipmi_event_intf * i;
 
-	if (name == NULL) {
+	if (!name) {
 		i = ipmi_event_intf_table[0];
 		return i;
 	}
 
 	for (intf = ipmi_event_intf_table;
-	     ((intf != NULL) && (*intf != NULL));
-	     intf++) {
+	     intf && *intf;
+	     intf++)
+	{
 		i = *intf;
 		if (strncmp(name, i->name, strlen(name)) == 0) {
 			return i;
@@ -224,7 +225,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	float trigger_reading = 0.0;
 	float threshold_reading = 0.0;
 
-	if (evt == NULL)
+	if (!evt)
 		return;
 
 	if (evt->record_type == 0xf0) {
@@ -245,7 +246,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.gen_id, evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
 
-	if (sdr == NULL) {
+	if (!sdr) {
 		/* could not find matching SDR record */
 		if (desc) {
 			lprintf(LOG_NOTICE, "%s%s sensor - %s",
@@ -362,7 +363,7 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 	req.msg.cmd = 0x2f;	/* Get BMC Global Enables */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get BMC Global Enables command failed");
 		return -1;
 	}
@@ -378,7 +379,7 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set BMC Global Enables command failed");
 		return -1;
 	}
@@ -507,7 +508,7 @@ selwatch_get_data(struct ipmi_intf * intf, struct sel_data *data)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return 0;
 	}
@@ -764,7 +765,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 		umask(022);
 		fp = ipmi_open_file_write(pidfile);
-		if (fp == NULL) {
+		if (!fp) {
 			/* Failed to get fp on PID file -> exit. */
 			log_halt();
 			log_init("ipmievd", daemon, verbose);
@@ -795,7 +796,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 	/* call event handler setup routine */
 
-	if (eintf->setup != NULL) {
+	if (eintf->setup) {
 		rc = eintf->setup(eintf);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error setting up Event Interface %s", eintf->name);
@@ -806,7 +807,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	lprintf(LOG_NOTICE, "Waiting for events...");
 
 	/* now launch event wait loop */
-	if (eintf->wait != NULL) {
+	if (eintf->wait) {
 		rc = eintf->wait(eintf);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error waiting for events!");
@@ -823,14 +824,14 @@ ipmievd_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_event_intf * eintf;
 
 	eintf = ipmi_event_intf_load("sel");
-	if (eintf == NULL) {
+	if (!eintf) {
 		lprintf(LOG_ERR, "Unable to load event interface");
 		return -1;
 	}
 
 	eintf->intf = intf;
 
-	if (intf->session != NULL) {
+	if (intf->session) {
 		snprintf(eintf->prefix,
 			 strlen((const char *)intf->ssn_params.hostname) + 3,
 			 "%s: ", intf->ssn_params.hostname);
@@ -851,7 +852,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	eintf = ipmi_event_intf_load("open");
-	if (eintf == NULL) {
+	if (!eintf) {
 		lprintf(LOG_ERR, "Unable to load event interface");
 		return -1;
 	}

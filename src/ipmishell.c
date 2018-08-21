@@ -78,9 +78,9 @@ static int rl_event_keepalive(void)
 {
 	static int internal_timer = 0;
 
-	if (shell_intf == NULL)
+	if (!shell_intf)
 		return -1;
-	if (shell_intf->keepalive == NULL)
+	if (!shell_intf->keepalive)
 		return 0;
 #if defined (RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0402
 	if (internal_timer++ < RL_TIMEOUT)
@@ -119,7 +119,7 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 #endif
 	}
 
-	while ((pbuf = (char *)readline(RL_PROMPT)) != NULL) {
+	while ((pbuf = (char *)readline(RL_PROMPT))) {
 		if (strlen(pbuf) == 0) {
 			free(pbuf);
 			pbuf = NULL;
@@ -168,8 +168,9 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ap = __argv;
 
 		for (*ap = strtok(pbuf, " \t");
-		     *ap != NULL;
-		     *ap = strtok(NULL, " \t")) {
+		     *ap;
+		     *ap = strtok(NULL, " \t"))
+		{
 			__argc++;
 
 			ptr = *ap;
@@ -296,7 +297,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (strncmp(argv[0], "host", 4) == 0 ||
 	    strncmp(argv[0], "hostname", 8) == 0) {
 		ipmi_intf_session_set_hostname(intf, argv[1]);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session hostname.");
 			return (-1);
 		}
@@ -306,7 +307,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "user", 4) == 0 ||
 		 strncmp(argv[0], "username", 8) == 0) {
 		ipmi_intf_session_set_username(intf, argv[1]);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session username.");
 			return (-1);
 		}
@@ -316,7 +317,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else if (strncmp(argv[0], "pass", 4) == 0 ||
 		 strncmp(argv[0], "password", 8) == 0) {
 		ipmi_intf_session_set_password(intf, argv[1]);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session password.");
 			return (-1);
 		}
@@ -331,7 +332,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 		}
 		ipmi_intf_session_set_authtype(intf, authtype);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session authtype.");
 			return (-1);
 		}
@@ -348,7 +349,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 		}
 		ipmi_intf_session_set_privlvl(intf, privlvl);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR,
 					"Failed to set session privilege level.");
 			return (-1);
@@ -365,7 +366,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 		}
 		ipmi_intf_session_set_port(intf, port);
-		if (intf->session == NULL) {
+		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session port.");
 			return (-1);
 		}
@@ -413,12 +414,12 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	fp = ipmi_open_file_read(argv[0]);
-	if (fp == NULL)
+	if (!fp)
 		return -1;
 
 	while (feof(fp) == 0) {
 		ret = fgets(buf, EXEC_BUF_SIZE, fp);
-		if (ret == NULL)
+		if (!ret)
 			continue;
 
 		/* clip off optional comment tail indicated by # */
@@ -462,10 +463,10 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* parse it and make argument list */
 		__argc = 0;
-		for (tok = strtok(ptr, " "); tok != NULL; tok = strtok(NULL, " ")) {
+		for (tok = strtok(ptr, " "); tok; tok = strtok(NULL, " ")) {
 			if (__argc < EXEC_ARG_SIZE) {
 				__argv[__argc++] = strdup(tok);
-				if (__argv[__argc-1] == NULL) {
+				if (!__argv[__argc-1]) {
 					lprintf(LOG_ERR, "ipmitool: malloc failure");
 					if (fp) {
 						fclose(fp);
@@ -502,7 +503,7 @@ int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* free argument list */
 		for (i=0; i<__argc; i++) {
-			if (__argv[i] != NULL) {
+			if (__argv[i]) {
 				free(__argv[i]);
 				__argv[i] = NULL;
 			}

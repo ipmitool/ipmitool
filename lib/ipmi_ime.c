@@ -202,7 +202,7 @@ static int ImeGetInfo(struct ipmi_intf *intf)
    req.msg.data_len = 0;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "Get Device ID command failed");
       return IME_ERROR;
    }
@@ -250,7 +250,7 @@ static int ImeGetInfo(struct ipmi_intf *intf)
                       (devid->product_id[1]<<8)+devid->product_id[0],
                       ipmi_oem_product_info);
 
-      if (product!=NULL) 
+      if (product) 
       {
          printf("Product Name               : %s\n", product);
       }
@@ -356,12 +356,7 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
 
    rc = ImeImageCtxFromFile(imageFilename, &imgCtx);
 
-   if(
-      (rc == IME_ERROR) ||
-      (imgCtx.pData == NULL) ||
-      (imgCtx.size == 0)
-     )
-   {
+   if (rc == IME_ERROR || !imgCtx.pData || !imgCtx.size) {
       return IME_ERROR;
    }
 
@@ -509,7 +504,7 @@ static int ImeUpdatePrepare(struct ipmi_intf *intf)
    req.msg.data_len = 0;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
@@ -544,7 +539,7 @@ static int ImeUpdateOpenArea(struct ipmi_intf *intf)
    req.msg.data_len = 2;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdateOpenArea command failed");
       return IME_ERROR;
    }
@@ -584,7 +579,7 @@ static int ImeUpdateWriteArea(
    req.msg.data_len = length + 1;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdateWriteArea command failed");
       return IME_ERROR;
    }
@@ -631,7 +626,7 @@ static int ImeUpdateCloseArea(
    req.msg.data_len = length;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdateCloseArea command failed");
       return IME_ERROR;
    }
@@ -665,7 +660,7 @@ static int ImeUpdateGetStatus(struct ipmi_intf *intf, tImeStatus *pStatus )
    req.msg.data_len = 0;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
@@ -738,7 +733,7 @@ static int ImeUpdateGetCapabilities(struct ipmi_intf *intf, tImeCaps *pCaps )
    req.msg.data_len = 0;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
@@ -778,7 +773,7 @@ static int ImeUpdateRegisterUpdate(struct ipmi_intf *intf, tImeUpdateType type)
    req.msg.data_len = 2;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "ImeUpdateRegisterUpdate command failed");
       return IME_ERROR;
    }
@@ -809,7 +804,7 @@ static int ImeUpdateShowStatus(struct ipmi_intf *intf)
    req.msg.data_len = 0;
 
    rsp = intf->sendrecv(intf, &req);
-   if (rsp == NULL) {
+   if (!rsp) {
       lprintf(LOG_ERR, "UpdatePrepare command failed");
       return IME_ERROR;
    }
@@ -878,15 +873,13 @@ static int ImeImageCtxFromFile(
 {
    int rc = IME_SUCCESS;
    FILE* pImageFile = fopen(imageFilename, "rb");
-   
-   if ( pImageFile == NULL )
-   {
+
+   if (!pImageFile) {
       lprintf(LOG_NOTICE,"Cannot open image file %s", imageFilename);
       rc = IME_ERROR;
    }
-   
-   if ( rc == IME_SUCCESS )
-   {
+
+   if (rc == IME_SUCCESS) {
       /* Get the raw data in file */
       fseek(pImageFile, 0, SEEK_END);
       pImageCtx->size  = ftell(pImageFile); 
@@ -900,32 +893,26 @@ static int ImeImageCtxFromFile(
       pImageCtx->pData = malloc(sizeof(unsigned char)*pImageCtx->size);
       rewind(pImageFile);
 
-      if ( pImageCtx->pData != NULL )
-      {
-         if (pImageCtx->size < fread(pImageCtx->pData, sizeof(unsigned char), 
-                                                   pImageCtx->size, pImageFile))
-            rc = IME_ERROR;
-      }
-      else
+      if (!pImageCtx->pData
+          || pImageCtx->size < fread(pImageCtx->pData, sizeof(unsigned char),
+                                     pImageCtx->size, pImageFile))
       {
          rc = IME_ERROR;
       }
    }
-   
+
    // Calculate checksum CRC8  
    if ( rc == IME_SUCCESS )
    {
       pImageCtx->crc8 = ImeCrc8(pImageCtx->size, pImageCtx->pData);
    }
 
-    
-   if( pImageFile != NULL)
-   {
+   if (pImageFile) {
       fclose(pImageFile);
    }
-    
+
    return rc;
-}  
+}
 
 static uint8_t ImeCrc8( uint32_t length, uint8_t * pBuf )
 {

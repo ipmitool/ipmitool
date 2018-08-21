@@ -179,7 +179,7 @@ ipmi_dummyipmi_open(struct ipmi_intf *intf)
 	char *dummy_sock_path;
 
 	dummy_sock_path = getenv("IPMI_DUMMY_SOCK");
-	if (dummy_sock_path == NULL) {
+	if (!dummy_sock_path) {
 		lprintf(LOG_DEBUG, "No IPMI_DUMMY_SOCK set. Using " IPMI_DUMMY_DEFAULTSOCK);
 		dummy_sock_path = IPMI_DUMMY_DEFAULTSOCK;
 	}
@@ -218,7 +218,7 @@ ipmi_dummyipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	struct dummy_rq req_dummy;
 	struct dummy_rs rsp_dummy;
 
-	if (intf == NULL || intf->fd < 0 || intf->opened != 1) {
+	if (!intf || intf->fd < 0 || intf->opened != 1) {
 		lprintf(LOG_ERR, "dummy failed on intf check.");
 		return NULL;
 	}

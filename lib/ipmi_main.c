@@ -107,14 +107,14 @@ ipmi_password_file_read(char * filename)
 	int l;
 
 	pass = malloc(21);
-	if (pass == NULL) {
+	if (!pass) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
 
 	memset(pass, 0, 21);
 	fp = ipmi_open_file_read((const char *)filename);
-	if (fp == NULL) {
+	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open password file %s",
 				filename);
 		free(pass);
@@ -122,7 +122,7 @@ ipmi_password_file_read(char * filename)
 	}
 
 	/* read in id */
-	if (fgets(pass, 21, fp) == NULL) {
+	if (!fgets(pass, 21, fp)) {
 		lprintf(LOG_ERR, "Unable to read password from file %s",
 				filename);
 		free(pass);
@@ -151,10 +151,10 @@ ipmi_cmd_print(struct ipmi_cmd * cmdlist)
 	struct ipmi_cmd * cmd;
 	int hdr = 0;
 
-	if (cmdlist == NULL)
+	if (!cmdlist)
 		return;
-	for (cmd=cmdlist; cmd->func != NULL; cmd++) {
-		if (cmd->desc == NULL)
+	for (cmd=cmdlist; cmd->func; cmd++) {
+		if (!cmd->desc)
 			continue;
 		if (hdr == 0) {
 			lprintf(LOG_NOTICE, "Commands:");
@@ -185,8 +185,8 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	struct ipmi_cmd * cmd = intf->cmdlist;
 
 	/* hook to run a default command if nothing specified */
-	if (name == NULL) {
-		if (cmd->func == NULL || cmd->name == NULL)
+	if (!name) {
+		if (!cmd->func || !cmd->name)
 			return -1;
 		else if (strncmp(cmd->name, "default", 7) == 0)
 			return cmd->func(intf, 0, NULL);
@@ -197,11 +197,11 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 		}
 	}
 
-	for (cmd=intf->cmdlist; cmd->func != NULL; cmd++) {
+	for (cmd=intf->cmdlist; cmd->func; cmd++) {
 		if (strncmp(name, cmd->name, __maxlen(cmd->name, name)) == 0)
 			break;
 	}
-	if (cmd->func == NULL) {
+	if (!cmd->func) {
 		cmd = intf->cmdlist;
 		if (strncmp(cmd->name, "default", 7) == 0)
 			return cmd->func(intf, argc+1, argv-1);
@@ -263,7 +263,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 
 	ipmi_intf_print(intflist);
 
-	if (cmdlist != NULL)
+	if (cmdlist)
 		ipmi_cmd_print(cmdlist);
 }
 /* ipmi_catch_sigint  -  Handle the interrupt signal (Ctrl-C), close the
@@ -276,7 +276,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
  */
 void ipmi_catch_sigint()
 {
-	if (ipmi_main_intf != NULL) {
+	if (ipmi_main_intf) {
 		printf("\nSIGN INT: Close Interface %s\n",ipmi_main_intf->desc);
 		/* reduce retry count to a single retry */
 		ipmi_main_intf->ssn_params.retry = 1;
@@ -351,7 +351,7 @@ ipmi_main(int argc, char ** argv,
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
-	progname = ((progname == NULL) ? argv[0] : progname+1);
+	progname = ((!progname) ? argv[0] : progname+1);
 	signal(SIGINT, ipmi_catch_sigint);
 	memset(kgkey, 0, sizeof(kgkey));
 
@@ -364,13 +364,13 @@ ipmi_main(int argc, char ** argv,
 				intfname = NULL;
 			}
 			intfname = strdup(optarg);
-			if (intfname == NULL) {
+			if (!intfname) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
-			if (intflist != NULL) {
+			if (intflist) {
 				found = 0;
-				for (sup=intflist; sup->name != NULL; sup++) {
+				for (sup=intflist; sup->name; sup++) {
 					if (strncmp(sup->name, intfname, strlen(intfname)) == 0 &&
 							strncmp(sup->name, intfname, strlen(sup->name)) == 0 &&
 							sup->supported == 1)
@@ -445,7 +445,7 @@ ipmi_main(int argc, char ** argv,
 				hostname = NULL;
 			}
 			hostname = strdup(optarg);
-			if (hostname == NULL) {
+			if (!hostname) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -456,7 +456,7 @@ ipmi_main(int argc, char ** argv,
 				password = NULL;
 			}
 			password = ipmi_password_file_read(optarg);
-			if (password == NULL)
+			if (!password)
 				lprintf(LOG_ERR, "Unable to read password "
 						"from file %s", optarg);
 			break;
@@ -466,14 +466,14 @@ ipmi_main(int argc, char ** argv,
 #else
 			tmp_pass = getpass("Password: ");
 #endif
-			if (tmp_pass != NULL) {
+			if (tmp_pass) {
 				if (password) {
 					free(password);
 					password = NULL;
 				}
 				password = strdup(tmp_pass);
 				tmp_pass = NULL;
-				if (password == NULL) {
+				if (!password) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
@@ -513,7 +513,7 @@ ipmi_main(int argc, char ** argv,
 #else
 			tmp_pass = getpass("Key: ");
 #endif
-			if (tmp_pass != NULL) {
+			if (tmp_pass) {
 				memset(kgkey, 0, sizeof(kgkey));
 				strncpy((char *)kgkey, tmp_pass,
 					sizeof(kgkey) - 1);
@@ -530,7 +530,7 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			username = strdup(optarg);
-			if (username == NULL) {
+			if (!username) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -541,7 +541,7 @@ ipmi_main(int argc, char ** argv,
 				sdrcache = NULL;
 			}
 			sdrcache = strdup(optarg);
-			if (sdrcache == NULL) {
+			if (!sdrcache) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -553,7 +553,7 @@ ipmi_main(int argc, char ** argv,
 				free(devfile);
 			}
 			devfile = strdup(optarg);
-			if (devfile == NULL) {
+			if (!devfile) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -597,7 +597,7 @@ ipmi_main(int argc, char ** argv,
 				oemtype = NULL;
 			}
 			oemtype = strdup(optarg);
-			if (oemtype == NULL) {
+			if (!oemtype) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -630,7 +630,7 @@ ipmi_main(int argc, char ** argv,
 				password = NULL;
 			}
 			password = strdup(optarg);
-			if (password == NULL) {
+			if (!password) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -646,7 +646,7 @@ ipmi_main(int argc, char ** argv,
 					password = NULL;
 				}
 				password = strdup(tmp_env);
-				if (password == NULL) {
+				if (!password) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
@@ -657,7 +657,7 @@ ipmi_main(int argc, char ** argv,
 					password = NULL;
 				}
 				password = strdup(tmp_env);
-				if (password == NULL) {
+				if (!password) {
 					lprintf(LOG_ERR, "%s: malloc failure", progname);
 					goto out_free;
 				}
@@ -731,7 +731,7 @@ ipmi_main(int argc, char ** argv,
 				seloem = NULL;
 			}
 			seloem = strdup(optarg);
-			if (seloem == NULL) {
+			if (!seloem) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -784,17 +784,17 @@ ipmi_main(int argc, char ** argv,
 	 * and the authtype was not explicitly set to NONE
 	 * then prompt the user.
 	 */
-	if (hostname != NULL && password == NULL &&
+	if (hostname && !password &&
 			(authtype != IPMI_SESSION_AUTHTYPE_NONE || authtype < 0)) {
 #ifdef HAVE_GETPASSPHRASE
 		tmp_pass = getpassphrase("Password: ");
 #else
 		tmp_pass = getpass("Password: ");
 #endif
-		if (tmp_pass != NULL) {
+		if (tmp_pass) {
 			password = strdup(tmp_pass);
 			tmp_pass = NULL;
-			if (password == NULL) {
+			if (!password) {
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
@@ -806,15 +806,15 @@ ipmi_main(int argc, char ** argv,
 	 * otherwise the default is hardcoded
 	 * to use the first entry in the list
 	 */
-	if (intfname == NULL && hostname != NULL) {
+	if (!intfname && hostname) {
 		intfname = strdup("lan");
-		if (intfname == NULL) {
+		if (!intfname) {
 			lprintf(LOG_ERR, "%s: malloc failure", progname);
 			goto out_free;
 		}
 	}
 
-	if (password != NULL && intfname != NULL) {
+	if (password && intfname) {
 		if (strcmp(intfname, "lan") == 0 && strlen(password) > 16) {
 			lprintf(LOG_ERR, "%s: password is longer than 16 bytes.", intfname);
 			rc = -1;
@@ -824,11 +824,11 @@ ipmi_main(int argc, char ** argv,
 			rc = -1;
 			goto out_free;
 		}
-	} /* if (password != NULL && intfname != NULL) */
+	}
 
 	/* load interface */
 	ipmi_main_intf = ipmi_intf_load(intfname);
-	if (ipmi_main_intf == NULL) {
+	if (!ipmi_main_intf) {
 		lprintf(LOG_ERR, "Error loading interface %s", intfname);
 		goto out_free;
 	}
@@ -837,18 +837,18 @@ ipmi_main(int argc, char ** argv,
 	log_init(progname, 0, verbose);
 
 	/* run OEM setup if found */
-	if (oemtype != NULL &&
+	if (oemtype &&
 	    ipmi_oem_setup(ipmi_main_intf, oemtype) < 0) {
 		lprintf(LOG_ERR, "OEM setup for \"%s\" failed", oemtype);
 		goto out_free;
 	}
 
 	/* set session variables */
-	if (hostname != NULL)
+	if (hostname)
 		ipmi_intf_session_set_hostname(ipmi_main_intf, hostname);
-	if (username != NULL)
+	if (username)
 		ipmi_intf_session_set_username(ipmi_main_intf, username);
-	if (password != NULL)
+	if (password)
 		ipmi_intf_session_set_password(ipmi_main_intf, password);
 	ipmi_intf_session_set_kgkey(ipmi_main_intf, kgkey);
 	if (port > 0)
@@ -878,7 +878,7 @@ ipmi_main(int argc, char ** argv,
 	ipmi_main_intf->ai_family = ai_family;
 	/* Open the interface with the specified or default IPMB address */
 	ipmi_main_intf->my_addr = arg_addr ? arg_addr : IPMI_BMC_SLAVE_ADDR;
-	if (ipmi_main_intf->open != NULL) {
+	if (ipmi_main_intf->open) {
 		if (ipmi_main_intf->open(ipmi_main_intf) < 0) {
 			goto out_free;
 		}
@@ -973,11 +973,11 @@ ipmi_main(int argc, char ** argv,
 			ipmi_main_intf->target_ipmb_addr);
 
 	/* parse local SDR cache if given */
-	if (sdrcache != NULL) {
+	if (sdrcache) {
 		ipmi_sdr_list_cache_fromfile(ipmi_main_intf, sdrcache);
 	}
 	/* Parse SEL OEM file if given */
-	if (seloem != NULL) {
+	if (seloem) {
 		ipmi_sel_oem_init(seloem);
 	}
 
@@ -1014,37 +1014,37 @@ ipmi_main(int argc, char ** argv,
 	ipmi_cleanup(ipmi_main_intf);
 
 	/* call interface close function if available */
-	if (ipmi_main_intf->opened > 0 && ipmi_main_intf->close != NULL)
+	if (ipmi_main_intf->opened && ipmi_main_intf->close)
 		ipmi_main_intf->close(ipmi_main_intf);
 
 	out_free:
 	log_halt();
 
-	if (intfname != NULL) {
+	if (intfname) {
 		free(intfname);
 		intfname = NULL;
 	}
-	if (hostname != NULL) {
+	if (hostname) {
 		free(hostname);
 		hostname = NULL;
 	}
-	if (username != NULL) {
+	if (username) {
 		free(username);
 		username = NULL;
 	}
-	if (password != NULL) {
+	if (password) {
 		free(password);
 		password = NULL;
 	}
-	if (oemtype != NULL) {
+	if (oemtype) {
 		free(oemtype);
 		oemtype = NULL;
 	}
-	if (seloem != NULL) {
+	if (seloem) {
 		free(seloem);
 		seloem = NULL;
 	}
-	if (sdrcache != NULL) {
+	if (sdrcache) {
 		free(sdrcache);
 		sdrcache = NULL;
 	}

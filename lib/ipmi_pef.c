@@ -193,7 +193,7 @@ ipmi_pef_print_1xd(const char * text, uint32_t val)
 static int
 ipmi_pef_print_guid(uint8_t *guid)
 {
-	if (guid == NULL) {
+	if (!guid) {
 		return (-1);
 	}
 
@@ -247,7 +247,7 @@ _ipmi_get_pef_capabilities(struct ipmi_intf *intf,
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	if (pcap == NULL) {
+	if (!pcap) {
 		return (-3);
 	}
 
@@ -257,7 +257,7 @@ _ipmi_get_pef_capabilities(struct ipmi_intf *intf,
 	req.msg.cmd = IPMI_CMD_GET_PEF_CAPABILITIES;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -287,7 +287,7 @@ _ipmi_get_pef_filter_entry(struct ipmi_intf *intf, uint8_t filter_id,
 	uint8_t data[3];
 	uint8_t data_len = 3 * sizeof(uint8_t);
 	int dest_size;
-	if (filter_entry == NULL) {
+	if (!filter_entry) {
 		return (-3);
 	}
 
@@ -303,7 +303,7 @@ _ipmi_get_pef_filter_entry(struct ipmi_intf *intf, uint8_t filter_id,
 	req.msg.data = (uint8_t *)&data;
 	req.msg.data_len = data_len;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -331,7 +331,7 @@ _ipmi_get_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	uint8_t data[3];
 	uint8_t data_len = 3 * sizeof(uint8_t);
 	int dest_size;
-	if (filter_cfg == NULL) {
+	if (!filter_cfg) {
 		return (-3);
 	}
 
@@ -347,7 +347,7 @@ _ipmi_get_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	req.msg.data = (uint8_t *)&data;
 	req.msg.data_len = data_len;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -375,7 +375,7 @@ _ipmi_get_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	uint8_t data[3];
 	uint8_t data_len = 3 * sizeof(uint8_t);
 	int dest_size;
-	if (policy_entry == NULL) {
+	if (!policy_entry) {
 		return (-3);
 	}
 
@@ -391,7 +391,7 @@ _ipmi_get_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	req.msg.data = (uint8_t *)&data;
 	req.msg.data_len = data_len;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -416,7 +416,7 @@ _ipmi_get_pef_filter_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 
-	if (table_size == NULL) {
+	if (!table_size) {
 		return (-3);
 	}
 
@@ -430,7 +430,7 @@ _ipmi_get_pef_filter_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -455,7 +455,7 @@ _ipmi_get_pef_policy_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
 
-	if (table_size == NULL) {
+	if (!table_size) {
 		return (-3);
 	}
 
@@ -469,7 +469,7 @@ _ipmi_get_pef_policy_table_size(struct ipmi_intf *intf, uint8_t *table_size)
 	req.msg.data = (uint8_t *)&psel;
 	req.msg.data_len = sizeof(psel);
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -494,7 +494,7 @@ _ipmi_get_pef_system_guid(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
-	if (system_guid == NULL) {
+	if (!system_guid) {
 		return (-3);
 	}
 
@@ -508,7 +508,7 @@ _ipmi_get_pef_system_guid(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof(psel);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -537,7 +537,7 @@ _ipmi_set_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	struct ipmi_rq req;
 	uint8_t data[3];
 	uint8_t data_len = 3 * sizeof(uint8_t);
-	if (filter_cfg == NULL) {
+	if (!filter_cfg) {
 		return (-3);
 	}
 
@@ -553,7 +553,7 @@ _ipmi_set_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
 	data[2] = filter_cfg->cfg;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
@@ -576,7 +576,7 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_set_policy_table_entry payload;
-	if (policy_entry == NULL) {
+	if (!policy_entry) {
 		return (-3);
 	}
 
@@ -593,7 +593,7 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 			sizeof(policy_entry->entry));
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;

@@ -179,7 +179,7 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 	}
 
 	ctx = EVP_CIPHER_CTX_new();
-	if (ctx == NULL) {
+	if (!ctx) {
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}
@@ -258,7 +258,7 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		return;
 
 	ctx = EVP_CIPHER_CTX_new();
-	if (ctx == NULL) {
+	if (!ctx) {
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}

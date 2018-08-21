@@ -188,7 +188,7 @@ ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf *intf,
 	req.msg.data_len = 2;
 	req.msg.lun = 0x00;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL)  {
+	if (!rsp)  {
 		printf("Cannot send large buffer command\n");
 		return(-1);
 	} else if (rsp->ccode)  {
@@ -243,7 +243,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	/* Set Lun, necessary for this oem command */
 	req.msg.lun = 0x03;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return (-1);
 	} else if (rsp->ccode) {
@@ -252,7 +252,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	}
 	sn_size = rsp->data_len;
 	sn = malloc(sn_size + 1);
-	if (sn == NULL) {
+	if (!sn) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return (-1);
 	}
@@ -269,7 +269,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = 1;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		free(sn);
 		sn = NULL;
@@ -302,7 +302,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = 4;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		free(sn);
 		sn = NULL;
@@ -328,7 +328,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	/* Set the Board Section */
 	board_sec_len = (header.offset.product * 8) - (header.offset.board * 8);
 	fru_data = malloc(fru.size);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		free(sn);
 		sn = NULL;
@@ -346,20 +346,20 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	/* Position at Board Manufacturer */
 	fru_data_offset = (header.offset.board * 8) + 6;
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Board Product Name */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
-	if (fru_area == NULL) {
+	if (!fru_area) {
 		lprintf(LOG_ERR, "Failed to read FRU Area string.");
 		free(fru_data);
 		fru_data = NULL;
@@ -420,32 +420,32 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	/* Position at Product Manufacturer */
 	fru_data_offset = (header.offset.product * 8) + 3;
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Name */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Part */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Version */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
 	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
-	if (fru_area == NULL) {
+	if (!fru_area) {
 		lprintf(LOG_ERR, "Failed to read FRU Area string.");
 		free(sn);
 		sn = NULL;
@@ -532,7 +532,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	/* Set Lun temporary, necessary for this oem command */
 	req.msg.lun = 0x03;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL)  {
+	if (!rsp)  {
 		printf("Device not present (No Response)\n");
 		return(-1);
 	} else if (rsp->ccode) {
@@ -554,7 +554,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = 1;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return(-1);
 	} else if (rsp->ccode) {
@@ -582,7 +582,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = 4;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return (-1);
 	} else if (rsp->ccode) {
@@ -601,7 +601,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 	}
 	board_sec_len = (header.offset.product * 8) - (header.offset.board * 8);
 	fru_data = malloc(fru.size);
-	if(fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return(-1);
 	}
@@ -690,7 +690,7 @@ ipmi_kontron_nextboot_set(struct ipmi_intf *intf, int argc, char **argv)
 	/* Set Lun temporary, necessary for this oem command */
 	req.msg.lun = 0x03;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf("Device not present (No Response)\n");
 		return(-1);
 	} else if (rsp->ccode) {

@@ -108,7 +108,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	ipmi_event_msg_print(intf, emsg);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Platform Event Message command failed");
 		return -1;
 	}
@@ -210,13 +210,13 @@ ipmi_event_find_offset(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t even
 {
 	const struct ipmi_event_sensor_types *evt;
 
-	if (desc == NULL || sensor_type == 0  || event_type == 0) {
+	if (!desc || sensor_type == 0  || event_type == 0) {
 		return 0x00;
 	}
 
 	for (evt = ipmi_get_first_event_sensor_type(intf, sensor_type, event_type);
-			evt != NULL; evt = ipmi_get_next_event_sensor_type(evt)) {
-		if (evt->desc != NULL &&
+			evt; evt = ipmi_get_next_event_sensor_type(evt)) {
+		if (evt->desc &&
 			strncasecmp(desc, evt->desc, __maxlen(desc, evt->desc)) == 0) {
 			return evt->offset;
 		}
@@ -245,7 +245,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 	int off;
 	uint8_t target, lun, channel;
 
-	if (id == NULL) {
+	if (!id) {
 		lprintf(LOG_ERR, "No sensor ID supplied");
 		return -1;
 	}
@@ -253,7 +253,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 	memset(&emsg, 0, sizeof(struct platform_event_msg));
 	emsg.evm_rev = 0x04;
 
-	if (evdir == NULL)
+	if (!evdir)
 		emsg.event_dir = EVENT_DIR_ASSERT;
 	else if (strncasecmp(evdir, "assert", 6) == 0)
 		emsg.event_dir = EVENT_DIR_ASSERT;
@@ -266,7 +266,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 	printf("Finding sensor %s... ", id);
 	sdr = ipmi_sdr_find_sdr_byid(intf, id);
-	if (sdr == NULL) {
+	if (!sdr) {
 		printf("not found!\n");
 		return -1;
 	}
@@ -303,7 +303,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		int hilo = 0;
 		off = 1;
 
-		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strncasecmp(state, "list", 4) == 0) {
 			printf("Sensor States:\n");
 			printf("  lnr : Lower Non-Recoverable \n");
 			printf("  lcr : Lower Critical\n");
@@ -348,7 +348,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 		rsp = ipmi_sdr_get_sensor_thresholds(intf, emsg.sensor_num,
 							target, lun, channel);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Command Get Sensor Thresholds failed: invalid response.");
 			return (-1);
@@ -363,7 +363,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 		rsp = ipmi_sdr_get_sensor_hysteresis(intf, emsg.sensor_num,
 							target, lun, channel);
-		if (rsp != NULL && !rsp->ccode)
+		if (rsp && !rsp->ccode)
 			off = dir ? rsp->data[0] : rsp->data[1];
 		if (off <= 0)
 			off = 1;
@@ -400,7 +400,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strncasecmp(state, "list", 4) == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			printf("Sensor State Shortcuts:\n");
 			for (x = 0; x < sizeof(digi_on)/sizeof(*digi_on); x++) {
@@ -440,7 +440,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strncasecmp(state, "list", 4) == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
@@ -460,7 +460,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (state == NULL || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strncasecmp(state, "list", 4) == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
@@ -494,7 +494,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	uint8_t chmed;
 	int rc = 0;
 
-	if (file == NULL)
+	if (!file)
 		return -1;
 
 	memset(rqdata, 0, 8);
@@ -514,11 +514,11 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	}
 
 	fp = ipmi_open_file_read(file);
-	if (fp == NULL)
+	if (!fp)
 		return -1;
 
 	while (feof(fp) == 0) {
-		if (fgets(buf, 1024, fp) == NULL)
+		if (!fgets(buf, 1024, fp))
 			continue;
 
 		/* clip off optional comment tail indicated by # */
@@ -574,7 +574,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		ipmi_sel_print_std_entry(intf, &sel_event);
 		
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Platform Event Message command failed");
 			rc = -1;
 		}
