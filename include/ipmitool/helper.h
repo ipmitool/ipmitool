@@ -63,7 +63,7 @@
 struct ipmi_intf;
 
 struct valstr {
-	uint16_t val;
+	uint32_t val;
 	const char * str;
 };
 struct oemvalstr {
