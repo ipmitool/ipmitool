@@ -251,6 +251,7 @@ uint8_t *array_ntoh(uint8_t *buffer, size_t length)
 {
 #if WORDS_BIGENDIAN
 	/* Big-endian host doesn't need conversion from big-endian network */
+	(void)length; /* Silence the compiler */
 	return buffer;
 #else
 	/* Little-endian host needs conversion from big-endian network */
@@ -266,6 +267,7 @@ uint8_t *array_letoh(uint8_t *buffer, size_t length)
 	return array_byteswap(buffer, length);
 #else
 	/* Little-endian host doesn't need conversion from little-endian IPMI */
+	(void)length; /* Silence the compiler */
 	return buffer;
 #endif
 }
