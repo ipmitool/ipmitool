@@ -183,7 +183,11 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_CIPHER_CTX_init(ctx);
+#else
+	EVP_CIPHER_CTX_reset(ctx);
+#endif
 	EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
 	EVP_CIPHER_CTX_set_padding(ctx, 0);
 
@@ -262,7 +266,11 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_CIPHER_CTX_init(ctx);
+#else
+	EVP_CIPHER_CTX_reset(ctx);
+#endif
 	EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
 	EVP_CIPHER_CTX_set_padding(ctx, 0);
 
