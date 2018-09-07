@@ -91,8 +91,6 @@ extern int verbose;
 static int
 ipmi_openipmi_open(struct ipmi_intf * intf)
 {
-	int i = 1;
-
 	char ipmi_dev[16];
 	char ipmi_devfs[16];
 	char ipmi_devfs2[16];
@@ -119,7 +117,9 @@ ipmi_openipmi_open(struct ipmi_intf * intf)
 		}
 	}
 
-	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &i) < 0) {
+	int receive_events = TRUE;
+
+	if (ioctl(intf->fd, IPMICTL_SET_GETS_EVENTS_CMD, &receive_events) < 0) {
 		lperror(LOG_ERR, "Could not enable event receiver");
 		return -1;
 	}
