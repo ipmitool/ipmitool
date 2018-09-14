@@ -75,10 +75,12 @@ typedef char ipmi_datebuf_t[IPMI_ASCTIME_SZ];
  * in account the command line options
  */
 char *ipmi_asctime_r(time_t stamp, ipmi_datebuf_t outbuf);
-size_t ipmi_strftime(char *s, int max, const char *format, time_t stamp);
+size_t ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
+       __attribute__((format(strftime, 3, 0)));
 
 /* These return pointers to static arrays and aren't thread safe */
-char *ipmi_timestamp_fmt(uint32_t stamp, const char *fmt);
+char *ipmi_timestamp_fmt(uint32_t stamp, const char *fmt)
+      __attribute__((format(strftime, 2, 0)));
 char *ipmi_timestamp_string(uint32_t stamp); /* Day Mon DD HH:MM:SS YYYY ZZZ */
 char *ipmi_timestamp_numeric(uint32_t stamp); /* MM/DD/YYYY HH:MM:SS ZZZ */
 char *ipmi_timestamp_date(uint32_t stamp); /* MM/DD/YYYY ZZZ */

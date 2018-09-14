@@ -68,9 +68,25 @@ ipmi_localtime2utc(time_t local)
  * @returns the number of bytes written to s or 0, see strftime()
  */
 size_t
-ipmi_strftime(char *s, int max, const char *format, time_t stamp)
+ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
 {
 	struct tm tm;
+	/*
+	 * There is a bug in gcc since 4.3.2 and still not fixed in 8.1.0.
+	 * Even if __attribute__((format(strftime... is specified for a wrapper
+	 * function around strftime, gcc still complains about strftime being
+	 * called from the wrapper with a "non-literal" format argument.
+	 *
+	 * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39438
+	 *
+	 * The following macro uses an "ugly cast" from that discussion to
+	 * silence the compiler. The format string is checked for the wrapper
+	 * because __attribute__((format)) is specified in the header file.
+	 */
+	#define wrapstrftime(buf, buflen, fmt, t) \
+		((size_t (*)(char *, size_t, const char *, const struct tm *))\
+		 strftime)(buf, buflen, fmt, t)
+
 
 	if (IPMI_TIME_UNSPECIFIED == stamp) {
 		return snprintf(s, max, "Unknown");
@@ -79,7 +95,7 @@ ipmi_strftime(char *s, int max, const char *format, time_t stamp)
 		/* Timestamp is relative to BMC start, no GMT offset */
 		gmtime_r(&stamp, &tm);
 
-		return strftime(s, max, format, &tm);
+		return wrapstrftime(s, max, format, &tm);
 	}
 
 	if (time_in_utc || ipmi_timestamp_is_special(stamp)) {
@@ -96,7 +112,7 @@ ipmi_strftime(char *s, int max, const char *format, time_t stamp)
 		 */
 		localtime_r(&stamp, &tm);
 	}
-	return strftime(s, max, format, &tm);
+	return wrapstrftime(s, max, format, &tm);
 }
 
 /**
@@ -115,21 +131,20 @@ ipmi_strftime(char *s, int max, const char *format, time_t stamp)
 char *
 ipmi_asctime_r(const time_t stamp, ipmi_datebuf_t outbuf)
 {
-	const char *format = "%c %Z";
 	if (ipmi_timestamp_is_special(stamp)) {
 		if (stamp < SECONDS_A_DAY) {
-			format = "S+%H:%M:%S";
+			ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, "S+%H:%M:%S", stamp);
 		}
 		/*
 		 * IPMI_TIME_INIT_DONE is over 17 years. This should never
 		 * happen normally, but we'll support this anyway.
 		 */
 		else {
-			format = "S+%yy %jd %H:%M:%S";
+			ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, "S+%yy %jd %H:%M:%S", stamp);
 		}
 	}
 
-	ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, format, stamp);
+	ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, "%c %Z", stamp);
 	return outbuf;
 }
 
@@ -141,68 +156,79 @@ ipmi_timestamp_fmt(uint32_t stamp, const char *fmt)
 	 * than IPMI_ASCTIME_SZ
 	 */
 	static ipmi_datebuf_t datebuf;
-	ipmi_strftime(datebuf, sizeof(datebuf), fmt, stamp);
+	/*
+	 * There is a bug in gcc since 4.3.2 and still not fixed in 8.1.0.
+	 * Even if __attribute__((format(strftime... is specified for a wrapper
+	 * function around strftime, gcc still complains about strftime being
+	 * called from the wrapper with a "non-literal" format argument.
+	 *
+	 * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39438
+	 *
+	 * The following call uses an "ugly cast" from that discussion to
+	 * silence the compiler. The format string is checked for the wrapper
+	 * because __attribute__((format)) is specified in the header file.
+	 */
+	((size_t (*)(char *, size_t, const char *, time_t))
+	 ipmi_strftime)(datebuf, sizeof(datebuf), fmt, stamp);
+
 	return datebuf;
 }
 
 char *
 ipmi_timestamp_string(uint32_t stamp)
 {
-	const char *format = "%c %Z";
 	if (!ipmi_timestamp_is_valid(stamp)) {
 		return "Unspecified";
 	}
 
 	if (ipmi_timestamp_is_special(stamp)) {
 		if (stamp < SECONDS_A_DAY) {
-			format = "S+ %H:%M:%S";
+			return ipmi_timestamp_fmt(stamp, "S+ %H:%M:%S");
 		}
 		/*
 		 * IPMI_TIME_INIT_DONE is over 17 years. This should never
 		 * happen normally, but we'll support this anyway.
 		 */
 		else {
-			format = "S+ %y years %j days %H:%M:%S";
+			return ipmi_timestamp_fmt(stamp, "S+ %y years %j days %H:%M:%S");
 		}
 	}
-	return ipmi_timestamp_fmt(stamp, format);
+	return ipmi_timestamp_fmt(stamp, "%c %Z");
 }
 
 char *
 ipmi_timestamp_numeric(uint32_t stamp)
 {
-	const char *format = "%x %X %Z";
 	if (!ipmi_timestamp_is_valid(stamp)) {
 		return "Unspecified";
 	}
 
 	if (ipmi_timestamp_is_special(stamp)) {
 		if (stamp < SECONDS_A_DAY) {
-			format = "S+ %H:%M:%S";
+			return ipmi_timestamp_fmt(stamp, "S+ %H:%M:%S");
 		}
 		/*
 		 * IPMI_TIME_INIT_DONE is over 17 years. This should never
 		 * happen normally, but we'll support this anyway.
 		 */
 		else {
-			format = "S+ %y/%j %H:%M:%S";
+			return ipmi_timestamp_fmt(stamp, "S+ %y/%j %H:%M:%S");
 		}
 	}
-	return ipmi_timestamp_fmt(stamp, format);
+	return ipmi_timestamp_fmt(stamp, "%x %X %Z");
 }
 
 char *
 ipmi_timestamp_date(uint32_t stamp)
 {
-	const char *format = "%x";
 	if (!ipmi_timestamp_is_valid(stamp)) {
 		return "Unspecified";
 	}
 
 	if (ipmi_timestamp_is_special(stamp)) {
-		format = "S+ %y/%j";
+		return ipmi_timestamp_fmt(stamp, "S+ %y/%j");
 	}
-	return ipmi_timestamp_fmt(stamp, format);
+	return ipmi_timestamp_fmt(stamp, "%x");
 }
 
 char *
