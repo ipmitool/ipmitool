@@ -1473,7 +1473,7 @@ processSolUserInput(
 }
 
 static int
-ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
+ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf, int force_keepalive)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct timeval end;
@@ -1483,7 +1483,7 @@ ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 
 	gettimeofday(&end, 0);
 
-	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
+	if (force_keepalive || end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
 		memset(&v2_payload, 0, sizeof(v2_payload));
 		v2_payload.payload.sol_packet.character_count = 0;
 		if (!intf->send_sol(intf, &v2_payload))
@@ -1495,7 +1495,7 @@ ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 }
 
 static int
-ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
+ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf, int force_keepalive)
 {
 	struct timeval  end;
 
@@ -1504,7 +1504,7 @@ ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf * intf)
 
 	gettimeofday(&end, 0);
 
-	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
+	if (force_keepalive || end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
 		if (intf->keepalive(intf) != 0)
          		return -1;
 		/* good return, reset start time */
@@ -1547,6 +1547,15 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 
 	enter_raw_mode();
 
+        /*
+         * When a keepalive fails, enter force_keepalive state so that
+         * keepalive timeout is ignored when sending new keepalive requests.
+         * Once keepalive passes, exit out of the force_keepalive state
+         * so that keepalive timeout is considered before sending new
+         * keepalive requests.
+         */
+	int force_keepalive = 0;
+
 	while (! bShouldExit)
 	{
 		FD_ZERO(&read_fds);
@@ -1558,15 +1567,18 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 			/* Send periodic keepalive packet */
 			if(_use_sol_for_keepalive == 0)
 			{
-				keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf);
+				keepAliveRet = ipmi_sol_keepalive_using_getdeviceid(intf, force_keepalive);
 			}
 			else
 			{
-				keepAliveRet = ipmi_sol_keepalive_using_sol(intf);
+				keepAliveRet = ipmi_sol_keepalive_using_sol(intf, force_keepalive);
 			}
 		
 			if (keepAliveRet != 0)
 			{
+				// enter forced keepalive state
+				force_keepalive = 1;
+
 				/*
 				 * Retrying the keep Alive before declaring a communication
 				 * lost state with the IPMC. Helpful when the payload is
@@ -1590,6 +1602,8 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 			{
 				/* if the keep Alive is successful reset retries to zero */
 				retrySol = 0;
+                                /* exit the forced keeepalive state */
+				force_keepalive = 0;
 			}
 		} /* !oem="i82571spt" */
 		/* Wait up to half a second */
