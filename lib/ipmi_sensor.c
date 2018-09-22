@@ -169,7 +169,25 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 	}
 
 	if (csv_output) {
-		/* NOT IMPLEMENTED */
+		printf("%s", sr->s_id);
+		if (sr->s_reading_valid) {
+			if (sr->s_has_analog_value) {
+				/* don't show discrete component */
+				printf(",%s,%s,%s",
+				       sr->s_a_str, sr->s_a_units, "ok");
+			} else {
+				printf(",0x%x,%s,0x%02x%02x",
+				       sr->s_reading, "discrete",
+				       sr->s_data2, sr->s_data3);
+			}
+		} else {
+			printf(",%s,%s,%s",
+			       "na", "discrete", "na");
+		}
+		printf(",%s,%s,%s,%s,%s,%s",
+		       "na", "na", "na", "na", "na", "na");
+
+		printf("\n");
 	} else {
 		if (verbose == 0) {
 			/* output format
@@ -270,7 +288,35 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 		thresh_available = 0;
 
 	if (csv_output) {
-		/* NOT IMPLEMENTED */
+		printf("%s", sr->s_id);
+		if (sr->s_reading_valid) {
+			if (sr->s_has_analog_value)
+				printf(",%.3f,%s,%s",
+				       sr->s_a_val, sr->s_a_units, thresh_status);
+			else
+				printf(",0x%x,%s,%s",
+				       sr->s_reading, sr->s_a_units, thresh_status);
+		} else {
+			printf(",%s,%s,%s",
+			       "na", sr->s_a_units, "na");
+		}
+		if (thresh_available && sr->full) {
+#define PTS(bit, dataidx) { \
+print_thresh_setting(sr->full, rsp->data[0] & (bit), \
+	rsp->data[(dataidx)], ",", "%.3f", "0x%x", "%s"); \
+}
+			PTS(LOWER_NON_RECOV_SPECIFIED, 3);
+			PTS(LOWER_CRIT_SPECIFIED, 2);
+			PTS(LOWER_NON_CRIT_SPECIFIED, 1);
+			PTS(UPPER_NON_CRIT_SPECIFIED, 4);
+			PTS(UPPER_CRIT_SPECIFIED, 5);
+			PTS(UPPER_NON_RECOV_SPECIFIED, 6);
+#undef PTS
+		} else {
+			printf(",%s,%s,%s,%s,%s,%s",
+			       "na", "na", "na", "na", "na", "na");
+		}
+		printf("\n");
 	} else {
 		if (verbose == 0) {
 			/* output format
@@ -289,21 +335,20 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 				       "na", sr->s_a_units, "na");
 			}
 			if (thresh_available && sr->full) {
-#define PTS(bit, dataidx) {						\
-	print_thresh_setting(sr->full, rsp->data[0] & (bit),  		\
-	    rsp->data[(dataidx)], "| ", "%-10.3f", "0x-8x", "%-10s");	\
+#define PTS(bit, dataidx) { \
+	print_thresh_setting(sr->full, rsp->data[0] & (bit), \
+	    rsp->data[(dataidx)], "| ", "%-10.3f", "0x%-8x", "%-10s"); \
 }
-				PTS(LOWER_NON_RECOV_SPECIFIED,	3);
-				PTS(LOWER_CRIT_SPECIFIED,	2);
-				PTS(LOWER_NON_CRIT_SPECIFIED,	1);
-				PTS(UPPER_NON_CRIT_SPECIFIED,	4);
-				PTS(UPPER_CRIT_SPECIFIED,	5);
-				PTS(UPPER_NON_RECOV_SPECIFIED,	6);
+				PTS(LOWER_NON_RECOV_SPECIFIED, 3);
+				PTS(LOWER_CRIT_SPECIFIED, 2);
+				PTS(LOWER_NON_CRIT_SPECIFIED, 1);
+				PTS(UPPER_NON_CRIT_SPECIFIED, 4);
+				PTS(UPPER_CRIT_SPECIFIED, 5);
+				PTS(UPPER_NON_RECOV_SPECIFIED, 6);
 #undef PTS
 			} else {
-				printf
-				    ("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s",
-				     "na", "na", "na", "na", "na", "na");
+				printf("| %-10s| %-10s| %-10s| %-10s| %-10s| %-10s",
+				       "na", "na", "na", "na", "na", "na");
 			}
 
 			printf("\n");
@@ -346,18 +391,18 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 
 				if (thresh_available) {
 					if (sr->full) {
-#define PTS(bit, dataidx, str) { 			\
-print_thresh_setting(sr->full, rsp->data[0] & (bit),	\
-		     rsp->data[(dataidx)], 		\
-		    (str), "%.3f\n", "0x%x\n", "%s\n"); \
+#define PTS(bit, dataidx, str) { \
+print_thresh_setting(sr->full, rsp->data[0] & (bit), \
+		     rsp->data[(dataidx)], \
+		     (str), "%.3f\n", "0x%x\n", "%s\n"); \
 }
 
-						PTS(LOWER_NON_RECOV_SPECIFIED,	3, " Lower Non-Recoverable : ");
-						PTS(LOWER_CRIT_SPECIFIED,	2, " Lower Critical        : ");
-						PTS(LOWER_NON_CRIT_SPECIFIED,	1, " Lower Non-Critical    : ");
-						PTS(UPPER_NON_CRIT_SPECIFIED,	4, " Upper Non-Critical    : ");
-						PTS(UPPER_CRIT_SPECIFIED,	5, " Upper Critical        : ");
-						PTS(UPPER_NON_RECOV_SPECIFIED,	6, " Upper Non-Recoverable : ");
+						PTS(LOWER_NON_RECOV_SPECIFIED, 3, " Lower Non-Recoverable : ");
+						PTS(LOWER_CRIT_SPECIFIED, 2, " Lower Critical        : ");
+						PTS(LOWER_NON_CRIT_SPECIFIED, 1, " Lower Non-Critical    : ");
+						PTS(UPPER_NON_CRIT_SPECIFIED, 4, " Upper Non-Critical    : ");
+						PTS(UPPER_CRIT_SPECIFIED, 5, " Upper Critical        : ");
+						PTS(UPPER_NON_RECOV_SPECIFIED, 6, " Upper Non-Recoverable : ");
 #undef PTS
 
 					}
