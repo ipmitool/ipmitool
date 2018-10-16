@@ -190,7 +190,7 @@ vita_discover(struct ipmi_intf *intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received");
 	} else if (rsp->ccode == 0xC1) {
 		lprintf(LOG_INFO, "Invalid completion code received: %s",
@@ -198,7 +198,7 @@ vita_discover(struct ipmi_intf *intf)
 	} else if (rsp->ccode == 0xCC) {
 		lprintf(LOG_INFO, "Invalid data field received: %s",
 			val2str(rsp->ccode, completion_code_vals));
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_INFO, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->data_len < 5) {
@@ -240,9 +240,9 @@ ipmi_vita_ipmb_address(struct ipmi_intf *intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received");
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->data_len < 7) {
@@ -284,10 +284,10 @@ ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -332,10 +332,10 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -402,10 +402,10 @@ ipmi_vita_set_fru_activation(struct ipmi_intf *intf,
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -444,10 +444,10 @@ ipmi_vita_get_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -499,10 +499,10 @@ ipmi_vita_set_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -540,10 +540,10 @@ ipmi_vita_get_led_properties(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -585,10 +585,10 @@ ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -649,10 +649,10 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -749,10 +749,10 @@ ipmi_vita_set_led_state(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -796,10 +796,10 @@ ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "No valid response received.");
 		return -1;
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;

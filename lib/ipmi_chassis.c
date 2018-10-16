@@ -29,8 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _SVID_SOURCE || _BSD_SOURCE || _POSIX_C_SOURCE >= 1 || \
-	_XOPEN_SOURCE || _POSIX_SOURCE
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,11 +57,11 @@ ipmi_chassis_power_status(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to get Chassis Power Status");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Power Status failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -98,12 +96,12 @@ ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to set Chassis Power Control to %s",
 				val2str(ctl, ipmi_chassis_power_control_vals));
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Chassis Power Control to %s failed: %s",
 				val2str(ctl, ipmi_chassis_power_control_vals),
 				val2str(rsp->ccode, completion_code_vals));
@@ -131,7 +129,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x4;
 
-	if (arg != NULL) {
+	if (arg) {
 		if (strncmp(arg, "force", 5) == 0) {
 			identify_data.force_on = 1;
 		} else {
@@ -154,11 +152,11 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	}
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to set Chassis Identify");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Chassis Identify failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		if (identify_data.force_on != 0) {
@@ -172,7 +170,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	}
 
 	printf("Chassis identify interval: ");
-	if (arg == NULL) {
+	if (!arg) {
 		printf("default (15 seconds)\n");
 	} else {
 		if (identify_data.force_on != 0) {
@@ -202,11 +200,11 @@ ipmi_chassis_poh(struct ipmi_intf * intf)
 	req.msg.cmd = 0xf;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to get Chassis Power-On-Hours");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Power-On-Hours failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -245,11 +243,11 @@ ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 	req.msg.cmd = 0x7;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to get Chassis Restart Cause");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Restart Cause failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -306,11 +304,11 @@ ipmi_chassis_status(struct ipmi_intf * intf)
 	req.msg.cmd = 0x1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error sending Chassis Status command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error sending Chassis Status command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -389,11 +387,11 @@ ipmi_chassis_selftest(struct ipmi_intf * intf)
 	req.msg.cmd = 0x4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error sending Get Self Test command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error sending Get Self Test command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -464,11 +462,11 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 	req.msg.data_len = len + 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting Chassis Boot Parameter %d", param);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (param != 0) {
 			lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
 					param, val2str(rsp->ccode, completion_code_vals));
@@ -488,7 +486,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	uint8_t msg_data[3];
 	uint8_t param_id = 0;
 
-	if (arg == NULL)
+	if (!arg)
 		return -1;
 
 	if (str2uchar(arg, &param_id) != 0) {
@@ -510,11 +508,11 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error Getting Chassis Boot Parameter %s", arg);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Boot Parameter %s failed: %s",
 				arg, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -704,6 +702,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 			unsigned long timestamp;
 			char time_buf[40];
 			time_t out_time;
+			struct tm *strtm;
 
 			session_id  = ((unsigned long) rsp->data[3]);
 			session_id |= (((unsigned long) rsp->data[4])<<8);
@@ -716,10 +715,15 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 			timestamp |= (((unsigned long) rsp->data[10])<<24);
 
 			memset(time_buf, 0, 40);
+			if(time_in_utc)
+				strtm = gmtime(&out_time);
+			else
+				strtm = localtime(&out_time);
+
 			strftime(
 					time_buf,
 					sizeof(time_buf),
-					"%m/%d/%Y %H:%M:%S", localtime(&out_time)
+					"%m/%d/%Y %H:%M:%S", strtm
 			);
 
 			printf(" Boot Initiator Info :\n");
@@ -783,7 +787,7 @@ get_bootparam_options(char *optstring,
 		return -1;
 	}
 	token = strtok_r(optstring + 8, ",", &saveptr);
-	while (token != NULL) {
+	while (token) {
 		int setbit = 0;
 		if (strcmp(token, "help") == 0) {
 			optionError = 1;
@@ -793,7 +797,7 @@ get_bootparam_options(char *optstring,
 			setbit = 1;
 			token += 3;
 		}
-		for (op = options; op->name != NULL; ++op) {
+		for (op = options; op->name; ++op) {
 			if (strncmp(token, op->name, strlen(op->name)) == 0) {
 				if (setbit) {
 				    *set_flag |= op->value;
@@ -803,7 +807,7 @@ get_bootparam_options(char *optstring,
 				break;
 			}
 		}
-		if (op->name == NULL) {
+		if (!op->name) {
 			/* Option not found */
 			optionError = 1;
 			if (setbit) {
@@ -816,7 +820,7 @@ get_bootparam_options(char *optstring,
 	if (optionError) {
 		lprintf(LOG_NOTICE, " Legal options are:");
 		lprintf(LOG_NOTICE, "  %-8s: print this message", "help");
-		for (op = options; op->name != NULL; ++op) {
+		for (op = options; op->name; ++op) {
 			lprintf(LOG_NOTICE, "  %-8s: %s", op->name, op->desc);
 		}
 		lprintf(LOG_NOTICE, " Any Option may be prepended with no-"
@@ -846,12 +850,12 @@ ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 			"Error Getting Chassis Boot Parameter %d", param_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Boot Parameter %d failed: %s",
 			param_id, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -971,12 +975,12 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 		return -1;
 	}
 
-	if (iflags == NULL)
+	if (!iflags)
 		memset(flags, 0, 5);
 	else
 		memcpy(flags, iflags, sizeof (flags));
 
-	if (arg == NULL)
+	if (!arg)
 		flags[1] |= 0x00;
 	else if (strncmp(arg, "none", 4) == 0)
 		flags[1] |= 0x00;
@@ -1055,11 +1059,11 @@ ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Power Restore Policy command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Power Restore Policy command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1347,19 +1351,19 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			memset(&flags[0], 0, sizeof(flags));
 			token = strtok_r(argv[2] + 8, ",", &saveptr);
-			while (token != NULL) {
+			while (token) {
 				if (strcmp(token, "help") == 0) {
 					optionError = 1;
 					break;
 				}
-				for (op = options; op->name != NULL; ++op) {
+				for (op = options; op->name; ++op) {
 					if (strcmp(token, op->name) == 0) {
 						flags[op->i] &= op->mask;
 						flags[op->i] |= op->value;
 						break;
 					}
 				}
-				if (op->name == NULL) {
+				if (!op->name) {
 					/* Option not found */
 					optionError = 1;
 					lprintf(LOG_ERR, "Invalid option: %s", token);
@@ -1369,7 +1373,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (optionError) {
 				lprintf(LOG_NOTICE, "Legal options settings are:");
 				lprintf(LOG_NOTICE, "\thelp:\tprint this message");
-				for (op = options; op->name != NULL; ++op) {
+				for (op = options; op->name; ++op) {
 					lprintf(LOG_NOTICE, "\t%s:\t%s", op->name, op->desc);
 				}
 				return (-1);

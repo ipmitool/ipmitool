@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF PPS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _GNU_SOURCE 1
 
 /* Serial Interface, Basic Mode plugin. */
 
@@ -242,12 +241,12 @@ serial_bm_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(rates); i++) {
 		if (rates[i].baudrate == rate) {
 			break;
 		}
 	}
-	if (i >= sizeof(rates) / sizeof(rates[0])) {
+	if (i >= ARRAY_SIZE(rates)) {
 		lprintf(LOG_ERR, "Unsupported baud rate %i specified", rate);
 		return -1;
 	}
@@ -656,7 +655,7 @@ serial_bm_build_msg(const struct ipmi_intf * intf,
 			/* inner send message request is further */
 			inner_rq = (outer_rq + 1);
 		} else {
-			/* there is only outer send message reuest */
+			/* there is only outer send message request */
 			inner_rq = outer_rq;
 		}
 

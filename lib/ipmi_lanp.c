@@ -146,7 +146,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 		}
 	}
 
-	if (p == NULL) {
+	if (!p) {
 		lprintf(LOG_INFO, "Get LAN Parameter failed: Unknown parameter.");
 		return NULL;
 	}
@@ -163,7 +163,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed", p->desc);
 		return NULL;
 	}
@@ -244,7 +244,7 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
 
 	for (;;) {
 		p = get_lan_param(intf, chan, param);
-		if (p == NULL) {
+		if (!p) {
 			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0)
 				return -1;
@@ -312,11 +312,11 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	req.msg.data_len = len+2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set LAN Parameter failed");
 		return -1;
 	}
-	if ((rsp->ccode > 0) && (wait != 0)) {
+	if (rsp->ccode && wait) {
 		lprintf(LOG_DEBUG, "Warning: Set LAN Parameter failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		if (rsp->ccode == 0xcc) {
@@ -328,9 +328,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 					break;
 				sleep(IPMI_LANP_TIMEOUT);
 				rsp = intf->sendrecv(intf, &req);
-				if (rsp == NULL)
-					continue;
-				if (rsp->ccode > 0)
+				if (!rsp || rsp->ccode)
 					continue;
 				return set_lan_param_wait(intf, chan, param, data, len);
 			}
@@ -341,7 +339,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 		}
 	}
 
-	if (wait == 0)
+	if (!wait)
 		return 0;
 	return set_lan_param_wait(intf, chan, param, data, len);
 }
@@ -362,9 +360,9 @@ ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
 {
 	struct lan_param * p;
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data == NULL)
+	if (!p->data)
 		return -1;
 	return (p->data[0] & 3);
 }
@@ -475,9 +473,9 @@ lan_set_arp_interval(struct ipmi_intf * intf, uint8_t chan, uint8_t ival)
 	int rc = 0;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
-	if (lp == NULL)
+	if (!lp)
 		return -1;
-	if (lp->data == NULL)
+	if (!lp->data)
 		return -1;
 
 	if (ival != 0) {
@@ -505,9 +503,9 @@ lan_set_arp_generate(struct ipmi_intf * intf,
 	uint8_t data;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
-	if (lp == NULL)
+	if (!lp)
 		return -1;
-	if (lp->data == NULL)
+	if (!lp->data)
 		return -1;
 	data = lp->data[0];
 
@@ -529,9 +527,9 @@ lan_set_arp_respond(struct ipmi_intf * intf,
 	uint8_t data;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
-	if (lp == NULL)
+	if (!lp)
 		return -1;
-	if (lp->data == NULL)
+	if (!lp->data)
 		return -1;
 	data = lp->data[0];
 
@@ -590,9 +588,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL) {
+	if (p->data) {
 		printf("%-24s: ", p->desc);
 		p->data[0] &= 3;
 		switch (p->data[0]) {
@@ -614,9 +612,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL) {
+	if (p->data) {
 		printf("%-24s: %s%s%s%s%s\n", p->desc,
 		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
 		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
@@ -626,9 +624,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL) {
+	if (p->data) {
 		printf("%-24s: Callback : %s%s%s%s%s\n", p->desc,
 		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
 		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
@@ -662,9 +660,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_ADDR_SRC);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL) {
+	if (p->data) {
 		printf("%-24s: ", p->desc);
 		p->data[0] &= 0xf;
 		switch (p->data[0]) {
@@ -687,79 +685,79 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_ADDR);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %d.%d.%d.%d\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3]);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SUBNET_MASK);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %d.%d.%d.%d\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3]);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_MAC_ADDR);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SNMP_STRING);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %s\n", p->desc, p->data);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_HEADER);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: TTL=0x%02x Flags=0x%02x Precedence=0x%02x TOS=0x%02x\n",
 		       p->desc, p->data[0], p->data[1] & 0xe0, p->data[2] & 0xe0, p->data[2] & 0x1e);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: ARP Responses %sabled, Gratuitous ARP %sabled\n", p->desc,
 		       (p->data[0] & 2) ? "En" : "Dis", (p->data[0] & 1) ? "En" : "Dis");
 
 	p = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %.1f seconds\n", p->desc, (float)((p->data[0] + 1) / 2));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_IP);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %d.%d.%d.%d\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3]);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_MAC);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_IP);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %d.%d.%d.%d\n", p->desc,
 		       p->data[0], p->data[1], p->data[2], p->data[3]);
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data != NULL)
+	if (p->data)
 		printf("%-24s: %s\n", p->desc, mac2str(p->data));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
-	if (p != NULL && p->data != NULL) {
+	if (p && p->data) {
 		int id = ((p->data[1] & 0x0f) << 8) + p->data[0];
 		if (p->data[1] & 0x80)
 			printf("%-24s: %d\n", p->desc, id);
@@ -768,25 +766,25 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_PRIORITY);
-	if (p != NULL && p->data != NULL)
+	if (p && p->data)
 		printf("%-24s: %d\n", p->desc, p->data[0] & 0x07);
 
 	/* Determine supported Cipher Suites -- Requires two calls */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	else if (p->data != NULL)
+	else if (p->data)
 	{
 		unsigned char cipher_suite_count = p->data[0];
 		p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHERS);
-		if (p == NULL)
+		if (!p)
 			return -1;
 
 		printf("%-24s: ", p->desc);
 
 		/* Now we're dangerous.  There are only 15 fixed cipher
 		   suite IDs, but the spec allows for 16 in the return data.*/
-		if ((p->data != NULL) && (p->data_len <= 17))
+		if (p->data && p->data_len <= 17)
 		{
 			unsigned int i;
 			for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
@@ -806,9 +804,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 	/* RMCP+ Messaging Cipher Suite Privilege Levels */
 	/* These are the privilege levels for the 15 fixed cipher suites */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if ((p->data != NULL) && (p->data_len == 9))
+	if (p->data && 9 == p->data_len)
 	{
 		printf("%-24s: %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", p->desc,
 		       priv_level_to_char(p->data[1] & 0x0F),
@@ -840,9 +838,9 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 
 	/* Bad Password Threshold */
 	p = get_lan_param(intf, chan, IPMI_LANP_BAD_PASS_THRESH);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if ((p->data != NULL) && (p->data_len == 6)) {
+	if (p->data && 6 == p->data_len) {
 		int tmp;
 
 		printf("%-24s: %d\n", p->desc, p->data[1]);
@@ -869,13 +867,13 @@ ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * ty
 	char * p;
 	struct lan_param * lp;
 
-	if (level == NULL || types == NULL)
+	if (!level || !types)
 		return -1;
 
 	lp = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE);
-	if (lp == NULL)
+	if (!lp)
 		return -1;
-	if (lp->data == NULL)
+	if (!lp->data)
 		return -1;
 
 	lprintf(LOG_DEBUG, "%-24s: callback=0x%02x user=0x%02x operator=0x%02x admin=0x%02x oem=0x%02x",
@@ -944,7 +942,7 @@ ipmi_lan_set_password(struct ipmi_intf *intf,
 	 */
 	ipmi_intf_session_set_password(intf, (char *)password);
 	printf("Password %s for user %d\n",
-	       (password == NULL) ? "cleared" : "set", user_id);
+	       password ? "set" : "cleared", user_id);
 
 	return 0;
 }
@@ -1208,10 +1206,10 @@ ipmi_lan_set_vlan_id(struct ipmi_intf *intf,  uint8_t chan, char *string)
 	uint8_t data[2];
 	int rc;
 
-	if (string == NULL) {
+	if (!string) {
 		lprintf(LOG_DEBUG, "Get current VLAN ID from BMC.");
 		p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
-		if (p != NULL && p->data != NULL && p->data_len > 1) {
+		if (p && p->data && p->data_len > 1) {
 			int id = ((p->data[1] & 0x0f) << 8) + p->data[0];
 			if (id < 1 || id > 4094) {
 				lprintf(LOG_ERR,
@@ -1270,8 +1268,8 @@ static void
 print_lan_set_bad_pass_thresh_usage(void)
 {
 	lprintf(LOG_NOTICE,
-"lan set <chanel> bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>\n"
-"        <thresh_num>         Bad Pasword Threshold number.\n"
+"lan set <channel> bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>\n"
+"        <thresh_num>         Bad Password Threshold number.\n"
 "        <1|0>                1 = generate a Session Audit sensor event.\n"
 "                             0 = do not generate an event.\n"
 "        <reset_interval>     Attempt Count Reset Interval. In tens of seconds.\n"
@@ -1673,9 +1671,9 @@ is_alert_destination(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 	struct lan_param * p;
 
 	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
-	if (p == NULL)
+	if (!p)
 		return 0;
-	if (p->data == NULL)
+	if (!p->data)
 		return 0;
 
 	if (alert <= (p->data[0] & 0xf))
@@ -1695,15 +1693,14 @@ ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 	uint8_t paddr[PADDR_LEN];
 
 	lp_ptr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_TYPE, alert);
-	if (lp_ptr == NULL || lp_ptr->data == NULL
+	if (!lp_ptr || !lp_ptr->data
 			|| lp_ptr->data_len < PTYPE_LEN) {
 		return (-1);
 	}
 	memcpy(ptype, lp_ptr->data, PTYPE_LEN);
 
 	lp_ptr = get_lan_param_select(intf, channel, IPMI_LANP_DEST_ADDR, alert);
-	if (lp_ptr == NULL || lp_ptr->data == NULL
-			|| lp_ptr->data_len < PADDR_LEN) {
+	if (!lp_ptr || !lp_ptr->data || lp_ptr->data_len < PADDR_LEN) {
 		return (-1);
 	}
 	memcpy(paddr, lp_ptr->data, PADDR_LEN);
@@ -1766,9 +1763,9 @@ ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
 	struct lan_param * p;
 
 	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
-	if (p == NULL)
+	if (!p)
 		return -1;
-	if (p->data == NULL)
+	if (!p->data)
 		return -1;
 	ndest = p->data[0] & 0xf;
 
@@ -1806,7 +1803,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	    (get_cmdline_ipaddr(argv[1], temp) == 0)) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1821,7 +1818,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		 (str2mac(argv[1], temp) == 0)) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1835,7 +1832,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "gateway", 7) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_ADDR, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1861,7 +1858,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "ack", 3) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1886,7 +1883,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "type", 4) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1914,7 +1911,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "time", 4) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -1930,7 +1927,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 	else if (strncasecmp(argv[0], "retry", 5) == 0) {
 		/* get current parameter */
 		p = get_lan_param_select(intf, chan, IPMI_LANP_DEST_TYPE, alert);
-		if (p == NULL) {
+		if (!p) {
 			return (-1);
 		}
 		memcpy(data, p->data, p->data_len);
@@ -2069,12 +2066,12 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed");
 		return (-1);
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -2145,12 +2142,12 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed");
 		return (-1);
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return (-1);

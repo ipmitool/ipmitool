@@ -66,6 +66,7 @@
 #include <ipmitool/ipmi_ime.h>
 #include <ipmitool/ipmi_dcmi.h>
 #include <ipmitool/ipmi_vita.h>
+#include <ipmitool/ipmi_quantaoem.h>
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -81,6 +82,7 @@ extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
 
 int csv_output = 0;
+int time_in_utc = 0;
 int verbose = 0;
 
 struct ipmi_cmd ipmitool_cmd_list[] = {

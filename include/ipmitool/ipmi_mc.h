@@ -33,7 +33,17 @@
 #ifndef IPMI_MC_H
 #define IPMI_MC_H
 
+#include <stdbool.h>
+
 #include <ipmitool/ipmi.h>
+#include <ipmitool/helper.h>
+#include <ipmitool/ipmi_strings.h>
+
+#define OEM_MFG_STRING(oem) val2str(IPM_DEV_MANUFACTURER_ID(oem),\
+                                    ipmi_oem_info)
+#define OEM_PROD_STRING(oem, p) oemval2str(IPM_DEV_MANUFACTURER_ID(oem),\
+                                           ipmi16toh(p),\
+                                           ipmi_oem_product_info)
 
 #define BMC_GET_DEVICE_ID	0x01
 #define BMC_COLD_RESET		0x02
@@ -84,29 +94,125 @@ struct ipm_devid_rsp {
 #define IPM_DEV_IPMI_VERSION_MINOR(x) \
 	((x & IPM_DEV_IPMI_VER_MINOR_MASK) >> IPM_DEV_IPMI_VER_MINOR_SHIFT)
 
-#define IPM_DEV_MANUFACTURER_ID(x) \
-	((uint32_t) ((x[2] & 0x0F) << 16 | x[1] << 8 | x[0]))
+#define IPM_DEV_MANUFACTURER_ID_RESERVED 0x0FFFFF
+#define IPM_DEV_MANUFACTURER_ID(x) ipmi24toh(x)
 
 #define IPM_DEV_ADTL_SUPPORT_BITS      (8)
 
-/* Structure follow the IPMI V.2 Rev 1.0
- * See Table 20-10 */
+/* There are lots of BMC implementations that don't follow the IPMI
+ * specification for GUID encoding. Some send data encoded as in
+ * RFC4122, some follow SMBIOS specification. We support all users
+ * of those buggy implementations here.
+ *
+ * Most implementations like AMI MegaRAC do it the SMBIOS way.
+ * This is the legacy behavior we don't want to break yet.
+ * That's why the last real mode is GUID_SMBIOS. If automatic
+ * detection finds more than one possible candidate, and
+ * GUID_SMBIOS is one of them, then it will take precedence.
+ *
+ * For the same reason GUID_IPMI is right before GUID_SMBIOS.
+ * If both RFC4122 and IPMI encodings have a valid version
+ * field, then IPMI takes precedence.
+ */
+typedef enum {
+	/* Real modes, in reverse precedence order */
+	GUID_RFC4122,
+	GUID_IPMI,
+	GUID_SMBIOS,
+	GUID_REAL_MODES, /* Real mode count*/
+	/* Pseudo modes start here */
+	GUID_AUTO = GUID_REAL_MODES, /* Automatically detect mode */
+	GUID_DUMP, /* Just dump the data */
+	GUID_TOTAL_MODES
+} ipmi_guid_mode_t;
+
+#define GUID_NODE_SZ 6
+
+#define GUID_VER_MASK 0x0F
+#define GUID_VER_SHIFT 12
+#define GUID_VERSION(t_hi) (((t_hi) >> GUID_VER_SHIFT) & GUID_VER_MASK)
+#define GUID_TIME_HI(t_hi) ((t_hi) & ~(GUID_VER_MASK << GUID_VER_SHIFT))
+
+typedef enum {
+	GUID_VERSION_UNKNOWN = 0, /* Not valid according to any specification */
+
+	/* The following are according to IPMI/SMBIOS/RFC4122 */
+	GUID_VERSION_TIME, /* Time-based, recommended for IPMI */
+	GUID_VERSION_DCE,  /* DCE Security with POSIX UIDs, not for IPMI */
+	GUID_VERSION_MD5,  /* Name-based, using MD5 */
+	GUID_VERSION_RND,  /* Randomly generated */
+	GUID_VERSION_SHA1, /* Name-based, using SHA-1 */
+
+	GUID_VERSION_MAX = GUID_VERSION_SHA1, /* The maximum supported version */
+	GUID_VERSION_COUNT /* The number of supported versions */
+} guid_version_t;
+
+static inline bool is_guid_version_valid(guid_version_t ver)
+{
+	return (ver > GUID_VERSION_UNKNOWN) && (ver <= GUID_VERSION_MAX);
+}
+
+/* The structure follows IPMI v2.0, rev 1.1
+ * See section 20.8 */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
-struct ipmi_guid_t {
-	uint32_t  time_low;	/* timestamp low field */
-	uint16_t  time_mid;	/* timestamp middle field */
-	uint16_t  time_hi_and_version; /* timestamp high field and version number */
-	uint8_t   clock_seq_hi_variant;/* clock sequence high field and variant */
-	uint8_t   clock_seq_low; /* clock sequence low field */
-	uint8_t   node[6];	/* node */
-} ATTRIBUTE_PACKING;
+typedef struct {
+	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is LSB */
+	union {
+		struct {
+			uint8_t clock_seq_low; /* clock sequence low field */
+			uint8_t clock_seq_hi_and_rsvd;/* clock sequence high field */
+		};
+		uint16_t clock_seq_and_rsvd;
+	};
+	uint16_t time_hi_and_version; /* timestamp high field and version number */
+	uint16_t time_mid; /* timestamp middle field */
+	uint32_t time_low; /* timestamp low field */
+} ATTRIBUTE_PACKING ipmi_guid_t;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
 
-int _ipmi_mc_get_guid(struct ipmi_intf *, struct ipmi_guid_t *);
+/* The structure follows RFC4122 (section 4.1.2)
+ * and SMBIOS v3.0.0 (section 7.2.1) */
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+typedef struct {
+	uint32_t time_low; /* timestamp low field */
+	uint16_t time_mid; /* timestamp middle field */
+	uint16_t time_hi_and_version; /* timestamp high field and version number */
+	union {
+		struct {
+			uint8_t clock_seq_hi_and_rsvd;/* clock sequence high field */
+			uint8_t clock_seq_low; /* clock sequence low field */
+		};
+		uint16_t clock_seq_and_rsvd;
+	};
+	uint8_t node[GUID_NODE_SZ]; /* Byte 0 is MSB */
+} ATTRIBUTE_PACKING rfc_guid_t;
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(0)
+#endif
+
+/* Parsed GUID structure */
+typedef struct {
+	uint8_t node[GUID_NODE_SZ]; /* MSB first */
+	/* These are architecture-specific for easy output with printf() */
+	uint16_t clock_seq_and_rsvd;
+	uint64_t time_hi_and_version;
+	uint64_t time_mid;
+	uint64_t time_low;
+	/* These are the parsed values */
+	time_t time;
+	ipmi_guid_mode_t mode;
+	guid_version_t ver; /* Version from time_hi_and_version, if valid */
+} parsed_guid_t;
+
+parsed_guid_t ipmi_parse_guid(void *guid, ipmi_guid_mode_t guid_mode);
+
+int _ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid);
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
@@ -138,14 +244,24 @@ struct ipm_selftest_rsp {
 #pragma pack(1)
 #endif
 struct ipm_get_watchdog_rsp {
-	unsigned char timer_use;
-	unsigned char timer_actions;
+	unsigned char use;
+	unsigned char intr_action;
 	unsigned char pre_timeout;
-	unsigned char timer_use_exp;
-	unsigned char initial_countdown_lsb;
-	unsigned char initial_countdown_msb;
-	unsigned char present_countdown_lsb;
-	unsigned char present_countdown_msb;
+	unsigned char exp_flags;
+	union {
+		struct {
+			unsigned char initial_countdown_lsb;
+			unsigned char initial_countdown_msb;
+		};
+		uint16_t init_cnt_le;
+	};
+	union {
+		struct {
+			unsigned char present_countdown_lsb;
+			unsigned char present_countdown_msb;
+		};
+		uint16_t pres_cnt_le;
+	};
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -169,6 +285,25 @@ struct ipm_get_watchdog_rsp {
 #define IPM_WATCHDOG_CLEAR_OS_LOAD	0x08
 #define IPM_WATCHDOG_CLEAR_BIOS_POST	0x04
 #define IPM_WATCHDOG_CLEAR_BIOS_FRB2	0x02
+
+/* Use */
+#define IPMI_WDT_USE_NOLOG_SHIFT    7
+#define IPMI_WDT_USE_DONTSTOP_SHIFT 6 /* For 'set' */
+#define IPMI_WDT_USE_RUNNING_SHIFT  6 /* For 'get' */
+#define IPMI_WDT_USE_SHIFT          0
+#define IPMI_WDT_USE_MASK           0x07
+
+/* Pre-timeout interrupt type */
+#define IPMI_WDT_INTR_SHIFT     4
+#define IPMI_WDT_INTR_MASK      0x07 /* Apply to the intr value, not to the data byte */
+
+/* Action */
+#define IPMI_WDT_ACTION_SHIFT   0
+#define IPMI_WDT_ACTION_MASK    0x07
+
+#define IPMI_WDT_GET(b, s) (((b) >> (IPMI_WDT_##s##_SHIFT)) & (IPMI_WDT_##s##_MASK))
+
+#define IS_WDT_BIT(b, s) IS_SET((b), IPMI_WDT_##s##_SHIFT)
 
 /* IPMI 2.0 command for system information*/
 #define IPMI_SET_SYS_INFO                  0x58

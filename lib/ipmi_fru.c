@@ -49,6 +49,7 @@
 #endif
 
 #define FRU_MULTIREC_CHUNK_SIZE     (255 + sizeof(struct fru_multirec_header))
+#define FRU_FIELD_VALID(a) (a && a[0])
 
 static const char *section_id[4] = {
 	"Internal Use Section",
@@ -145,7 +146,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 		return NULL;
 	}
 	str = malloc(size+1);
-	if (str == NULL)
+	if (!str)
 		return NULL;
 	memset(str, 0, size+1);
 
@@ -211,7 +212,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 int
 is_valid_filename(const char *input_filename)
 {
-	if (input_filename == NULL) {
+	if (!input_filename) {
 		lprintf(LOG_ERR, "ERROR: NULL pointer passed.");
 		return (-1);
 	}
@@ -271,12 +272,12 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, " Device not present (No Response)");
 		return NULL;
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR," Device not present (%s)",
 				val2str(rsp->ccode, completion_code_vals));
 		return NULL;
@@ -567,7 +568,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			protected_bloc = 1;
 		}
 
-		if (rsp->ccode > 0)
+		if (rsp->ccode)
 			break;
 
 		if (protected_bloc == 0) {
@@ -679,11 +680,11 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			msg_data[3] = (uint8_t)tmp;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_NOTICE, "FRU Read failed");
 			break;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			/* if we get C7h or C8h or CAh return code then we requested too
 			* many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca)
@@ -785,11 +786,11 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			msg_data[3] = (uint8_t)tmp;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_NOTICE, "FRU Read failed");
 			break;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			/* if we get C7 or C8  or CA return code then we requested too
 			* many bytes at once so try again with smaller size */
 			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
@@ -834,7 +835,7 @@ fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 	i = last_off = offset;
 
 	fru_data = malloc(fru->size + 1);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, " Out of memory!");
 		return;
 	}
@@ -898,6 +899,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	uint8_t * fru_data;
 	uint32_t fru_len, i;
 	uint8_t tmp[2];
+	size_t chassis_type;
 
 	fru_len = 0;
 
@@ -911,7 +913,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_data = malloc(fru_len);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return;
 	}
@@ -931,15 +933,15 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	 */
 	i = 2;
 
-	printf(" Chassis Type          : %s\n",
- 		chassis_type_desc[fru_data[i] >
- 		(sizeof(chassis_type_desc)/sizeof(chassis_type_desc[0])) - 1 ?
- 		2 : fru_data[i]]);
+	chassis_type = (fru_data[i] > ARRAY_SIZE(chassis_type_desc) - 1)
+	               ? 2
+	               : fru_data[i];
+	printf(" Chassis Type          : %s\n", chassis_type_desc[chassis_type]);
 
  	i++;
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Chassis Part Number   : %s\n", fru_area);
 		}
@@ -948,7 +950,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Chassis Serial        : %s\n", fru_area);
 		}
@@ -961,7 +963,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL) {
+		if (fru_area) {
 			if (strlen(fru_area) > 0) {
 				printf(" Chassis Extra         : %s\n", fru_area);
 			}
@@ -974,7 +976,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		}
 	}
 
-	if (fru_data != NULL) {
+	if (fru_data) {
 		free(fru_data);
 		fru_data = NULL;
 	}
@@ -997,6 +999,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	uint32_t i;
 	time_t tval;
 	uint8_t tmp[2];
+	struct tm *strtm;
 
 	fru_len = 0;
 
@@ -1010,7 +1013,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_data = malloc(fru_len);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return;
 	}
@@ -1034,11 +1037,15 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	tval=((fru_data[i+2] << 16) + (fru_data[i+1] << 8) + (fru_data[i]));
 	tval=tval * 60;
 	tval=tval + secs_from_1970_1996;
-	printf(" Board Mfg Date        : %s", asctime(localtime(&tval)));
+	if(time_in_utc)
+		strtm = gmtime(&tval);
+	else
+		strtm = localtime(&tval);
+	printf(" Board Mfg Date        : %s", asctime(strtm));
 	i += 3;  /* skip mfg. date time */
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Board Mfg             : %s\n", fru_area);
 		}
@@ -1047,7 +1054,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Board Product         : %s\n", fru_area);
 		}
@@ -1056,7 +1063,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Board Serial          : %s\n", fru_area);
 		}
@@ -1065,7 +1072,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Board Part Number     : %s\n", fru_area);
 		}
@@ -1074,7 +1081,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Board FRU ID          : %s\n", fru_area);
 		}
@@ -1087,7 +1094,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL) {
+		if (fru_area) {
 			if (strlen(fru_area) > 0) {
 				printf(" Board Extra           : %s\n", fru_area);
 			}
@@ -1098,7 +1105,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 			break;
 	}
 
-	if (fru_data != NULL) {
+	if (fru_data) {
 		free(fru_data);
 		fru_data = NULL;
 	}
@@ -1132,7 +1139,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_data = malloc(fru_len);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return;
 	}
@@ -1155,7 +1162,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	i = 3;
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Manufacturer  : %s\n", fru_area);
 		}
@@ -1164,7 +1171,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Name          : %s\n", fru_area);
 		}
@@ -1173,7 +1180,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Part Number   : %s\n", fru_area);
 		}
@@ -1182,7 +1189,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Version       : %s\n", fru_area);
 		}
@@ -1191,7 +1198,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Serial        : %s\n", fru_area);
 		}
@@ -1200,7 +1207,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0) {
 			printf(" Product Asset Tag     : %s\n", fru_area);
 		}
@@ -1209,7 +1216,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
-	if (fru_area != NULL) {
+	if (fru_area) {
 		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Product FRU ID        : %s\n", fru_area);
 		}
@@ -1222,7 +1229,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	{
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
-		if (fru_area != NULL) {
+		if (fru_area) {
 			if (strlen(fru_area) > 0) {
 				printf(" Product Extra         : %s\n", fru_area);
 			}
@@ -1233,7 +1240,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 			break;
 	}
 
-	if (fru_data != NULL) {
+	if (fru_data) {
 		free(fru_data);
 		fru_data = NULL;
 	}
@@ -1262,7 +1269,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 	last_off = offset;
 
 	fru_data = malloc(FRU_MULTIREC_CHUNK_SIZE);
-	if (fru_data == NULL) {
+	if (!fru_data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return;
 	}
@@ -2885,11 +2892,11 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2922,11 +2929,11 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return 1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return 1;
@@ -3003,7 +3010,7 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 	uint32_t save_channel;
 	int rc = 0;
 
-	if (fru == NULL)
+	if (!fru)
 		return __ipmi_fru_print(intf, 0);
 
 	/* Logical FRU Device
@@ -3101,11 +3108,11 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3121,14 +3128,15 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		printf("\n");
 	}
 
-	if ((itr = ipmi_sdr_start(intf, 0)) == NULL)
+	itr = ipmi_sdr_start(intf, 0);
+	if (!itr)
 		return -1;
 
 	/* Walk the SDRs looking for FRU Devices and Management Controller Devices. */
 	/* For FRU devices, print the FRU from the SDR locator record.		    */
 	/* For MC devices, issue FRU commands to the satellite controller to print  */
 	/* FRU data.								    */
-	while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL)
+	while ((header = ipmi_sdr_get_next_header(intf, itr)))
 	{
 		if (header->type == SDR_RECORD_TYPE_MC_DEVICE_LOCATOR ) {
 			/* Check the capabilities of the Management Controller Device */
@@ -3172,7 +3180,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		/* Print the FRU from the SDR locator record. */
 		fru = (struct sdr_record_fru_locator *)
 			ipmi_sdr_get_record(intf, header, itr);
-		if (fru == NULL || !fru->logical) {
+		if (!fru || !fru->logical) {
 			if (fru) {
 				free(fru);
 				fru = NULL;
@@ -3224,7 +3232,7 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 	if (!rsp)
 		return;
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		return;
@@ -3240,7 +3248,7 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 	}
 
 	pFruBuf = malloc(fru.size);
-	if (pFruBuf != NULL) {
+	if (pFruBuf) {
 		printf("Fru Size         : %d bytes\n",fru.size);
 		read_fru_area(intf, &fru, fruId, 0, fru.size, pFruBuf);
 	} else {
@@ -3248,7 +3256,7 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 		return;
 	}
 
-	if(pFruBuf != NULL)
+	if(pFruBuf)
 	{
 		FILE * pFile;
 		pFile = fopen(pFileName,"wb");
@@ -3308,13 +3316,13 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 	}
 
 	pFruBuf = malloc(fru.size);
-	if (pFruBuf == NULL) {
+	if (!pFruBuf) {
 		lprintf(LOG_ERR, "Cannot allocate %d bytes\n", fru.size);
 		return;
 	}
 
 		pFile = fopen(pFileName, "rb");
-		if (pFile != NULL) {
+		if (pFile) {
 			len = fread(pFruBuf, 1, fru.size, pFile);
 			printf("Fru Size         : %d bytes\n", fru.size);
 			printf("Size to Write    : %d bytes\n", len);
@@ -3334,7 +3342,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 
 /* ipmi_fru_write_help() - print help text for 'write'
  *
- * retruns void
+ * returns void
  */
 void
 ipmi_fru_write_help()
@@ -3411,11 +3419,11 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3446,7 +3454,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 
 		memset(&fru, 0, sizeof(fru));
 		fru_data = malloc(fru.size + 1);
-		if (fru_data == NULL) {
+		if (!fru_data) {
 			lprintf(LOG_ERR, " Out of memory!");
 			return -1;
 		}
@@ -3616,11 +3624,11 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -3650,7 +3658,7 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 		i = last_off = offset;
 
 		fru_data = malloc(fru.size + 1);
-		if (fru_data == NULL) {
+		if (!fru_data) {
 			lprintf(LOG_ERR, " Out of memory!");
 			return -1;
 		}
@@ -3734,7 +3742,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	uint32_t fruMultiRecSize = 0;
 	uint32_t offFileMultiRec = 0;
 	uint32_t fileMultiRecSize = 0;
-	if (pFileName == NULL) {
+	if (!pFileName) {
 		lprintf(LOG_ERR, "File expected, but none given.");
 		return (-1);
 	}
@@ -3751,14 +3759,14 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		return (-1);
 	}
 	buf = malloc(fileMultiRecSize);
-	if (buf == NULL) {
+	if (!buf) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return (-1);
 	}
 	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
 				offFileMultiRec) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.", pFileName);
-		if (buf != NULL) {
+		if (buf) {
 			free(buf);
 			buf = NULL;
 		}
@@ -3766,7 +3774,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	}
 	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
-		if (buf != NULL) {
+		if (buf) {
 			free(buf);
 			buf = NULL;
 		}
@@ -3775,13 +3783,13 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
 				fileMultiRecSize, buf) != 0) {
 		lprintf(LOG_ERR, "Failed to write FRU area.");
-		if (buf != NULL) {
+		if (buf) {
 			free(buf);
 			buf = NULL;
 		}
 		return (-1);
 	}
-	if (buf != NULL) {
+	if (buf) {
 		free(buf);
 		buf = NULL;
 	}
@@ -3834,7 +3842,7 @@ ipmi_fru_get_multirec_size_from_file(char * pFileName,
 		return -1;
 	}
 
-	/* Retreive length */
+	/* Retrieve length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
 		((header.offset.internal * 8) < end))
 		end = (header.offset.internal * 8);
@@ -3912,7 +3920,7 @@ ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
 {
 	FILE * pFile;
 	uint32_t len = 0;
-	if (pFileName == NULL) {
+	if (!pFileName) {
 		lprintf(LOG_ERR, "Invalid file name given.");
 		return (-1);
 	}
@@ -3971,7 +3979,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		else
@@ -4003,7 +4011,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 
 	if (!rsp)
 		return -1;
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (rsp->ccode == 0xc3)
 			printf ("  Timeout while reading FRU data. (Device not present?)\n");
 		return -1;
@@ -4021,7 +4029,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 
 	end = pFruInfo->size;
 
-	/* Retreive length */
+	/* Retrieve length */
 	if (((header.offset.internal * 8) > (header.offset.internal * 8)) &&
 		((header.offset.internal * 8) < end))
 		end = (header.offset.internal * 8);
@@ -4044,7 +4052,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	return 0;
 }
 
-/* ipmi_fru_get_internal_use_offset -  Retreive internal use offset
+/* ipmi_fru_get_internal_use_offset -  Retrieve internal use offset
 *
 * @intf:   ipmi interface
 * @id:     fru id
@@ -4085,17 +4093,16 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
-	memset(&fru, 0, sizeof(fru));
 	fru->size = (rsp->data[1] << 8) | rsp->data[0];
 	fru->access = rsp->data[2] & 0x1;
 
@@ -4122,11 +4129,11 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return 1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
 		return 1;
@@ -4265,7 +4272,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
 
 			if(rc == 0)
 			{
-				if(pFileName == NULL)
+				if(!pFileName)
 				{
 					uint16_t counter;
 					for(counter = 0; counter < size; counter ++)
@@ -4340,7 +4347,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 
 		if(fp)
 		{
-			/* Retreive file length, check if it's fits the Eeprom Size */
+			/* Retrieve file length, check if it's fits the Eeprom Size */
 			fseek(fp, 0 ,SEEK_END);
 			fileLength = ftell(fp);
 
@@ -4668,12 +4675,12 @@ f_type, uint8_t f_index, char *f_string)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
 		rc = (-1);
@@ -4704,13 +4711,13 @@ f_type, uint8_t f_index, char *f_string)
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL)
+	if (!rsp)
 	{
 		printf(" Device not present (No Response)\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
 	}
-	if (rsp->ccode > 0)
+	if (rsp->ccode)
 	{
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
@@ -4732,9 +4739,7 @@ f_type, uint8_t f_index, char *f_string)
 	}
 
 	fru_data = malloc( fru.size );
-
-	if( fru_data == NULL )
-	{
+	if (!fru_data) {
 		printf("Out of memory!\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
@@ -4782,14 +4787,14 @@ f_type, uint8_t f_index, char *f_string)
 	/*Seek to field index */
 	for (i=0; i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
-		if (fru_area != NULL) {
+		if (fru_area) {
 			free(fru_area);
 			fru_area = NULL;
 		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
 
-	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
+	if (!FRU_FIELD_VALID(fru_area)) {
 		printf("Field not found !\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_out;
@@ -4831,11 +4836,11 @@ f_type, uint8_t f_index, char *f_string)
 	}
 
 	ipmi_fru_set_field_string_out:
-	if (fru_data != NULL) {
+	if (fru_data) {
 		free(fru_data);
 		fru_data = NULL;
 	}
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
@@ -4894,8 +4899,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	fru_data_new = malloc( fru.size );
 
-	if( fru_data_old == NULL || fru_data_new == NULL )
-	{
+	if (!fru_data_old || !fru_data_new) {
 		printf("Out of memory!\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_rebuild_out;
@@ -4960,14 +4964,14 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	3) Seek to field index */
 	for (i = 0;i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
-		if (fru_area != NULL) {
+		if (fru_area) {
 			free(fru_area);
 			fru_area = NULL;
 		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
 	}
 
-	if( (fru_area == NULL )  || strlen((const char *)fru_area) == 0 ) {
+	if (!FRU_FIELD_VALID(fru_area)) {
 		printf("Field not found (1)!\n");
 		rc = (-1);
 		goto ipmi_fru_set_field_string_rebuild_out;
@@ -5142,7 +5146,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		*(fru_data_new + fru_field_offset_tmp) = (0xc0 + strlen(f_string));
 		memcpy(fru_data_new + fru_field_offset_tmp + 1, f_string, strlen(f_string));
 
-		/* Copy remaing bytes in section */
+		/* Copy remaining bytes in section */
 #ifdef DBG_RESIZE_FRU
 		printf("Copying remaining of sections: %d \n",
 		 (int)((fru_data_old + header_offset + fru_section_len - 1) -
@@ -5195,15 +5199,15 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	printf("Done.\n");
 
 	ipmi_fru_set_field_string_rebuild_out:
-	if (fru_area != NULL) {
+	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
-	if (fru_data_new != NULL) {
+	if (fru_data_new) {
 		free(fru_data_new);
 		fru_data_new = NULL;
 	}
-	if (fru_data_old != NULL) {
+	if (fru_data_old) {
 		free(fru_data_old);
 		fru_data_old = NULL;
 	}

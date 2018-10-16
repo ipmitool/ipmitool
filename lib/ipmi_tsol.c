@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -104,11 +103,11 @@ ipmi_tsol_command(struct ipmi_intf *intf, char *recvip, int port,
 	data[5] = (port & 0xff);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to perform TSOL command");
 		return (-1);
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to perform TSOL command: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return (-1);
@@ -149,11 +148,11 @@ ipmi_tsol_send_keystroke(struct ipmi_intf *intf, char *buff, int length)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (verbose) {
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to send keystroke");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Unable to send keystroke: %s",
 					val2str(rsp->ccode, completion_code_vals));
 			return -1;
@@ -430,7 +429,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (result <= 0) {
 		struct hostent *host = gethostbyname((const char *)intf->ssn_params.hostname);
-		if (host == NULL ) {
+		if (!host ) {
 			lprintf(LOG_ERR, "Address lookup for %s failed",
 				intf->ssn_params.hostname);
 			return -1;
@@ -460,7 +459,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	/*
 	 * retrieve local IP address if not supplied on command line
 	 */
-	if (recvip == NULL) {
+	if (!recvip) {
 		/* must connect first */
 		result = intf->open(intf);
 		if (result < 0) {
@@ -476,7 +475,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 		}
 
 		recvip = inet_ntoa(myaddr.sin_addr);
-		if (recvip == NULL) {
+		if (!recvip) {
 			lprintf(LOG_ERR, "Unable to find local IP address");
 			close(fd_socket);
 			return -1;

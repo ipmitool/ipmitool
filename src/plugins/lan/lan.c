@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,7 +94,6 @@ static struct ipmi_rs * ipmi_lan_recv_sol(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lan_send_sol(struct ipmi_intf * intf,
 					  struct ipmi_v2_payload * payload);
 static struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req);
-static int ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp);
 static int ipmi_lan_open(struct ipmi_intf * intf);
 static void ipmi_lan_close(struct ipmi_intf * intf);
 static int ipmi_lan_ping(struct ipmi_intf * intf);
@@ -109,7 +107,6 @@ struct ipmi_intf ipmi_lan_intf = {
 	.open = ipmi_lan_open,
 	.close = ipmi_lan_close,
 	.sendrecv = ipmi_lan_send_cmd,
-	.sendrsp = ipmi_lan_send_rsp,
 	.recv_sol = ipmi_lan_recv_sol,
 	.send_sol = ipmi_lan_send_sol,
 	.keepalive = ipmi_lan_keepalive,
@@ -124,7 +121,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_se
 	struct ipmi_rq_entry * e;
 
 	e = malloc(sizeof(struct ipmi_rq_entry));
-	if (e == NULL) {
+	if (!e) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -135,7 +132,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_se
 	e->intf = intf;
 	e->rq_seq = req_seq;
 
-	if (ipmi_req_entries == NULL)
+	if (!ipmi_req_entries)
 		ipmi_req_entries = e;
 	else
 		ipmi_req_entries_tail->next = e;
@@ -151,7 +148,7 @@ ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 {
 	struct ipmi_rq_entry * e = ipmi_req_entries;
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
-		if (e->next == NULL || e == e->next)
+		if (!e->next || e == e->next)
 			return NULL;
 		e = e->next;
 	}
@@ -206,7 +203,7 @@ ipmi_req_clear_entries(void)
 	while (e) {
 		lprintf(LOG_DEBUG+3, "cleared list entry seq=0x%02x cmd=0x%02x",
 			e->rq_seq, e->req.msg.cmd);
-		if (e->next != NULL) {
+		if (e->next) {
 			p = e->next;
 			free(e);
 			e = p;
@@ -345,7 +342,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 {
 	struct rmcp_pong * pong;
 
-	if (rsp == NULL)
+	if (!rsp)
 		return -1;
 
 	pong = (struct rmcp_pong *)rsp->data;
@@ -402,7 +399,7 @@ ipmi_lan_ping(struct ipmi_intf * intf)
 	int rv;
 
 	data = malloc(len);
-	if (data == NULL) {
+	if (!data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return -1;
 	}
@@ -463,7 +460,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 
 	rsp = ipmi_lan_recv_packet(intf);
 
-	while (rsp != NULL) {
+	while (rsp) {
 
 		/* parse response headers */
 		memcpy(&rmcp_rsp, rsp->data, 4);
@@ -613,7 +610,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 							rsp = !rsp->ccode ? ipmi_lan_recv_packet(intf) : NULL;
 							if (!entry->bridging_level)
 								entry->req.msg.cmd = entry->req.msg.target_cmd;
-							if (rsp == NULL) {
+							if (!rsp) {
 								ipmi_req_remove_entry(entry->rq_seq, entry->req.msg.cmd);
 							}
 							continue;
@@ -736,10 +733,10 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 	}
 	else
 	{
-		// We dont have this request in the list so we can add it 
+		// We don't have this request in the list so we can add it
 		// to the list
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
-		if (entry == NULL)
+		if (!entry)
 			return NULL;
 	}
  
@@ -749,7 +746,7 @@ ipmi_lan_build_cmd(struct ipmi_intf * intf, struct ipmi_rq * req, int isRetry)
 	if (intf->transit_addr != intf->my_addr && intf->transit_addr != 0)
 		len += 8;
 	msg = malloc(len);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -909,7 +906,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	lprintf(LOG_DEBUG, "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
 		intf->opened, intf->open);
 
-	if (intf->opened == 0 && intf->open != NULL) {
+	if (!intf->opened && intf->open) {
 		if (intf->open(intf) < 0) {
 			lprintf(LOG_DEBUG, "Failed to open LAN interface");
 			return NULL;
@@ -922,7 +919,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 		isRetry = ( try > 0 ) ? 1 : 0;
 
 		entry = ipmi_lan_build_cmd(intf, req, isRetry);
-		if (entry == NULL) {
+		if (!entry) {
 			lprintf(LOG_ERR, "Aborting send command, unable to build");
 			return NULL;
 		}
@@ -947,7 +944,7 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 		/* Duplicate Request ccode most likely indicates a response to
 		   a previous retry. Ignore and keep polling. */
-		if((rsp != NULL) && (rsp->ccode == 0xcf)) {
+		if(rsp && rsp->ccode == 0xcf) {
 			rsp = NULL;
 			rsp = ipmi_lan_poll_recv(intf);
 		}
@@ -968,14 +965,14 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	// This is the corner case where the remote controller responds very slowly.
 	//
 	// Example: We have to send command 23 and 2d.
-	// If we send command,seq as 23,10 and if we dont get any response it will 
+	// If we send command,seq as 23,10 and if we don't get any response it will
 	// retry 4 times with 23,10 and then come out here and indicate that there is no
 	// response from the remote controller and will send the next command for
 	// ie 2d,11. And if the BMC is slow to respond and returns 23,10 then it 
 	// will match it in the list and will take response of command 23 as response 
 	// for command 2d and return success. So ideally when retries are done and 
 	// are out of this function we should be clearing the list to be safe so that
-	// we dont match the old response with new request.
+	// we don't match the old response with new request.
 	//          [23, 10] --> BMC
 	//          [23, 10] --> BMC
 	//          [23, 10] --> BMC
@@ -987,135 +984,6 @@ ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	ipmi_req_clear_entries();
  
 	return rsp;
-}
-
-static uint8_t *
-ipmi_lan_build_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp, int * llen)
-{
-	struct rmcp_hdr rmcp = {
-		.ver	= RMCP_VERSION_1,
-		.class	= RMCP_CLASS_IPMI,
-		.seq	= 0xff,
-	};
-	struct ipmi_session * s = intf->session;
-	int cs, mp, ap = 0, tmp;
-	int len;
-	uint8_t * msg;
-
-	len = rsp->data_len + 22;
-	if (s->active)
-		len += 16;
-
-	msg = malloc(len);
-	if (msg == NULL) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
-	memset(msg, 0, len);
-
-	/* rmcp header */
-	memcpy(msg, &rmcp, 4);
-	len = sizeof(rmcp);
-
-	/* ipmi session header */
-	msg[len++] = s->active ? s->authtype : 0;
-
-	if (s->in_seq) {
-		s->in_seq++;
-		if (s->in_seq == 0)
-			s->in_seq++;
-	}
-	memcpy(msg+len, &s->in_seq, 4);
-	len += 4;
-	memcpy(msg+len, &s->session_id, 4);
-	len += 4;
-
-	/* session authcode, if session active and authtype is not none */
-	if (s->active && s->authtype) {
-		ap = len;
-		memcpy(msg+len, s->authcode, 16);
-		len += 16;
-	}
-
-	/* message length */
-	msg[len++] = rsp->data_len + 8;
-
-	/* message header */
-	cs = mp = len;
-	msg[len++] = IPMI_REMOTE_SWID;
-	msg[len++] = rsp->msg.netfn << 2;
-	tmp = len - cs;
-	msg[len++] = ipmi_csum(msg+cs, tmp);
-	cs = len;
-	msg[len++] = IPMI_BMC_SLAVE_ADDR;
-	msg[len++] = (rsp->msg.seq << 2) | (rsp->msg.lun & 3);
-	msg[len++] = rsp->msg.cmd;
-
-	/* completion code */
-	msg[len++] = rsp->ccode;
-
-	/* message data */
-	if (rsp->data_len) {
-		memcpy(msg+len, rsp->data, rsp->data_len);
-		len += rsp->data_len;
-	}
-
-	/* second checksum */
-	tmp = len - cs;
-	msg[len++] = ipmi_csum(msg+cs, tmp);
-
-	if (s->active) {
-		uint8_t * d;
-		switch (s->authtype) {
-		case IPMI_SESSION_AUTHTYPE_MD5:
-			d = ipmi_auth_md5(s, msg+mp, msg[mp-1]);
-			memcpy(msg+ap, d, 16);
-			break;
-		case IPMI_SESSION_AUTHTYPE_MD2:
-			d = ipmi_auth_md2(s, msg+mp, msg[mp-1]);
-			memcpy(msg+ap, d, 16);
-			break;
-		}
-	}
-
-	*llen = len;
-	return msg;
-}
-
-static int
-ipmi_lan_send_rsp(struct ipmi_intf * intf, struct ipmi_rs * rsp)
-{
-	uint8_t * msg;
-	int len = 0;
-	int rv;
-
-	msg = ipmi_lan_build_rsp(intf, rsp, &len);
-	if (len <= 0 || msg == NULL) {
-		lprintf(LOG_ERR, "Invalid response packet");
-		if (msg != NULL) {
-			free(msg);
-			msg = NULL;
-		}
-		return -1;
-	}
-
-	rv = sendto(intf->fd, msg, len, 0,
-		    (struct sockaddr *)&intf->session->addr,
-		    intf->session->addrlen);
-	if (rv < 0) {
-		lprintf(LOG_ERR, "Packet send failed");
-		if (msg != NULL) {
-			free(msg);
-			msg = NULL;
-		}
-		return -1;
-	}
-
-	if (msg != NULL) {
-		free(msg);
-		msg = NULL;
-	}
-	return 0;
 }
 
 /*
@@ -1163,7 +1031,7 @@ uint8_t * ipmi_lan_build_sol_msg(struct ipmi_intf * intf,
 		payload->payload.sol_packet.character_count;    // The actual payload
 
 	msg = malloc(len);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -1256,15 +1124,15 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 	int                   len;
 	int                   try = 0;
 
-	if (intf->opened == 0 && intf->open != NULL) {
+	if (!intf->opened && intf->open) {
 		if (intf->open(intf) < 0)
 			return NULL;
 	}
 
 	msg = ipmi_lan_build_sol_msg(intf, payload, &len);
-	if (len <= 0 || msg == NULL) {
+	if (len <= 0 || !msg) {
 		lprintf(LOG_ERR, "Invalid SOL payload packet");
-		if (msg != NULL) {
+		if (msg) {
 			free(msg);
 			msg = NULL;
 		}
@@ -1312,7 +1180,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf * intf,
 		}
 	}
 
-	if (msg != NULL) {
+	if (msg) {
 		free(msg);
 		msg = NULL;
 	}
@@ -1476,7 +1344,7 @@ check_sol_packet_for_new_data(struct ipmi_intf * intf,
 		}
 	
 		/*
-		 *Rember the data for next round
+		 * Remember the data for next round
 		 */
 		if (rsp && rsp->payload.sol_packet.packet_sequence_number)
 		{
@@ -1564,9 +1432,7 @@ ipmi_lan_keepalive(struct ipmi_intf * intf)
 		return 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL)
-		return -1;
-	if (rsp->ccode > 0)
+	if (!rsp || rsp->ccode)
 		return -1;
 
 	return 0;
@@ -1594,14 +1460,14 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 	req.msg.data_len = 2;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_INFO, "Get Auth Capabilities command failed");
 		return -1;
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "get_auth_capabilities");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get Auth Capabilities command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1709,14 +1575,14 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 	req.msg.data_len	= 17; /* 1 byte for authtype, 16 for user */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Session Challenge command failed");
 		return -1;
 	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "get_session_challenge");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x81:
 			lprintf(LOG_ERR, "Invalid user name");
@@ -1784,7 +1650,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		val2str(s->authtype, ipmi_authtype_session_vals));
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Activate Session command failed");
 		s->active = 0;
 		return -1;
@@ -1875,7 +1741,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	rsp = intf->sendrecv(intf, &req);
 	bridge_possible = backup_bridge_possible;
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
 			val2str(privlvl, ipmi_privlvl_vals));
 		return -1;
@@ -1883,7 +1749,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
@@ -1919,7 +1785,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	req.msg.data_len	= 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Close Session command failed");
 		return -1;
 	}
@@ -1931,7 +1797,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 			"session ID %08lx", (long)session_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Close Session command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2028,7 +1894,7 @@ ipmi_lan_open(struct ipmi_intf * intf)
 	struct ipmi_session *s;
 	struct ipmi_session_params *p;
 
-	if (intf == NULL || intf->opened)
+	if (!intf || intf->opened)
 		return -1;
 
 	s = intf->session;
@@ -2043,7 +1909,7 @@ ipmi_lan_open(struct ipmi_intf * intf)
 	if (p->retry == 0)
 		p->retry = IPMI_LAN_RETRY;
 
-	if (p->hostname == NULL || strlen((const char *)p->hostname) == 0) {
+	if (!p->hostname || strlen((const char *)p->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}

@@ -117,7 +117,7 @@ open_imb(void)
 			OPEN_EXISTING,
 			FILE_ATTRIBUTE_NORMAL,
 			NULL);
-	if (hDevice == NULL || hDevice == INVALID_HANDLE_VALUE) {
+	if (!hDevice || INVALID_HANDLE_VALUE == hDevice) {
 		return 0;
 	}
 	/* Detect the IPMI version for processing requests later. This
@@ -281,7 +281,7 @@ ipmi_close_ia(void)
  * @lpcbBytesReturned, address of actual bytes of output
  * @lpoOverlapped address of overlapped struct
  *
- * returns - FALSE for fail and TRUE for success. Same as standarad NTOS call as
+ * returns - FALSE for fail and TRUE for success. Same as standard NTOS call as
  * it also sets Ntstatus.status.
  */
 static BOOL
@@ -312,7 +312,7 @@ DeviceIoControl(HANDLE dummey_hDevice, DWORD dwIoControlCode, LPVOID
 	s.cbOutBuffer = cbOutBuffer;
 	s.lpcbBytesReturned = lpcbBytesReturned;
 	s.lpoOverlapped = lpoOverlapped;
-	/* dummy place holder. Linux IMB driver doesnt return status or info
+	/* dummy place holder. Linux IMB driver doesn't return status or info
 	 * via it
 	 */
 	s.ntstatus = (LPVOID)&NTstatus;
@@ -434,7 +434,7 @@ SendTimedI2cRequest(I2CREQUESTDATA *reqPtr, int timeOut, BYTE *respDataPtr,
  * @responseDataLen
  * @timeOut - how long to wait, in mSec units
  *
- * retruns - OK  else error status code
+ * returns - OK  else error status code
  */
 ACCESN_STATUS
 SendTimedEmpMessageResponse (ImbPacket *ptr, char *responseDataBuf,
@@ -514,7 +514,7 @@ SendTimedEmpMessageResponse (ImbPacket *ptr, char *responseDataBuf,
  * @timeOut - how long to wait, in mSec units
  * @sessionHandle - This is introduced in IPMI1.5,this is required to be sent in
  * sendd message command as a parameter, which is then used by BMC
- * to identify the correct DPC session to send the mesage to.
+ * to identify the correct DPC session to send the message to.
  * @channelNumber - There are 3 different channels on which DPC communication
  * goes on:
  *   * Emp - 1
@@ -591,7 +591,7 @@ SendTimedEmpMessageResponse_Ex (ImbPacket *ptr, char *responseDataBuf, int
 	req->req.data[i++] = ((ptr->seqLn & 0xfc) | (ptr->nfLn & 0x3));
 	/* The next byte is the command like get software ID(00). */
 	req->req.data[i++] = ptr->cmd;
-	/* after the cmd the data, which is sent by DPC & is retrived using the
+	/* after the cmd the data, which is sent by DPC & is retrieved using the
 	 * get message earlier is sent back to DPC.
 	 */
 	for (j = 0; j < responseDataLen; ++j, ++i) {
@@ -728,7 +728,7 @@ SendTimedLanMessageResponse(ImbPacket *ptr, char *responseDataBuf,
  * @timeOut - how long to wait, in mSec units
  * @sessionHandle - This is introduced in IPMI1.5,this is required to be sent in
  * send message command as a parameter,which is then used by BMC to identify the
- * correct DPC session to send the mesage to.
+ * correct DPC session to send the message to.
  * @channelNumber - There are 3 different channels on which DPC communication
  * goes on:
  *	* Emp - 1
@@ -806,7 +806,7 @@ SendTimedLanMessageResponse_Ex(ImbPacket *ptr, char *responseDataBuf, int
 	req->req.data[i++] = ((ptr->seqLn & 0xfc) | (ptr->nfLn & 0x3));
 	/* The next byte is the command like get software ID(00). */
 	req->req.data[i++] = ptr->cmd;
-	/* After the cmd the data ,which is sent by DPC & is retrived using the
+	/* After the cmd the data ,which is sent by DPC & is retrieved using the
 	 * get message earlier is sent back to DPC.
 	 */
 	for (j = 0; j < responseDataLen; ++j, ++i) {
@@ -979,82 +979,12 @@ ACCESN_STATUS
 GetAsyncImbpMessage (ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 		ImbAsyncSeq *seqNo, DWORD channelNumber)
 {
-	BOOL status;
-	BYTE responseData[MAX_ASYNC_RESP_SIZE];
-	BYTE lun;
-	ImbAsyncResponse *resp = (ImbAsyncResponse *)responseData;
-	DWORD respLength = sizeof(responseData);
-	ImbAsyncRequest req;
-
-	while (1) {
-		if ((msgPtr == NULL) || (msgLen == NULL) || ( seqNo == NULL)) {
-			return ACCESN_ERROR;
-		}
-		/* convert to uSec units */
-		req.timeOut = timeOut * 1000;
-		req.lastSeq = *seqNo;
-
-		status = DeviceIoControl(hDevice, IOCTL_IMB_GET_ASYNC_MSG, &req,
-				sizeof(req), &responseData,
-				sizeof(responseData), &respLength, NULL);
-
-		lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d",
-				__FUNCTION__, status);
-		if (status != TRUE) {
-			DWORD error = GetLastError();
-			/* handle "msg not available" specially. it is different
-			 * from a random old error.
-			 */
-			switch (error) {
-			case IMB_MSG_NOT_AVAILABLE:
-				return ACCESN_END_OF_DATA;
-				break;
-			default:
-				return ACCESN_ERROR;
-				break;
-			}
-		} else if (respLength < MIN_ASYNC_RESP_SIZE) {
-			return ACCESN_ERROR;
-		}
-		respLength -= MIN_ASYNC_RESP_SIZE;
-
-		if (*msgLen < respLength) {
-			return ACCESN_ERROR;
-		}
-
-		/* same code as in NT section */
-		if (IpmiVersion == IPMI_09_VERSION) {
-			switch (channelNumber) {
-			case IPMB_CHANNEL:
-				lun = IPMB_LUN;
-				break;
-			case  EMP_CHANNEL:
-				lun = EMP_LUN;
-				break;
-			default:
-				lun = RESERVED_LUN;
-				break;
-			}
-			if ((lun == RESERVED_LUN)
-					|| (lun != ((((ImbPacket *)(resp->data))->nfLn) & 0x3 ))) {
-				*seqNo = resp->thisSeq;
-				continue;
-			}
-			memcpy(msgPtr, resp->data, respLength);
-			*msgLen = respLength;
-		} else {
-			/* it is version 1.0 or better */
-			if (resp->data[0] != (BYTE)channelNumber) {
-				*seqNo = resp->thisSeq;
-				continue;
-			}
-			memcpy(msgPtr, &(resp->data[1]), (respLength - 1));
-			*msgLen = respLength - 1;
-		}
-		/* give the caller his sequence number */
-		*seqNo = resp->thisSeq;
-		return ACCESN_OK;
-	}
+	/* This function does exactly the same as GetAsuncImbpMessage_Ex(),
+	 * but doesn't return session handle and privilege
+	 */
+	return GetAsyncImbpMessage_Ex(msgPtr, msgLen, timeOut,
+	                              seqNo, channelNumber,
+	                              NULL, NULL);
 }
 
 /* GetAsyncImbpMessage_Ex - gets the next available async message with a message
@@ -1084,7 +1014,7 @@ GetAsyncImbpMessage_Ex(ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 	ImbAsyncRequest req;
 
 	while (1) {
-		if ((msgPtr == NULL) || (msgLen == NULL) || ( seqNo == NULL)) {
+		if (!msgPtr || !msgLen || !seqNo) {
 			return ACCESN_ERROR;
 		}
 
@@ -1110,12 +1040,12 @@ GetAsyncImbpMessage_Ex(ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 				return ACCESN_ERROR;
 				break;
 			}
-		}
-		if (respLength < MIN_ASYNC_RESP_SIZE) {
+		} else if (respLength < MIN_ASYNC_RESP_SIZE) {
 			return ACCESN_ERROR;
 		}
 
 		respLength -= MIN_ASYNC_RESP_SIZE;
+
 		if (*msgLen < respLength) {
 			return ACCESN_ERROR;
 		}
@@ -1143,26 +1073,26 @@ GetAsyncImbpMessage_Ex(ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 			memcpy(msgPtr, resp->data, respLength);
 			*msgLen = respLength;
 		} else {
-			if ((sessionHandle ==NULL) || (privilege ==NULL)) {
-				return ACCESN_ERROR;
-			}
-			/* With the new IPMI version the get message command
-			 * returns the channel number along with the
-			 * privileges.The 1st 4 bits of the second byte of the
-			 * response data for get message command represent the
-			 * channel number & the last 4 bits are the privileges.
-			 */
-			*privilege = (resp->data[0] & 0xf0)>> 4;
+			/* it is version 1.0 or better */
 			if ((resp->data[0] & 0x0f) != (BYTE)channelNumber) {
 				*seqNo = resp->thisSeq;
 				continue;
 			}
-			/* The get message command according to IPMI 1.5 spec
-			 * now even returns the session handle.This is required
-			 * to be captured as it is required as request data for
-			 * send message command.
+			/* With the new IPMI version the get message command
+			 * returns the channel number along with the
+			 * privileges. The 1st 4 bits of the second byte of the
+			 * response data for get message command represent the
+			 * channel number & the last 4 bits are the privileges.
 			 */
-			*sessionHandle = resp->data[1];
+			if (sessionHandle && privilege) {
+				*privilege = (resp->data[0] & 0xf0) >> 4;
+				/* The get message command according to IPMI 1.5 spec
+				 * now even returns the session handle. This is required
+				 * to be captured as it is required as request data for
+				 * send message command.
+				 */
+				*sessionHandle = resp->data[1];
+			}
 			memcpy(msgPtr, &(resp->data[2]), (respLength - 1));
 			*msgLen = respLength - 1;
 		}
@@ -1220,7 +1150,7 @@ RegisterForImbAsyncMessageNotification(unsigned int *handleId)
 	DWORD respLength ;
 	int dummy;
 	/*allow  only one app to register  */
-	if ((handleId  == NULL ) || (AsyncEventHandle)) {
+	if (!handleId || AsyncEventHandle) {
 		return ACCESN_ERROR;
 	}
 	status = DeviceIoControl(hDevice, IOCTL_IMB_REGISTER_ASYNC_OBJ, &dummy,

@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -277,28 +276,6 @@ int lanplus_get_requested_ciphers(int       cipher_suite_id,
 	return 0;
 }
 
-
-
-/*
- * Reverse the order of arbitrarily long strings of bytes
- */
-void lanplus_swap(
-				  uint8_t * buffer,
-						int             length)
-{
-	int i;
-	uint8_t temp;
-
-	for (i =0; i < length/2; ++i)
-	{
-		temp = buffer[i];
-		buffer[i] = buffer[length - 1 - i];
-		buffer[length - 1 - i] = temp;
-	}
-}
-
-
-
 static const struct valstr plus_payload_types_vals[] = {
 	 { IPMI_PAYLOAD_TYPE_IPMI,              "IPMI (0)" },	// IPMI Message
 	 { IPMI_PAYLOAD_TYPE_SOL,               "SOL  (1)" },	// SOL (Serial over LAN)
@@ -320,7 +297,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_se
 	struct ipmi_rq_entry * e;
 
 	e = malloc(sizeof(struct ipmi_rq_entry));
-	if (e == NULL) {
+	if (!e) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -331,7 +308,7 @@ ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_se
 	e->intf = intf;
 	e->rq_seq = req_seq;
 
-	if (ipmi_req_entries == NULL)
+	if (!ipmi_req_entries)
 		ipmi_req_entries = e;
 	else
 		ipmi_req_entries_tail->next = e;
@@ -595,7 +572,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 	int rv;
 
 	data = malloc(len);
-	if (data == NULL) {
+	if (!data) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return -1;
 	}
@@ -644,7 +621,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 	rsp = ipmi_lan_recv_packet(intf);
 
 	/* check if no packet has come */
-	if (rsp == NULL) {
+	if (!rsp) {
 		return NULL;
 	}
 
@@ -764,7 +741,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 			entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
 								rsp->payload.ipmi_response.cmd);
 
-			if (entry == NULL) {
+			if (!entry) {
 				lprintf(LOG_INFO, "IPMI Request Match NOT FOUND");
 				/* read one more packet */
 				return (struct ipmi_rs *)1;
@@ -990,7 +967,7 @@ read_open_session_response(struct ipmi_rs * rsp, int offset)
  *
  * param rsp [in/out] reading from the data variable and writing to the rakp 2
  *       section
- * param offset [in] tells us where hte rakp2 payload starts
+ * param offset [in] tells us where the rakp2 payload starts
  * param auth_alg [in] describes the authentication algorithm was agreed upon in
  *       the open session request/response phase.  We need to know that here so
  *       that we know how many bytes (if any) to read fromt the packet.
@@ -1011,31 +988,19 @@ read_rakp2_message(
 	 /* RAKP response code */
 	 rsp->payload.rakp2_message.rakp_return_code = rsp->data[offset + 1];
 
-	 /* Console session ID */
-	 memcpy(&(rsp->payload.rakp2_message.console_id),
-			rsp->data + offset + 4,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.rakp2_message.console_id =
-		 BSWAP_32(rsp->payload.rakp2_message.console_id);
-	 #endif
+	/* Console session ID */
+	rsp->payload.rakp2_message.console_id = ipmi32toh(&rsp->data[offset + 4]);
 
-	 /* BMC random number */
-	 memcpy(&(rsp->payload.rakp2_message.bmc_rand),
-			rsp->data + offset + 8,
-			16);
-	 #if WORDS_BIGENDIAN
-	 lanplus_swap(rsp->payload.rakp2_message.bmc_rand, 16);
-	 #endif
+	/* BMC random number */
+	memcpy(&(rsp->payload.rakp2_message.bmc_rand),
+	       array_letoh(&rsp->data[offset + 8], 16),
+	       16);
 
-	 /* BMC GUID */
-	 memcpy(&(rsp->payload.rakp2_message.bmc_guid),
-			rsp->data + offset + 24,
-			16);
-	 #if WORDS_BIGENDIAN
-	 lanplus_swap(rsp->payload.rakp2_message.bmc_guid, 16);
-	 #endif
-	 
+	/* BMC GUID */
+	memcpy(&(rsp->payload.rakp2_message.bmc_guid),
+	       array_letoh(&rsp->data[offset + 24], 16),
+	       16);
+
 	 /* Key exchange authentication code */
 	 switch (auth_alg)
 	 {
@@ -1089,7 +1054,7 @@ read_rakp2_message(
  *
  * param rsp [in/out] reading from the data variable and writing to the rakp
  *       4 section
- * param offset [in] tells us where hte rakp4 payload starts
+ * param offset [in] tells us where the rakp4 payload starts
  * param integrity_alg [in] describes the authentication algorithm was
  *       agreed upon in the open session request/response phase.  We need
  *       to know that here so that we know how many bytes (if any) to read
@@ -1111,16 +1076,9 @@ read_rakp4_message(
 	 /* RAKP response code */
 	 rsp->payload.rakp4_message.rakp_return_code = rsp->data[offset + 1];
 
-	 /* Console session ID */
-	 memcpy(&(rsp->payload.rakp4_message.console_id),
-			rsp->data + offset + 4,
-			4);
-	 #if WORDS_BIGENDIAN
-	 rsp->payload.rakp4_message.console_id =
-		 BSWAP_32(rsp->payload.rakp4_message.console_id);
-	 #endif
+	/* Console session ID */
+	rsp->payload.rakp4_message.console_id = ipmi32toh(&rsp->data[offset + 4]);
 
-	 
 	 /* Integrity check value */
 	 switch (auth_alg)
 	 {
@@ -1231,25 +1189,15 @@ read_session_data_v2x(
 	rsp->session.payloadtype = rsp->data[(*offset)++] & 0x3F;
 
 	/* Session ID */
-	memcpy(&rsp->session.id, rsp->data + *offset, 4);
+	rsp->session.id = ipmi32toh(&rsp->data[*offset]);
 	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.id = BSWAP_32(rsp->session.id);
-	#endif
-
 
 	/* Ignored, so far */
-	memcpy(&rsp->session.seq, rsp->data + *offset, 4);
+	rsp->session.seq = ipmi32toh(&rsp->data[*offset]);
 	*offset += 4;
-	#if WORDS_BIGENDIAN
-	rsp->session.seq = BSWAP_32(rsp->session.seq);
-	#endif		
 
-	memcpy(&rsp->session.msglen, rsp->data + *offset, 2);
+	rsp->session.msglen = ipmi16toh(&rsp->data[*offset]);
 	*offset += 2;
-	#if WORDS_BIGENDIAN
-	rsp->session.msglen = BSWAP_16(rsp->session.msglen);
-	#endif
 }
 
 
@@ -1667,7 +1615,7 @@ ipmi_lanplus_build_v2x_msg(
 
 
 	msg = malloc(len);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return;
 	}
@@ -1988,7 +1936,7 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 		}
 	}
 
-	if (entry == NULL)
+	if (!entry)
 		return NULL;
 
 	// Build our payload
@@ -2054,13 +2002,13 @@ ipmi_lanplus_build_v15_ipmi_cmd(
 	struct ipmi_rq_entry * entry;
 
 	entry = ipmi_req_add_entry(intf, req, 0);
-	if (entry == NULL)
+	if (!entry)
 		return NULL;
 
 	len = req->msg.data_len + 21;
 
 	msg = malloc(len);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -2251,7 +2199,7 @@ ipmi_lanplus_send_payload(
 					entry = ipmi_lanplus_build_v2x_ipmi_cmd(intf, ipmi_request, isRetry);
 				}
 
-				if (entry == NULL) {
+				if (!entry) {
 					lprintf(LOG_ERR, "Aborting send command, unable to build");
 					return NULL;
 				}
@@ -2397,7 +2345,7 @@ ipmi_lanplus_send_payload(
 
 			/* Duplicate Request ccode most likely indicates a response to
 			   a previous retry. Ignore and keep polling. */
-			while ((rsp != NULL) && (rsp->ccode == 0xcf))
+			while (rsp && rsp->ccode == 0xcf)
 			{
 				rsp = NULL;
 				rsp = ipmi_lan_poll_recv(intf);
@@ -2623,7 +2571,7 @@ check_sol_packet_for_new_data(
 
 
 		/*
-		 *Rember the data for next round
+		 * Remember the data for next round
 		 */
 		if (rsp->payload.sol_packet.packet_sequence_number)
 		{
@@ -2770,7 +2718,7 @@ ipmi_get_auth_capabilities_cmd(
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL || rsp->ccode > 0) {
+	if (!rsp || rsp->ccode) {
 		/*
 		 * It's very possible that this failed because we asked for IPMI
 		 * v2 data. Ask again, without requesting IPMI v2 data.
@@ -2779,11 +2727,11 @@ ipmi_get_auth_capabilities_cmd(
 
 		rsp = intf->sendrecv(intf, &req);
 
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_INFO, "Get Auth Capabilities error");
 			return 1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_INFO, "Get Auth Capabilities error: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			return 1;
@@ -2808,10 +2756,9 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
-	uint32_t bmc_session_lsbf;
 	uint8_t backupBridgePossible;
 
-	if (intf->session == NULL
+	if (!intf->session
 			|| intf->session->v2_data.session_state != LANPLUS_STATE_ACTIVE)
 		return -1;
 
@@ -2820,12 +2767,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
 	bridgePossible = 0;
 
-	bmc_session_lsbf = intf->session->v2_data.bmc_id;
-#if WORDS_BIGENDIAN
-	bmc_session_lsbf = BSWAP_32(bmc_session_lsbf);
-#endif
-
-	memcpy(&msg_data, &bmc_session_lsbf, 4);
+	htoipmi32(intf->session->v2_data.bmc_id, msg_data);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -2834,7 +2776,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	req.msg.data_len	= 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		/* Looks like the session was closed */
 		lprintf(LOG_ERR, "Close Session command failed");
 		return -1;
@@ -2848,7 +2790,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 			(long)intf->session->v2_data.bmc_id);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Close Session command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2885,7 +2827,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 	 * Build an Open Session Request Payload
 	 */
 	msg = (uint8_t*)malloc(IPMI_OPEN_SESSION_REQUEST_SIZE);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -2966,7 +2908,7 @@ ipmi_lanplus_open_session(struct ipmi_intf * intf)
 
 	free(msg);
 	msg = NULL;
-	if (rsp == NULL ) {
+	if (!rsp ) {
 		lprintf(LOG_DEBUG, "Timeout in open session response message.");
 		return 2;
 	}
@@ -3071,7 +3013,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	 * Build a RAKP 1 message
 	 */
 	msg = (uint8_t*)malloc(IPMI_RAKP1_MESSAGE_SIZE);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -3102,9 +3044,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		return 1;
 	}
 	memcpy(msg + 8, session->v2_data.console_rand, 16);
-	#if WORDS_BIGENDIAN
-	lanplus_swap(msg + 8, 16);
-	#endif
+	array_letoh(msg + 8, 16);
 
 	if (verbose > 1)
 		printbuf(session->v2_data.console_rand, 16,
@@ -3152,7 +3092,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	free(msg);
 	msg = NULL;
 
-	if (rsp == NULL)
+	if (!rsp)
 	{
 		lprintf(LOG_WARNING, "> Error: no response from RAKP 1 message");
 		return 2;
@@ -3236,7 +3176,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 	 * Build a RAKP 3 message
 	 */
 	msg = (uint8_t*)malloc(IPMI_RAKP3_MESSAGE_MAX_SIZE);
-	if (msg == NULL) {
+	if (!msg) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -3325,7 +3265,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
 		 */
 		return 1;
 	}
-	else if (rsp == NULL)
+	else if (!rsp)
 	{
 		lprintf(LOG_WARNING, "> Error: no response from RAKP 3 message");
 		return 2;
@@ -3416,7 +3356,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	req.msg.data_len	= 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
 			val2str(privlvl, ipmi_privlvl_vals));
 		bridgePossible = backupBridgePossible;
@@ -3425,7 +3365,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
 
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
@@ -3470,7 +3410,7 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (!params->retry)
 		params->retry = IPMI_LAN_RETRY;
 
-	if (params->hostname == NULL || strlen((const char *)params->hostname) == 0) {
+	if (!params->hostname || strlen((const char *)params->hostname) == 0) {
 		lprintf(LOG_ERR, "No hostname specified!");
 		return -1;
 	}
@@ -3687,7 +3627,7 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 		return 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	while (rsp != NULL && is_sol_packet(rsp)) {
+	while (rsp && is_sol_packet(rsp)) {
 					 /* rsp was SOL data instead of our answer */
 					 /* since it didn't go through the sol recv, do sol recv stuff here */
 					 ack_sol_packet(intf, rsp);
@@ -3695,13 +3635,11 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 					 if (rsp->data_len)
 								intf->session->sol_data.sol_input_handler(rsp);
 		rsp = ipmi_lan_poll_recv(intf);
-		if (rsp == NULL) /* the get device id answer never got back, but retry mechanism was bypassed by SOL data */
+		if (!rsp) /* the get device id answer never got back, but retry mechanism was bypassed by SOL data */
 			return 0; /* so get device id command never returned, the connection is still alive */
 		  }
 
-	if (rsp == NULL)
-		return -1;
-	if (rsp->ccode > 0)
+	if (!rsp || rsp->ccode)
 		return -1;
 
 	return 0;

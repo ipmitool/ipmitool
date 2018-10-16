@@ -38,6 +38,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 #ifndef TRUE
 #define TRUE    1
 #endif
@@ -61,7 +63,7 @@
 struct ipmi_intf;
 
 struct valstr {
-	uint16_t val;
+	uint32_t val;
 	const char * str;
 };
 struct oemvalstr {
@@ -108,6 +110,66 @@ uint8_t ipmi_csum(uint8_t * d, int s);
 FILE * ipmi_open_file(const char * file, int rw);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
+
+#define IS_SET(v, b) ((v) & (1 << (b)))
+
+/* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
+/* For portability, let's simply define our own versions here */
+
+/* IPMI is always little-endian */
+static inline uint16_t ipmi16toh(void *ipmi16)
+{
+	uint8_t *ipmi = (uint8_t *)ipmi16;
+	uint16_t h;
+
+	h = ipmi[1] << 8; /* MSB */
+	h |= ipmi[0]; /* LSB */
+
+	return h;
+}
+
+static inline void htoipmi16(uint16_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = h >> 8; /* MSB */
+}
+
+static inline uint32_t ipmi24toh(void *ipmi24)
+{
+	uint8_t *ipmi = (uint8_t *)ipmi24;
+	uint32_t h = 0;
+
+	h = ipmi[2] << 16; /* MSB */
+	h |= ipmi[1] << 8;
+	h |= ipmi[0]; /* LSB */
+
+	return h;
+}
+
+static inline uint32_t ipmi32toh(void *ipmi32)
+{
+	uint8_t *ipmi = ipmi32;
+	uint32_t h;
+
+	h = ipmi[3] << 24; /* MSB */
+	h |= ipmi[2] << 16;
+	h |= ipmi[1] << 8;
+	h |= ipmi[0]; /* LSB */
+
+	return h;
+}
+
+static inline void htoipmi32(uint32_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = (h >> 8) & 0xFF;
+	ipmi[2] = (h >> 16) & 0xFF;
+	ipmi[3] = (h >> 24) & 0xFF; /* MSB */
+}
+
+uint8_t *array_byteswap(uint8_t *buffer, size_t length);
+uint8_t *array_ntoh(uint8_t *buffer, size_t length);
+uint8_t *array_letoh(uint8_t *buffer, size_t length);
 
 #define ipmi_open_file_read(file)	ipmi_open_file(file, 0)
 #define ipmi_open_file_write(file)	ipmi_open_file(file, 1)

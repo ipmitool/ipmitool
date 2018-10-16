@@ -29,11 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _XOPEN_SOURCE
-#define _BSD_SOURCE || \
-	(_XOPEN_SOURCE >= 500 || \
-                       _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED) && \
-	!(_POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700)
 
 #include <stdlib.h>
 #include <string.h>
@@ -130,11 +125,11 @@ ipmi_sol_payload_access(struct ipmi_intf * intf, uint8_t channel,
 	/* payload 1 is SOL */
 	data[2] = 0x02;
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d",
 				enable ? "en" : "dis", userid, channel);
 		rc = (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error %sabling SOL payload for user %d on channel %d: %s",
 				enable ? "en" : "dis", userid, channel,
 				val2str(rsp->ccode, completion_code_vals));
@@ -164,7 +159,7 @@ ipmi_sol_payload_access_status(struct ipmi_intf * intf,
 	data[1] = userid & 0x3f;	/* user id */
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error. No valid response received.");
 		return -1;
 	}
@@ -219,7 +214,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                          /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -257,7 +252,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                     /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -295,7 +290,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                             /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -335,7 +330,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                             /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -374,7 +369,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                    /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -413,7 +408,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                                    /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -451,7 +446,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                                /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -489,7 +484,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                              /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -528,7 +523,7 @@ ipmi_get_sol_info(
 	data[3] = 0x00;                           /* block selector     */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error: No response requesting SOL parameter '%s'",
 				val2str(data[1], sol_parameter_vals));
 		return (-1);
@@ -546,7 +541,7 @@ ipmi_get_sol_info(
 			}
 			break;
 		case 0x80:
-			if( intf->session != NULL ) {
+			if (intf->session) {
 				lprintf(LOG_ERR, "Info: SOL parameter '%s' not supported - defaulting to %d",
 						val2str(data[1], sol_parameter_vals), intf->ssn_params.port);
 				params->payload_port = intf->ssn_params.port;
@@ -1073,13 +1068,13 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 	/* The command proper */
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting SOL parameter '%s'", param);
 		return -1;
 	}
 
 	if (!(!strncmp(param, "set-in-progress", 15) && !strncmp(value, "commit-write", 12)) &&
-	    rsp->ccode > 0) {
+	    rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x80:
 			lprintf(LOG_ERR, "Error setting SOL parameter '%s': "
@@ -1491,7 +1486,7 @@ ipmi_sol_keepalive_using_sol(struct ipmi_intf * intf)
 	if (end.tv_sec - _start_keepalive.tv_sec > SOL_KEEPALIVE_TIMEOUT) {
 		memset(&v2_payload, 0, sizeof(v2_payload));
 		v2_payload.payload.sol_packet.character_count = 0;
-		if (intf->send_sol(intf, &v2_payload) == NULL)
+		if (!intf->send_sol(intf, &v2_payload))
 			return -1;
 		/* good return, reset start time */
 		gettimeofday(&_start_keepalive, 0);
@@ -1542,7 +1537,7 @@ ipmi_sol_red_pill(struct ipmi_intf * intf, int instance)
 		buffer_size -= 4;
 
 	buffer = (char*)malloc(buffer_size);
-	if (buffer == NULL) {
+	if (!buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure"); 
 		return -1;
 	}
@@ -2011,7 +2006,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		retval = ipmi_sol_activate(intf, 0, 0, instance);
 	} else if (!strncmp(argv[0], "deactivate", 10)) {
-		/* Dectivate */
+		/* Deactivate */
 		int i;
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
@@ -2030,7 +2025,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		retval = ipmi_sol_deactivate(intf, instance);
 	} else if (!strncmp(argv[0], "looptest", 8)) {
-		/* SOL loop test: Activate and then Dectivate */
+		/* SOL loop test: Activate and then Deactivate */
 		int cnt = 200;
 		int interval = 100; /* Unit is: ms */
 		uint8_t instance = 1;

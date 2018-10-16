@@ -235,11 +235,11 @@ _get_netfn_support(struct ipmi_intf * intf, int channel, unsigned char * lun, un
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get NetFn Support command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get NetFn Support command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -289,11 +289,11 @@ _get_command_support(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Support (LUN=%d, NetFn=%d, op=0) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Support (LUN=%d, NetFn=%d, op=0) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -316,11 +316,11 @@ _get_command_support(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Support (LUN=%d, NetFn=%d, op=1) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Support (LUN=%d, NetFn=%d, op=1) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -368,11 +368,11 @@ _get_command_configurable(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Configurable Command (LUN=%d, NetFn=%d, op=0) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Configurable Command (LUN=%d, NetFn=%d, op=0) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -395,11 +395,11 @@ _get_command_configurable(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Configurable Command (LUN=%d, NetFn=%d, op=1) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Configurable Command (LUN=%d, NetFn=%d, op=1) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -447,11 +447,11 @@ _get_command_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Enables (LUN=%d, NetFn=%d, op=0) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Enables (LUN=%d, NetFn=%d, op=0) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -474,11 +474,11 @@ _get_command_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 3;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Enables (LUN=%d, NetFn=%d, op=1) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Enables (LUN=%d, NetFn=%d, op=1) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -558,11 +558,11 @@ _set_command_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 19;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Command Enables (LUN=%d, NetFn=%d, op=0) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Command Enables (LUN=%d, NetFn=%d, op=0) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -579,11 +579,11 @@ _set_command_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 19;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Command Enables (LUN=%d, NetFn=%d, op=1) command failed", p->lun, p->netfn);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Command Enables (LUN=%d, NetFn=%d, op=1) command failed: %s",
 			p->lun, p->netfn, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -625,11 +625,11 @@ _get_subfn_support(struct ipmi_intf * intf,
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Sub-function Support (LUN=%d, NetFn=%d, command=%d) command failed", p->lun, p->netfn, p->command);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Sub-function Support (LUN=%d, NetFn=%d, command=%d) command failed: %s",
 			p->lun, p->netfn, p->command, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -672,11 +672,11 @@ _get_subfn_configurable(struct ipmi_intf * intf,
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Configurable Command Sub-function (LUN=%d, NetFn=%d, command=%d) command failed", p->lun, p->netfn, p->command);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Configurable Command Sub-function (LUN=%d, NetFn=%d, command=%d) command failed: %s",
 			p->lun, p->netfn, p->command, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -719,11 +719,11 @@ _get_subfn_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 4;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed", p->lun, p->netfn, p->command);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed: %s",
 			p->lun, p->netfn, p->command, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -787,11 +787,11 @@ _set_subfn_enables(struct ipmi_intf * intf,
 	req.msg.data_len = 8;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed", p->lun, p->netfn, p->command);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed: %s",
 			p->lun, p->netfn, p->command, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -888,7 +888,7 @@ static int _gather_info(struct ipmi_intf * intf, struct ipmi_function_params * p
 
 /* ipmi_firewall_info - print out info for firewall functions
  *
- * @intf:	ipmi inteface
+ * @intf:	ipmi interface
  * @argc:	argument count
  * @argv:	argument list
  *
@@ -1001,7 +1001,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 
 /* ipmi_firewall_enable_disable  -  enable/disable BMC functions
  *
- * @intf:	ipmi inteface
+ * @intf:	ipmi interface
  * @enable:     whether to enable or disable
  * @argc:	argument count
  * @argv:	argument list
@@ -1055,7 +1055,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 	c = p.command;
 	if (p.subfn >= 0) {
 		// firewall (en|dis)able [channel c] lun l netfn n command m subfn s
-		// (en|dis)able this sub-function for this commnad on this lun/netfn pair
+		// (en|dis)able this sub-function for this command on this lun/netfn pair
 		memcpy(enables,
 			bmc_fn_support->lun[l].netfn[n].command[c].subfn_enable,
 			MAX_SUBFN_BYTES);
@@ -1065,7 +1065,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 
 	} else if (p.command >= 0) {
 		// firewall (en|dis)able [channel c] lun l netfn n command m
-		//    (en|dis)able all subfn and command for this commnad on this lun/netfn pair
+		//    (en|dis)able all subfn and command for this command on this lun/netfn pair
 		memset(enables, enable?0xff:0, MAX_SUBFN_BYTES);
 		ret = _set_subfn_enables(intf, &p,
 			&bmc_fn_support->lun[l].netfn[n].command[c], enables);
@@ -1076,14 +1076,14 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 			&bmc_fn_support->lun[l].netfn[n], enables, p.force);
 	} else if (p.netfn >= 0) {
 		// firewall (en|dis)able [channel c] lun l netfn n
-		//    (en|dis)able all commnads on this lun/netfn pair
+		//    (en|dis)able all command on this lun/netfn pair
 		memset(enables, enable?0xff:0, sizeof(enables));
 		ret = _set_command_enables(intf, &p,
 			&bmc_fn_support->lun[l].netfn[n], enables, p.force);
 		/*
 		   } else if (p.lun >= 0) {
 		// firewall (en|dis)able [channel c] lun l
-		//    (en|dis)able all commnads on all netfn pairs for this lun
+		//    (en|dis)able all command on all netfn pairs for this lun
 		*/
 	}
 	free(bmc_fn_support);
@@ -1093,7 +1093,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 
 /* ipmi_firewall_reset - reset firmware firewall to enable everything
  *
- * @intf:	ipmi inteface
+ * @intf:	ipmi interface
  * @argc:	argument count
  * @argv:	argument list
  *

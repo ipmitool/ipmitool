@@ -67,6 +67,7 @@
 #define IPMI_PAYLOAD_TYPE_RAKP_4             0x15
 
 extern int verbose;
+extern int time_in_utc;
 extern int csv_output;
 
 struct ipmi_rq {
@@ -259,6 +260,8 @@ struct ipmi_rs {
 
 typedef enum IPMI_OEM {
      IPMI_OEM_UNKNOWN    = 0,
+     IPMI_OEM_DEBUG      = 0xFFFFFE, /* Hoping IANA won't hit this soon */
+     IPMI_OEM_RESERVED   = 0x0FFFFF, /* As per IPMI 2.0 specification */
      /* 2 for [IBM] */
      IPMI_OEM_IBM_2      = 2,
      IPMI_OEM_HP         = 11,

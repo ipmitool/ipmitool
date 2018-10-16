@@ -178,7 +178,7 @@ BIT_DESC_MAP_LIST,
 	{"Entity presence",				37},
 	{"Monitor ASIC/IC",				38},
 	{"LAN",								39},
-	{"Management subsytem health",40},
+	{"Management subsystem health",40},
 	{"Battery",							41},
 	{NULL}
 }	};
@@ -327,8 +327,7 @@ pef_b2s_generic_ER[] __attribute__((unused)) = {
 	&pef_b2s_gentype_11,
 	&pef_b2s_gentype_12,
 };
-#define PEF_B2S_GENERIC_ER_ENTRIES \
-			(sizeof(pef_b2s_generic_ER) / sizeof(pef_b2s_generic_ER[0]))
+#define PEF_B2S_GENERIC_ER_ENTRIES ARRAY_SIZE(pef_b2s_generic_ER)
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)

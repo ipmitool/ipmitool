@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF PPS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _GNU_SOURCE 1
 
 /* Serial Interface, Terminal Mode plugin. */
 
@@ -150,7 +149,7 @@ ipmi_serial_term_open(struct ipmi_intf * intf)
 	struct termios ti;
 	unsigned int rate = 9600;
 	char *p;
-	int i;
+	size_t i;
 
 	if (!intf->devfile) {
 		lprintf(LOG_ERR, "Serial device is not specified");
@@ -189,12 +188,12 @@ ipmi_serial_term_open(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(rates); i++) {
 		if (rates[i].baudrate == rate) {
 			break;
 		}
 	}
-	if (i >= sizeof(rates) / sizeof(rates[0])) {
+	if (i >= ARRAY_SIZE(rates)) {
 		lprintf(LOG_ERR, "Unsupported baud rate %i specified", rate);
 		return -1;
 	}
@@ -354,7 +353,7 @@ serial_flush(struct ipmi_intf * intf)
 /*
  *	Receive IPMI response from the device
  *	Len: buffer size
- *	Returns: -1 or response lenth on success
+ *	Returns: -1 or response length on success
  */
 static int
 recv_response(struct ipmi_intf * intf, unsigned char *data, int len)

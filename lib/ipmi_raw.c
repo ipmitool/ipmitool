@@ -101,11 +101,11 @@ ipmi_master_write_read(struct ipmi_intf * intf, uint8_t bus, uint8_t addr,
 	}
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "I2C Master Write-Read command failed");
 		return NULL;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x81:
 			lprintf(LOG_ERR, "I2C Master Write-Read command failed: Lost Arbitration");
@@ -171,7 +171,7 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 	for (i = 0; i < RAW_SPD_SIZE; i+= msize) {
 		rsp = ipmi_master_write_read(intf, i2cbus, i2caddr,
 					     (uint8_t *)&i, 1, msize );
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to perform I2C Master Write-Read");
 			return -1;
 		}
@@ -259,7 +259,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printbuf(wdata, wsize, "WRITE DATA");
 
 	rsp = ipmi_master_write_read(intf, bus, i2caddr, wdata, wsize, rsize);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to perform I2C Master Write-Read");
 		return -1;
 	}
@@ -379,13 +379,13 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
 			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x)",
 			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
 			"(channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x rsp=0x%x): %s",
 			intf->target_channel & 0x0f, req.msg.netfn, req.msg.lun, req.msg.cmd, rsp->ccode,
@@ -417,7 +417,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
  */
 int
 is_valid_param(const char *input_param, uint8_t *uchr_ptr, const char *label) {
-	if (input_param == NULL || label == NULL) {
+	if (!input_param || !label) {
 		lprintf(LOG_ERROR, "ERROR: NULL pointer passed.");
 		return (-1);
 	}

@@ -80,7 +80,7 @@ partial_send(struct ipmi_intf *intf, struct ipmi_rq *req, uint16_t *id)
 {
   struct ipmi_rs *rsp;
   rsp = intf->sendrecv(intf, req);
-  if (rsp == NULL) {
+  if (!rsp) {
     return -1;
   }
 
@@ -115,7 +115,7 @@ ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr)
   }
 
   sdr_rq = (struct sdr_add_rq *)malloc(sizeof(*sdr_rq) + sdr_max_write_len);
-  if (sdr_rq == NULL) {
+  if (!sdr_rq) {
     lprintf(LOG_ERR, "ipmitool: malloc failure");
     return -1;
   }
@@ -202,11 +202,11 @@ ipmi_sdr_repo_clear(struct ipmi_intf *intf)
 
   for (try = 0; try < 5; try++) {
     rsp = intf->sendrecv(intf, &req);
-    if (rsp == NULL) {
+    if (!rsp) {
       lprintf(LOG_ERR, "Unable to clear SDRR");
       return -1;
     }
-    if (rsp->ccode > 0) {
+    if (rsp->ccode) {
       lprintf(LOG_ERR, "Unable to clear SDRR: %s",
         val2str(rsp->ccode, completion_code_vals));
       return -1;
@@ -248,11 +248,11 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
   queue->head = NULL;
   queue->tail = NULL;
 
-  while ((header = ipmi_sdr_get_next_header(intf, itr)) != NULL) {
+  while ((header = ipmi_sdr_get_next_header(intf, itr))) {
     struct sdr_record_list *sdrr;
 
     sdrr = malloc(sizeof (struct sdr_record_list));
-    if (sdrr == NULL) {
+    if (!sdrr) {
       lprintf(LOG_ERR, "ipmitool: malloc failure");
       return -1;
     }
@@ -266,7 +266,7 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
     (void)ipmi_sdr_print_name_from_rawentry(intf,  sdrr->id, sdrr->type,sdrr->raw);
 
     /* put in the record queue */
-    if (queue->head == NULL)
+    if (!queue->head)
       queue->head = sdrr;
     else
       queue->tail->next = sdrr;
@@ -300,7 +300,7 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
 
   /* write the SDRs to the destination SDR Repository */
   intf->target_addr = to_addr;
-  for (sdrr = sdrr_queue.head; sdrr != NULL; sdrr = sdrr_next) {
+  for (sdrr = sdrr_queue.head; sdrr; sdrr = sdrr_next) {
     sdrr_next = sdrr->next;
     rc = ipmi_sdr_add_record(intf, sdrr);
     if(rc < 0){
@@ -433,7 +433,7 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
 
     do
     {
-      if(nextString != NULL) 
+      if(nextString) 
       {
         (*nextString)= 0;
         nextString   ++;
@@ -446,8 +446,7 @@ int ipmi_parse_range_list(const char *rangeList, unsigned char * pHexList)
 
       /* At this point, it is a single entry or a range */
       rangeString = strstr( inProcessString, "-" );
-      if(rangeString == NULL) 
-      {
+      if (!rangeString) {
         unsigned char decValue = 0;
 
         /* Single entry */
@@ -597,7 +596,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     lprintf(LOG_DEBUG, "binHdr[4] (length) = 0x%02x", binHdr[4]);
 
     sdrr = malloc(sizeof(*sdrr));
-    if (sdrr == NULL) {
+    if (!sdrr) {
       lprintf(LOG_ERR, "ipmitool: malloc failure");
       rc = -1;
       break;
@@ -607,7 +606,8 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     sdrr->type = binHdr[3];
     sdrr->length = binHdr[4];
 
-    if ((sdrr->raw = malloc(sdrr->length)) == NULL) {
+    sdrr->raw = malloc(sdrr->length);
+    if (!sdrr->raw) {
       lprintf(LOG_ERR, "ipmitool: malloc failure");
       free(sdrr);
       sdrr = NULL;
@@ -626,7 +626,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     }
 
     /* put in the record queue */
-    if (queue->head == NULL)
+    if (!queue->head)
       queue->head = sdrr;
     else
       queue->tail->next = sdrr;
@@ -654,7 +654,7 @@ ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile)
   }
 
   /* write the SDRs to the SDR Repository */
-  for (sdrr = sdrr_queue.head; sdrr != NULL; sdrr = sdrr_next) {
+  for (sdrr = sdrr_queue.head; sdrr; sdrr = sdrr_next) {
     sdrr_next = sdrr->next;
     rc = ipmi_sdr_add_record(intf, sdrr);
     if(rc < 0){

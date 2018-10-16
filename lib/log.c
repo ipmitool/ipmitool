@@ -29,9 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _SVID_SOURCE || _BSD_SOURCE || _XOPEN_SOURCE >= 500 || \
-	_XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED || \
-	/* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809L
 
 #include <unistd.h>
 #include <stdio.h>
@@ -111,12 +108,12 @@ void log_init(const char * name, int isdaemon, int verbose)
 	if (!logpriv)
 		return;
 
-	if (name != NULL)
+	if (name)
 		logpriv->name = strdup(name);
 	else
 		logpriv->name = strdup(LOG_NAME_DEFAULT);
 
-	if (logpriv->name == NULL)
+	if (!logpriv->name)
 		fprintf(stderr, "ipmitool: malloc failure\n");
 
 	logpriv->daemon = isdaemon;

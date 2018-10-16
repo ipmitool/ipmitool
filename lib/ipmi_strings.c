@@ -38,16 +38,26 @@
 
 const struct valstr ipmi_oem_info[] = {
 
-   { IPMI_OEM_UNKNOWN,                "Unknown" },
+/* These are at the top so they are found first */
+   { IPMI_OEM_UNKNOWN, "Unknown" },
+   { IPMI_OEM_RESERVED, "Unspecified" },
 
-/* The included file is auto-generated from offical IANA PEN list */
+/* The included file is auto-generated from official IANA PEN list */
 #include "ipmi_pen_list.inc.c"
 
-   { 0xffff , NULL },
+/*
+ * This debug ID is at the bottom so that if IANA assigns it to
+ * any entity, that IANA's value is found first and reported.
+ */
+   { IPMI_OEM_DEBUG, "A Debug Assisting Company, Ltd." },
+   { -1 , NULL },
 };
 
 const struct oemvalstr ipmi_oem_product_info[] = {
    /* Keep OEM grouped together */
+
+   /* For ipmitool debugging */
+   { IPMI_OEM_DEBUG, 0x1234, "Great Debuggable BMC" },
 
    /* Intel stuff, thanks to Tim Bell */
    { IPMI_OEM_INTEL, 0x000C, "TSRLT2" },

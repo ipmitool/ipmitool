@@ -88,8 +88,7 @@ ipmi_gendev_get_eeprom_size(
    lprintf(LOG_ERR, "DevType    : %x", dev->dev_type);
    lprintf(LOG_ERR, "DevType Mod: %x", dev->dev_type_modifier);
    */
-   if( info != NULL)
-   {
+   if (info) {
       switch(dev->dev_type)
       {
          case 0x08:  // 24C01
@@ -280,8 +279,7 @@ ipmi_gendev_read_file(
                            msize
                            );
 
-               if (rsp != NULL) 
-               {
+               if (rsp) {
                   retryCounter = GENDEV_RETRY_COUNT;
                   rc = 0;
                }
@@ -376,7 +374,7 @@ ipmi_gendev_write_file(
       
       if(fp)
       {
-         /* Retreive file length, check if it's fits the Eeprom Size */
+         /* Retrieve file length, check if it's fits the Eeprom Size */
          fseek(fp, 0 ,SEEK_END);
          fileLength = ftell(fp);
 
@@ -457,8 +455,6 @@ ipmi_gendev_write_file(
                break;
             }
 
-
-
             for(
                   retryCounter = 0; 
                   retryCounter<GENDEV_RETRY_COUNT; 
@@ -476,8 +472,7 @@ ipmi_gendev_write_file(
                i2caddr+= (((eeprom_info.size) % address_span_size) * 2);
 
                rsp = ipmi_master_write_read(intf, i2cbus, i2caddr, (uint8_t *) wrByte, eeprom_info.address_length+msize, 0);
-               if (rsp != NULL) 
-               {
+               if (rsp) {
                   retryCounter = GENDEV_RETRY_COUNT;
                   rc = 0;
                }
@@ -495,8 +490,7 @@ ipmi_gendev_write_file(
                }
             }
 
-            if( rc == 0 )
-            {
+            if (!rc) {
                static uint8_t previousCompleted = 101;
                percentCompleted = ((counter * 100) / eeprom_info.size );
 
@@ -548,11 +542,8 @@ ipmi_gendev_main(struct ipmi_intf *intf, int argc, char **argv)
 
    lprintf(LOG_ERR, "Rx gendev command: %s", argv[0]);
 
-   if (
-         (argc == 0)
-         ||
-         (strncmp(argv[0], "help", 4) == 0) 
-      )
+   if (!argc
+       || strncmp(argv[0], "help", 4) == 0)
    {
       lprintf(LOG_ERR,
          "SDR Commands:  list read write");
@@ -562,18 +553,12 @@ ipmi_gendev_main(struct ipmi_intf *intf, int argc, char **argv)
          "                     read <sdr name> <file>   Read to file eeprom specify by Generic Device Locators");
       lprintf(LOG_ERR,
          "                     write <sdr name> <file>  Write from file eeprom specify by Generic Device Locators");
-   } 
-   else if ( strncmp(argv[0], "list", 4) == 0)
-   {
-      rc = ipmi_sdr_print_sdr(intf,
-                  SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
-   }
-   else if (strncmp(argv[0], "read", 4) == 0) 
-   {
+   } else if (strncmp(argv[0], "list", 4) == 0) {
+      rc = ipmi_sdr_print_sdr(intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
+   } else if (strncmp(argv[0], "read", 4) == 0) {
       if (argc < 3)
          lprintf(LOG_ERR, "usage: gendev read <gendev> <filename>");
-      else
-      {
+      else {
          struct sdr_record_list *sdr;
 
          lprintf(LOG_ERR, "Gendev read sdr name : %s", argv[1]);
@@ -582,14 +567,12 @@ ipmi_gendev_main(struct ipmi_intf *intf, int argc, char **argv)
 
          /* lookup by sensor name */
          sdr = ipmi_sdr_find_sdr_byid(intf, argv[1]);
-         if (sdr == NULL) 
-         {
+         if (!sdr) {
             lprintf(LOG_ERR, "Sensor data record not found!");
             return -1;
          }
 
-         if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) 
-         {
+         if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) {
             lprintf(LOG_ERR, "Target SDR is not a generic device locator");
             return -1;
          }
@@ -598,13 +581,10 @@ ipmi_gendev_main(struct ipmi_intf *intf, int argc, char **argv)
          ipmi_gendev_read_file(intf, sdr->record.genloc, argv[2]);
 
       }
-   } 
-   else if (strncmp(argv[0], "write", 5) == 0) 
-   {
+   } else if (strncmp(argv[0], "write", 5) == 0) {
       if (argc < 3)
          lprintf(LOG_ERR, "usage: gendev write <gendev> <filename>");
-      else
-      {
+      else {
          struct sdr_record_list *sdr;
 
          lprintf(LOG_ERR, "Gendev write sdr name : %s", argv[1]);
@@ -613,25 +593,20 @@ ipmi_gendev_main(struct ipmi_intf *intf, int argc, char **argv)
 
          /* lookup by sensor name */
          sdr = ipmi_sdr_find_sdr_byid(intf, argv[1]);
-         if (sdr == NULL) 
-         {
+         if (!sdr) {
             lprintf(LOG_ERR, "Sensor data record not found!");
             return -1;
          }
 
-         if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) 
-         {
+         if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) {
             lprintf(LOG_ERR, "Target SDR is not a generic device locator");
             return -1;
          }
 
          lprintf(LOG_ERR, "Gendev write file name: %s", argv[2]);
          ipmi_gendev_write_file(intf, sdr->record.genloc, argv[2]);
-
       }
-   } 
-   else 
-   {
+   } else {
       lprintf(LOG_ERR, "Invalid gendev command: %s", argv[0]);
       rc = -1;
    }

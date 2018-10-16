@@ -29,8 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _XOPEN_SOURCE 700
-#define _BSD_SOURCE
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -90,6 +88,7 @@ char pidfile[64];
 /* global variables */
 int verbose = 0;
 int csv_output = 0;
+int time_in_utc = 0;
 uint16_t selwatch_count = 0;	/* number of entries in the SEL */
 uint16_t selwatch_lastid = 0;	/* current last entry in the SEL */
 int selwatch_pctused = 0;	/* current percent usage in the SEL */
@@ -125,7 +124,7 @@ static int openipmi_wait(struct ipmi_event_intf * eintf);
 static int openipmi_read(struct ipmi_event_intf * eintf);
 static struct ipmi_event_intf openipmi_event_intf = {
 	.name = "open",
-	.desc = "OpenIPMI asyncronous notification of events",
+	.desc = "OpenIPMI asynchronous notification of events",
 	.prefix = "",
 	.setup = openipmi_setup,
 	.wait = openipmi_wait,
@@ -175,7 +174,7 @@ ipmievd_usage(void)
  *
  * @name:	interface name to try and load
  *
- * returns pointer to inteface structure if found
+ * returns pointer to interface structure if found
  * returns NULL on error
  */
 static struct ipmi_event_intf *
@@ -184,14 +183,15 @@ ipmi_event_intf_load(char * name)
 	struct ipmi_event_intf ** intf;
 	struct ipmi_event_intf * i;
 
-	if (name == NULL) {
+	if (!name) {
 		i = ipmi_event_intf_table[0];
 		return i;
 	}
 
 	for (intf = ipmi_event_intf_table;
-	     ((intf != NULL) && (*intf != NULL));
-	     intf++) {
+	     intf && *intf;
+	     intf++)
+	{
 		i = *intf;
 		if (strncmp(name, i->name, strlen(name)) == 0) {
 			return i;
@@ -225,7 +225,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	float trigger_reading = 0.0;
 	float threshold_reading = 0.0;
 
-	if (evt == NULL)
+	if (!evt)
 		return;
 
 	if (evt->record_type == 0xf0) {
@@ -246,7 +246,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.gen_id, evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
 
-	if (sdr == NULL) {
+	if (!sdr) {
 		/* could not find matching SDR record */
 		if (desc) {
 			lprintf(LOG_NOTICE, "%s%s sensor - %s",
@@ -363,11 +363,11 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 	req.msg.cmd = 0x2f;	/* Get BMC Global Enables */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get BMC Global Enables command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get BMC Global Enables command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -379,11 +379,11 @@ openipmi_enable_event_msg_buffer(struct ipmi_intf * intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Set BMC Global Enables command failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set BMC Global Enables command failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -508,11 +508,11 @@ selwatch_get_data(struct ipmi_intf * intf, struct sel_data *data)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return 0;
@@ -579,7 +579,7 @@ selwatch_setup(struct ipmi_event_intf * eintf)
 		/* save current last record ID */
 		selwatch_lastid = selwatch_get_lastid(eintf->intf);
 		lprintf(LOG_DEBUG, "Current SEL lastid is %04x", selwatch_lastid);
-		/* display alert/warning immediatly as startup if relevant */
+		/* display alert/warning immediately as startup if relevant */
 		if (selwatch_pctused >= WARNING_THRESHOLD) {
 			lprintf(LOG_WARNING, "SEL buffer used at %d%%, please consider clearing the SEL buffer", selwatch_pctused);
 		}
@@ -765,7 +765,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 		umask(022);
 		fp = ipmi_open_file_write(pidfile);
-		if (fp == NULL) {
+		if (!fp) {
 			/* Failed to get fp on PID file -> exit. */
 			log_halt();
 			log_init("ipmievd", daemon, verbose);
@@ -796,7 +796,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 	/* call event handler setup routine */
 
-	if (eintf->setup != NULL) {
+	if (eintf->setup) {
 		rc = eintf->setup(eintf);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error setting up Event Interface %s", eintf->name);
@@ -807,7 +807,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	lprintf(LOG_NOTICE, "Waiting for events...");
 
 	/* now launch event wait loop */
-	if (eintf->wait != NULL) {
+	if (eintf->wait) {
 		rc = eintf->wait(eintf);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error waiting for events!");
@@ -824,14 +824,14 @@ ipmievd_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_event_intf * eintf;
 
 	eintf = ipmi_event_intf_load("sel");
-	if (eintf == NULL) {
+	if (!eintf) {
 		lprintf(LOG_ERR, "Unable to load event interface");
 		return -1;
 	}
 
 	eintf->intf = intf;
 
-	if (intf->session != NULL) {
+	if (intf->session) {
 		snprintf(eintf->prefix,
 			 strlen((const char *)intf->ssn_params.hostname) + 3,
 			 "%s: ", intf->ssn_params.hostname);
@@ -852,7 +852,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	eintf = ipmi_event_intf_load("open");
-	if (eintf == NULL) {
+	if (!eintf) {
 		lprintf(LOG_ERR, "Unable to load event interface");
 		return -1;
 	}
@@ -864,7 +864,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 struct ipmi_cmd ipmievd_cmd_list[] = {
 #ifdef IPMI_INTF_OPEN
-	{ ipmievd_open_main,	"open",   "Use OpenIPMI for asyncronous notification of events" },
+	{ ipmievd_open_main,	"open",   "Use OpenIPMI for asynchronous notification of events" },
 #endif
 	{ ipmievd_sel_main,	"sel",    "Poll SEL for notification of events" },
 	{ NULL }

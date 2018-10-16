@@ -103,7 +103,7 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		strlen((const char *)intf->ssn_params.username); /* optional */
 
 	buffer = malloc(bufferLength);
-	if (buffer == NULL) {
+	if (!buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -265,7 +265,7 @@ lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 		16;    /* GUIDc */
 
 	buffer = (uint8_t *)malloc(bufferLength);
-	if (buffer == NULL) {
+	if (!buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -432,7 +432,7 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 		strlen((const char *)intf->ssn_params.username);
 
 	input_buffer = malloc(input_buffer_length);
-	if (input_buffer == NULL) {
+	if (!input_buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -512,7 +512,7 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
  *     <USERNAME> - Usename (absent for null usernames)
  *
  * The key used to generated the SIK is Kg if Kg is not null (two-key logins are
- * enabled).  Otherwise Kuid (the user authcode) is used as the key to genereate
+ * enabled).  Otherwise Kuid (the user authcode) is used as the key to generate
  * the SIK.
  *
  * I am aware that the subscripts look backwards, but that is the way they are
@@ -554,7 +554,7 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 		strlen((const char *)intf->ssn_params.username);
 
 	input_buffer = malloc(input_buffer_length);
-	if (input_buffer == NULL) {
+	if (!input_buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -836,7 +836,7 @@ lanplus_encrypt_payload(uint8_t crypt_alg,
 		pad_length = IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE - mod;
 
 	padded_input = (uint8_t*)malloc(input_length + pad_length + 1);
-	if (padded_input == NULL) {
+	if (!padded_input) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -853,7 +853,7 @@ lanplus_encrypt_payload(uint8_t crypt_alg,
 	if (lanplus_rand(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE))
 	{
 		lprintf(LOG_ERR, "lanplus_encrypt_payload: Error generating IV");
-		if (padded_input != NULL) {
+		if (padded_input) {
 			free(padded_input);
 			padded_input = NULL;
 		}
@@ -897,7 +897,7 @@ lanplus_encrypt_payload(uint8_t crypt_alg,
  *
  * The authcode is computed using the specified integrity algorithm starting
  * with the AuthType / Format field, and ending with the field immediately
- * preceeding the authcode itself.
+ * preceding the authcode itself.
  *
  * The key key used to generate the authcode MAC is K1.
  * 
@@ -1003,7 +1003,7 @@ lanplus_decrypt_payload(uint8_t crypt_alg, const uint8_t * key,
 	assert(crypt_alg == IPMI_CRYPT_AES_CBC_128);
 
 	decrypted_payload = (uint8_t*)malloc(input_length);
-	if (decrypted_payload == NULL) {
+	if (!decrypted_payload) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return 1;
 	}
@@ -1029,7 +1029,7 @@ lanplus_decrypt_payload(uint8_t crypt_alg, const uint8_t * key,
 				bytes_decrypted);
 
 		/*
-		 * We have to determine the payload size, by substracting the padding, etc.
+		 * We have to determine the payload size, by subtracting the padding, etc.
 		 * The last byte of the decrypted payload is the confidentiality pad length.
 		 */
 		conf_pad_length = decrypted_payload[bytes_decrypted - 1];

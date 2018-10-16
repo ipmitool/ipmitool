@@ -1632,11 +1632,11 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		printf(" Device not present (No Response)\n");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1656,7 +1656,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 
         spd_data = malloc(fru.size);
 
-        if (spd_data == NULL) {
+        if (!spd_data) {
 		printf(" Unable to malloc memory for spd array of size=%d\n",
 		       fru.size);
 		return -1;
@@ -1677,13 +1677,13 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		msg_data[3] = FRU_DATA_RQST_SIZE;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			printf(" Device not present (No Response)\n");
                         free(spd_data);
                         spd_data = NULL;
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
 

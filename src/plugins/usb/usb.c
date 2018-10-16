@@ -30,8 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _BSD_SOURCE
-
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
@@ -123,14 +121,14 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	FILE *fp;
 
 	fp = fopen("/proc/scsi/sg/device_strs", "r");
-	if (fp == NULL) {
+	if (!fp) {
 		/* Return 1 on error */
 		return 1;
 	}
 
 	while (1) {
 		/* Read line by line and search for "AMI" */
-		if (fgets(linebuf, 80, fp) == NULL) {
+		if (!fgets(linebuf, 80, fp)) {
 			break;
 		}
 
@@ -147,7 +145,7 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 	}
 
 	*num_ami_devices = numdevfound;
-	if (fp != NULL) {
+	if (fp) {
 		fclose(fp);
 		fp = NULL;
 	}
@@ -605,7 +603,7 @@ ipmi_usb_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	rsp.ccode = rsp.data[0];
 
 	/* Save response data for caller */
-	if ((rsp.ccode == 0) && (rsp.data_len > 0)) {
+	if (!rsp.ccode && rsp.data_len > 0) {
 		memmove(rsp.data, rsp.data + 1, rsp.data_len - 1);
 		rsp.data[rsp.data_len] = 0;
 		rsp.data_len -= 1;

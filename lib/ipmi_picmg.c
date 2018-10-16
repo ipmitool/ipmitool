@@ -62,7 +62,7 @@ typedef enum picmg_card_type {
 	PICMG_CARD_TYPE_RESERVED
 } t_picmg_card_type ;
 
-/* This is the version of the PICMG Extenstion */
+/* This is the version of the PICMG Extension */
 static t_picmg_card_type PicmgCardType = PICMG_CARD_TYPE_RESERVED;
 
 void
@@ -146,7 +146,7 @@ is_amc_channel(const char *argv_ptr, uint8_t *amc_chan_ptr)
 	return (-1);
 }
 /* is_amc_dev - wrapper to convert user input into integer.
- * AMC Dev ID limits are uknown.
+ * AMC Dev ID limits are unknown.
  *
  * @argv_ptr: source string to convert from; usually argv
  * @amc_dev_ptr: pointer where to store result
@@ -167,7 +167,7 @@ is_amc_dev(const char *argv_ptr, int32_t *amc_dev_ptr)
 	return (-1);
 }
 /* is_amc_intf - wrapper to convert user input into integer.
- * AMC Interface (ID) limits are uknown.
+ * AMC Interface (ID) limits are unknown.
  *
  * @argv_ptr: source string to convert from; usually argv
  * @amc_intf_ptr: pointer where to store result
@@ -188,7 +188,7 @@ is_amc_intf(const char *argv_ptr, int32_t *amc_intf_ptr)
 	return (-1);
 }
 /* is_amc_port - wrapper to convert user input into integer.
- * AMC Port limits are uknown.
+ * AMC Port limits are unknown.
  *
  * @argv_ptr: source string to convert from; usually argv
  * @amc_port_ptr: pointer where to store result
@@ -208,7 +208,7 @@ is_amc_port(const char *argv_ptr, int32_t *amc_port_ptr)
 	return (-1);
 }
 /* is_clk_acc - wrapper to convert user input into integer.
- * Clock Accuracy limits are uknown[1byte by spec].
+ * Clock Accuracy limits are unknown[1byte by spec].
  *
  * @argv_ptr: source string to convert from; usually argv
  * @clk_acc_ptr: pointer where to store result
@@ -229,7 +229,7 @@ is_clk_acc(const char *argv_ptr, uint8_t *clk_acc_ptr)
 	return (-1);
 }
 /* is_clk_family - wrapper to convert user input into integer.
- * Clock Family limits are uknown[1byte by spec].
+ * Clock Family limits are unknown[1byte by spec].
  *
  * @argv_ptr: source string to convert from; usually argv
  * @clk_family_ptr: pointer where to store result
@@ -250,7 +250,7 @@ is_clk_family(const char *argv_ptr, uint8_t *clk_family_ptr)
 	return (-1);
 }
 /* is_clk_freq - wrapper to convert user input into integer.
- * Clock Frequency limits are uknown, but specification says
+ * Clock Frequency limits are unknown, but specification says
  * 3Bytes + 1B checksum
  *
  * @argv_ptr: source string to convert from; usually argv
@@ -272,7 +272,7 @@ is_clk_freq(const char *argv_ptr, uint32_t *clk_freq_ptr)
 	return (-1);
 }
 /* is_clk_id - wrapper to convert user input into integer.
- * Clock ID limits are uknown, however it's 1B by specification and I've
+ * Clock ID limits are unknown, however it's 1B by specification and I've
  * found two ranges: <1..5> or <0..15>
  *
  * @argv_ptr: source string to convert from; usually argv
@@ -293,7 +293,7 @@ is_clk_id(const char *argv_ptr, uint8_t *clk_id_ptr)
 	return (-1);
 }
 /* is_clk_index - wrapper to convert user input into integer.
- * Clock Index limits are uknown[1B by spec]
+ * Clock Index limits are unknown[1B by spec]
  *
  * @argv_ptr: source string to convert from; usually argv
  * @clk_index_ptr: pointer where to store result
@@ -313,7 +313,7 @@ is_clk_index(const char *argv_ptr, uint8_t *clk_index_ptr)
 	return (-1);
 }
 /* is_clk_resid - wrapper to convert user input into integer.
- * Clock Resource Index(?) limits are uknown, but maximum seems to be 15.
+ * Clock Resource Index(?) limits are unknown, but maximum seems to be 15.
  *
  * @argv_ptr: source string to convert from; usually argv
  * @clk_resid_ptr: pointer where to store result
@@ -1024,7 +1024,7 @@ ipmi_picmg_amc_portstate_get(struct ipmi_intf * intf, int32_t device,
 
 
 				/* Removed endianness check here, probably not required
-					as we dont use bitfields  */
+					as we don't use bitfields  */
 				port = d->linkInfo[0] & 0x0F;
 				type = ((d->linkInfo[0] & 0xF0) >> 4 )|(d->linkInfo[1] & 0x0F );
 				ext  = ((d->linkInfo[1] & 0xF0) >> 4 );
@@ -1649,7 +1649,7 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, uint8_t clk_id, int8_t clk_res,
 		return -1;
 	}
 
-	if (rsp->ccode == 0 ) {
+	if (!rsp->ccode) {
 		enabled	 = (rsp->data[1]&0x8)!=0;
 		direction = (rsp->data[1]&0x4)!=0;
 
@@ -2325,7 +2325,7 @@ ipmi_picmg_ipmb_address(struct ipmi_intf *intf) {
 uint8_t
 picmg_discover(struct ipmi_intf *intf) {
 	/* Check if PICMG extension is available to use the function 
-	 * GetDeviceLocator to retreive i2c address PICMG hack to set 
+	 * GetDeviceLocator to retrieve i2c address PICMG hack to set
 	 * right IPMB address, If extension is not supported, should 
 	 * not give any problems
 	 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
@@ -2351,10 +2351,10 @@ picmg_discover(struct ipmi_intf *intf) {
 	lprintf(LOG_DEBUG, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x",
 		intf->my_addr, intf->transit_addr, intf->target_addr);
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 	    lprintf(LOG_DEBUG,"No response from Get PICMG Properties");
-	} else if (rsp->ccode != 0) {
-	    lprintf(LOG_DEBUG,"Error response %#x from Get PICMG Properities",
+	} else if (rsp->ccode) {
+	    lprintf(LOG_DEBUG,"Error response %#x from Get PICMG Properties",
 		    rsp->ccode);
 	} else if (rsp->data_len < 4) {
 	    lprintf(LOG_INFO,"Invalid Get PICMG Properties response length %d",

@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _BSD_SOURCE
 
 #include <string.h>
 #include <strings.h>
@@ -50,8 +49,8 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_quantaoem.h>
 
-extern int verbose;
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
 
@@ -123,13 +122,13 @@ int ipmi_sel_oem_init(const char * filename)
 	int i, j, k, n, byte;
 	char buf[15][150];
 
-	if (filename == NULL) {
+	if (!filename) {
 		lprintf(LOG_ERR, "No SEL OEM filename provided");
 		return -1;
 	}
 
 	fp = ipmi_open_file_read(filename);
-	if (fp == NULL) {
+	if (!fp) {
 		lprintf(LOG_ERR, "Could not open %s file", filename);
 		return -1;
 	}
@@ -315,11 +314,11 @@ ipmi_get_oem(struct ipmi_intf * intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Device ID command failed");
 		return IPMI_OEM_UNKNOWN;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
 			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		return IPMI_OEM_UNKNOWN;
@@ -348,11 +347,11 @@ ipmi_sel_add_entry(struct ipmi_intf * intf, struct sel_event_record * rec)
 	ipmi_sel_print_std_entry(intf, rec);
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Add SEL Entry failed");
 		return -1;
 	}
-	else if (rsp->ccode > 0) {
+	else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Add SEL Entry failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -373,15 +372,15 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 	uint8_t rqdata[8];
 	struct sel_event_record sel_event;
 	
-	if (filename == NULL)
+	if (!filename)
 		return -1;
 
 	fp = ipmi_open_file_read(filename);
-	if (fp == NULL)
+	if (!fp)
 		return -1;
 
 	while (feof(fp) == 0) {
-		if (fgets(buf, 1024, fp) == NULL)
+		if (!fgets(buf, 1024, fp))
 			continue;
 
 		/* clip off optional comment tail indicated by # */
@@ -465,7 +464,7 @@ get_kontron_evt_desc(struct ipmi_intf *intf, struct sel_event_record * rec)
 	/* Only standard records are defined so far */
 	if( rec->record_type < 0xC0 ){
 		const struct ipmi_event_sensor_types *st=NULL;
-		for ( st=oem_kontron_event_types ; st->desc != NULL; st++){
+		for (st = oem_kontron_event_types; st->desc; st++){
 			if (st->code == rec->sel_type.standard_type.event_type ){
 				size_t len =strlen(st->desc);
 				description = (char*)malloc( len + 1 );
@@ -506,12 +505,12 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	req.msg.data = msg_data;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		if (verbose)
 			lprintf(LOG_ERR, "Error issuing OEM command");
 		return NULL;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		if (verbose)
 			lprintf(LOG_ERR, "OEM command returned error code: %s",
 					val2str(rsp->ccode, completion_code_vals));
@@ -565,9 +564,9 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	if (rec->sel_type.standard_type.event_type != 0x6F) {
 		return NULL;
 	}
-	/* Allocate mem for te Description string */
+	/* Allocate mem for the Description string */
 	desc = malloc(sizeof(char) * SIZE_OF_DESC);
-	if (desc == NULL) {
+	if (!desc) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return NULL;
 	}
@@ -583,17 +582,17 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 			req.msg.data_len = 0;
 
 			rsp = intf->sendrecv(intf, &req);
-			if (rsp == NULL) {
+			if (!rsp) {
 				lprintf(LOG_ERR, " Error getting system info");
-				if (desc != NULL) {
+				if (desc) {
 					free(desc);
 					desc = NULL;
 				}
 				return NULL;
-			} else if (rsp->ccode > 0) {
+			} else if (rsp->ccode) {
 				lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
-				if (desc != NULL) {
+				if (desc) {
 					free(desc);
 					desc = NULL;
 				}
@@ -602,7 +601,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 			/* check the chipset type */
 			oem_id = ipmi_get_oem_id(intf);
 			if (oem_id == 0) {
-				if (desc != NULL) {
+				if (desc) {
 					free(desc);
 					desc = NULL;
 				}
@@ -705,7 +704,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 
 /*
  * Function 	: Decoding the SEL OEM Bytes for the DELL Platforms.
- * Description  : The below fucntion will decode the SEL Events OEM Bytes for the Dell specific	Sensors only.
+ * Description  : The below function will decode the SEL Events OEM Bytes for the Dell specific Sensors only.
  * The below function will append the additional information Strings/description to the normal sel desc.
  * With this the SEL will display additional information sent via OEM Bytes of the SEL Record.
  * NOTE		: Specific to DELL Platforms only.
@@ -738,7 +737,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	if (0x6F == rec->sel_type.standard_type.event_type)
 		{
 		sensor_type = rec->sel_type.standard_type.sensor_type;
-		/* Allocate mem for te Description string */
+		/* Allocate mem for the Description string */
 		desc = (char*)malloc(SIZE_OF_DESC);
 		if(NULL == desc)
 			return NULL;
@@ -787,17 +786,17 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 				if (NULL == rsp) 
 				{
 					lprintf(LOG_ERR, " Error getting system info");
-					if (desc != NULL) {
+					if (desc) {
 						free(desc);
 						desc = NULL;
 					}
 					return NULL;
 				} 
-				else if (rsp->ccode > 0)
+				else if (rsp->ccode)
 				{
 					lprintf(LOG_ERR, " Error getting system info: %s",
 						val2str(rsp->ccode, completion_code_vals));
-					if (desc != NULL) {
+					if (desc) {
 						free(desc);
 						desc = NULL;
 					}
@@ -896,11 +895,11 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 					if(SENSOR_TYPE_EVT_LOG == sensor_type)
 					{
 						if(0x03 == (data1 & MASK_LOWER_NIBBLE)) 
-							snprintf(desc,SIZE_OF_DESC,"All Even Logging Dissabled");
+							snprintf(desc,SIZE_OF_DESC,"All Even Logging Disabled");
 					}
 				}
 				/* 
- 				 * Based on the above error, we need to find whcih memory slot or 
+ 				 * Based on the above error, we need to find which memory slot or
  				 * Card has got the Errors/Sel Generated.
  				 */
 				if(data1 & OEM_CODE_IN_BYTE2 ) 
@@ -1042,7 +1041,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 				}	
 				
 			break;
-						/* This Event is for BMC to Othe Hardware or CPU . */
+						/* This Event is for BMC to other Hardware or CPU . */
 			case SENSOR_TYPE_VER_CHANGE:
 				if((0x02 == (data1 & MASK_LOWER_NIBBLE))&&((data1 & OEM_CODE_IN_BYTE2) && (data1 & OEM_CODE_IN_BYTE3)))
 				{
@@ -1244,6 +1243,9 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	case IPMI_OEM_SUPERMICRO_47488:
 		desc = get_supermicro_evt_desc(intf, rec);
 		break;
+	case IPMI_OEM_QUANTA:
+		desc = oem_qct_get_evt_desc(intf, rec);
+		break;
 	case IPMI_OEM_UNKNOWN:
 	default:
 		break;
@@ -1282,9 +1284,9 @@ ipmi_get_first_event_sensor_type(struct ipmi_intf *intf,
 		code = event_type;
 	}
 
-	for (evt = start; evt->desc != NULL || next != NULL; evt++) {
+	for (evt = start; evt->desc || next; evt++) {
 		/* check if VITA sensor event types has finished */
-		if (evt->desc == NULL) {
+		if (!evt->desc) {
 			/* proceed with next table */
 			evt = next;
 			next = NULL;
@@ -1303,7 +1305,7 @@ ipmi_get_next_event_sensor_type(const struct ipmi_event_sensor_types *evt)
 {
 	const struct ipmi_event_sensor_types *start = evt;
 
-	for (evt = start + 1; evt->desc != NULL; evt++) {
+	for (evt = start + 1; evt->desc; evt++) {
 		if (evt->code == start->code) {
 			return evt;
 		}
@@ -1321,7 +1323,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 	char *sfx = NULL;	/* This will be assigned if the Platform is DELL,
 				 additional info is appended to the current Description */
 
-	if (desc == NULL)
+	if (!desc)
 		return;
 	*desc = NULL;
 
@@ -1349,6 +1351,9 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					sfx = ipmi_get_oem_desc(intf, rec);
 					break;
 				 /* add your oem sensor assignation here */
+				case IPMI_OEM_QUANTA:
+					sfx = ipmi_get_oem_desc(intf, rec);
+					break;
 				default:
 					lprintf(LOG_DEBUG, "oem sensor type %x  using standard type supplied description",
 						rec->sel_type.standard_type.sensor_type );
@@ -1359,9 +1364,12 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 				case IPMI_OEM_SUPERMICRO:
 				case IPMI_OEM_SUPERMICRO_47488:
 					sfx = ipmi_get_oem_desc(intf, rec);
-				 break;
+					break;
+				case IPMI_OEM_QUANTA:
+					sfx = ipmi_get_oem_desc(intf, rec);
+					break;
 				default:
-				 break;
+					break;
 			}
 		}
 		/*
@@ -1387,10 +1395,11 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 	offset = rec->sel_type.standard_type.event_data[0] & 0xf;
 
 	for (evt = ipmi_get_first_event_sensor_type(intf,
-			rec->sel_type.standard_type.sensor_type,
-			rec->sel_type.standard_type.event_type);
-			evt != NULL; evt = ipmi_get_next_event_sensor_type(evt)) {
-		if ((evt->offset == offset && evt->desc != NULL) &&
+	               rec->sel_type.standard_type.sensor_type,
+	               rec->sel_type.standard_type.event_type);
+	     evt; evt = ipmi_get_next_event_sensor_type(evt))
+	{
+		if ((evt->offset == offset && evt->desc) &&
 			((evt->data == ALL_OFFSETS_SPECIFIED) ||
 			 ((rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK) &&
 			  (evt->data == rec->sel_type.standard_type.event_data[1]))))
@@ -1513,7 +1522,7 @@ ipmi_get_sensor_type(struct ipmi_intf *intf, uint8_t code)
 		type = ipmi_get_generic_sensor_type(code);
 	}
 
-	if (type == NULL) {
+	if (!type) {
 		type = "Unknown";
 	}
 
@@ -1537,10 +1546,10 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return -1;
-	} else if (rsp->ccode > 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -1618,12 +1627,12 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		req.msg.cmd = IPMI_CMD_GET_SEL_ALLOC_INFO;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 				"Get SEL Allocation Info command failed");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR,
 				"Get SEL Allocation Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
@@ -1664,11 +1673,11 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get SEL Entry %x command failed", id);
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Entry %x command failed: %s",
 			id, val2str(rsp->ccode, completion_code_vals));
 		return 0;
@@ -1751,7 +1760,7 @@ ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt
 {
 	char * description;
 
-	if (fp == NULL)
+	if (!fp)
 		return;
 
 	ipmi_get_event_desc(intf, evt, &description);
@@ -1766,9 +1775,9 @@ ipmi_sel_print_event_file(struct ipmi_intf * intf, struct sel_event_record * evt
 		evt->sel_type.standard_type.event_data[2],
 		ipmi_get_sensor_type(intf, evt->sel_type.standard_type.sensor_type),
 		evt->sel_type.standard_type.sensor_num,
-		(description != NULL) ? description : "Unknown");
+		description ? description : "Unknown");
 
-	if (description != NULL) {
+	if (description) {
 		free(description);
 		description = NULL;
 	}
@@ -1883,7 +1892,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	}
 
 	/* lookup SDR entry based on sensor number and type */
-	if (sdr != NULL) {
+	if (sdr) {
 		printf("%s ", ipmi_get_sensor_type(intf,
 			evt->sel_type.standard_type.sensor_type));
 		switch (sdr->type) {
@@ -1940,7 +1949,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		printf("Asserted");
 	}
 
-	if (sdr != NULL && evt->sel_type.standard_type.event_type == 1) {
+	if (sdr && evt->sel_type.standard_type.event_type == 1) {
 		/*
 		 * Threshold Event
 		 */
@@ -1986,9 +1995,12 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			case IPMI_OEM_SUPERMICRO:
 			case IPMI_OEM_SUPERMICRO_47488:
 				print_sensor = 0;
-			 break;
+				break;
+			case IPMI_OEM_QUANTA:
+				print_sensor = 0;
+				break;
 			default:
-			 break;
+				break;
 		}
 		/*
 		 * Sensor-Specific Discrete
@@ -2111,7 +2123,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 					  evt->sel_type.standard_type.gen_id,
 					  evt->sel_type.standard_type.sensor_num,
 					  evt->sel_type.standard_type.sensor_type);
-	if (sdr == NULL) 
+	if (!sdr) 
 	{
 	    ipmi_sel_print_std_entry_verbose(intf, evt);
 		return;
@@ -2268,11 +2280,11 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get SEL Info command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2290,11 +2302,11 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Reserve SEL command failed");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Reserve SEL command failed: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2307,11 +2319,11 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 
 		req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Get SEL Info command failed");
 			return -1;
 		}
-		if (rsp->ccode > 0) {
+		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
 			return -1;
@@ -2336,7 +2348,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		}
 	}
 
-	if (savefile != NULL) {
+	if (savefile) {
 		fp = ipmi_open_file_write(savefile);
 	}
 
@@ -2361,7 +2373,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		else
 			ipmi_sel_print_std_entry(intf, &evt);
 
-		if (fp != NULL) {
+		if (fp) {
 			if (binary)
 				fwrite(&evt, 1, 16, fp);
 			else
@@ -2373,7 +2385,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		}
 	}
 
-	if (fp != NULL)
+	if (fp)
 		fclose(fp);
 
 	return 0;
@@ -2418,13 +2430,13 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 		 * Supports a tweak for hotswap events that are already interpreted.
 		 */
 		fp = ipmi_open_file(readfile, 0);
-		if (fp == NULL) {
+		if (!fp) {
 			lprintf(LOG_ERR, "Failed to open file '%s' for reading.",
 					readfile);
 			return (-1);
 		}
 		buffer = (char *)malloc((size_t)256);
-		if (buffer == NULL) {
+		if (!buffer) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			fclose(fp);
 			return (-1);
@@ -2433,7 +2445,7 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			/* Only allow complete lines to be parsed,
 			 * hardcoded maximum line length
 			 */
-			if (fgets(buffer, 256, fp) == NULL) {
+			if (!fgets(buffer, 256, fp)) {
 				status = (-1);
 				break;
 			}
@@ -2687,11 +2699,11 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_WARN, "Unable to reserve SEL");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		printf("Unable to reserve SEL: %s",
 		       val2str(rsp->ccode, completion_code_vals));
 		return 0;
@@ -2723,13 +2735,12 @@ ipmi_sel_get_time(struct ipmi_intf * intf)
 
 	rsp = intf->sendrecv(intf, &req);
 
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Get SEL Time command failed");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
+	if (!rsp || rsp->ccode) {
 		lprintf(LOG_ERR, "Get SEL Time command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        rsp
+		        ? val2str(rsp->ccode, completion_code_vals)
+		        : "Unknown"
+		       );
 		return -1;
 	}
 	if (rsp->data_len != 4) {
@@ -2802,7 +2813,10 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 		gt_hour=tm_tmp->tm_hour;
 		gt_min=tm_tmp->tm_min;
 		memset(&*tm_tmp, 0, sizeof(struct tm));
-		tm_tmp=localtime(&t);
+		if(time_in_utc)
+			tm_tmp=gmtime(&t);
+		else
+			tm_tmp=localtime(&t);
 		lt_year=tm_tmp->tm_year;
 		lt_yday=tm_tmp->tm_yday;
 		lt_hour=tm_tmp->tm_hour;
@@ -2825,13 +2839,12 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 #endif
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
-		lprintf(LOG_ERR, "Set SEL Time command failed");
-		return -1;
-	}
-	if (rsp->ccode > 0) {
+	if (!rsp || rsp->ccode) {
 		lprintf(LOG_ERR, "Set SEL Time command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+		        rsp
+		        ? val2str(rsp->ccode, completion_code_vals)
+		        : "Unknown"
+		       );
 		return -1;
 	}
 
@@ -2839,8 +2852,6 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 	return 0;
 }
-
-
 
 static int
 ipmi_sel_clear(struct ipmi_intf * intf)
@@ -2869,11 +2880,11 @@ ipmi_sel_clear(struct ipmi_intf * intf)
 	req.msg.data_len = 6;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to clear SEL");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to clear SEL: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -2923,11 +2934,11 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 		req.msg.data_len = 4;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to delete entry %d", id);
 			rc = -1;
 		}
-		else if (rsp->ccode > 0) {
+		else if (rsp->ccode) {
 			lprintf(LOG_ERR, "Unable to delete entry %d: %s", id,
 				val2str(rsp->ccode, completion_code_vals));
 			rc = -1;
@@ -2994,7 +3005,7 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 				evt.sel_type.standard_type.gen_id,
 				evt.sel_type.standard_type.sensor_num,
 				evt.sel_type.standard_type.sensor_type);
-		if (sdr == NULL) {
+		if (!sdr) {
 			continue;
 		}
 

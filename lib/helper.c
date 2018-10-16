@@ -29,12 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _POSIX_SOURCE
-#define /* glibc 2.19 and earlier */ _BSD_SOURCE || \
-	/* Since glibc 2.20 */_DEFAULT_SOURCE || \
-	_XOPEN_SOURCE >= 500 || \
-	_XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED || \
-	/* Since glibc 2.10: */ _POSIX_C_SOURCE >= 200112L \
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -100,7 +94,7 @@ buf2str_extended(const uint8_t *buf, int len, const char *sep)
 	int left;
 	int sep_len;
 
-	if (buf == NULL) {
+	if (!buf) {
 		snprintf(str, sizeof(str), "<NULL>");
 		return (const char *)str;
 	}
@@ -180,7 +174,7 @@ ipmi_parse_hex(const char *str, uint8_t *out, int size)
 	}
 
 	len /= 2; /* out bytes */
-	if (out == NULL) {
+	if (!out) {
 		return -2;
 	}
 
@@ -232,6 +226,50 @@ void printbuf(const uint8_t * buf, int len, const char * desc)
 		fprintf(stderr, " %2.2x", buf[i]);
 	}
 	fprintf(stderr, "\n");
+}
+
+/*
+ * Unconditionally reverse the order of arbitrarily long strings of bytes
+ */
+uint8_t *array_byteswap(uint8_t *buffer, size_t length)
+{
+	size_t i;
+	uint8_t temp;
+	size_t max = length - 1;
+
+	for (i = 0; i < length / 2; ++i) {
+		temp = buffer[i];
+		buffer[i] = buffer[max - i];
+		buffer[max - i] = temp;
+	}
+
+	return buffer;
+}
+
+/* Convert data array from network (big-endian) to host byte order */
+uint8_t *array_ntoh(uint8_t *buffer, size_t length)
+{
+#if WORDS_BIGENDIAN
+	/* Big-endian host doesn't need conversion from big-endian network */
+	(void)length; /* Silence the compiler */
+	return buffer;
+#else
+	/* Little-endian host needs conversion from big-endian network */
+	return array_byteswap(buffer, length);
+#endif
+}
+
+/* Convert data array from little-endian to host byte order */
+uint8_t *array_letoh(uint8_t *buffer, size_t length)
+{
+#if WORDS_BIGENDIAN
+	/* Big-endian host needs conversion from little-endian IPMI */
+	return array_byteswap(buffer, length);
+#else
+	/* Little-endian host doesn't need conversion from little-endian IPMI */
+	(void)length; /* Silence the compiler */
+	return buffer;
+#endif
 }
 
 /* str2mac - parse-out MAC address from given string and store it
@@ -286,7 +324,7 @@ const char * val2str(uint16_t val, const struct valstr *vs)
 	static char un_str[32];
 	int i;
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (vs[i].val == val)
 			return vs[i].str;
 	}
@@ -303,7 +341,7 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 	static char un_str[32];
 	int i;
 
-	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str; i++) {
 		/* FIXME: for now on we assume PICMG capability on all IANAs */
 		if ( (vs[i].oem == oem || vs[i].oem == IPMI_OEM_PICMG) &&
 				vs[i].val == val ) {
@@ -563,7 +601,7 @@ uint16_t str2val(const char *str, const struct valstr *vs)
 {
 	int i;
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
 			return vs[i].val;
 	}
@@ -582,10 +620,10 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 {
 	int i;
 
-	if (vs == NULL)
+	if (!vs)
 		return;
 
-	if (title != NULL) {
+	if (title) {
 		if (loglevel < 0)
 			printf("\n%s:\n\n", title);
 		else
@@ -600,7 +638,7 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 		lprintf(loglevel, "==============================================");
 	}
 
-	for (i = 0; vs[i].str != NULL; i++) {
+	for (i = 0; vs[i].str; i++) {
 		if (loglevel < 0) {
 			if (vs[i].val < 256)
 				printf("  %d\t0x%02x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
@@ -631,18 +669,18 @@ print_valstr_2col(const struct valstr * vs, const char * title, int loglevel)
 {
 	int i;
 
-	if (vs == NULL)
+	if (!vs)
 		return;
 
-	if (title != NULL) {
+	if (title) {
 		if (loglevel < 0)
 			printf("\n%s:\n\n", title);
 		else
 			lprintf(loglevel, "\n%s:\n", title);
 	}
 
-	for (i = 0; vs[i].str != NULL; i++) {
-		if (vs[i+1].str == NULL) {
+	for (i = 0; vs[i].str; i++) {
+		if (!vs[i+1].str) {
 			/* last one */
 			if (loglevel < 0) {
 				printf("  %4d  %-32s\n", vs[i].val, vs[i].str);
@@ -696,12 +734,12 @@ ipmi_open_file(const char * file, int rw)
 	struct stat st1, st2;
 	FILE * fp;
 
-	/* verify existance */
+	/* verify existence */
 	if (lstat(file, &st1) < 0) {
 		if (rw) {
 			/* does not exist, ok to create */
 			fp = fopen(file, "w");
-			if (fp == NULL) {
+			if (!fp) {
 				lperror(LOG_ERR, "Unable to open file %s "
 					"for write", file);
 				return NULL;
@@ -718,7 +756,7 @@ ipmi_open_file(const char * file, int rw)
 	if (!rw) {
 		/* on read skip the extra checks */
 		fp = fopen(file, "r");
-		if (fp == NULL) {
+		if (!fp) {
 			lperror(LOG_ERR, "Unable to open file %s", file);
 			return NULL;
 		}
@@ -741,7 +779,7 @@ ipmi_open_file(const char * file, int rw)
 	}
 
 	fp = fopen(file, rw ? "w+" : "r");
-	if (fp == NULL) {
+	if (!fp) {
 		lperror(LOG_ERR, "Unable to open file %s", file);
 		return NULL;
 	}
@@ -852,7 +890,7 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 int
 eval_ccode(const int ccode)
 {
-	if (ccode == 0) {
+	if (!ccode) {
 		return 0;
 	} else if (ccode < 0) {
 		switch (ccode) {
@@ -1012,11 +1050,11 @@ ipmi_get_oem_id(struct ipmi_intf *intf)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Get Board ID command failed");
 		return 0;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Board ID command failed: %#x %s",
 			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
 		return 0;

@@ -102,7 +102,7 @@ lanplus_rand(uint8_t * buffer, uint32_t num_bytes)
  * param mac specifies the algorithm to be used, currently SHA1, SHA256 and MD5
  *     are supported
  * param key is the key used for HMAC generation
- * param key_len is the lenght of key
+ * param key_len is the length of key
  * param d is the data to be MAC'd
  * param n is the length of the data at d
  * param md is the result of the HMAC algorithm
@@ -179,7 +179,7 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 	}
 
 	ctx = EVP_CIPHER_CTX_new();
-	if (ctx == NULL) {
+	if (!ctx) {
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}
@@ -258,7 +258,7 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 		return;
 
 	ctx = EVP_CIPHER_CTX_new();
-	if (ctx == NULL) {
+	if (!ctx) {
 		lprintf(LOG_DEBUG, "ERROR: EVP_CIPHER_CTX_new() failed");
 		return;
 	}

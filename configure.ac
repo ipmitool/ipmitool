@@ -33,7 +33,7 @@ AC_CHECK_FUNCS([alarm gethostbyname getaddrinfo getifaddrs socket select])
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror])
 AC_CHECK_FUNCS([getpassphrase])
 
-CFLAGS="$CFLAGS -Wall -Wextra -std=gnu99 -pedantic -Wformat -Wformat-nonliteral"
+CFLAGS="$CFLAGS -Wall -Wextra -std=gnu11 -pedantic -Wformat -Wformat-nonliteral"
 
 AM_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"

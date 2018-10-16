@@ -29,7 +29,6 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#define _XOPEN_SOURCE
 
 #include <stdlib.h>
 #include <string.h>
@@ -84,7 +83,7 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 	data[3] = 0x00;		/* selector */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
@@ -92,7 +91,7 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "IPMI v1.5 Serial Over Lan (ISOL) not supported!");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -108,11 +107,11 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 	data[3] = 0x00;		/* selector */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -128,11 +127,11 @@ static int ipmi_get_isol_info(struct ipmi_intf * intf,
 	data[3] = 0x00;		/* selector */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -272,11 +271,11 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 	 */
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting ISOL parameter '%s'", param);
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error setting ISOL parameter '%s': %s",
 			   param, val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -429,11 +428,11 @@ ipmi_isol_deactivate(struct ipmi_intf * intf)
 	data[5] = 0x00;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error deactivating ISOL");
 		return -1;
 	}
-	if (rsp->ccode > 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Error deactivating ISOL: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
@@ -573,7 +572,7 @@ ipmi_isol_red_pill(struct ipmi_intf * intf)
 	int    timedout = 0;
 
 	buffer = (char*)malloc(buffer_size);
-	if (buffer == NULL) {
+	if (!buffer) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		return -1;
 	}

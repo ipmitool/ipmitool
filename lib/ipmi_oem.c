@@ -39,6 +39,7 @@
 
 static int ipmi_oem_supermicro(struct ipmi_intf * intf);
 static int ipmi_oem_ibm(struct ipmi_intf * intf);
+static int ipmi_oem_quanta(struct ipmi_intf * intf);
 
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
@@ -71,6 +72,11 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 		.name = "kontron",
 		.desc = "Kontron OEM big buffer support"
 	},
+	{
+		.name = "quanta",
+		.desc = "Quanta IPMIv1.5 BMC with OEM LAN authentication support",
+		.setup = ipmi_oem_quanta,
+	},
 	{ 0 }
 };
 
@@ -85,12 +91,20 @@ ipmi_oem_supermicro(struct ipmi_intf * intf)
 static int
 ipmi_oem_ibm(struct ipmi_intf * intf)
 {
-	char * filename;
-	if ((filename = getenv("IPMI_OEM_IBM_DATAFILE")) == NULL) {
+	char * filename = getenv("IPMI_OEM_IBM_DATAFILE");
+	if (!filename) {
 		lprintf(LOG_ERR, "Unable to read IPMI_OEM_IBM_DATAFILE from environment");
 		return -1;
 	}
 	return ipmi_sel_oem_init((const char *)filename);
+}
+
+/* Quanta IPMIv2 BMCs use OEM authtype */
+static int
+ipmi_oem_quanta(struct ipmi_intf * intf)
+{
+	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
+	return 0;
 }
 
 /* ipmi_oem_print  -  print list of OEM handles
@@ -100,7 +114,7 @@ ipmi_oem_print(void)
 {
 	struct ipmi_oem_handle * oem;
 	lprintf(LOG_NOTICE, "\nOEM Support:");
-	for (oem=ipmi_oem_list; oem->name != NULL && oem->desc != NULL; oem++) {
+	for (oem=ipmi_oem_list; oem->name && oem->desc; oem++) {
 		lprintf(LOG_NOTICE, "\t%-12s %s", oem->name, oem->desc);
 	}
 	lprintf(LOG_NOTICE, "");
@@ -120,26 +134,27 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 	struct ipmi_oem_handle * oem;
 	int rc = 0;
 
-	if (oemtype == NULL ||
-			strncmp(oemtype, "help", 4) == 0 ||
-			strncmp(oemtype, "list", 4) == 0) {
+	if (!oemtype
+	    || strncmp(oemtype, "help", 4) == 0
+	    || strncmp(oemtype, "list", 4) == 0)
+	{
 		ipmi_oem_print();
 		return -1;
 	}
 
-	for (oem=ipmi_oem_list; oem->name != NULL; oem++) {
+	for (oem=ipmi_oem_list; oem->name; oem++) {
 		if (strncmp(oemtype, oem->name, strlen(oem->name)) == 0)
 			break;
 	}
 
-	if (oem->name == NULL)
+	if (!oem->name)
 		return -1;
 
 	/* save pointer for later use */
 	intf->oem = oem;
 
 	/* run optional setup function if it is defined */
-	if (oem->setup != NULL) {
+	if (oem->setup) {
 		lprintf(LOG_DEBUG, "Running OEM setup for \"%s\"", oem->desc);
 		rc = oem->setup(intf);
 	}
@@ -158,7 +173,7 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 int
 ipmi_oem_active(struct ipmi_intf * intf, const char * oemtype)
 {
-	if (intf->oem == NULL)
+	if (!intf->oem)
 		return 0;
 
 	if (strncmp(intf->oem->name, oemtype, strlen(oemtype)) == 0)

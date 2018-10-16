@@ -258,7 +258,7 @@ ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 	unsigned short padding;
 	unsigned long fsize = 0;
 	unsigned char not_used;
-	if (file == NULL) {
+	if (!file) {
 		lprintf(LOG_ERR, "No file given.");
 		return (-1);
 	}
@@ -312,7 +312,7 @@ KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle = NULL;
 	pFileHandle = fopen(pFileName, "rb");
-	if (pFileHandle == NULL) {
+	if (!pFileHandle) {
 		return (-1);
 	}
 	if (fseek(pFileHandle, 0L , SEEK_END) == 0) {
@@ -342,7 +342,7 @@ KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 	int qty = 0;
 
 	pFileHandle = fopen(pFileName, "rb");
-	if (pFileHandle == NULL) {
+	if (!pFileHandle) {
 		lprintf(LOG_ERR, "Failed to open '%s' for reading.",
 				pFileName);
 		return (-1);
@@ -454,7 +454,7 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Firmware Get Info Command.");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x",
 				rsp->ccode);
 		return (-1);
@@ -479,7 +479,7 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		printf("Number Of Memory Bank     : %u\n", pGetInfo->numBank);
 	}
 	*pNumBank = pGetInfo->numBank;
-	/* Determine wich type of download to use: */
+	/* Determine which type of download to use: */
 	/* Old FWUM or Old IPMC fw (data_len < 7)
 	 * --> Address with small buffer size
 	 */
@@ -501,14 +501,14 @@ KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 			printf("Protocol Revision          :");
 			printf(" > 5 optimizing buffers\n");
 		}
-		if (strstr(intf->name,"lan") != NULL) {
+		if (strstr(intf->name,"lan")) {
 			/* also covers lanplus */
 			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
 			if (verbose) {
 				printf("IOL payload size           : %d\n",
 						save_fw_nfo.bufferSize);
 			}
-		} else if ((strstr(intf->name,"open")!= NULL)
+		} else if (strstr(intf->name,"open")
 				&& intf->target_addr != IPMI_BMC_SLAVE_ADDR 
 				&& (intf->target_addr !=  intf->my_addr)) {
 			save_fw_nfo.bufferSize = KFWUM_SMALL_BUFFER;
@@ -549,10 +549,10 @@ KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get Device Id Command");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device Id returned %x",
 				rsp->ccode);
 		return (-1);
@@ -598,19 +598,19 @@ KfwumGetStatus(struct ipmi_intf * intf)
 	if (verbose) {
 		printf(" Getting Status!\n");
 	}
-	/* Retreive the number of bank */
+	/* Retrieve the number of bank */
 	rc = KfwumGetInfo(intf, 0, &numBank);
 	for(counter = 0;
 			(counter < numBank) && (rc == 0);
 			counter ++) {
-		/* Retreive the status of each bank */
+		/* Retrieve the status of each bank */
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_FIRMWARE;
 		req.msg.cmd = KFWUM_CMD_ID_GET_FIRMWARE_STATUS;
 		req.msg.data = &counter;
 		req.msg.data_len = 1;
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Get Status Command.");
 			rc = (-1);
@@ -668,10 +668,10 @@ KfwumManualRollback(struct ipmi_intf *intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
 		return (-1);
-	} else if (rsp->ccode != 0) {
+	} else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Manual Rollback Command returned %x",
 				rsp->ccode);
@@ -707,7 +707,7 @@ KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
 		req.msg.data_len = 6;
 	}
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Firmware Start Firmware Image Download Command.");
 		return (-1);
@@ -755,13 +755,13 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 			/* + 1 => sequenceNumber*/
 		}
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Save Firmware Image Download Command.");
 			/* We don't receive "C7" on errors with IOL,
 			 * instead we receive nothing
 			 */
-			if (strstr(intf->name, "lan") != NULL) {
+			if (strstr(intf->name, "lan")) {
 				no_rsp++;
 				if (no_rsp < FWUM_SAVE_FIRMWARE_NO_RESPONSE_LIMIT) {
 					*pInBufLength -= 1;
@@ -772,7 +772,7 @@ KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 				*pInBufLength = 0;
 				break;
 			} /* For other interface keep trying */
-		} else if (rsp->ccode != 0) {
+		} else if (rsp->ccode) {
 			if (rsp->ccode == 0xc0) {
 				sleep(1);
 			} else if ((rsp->ccode == 0xc7)
@@ -836,9 +836,9 @@ KfwumFinishFirmwareImage(struct ipmi_intf *intf, tKFWUM_InFirmwareInfo firmInfo)
 	/* Infinite loop if BMC doesn't reply or replies 0xc0 every time. */
 	do {
 		rsp = intf->sendrecv(intf, &req);
-	} while (rsp == NULL || rsp->ccode == 0xc0);
+	} while (!rsp || rsp->ccode == 0xc0);
 
-	if (rsp->ccode != 0) {
+	if (rsp->ccode) {
 		lprintf(LOG_ERR,
 				"FWUM Firmware Finish Firmware Image Download returned %x",
 				rsp->ccode);
@@ -917,7 +917,7 @@ KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 	req.msg.data_len = 1;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (rsp == NULL) {
+	if (!rsp) {
 		lprintf(LOG_ERR,
 				"Error in FWUM Firmware Start Firmware Upgrade Command");
 		rc = (-1);
@@ -950,7 +950,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 			(chunkIdx < TRACE_LOG_CHUNK_COUNT)
 			&& (rc == 0);
 			chunkIdx++) {
-		/* Retreive each log chunk and print it */
+		/* Retrieve each log chunk and print it */
 		memset(&req, 0, sizeof(req));
 		req.msg.netfn = IPMI_NETFN_FIRMWARE;
 		req.msg.cmd = KFWUM_CMD_ID_GET_TRACE_LOG;
@@ -958,7 +958,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 		req.msg.data_len = 1;
 
 		rsp = intf->sendrecv(intf, &req);
-		if (rsp == NULL) {
+		if (!rsp) {
 			lprintf(LOG_ERR,
 					"Error in FWUM Firmware Get Trace Log Command");
 			rc = (-1);
@@ -971,7 +971,7 @@ KfwumGetTraceLog(struct ipmi_intf *intf)
 			break;
 		}
 		for (cmdIdx=0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++) {
-			/* Don't diplay commands with an invalid state */
+			/* Don't display commands with an invalid state */
 			if ((rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx + 1] != 0)
 					&& (rsp->data[TRACE_LOG_ATT_COUNT * cmdIdx] < KFWUM_CMD_ID_STD_MAX_CMD)) {
 				printf("  Cmd ID: %17s -- CmdState: %10s -- CompCode: %2x\n",
@@ -1001,7 +1001,7 @@ KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
 	}
 	offset = IN_FIRMWARE_INFO_OFFSET_LOCATION;
 
-	/* Now, fill the structure with read informations */
+	/* Now, fill the structure with read information */
 	pInfo->checksum = (unsigned short)KWUM_GET_BYTE_AT_OFFSET(pBuf,
 			offset + 0 + IN_FIRMWARE_INFO_OFFSET_CHECKSUM ) << 8;
 
