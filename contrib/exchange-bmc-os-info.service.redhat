@@ -1,7 +1,7 @@
 [Unit]
 Description=Exchange Information between BMC and OS
-After=ipmi.service network.target
-Requires=ipmi.service
+ConditionFileIsExecutable=/usr/bin/ipmitool
+ConditionPathExistsGlob=/dev/ipmi*
 
 [Service]
 Type=oneshot
