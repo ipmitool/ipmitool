@@ -823,6 +823,7 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 {
 	pid_t pid;
 	int fd;
+	int ret;
 #ifdef SIGHUP
 	sigset_t sighup;
 #endif
@@ -866,7 +867,11 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 		exit(0);
 #endif
 
-	chdir("/");
+	ret = chdir("/");
+	if (ret) {
+		lprintf(LOG_ERR, "chdir failed: %s (%d)", strerror(errno), errno);
+		exit(1);
+	}
 	umask(0);
 
 	for (fd=0; fd<64; fd++) {
@@ -875,9 +880,20 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 	}
 
 	fd = open("/dev/null", O_RDWR);
-	assert(0 == fd);
-	dup(fd);
-	dup(fd);
+	if (fd != STDIN_FILENO) {
+		lprintf(LOG_ERR, "failed to reset stdin: %s (%d)", strerror(errno), errno);
+		exit(1);
+	}
+	ret = dup(fd);
+	if (ret != STDOUT_FILENO) {
+		lprintf(LOG_ERR, "failed to reset stdout: %s (%d)", strerror(errno), errno);
+		exit(1);
+	}
+	ret = dup(fd);
+	if (ret != STDOUT_FILENO) {
+		lprintf(LOG_ERR, "failed to reset stderr: %s (%d)", strerror(errno), errno);
+		exit(1);
+	}
 }
 
 /* eval_ccode - evaluate return value of _ipmi_* functions and print error error
