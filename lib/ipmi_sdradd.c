@@ -263,7 +263,7 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
     sdrr->type = header->type;
     sdrr->length = header->length;
     sdrr->raw = ipmi_sdr_get_record(intf, header, itr);
-    (void)ipmi_sdr_print_name_from_rawentry(intf,  sdrr->id, sdrr->type,sdrr->raw);
+    (void)ipmi_sdr_print_name_from_rawentry(sdrr->id, sdrr->type,sdrr->raw);
 
     /* put in the record queue */
     if (!queue->head)
@@ -295,7 +295,7 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
 
   printf("Load SDRs from 0x%x\n", from_addr);
   rc = sdrr_get_records(intf, itr, &sdrr_queue);
-  ipmi_sdr_end(intf, itr);
+  ipmi_sdr_end(itr);
   /* ... */
 
   /* write the SDRs to the destination SDR Repository */

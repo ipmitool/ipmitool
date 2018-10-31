@@ -314,7 +314,7 @@ ipmi_intf_session_cleanup(struct ipmi_intf *intf)
 void
 ipmi_cleanup(struct ipmi_intf * intf)
 {
-	ipmi_sdr_list_empty(intf);
+	ipmi_sdr_list_empty();
 	ipmi_intf_session_set_hostname(intf, NULL);
 }
 

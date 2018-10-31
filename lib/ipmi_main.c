@@ -984,7 +984,7 @@ ipmi_main(int argc, char ** argv,
 
 	/* parse local SDR cache if given */
 	if (sdrcache) {
-		ipmi_sdr_list_cache_fromfile(ipmi_main_intf, sdrcache);
+		ipmi_sdr_list_cache_fromfile(sdrcache);
 	}
 	/* Parse SEL OEM file if given */
 	if (seloem) {
