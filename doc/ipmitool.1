@@ -3,12 +3,13 @@
 ipmitool \- utility for controlling IPMI\-enabled devices
 .SH "SYNOPSIS"
 
-ipmitool [ <options> ] <command> [ <sub-commands and sub-options> ]
+.BR ipmitool
+[ <options> ] <command> [ <sub-commands and sub-options> ]
 
 <options>           := [ <general-options> | <conditional-opts> ]
-.br
-Any recognized option is accepted. Conditional options may be ignored or it's usage postponed until shell or exec processes relevant command.
-.br
+
+Any recognized option is accepted. Conditional options may be ignored or it's
+usage postponed until shell or exec processes relevant command.
 
 <general\-options>   := [ \-h | \-V | \-v | \-I <interface> | \-H <address> |
                          \-d <N> | \-p <port> | \-c | \-U <username> |
@@ -66,8 +67,9 @@ called \fIOpenIPMI\fP and it is included in standard distributions.
 On Solaris this driver is called \fIBMC\fP and is included in Solaris 10.
 Management of a remote station requires the IPMI\-over\-LAN interface to be
 enabled and configured.  Depending on the particular requirements of each
-system it may be possible to enable the LAN interface using ipmitool over
-the system interface.
+system it may be possible to enable the LAN interface using
+.BR ipmitool
+over the system interface.
 .SH "OPTIONS"
 .TP 
 \fB\-a\fR
@@ -234,8 +236,9 @@ Prompt for the Kg key for IPMIv2.0 authentication.
 Change Size of Communication Channel. (OEM)
 
 .LP 
-If no password method is specified then ipmitool will prompt the
-user for a password. If no password is entered at the prompt,
+If no password method is specified then
+.BR ipmitool
+will prompt the user for a password. If no password is entered at the prompt,
 the remote server password will default to NULL.
 .SH "SECURITY"
 There are several security issues be be considered before enabling the
@@ -264,11 +267,11 @@ longer passwords are truncated.
 .SH "COMMANDS"
 .TP 
 \fIhelp\fP
-This can be used to get command\-line help  on  ipmitool
-commands.  It may also be placed at the end of commands
-to get option usage help.
+This can be used to get command\-line help on 
+.BR ipmitool
+commands. It may also be placed at the end of commands to get option usage help.
 
-ipmitool help
+> ipmitool help
 .br 
 Commands:
         bmc          Deprecated. Use mc
@@ -1215,12 +1218,13 @@ Get a list of all the possible Sensor States and pre-defined Sensor State
 Shortcuts available for a particular sensor.   \fBsensorid\fR is the character 
 string representation of the sensor and must be enclosed in double quotes
 if it includes white space.  Several different commands including 
-\fIipmitool sensor list\fP may be used to obtain a list that includes 
+.BR ipmitool
+\fIsensor list\fP may be used to obtain a list that includes 
 the \fBsensorid\fR strings representing the sensors on a given system. 
 .RS
 .PP 
 > ipmitool \-I open event "PS 2T Fan Fault" list
-.br 
+.br
 Finding sensor PS 2T Fan Fault... ok
 .br 
 Sensor States:
@@ -1277,7 +1281,9 @@ Finding sensor PS 2T Fan Fault... ok
 \fIexec\fP <\fBfilename\fR>
 
 .RS
-Execute ipmitool commands from \fIfilename\fR.  Each line is a
+Execute
+.BR ipmitool
+commands from \fIfilename\fR.  Each line is a
 complete command.  The syntax of the commands are defined by the
 COMMANDS section in this manpage.  Each line may have an optional
 comment at the end of the line, delimited with a `#' symbol.
@@ -1692,7 +1698,9 @@ user, operator, admin, oem.
 \fIactivate\fP
 .br
 
-Causes ipmitool to enter Intel IPMI v1.5 Serial Over LAN mode. An RMCP+
+Causes
+.BR ipmitool
+to enter Intel IPMI v1.5 Serial Over LAN mode. An RMCP+
 connection is made to the BMC, the terminal is set to raw mode, and user
 input is sent to the serial console on the remote server. On exit, 
 the SOL payload mode is deactivated and the terminal is reset to its
@@ -1704,9 +1712,9 @@ Special escape sequences are provided to control the SOL session:
 .TP
 \fI~.\fP        Terminate connection
 .TP
-\fI~^Z\fP       Suspend ipmitool
+\fI~^Z\fP       Suspend \fBipmitool\fR
 .TP
-\fI~^X\fP       Suspend ipmitool, but don't restore tty on restart
+\fI~^X\fP       Suspend \fBipmitool\fR, but don't restore tty on restart
 .TP
 \fI~B\fP        Send break
 .TP
@@ -1744,7 +1752,8 @@ Select the next boot order on the Kontron CP6012.
 .RS
 
 These commands will allow you to configure IPMI LAN channels
-with network information so they can be used with the ipmitool
+with network information so they can be used with the
+..BR ipmitool
 \fIlan\fP and \fIlanplus\fP interfaces.  \fINOTE\fR: To
 determine on which channel the LAN interface is located, issue
 the `channel info \fInumber\fR' command until you come across
@@ -2951,7 +2960,9 @@ A list of all entity ids can be found in the IPMI specifications.
 
 Dumps raw SDR data to a file.  This data file can then be used as
 a local SDR cache of the remote managed system with the \fI\-S <file>\fP
-option on the ipmitool command line.  This can greatly improve performance
+option on the
+.BR ipmitool
+command line.  This can greatly improve performance
 over system interface or remote LAN.
 .TP 
 \fIfill\fP \fIsensors\fP
@@ -3034,7 +3045,9 @@ Print information on the specified SEL Record entry.
 \fIsave\fP <\fBfile\fR>
 
 Save SEL records to a text file that can be fed back into the
-\fIevent file\fP ipmitool command.  This can be useful for
+\fIevent file\fP
+.BR ipmitool
+command. This can be useful for
 testing Event generation by building an appropriate Platform
 Event Message file based on existing events.  Please see the
 available help for the 'event file ...' command for a description of
@@ -3043,12 +3056,16 @@ the format of this file.
 \fIwriteraw\fP <\fBfile\fR>
 
 Save SEL records to a file in raw, binary format.  This file can
-be fed back to the \fIsel readraw\fP ipmitool command for viewing.
+be fed back to the \fIsel readraw\fP
+.BR ipmitool
+command for viewing.
 .TP 
 \fIreadraw\fP <\fBfile\fR>
 
 Read and display SEL records from a binary file.  Such a file can
-be created using the \fIsel writeraw\fP ipmitool command.
+be created using the \fIsel writeraw\fP
+.BR ipmitool
+command.
 .TP          
 \fItime\fP
 .RS
@@ -3197,9 +3214,12 @@ Verbosity level.
 \fIshell\fP
 .RS
 This command will launch an interactive shell which you can use
-to send multiple ipmitool commands to a BMC and see the responses.
-This can be useful instead of running the full ipmitool command each
-time.  Some commands will make use of a Sensor Data Record cache
+to send multiple 
+.BR ipmitool
+commands to a BMC and see the responses. This can be useful instead of
+running the full
+.BR ipmitool
+command each time. Some commands will make use of a Sensor Data Record cache
 and you will see marked improvement in speed if these commands
 are able to reuse the same cache in a shell session.  LAN sessions
 will send a periodic keepalive command to keep the IPMI session
@@ -3275,7 +3295,9 @@ by the IPMI over serial channel.
 \fIactivate\fP [\fIusesolkeepalive\fP | \fInokeepalive\fP] [\fIinstance=<number>\fP]
 .br 
 
-Causes ipmitool to enter Serial Over LAN
+Causes
+.BR ipmitool
+to enter Serial Over LAN
 mode, and is only available when using the lanplus
 interface.  An RMCP+ connection is made to the BMC,
 the terminal is set to raw mode, and user input is
@@ -3565,7 +3587,9 @@ Determine whether a password has been stored as 16 or 20 bytes.
 .RE
 
 .SH "OPEN INTERFACE"
-The ipmitool \fIopen\fP interface utilizes the OpenIPMI
+The
+.BR ipmitool
+\fIopen\fP interface utilizes the OpenIPMI
 kernel device driver.  This driver is present in all modern
 2.4 and all 2.6 kernels and it should be present in recent
 Linux distribution kernels.  There are also IPMI driver
@@ -3574,7 +3598,9 @@ the OpenIPMI homepage.
 
 The required kernel modules is different for 2.4 and 2.6
 kernels.  The following kernel modules must be loaded on
-a 2.4\-based kernel in order for ipmitool to work:
+a 2.4\-based kernel in order for
+.BR ipmitool
+to work:
 .TP 
 .B ipmi_msghandler
 Incoming and outgoing message handler for IPMI interfaces.
@@ -3586,7 +3612,9 @@ An IPMI Keyboard Controller Style (KCS) interface driver for the message handler
 Linux character device interface for the message handler.
 .LP 
 The following kernel modules must be loaded on
-a 2.6\-based kernel in order for ipmitool to work:
+a 2.6\-based kernel in order for
+.BR ipmitool
+to work:
 .TP 
 .B ipmi_msghandler
 Incoming and outgoing message handler for IPMI interfaces.
@@ -3614,19 +3642,22 @@ entry with:
 
 .I mknod /dev/ipmi0 c 254 0
 
-ipmitool includes some sample initialization scripts that
+.BR ipmitool
+includes some sample initialization scripts that
 can perform this task automatically at start\-up.
 
-In order to have ipmitool use the OpenIPMI device interface
+In order to have
+.BR ipmitool
+use the OpenIPMI device interface
 you can specify it on the command line:
 .PP 
-ipmitool \fB\-I\fR \fIopen\fP <\fIcommand\fP>
+> ipmitool \fB\-I\fR \fIopen\fP <\fIcommand\fP>
 .SH "BMC INTERFACE"
 The ipmitool bmc interface utilizes the \fIbmc\fP device driver as
 provided by Solaris 10 and higher.  In order to force ipmitool to make
 use of this interface you can specify it on the command line:
 .PP 
-ipmitool \fB\-I\fR \fIbmc\fP <\fIcommand\fP>
+> ipmitool \fB\-I\fR \fIbmc\fP <\fIcommand\fP>
 
 The following files are associated with the bmc driver:
 
@@ -3640,13 +3671,18 @@ The following files are associated with the bmc driver:
 .B /dev/bmc
 Character device node used to communicate with the bmc driver.
 .SH "LIPMI INTERFACE"
-The ipmitool \fIlipmi\fP interface uses the Solaris 9 IPMI kernel device driver.
-It has been superseded by the \fIbmc\fP interface on Solaris 10.  You can tell
-ipmitool to use this interface by specifying it on the command line.
+The
+.BR ipmitool
+\fIlipmi\fP interface uses the Solaris 9 IPMI kernel device driver.
+It has been superceeded by the \fIbmc\fP interface on Solaris 10.  You can tell
+.BR ipmitool
+to use this interface by specifying it on the command line.
 
-ipmitool \fB\-I\fR \fIlipmi\fP <\fIexpression\fP>
+> ipmitool \fB\-I\fR \fIlipmi\fP <\fIexpression\fP>
 .SH "LAN INTERFACE"
-The ipmitool \fIlan\fP interface communicates with the BMC
+The
+.BR ipmitool
+\fIlan\fP interface communicates with the BMC
 over an Ethernet LAN connection using UDP under IPv4.  UDP
 datagrams are formatted to contain IPMI request/response 
 messages with a IPMI session headers and RMCP headers.
@@ -3659,20 +3695,24 @@ datagrams to port 623.
 The LAN interface is an authentication multi\-session connection;
 messages delivered to the BMC can (and should) be authenticated
 with a challenge/response protocol with either straight
-password/key or MD5 message\-digest algorithm.  ipmitool will
-attempt to connect with administrator privilege level as this
+password/key or MD5 message\-digest algorithm.
+.BR ipmitool
+will attempt to connect with administrator privilege level as this
 is required to perform chassis power functions.
 
-You can tell ipmitool to use the lan interface with the
+You can tell
+.BR ipmitool
+to use the lan interface with the
 \fB\-I\fR \fIlan\fP option:
 
 .PP 
-ipmitool \fB\-I\fR \fIlan\fP \fB\-H\fR <\fIhostname\fP>
+> ipmitool \fB\-I\fR \fIlan\fP \fB\-H\fR <\fIhostname\fP>
 [\fB\-U\fR <\fIusername\fP>] [\fB\-P\fR <\fIpassword\fP>] <\fIcommand\fP>
 
 A hostname must be given on the command line in order to use the 
-lan interface with ipmitool.  The password field is optional;
-if you do not provide a password on the command line, ipmitool
+lan interface with \fBipmitool\fR. The password field is optional;
+if you do not provide a password on the command line,
+.BR ipmitool
 will attempt to connect without authentication.  If you specify a 
 password it will use MD5 authentication if supported by the BMC
 and straight password/key otherwise, unless overridden with a
@@ -3685,35 +3725,42 @@ interface uses the RMCP+ protocol as described in the IPMI v2.0
 specification.  RMCP+ allows for improved authentication and data 
 integrity checks, as well as encryption and the ability to carry
 multiple types of payloads.  Generic Serial Over LAN support 
-requires RMCP+, so the ipmitool \fIsol activate\fP command
+requires RMCP+, so the
+.BR ipmitool
+\fIsol activate\fP command
 requires the use of the \fIlanplus\fP interface.
 
 RMCP+ session establishment uses a symmetric challenge\-response
 protocol called RAKP (\fBRemote Authenticated Key\-Exchange Protocol\fR)
-which allows the negotiation of many options.  ipmitool does not
+which allows the negotiation of many options.
+.BR ipmitool
+does not
 yet allow the user to specify the value of every option, defaulting
 to the most obvious settings marked as required in the v2.0 
 specification.  Authentication and integrity HMACS are produced with
 SHA1, and encryption is performed with AES\-CBC\-128.  Role\-level logins
 are not yet supported.
 
-ipmitool must be linked with the \fIOpenSSL\fP library in order to
+.BR ipmitool
+must be linked with the \fIOpenSSL\fP library in order to
 perform the encryption functions and support the \fIlanplus\fP
 interface.  If the required packages are not found it will not be
 compiled in and supported.
 
-You can tell ipmitool to use the lanplus interface with the
+You can tell
+.BR ipmitool
+to use the lanplus interface with the
 \fB\-I\fR \fIlanplus\fP option:
 
 .PP 
-ipmitool \fB\-I\fR \fIlanplus\fP 
+> ipmitool \fB\-I\fR \fIlanplus\fP 
 \fB\-H\fR <\fIhostname\fP>
 [\fB\-U\fR <\fIusername\fP>]
 [\fB\-P\fR <\fIpassword\fP>]
 <\fIcommand\fP>
 
 A hostname must be given on the command line in order to use the 
-lan interface with ipmitool.  With the exception of the \fB\-A\fR and
+lan interface with \fBipmitool\fR. With the exception of the \fB\-A\fR and
 \fB\-C\fR options the rest of the command line options are identical to
 those available for the \fIlan\fP interface.
 
@@ -3726,22 +3773,30 @@ encryption algorightms.
 
 .SH "FREE INTERFACE"
 .LP
-The ipmitool \fIfree\fP interface utilizes the FreeIPMI libfreeipmi
+The
+.BR ipmitool
+\fIfree\fP interface utilizes the FreeIPMI libfreeipmi
 drivers.  
 .LP
-You can tell ipmitool to use the FreeIPMI interface with the \-I option:
+You can tell
+.BR ipmitool
+to use the FreeIPMI interface with the \-I option:
 .PP
-ipmitool \fB\-I\fR \fIfree\fP <\fIcommand\fP>
+> ipmitool \fB\-I\fR \fIfree\fP <\fIcommand\fP>
 
 
 .SH "IMB INTERFACE"
 .LP
-The ipmitool \fIimb\fP interface supports the Intel IMB (Intel
+The
+.BR ipmitool
+\fIimb\fP interface supports the Intel IMB (Intel
 Inter-module Bus) Interface through the /dev/imb device.  
 .LP
-You can tell ipmitool to use the IMB interface with the \-I option:
+You can tell
+.BR ipmitool
+to use the IMB interface with the \-I option:
 .PP
-ipmitool \fB\-I\fR \fIimb\fP <\fIcommand\fP>
+> ipmitool \fB\-I\fR \fIimb\fP <\fIcommand\fP>
 
 .SH "EXAMPLES"
 .TP 
@@ -3798,7 +3853,7 @@ Duncan Laurie <duncan@iceblink.org>
 .SH "SEE ALSO"
 .TP 
 IPMItool Homepage
-http://ipmitool.sourceforge.net
+http://github.com/ipmitool/ipmitool
 .TP 
 Intelligent Platform Management Interface Specification
 http://www.intel.com/design/servers/ipmi
