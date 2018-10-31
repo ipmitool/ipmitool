@@ -3186,7 +3186,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		fru = NULL;
 	}
 
-	ipmi_sdr_end(intf, itr);
+	ipmi_sdr_end(itr);
 
 	return rc;
 }

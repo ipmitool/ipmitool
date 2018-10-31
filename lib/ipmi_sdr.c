@@ -2119,15 +2119,13 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 
 /* ipmi_sdr_print_sensor_mc_locator  -  print SDR MC locator record
  *
- * @intf:	ipmi interface
  * @mc:		mc locator sdr record
  *
  * returns 0 on success
  * returns -1 on error
  */
 int
-ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf *intf,
-				 struct sdr_record_mc_locator *mc)
+ipmi_sdr_print_sensor_mc_locator(struct sdr_record_mc_locator *mc)
 {
 	char desc[17];
 
@@ -2215,15 +2213,13 @@ ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf *intf,
 
 /* ipmi_sdr_print_sensor_generic_locator  -  print generic device locator record
  *
- * @intf:	ipmi interface
  * @gen:	generic device locator sdr record
  *
  * returns 0 on success
  * returns -1 on error
  */
 int
-ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf *intf,
-				      struct sdr_record_generic_locator *dev)
+ipmi_sdr_print_sensor_generic_locator(struct sdr_record_generic_locator *dev)
 {
 	char desc[17];
 
@@ -2272,15 +2268,13 @@ ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf *intf,
 
 /* ipmi_sdr_print_sensor_fru_locator  -  print FRU locator record
  *
- * @intf:	ipmi interface
  * @fru:	fru locator sdr record
  *
  * returns 0 on success
  * returns -1 on error
  */
 int
-ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf *intf,
-				  struct sdr_record_fru_locator *fru)
+ipmi_sdr_print_sensor_fru_locator(struct sdr_record_fru_locator *fru)
 {
 	char desc[17];
 
@@ -2329,32 +2323,15 @@ ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf *intf,
 	return 0;
 }
 
-/* ipmi_sdr_print_sensor_entity_assoc  -  print SDR entity association record
- *
- * @intf:	ipmi interface
- * @mc:		entity association sdr record
- *
- * returns 0 on success
- * returns -1 on error
- */
-int
-ipmi_sdr_print_sensor_entity_assoc(struct ipmi_intf *intf,
-				   struct sdr_record_entity_assoc *assoc)
-{
-	return 0;
-}
-
 /* ipmi_sdr_print_sensor_oem_intel  -  print Intel OEM sensors
  *
- * @intf:	ipmi interface
  * @oem:	oem sdr record
  *
  * returns 0 on success
  * returns -1 on error
  */
 static int
-ipmi_sdr_print_sensor_oem_intel(struct ipmi_intf *intf,
-				struct sdr_record_oem *oem)
+ipmi_sdr_print_sensor_oem_intel(struct sdr_record_oem *oem)
 {
 	switch (oem->data[3]) {	/* record sub-type */
 	case 0x02:		/* Power Unit Map */
@@ -2435,14 +2412,13 @@ ipmi_sdr_print_sensor_oem_intel(struct ipmi_intf *intf,
  * a particular BMC might stuff into its OEM records.  The
  * records are keyed off manufacturer ID and record subtypes.
  *
- * @intf:	ipmi interface
  * @oem:	oem sdr record
  *
  * returns 0 on success
  * returns -1 on error
  */
 static int
-ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
+ipmi_sdr_print_sensor_oem(struct sdr_record_oem *oem)
 {
 	int rc = 0;
 
@@ -2457,7 +2433,7 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
 	/* intel manufacturer id */
 	if (oem->data[0] == 0x57 &&
 	    oem->data[1] == 0x01 && oem->data[2] == 0x00) {
-		rc = ipmi_sdr_print_sensor_oem_intel(intf, oem);
+		rc = ipmi_sdr_print_sensor_oem_intel(oem);
 	}
 
 	return rc;
@@ -2465,7 +2441,6 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
 
 /* ipmi_sdr_print_name_from_rawentry  -  Print SDR name  from raw data
  *
- * @intf:	ipmi interface
  * @type:	sensor type
  * @raw:	raw sensor data
  *
@@ -2473,7 +2448,7 @@ ipmi_sdr_print_sensor_oem(struct ipmi_intf *intf, struct sdr_record_oem *oem)
  * returns -1 on error
  */
 int
-ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf, uint16_t id,
+ipmi_sdr_print_name_from_rawentry(uint16_t id,
                                   uint8_t type, uint8_t *raw)
 {
    union {
@@ -2551,35 +2526,27 @@ ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type,
 						      *) raw);
 		break;
 	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_generic_locator(intf,
-							   (struct
+		rc = ipmi_sdr_print_sensor_generic_locator((struct
 							    sdr_record_generic_locator
 							    *) raw);
 		break;
 	case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_fru_locator(intf,
-						       (struct
+		rc = ipmi_sdr_print_sensor_fru_locator((struct
 							sdr_record_fru_locator
 							*) raw);
 		break;
 	case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_mc_locator(intf,
-						      (struct
+		rc = ipmi_sdr_print_sensor_mc_locator((struct
 						       sdr_record_mc_locator *)
 						      raw);
 		break;
 	case SDR_RECORD_TYPE_ENTITY_ASSOC:
-		rc = ipmi_sdr_print_sensor_entity_assoc(intf,
-							(struct
-							 sdr_record_entity_assoc
-							 *) raw);
 		break;
 	case SDR_RECORD_TYPE_OEM:{
 			struct sdr_record_oem oem;
 			oem.data = raw;
 			oem.data_len = len;
-			rc = ipmi_sdr_print_sensor_oem(intf,
-						       (struct sdr_record_oem *)
+			rc = ipmi_sdr_print_sensor_oem((struct sdr_record_oem *)
 						       &oem);
 			break;
 		}
@@ -2616,24 +2583,19 @@ ipmi_sdr_print_listentry(struct ipmi_intf *intf, struct sdr_record_list *entry)
 						     entry->record.eventonly);
 		break;
 	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_generic_locator(intf,
-							   entry->record.
+		rc = ipmi_sdr_print_sensor_generic_locator(entry->record.
 							   genloc);
 		break;
 	case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_fru_locator(intf,
-						       entry->record.fruloc);
+		rc = ipmi_sdr_print_sensor_fru_locator(entry->record.fruloc);
 		break;
 	case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-		rc = ipmi_sdr_print_sensor_mc_locator(intf,
-						      entry->record.mcloc);
+		rc = ipmi_sdr_print_sensor_mc_locator(entry->record.mcloc);
 		break;
 	case SDR_RECORD_TYPE_ENTITY_ASSOC:
-		rc = ipmi_sdr_print_sensor_entity_assoc(intf,
-							entry->record.entassoc);
 		break;
 	case SDR_RECORD_TYPE_OEM:
-		rc = ipmi_sdr_print_sensor_oem(intf, entry->record.oem);
+		rc = ipmi_sdr_print_sensor_oem(entry->record.oem);
 		break;
 	case SDR_RECORD_TYPE_DEVICE_ENTITY_ASSOC:
 	case SDR_RECORD_TYPE_MC_CONFIRMATION:
@@ -3070,13 +3032,12 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 
 /* ipmi_sdr_end  -  cleanup SDR iterator
  *
- * @intf:	ipmi interface
  * @itr:	SDR iterator
  *
  * no meaningful return code
  */
 void
-ipmi_sdr_end(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
+ipmi_sdr_end(struct ipmi_sdr_iterator *itr)
 {
 	if (itr) {
 		free(itr);
@@ -3137,16 +3098,14 @@ __sdr_list_empty(struct sdr_record_list *head)
 
 /* ipmi_sdr_list_empty  -  clean global SDR list
  *
- * @intf:	ipmi interface
- *
  * no meaningful return code
  */
 void
-ipmi_sdr_list_empty(struct ipmi_intf *intf)
+ipmi_sdr_list_empty(void)
 {
 	struct sdr_record_list *list, *next;
 
-	ipmi_sdr_end(intf, sdr_list_itr);
+	ipmi_sdr_end(sdr_list_itr);
 
 	for (list = sdr_list_head; list; list = next) {
 		switch (list->type) {
@@ -3915,14 +3874,13 @@ ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 
 /* ipmi_sdr_list_cache_fromfile  -  generate SDR cache for fast lookup from local file
  *
- * @intf:	ipmi interface
  * @ifile:	input filename
  *
  * returns pointer to SDR list
  * returns NULL on error
  */
 int
-ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile)
+ipmi_sdr_list_cache_fromfile(const char *ifile)
 {
 	FILE *fp;
 	struct __sdr_header {
@@ -4376,7 +4334,7 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 		sdr_list_tail = sdrr;
 	}
 
-	ipmi_sdr_end(intf, itr);
+	ipmi_sdr_end(itr);
 
 	/* now write to file */
 	fp = ipmi_open_file_write(ofile);

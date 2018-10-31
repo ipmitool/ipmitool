@@ -3970,14 +3970,14 @@ ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
 	}
 	if (!header) {
 		lprintf(LOG_DEBUG, "header == NULL");
-		ipmi_sdr_end(intf, itr);
+		ipmi_sdr_end(itr);
 		return (-1);
 	}
 	/* yes, we found the SDR for this record ID, now get full record */
 	rec = ipmi_sdr_get_record(intf, header, itr);
 	if (!rec) {
 		lprintf(LOG_DEBUG, "rec == NULL");
-		ipmi_sdr_end(intf, itr);
+		ipmi_sdr_end(itr);
 		return (-1);
 	}
 	if ((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
@@ -3990,6 +3990,6 @@ ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
 	}
 	free(rec);
 	rec = NULL;
-	ipmi_sdr_end(intf, itr);
+	ipmi_sdr_end(itr);
 	return rc;
 }
