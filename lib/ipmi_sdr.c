@@ -205,7 +205,7 @@ sdr_convert_sensor_reading(struct sdr_record_full_sensor *sensor, uint8_t val)
 	case 1:
 		if (val & 0x80)
 			val++;
-		/* Deliberately fall through to case 2. */
+		/* fall through */
 	case 2:
 		result = (double) (((m * (int8_t) val) +
 				    (b * pow(10, k1))) * pow(10, k2));
@@ -285,7 +285,7 @@ sdr_convert_sensor_hysterisis(struct sdr_record_full_sensor *sensor, uint8_t val
 	case 1:
 		if (val & 0x80)
 			val++;
-		/* Deliberately fall through to case 2. */
+		/* fall through */
 	case 2:
 		result = (double) (((m * (int8_t) val) ) * pow(10, k2));
 		break;
@@ -360,7 +360,7 @@ sdr_convert_sensor_tolerance(struct sdr_record_full_sensor *sensor, uint8_t val)
 	case 1:
 		if (val & 0x80)
 			val++;
-		/* Deliberately fall through to case 2. */
+		/* fall through */
 	case 2:
 		result = (double) (((m * ((double)((int8_t) val)/2))) * pow(10, k2));
 		break;
