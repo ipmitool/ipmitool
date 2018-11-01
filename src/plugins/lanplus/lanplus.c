@@ -163,10 +163,11 @@ extern int verbose;
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_get_requested_ciphers(enum cipher_suite_ids cipher_suite_id,
-								  uint8_t * auth_alg,
-								  uint8_t * integrity_alg,
-								  uint8_t * crypt_alg)
+int
+lanplus_get_requested_ciphers(enum cipher_suite_ids cipher_suite_id,
+                              uint8_t *auth_alg,
+                              uint8_t *integrity_alg,
+                              uint8_t *crypt_alg)
 {
 		/* See table 22-19 for the source of the statement */
 	switch (cipher_suite_id)
@@ -3383,15 +3384,16 @@ ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
 #ifdef HAVE_CRYPTO_SHA256
 	struct cipher_suite_info suites[MAX_CIPHER_SUITE_COUNT];
 	size_t nr_suites = ARRAY_SIZE(suites);
+
 	/* cipher suite best order is chosen with this criteria:
 	 * HMAC-MD5 and MD5 are BAD; xRC4 is bad; AES128 is required
 	 * HMAC-SHA256 > HMAC-SHA1
 	 * secure authentication > encrypted content
 	 *
-	 * With xRC4 out, all cipher suites with MD5 out, and cipher suite 3 being
-	 * required by the spec, the only better defined standard cipher suite is
-	 * 17. So if SHA256 is available, we should try to use that, otherwise,
-	 * fall back to 3.
+	 * With xRC4 out, all cipher suites with MD5 out, and cipher suite 3
+	 * being required by the spec, the only better defined standard cipher
+	 * suite is 17. So if SHA256 is available, we should try to use that,
+	 * otherwise, fall back to 3.
 	 */
 	const enum cipher_suite_ids cipher_order_preferred[] = {
 		IPMI_LANPLUS_CIPHER_SUITE_17,
@@ -3403,14 +3405,18 @@ ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
 	if (ipmi_get_channel_cipher_suites(intf, "ipmi", IPMI_LAN_CHANNEL_E,
 	                                   suites, &nr_suites) < 0)
 	{
-		/* default legacy behavior - cipher suite 3 if none is requested */
+		/* default legacy behavior - fall back to cipher suite 3 */
 		return IPMI_LANPLUS_CIPHER_SUITE_3;
 	}
-	for (ipref = 0; ipref < nr_preferred &&
-	                IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite; ipref++)
+	for (ipref = 0;
+	     ipref < nr_preferred &&
+	     IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite;
+	     ipref++)
 	{
 		for (i = 0; i < nr_suites; i++) {
-			if (cipher_order_preferred[ipref] == suites[i].cipher_suite_id) {
+			if (cipher_order_preferred[ipref]
+			    == suites[i].cipher_suite_id)
+			{
 				best_suite = cipher_order_preferred[ipref];
 				break;
 			}
@@ -3477,7 +3483,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	/* Setup our lanplus session state */
 	memset(session, 0, sizeof(struct ipmi_session));
 	session->timeout = params->timeout;
-	memcpy(&session->authcode, &params->authcode_set, sizeof(session->authcode));
+	memcpy(&session->authcode,
+	       &params->authcode_set,
+	       sizeof(session->authcode));
 	session->v2_data.auth_alg         = IPMI_AUTH_RAKP_NONE;
 	session->v2_data.crypt_alg        = IPMI_CRYPT_NONE;
 	session->sol_data.sequence_number = 1;
@@ -3496,25 +3504,30 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		goto fail;
 	}
 
-	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available) {
+	if (!ipmi_oem_active(intf, "i82571spt") &&
+	    !auth_cap.v20_data_available)
+	{
 		lprintf(LOG_INFO, "This BMC does not support IPMI v2 / RMCP+");
 		goto fail;
 	}
+
 	/*
-	 * If no cipher suite was provided, query the channel cipher suite list and
-	 * pick the best one available
+	 * If no cipher suite was provided, query the channel cipher suite list
+	 * and pick the best one available
 	 */
 	if (IPMI_LANPLUS_CIPHER_SUITE_RESERVED ==
 	    intf->ssn_params.cipher_suite_id)
 	{
-		ipmi_intf_session_set_cipher_suite_id(intf,
-			ipmi_find_best_cipher_suite(intf));
+		ipmi_intf_session_set_cipher_suite_id(
+			intf,
+			ipmi_find_best_cipher_suite(intf)
+		);
 	}
 
 	/*
-	 * If the open/rakp1/rakp3 sequence encounters a timeout, the whole sequence
-	 * needs to restart. The individual messages are not individually retryable,
-	 * as the session state is advancing.
+	 * If the open/rakp1/rakp3 sequence encounters a timeout, the whole
+	 * sequence needs to restart. The individual messages are not
+	 * individually retryable, as the session state is advancing.
 	 */
 	for (retry = 0; retry < IPMI_LAN_RETRY; retry++) {
 		session->v2_data.session_state = LANPLUS_STATE_PRESESSION;
