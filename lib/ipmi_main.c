@@ -318,6 +318,7 @@ ipmi_main(int argc, char ** argv,
 	uint8_t target_addr = 0;
 	uint8_t target_channel = 0;
 
+	uint8_t u8tmp = 0;
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
@@ -425,17 +426,14 @@ ipmi_main(int argc, char ** argv,
 			break;
 #ifdef IPMI_INTF_LANPLUS
 		case 'C':
-			if (str2int(optarg, &cipher_suite_id) != 0) {
-				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-C'.");
+			/* Cipher Suite ID is a byte as per IPMI specification */
+			if (str2uchar(optarg, &u8tmp) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of "
+				                 "range [0-255] for '-C'.");
 				rc = -1;
 				goto out_free;
 			}
-			/* add check Cipher is -gt 0 */
-			if (cipher_suite_id < 0) {
-				lprintf(LOG_ERR, "Cipher suite ID %i is invalid.", cipher_suite_id);
-				rc = -1;
-				goto out_free;
-			}
+			cipher_suite_id = u8tmp;
 			break;
 #endif /* IPMI_INTF_LANPLUS */
 		case 'v':
