@@ -119,8 +119,8 @@ struct oem_cipher_suite_record_t {
  * records.
  */
 #define MAX_CIPHER_SUITE_COUNT (MAX_CIPHER_SUITE_RECORD_OFFSET * \
-		MAX_CIPHER_SUITE_DATA_LEN / \
-		sizeof(struct std_cipher_suite_record_t))
+                                MAX_CIPHER_SUITE_DATA_LEN / \
+                                sizeof(struct std_cipher_suite_record_t))
 
 /*
  * The Get Authentication Capabilities response structure
@@ -174,20 +174,25 @@ struct get_channel_auth_cap_rsp {
 #endif
 
 int _ipmi_get_channel_access(struct ipmi_intf *intf,
-		struct channel_access_t *channel_access,
-		uint8_t get_volatile_settings);
-int ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
-		uint8_t channel, struct cipher_suite_info *suites, size_t *count);
+                             struct channel_access_t *channel_access,
+                             uint8_t get_volatile_settings);
+int ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
+                                   const char *payload_type,
+                                   uint8_t channel,
+                                   struct cipher_suite_info *suites,
+                                   size_t *count);
 int _ipmi_get_channel_info(struct ipmi_intf *intf,
-        struct channel_info_t *channel_info);
+                           struct channel_info_t *channel_info);
 int _ipmi_set_channel_access(struct ipmi_intf *intf,
-		struct channel_access_t channel_access, uint8_t access_option,
-		uint8_t privilege_option);
+                             struct channel_access_t channel_access,
+                             uint8_t access_option,
+                             uint8_t privilege_option);
 
 uint8_t ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel);
 uint8_t ipmi_current_channel_medium(struct ipmi_intf * intf);
 int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);
-int ipmi_get_channel_auth_cap(struct ipmi_intf * intf, uint8_t channel, uint8_t priv);
+int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
+                              uint8_t channel, uint8_t priv);
 int ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel);
 
 #endif /*IPMI_CHANNEL_H*/

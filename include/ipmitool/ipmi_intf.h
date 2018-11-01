@@ -251,7 +251,7 @@ void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
 void ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit);
 #ifdef IPMI_INTF_LANPLUS
 void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf,
-		enum cipher_suite_ids cipher_suite_id);
+                                           enum cipher_suite_ids cipher_suite_id);
 #endif /* IPMI_INTF_LANPLUS */
 void ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char);
 void ipmi_intf_session_set_kgkey(struct ipmi_intf *intf, const uint8_t *kgkey);

@@ -342,75 +342,108 @@ ipmi_get_channel_auth_cap(struct ipmi_intf *intf, uint8_t channel, uint8_t priv)
 	return 0;
 }
 
+static inline size_t parse_cipher_suite(uint8_t *cipher_suite_data,
+                                        size_t data_len,
+                                        uint32_t *iana,
+                                        uint8_t *auth_alg,
+                                        uint8_t *integrity_alg,
+                                        uint8_t *crypt_alg,
+                                        enum cipher_suite_ids *cipher_suite_id)
+{
+	size_t size = 0;
+	const char *incomplete = "Incomplete data record in cipher suite data";
+
+	if (*cipher_suite_data == STANDARD_CIPHER_SUITE) {
+		struct std_cipher_suite_record_t *record =
+			(struct std_cipher_suite_record_t*)cipher_suite_data;
+
+		/* Verify that we have at least a full record left; id + 3 algs */
+		if (data_len < sizeof(*record)) {
+			lprintf(LOG_INFO, "%s", incomplete);
+			goto out;
+		}
+
+		/* IANA code remains default (0) */
+		*cipher_suite_id = record->cipher_suite_id;
+		*auth_alg = CIPHER_ALG_MASK & record->auth_alg;
+		*integrity_alg = CIPHER_ALG_MASK & record->integrity_alg;
+		*crypt_alg = CIPHER_ALG_MASK & record->crypt_alg;
+		size = sizeof(*record);
+	} else if (*cipher_suite_data == OEM_CIPHER_SUITE) {
+		/* OEM record type */
+		struct oem_cipher_suite_record_t *record =
+			(struct oem_cipher_suite_record_t*)cipher_suite_data;
+		/* Verify that we have at least a full record left
+		 * id + iana + 3 algs
+		 */
+		if (data_len < sizeof(*record)) {
+			lprintf(LOG_INFO, "%s", incomplete);
+			goto out;
+		}
+
+		/* Grab the IANA */
+		*iana = ipmi24toh(record->iana);
+		*cipher_suite_id = record->cipher_suite_id;
+		*auth_alg = CIPHER_ALG_MASK & record->auth_alg;
+		*integrity_alg = CIPHER_ALG_MASK & record->integrity_alg;
+		*crypt_alg = CIPHER_ALG_MASK & record->crypt_alg;
+		size = sizeof(*record);
+	} else {
+			lprintf(LOG_INFO, "Bad start of record byte in cipher suite data "
+			                  "(value %x)", *cipher_suite_data);
+	}
+
+out:
+	return size;
+}
+
 static size_t
 parse_channel_cipher_suite_data(uint8_t *cipher_suite_data, size_t data_len,
-		struct cipher_suite_info* suites, size_t nr_suites)
+                                struct cipher_suite_info* suites,
+                                size_t nr_suites)
 {
 	size_t count = 0;
 	size_t offset = 0;
-	uint32_t iana;
-	uint8_t auth_alg, integrity_alg, crypt_alg;
-	uint8_t cipher_suite_id;
 
+	/* Default everything to zeroes */
 	memset(suites, 0, sizeof(*suites) * nr_suites);
 
 	while (offset < data_len && count < nr_suites) {
-		auth_alg      = IPMI_AUTH_RAKP_NONE;
-		integrity_alg = IPMI_INTEGRITY_NONE;
-		crypt_alg     = IPMI_CRYPT_NONE;
-		if (cipher_suite_data[offset] == STANDARD_CIPHER_SUITE) {
-			struct std_cipher_suite_record_t *record =
-				(struct std_cipher_suite_record_t*)(&cipher_suite_data[offset]);
-			/* standard type */
-			iana = 0;
+		size_t suite_size;
 
-			/* Verify that we have at least a full record left; id + 3 algs */
-			if ((data_len - offset) < sizeof(*record)) {
-				lprintf(LOG_INFO, "Incomplete data record in cipher suite data");
-				break;
-			}
-			cipher_suite_id = record->cipher_suite_id;
-			auth_alg = CIPHER_ALG_MASK & record->auth_alg;
-			integrity_alg = CIPHER_ALG_MASK & record->integrity_alg;
-			crypt_alg = CIPHER_ALG_MASK & record->crypt_alg;
-			offset += sizeof(*record);
-		} else if (cipher_suite_data[offset] == OEM_CIPHER_SUITE) {
-			/* OEM record type */
-			struct oem_cipher_suite_record_t *record =
-				(struct oem_cipher_suite_record_t*)(&cipher_suite_data[offset]);
-			/* Verify that we have at least a full record left
-			 * id + iana + 3 algs
-			 */
-			if ((data_len - offset) < sizeof(*record)) {
-				lprintf(LOG_INFO, "Incomplete data record in cipher suite data");
-				break;
-			}
+		/* Set non-zero defaults */
+		suites[count].auth_alg = IPMI_AUTH_RAKP_NONE;
+		suites[count].integrity_alg = IPMI_INTEGRITY_NONE;
+		suites[count].crypt_alg = IPMI_CRYPT_NONE;
 
-			cipher_suite_id = record->cipher_suite_id;
+		/* Update fields from cipher suite data */
+		suite_size = parse_cipher_suite(cipher_suite_data + offset,
+		                                data_len - offset,
+		                                &suites[count].iana,
+		                                &suites[count].auth_alg,
+		                                &suites[count].integrity_alg,
+		                                &suites[count].crypt_alg,
+		                                &suites[count].cipher_suite_id);
 
-			/* Grab the IANA */
-			iana = ipmi24toh(record->iana);
-			auth_alg = CIPHER_ALG_MASK & record->auth_alg;
-			integrity_alg = CIPHER_ALG_MASK & record->integrity_alg;
-			crypt_alg = CIPHER_ALG_MASK & record->crypt_alg;
-			offset += sizeof(*record);
-		} else {
-			lprintf(LOG_INFO, "Bad start of record byte in cipher suite data (offset %d, value %x)", offset, cipher_suite_data[offset]);
+		if (!suite_size) {
+			lprintf(LOG_INFO,
+			        "Failed to parse cipher suite data at offset %d",
+			        offset);
 			break;
 		}
-		suites[count].cipher_suite_id = cipher_suite_id;
-		suites[count].iana = iana;
-		suites[count].auth_alg = auth_alg;
-		suites[count].integrity_alg = integrity_alg;
-		suites[count].crypt_alg = crypt_alg;
+
+		offset += suite_size;
 		count++;
 	}
 	return count;
 }
 
 int
-ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
-		uint8_t channel, struct cipher_suite_info *suites, size_t *count)
+ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
+                               const char *payload_type,
+                               uint8_t channel,
+                               struct cipher_suite_info *suites,
+                               size_t *count)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -419,7 +452,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 	uint8_t list_index = 0;
 	/* 0x40 sets * 16 bytes per set */
 	uint8_t cipher_suite_data[MAX_CIPHER_SUITE_RECORD_OFFSET *
-		MAX_CIPHER_SUITE_DATA_LEN];
+	                          MAX_CIPHER_SUITE_DATA_LEN];
 	size_t offset = 0;
 	size_t nr_suites = 0;
 
@@ -464,8 +497,8 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 		 * Increment our list for the next call
 		 */
 		++list_index;
-	} while ((rsp->data_len == (sizeof(uint8_t) + MAX_CIPHER_SUITE_DATA_LEN)) &&
-			 (list_index < MAX_CIPHER_SUITE_RECORD_OFFSET));
+	} while ((rsp->data_len == (sizeof(uint8_t) + MAX_CIPHER_SUITE_DATA_LEN))
+	         && (list_index < MAX_CIPHER_SUITE_RECORD_OFFSET));
 
 	*count = parse_channel_cipher_suite_data(cipher_suite_data, offset, suites,
 	                                         nr_suites);
@@ -473,27 +506,30 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
 }
 
 static int
-ipmi_print_channel_cipher_suites(struct ipmi_intf *intf, const char *payload_type,
-		uint8_t channel)
+ipmi_print_channel_cipher_suites(struct ipmi_intf *intf,
+                                 const char *payload_type,
+                                 uint8_t channel)
 {
 	int rc;
 	size_t i = 0;
 	struct cipher_suite_info suites[MAX_CIPHER_SUITE_COUNT];
 	size_t nr_suites = sizeof(*suites);
+	const char *header_str =
+"ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg";
 
 	rc = ipmi_get_channel_cipher_suites(intf, payload_type, channel,
-			suites, &nr_suites);
+	                                    suites, &nr_suites);
 
 	if (rc < 0)
 		return rc;
 
-	if (! csv_output) {
-		printf("ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg\n");
+	if (!csv_output) {
+		printf("%s\n", header_str);
 	}
 	for (i = 0; i < nr_suites; i++) {
 		/* We have everything we need to spit out a cipher suite record */
-		printf((csv_output? "%d,%s,%s,%s,%s\n" :
-			"%-4d %-7s %-15s %-15s %-15s\n"),
+		printf(csv_output ? "%d,%s,%s,%s,%s\n"
+		                  : "%-4d %-7s %-15s %-15s %-15s\n",
 		       suites[i].cipher_suite_id,
 		       iana_string(suites[i].iana),
 		       val2str(suites[i].auth_alg, ipmi_auth_algorithms),
@@ -877,8 +913,8 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		retval = ipmi_print_channel_cipher_suites(intf,
-							argv[1], /* ipmi | sol */
-							channel);
+		                                          argv[1], /* ipmi | sol */
+		                                          channel);
 	} else {
 		lprintf(LOG_ERR, "Invalid CHANNEL command: %s\n", argv[0]);
 		printf_channel_usage();
