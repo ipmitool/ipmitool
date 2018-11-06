@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -65,6 +66,7 @@
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_pef.h>
+#include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_picmg.h>
@@ -352,6 +354,9 @@ ipmi_main(int argc, char ** argv,
 	int ai_family = AF_UNSPEC;
 	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
 	char * devfile  = NULL;
+
+	/* Set program locale according to system settings */
+	setlocale(LC_ALL, "");
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
