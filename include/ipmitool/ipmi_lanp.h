@@ -50,6 +50,13 @@
 #define IPMI_LANP_WRITE_LOCK		1
 #define IPMI_LANP_WRITE_COMMIT		2
 
+#define IPMI_LANP_VLAN_ID_MAX 4094
+#define IPMI_LANP_VLAN_ID_MIN 1
+#define IPMI_LANP_VLAN_DISABLE 0 /* ID 0 = VLAN is disabled for the channel */
+
+#define IPMI_LANP_IS_VLAN_VALID(x) \
+	((x) >= IPMI_LANP_VLAN_ID_MIN && (x) <= IPMI_LANP_VLAN_ID_MAX)
+
 enum {
 	IPMI_LANP_SET_IN_PROGRESS,
 	IPMI_LANP_AUTH_TYPE,
