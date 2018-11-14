@@ -194,7 +194,7 @@ int ipmi_sel_oem_init(const char * filename)
 	return 0;
 }
 
-static void ipmi_sel_oem_message(struct sel_event_record * evt, int verbose)
+static void ipmi_sel_oem_message(struct sel_event_record * evt)
 {
 	/*
 	 * Note: although we have a verbose argument, currently the output
@@ -425,14 +425,15 @@ static struct ipmi_event_sensor_types __UNUSED__(oem_kontron_event_reading_types
    { 0x71 , 0x00 , 0xff, "Code Assert" },
    { 0, 0, 0xFF, NULL }
 };
- 
+
+/* NOTE: unused paramter kept in for consistency. */
 char *
-get_kontron_evt_desc(struct ipmi_intf *intf, struct sel_event_record * rec)
+get_kontron_evt_desc(struct ipmi_intf *__UNUSED__(intf), struct sel_event_record *rec)
 {
-	char * description = NULL;
+	char *description = NULL;
 	/*
 	 * Kontron OEM events are described in the product's user manual,  but are limited in favor of
-    * sensor specific 
+	 * sensor specific
 	 */
 
 	/* Only standard records are defined so far */
@@ -1861,7 +1862,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			for(data_count=0;data_count < SEL_OEM_NOTS_DATA_LEN;data_count++)
 				printf("%02x", evt->sel_type.oem_nots_type.oem_defined[data_count]);
 		}
-		ipmi_sel_oem_message(evt, 0);
+		ipmi_sel_oem_message(evt);
 		printf ("\n");
 		return;
 	}
@@ -2055,7 +2056,7 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 			for(data_count=0;data_count < SEL_OEM_NOTS_DATA_LEN;data_count++)
 				printf("%02x", evt->sel_type.oem_nots_type.oem_defined[data_count]);
 			printf(" [%s]\n\n",hex2ascii (evt->sel_type.oem_nots_type.oem_defined, SEL_OEM_NOTS_DATA_LEN));
-			ipmi_sel_oem_message(evt, 1);
+			ipmi_sel_oem_message(evt);
 		}
 		return;
 	}

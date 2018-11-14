@@ -603,7 +603,8 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 }
 
 static void
-ipmi_pef_print_oem_lan_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
+ipmi_pef_print_oem_lan_dest(struct ipmi_intf *intf,
+                            uint8_t dest)
 {
 	char address[128];
 	int len;
@@ -866,7 +867,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
 	if (!dest || tbl_size == 0)	/* Page alerting not supported */
 		return;
 	if (dest > tbl_size) {
-		ipmi_pef_print_oem_lan_dest(intf, ch, dest - tbl_size);
+		ipmi_pef_print_oem_lan_dest(intf, dest - tbl_size);
 		return;
 	}
 
@@ -904,7 +905,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
 }
 
 static void
-ipmi_pef_print_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
+ipmi_pef_print_dest(uint8_t dest)
 {	/*
 	// print generic alert destination info
 	*/
@@ -1330,7 +1331,7 @@ ipmi_pef2_list_policies(struct ipmi_intf *intf)
 					dest);
 			break;
 		default:
-			ipmi_pef_print_dest(intf, channel_info.channel, dest);
+			ipmi_pef_print_dest(dest);
 			break;
 		}
 		printf("\n");

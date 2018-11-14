@@ -96,7 +96,7 @@ static int rl_event_keepalive(void)
 	return 0;
 }
 
-int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
+int ipmi_shell_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *ptr, *pbuf, **ap, *__argv[EXEC_ARG_SIZE];
 	int __argc, rc=0;
@@ -215,7 +215,9 @@ int ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 #else  /* HAVE_READLINE */
 
 int
-ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_shell_main(struct ipmi_intf *__UNUSED__(intf),
+                int __UNUSED__(argc),
+                char **__UNUSED__(argv))
 {
 	lprintf(LOG_ERR, "Compiled without readline, shell is disabled");
 	return -1;
@@ -223,7 +225,8 @@ ipmi_shell_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 #endif /* HAVE_READLINE */
 
-int ipmi_echo_main(struct ipmi_intf * intf, int argc, char ** argv)
+int ipmi_echo_main(struct ipmi_intf *__UNUSED__(intf), int argc,
+                   char **argv)
 {
 	int i;
 

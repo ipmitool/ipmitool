@@ -648,13 +648,14 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
  *
  * function will return -1 if value is not valid, or
  * will return 0 if valid.
+ *
+ * base parameter currently unused, left in for extension.
  */
-int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
-					const char *name,
-					int base,
-					uint8_t minval,
-					uint8_t maxval,
-					uint8_t *out_value)
+int ipmi_sol_set_param_isvalid_uint8_t(const char *strval,
+				       const char *name,
+				       uint8_t minval,
+				       uint8_t maxval,
+				       uint8_t *out_value)
 {
 	if (str2uchar(strval, out_value) != 0 || (*out_value < minval)
 			|| (*out_value > maxval)) {
@@ -866,7 +867,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
 
 		/* validate user-supplied input */
-		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 1, 255, &data[2]))
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 1, 255, &data[2]))
 			return -1;
 
 		/* We need other values to complete the request */
@@ -892,7 +893,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		data[1] = SOL_PARAMETER_CHARACTER_INTERVAL;
 
 		/* validate user-supplied input */
-		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 255, &data[3]))
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 255, &data[3]))
 			return -1;
 
 		/* We need other values to complete the request */
@@ -918,7 +919,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		data[1] = SOL_PARAMETER_SOL_RETRY;
 
 		/* validate user input, 7 is max value */
-		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 7, &data[2]))
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 7, &data[2]))
 			return -1;
 
 		/* We need other values to complete the request */
@@ -944,7 +945,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		data[1] = SOL_PARAMETER_SOL_RETRY;
 
 		/* validate user-supplied input */
-		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 0, 255, &data[3]))
+		if (ipmi_sol_set_param_isvalid_uint8_t(value, param, 0, 255, &data[3]))
 			return -1;
 
 		/* We need other values to complete the request */

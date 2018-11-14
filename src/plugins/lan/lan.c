@@ -338,9 +338,9 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
  * asf.data[f:a]= 0x000000000000
  */
 static int
-ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
+ipmi_handle_pong(struct ipmi_rs *rsp)
 {
-	struct rmcp_pong * pong;
+	struct rmcp_pong *pong;
 
 	if (!rsp)
 		return -1;
@@ -468,7 +468,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 		switch (rmcp_rsp.class) {
 		case RMCP_CLASS_ASF:
 			/* ping response packet */
-			rv = ipmi_handle_pong(intf, rsp);
+			rv = ipmi_handle_pong(rsp);
 			return (rv <= 0) ? NULL : rsp;
 		case RMCP_CLASS_IPMI:
 			/* handled by rest of function */
@@ -1310,8 +1310,7 @@ ipmi_lan_send_sol(struct ipmi_intf * intf,
  *
  */
 static int
-check_sol_packet_for_new_data(struct ipmi_intf * intf,
-			      struct ipmi_rs *rsp)
+check_sol_packet_for_new_data(struct ipmi_rs *rsp)
 {
 	static uint8_t last_received_sequence_number = 0;
 	static uint8_t last_received_byte_count      = 0;
@@ -1411,7 +1410,7 @@ ipmi_lan_recv_sol(struct ipmi_intf * intf)
 	 * Remembers the data sent, and alters the data to just
 	 * include the new stuff.
 	 */
-	check_sol_packet_for_new_data(intf, rsp);
+	check_sol_packet_for_new_data(rsp);
 
 	return rsp;
 }

@@ -102,15 +102,14 @@ static void getIpmiPayloadWireRep(
 								  uint8_t    rq_seq,
 								  uint8_t curr_seq);
 static void getSolPayloadWireRep(
-								  struct ipmi_intf       * intf,
 								 uint8_t          * msg,
 								 struct ipmi_v2_payload * payload);
 static void read_open_session_response(struct ipmi_rs * rsp, int offset);
 static void read_rakp2_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
 static void read_rakp4_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
-static void read_session_data(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
-static void read_session_data_v15(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
-static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
+static void read_session_data(struct ipmi_rs * rsp, int * offset);
+static void read_session_data_v15(struct ipmi_rs * rsp, int * offset);
+static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset);
 static void read_ipmi_response(struct ipmi_rs * rsp, int * offset);
 static void read_sol_packet(struct ipmi_rs * rsp, int * offset);
 static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
@@ -118,7 +117,6 @@ static struct ipmi_rs * ipmi_lanplus_send_sol(
 											  struct ipmi_intf * intf,
 											  struct ipmi_v2_payload * payload);
 static int check_sol_packet_for_new_data(
-									 struct ipmi_intf * intf,
 									 struct ipmi_rs *rsp);
 static void ack_sol_packet(
 							struct ipmi_intf * intf,
@@ -496,7 +494,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
  * asf.data[f:a]= 0x000000000000
  */
 static int
-ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
+ipmi_handle_pong(struct ipmi_rs *rsp)
 {
 	struct rmcp_pong {
 		struct rmcp_hdr rmcp;
@@ -506,7 +504,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		uint8_t sup_entities;
 		uint8_t sup_interact;
 		uint8_t reserved[6];
-	} * pong;
+	} *pong;
 
 	if (!rsp)
 		return -1;
@@ -626,7 +624,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 
 	if (rmcp_rsp->class == RMCP_CLASS_ASF) {
 		/* might be ping response packet */
-		rv = ipmi_handle_pong(intf, rsp);
+		rv = ipmi_handle_pong(rsp);
 		return (rv <= 0) ? NULL : rsp;
 	}
 
@@ -656,7 +654,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 	 * -------------------------------------------------------------------
 	 */
 
-	read_session_data(rsp, &offset, intf->session);
+	read_session_data(rsp, &offset);
 
 	/*
 	 * Skip packets that are not intended for this session
@@ -1132,21 +1130,19 @@ read_rakp4_message(
  * param offset  [in/out] should point to the beginning of the session when
  *               this function is called.  The offset will be adjusted to
  *               point to the end of the session when this function exits.
- * param session holds our session state
  */
 void
 read_session_data(
 				  struct ipmi_rs * rsp,
-				  int * offset,
-				  struct ipmi_session * s)
+				  int * offset)
 {
 	/* We expect to read different stuff depending on the authtype */
 	rsp->session.authtype = rsp->data[*offset];
 
 	if (rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS)
-		read_session_data_v2x(rsp, offset, s);
+		read_session_data_v2x(rsp, offset);
 	else
-		read_session_data_v15(rsp, offset, s);
+		read_session_data_v15(rsp, offset);
 }
 
 
@@ -1172,8 +1168,7 @@ read_session_data(
 void
 read_session_data_v2x(
 					  struct ipmi_rs      * rsp,
-					  int                 * offset,
-					  struct ipmi_session * s)
+					  int                 * offset)
 {
 	rsp->session.authtype = rsp->data[(*offset)++];
 
@@ -1201,7 +1196,7 @@ read_session_data_v2x(
 /*
  * read_session_data_v15
  *
- * Initialize the ipmi_rsp from the session header of the packet. 
+ * Initialize the ipmi_rsp from the session header of the packet.
  *
  * The offset should point the first byte of the the IPMI session when this
  * function is called.  When this function exits, the offset will point to
@@ -1216,8 +1211,7 @@ read_session_data_v2x(
  */
 void read_session_data_v15(
 							struct ipmi_rs * rsp,
-							int * offset,
-							struct ipmi_session * s)
+							int * offset)
 {
 	/* All v15 messages are IPMI messages */
 	rsp->session.payloadtype = IPMI_PAYLOAD_TYPE_IPMI;
@@ -1481,7 +1475,6 @@ void getIpmiPayloadWireRep(
  * param payload [in] holds the v2 payload with our SOL data
  */
 void getSolPayloadWireRep(
-						  struct ipmi_intf       * intf,  /* in out */
 						  uint8_t          * msg,     /* output */
 						  struct ipmi_v2_payload * payload) /* input */
 {
@@ -1687,7 +1680,7 @@ ipmi_lanplus_build_v2x_msg(
 		break;
 
 	case IPMI_PAYLOAD_TYPE_SOL:
-		getSolPayloadWireRep(intf,
+		getSolPayloadWireRep(
 							 msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
 							 payload);
 
@@ -2528,7 +2521,6 @@ ipmi_lanplus_send_sol(
  */
 static int
 check_sol_packet_for_new_data(
-							  struct ipmi_intf * intf,
 							  struct ipmi_rs *rsp)
 {
 	static uint8_t last_received_sequence_number = 0;
@@ -2644,7 +2636,7 @@ ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		 * Remembers the data sent, and alters the data to just
 		 * include the new stuff.
 		 */
-		check_sol_packet_for_new_data(intf, rsp);
+		check_sol_packet_for_new_data(rsp);
 	}
 	return rsp;
 }
@@ -3700,7 +3692,7 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 					 /* rsp was SOL data instead of our answer */
 					 /* since it didn't go through the sol recv, do sol recv stuff here */
 					 ack_sol_packet(intf, rsp);
-					 check_sol_packet_for_new_data(intf, rsp);
+					 check_sol_packet_for_new_data(rsp);
 					 if (rsp->data_len)
 								intf->session->sol_data.sol_input_handler(rsp);
 		rsp = ipmi_lan_poll_recv(intf);

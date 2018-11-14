@@ -218,8 +218,7 @@ static void ipmi_ek_add_record2list( struct ipmi_ek_multi_header ** record,
       struct ipmi_ek_multi_header ** list_last );
 
 static void ipmi_ek_display_record( struct ipmi_ek_multi_header * record,
-      struct ipmi_ek_multi_header * list_head,
-      struct ipmi_ek_multi_header * list_last );
+      struct ipmi_ek_multi_header * list_head);
 
 static void ipmi_ek_remove_record_from_list(
       struct ipmi_ek_multi_header * record,
@@ -236,7 +235,7 @@ static int ipmi_ekanalyzer_fru_file2structure( char * filename,
 *****************************************************************************/
 static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       struct ipmi_ek_multi_header ** list_head,
-      struct ipmi_ek_multi_header ** list_last, char * opt,
+      char * opt,
       struct ipmi_ek_multi_header * pphysical );
 
 static int ipmi_ek_get_resource_descriptor( int port_count, int index,
@@ -456,7 +455,7 @@ ipmi_ek_get_file_type(char *argument)
 *
 ***************************************************************************/
 int
-ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
+ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 {
 	int rc = ERROR_STATUS;
 	int file_type[MAX_FILE_NUMBER];
@@ -513,7 +512,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 				/* Convert from binary data into multi record structure */
 				rc = ipmi_ekanalyzer_fru_file2structure (filename[type_offset],
 						&list_head, &list_record, &list_last );
-				ipmi_ek_display_record(list_record, list_head, list_last);
+				ipmi_ek_display_record(list_record, list_head);
 				/* Remove record of list */
 				while (list_head) {
 					ipmi_ek_remove_record_from_list(list_head,
@@ -1188,7 +1187,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
                         }
                         return_value = ipmi_ek_matching_process( file_type,
                                              match_pair, num_file, list_head,
-                                             list_last, opt, pcarrier_p2p);
+                                             opt, pcarrier_p2p);
                      }
                   }
                }
@@ -1224,8 +1223,6 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 *        index2: position of the second record in the list of the record
 *        ipmi_ek_multi_header ** list_head: pointer to the header of a
 *                 linked list that contain FRU multi record
-*        ipmi_ek_multi_header ** list_last: pointer to the tale of a
-*                 linked list that contain FRU multi record
 *        opt: string that contain display option such as "match", "unmatch", or
 *               "all".
 *        pphysical: a pointer that contain a carrier p2p connectivity record
@@ -1241,7 +1238,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 ***************************************************************************/
 static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       struct ipmi_ek_multi_header ** list_head,
-      struct ipmi_ek_multi_header ** list_last, char * opt,
+      char * opt,
       struct ipmi_ek_multi_header * pphysical )
 {
    int result = ERROR_STATUS;
@@ -2951,7 +2948,6 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 *
 * Input: record: a pointer to current record
 *        list_head: a pointer to header of the list
-*        list_last: a pointer to tale of the list
 *
 * Output: None
 *
@@ -2962,8 +2958,7 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 ***************************************************************************/
 static void
 ipmi_ek_display_record(struct ipmi_ek_multi_header *record,
-		struct ipmi_ek_multi_header *list_head,
-		struct ipmi_ek_multi_header *list_last)
+		struct ipmi_ek_multi_header *list_head)
 {
 	if (!list_head) {
 		printf("***empty list***\n");
