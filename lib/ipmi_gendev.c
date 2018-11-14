@@ -71,7 +71,6 @@ typedef struct gendev_eeprom_info
 
 static int
 ipmi_gendev_get_eeprom_size(
-                        struct ipmi_intf *intf, 
                         struct sdr_record_generic_locator *dev,
                         t_gendev_eeprom_info *info
                      )
@@ -191,7 +190,7 @@ ipmi_gendev_read_file(
    int eeprom_size;
    t_gendev_eeprom_info eeprom_info;
 
-   eeprom_size = ipmi_gendev_get_eeprom_size(intf, dev, &eeprom_info);
+   eeprom_size = ipmi_gendev_get_eeprom_size(dev, &eeprom_info);
 
    if(eeprom_size > 0)
    {
@@ -362,7 +361,7 @@ ipmi_gendev_write_file(
    int eeprom_size;
    t_gendev_eeprom_info eeprom_info;
 
-   eeprom_size = ipmi_gendev_get_eeprom_size(intf, dev, &eeprom_info);
+   eeprom_size = ipmi_gendev_get_eeprom_size(dev, &eeprom_info);
 
    if(eeprom_size > 0)
    {

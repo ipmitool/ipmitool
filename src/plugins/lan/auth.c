@@ -119,14 +119,23 @@ uint8_t * ipmi_auth_md5(struct ipmi_session * s, uint8_t * data, int data_len)
 #endif /*HAVE_CRYPTO_MD5*/
 }
 
-/* 
+#ifdef HAVE_CRYPTO_MD2
+  #define __MD2_ONLY__(x) x
+#else
+  #define __MD2_ONLY__(x) __UNUSED__(x)
+#endif
+
+/*
  * multi-session authcode generation for MD2
  * H(password + session_id + msg + session_seq + password)
  *
  * Use OpenSSL implementation of MD2 algorithm if found.
  * This function is analogous to ipmi_auth_md5
  */
-uint8_t * ipmi_auth_md2(struct ipmi_session * s, uint8_t * data, int data_len)
+uint8_t * ipmi_auth_md2(
+    struct ipmi_session *__MD2_ONLY__(s),
+    uint8_t *__MD2_ONLY__(data),
+    int __MD2_ONLY__(data_len))
 {
 #ifdef HAVE_CRYPTO_MD2
 	MD2_CTX ctx;

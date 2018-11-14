@@ -113,7 +113,7 @@ int HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		int option,
 		int *pFlagColdReset);
 int
-HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
+HpmfwupgPreUpgradeCheck(
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		int componentMask, int option);
 
@@ -503,10 +503,9 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 			lprintf(LOG_NOTICE, "\nPerforming upgrade stage:");
 		}
 		if (option & VIEW_MODE) {
-			rc = HpmfwupgPreUpgradeCheck(intf,
-					&fwupgCtx,componentMask, VIEW_MODE);
+			rc = HpmfwupgPreUpgradeCheck(&fwupgCtx,componentMask, VIEW_MODE);
 		} else {
-			rc = HpmfwupgPreUpgradeCheck(intf, &fwupgCtx,
+			rc = HpmfwupgPreUpgradeCheck(&fwupgCtx,
 					componentMask, option);
 			if (rc == HPMFWUPG_SUCCESS) {
 				if (verbose) {
@@ -830,7 +829,7 @@ HpmfwupgValidateActionRecordChecksum(struct HpmfwupgActionRecord *pActionRecord)
  * is same as target version.
  */
 int
-HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
+HpmfwupgPreUpgradeCheck(
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		int componentMask, int option)
 {

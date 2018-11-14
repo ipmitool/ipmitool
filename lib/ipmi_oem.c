@@ -37,9 +37,9 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_sel.h>
 
-static int ipmi_oem_supermicro(struct ipmi_intf * intf);
-static int ipmi_oem_ibm(struct ipmi_intf * intf);
-static int ipmi_oem_quanta(struct ipmi_intf * intf);
+static int ipmi_oem_supermicro(struct ipmi_intf *intf);
+static int ipmi_oem_ibm(struct ipmi_intf *intf);
+static int ipmi_oem_quanta(struct ipmi_intf *intf);
 
 static struct ipmi_oem_handle ipmi_oem_list[] = {
 	{
@@ -82,16 +82,16 @@ static struct ipmi_oem_handle ipmi_oem_list[] = {
 
 /* Supermicro IPMIv2 BMCs use OEM authtype */
 static int
-ipmi_oem_supermicro(struct ipmi_intf * intf)
+ipmi_oem_supermicro(struct ipmi_intf *intf)
 {
 	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
 	return 0;
 }
 
 static int
-ipmi_oem_ibm(struct ipmi_intf * intf)
+ipmi_oem_ibm(struct ipmi_intf *__UNUSED__(intf))
 {
-	char * filename = getenv("IPMI_OEM_IBM_DATAFILE");
+	char *filename = getenv("IPMI_OEM_IBM_DATAFILE");
 	if (!filename) {
 		lprintf(LOG_ERR, "Unable to read IPMI_OEM_IBM_DATAFILE from environment");
 		return -1;
@@ -101,7 +101,7 @@ ipmi_oem_ibm(struct ipmi_intf * intf)
 
 /* Quanta IPMIv2 BMCs use OEM authtype */
 static int
-ipmi_oem_quanta(struct ipmi_intf * intf)
+ipmi_oem_quanta(struct ipmi_intf *intf)
 {
 	ipmi_intf_session_set_authtype(intf, IPMI_SESSION_AUTHTYPE_OEM);
 	return 0;
@@ -112,7 +112,7 @@ ipmi_oem_quanta(struct ipmi_intf * intf)
 void
 ipmi_oem_print(void)
 {
-	struct ipmi_oem_handle * oem;
+	struct ipmi_oem_handle *oem;
 	lprintf(LOG_NOTICE, "\nOEM Support:");
 	for (oem=ipmi_oem_list; oem->name && oem->desc; oem++) {
 		lprintf(LOG_NOTICE, "\t%-12s %s", oem->name, oem->desc);

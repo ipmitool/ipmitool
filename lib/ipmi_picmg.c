@@ -656,7 +656,7 @@ ipmi_picmg_properties(struct ipmi_intf * intf, int show )
 #define PICMG_FRU_ACTIVATE	(unsigned char) 0x01
 
 int
-ipmi_picmg_fru_activation(struct ipmi_intf * intf, int argc, char ** argv, unsigned char state)
+ipmi_picmg_fru_activation(struct ipmi_intf * intf, char ** argv, unsigned char state)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -690,7 +690,7 @@ ipmi_picmg_fru_activation(struct ipmi_intf * intf, int argc, char ** argv, unsig
 
 
 int
-ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -729,7 +729,7 @@ ipmi_picmg_fru_activation_policy_get(struct ipmi_intf * intf, int argc, char ** 
 }
 
 int
-ipmi_picmg_fru_activation_policy_set(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_fru_activation_policy_set(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1153,7 +1153,7 @@ ipmi_picmg_amc_portstate_set(struct ipmi_intf * intf, uint8_t channel,
 
 
 int
-ipmi_picmg_get_led_properties(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_get_led_properties(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1192,7 +1192,7 @@ ipmi_picmg_get_led_properties(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
-ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, char ** argv)
 {
 	int i;
 	struct ipmi_rs * rsp;
@@ -1242,7 +1242,7 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
-ipmi_picmg_get_led_state(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_get_led_state(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1329,7 +1329,7 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
-ipmi_picmg_set_led_state(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_set_led_state(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1405,7 +1405,7 @@ ipmi_picmg_set_led_state(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
-ipmi_picmg_get_power_level(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_get_power_level(struct ipmi_intf * intf, char ** argv)
 {
 	int i;
 	struct ipmi_rs * rsp;
@@ -1456,7 +1456,7 @@ ipmi_picmg_get_power_level(struct ipmi_intf * intf, int argc, char ** argv)
 }
 
 int
-ipmi_picmg_set_power_level(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_set_power_level(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1560,7 +1560,7 @@ ipmi_picmg_bused_resource(struct ipmi_intf * intf, t_picmg_bused_resource_mode m
 }
 
 int
-ipmi_picmg_fru_control(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_picmg_fru_control(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -1807,7 +1807,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	/* fru control command */
 	else if (!strncmp(argv[0], "frucontrol", 10)) {
 		if (argc > 2) {
-			rc = ipmi_picmg_fru_control(intf, argc-1, &(argv[1]));
+			rc = ipmi_picmg_fru_control(intf, &(argv[1]));
 		}
 		else {
 			lprintf(LOG_NOTICE, "usage: frucontrol <FRU-ID> <OPTION>");
@@ -1827,7 +1827,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	/* fru activation command */
 	else if (!strncmp(argv[0], "activate", 8)) {
 		if (argc > 1) {
-			rc = ipmi_picmg_fru_activation(intf, argc-1, &(argv[1]), PICMG_FRU_ACTIVATE);
+			rc = ipmi_picmg_fru_activation(intf, &(argv[1]), PICMG_FRU_ACTIVATE);
 		}
 		else {
 			lprintf(LOG_ERR, "Specify the FRU to activate.");
@@ -1838,7 +1838,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	/* fru deactivation command */
 	else if (!strncmp(argv[0], "deactivate", 10)) {
 		if (argc > 1) {
-			rc = ipmi_picmg_fru_activation(intf, argc-1, &(argv[1]), PICMG_FRU_DEACTIVATE);
+			rc = ipmi_picmg_fru_activation(intf, &(argv[1]), PICMG_FRU_DEACTIVATE);
 		}else {
 			lprintf(LOG_ERR, "Specify the FRU to deactivate.");
 			return -1;
@@ -1850,13 +1850,13 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc > 1) {
 			if (!strncmp(argv[1], "get", 3)) {
 				if (argc > 2) {
-					rc = ipmi_picmg_fru_activation_policy_get(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_fru_activation_policy_get(intf, &(argv[2]));
 				} else {
 					lprintf(LOG_NOTICE, "usage: get <fruid>");
 				}
 			} else if (!strncmp(argv[1], "set", 3)) {
 				if (argc > 4) {
-					rc = ipmi_picmg_fru_activation_policy_set(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_fru_activation_policy_set(intf, &(argv[2]));
 				} else {
 					lprintf(LOG_NOTICE, "usage: set <fruid> <lockmask> <lock>");
 					lprintf(LOG_NOTICE,
@@ -2095,7 +2095,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc > 1) {
 			if (!strncmp(argv[1], "prop", 4)) {
 				if (argc > 2) {
-					rc = ipmi_picmg_get_led_properties(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_get_led_properties(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE, "led prop <FRU-ID>");
@@ -2103,7 +2103,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			else if (!strncmp(argv[1], "cap", 3)) {
 				if (argc > 3) {
-					rc = ipmi_picmg_get_led_capabilities(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_get_led_capabilities(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE, "led cap <FRU-ID> <LED-ID>");
@@ -2111,7 +2111,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			else if (!strncmp(argv[1], "get", 3)) {
 				if (argc > 3) {
-					rc = ipmi_picmg_get_led_state(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_get_led_state(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE, "led get <FRU-ID> <LED-ID>");
@@ -2119,7 +2119,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			else if (!strncmp(argv[1], "set", 3)) {
 				if (argc > 6) {
-					rc = ipmi_picmg_set_led_state(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_set_led_state(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE,
@@ -2163,7 +2163,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		if (argc > 1) {
 			if (!strncmp(argv[1], "get", 3)) {
 				if (argc > 3) {
-					rc = ipmi_picmg_get_power_level(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_get_power_level(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE, "power get <FRU-ID> <type>");
@@ -2178,7 +2178,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			else if (!strncmp(argv[1], "set", 3)) {
 				if (argc > 4) {
-					rc = ipmi_picmg_set_power_level(intf, argc-1, &(argv[2]));
+					rc = ipmi_picmg_set_power_level(intf, &(argv[2]));
 				}
 				else {
 					lprintf(LOG_NOTICE, "power set <FRU-ID> <level> <present-desired>");

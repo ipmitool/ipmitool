@@ -1573,10 +1573,11 @@ typedef struct OemKontronInformationRecordV1{
 
 */
 
-static void ipmi_fru_oemkontron_get( int argc, char ** argv,uint8_t * fru_data,
-												int off,int len,
-												struct fru_multirec_header *h,
-												struct fru_multirec_oem_header *oh)
+static void ipmi_fru_oemkontron_get(int argc,
+				    char ** argv,
+				    uint8_t * fru_data,
+				    int off,
+				    struct fru_multirec_oem_header *oh)
 {
 	static int badParams=FALSE;
 	int start = off;
@@ -3703,15 +3704,15 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 				if( suppliedIana == iana ) {
 					lprintf(LOG_DEBUG, "Matching record found" );
 
-				if( iana == IPMI_OEM_KONTRON ) {
-						ipmi_fru_oemkontron_get( argc,argv,fru_data,
-						i + sizeof(struct fru_multirec_header),
-						h->len, h, oh );
+					if( iana == IPMI_OEM_KONTRON ) {
+						ipmi_fru_oemkontron_get(argc, argv, fru_data,
+									i + sizeof(struct fru_multirec_header),
+									oh);
 					}
 					/* FIXME: Add OEM record support here */
 					else{
 						printf("  OEM IANA (%s) Record not supported in this mode\n",
-															val2str( iana,  ipmi_oem_info));
+						       val2str( iana,  ipmi_oem_info));
 						error = 1;
 					}
 				}

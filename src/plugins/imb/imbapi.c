@@ -60,6 +60,7 @@
 
 #include "imbapi.h"
 #include <sys/socket.h>
+#include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 
 #ifdef SCO_UW
@@ -285,7 +286,7 @@ ipmi_close_ia(void)
  * it also sets Ntstatus.status.
  */
 static BOOL
-DeviceIoControl(HANDLE dummey_hDevice, DWORD dwIoControlCode, LPVOID
+DeviceIoControl(HANDLE __UNUSED__(dummey_hDevice), DWORD dwIoControlCode, LPVOID
 		lpvInBuffer, DWORD cbInBuffer, LPVOID lpvOutBuffer,
 		DWORD cbOutBuffer, LPDWORD lpcbBytesReturned,
 		LPOVERLAPPED lpoOverlapped)

@@ -171,12 +171,10 @@ static int ipmi_lcd_get_status(struct ipmi_intf *intf);
 static int ipmi_lcd_set_kvm(struct ipmi_intf *intf, char status);
 static int ipmi_lcd_set_lock(struct ipmi_intf *intf,  char lock);
 static int ipmi_lcd_set_single_line_text(struct ipmi_intf *intf, char *text);
-static int ipmi_lcd_set_text(struct ipmi_intf *intf, char *text,
-		int line_number);
+static int ipmi_lcd_set_text(struct ipmi_intf *intf, char *text);
 static int ipmi_lcd_configure_wh(struct ipmi_intf *intf, uint32_t mode,
-		uint16_t lcdquallifier, uint8_t errordisp, int8_t line_number, char *text);
-static int ipmi_lcd_configure(struct ipmi_intf *intf, int command,
-		int8_t line_number, char *text);
+		uint16_t lcdquallifier, uint8_t errordisp, char *text);
+static int ipmi_lcd_configure(struct ipmi_intf *intf, int command, char *text);
 static void ipmi_lcd_usage(void);
 /* MAC Function prototypes */
 static int ipmi_delloem_mac_main(struct ipmi_intf *intf, int argc, char **argv);
@@ -417,10 +415,10 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (strncmp(argv[current_arg], "none\0", 5) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_NONE, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "modelname\0", 10) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "userdefined\0", 12) == 0) {
 				current_arg++;
 				if (argc <= current_arg) {
@@ -428,31 +426,31 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 					return -1;
 				}
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
-						0xFF, 0XFF, line_number, argv[current_arg]);
+						0xFF, 0XFF, argv[current_arg]);
 			} else if (strncmp(argv[current_arg], "ipv4address\0", 12) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV4ADRESS,
-						0xFF, 0XFF, 0, NULL);
+						0xFF, 0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "macaddress\0", 11) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_IDRAC_MAC_ADDRESS,
-							0xFF, 0XFF, 0, NULL);
+							0xFF, 0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "systemname\0", 11) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_OS_SYSTEM_NAME, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "servicetag\0", 11) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SERVICE_TAG, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "ipv6address\0", 12) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV6ADRESS,
-						0xFF, 0XFF, 0, NULL);
+						0xFF, 0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "ambienttemp\0", 12) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_AMBEINT_TEMP, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "systemwatt\0", 11) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SYSTEM_WATTS, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "assettag\0", 9) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_ASSET_TAG, 0xFF,
-						0XFF, 0, NULL);
+						0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
@@ -472,13 +470,13 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			}
 			if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x00, 0XFF, 0, NULL);
+				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x00, 0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "btuphr\0",7) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x01, 0XFF, 0, NULL);
+				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x01, 0XFF, NULL);
 			} else if (strncmp(argv[current_arg], "celsius\0", 8) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x02, 0xFF, 0, NULL);
+				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x02, 0xFF, NULL);
 			} else if (strncmp(argv[current_arg], "fahrenheit", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x03, 0xFF, 0, NULL);
+				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x03, 0xFF, NULL);
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
@@ -499,10 +497,10 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (strncmp(argv[current_arg], "sel\0", 4) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
-						IPMI_DELL_LCD_ERROR_DISP_SEL, 0, NULL);
+						IPMI_DELL_LCD_ERROR_DISP_SEL, NULL);
 			} else if (strncmp(argv[current_arg], "simple\0", 7) == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
-						IPMI_DELL_LCD_ERROR_DISP_VERBOSE, 0, NULL);
+						IPMI_DELL_LCD_ERROR_DISP_VERBOSE, NULL);
 			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
 				ipmi_lcd_usage();
 			} else {
@@ -512,10 +510,10 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		} else if ((strncmp(argv[current_arg], "none\0", 5) == 0)
 				&& (iDRAC_FLAG==0)) {
-			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_NONE, 0, NULL);
+			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_NONE, NULL);
 		} else if ((strncmp(argv[current_arg], "default\0", 8) == 0)
 				&& (iDRAC_FLAG==0)) {
-			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0, NULL);
+			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, NULL);
 		} else if ((strncmp(argv[current_arg], "custom\0", 7) == 0)
 				&& (iDRAC_FLAG==0)) {
 			current_arg++;
@@ -524,7 +522,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			}
 			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
-					line_number, argv[current_arg]);
+					argv[current_arg]);
 		} else if (strncmp(argv[current_arg], "vkvm\0", 5) == 0) {
 			current_arg++;
 			if (argc <= current_arg) {
@@ -1332,13 +1330,12 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
  * Description:     This function sets lcd line text
  * Input:           intf            - ipmi interface
  *                  text    - lcd string
- *                  line_number- line number
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
 static int
-ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
+ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
 {
 	int rc = 0;
 	IPMI_DELL_LCD_CAPS lcd_caps;
@@ -1367,7 +1364,6 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
  * Input:           intf            - ipmi interface
  *                  lcdquallifier- lcd quallifier
  *                  errordisp       - error number
- *                  line_number-line number
  *                  text            - lcd string
  * Output:
  * Return:          -1 on error
@@ -1375,12 +1371,12 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text, int line_number)
  */
 static int
 ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
-		uint16_t lcdquallifier, uint8_t errordisp, int8_t line_number, char * text)
+		uint16_t lcdquallifier, uint8_t errordisp, char * text)
 {
 	int rc = 0;
 	if (IPMI_DELL_LCD_CONFIG_USER_DEFINED == mode) {
 		/* Any error was reported earlier. */
-		rc = ipmi_lcd_set_text(intf, text, line_number);
+		rc = ipmi_lcd_set_text(intf, text);
 	}
 	if (rc == 0) {
 		rc = ipmi_lcd_set_configure_command_wh(intf, mode ,lcdquallifier,errordisp);
@@ -1393,19 +1389,17 @@ ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Description:     This function updates the current lcd configuration
  * Input:           intf            - ipmi interface
  *                  command- lcd command
- *                  line_number-line number
  *                  text            - lcd string
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
 static int
-ipmi_lcd_configure(struct ipmi_intf * intf, int command,
-		int8_t line_number, char * text)
+ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
 {
 	int rc = 0;
 	if (IPMI_DELL_LCD_CONFIG_USER_DEFINED == command) {
-		rc = ipmi_lcd_set_text(intf, text, line_number);
+		rc = ipmi_lcd_set_text(intf, text);
 	}
 	if (rc == 0) {
 		rc = ipmi_lcd_set_configure_command(intf, command);
@@ -1948,7 +1942,7 @@ ipmi_mac_usage(void)
  *
  * Description:         This function processes the delloem lan command
  * Input:               intf    - ipmi interface
- *                      argc    - no of arguments
+ *                      argc    - no of arguments (unused, left in for calling consistency)
  *                      argv    - argument string array
  * Output:
  *
@@ -1956,7 +1950,7 @@ ipmi_mac_usage(void)
  *                         -1 - failure
  */
 static int
-ipmi_delloem_lan_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
 	int nic_selection = 0;
@@ -3741,7 +3735,7 @@ ipmi_powermonitor_usage(void)
  *
  * Description:		   This function processes the delloem vFlash command
  * Input:			   intf    - ipmi interface
- *					   argc    - no of arguments
+ *					   argc    - no of arguments (unused)
  *					   argv    - argument string array
  * Output:
  *
@@ -3749,7 +3743,7 @@ ipmi_powermonitor_usage(void)
  *						  -1 - failure
  */
 static int
-ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
 	current_arg++;

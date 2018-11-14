@@ -714,11 +714,13 @@ serial_term_wait_response(struct ipmi_intf * intf,
 
 /*
  *	Get message from receive message queue
+ *
+ * Note: Kept max_len in case it's useful later.
  */
 static int
 serial_term_get_message(struct ipmi_intf * intf,
 		struct serial_term_request_ctx * req_ctx,
-		uint8_t * msg, size_t max_len)
+		uint8_t * msg, size_t __UNUSED__(max_len))
 {
 	uint8_t data[IPMI_SERIAL_MAX_RESPONSE];
 	struct serial_term_request_ctx tmp_ctx;

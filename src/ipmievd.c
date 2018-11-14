@@ -682,7 +682,7 @@ selwatch_wait(struct ipmi_event_intf * eintf)
 /*************************************************************************/
 
 static void
-ipmievd_cleanup(int signal)
+ipmievd_cleanup(int __UNUSED__(signal))
 {
 	struct stat st1;
 

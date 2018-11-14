@@ -62,7 +62,7 @@ static int ipmi_imb_open(struct ipmi_intf * intf)
 		printf("Error: no IMB driver found at %s!\n", IPMI_IMB_DEV);
 		return -1;
 	}
-		
+
 	intf->opened = 1;
 	intf->manufacturer_id = ipmi_get_oem(intf);
 
@@ -75,10 +75,10 @@ static void ipmi_imb_close(struct ipmi_intf * intf)
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
-static struct ipmi_rs * ipmi_imb_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
+static struct ipmi_rs * ipmi_imb_send_cmd(struct ipmi_intf *__UNUSED__(intf), struct ipmi_rq *req)
 {
 	IMBPREQUESTDATA imbreq;
-	static struct ipmi_rs rsp;	
+	static struct ipmi_rs rsp;
 	int status, i;
 	unsigned char ccode;
 

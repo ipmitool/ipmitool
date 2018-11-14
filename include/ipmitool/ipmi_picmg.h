@@ -93,7 +93,7 @@ typedef enum picmg_busres_resource_id {
 } t_picmg_busres_resource_id;
 
 /* the LED color capabilities */
-static const char* __UNUSED__(led_color_str[]) = {
+static const char *__UNUSED__(led_color_str[]) = {
    "reserved",
    "BLUE",
    "RED",
