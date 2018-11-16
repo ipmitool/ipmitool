@@ -36,6 +36,7 @@
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_time.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -591,9 +592,21 @@ struct fru_picmgext_amc_link_desc_record {
 #endif
 
 /* FRU Board manufacturing date */
+#define FRU_BOARD_DATE_UNSPEC 0 /* IPMI FRU Information Storage Definition
+                                   v1.0 rev 1.3, Table 11-1 */
 static inline time_t ipmi_fru2time_t(void *mfg_date) {
 	const uint64_t secs_from_1970_1996 = 820454400;
-	return ipmi24toh(mfg_date) * 60 + secs_from_1970_1996;
+	uint32_t fru_ts = ipmi24toh(mfg_date);
+	time_t ts;
+
+	if (FRU_BOARD_DATE_UNSPEC == fru_ts) {
+		ts = IPMI_TIME_UNSPECIFIED;
+	}
+	else {
+		ts = fru_ts * 60 + secs_from_1970_1996;
+	}
+
+	return ts;
 }
 static const char * chassis_type_desc[] __attribute__((unused)) = {
 	"Unspecified", "Other", "Unknown",

@@ -2546,7 +2546,11 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		}
 
 		ts = ipmi_fru2time_t(mfg_date);
-		printf("Board Mfg Date: %ld, %s\n", ts, ipmi_timestamp_numeric(ts));
+		printf("Board Mfg Date: %ld, %s\n",
+		       (IPMI_TIME_UNSPECIFIED == ts)
+		       ? FRU_BOARD_DATE_UNSPEC
+		       : ts,
+		       ipmi_timestamp_numeric(ts));
 		board_length -= SIZE_MFG_DATE;
 
 		/* Board Mfg */
