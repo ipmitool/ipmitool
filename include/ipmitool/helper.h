@@ -52,6 +52,12 @@
 #define tboolean   int
 #endif
 
+#ifdef __GNUC__
+    #define __UNUSED__(x) x __attribute__((unused))
+#else
+    #define __UNUSED__(x) x
+#endif
+
 /* IPMI spec. - UID 0 reserved, 63 maximum UID which can be used */
 #ifndef IPMI_UID_MIN
 # define IPMI_UID_MIN 1
