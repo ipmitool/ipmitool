@@ -131,7 +131,7 @@ static struct lan_param {
 	char desc[24];
 	uint8_t * data;
 	int data_len;
-} ipmi_lan_params[] __attribute__((unused)) = {
+} __UNUSED__(ipmi_lan_params[]) = {
 	{ IPMI_LANP_SET_IN_PROGRESS,	1,	"Set in Progress", NULL, 0 },
 	{ IPMI_LANP_AUTH_TYPE,		1,	"Auth Type Support", NULL, 0 },
 	{ IPMI_LANP_AUTH_TYPE_ENABLE,	5,	"Auth Type Enable", NULL, 0	},

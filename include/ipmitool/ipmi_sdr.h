@@ -776,7 +776,7 @@ struct sdr_record_list {
 
 /* unit description codes (IPMI v1.5 section 37.16) */
 #define UNIT_MAX	0x90
-static const char *unit_desc[] __attribute__ ((unused)) = {
+static const char *__UNUSED__(unit_desc[]) = {
 "unspecified",
 	    "degrees C", "degrees F", "degrees K",
 	    "Volts", "Amps", "Watts", "Joules",
@@ -801,7 +801,7 @@ static const char *unit_desc[] __attribute__ ((unused)) = {
 /* sensor type codes (IPMI v1.5 table 36.3) 
   / Updated to v2.0 Table 42-3, Sensor Type Codes */
 #define SENSOR_TYPE_MAX 0x2C
-static const char *sensor_type_desc[] __attribute__ ((unused)) = {
+static const char *__UNUSED__(sensor_type_desc[]) = {
 "reserved",
 	    "Temperature", "Voltage", "Current", "Fan",
 	    "Physical Security", "Platform Security", "Processor",

@@ -194,7 +194,7 @@ struct fru_multirec_powersupply {
 #pragma pack(0)
 #endif
 
-static const char * combined_voltage_desc[] __attribute__((unused)) = {
+static const char * __UNUSED__(combined_voltage_desc[]) = {
 "12 V", "-12 V", "5 V", "3.3 V"};
 
 #ifdef HAVE_PRAGMA_PACK
@@ -608,7 +608,7 @@ static inline time_t ipmi_fru2time_t(void *mfg_date) {
 
 	return ts;
 }
-static const char * chassis_type_desc[] __attribute__((unused)) = {
+static const char * __UNUSED__(chassis_type_desc[]) = {
 	"Unspecified", "Other", "Unknown",
 	"Desktop", "Low Profile Desktop", "Pizza Box",
 	"Mini Tower", "Tower",

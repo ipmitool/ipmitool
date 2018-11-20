@@ -41,7 +41,7 @@
 #define ASF_TYPE_PING		0x80
 #define ASF_TYPE_PONG		0x40
 
-static const struct valstr asf_type_vals[] __attribute__((unused)) = {
+static const struct valstr __UNUSED__(asf_type_vals[]) = {
 	{ 0x10, "Reset" },
 	{ 0x11, "Power-up" },
 	{ 0x12, "Unconditional Power-down" },

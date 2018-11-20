@@ -420,7 +420,7 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 	return rc;
 }
 
-static struct ipmi_event_sensor_types oem_kontron_event_reading_types[] __attribute__((unused)) = {
+static struct ipmi_event_sensor_types __UNUSED__(oem_kontron_event_reading_types[]) = {
    { 0x70 , 0x00 , 0xff, "Code Assert" },
    { 0x71 , 0x00 , 0xff, "Code Assert" },
    { 0, 0, 0xFF, NULL }

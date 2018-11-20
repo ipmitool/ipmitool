@@ -45,7 +45,7 @@
 #define RMCP_TYPE_NORM		0x00
 #define RMCP_TYPE_ACK		0x01
 
-static const struct valstr rmcp_type_vals[] __attribute__((unused)) = {
+static const struct valstr __UNUSED__(rmcp_type_vals[]) = {
 	{ RMCP_TYPE_NORM,	"Normal RMCP" },
 	{ RMCP_TYPE_ACK,	"RMCP ACK" },
 	{ 0,			NULL }
@@ -56,7 +56,7 @@ static const struct valstr rmcp_type_vals[] __attribute__((unused)) = {
 #define RMCP_CLASS_IPMI		0x07
 #define RMCP_CLASS_OEM		0x08
 
-static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
+static const struct valstr __UNUSED__(rmcp_class_vals[]) = {
 	{ RMCP_CLASS_ASF,	"ASF" },
 	{ RMCP_CLASS_IPMI,	"IPMI" },
 	{ RMCP_CLASS_OEM,	"OEM" },

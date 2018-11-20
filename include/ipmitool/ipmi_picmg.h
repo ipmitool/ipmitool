@@ -93,7 +93,7 @@ typedef enum picmg_busres_resource_id {
 } t_picmg_busres_resource_id;
 
 /* the LED color capabilities */
-static const char* led_color_str[] __attribute__((unused)) = {
+static const char* __UNUSED__(led_color_str[]) = {
    "reserved",
    "BLUE",
    "RED",
@@ -105,7 +105,7 @@ static const char* led_color_str[] __attribute__((unused)) = {
 };
 
 
-static const char* amc_link_type_str[] __attribute__((unused)) = {
+static const char* __UNUSED__(amc_link_type_str[]) = {
    "RESERVED",
    "RESERVED1",
    "PCI EXPRESS",
@@ -116,7 +116,7 @@ static const char* amc_link_type_str[] __attribute__((unused)) = {
    "STORAGE",
 };
 
-static const char* amc_link_type_ext_str[][16] __attribute__((unused)) = {
+static const char* __UNUSED__(amc_link_type_ext_str[][16]) = {
 	/* FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED */
 	{
 		"", "", "", "", "", "", "", "",   "", "", "", "", "", "", "", ""
