@@ -59,6 +59,46 @@ static const char *section_id[4] = {
 	"Product Section"
 };
 
+static const char * combined_voltage_desc[] = {
+	"12 V",
+	"-12 V",
+	"5 V",
+	"3.3 V"
+};
+
+static const char * chassis_type_desc[] = {
+	"Unspecified",
+	"Other",
+	"Unknown",
+	"Desktop",
+	"Low Profile Desktop",
+	"Pizza Box",
+	"Mini Tower",
+	"Tower",
+	"Portable",
+	"LapTop",
+	"Notebook",
+	"Hand Held",
+	"Docking Station",
+	"All in One",
+	"Sub Notebook",
+	"Space-saving",
+	"Lunch Box",
+	"Main Server Chassis",
+	"Expansion Chassis",
+	"SubChassis",
+	"Bus Expansion Chassis",
+	"Peripheral Chassis",
+	"RAID Chassis",
+	"Rack Mount Chassis",
+	"Sealed-case PC",
+	"Multi-system Chassis",
+	"CompactPCI",
+	"AdvancedTCA",
+	"Blade",
+	"Blade Enclosure"
+};
+
 /* From lib/dimm_spd.c: */
 int
 ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id);
