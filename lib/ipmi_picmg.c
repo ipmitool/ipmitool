@@ -62,6 +62,83 @@ typedef enum picmg_card_type {
 	PICMG_CARD_TYPE_RESERVED
 } t_picmg_card_type ;
 
+static const char* amc_link_type_str[] = {
+	"RESERVED",
+	"RESERVED1",
+	"PCI EXPRESS",
+	"ADVANCED SWITCHING1",
+	"ADVANCED SWITCHING2",
+	"ETHERNET",
+	"RAPIDIO",
+	"STORAGE",
+};
+
+static const char* amc_link_type_ext_str[][16] = {
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED */
+	{
+		"", "", "", "", "", "", "", "",   "", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RESERVED1 */
+	{
+		"", "", "", "", "", "", "", "",   "", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_PCI_EXPRESS */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "",
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING1 */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "",
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ADVANCED_SWITCHING2 */
+	{
+		"Gen 1 - NSSC",
+		"Gen 1 - SSC",
+		"Gen 2 - NSSC",
+		"Gen 2 - SSC",
+		"", "", "", "",
+		"", "", "", "",
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET */
+	{
+   		"1000BASE-BX (SerDES Gigabit)",
+   		"10GBASE-BX410 Gigabit XAUI",
+   		"", "",
+   		"", "", "", "",
+		"", "", "", "",
+		"", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO */
+	{
+   		"1.25 Gbaud transmission rate",
+   		"2.5 Gbaud transmission rate",
+   		"3.125 Gbaud transmission rate",
+   		"", "", "", "", "",
+		"", "", "", "", "", "", "", ""
+	},
+	/* FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE */
+	{
+   		"Fibre Channel",
+   		"Serial ATA",
+   		"Serial Attached SCSI",
+   		"", "", "", "", "",
+		"", "", "", "", "", "", "", ""
+	}
+};
+
 /* This is the version of the PICMG Extension */
 static t_picmg_card_type PicmgCardType = PICMG_CARD_TYPE_RESERVED;
 

@@ -194,9 +194,6 @@ struct fru_multirec_powersupply {
 #pragma pack(0)
 #endif
 
-static const char * __UNUSED__(combined_voltage_desc[]) = {
-"12 V", "-12 V", "5 V", "3.3 V"};
-
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
@@ -608,18 +605,6 @@ static inline time_t ipmi_fru2time_t(void *mfg_date) {
 
 	return ts;
 }
-static const char * __UNUSED__(chassis_type_desc[]) = {
-	"Unspecified", "Other", "Unknown",
-	"Desktop", "Low Profile Desktop", "Pizza Box",
-	"Mini Tower", "Tower",
-	    "Portable", "LapTop", "Notebook", "Hand Held",
-	    "Docking Station", "All in One", "Sub Notebook",
-	    "Space-saving", "Lunch Box", "Main Server Chassis",
-	    "Expansion Chassis", "SubChassis", "Bus Expansion Chassis",
-	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis",
-	    "Sealed-case PC", "Multi-system Chassis", "CompactPCI",
-	    "AdvancedTCA", "Blade", "Blade Enclosure"
-};
 
 typedef struct ipmi_fru_bloc {
 	struct ipmi_fru_bloc * next;
