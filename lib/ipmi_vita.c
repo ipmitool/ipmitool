@@ -603,14 +603,14 @@ ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 	printf("LED Color Capabilities: ");
 	for (i = 0; i < 8; i++) {
 		if (rsp->data[1] & (0x01 << i)) {
-			printf("%s, ", led_color_str[i]);
+			printf("%s, ", picmg_led_color_str(i));
 		}
 	}
 	putchar('\n');
 
 	printf("Default LED Color in\n");
-	printf("      LOCAL control:  %s\n", led_color_str[rsp->data[2]]);
-	printf("      OVERRIDE state: %s\n", led_color_str[rsp->data[3]]);
+	printf("      LOCAL control:  %s\n", picmg_led_color_str(rsp->data[2]));
+	printf("      OVERRIDE state: %s\n", picmg_led_color_str(rsp->data[3]));
 
 	if (rsp->data_len == 5) {
 		printf("LED flags:\n");
@@ -692,7 +692,7 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 		}
 		printf("  Local Control On-Duration:  %x\n", rsp->data[3]);
 		printf("  Local Control Color:        %x\t[%s]\n",
-			rsp->data[4], led_color_str[rsp->data[4] & 7]);
+			rsp->data[4], picmg_led_color_str(rsp->data[4] & 7));
 	}
 
 	/* override state or lamp test */
@@ -707,7 +707,7 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 		}
 		printf("  Override On-Duration:  %x\n", rsp->data[6]);
 		printf("  Override Color:        %x\t[%s]\n",
-			rsp->data[7], led_color_str[rsp->data[7] & 7]);
+			rsp->data[7], picmg_led_color_str(rsp->data[7] & 7));
 		if (rsp->data[1] == 0x04) {
 			printf("  Lamp test duration:    %x\n", rsp->data[8]);
 		}

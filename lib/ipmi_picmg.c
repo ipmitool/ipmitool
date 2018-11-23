@@ -114,27 +114,27 @@ static const char* amc_link_type_ext_str[][16] = {
 	},
 	/* FRU_PICMGEXT_AMC_LINK_TYPE_ETHERNET */
 	{
-   		"1000BASE-BX (SerDES Gigabit)",
-   		"10GBASE-BX410 Gigabit XAUI",
-   		"", "",
-   		"", "", "", "",
+		"1000BASE-BX (SerDES Gigabit)",
+		"10GBASE-BX410 Gigabit XAUI",
+		"", "",
+		"", "", "", "",
 		"", "", "", "",
 		"", "", "", ""
 	},
 	/* FRU_PICMGEXT_AMC_LINK_TYPE_RAPIDIO */
 	{
-   		"1.25 Gbaud transmission rate",
-   		"2.5 Gbaud transmission rate",
-   		"3.125 Gbaud transmission rate",
-   		"", "", "", "", "",
+		"1.25 Gbaud transmission rate",
+		"2.5 Gbaud transmission rate",
+		"3.125 Gbaud transmission rate",
+		"", "", "", "", "",
 		"", "", "", "", "", "", "", ""
 	},
 	/* FRU_PICMGEXT_AMC_LINK_TYPE_STORAGE */
 	{
-   		"Fibre Channel",
-   		"Serial ATA",
-   		"Serial Attached SCSI",
-   		"", "", "", "", "",
+		"Fibre Channel",
+		"Serial ATA",
+		"Serial Attached SCSI",
+		"", "", "", "", "",
 		"", "", "", "", "", "", "", ""
 	}
 };
@@ -201,6 +201,28 @@ struct sAmcAddrMap {
 	{0x86, "reserved", 0},
 	{0x88, "reserved", 0},
 };
+
+/* the LED color capabilities */
+static const char *led_color_str[] = {
+   "reserved",
+   "BLUE",
+   "RED",
+   "GREEN",
+   "AMBER",
+   "ORANGE",
+   "WHITE",
+   "reserved"
+};
+
+const char *
+picmg_led_color_str(int color)
+{
+	if (color < 0 || (size_t)color >= ARRAY_SIZE(led_color_str)) {
+		return "invalid";
+	}
+
+	return led_color_str[color];
+}
 
 /* is_amc_channel - wrapper to convert user input into integer
  * AMC Channel range seems to be <0..255>, bits [7:0]
@@ -1306,14 +1328,14 @@ ipmi_picmg_get_led_capabilities(struct ipmi_intf * intf, char ** argv)
 	printf("LED Color Capabilities: ");
 	for ( i=0 ; i<8 ; i++ ) {
 		if ( rsp->data[1] & (0x01 << i) ) {
-			printf("%s, ", led_color_str[ i ]);
+			printf("%s, ", picmg_led_color_str(i));
 		}
 	}
 	printf("\n");
 
 	printf("Default LED Color in\n");
-	printf("      LOCAL control:  %s\n", led_color_str[ rsp->data[2] ] );
-	printf("      OVERRIDE state: %s\n", led_color_str[ rsp->data[3] ] );
+	printf("      LOCAL control:  %s\n", picmg_led_color_str(rsp->data[2]));
+	printf("      OVERRIDE state: %s\n", picmg_led_color_str(rsp->data[3]));
 
 	return 0;
 }
@@ -1380,7 +1402,9 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, char ** argv)
 	}
 
 	printf("  Local Control On-Duration:  %x\n", rsp->data[3] );
-	printf("  Local Control Color:        %x  [%s]\n", rsp->data[4], led_color_str[ rsp->data[4] ]);
+	printf("  Local Control Color:        %x  [%s]\n",
+	       rsp->data[4],
+	       picmg_led_color_str(rsp->data[4]));
 
 	/* override state or lamp test */
 	if (rsp->data[1] & 0x02) {
@@ -1394,7 +1418,9 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, char ** argv)
 		}
 
 		printf("  Override On-Duration:  %x\n", rsp->data[6] );
-		printf("  Override Color:        %x  [%s]\n", rsp->data[7], led_color_str[ rsp->data[7] ]);
+		printf("  Override Color:        %x  [%s]\n",
+		       rsp->data[7],
+		       picmg_led_color_str(rsp->data[7]));
 
 	}
 
