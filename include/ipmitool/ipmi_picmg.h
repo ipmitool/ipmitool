@@ -92,18 +92,7 @@ typedef enum picmg_busres_resource_id {
 	PICMG_BUSRES_SYNC_CLOCK_GROUP_3
 } t_picmg_busres_resource_id;
 
-/* the LED color capabilities */
-static const char *__UNUSED__(led_color_str[]) = {
-   "reserved",
-   "BLUE",
-   "RED",
-   "GREEN",
-   "AMBER",
-   "ORANGE",
-   "WHITE",
-   "reserved"
-};
-
+const char *picmg_led_color_str(int color);
 
 struct sAmcPortState {
 #ifndef WORDS_BIGENDIAN
