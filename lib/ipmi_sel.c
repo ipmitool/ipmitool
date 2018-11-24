@@ -68,7 +68,6 @@ struct ipmi_sel_oem_msg_rec {
 
 // Definiation for the Decoding the SEL OEM Bytes for DELL Platfoms
 #define BIT(x)	 (1 << x)	/* Select the Bit */
-#define	SIZE_OF_DESC	128	/* Max Size of the description String to be displyed for the Each sel entry */
 #define	MAX_CARDNO_STR	32	/* Max Size of Card number string */
 #define	MAX_DIMM_STR	32	/* Max Size of DIMM string */
 #define	MAX_CARD_STR	32	/* Max Size of Card string */

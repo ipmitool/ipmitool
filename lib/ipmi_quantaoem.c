@@ -60,9 +60,6 @@
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
 
-/* Max Size of the description String to be displyed for the Each sel entry */
-#define	SIZE_OF_DESC 128
-
 #define CPU_SHIFT 6
 #define CPU_MASK 0X03
 #define CPU_NUM(x) (((x) >> CPU_SHIFT) & CPU_MASK)
