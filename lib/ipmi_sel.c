@@ -67,7 +67,6 @@ struct ipmi_sel_oem_msg_rec {
 #define SEL_BYTE(n) (n-3) /* So we can refer to byte positions in log entries (byte 3 is at index 0, etc) */
 
 // Definition for the Decoding the SEL OEM Bytes for DELL Platfoms
-#define BIT(x)	 (1 << x)	/* Select the Bit */
 #define	MAX_CARDNO_STR	32	/* Max Size of Card number string */
 #define	MAX_CARD_STR	32	/* Max Size of Card string */
 

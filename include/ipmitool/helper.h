@@ -38,6 +38,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define BIT(x)   (1 << x)       /* Select the Bit */
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 #ifndef TRUE
