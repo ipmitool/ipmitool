@@ -38,9 +38,11 @@
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
-
+#include <ipmitool/ipmi_sel.h>
 
 int ipmi_kontronoem_main(struct ipmi_intf *, int, char **);
 int ipmi_kontronoem_set_large_buffer(struct ipmi_intf *, unsigned char size);
+char *
+oem_kontron_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
 
 #endif /* IPMI_KONTRONOEM_H */

@@ -44,6 +44,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_supermicrooem.h>
 #include <ipmitool/ipmi_sdr.h>
@@ -417,39 +418,6 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 
 	fclose(fp);
 	return rc;
-}
-
-static struct ipmi_event_sensor_types __UNUSED__(oem_kontron_event_reading_types[]) = {
-   { 0x70 , 0x00 , 0xff, "Code Assert" },
-   { 0x71 , 0x00 , 0xff, "Code Assert" },
-   { 0, 0, 0xFF, NULL }
-};
-
-/* NOTE: unused paramter kept in for consistency. */
-char *
-get_kontron_evt_desc(struct ipmi_intf *__UNUSED__(intf), struct sel_event_record *rec)
-{
-	char *description = NULL;
-	/*
-	 * Kontron OEM events are described in the product's user manual,  but are limited in favor of
-	 * sensor specific
-	 */
-
-	/* Only standard records are defined so far */
-	if( rec->record_type < 0xC0 ){
-		const struct ipmi_event_sensor_types *st=NULL;
-		for (st = oem_kontron_event_types; st->desc; st++){
-			if (st->code == rec->sel_type.standard_type.event_type ){
-				size_t len =strlen(st->desc);
-				description = (char*)malloc( len + 1 );
-				memcpy(description, st->desc , len);
-				description[len] = 0;;
-				return description;
-			}
-		}
-	}
-
-	return NULL;
 }
 
 char *
@@ -1047,7 +1015,7 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 		desc = get_newisys_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_KONTRON:
-		desc =  get_kontron_evt_desc(intf, rec);
+		desc = oem_kontron_get_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_DELL: // Dell Decoding of the OEM Bytes from SEL Record.
 		desc = get_dell_evt_desc(intf, rec);
