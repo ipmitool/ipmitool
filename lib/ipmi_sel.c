@@ -66,11 +66,11 @@ struct ipmi_sel_oem_msg_rec {
 
 #define SEL_BYTE(n) (n-3) /* So we can refer to byte positions in log entries (byte 3 is at index 0, etc) */
 
-// Definiation for the Decoding the SEL OEM Bytes for DELL Platfoms
+// Definition for the Decoding the SEL OEM Bytes for DELL Platfoms
 #define BIT(x)	 (1 << x)	/* Select the Bit */
 #define	MAX_CARDNO_STR	32	/* Max Size of Card number string */
-#define	MAX_DIMM_STR	32	/* Max Size of DIMM string */
 #define	MAX_CARD_STR	32	/* Max Size of Card string */
+
 /*
  * Reads values found in message translation file.  XX is a wildcard, R means reserved.
  * Returns -1 for XX, -2 for R, -3 for non-hex (string), or positive integer from a hex value.
