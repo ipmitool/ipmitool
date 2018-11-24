@@ -45,13 +45,14 @@
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sel.h>
-#include <ipmitool/ipmi_sel_supermicro.h>
+#include <ipmitool/ipmi_supermicrooem.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_time.h>
+
 
 static int sel_extended = 0;
 static int sel_oem_nrecs = 0;
@@ -512,167 +513,6 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	description[rsp->data[3]] = 0;;
 
 	return description;
-}
-
-char *
-get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
-{
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
-	char *desc = NULL;
-	int chipset_type = 4;
-	int data1;
-	int data2;
-	int data3;
-	int sensor_type;
-	uint8_t i = 0;
-	uint16_t oem_id = 0;
-	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to
-	 * data1,data2,data3
-	 */
-	data1 = rec->sel_type.standard_type.event_data[0];
-	data2 = rec->sel_type.standard_type.event_data[1];
-	data3 = rec->sel_type.standard_type.event_data[2];
-	/* Check for the Standard Event type == 0x6F */
-	if (rec->sel_type.standard_type.event_type != 0x6F) {
-		return NULL;
-	}
-	/* Allocate mem for the Description string */
-	desc = malloc(sizeof(char) * SIZE_OF_DESC);
-	if (!desc) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
-	memset(desc, '\0', SIZE_OF_DESC);
-	sensor_type = rec->sel_type.standard_type.sensor_type;
-	switch (sensor_type) {
-		case SENSOR_TYPE_MEMORY:
-			memset(&req, 0, sizeof (req));
-			req.msg.netfn = IPMI_NETFN_APP;
-			req.msg.lun = 0;
-			req.msg.cmd = BMC_GET_DEVICE_ID;
-			req.msg.data = NULL;
-			req.msg.data_len = 0;
-
-			rsp = intf->sendrecv(intf, &req);
-			if (!rsp) {
-				lprintf(LOG_ERR, " Error getting system info");
-				if (desc) {
-					free(desc);
-					desc = NULL;
-				}
-				return NULL;
-			} else if (rsp->ccode) {
-				lprintf(LOG_ERR, " Error getting system info: %s",
-						val2str(rsp->ccode, completion_code_vals));
-				if (desc) {
-					free(desc);
-					desc = NULL;
-				}
-				return NULL;
-			}
-			/* check the chipset type */
-			oem_id = ipmi_get_oem_id(intf);
-			if (oem_id == 0) {
-				if (desc) {
-					free(desc);
-					desc = NULL;
-				}
-				return NULL;
-			}
-			for (i = 0; supermicro_X8[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_X8[i]) {
-					chipset_type = 0;
-					break;
-				}
-			}
-			for (i = 0; supermicro_older[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_older[i]) {
-					chipset_type = 0;
-					break;
-				}
-			}
-			for (i = 0; supermicro_romely[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_romely[i]) {
-					chipset_type = 1;
-					break;
-				}
-			}
-			for (i = 0; supermicro_x9[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_x9[i]) {
-					chipset_type = 2;
-					break;
-				}
-			}
-			for (i = 0; supermicro_brickland[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_brickland[i]) {
-					chipset_type = 3;
-					break;
-				}
-			}
-			for (i = 0; supermicro_x10QRH[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_x10QRH[i]) {
-					chipset_type = 4;
-					break;
-				}
-			}
-			for (i = 0; supermicro_x10QBL[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_x10QBL[i]) {
-					chipset_type = 4;
-					break;
-				}
-			}
-			for (i = 0; supermicro_x10OBi[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_x10OBi[i]) {
-					chipset_type = 5;
-					break;
-				}
-			}
-			if (chipset_type == 0) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%2X(CPU%x)",
-						data2,
-						(data3 & 0x03) + 1);
-			} else if (chipset_type == 1) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
-						(data2 >> 4) + 0x40 + (data3 & 0x3) * 4,
-						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
-			} else if (chipset_type == 2) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
-						(data2 >> 4) + 0x40 + (data3 & 0x3) * 3,
-						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
-			} else if (chipset_type == 3) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%d(P%dM%d)",
-						((data2 & 0xf) >> 4) > 4
-						? '@' - 4 + ((data2 & 0xff) >> 4)
-						: '@' + ((data2 & 0xff) >> 4),
-						(data2 & 0xf) - 0x09, (data3 & 0x0f) + 1,
-						(data2 & 0xff) >> 4 > 4 ? 2 : 1);
-			} else if (chipset_type == 4) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
-						(data2 >> 4) + 0x40,
-						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
-			} else if (chipset_type == 5) {
-				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
-						(data2 >> 4) + 0x40,
-						(data2 & 0xf) + 0x27, (data3 & 0x07) + 1);
-			} else {
-				/* No description. */
-				desc[0] = '\0';
-			}
-			break;
-		case SENSOR_TYPE_SUPERMICRO_OEM:
-			if (data1 == 0x80 && data3 == 0xFF) {
-				if (data2 == 0x0) {
-					snprintf(desc, SIZE_OF_DESC, "BMC unexpected reset");
-				} else if (data2 == 0x1) {
-					snprintf(desc, SIZE_OF_DESC, "BMC cold reset");
-				} else if (data2 == 0x2) {
-					snprintf(desc, SIZE_OF_DESC, "BMC warm reset");
-				}
-			}
-			break;
-	}
-	return desc;
 }
 
 /*
@@ -1214,7 +1054,7 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 		break;
 	case IPMI_OEM_SUPERMICRO:
 	case IPMI_OEM_SUPERMICRO_47488:
-		desc = get_supermicro_evt_desc(intf, rec);
+		desc = oem_supermicro_get_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_QUANTA:
 		desc = oem_qct_get_evt_desc(intf, rec);
