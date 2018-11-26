@@ -1300,6 +1300,10 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		free(uploadCmd.req);
 		uploadCmd.req = NULL;
 	}
+
+	/* skip can be set in the above condition on failure, which skips the
+	 * while loop.
+	 */
 	if (skip) {
 		HpmDisplayUpgrade(1,0,0,0);
 		if ((option & COMPARE_MODE)
