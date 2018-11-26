@@ -2814,10 +2814,8 @@ int ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type)
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3343,10 +3341,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf,
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3389,10 +3385,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bynumtype(struct ipmi_intf *intf,
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3472,10 +3466,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf,
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3512,10 +3504,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bysensortype(struct ipmi_intf *intf,
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3626,10 +3616,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf,
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3692,10 +3680,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf,
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3762,10 +3748,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf,
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3798,10 +3782,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf,
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3913,10 +3895,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -3988,10 +3968,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf, char *id)
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -4096,14 +4074,11 @@ int ipmi_sdr_list_cache_fromfile(const char *ifile)
 				"record %04x read %d bytes, expected %d",
 				header.id, bc, header.length);
 			ret = -1;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
-			if (rec) {
-				free(rec);
-				rec = NULL;
-			}
+
+			free(sdrr);
+			sdrr = NULL;
+			free(rec);
+			rec = NULL;
 			break;
 		}
 
@@ -4136,10 +4111,8 @@ int ipmi_sdr_list_cache_fromfile(const char *ifile)
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -4204,10 +4177,8 @@ int ipmi_sdr_list_cache(struct ipmi_intf *intf)
 
 		rec = ipmi_sdr_get_record(intf, header, sdr_list_itr);
 		if (!rec) {
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -4240,10 +4211,8 @@ int ipmi_sdr_list_cache(struct ipmi_intf *intf)
 		default:
 			free(rec);
 			rec = NULL;
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			continue;
 		}
 
@@ -4452,10 +4421,8 @@ ipmi_sdr_dump_bin(struct ipmi_intf *intf, const char *ofile)
 			lprintf(LOG_ERR,
 				"ipmitool: cannot obtain SDR record %04x",
 				header->id);
-			if (sdrr) {
-				free(sdrr);
-				sdrr = NULL;
-			}
+			free(sdrr);
+			sdrr = NULL;
 			return -1;
 		}
 
