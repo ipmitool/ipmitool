@@ -3304,14 +3304,14 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 	if (verbose > 1) {
 		rdata = (void *)pstMinpower;
 		printf("Peak power consmhistory  Data               : "
-				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-				rdata[0], rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10], rdata[11],
-				rdata[12], rdata[13], rdata[14], rdata[15],
-				rdata[16], rdata[17], rdata[18], rdata[19],
-				rdata[20], rdata[21], rdata[22], rdata[23]);
+		       "%x %x %x %x %x %x %x %x %x %x\n   "
+		       "%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
+		       rdata[0], rdata[1], rdata[2], rdata[3],
+		       rdata[4], rdata[5], rdata[6], rdata[7],
+		       rdata[8], rdata[9], rdata[10], rdata[11],
+		       rdata[12], rdata[13], rdata[14], rdata[15],
+		       rdata[16], rdata[17], rdata[18], rdata[19],
+		       rdata[20], rdata[21], rdata[22], rdata[23]);
 	}
 # if WORDS_BIGENDIAN
 	pstMinpower->lastminutepower = BSWAP_16(pstMinpower->lastminutepower);
@@ -3484,10 +3484,10 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 	}
 	if (verbose > 1) {
 		rdata = (void*)ipmipowercap;
-		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-				rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10],rdata[11]);
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x",
+		       rdata[1], rdata[2], rdata[3],
+		       rdata[4], rdata[5], rdata[6], rdata[7],
+		       rdata[8], rdata[9], rdata[10],rdata[11]);
 	}
 # if WORDS_BIGENDIAN
 	ipmipowercap->PowerCap = BSWAP_16(ipmipowercap->PowerCap);
