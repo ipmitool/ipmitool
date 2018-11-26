@@ -210,12 +210,11 @@ static void ipmi_sunoem_usage(void)
 
 static void __sdr_list_empty(struct sdr_record_list *head)
 {
-	struct sdr_record_list * e, *f;
+	struct sdr_record_list *e, *f;
 	for (e = head; e; e = f) {
 		f = e->next;
 		free(e);
 	}
-	head = NULL;
 }
 
 /*
