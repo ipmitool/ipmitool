@@ -42,6 +42,8 @@
 # include <config.h>
 #endif
 
+#define FRU_END_OF_FIELDS 0xc1
+
 #define GET_FRU_INFO		0x10
 #define GET_FRU_DATA		0x11
 #define SET_FRU_DATA		0x12
