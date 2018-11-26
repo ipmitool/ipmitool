@@ -1555,6 +1555,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 			if (retval == -1) {
 				/* ERROR */
 				perror("select");
+				free(buffer);
 				return -1;
 			}
 
@@ -1606,6 +1607,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 	}
 
 	leave_raw_mode();
+	free(buffer);
 
 	if (keepAliveRet != 0) {
 		lprintf(LOG_ERR,
