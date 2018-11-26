@@ -4082,6 +4082,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		*list_record = malloc(sizeof(struct ipmi_ek_multi_header));
 		if (!(*list_record)) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			fclose(input_file);
 			return ERROR_STATUS;
 		}
 		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1,
