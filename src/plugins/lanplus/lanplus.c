@@ -3303,7 +3303,7 @@ ipmi_lanplus_rakp3(struct ipmi_intf * intf)
  * ipmi_lan_close
  */
 void
-ipmi_lanplus_close(struct ipmi_intf * intf)
+ipmi_lanplus_close(struct ipmi_intf *intf)
 {
 	if (!intf->abort && intf->session)
 		ipmi_close_session_cmd(intf);
@@ -3317,7 +3317,6 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 	ipmi_intf_session_cleanup(intf);
 	intf->opened = 0;
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
-	intf = NULL;
 }
 
 
