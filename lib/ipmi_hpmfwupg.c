@@ -1383,21 +1383,21 @@ HpmfwupgActivationStage(struct ipmi_intf *intf,
 
 int
 HpmfwupgGetBufferFromFile(char *imageFilename,
-		struct HpmfwupgUpgradeCtx *pFwupgCtx)
+			  struct HpmfwupgUpgradeCtx *pFwupgCtx)
 {
 	int rc = HPMFWUPG_SUCCESS;
 	int ret = 0;
 	FILE *pImageFile = fopen(imageFilename, "rb");
 	if (!pImageFile) {
 		lprintf(LOG_ERR, "Cannot open image file '%s'",
-				imageFilename);
+			imageFilename);
 		return HPMFWUPG_ERROR;
 	}
 	/* Get the raw data in file */
 	ret = fseek(pImageFile, 0, SEEK_END);
 	if (ret != 0) {
 		lprintf(LOG_ERR, "Failed to seek in the image file '%s'",
-				imageFilename);
+			imageFilename);
 		return HPMFWUPG_ERROR;
 	}
 	pFwupgCtx->imageSize  = ftell(pImageFile);
@@ -1409,14 +1409,14 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 	}
 	rewind(pImageFile);
 	ret = fread(pFwupgCtx->pImageData,
-			sizeof(unsigned char),
-			pFwupgCtx->imageSize,
-			pImageFile);
+		    sizeof(unsigned char),
+		    pFwupgCtx->imageSize,
+		    pImageFile);
 	if (ret != pFwupgCtx->imageSize) {
 		lprintf(LOG_ERR,
-				"Failed to read file %s size %d", 
-				imageFilename,
-				pFwupgCtx->imageSize);
+			"Failed to read file %s size %d",
+			imageFilename,
+			pFwupgCtx->imageSize);
 		rc = HPMFWUPG_ERROR;
 	}
 	fclose(pImageFile);
