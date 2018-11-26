@@ -1129,7 +1129,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	/* validate lower bound of max request size */
 	if (max_rq_size <= sizeof(struct HpmfwupgUploadFirmwareBlockReq)) {
 		lprintf(LOG_ERROR, "Maximum request size is too small to "
-				"send a upload request.");
+			"send a upload request.");
 		return HPMFWUPG_ERROR;
 	}
 
@@ -1146,18 +1146,20 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	}
 	if ((option & DEBUG_MODE)) {
 		printf("\n\n Comp ID : %d	 [%-20s]\n",
-				pVersionInfo->componentId,
-				pFwImage->desc);
+		       pVersionInfo->componentId,
+		       pFwImage->desc);
 	} else {
 		HpmDisplayVersion(mode, pVersionInfo, 0);
 	}
+
 	if ((1 << componentId) & pFwupgCtx->compUpdateMask.ComponentBits.byte) {
 		if (verbose) {
 			lprintf(LOG_NOTICE, "Do not skip %d",
-					componentId);
+				componentId);
 		}
 		skip = FALSE;
 	}
+
 	if (!skip) {
 		HpmDisplayUpgrade(0,0,1,0);
 		/* Initialize parameters */
@@ -1176,6 +1178,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			/* Action is upgrade */
 			initUpgActionCmd.req.upgradeAction = HPMFWUPG_UPGRADE_ACTION_UPGRADE;
 		}
+
 		rc = HpmfwupgInitiateUpgradeAction(intf, &initUpgActionCmd, pFwupgCtx);
 		if (rc != HPMFWUPG_SUCCESS) {
 			skip = TRUE;
@@ -1202,7 +1205,9 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			blockLength = 0x00;
 			numTxPkts++;
 			rc = HpmfwupgUploadFirmwareBlock(intf, &uploadCmd,
-					pFwupgCtx, count, &imageOffset,&blockLength);
+							 pFwupgCtx, count,
+							 &imageOffset,
+							 &blockLength);
 			numRxPkts++;
 			if (rc != HPMFWUPG_SUCCESS) {
 				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH && !bufLengthIsSet) {
@@ -1211,13 +1216,13 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 					if (strstr(intf->name,"lan") && bufLength > 8) {
 						bufLength-= 8;
 						lprintf(LOG_INFO,
-								"Trying reduced buffer length: %d",
-								bufLength);
+							"Trying reduced buffer length: %d",
+							bufLength);
 					} else if (bufLength) {
 						bufLength-= 1;
 						lprintf(LOG_INFO,
-								"Trying reduced buffer length: %d",
-								bufLength);
+							"Trying reduced buffer length: %d",
+							bufLength);
 					} else {
 						rc = HPMFWUPG_ERROR;
 					}
@@ -1226,11 +1231,11 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				} else {
 					fflush(stdout);
 					lprintf(LOG_NOTICE,
-							"\n Error in Upload FIRMWARE command [rc=%d]\n",
-							rc);
+						"\n Error in Upload FIRMWARE command [rc=%d]\n",
+						rc);
 					lprintf(LOG_NOTICE,
-							"\n TotalSent:0x%x ",
-							totalSent);
+						"\n TotalSent:0x%x ",
+						totalSent);
 					/* Exiting from the function */
 					rc = HPMFWUPG_ERROR;
 				}
@@ -1238,18 +1243,18 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				/* success, buf length is valid */
 				bufLengthIsSet = 1;
 				if (imageOffset + blockLength > firmwareLength ||
-						imageOffset + blockLength < blockLength) {
+				    imageOffset + blockLength < blockLength) {
 					/*
 					 * blockLength is the remaining length of the firmware to upload so
 					 * if imageOffset and blockLength sum is greater than the firmware
 					 * length then its kind of error
 					 */
 					lprintf(LOG_NOTICE,
-							"\n Error in Upload FIRMWARE command [rc=%d]\n",
-							rc);
+						"\n Error in Upload FIRMWARE command [rc=%d]\n",
+						rc);
 					lprintf(LOG_NOTICE,
-							"\n TotalSent:0x%x Img offset:0x%x  Blk length:0x%x  Fwlen:0x%x\n",
-							totalSent,imageOffset,blockLength,firmwareLength);
+						"\n TotalSent:0x%x Img offset:0x%x  Blk length:0x%x  Fwlen:0x%x\n",
+						totalSent,imageOffset,blockLength,firmwareLength);
 					rc = HPMFWUPG_ERROR;
 					continue;
 				}
@@ -1274,19 +1279,19 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				if (option & DEBUG_MODE) {
 					fflush(stdout);
 					printf(" Blk Num : %02x        Bytes : %05x ",
-							uploadCmd.req->blockNumber,totalSent);
+					       uploadCmd.req->blockNumber,totalSent);
 					if (imageOffset || blockLength) {
 						printf("\n--> ImgOff : %x BlkLen : %x\n",
-								imageOffset,blockLength);
+						       imageOffset,blockLength);
 					}
 					if (displayFWLength == totalSent) {
 						printf("\n Time Taken %02ld:%02ld",
-								(end-start)/60, (end-start)%60);
+						       (end-start)/60, (end-start)%60);
 						printf("\n\n");
 					}
 				} else {
 					HpmDisplayUpgrade(0, totalSent,
-							displayFWLength, (end-start));
+							  displayFWLength, (end-start));
 				}
 				uploadCmd.req->blockNumber++;
 			}
@@ -1303,6 +1308,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		}
 		*pImagePtr = pDataInitial + firmwareLength;
 	}
+
 	if (rc == HPMFWUPG_SUCCESS && !skip) {
 		/* Send finish component */
 		/* Set image length */
@@ -1315,7 +1321,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		finishCmd.req.imageLength[2] = (totalSent >> 16) & 0xFF;
 		finishCmd.req.imageLength[3] = (totalSent >> 24) & 0xFF;
 		rc = HpmfwupgFinishFirmwareUpload(intf, &finishCmd,
-				pFwupgCtx, option);
+						  pFwupgCtx, option);
 		*pImagePtr = pDataInitial + firmwareLength;
 	}
 	return rc;
