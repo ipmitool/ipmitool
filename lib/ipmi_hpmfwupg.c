@@ -302,7 +302,7 @@ int
 HpmfwupgTargetCheck(struct ipmi_intf *intf, int option)
 {
 	struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
-	int rc = HPMFWUPG_SUCCESS;
+	int rc;
 	int componentId = 0;
 	struct ipm_devid_rsp devIdrsp;
 	struct HpmfwupgGetComponentPropertiesCtx getCompProp;
@@ -465,7 +465,7 @@ int
 HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 		int componentMask, int option)
 {
-	int rc = HPMFWUPG_SUCCESS;
+	int rc;
 	struct HpmfwupgUpgradeCtx  fwupgCtx;
 	/* INITIALIZE UPGRADE CONTEXT */
 	memset(&fwupgCtx, 0, sizeof (fwupgCtx));
@@ -609,7 +609,7 @@ HpmfwupgPreparationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx, int option)
 {
 	int componentId;
-	int rc = HPMFWUPG_SUCCESS;
+	int rc;
 	struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
 	struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 		pFwupgCtx->pImageData;
@@ -1335,7 +1335,7 @@ int
 HpmfwupgActivationStage(struct ipmi_intf *intf,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx)
 {
-	int rc = HPMFWUPG_SUCCESS;
+	int rc;
 	struct HpmfwupgActivateFirmwareCtx activateCmd;
 	struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 		pFwupgCtx->pImageData;
@@ -1930,7 +1930,7 @@ HpmfwupgManualFirmwareRollback(struct ipmi_intf *intf,
 {
 	struct HpmfwupgUpgradeCtx fwupgCtx;
 	struct HpmfwupgGetTargetUpgCapabilitiesCtx targetCapCmd;
-	int rc = HPMFWUPG_SUCCESS;
+	int rc;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	/* prepare fake upgrade context */
