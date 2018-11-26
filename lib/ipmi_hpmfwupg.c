@@ -1398,6 +1398,7 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 	if (ret != 0) {
 		lprintf(LOG_ERR, "Failed to seek in the image file '%s'",
 			imageFilename);
+		fclose(pImageFile);
 		return HPMFWUPG_ERROR;
 	}
 	pFwupgCtx->imageSize  = ftell(pImageFile);
