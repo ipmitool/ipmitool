@@ -3164,7 +3164,6 @@ void ipmi_sdr_end(struct ipmi_sdr_iterator *itr)
 {
 	if (itr) {
 		free(itr);
-		itr = NULL;
 	}
 }
 
@@ -3219,7 +3218,6 @@ __sdr_list_empty(struct sdr_record_list *head)
 		free(e);
 		e = NULL;
 	}
-	head = NULL;
 }
 
 /* ipmi_sdr_list_empty  -  clean global SDR list
