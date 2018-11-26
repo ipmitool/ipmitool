@@ -276,12 +276,12 @@ int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
  */
 int KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
-	FILE *pFileHandle = NULL;
+	FILE *pFileHandle;
 	pFileHandle = fopen(pFileName, "rb");
 	if (!pFileHandle) {
 		return (-1);
 	}
-	if (fseek(pFileHandle, 0L , SEEK_END) == 0) {
+	if (fseek(pFileHandle, 0L, SEEK_END) == 0) {
 		*pFileSize = ftell(pFileHandle);
 	}
 	fclose(pFileHandle);
@@ -301,7 +301,7 @@ int KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 int KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 {
 	int rc = (-1);
-	FILE *pFileHandle = NULL;
+	FILE *pFileHandle;
 	int count;
 	int modulus;
 	int qty = 0;
