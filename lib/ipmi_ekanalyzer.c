@@ -4068,14 +4068,14 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 	}
 	if (data == 0) {
 		lprintf(LOG_ERR, "There is no multi record in the file '%s'",
-				filename);
+			filename);
 		fclose(input_file);
 		return ERROR_STATUS;
 	}
 	/* the offset value is in multiple of 8 bytes. */
 	multi_offset = data * 8;
-	lprintf(LOG_DEBUG, "start multi offset = 0x%02x", 
-			multi_offset);
+	lprintf(LOG_DEBUG, "start multi offset = 0x%02x",
+		multi_offset);
 
 	fseek(input_file, multi_offset, SEEK_SET);
 	while (!feof(input_file)) {
@@ -4084,7 +4084,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return ERROR_STATUS;
 		}
-		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1, 
+		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1,
 				input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			free(*list_record);
@@ -4100,7 +4100,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		(*list_record)->data = malloc((*list_record)->header.len);
 		if (!(*list_record)->data) {
 			lprintf(LOG_ERR, "Failed to allocation memory size %d\n",
-					(*list_record)->header.len);
+				(*list_record)->header.len);
 			record_count++;
 			continue;
 		}
@@ -4114,7 +4114,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		}
 		if (verbose > 0)
 			printf("Record %d has length = %02x\n", record_count,
-					(*list_record)->header.len);
+			       (*list_record)->header.len);
 		if (verbose > 1) {
 			int i;
 			printf("Type: %02x", (*list_record)->header.type);
