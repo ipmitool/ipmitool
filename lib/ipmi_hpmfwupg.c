@@ -1103,8 +1103,6 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	unsigned int imageOffset = 0x00;
 	unsigned int blockLength = 0x00;
 	unsigned int lengthOfBlock = 0x00;
-	unsigned int numTxPkts = 0;
-	unsigned int numRxPkts = 0;
 	unsigned char mode = 0;
 	unsigned char componentId = 0x00;
 	unsigned char componentIdByte = 0x00;
@@ -1203,12 +1201,10 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			memcpy(&uploadCmd.req->data, pData, count);
 			imageOffset = 0x00;
 			blockLength = 0x00;
-			numTxPkts++;
 			rc = HpmfwupgUploadFirmwareBlock(intf, &uploadCmd,
 							 pFwupgCtx, count,
 							 &imageOffset,
 							 &blockLength);
-			numRxPkts++;
 			if (rc != HPMFWUPG_SUCCESS) {
 				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH && !bufLengthIsSet) {
 					rc = HPMFWUPG_SUCCESS;
