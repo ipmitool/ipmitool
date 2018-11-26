@@ -1000,8 +1000,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	/* read any extra fields */
-	while ((fru_data[i] != 0xc1) && (i < fru_len))
-	{
+	while ((i < fru_len) && (fru_data[i] != FRU_END_OF_FIELDS)) {
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area) {
@@ -1124,8 +1123,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	/* read any extra fields */
-	while ((fru_data[i] != 0xc1) && (i < fru_len))
-	{
+	while ((i < fru_len) && (fru_data[i] != FRU_END_OF_FIELDS)) {
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area) {
@@ -1259,8 +1257,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	}
 
 	/* read any extra fields */
-	while ((fru_data[i] != 0xc1) && (i < fru_len))
-	{
+	while ((i < fru_len) && (fru_data[i] != FRU_END_OF_FIELDS)) {
 		int j = i;
 		fru_area = get_fru_area_str(fru_data, &i);
 		if (fru_area) {
