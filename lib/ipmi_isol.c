@@ -568,6 +568,7 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 			if (retval == -1) {
 				/* ERROR */
 				perror("select");
+				free(buffer);
 				return -1;
 			}
 
@@ -631,6 +632,7 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 		ipmi_isol_deactivate(intf);
 	}
 
+	free(buffer);
 	return 0;
 }
 
