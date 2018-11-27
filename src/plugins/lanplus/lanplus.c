@@ -1882,8 +1882,6 @@ ipmi_lanplus_build_v2x_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req,
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
 		/* it's a bridge command */
 	} else {
-		unsigned char backup_cmd;
-
 		/* Add entry for cmd */
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
 
