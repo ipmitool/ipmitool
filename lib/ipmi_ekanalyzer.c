@@ -2704,6 +2704,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	unsigned char len = 0;
 	unsigned int size_board = 0;
 	int custom_fields = 0;
+
 	if (!input_file || !board_type || !board_length) {
 		return (size_t)(-1);
 	}
@@ -2729,7 +2730,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		printf("%s: None\n", board_type);
 		goto out;
 	}
-	if (strncmp(board_type, "Custom", 6 ) != 0) {
+	if (strncmp(board_type, "Custom", 6) != 0) {
 		unsigned char *data, *str;
 		unsigned int i = 0;
 		data = malloc(size_board + 1); /* Make room for type/length field */
@@ -2751,9 +2752,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		str = (unsigned char *)get_fru_area_str(data, &i);
 		printf("%s\n", str);
 		free(str);
-		str = NULL;
 		free(data);
-		data = NULL;
 		(*board_length) -= size_board;
 		goto out;
 	}
@@ -2761,7 +2760,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		if (len == NO_MORE_INFO_FIELD) {
 			unsigned char padding;
 			unsigned char checksum = 0;
-			/* take the rest of data in the area minus 1 byte of 
+			/* take the rest of data in the area minus 1 byte of
 			 * checksum
 			 */
 			if (custom_fields) {
@@ -2797,10 +2796,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			ret = fread(additional_data + 1, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
-				if (additional_data) {
-					free(additional_data);
-					additional_data = NULL;
-				}
+				free(additional_data);
 				goto out;
 			}
 			printf("Additional Custom Mfg. Data: ");
@@ -2808,9 +2804,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			str = (unsigned char *)get_fru_area_str(additional_data, &i);
 			printf("%s\n", str);
 			free(str);
-			str = NULL;
 			free(additional_data);
-			additional_data = NULL;
 
 			(*board_length) -= size_board;
 			ret = fread(&len, 1, 1, input_file);
@@ -2827,7 +2821,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			goto out;
 		}
 	}
- 
+
 out:
 	file_offset = ftell(input_file);
 	return file_offset;
