@@ -2667,7 +2667,7 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 static int
 ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[2];
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2954,7 +2954,7 @@ btuphr_to_watt_conversion(uint64_t powerinbtuphr)
 static int
 ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint64_t peakpowerheadroombtuphr;
 	uint64_t instantpowerhearoom;
@@ -3968,7 +3968,7 @@ IsSetLEDSupported(void)
 static void
 CheckSetLEDSupport(struct ipmi_intf * intf)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[10];
 
@@ -4013,7 +4013,7 @@ static int
 ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
 		int *slot)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[8];
 	/* Get mapping of BDF to bay:slot */
@@ -4064,7 +4064,7 @@ ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
 static int
 ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[20];
 	/* Issue Drive Status Update to bay:slot */
