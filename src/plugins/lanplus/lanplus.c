@@ -1953,7 +1953,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		.seq = 0xff,
 	};
 	uint8_t *msg;
-	int cs, mp, len = 0, tmp;
+	int cs, len = 0, tmp;
 	struct ipmi_session *session = intf->session;
 	struct ipmi_rq_entry *entry;
 
@@ -2001,7 +2001,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	msg[len++] = req->msg.data_len + 7;
 
 	/* ipmi message header */
-	cs = mp = len;
+	cs = len;
 	msg[len++] = IPMI_BMC_SLAVE_ADDR;
 	msg[len++] = req->msg.netfn << 2;
 	tmp = len - cs;
