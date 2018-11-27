@@ -1654,7 +1654,6 @@ static void ipmi_fru_oemkontron_get(int argc,
 	uint8_t blockCount;
 	uint8_t blockIndex = 0;
 
-	unsigned int matchInstance = 0;
 	uint8_t instance = 0;
 
 	if (str2uchar(argv[OEM_KONTRON_INSTANCE_ARG_POS], &instance) != 0) {
@@ -1696,7 +1695,6 @@ static void ipmi_fru_oemkontron_get(int argc,
 			       OEM_KONTRON_FIELD_SIZE,
 			       OEM_KONTRON_FIELD_SIZE,
 			       ((tOemKontronInformationRecordV0 *) pRecordData)->crc32);
-			matchInstance++;
 			offset += sizeof(tOemKontronInformationRecordV0);
 			offset++;
 		} else if (version == 1) {
@@ -1716,7 +1714,6 @@ static void ipmi_fru_oemkontron_get(int argc,
 			       OEM_KONTRON_FIELD_SIZE,
 			       OEM_KONTRON_FIELD_SIZE,
 			       ((tOemKontronInformationRecordV1 *) pRecordData)->crc32);
-			matchInstance++;
 			offset += sizeof(tOemKontronInformationRecordV1);
 			offset++;
 		} else {
