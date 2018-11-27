@@ -3758,29 +3758,30 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 }
 
 static int
-ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
-			char * pFileName,
-			uint8_t fruId)
+ipmi_fru_upg_ekeying(struct ipmi_intf *intf,
+		     char *pFileName,
+		     uint8_t fruId)
 {
 	struct fru_info fruInfo = {0};
-	uint8_t *buf = NULL;
+	uint8_t *buf;
 	uint32_t offFruMultiRec = 0;
 	uint32_t fruMultiRecSize = 0;
 	uint32_t offFileMultiRec = 0;
 	uint32_t fileMultiRecSize = 0;
+
 	if (!pFileName) {
 		lprintf(LOG_ERR, "File expected, but none given.");
 		return (-1);
 	}
 	if (ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
-							&offFruMultiRec, &fruMultiRecSize) != 0) {
+			&offFruMultiRec, &fruMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec location from FRU.");
 		return (-1);
 	}
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
 	if (ipmi_fru_get_multirec_size_from_file(pFileName, &fileMultiRecSize,
-				&offFileMultiRec) != 0) {
+			&offFileMultiRec) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec size from file '%s'.", pFileName);
 		return (-1);
 	}
@@ -3790,35 +3791,24 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		return (-1);
 	}
 	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
-				offFileMultiRec) != 0) {
+			offFileMultiRec) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.", pFileName);
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
+		free(buf);
 		return (-1);
 	}
 	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
+		free(buf);
 		return (-1);
 	}
 	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
-				fileMultiRecSize, buf) != 0) {
+			   fileMultiRecSize, buf) != 0) {
 		lprintf(LOG_ERR, "Failed to write FRU area.");
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
+		free(buf);
 		return (-1);
 	}
-	if (buf) {
-		free(buf);
-		buf = NULL;
-	}
+
+	free(buf);
 	lprintf(LOG_INFO, "Done upgrading Ekey.");
 	return 0;
 }
