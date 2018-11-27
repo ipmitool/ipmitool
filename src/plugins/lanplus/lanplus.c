@@ -586,9 +586,9 @@ int ipmiv2_lan_ping(struct ipmi_intf *intf)
  */
 static struct ipmi_rs *ipmi_lan_poll_single(struct ipmi_intf *intf)
 {
-	struct rmcp_hdr * rmcp_rsp;
-	struct ipmi_rs * rsp;
-	struct ipmi_session * session = intf->session;
+	struct rmcp_hdr *rmcp_rsp;
+	struct ipmi_rs *rsp;
+	struct ipmi_session *session = intf->session;
 	int offset, rv;
 	uint16_t payload_size;
 
@@ -732,8 +732,6 @@ static struct ipmi_rs *ipmi_lan_poll_single(struct ipmi_intf *intf)
 				return (struct ipmi_rs *)1;
 			};
 
-			uint8_t target_cmd = entry->req.msg.target_cmd;
-
 			lprintf(LOG_DEBUG + 2, "IPMI Request Match found");
 
 			if (entry->bridging_level) {
@@ -783,7 +781,7 @@ static struct ipmi_rs *ipmi_lan_poll_single(struct ipmi_intf *intf)
 
 			/* Remove request entry */
 			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
-					rsp->payload.ipmi_response.cmd);
+					      rsp->payload.ipmi_response.cmd);
 
 			/*
 			 * Good packet.  Shift response data to start of array.
@@ -860,12 +858,12 @@ static struct ipmi_rs *ipmi_lan_poll_single(struct ipmi_intf *intf)
 		} else {
 			rsp->data_len = 0;
 		}
-	/*
-	 * Unknown Payload type
-	 */
 	} else {
+		/*
+		 * Unknown Payload type
+		 */
 		lprintf(LOG_ERR, "Invalid RMCP+ payload type : 0x%x",
-				rsp->session.payloadtype);
+			rsp->session.payloadtype);
 		/* read one more packet */
 		return (struct ipmi_rs *)1;
 	}
