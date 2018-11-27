@@ -4214,5 +4214,4 @@ ipmi_ek_remove_record_from_list(struct ipmi_ek_multi_header *record,
 		record->next->prev = record->prev;
 	}
 	free(record);
-	record = NULL;
 }
