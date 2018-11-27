@@ -964,7 +964,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 					 struct ipmi_rq *req)
 {
 	struct ipmi_rq_entry *entry;
-	struct ipmi_rs *rsp = NULL;
+	struct ipmi_rs *rsp;
 	int try = 0;
 	int isRetry = 0;
 
@@ -1013,7 +1013,6 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 		/* Duplicate Request ccode most likely indicates a response to
 		 * a previous retry. Ignore and keep polling. */
 		if (rsp && rsp->ccode == 0xcf) {
-			rsp = NULL;
 			rsp = ipmi_lan_poll_recv(intf);
 		}
 
