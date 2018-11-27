@@ -859,9 +859,9 @@ static int ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
 static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 				  char *ifile)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	FILE * fp;
+	FILE *fp;
 	int count = 0;
 	uint8_t wbuf[SSHKEY_BLOCK_SIZE + 3];
 	int32_t i_size = 0;
@@ -887,31 +887,27 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 
 	if (fseek(fp, 0, SEEK_END) == (-1)) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
-		if (fp)
-			fclose(fp);
+		fclose(fp);
 
 		return (-1);
 	}
 
-	size = (int32_t) ftell(fp);
+	size = (int32_t)ftell(fp);
 	if (size < 0) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
-		if (fp)
-			fclose(fp);
+		fclose(fp);
 
 		return (-1);
 	} else if (size == 0) {
 		lprintf(LOG_ERR, "File '%s' is empty.", ifile);
-		if (fp)
-			fclose(fp);
+		fclose(fp);
 
 		return (-1);
 	}
 
 	if (fseek(fp, 0, SEEK_SET) == (-1)) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
-		if (fp)
-			fclose(fp);
+		fclose(fp);
 
 		return (-1);
 	}
@@ -931,8 +927,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 			lprintf(LOG_ERR,
 				"Unable to read %ld bytes from file '%s'.",
 				i_size, ifile);
-			if (fp)
-				fclose(fp);
+			fclose(fp);
 
 			return (-1);
 		}
@@ -949,15 +944,14 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 				lprintf(LOG_ERR,
 					"Unable to pack byte %ld from file '%s'.",
 					r, ifile);
-				if (fp)
-					fclose(fp);
+				fclose(fp);
 
 				return (-1);
 			}
-			wbuf[1] = (uint8_t) (r / SSHKEY_BLOCK_SIZE);
+			wbuf[1] = (uint8_t)(r / SSHKEY_BLOCK_SIZE);
 		}
 
-		wbuf[2] = (uint8_t) i_size;
+		wbuf[2] = (uint8_t)i_size;
 
 		req.msg.data_len = i_size + 3;
 
@@ -966,8 +960,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 			printf("failed\n");
 			lprintf(LOG_ERR, "Unable to set ssh key for UID %d.",
 				uid);
-			if (fp)
-				fclose(fp);
+			fclose(fp);
 
 			return (-1);
 		}
@@ -976,8 +969,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 			lprintf(LOG_ERR,
 				"Unable to set ssh key for UID %d, %s.", uid,
 				val2str(rsp->ccode, completion_code_vals));
-			if (fp)
-				fclose(fp);
+			fclose(fp);
 
 			return (-1);
 		}
@@ -986,7 +978,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 	printf("done\n");
 
 	fclose(fp);
-	return (0);
+	return 0;
 }
 
 /*
