@@ -2101,8 +2101,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 		if (xmit) {
 			ltime = time(NULL);
 
-			if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
-			{
+			if (payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI) {
 				/*
 				 * Build an IPMI v1.5 or v2 command
 				 */
@@ -2128,7 +2127,6 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 								.data[i]);
 					fprintf(stderr, "\n\n");
 				}
-
 
 				/*
 				 * If we are presession, and the command is GET
@@ -2245,8 +2243,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 		usleep(100);
 
 		/* Remember our connection state */
-		switch (payload->payload_type)
-		{
+		switch (payload->payload_type) {
 		case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
 			/* not retryable for timeouts, force no retry */
 			try = intf->ssn_params.retry;
@@ -2287,9 +2284,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 
 			if (sol_response_acks_packet(rsp, payload))
 				break;
-
-			else if (is_sol_packet(rsp) && rsp->data_len)
-			{
+			else if (is_sol_packet(rsp) && rsp->data_len) {
 				/*
 				 * We're still waiting for our ACK, but we more
 				 * data from the BMC
@@ -2300,24 +2295,21 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 				rsp->data_len = 0;
 				break;
 			}
-		}
+		} else {
+			/* Non-SOL processing */
 
-
-		/* Non-SOL processing */
-		else
-		{
 			rsp = ipmi_lan_poll_recv(intf);
 
 			/* Duplicate Request ccode most likely indicates a
 			 * response to a previous retry. Ignore and keep
 			 * polling. */
 			while (rsp && rsp->ccode == 0xcf) {
-				rsp = NULL;
 				rsp = ipmi_lan_poll_recv(intf);
 			}
 
 			if (rsp)
 				break;
+
 			/* This payload type is retryable for timeouts. */
 			if ((payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI)
 			    && entry) {
