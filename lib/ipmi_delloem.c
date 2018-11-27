@@ -922,17 +922,17 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 {
 	IPMI_DELL_LCD_CAPS lcd_caps;
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-	int rc;
+	int rc = -1;
 	printf("LCD info\n");
 	if (ipmi_lcd_get_configure_command_wh(intf) != 0) {
-		return -1;
+		goto out;
 	}
 	if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT) {
 		char text[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 		if (ipmi_lcd_get_platform_model_name(intf, text,
 					IPMI_DELL_LCD_STRING_LENGTH_MAX,
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			goto out;
 		}
 		printf("    Setting:Model name\n");
 		printf("    Line 1:  %s\n", text);
@@ -944,19 +944,23 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 				sizeof(lcd_caps), &lcd_caps);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
-			return -1;
+			ERR_OUT;
 		} else if ((rc == 0xc1) || (rc == 0xcb)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
 					val2str(rc, completion_code_vals));
-			return -1;
+			ERR_OUT;
 		}
 		if (lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
 			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
 					lcd_caps.max_chars[0]);
+			if (rc < 0) {
+				lprintf(LOG_ERR, "Error getting LCD single line.");
+				goto out;
+			}
 			printf("    Text:    %s\n", lcdstring);
 		} else {
 			printf("    No lines to show\n");
@@ -993,7 +997,9 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 	} else if (lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_VERBOSE) {
 		printf("    Error Display:  Simple\n");
 	}
-	return 0;
+	rc = 0;
+out:
+	return rc;
 }
 /*
  * Function Name:    ipmi_lcd_get_info
@@ -1009,19 +1015,19 @@ ipmi_lcd_get_info(struct ipmi_intf * intf)
 	IPMI_DELL_LCD_CAPS lcd_caps;
 	uint8_t command = 0;
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-	int rc;
+	int rc = -1;
 
 	printf("LCD info\n");
 
 	if (ipmi_lcd_get_configure_command(intf, &command) != 0) {
-		return -1;
+		goto out;
 	}
 	if (command == IPMI_DELL_LCD_CONFIG_DEFAULT) {
 		memset(lcdstring,0,IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
 		if (ipmi_lcd_get_platform_model_name(intf, lcdstring,
 					IPMI_DELL_LCD_STRING_LENGTH_MAX,
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			goto out;
 		}
 		printf("    Setting: default\n");
 		printf("    Line 1:  %s\n", lcdstring);
@@ -1033,25 +1039,32 @@ ipmi_lcd_get_info(struct ipmi_intf * intf)
 				sizeof(lcd_caps), &lcd_caps);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
-			return -1;
+			ERR_OUT;
 		} else if ((rc == 0xc1) || (rc == 0xcb)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
 					val2str(rc, completion_code_vals));
-			return -1;
+			ERR_OUT;
 		}
 		if (lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
 			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
 					lcd_caps.max_chars[0]);
+			if (rc < 0) {
+				lprintf(LOG_ERR, "Error getting LCD single line.");
+				goto out;
+			}
 			printf("    Text:    %s\n", lcdstring);
 		} else {
 			printf("    No lines to show\n");
 		}
 	}
-	return 0;
+
+	rc = 0;
+out:
+	return rc;
 }
 /*
  * Function Name:    ipmi_lcd_get_status_val
