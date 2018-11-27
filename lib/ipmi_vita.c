@@ -31,12 +31,20 @@
  */
 
 
+#include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_vita.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/log.h>
+
+enum vita_fru_policy_bits {
+	activation_locked = (1 << 0),
+	deactivation_locked = (1 << 1),
+	commanded_deactivation_ignored = (1 << 2),
+	default_activation_locked = (1 << 3),
+};
 
 /* Handled VITA 46.11 commands */
 #define VITA_CMD_HELP 0
@@ -350,8 +358,18 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 
 	tmp = (rsp->data[2] & 0x30) >> 4;
 
-	printf("    Frequency  %skHz\n",
-	       tmp == 0 ? "100" : tmp == 1 ? "400" : "RESERVED");
+	static const char const *rsvd = "RESERVED";
+	const char *freq = rsvd;
+	switch (tmp) {
+	case 0:
+		freq = "100";
+		break;
+	case 1:
+		freq = "400";
+		break;
+	}
+
+	printf("    Frequency  %skHz\n", freq);
 
 	tmp = rsp->data[2] & 3;
 
@@ -459,13 +477,13 @@ ipmi_vita_get_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 
 	printf("FRU State Policy Bits:	%xh\n", rsp->data[1]);
 	printf("    Default-Activation-Locked Policy Bit is %d\n",
-	       rsp->data[1] & 0x08 ? 1 : 0);
+	       IS_SET(rsp->data[1], default_activation_locked));
 	printf("    Commanded-Deactivation-Ignored Policy Bit is %d\n",
-	       rsp->data[1] & 0x04 ? 1 : 0);
+	       IS_SET(rsp->data[1], commanded_deactivation_ignored));
 	printf("    Deactivation-Locked Policy Bit is %d\n",
-	       rsp->data[1] & 0x02 ? 1 : 0);
+	       IS_SET(rsp->data[1], deactivation_locked));
 	printf("    Activation-Locked Policy Bit is %d\n",
-	       rsp->data[1] & 0x01);
+	       IS_SET(rsp->data[1], activation_locked));
 
 	return 0;
 }
