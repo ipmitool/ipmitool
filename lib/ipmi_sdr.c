@@ -2110,7 +2110,7 @@ void ipmi_sdr_print_discrete_state_mini(struct ipmi_intf *intf,
 					uint8_t state1, uint8_t state2)
 {
 	const struct ipmi_event_sensor_types *evt;
-	int pre = 0, c = 0;
+	int pre = 0;
 
 	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
@@ -2144,7 +2144,6 @@ void ipmi_sdr_print_discrete_state_mini(struct ipmi_intf *intf,
 				}
 			}
 		}
-		c++;
 	}
 }
 
@@ -2163,7 +2162,7 @@ void ipmi_sdr_print_discrete_state(struct ipmi_intf *intf, const char *desc,
 				   uint8_t state1, uint8_t state2)
 {
 	const struct ipmi_event_sensor_types *evt;
-	int pre = 0, c = 0;
+	int pre = 0;
 
 	if (state1 == 0 && (state2 & 0x7f) == 0)
 		return;
@@ -2204,7 +2203,6 @@ void ipmi_sdr_print_discrete_state(struct ipmi_intf *intf, const char *desc,
 				}
 			}
 		}
-		c++;
 	}
 }
 
