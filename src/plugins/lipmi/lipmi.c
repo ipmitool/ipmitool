@@ -80,8 +80,7 @@ ipmi_lipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 {
 	struct strioctl istr;
 	static struct lipmi_reqrsp reqrsp;
-	static struct ipmi_rs rsp;	
-	static int curr_seq = 0;
+	static struct ipmi_rs rsp;
 
 	if (!intf || !req)
 		return NULL;
