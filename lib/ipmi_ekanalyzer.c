@@ -2414,7 +2414,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	size_t file_offset = 0;
 	struct fru_header header;
 	time_t ts;
-	int ret = 0;
+	int ret;
 	unsigned char data = 0;
 	unsigned char lan_code = 0;
 	unsigned char mfg_date[SIZE_MFG_DATE];
@@ -2478,16 +2478,16 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	if (header.offset.chassis != 0) {
 		long offset = 0;
 		offset = header.offset.chassis * FACTOR_OFFSET;
-		ret = ipmi_ek_display_chassis_info_area(input_file, offset);
+		(void)ipmi_ek_display_chassis_info_area(input_file, offset);
 	}
 	/*** Display FRU Board Info Area ***/
 	while (1) {
 		if (header.offset.board == 0) {
 			break;
 		}
-		ret = fseek(input_file,
-				(header.offset.board * FACTOR_OFFSET),
-				SEEK_SET);
+		(void)fseek(input_file,
+			    (header.offset.board * FACTOR_OFFSET),
+			    SEEK_SET);
 		if (feof(input_file)) {
 			break;
 		}
@@ -2553,27 +2553,27 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		/* Board Mfg */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Manufacture Data", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Product */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Product Name", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Serial */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Serial Number", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Part */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Part Number", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* FRU file ID */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "FRU File ID", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Additional Custom Mfg. */
 		file_offset = ipmi_ek_display_board_info_area(
@@ -2584,7 +2584,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	if (header.offset.product && (!feof(input_file))) {
 		long offset = 0;
 		offset = header.offset.product * FACTOR_OFFSET;
-		ret = ipmi_ek_display_product_info_area(input_file,
+		(void)ipmi_ek_display_product_info_area(input_file,
 				offset);
 	}
 	fclose(input_file);
@@ -2615,7 +2615,7 @@ static int
 ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 {
 	size_t file_offset;
-	int ret = 0;
+	int ret;
 	unsigned char data = 0;
 	unsigned char ch_len = 0;
 	unsigned char ch_type = 0;
@@ -2628,7 +2628,7 @@ ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Chassis Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-	ret = fseek(input_file, offset, SEEK_SET);
+	(void)fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Chassis Info Area!");
 		return (-1);
@@ -2662,13 +2662,13 @@ ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 	/* Chassis Part Number*/
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Part Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Chassis Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Serial Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
-	file_offset = ipmi_ek_display_board_info_area(input_file,
+	(void)ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
 	return 0;
 }
@@ -2857,7 +2857,7 @@ static int
 ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 {
 	size_t file_offset;
-	int ret = 0;
+	int ret;
 	unsigned char ch_len = 0;
 	unsigned char data = 0;
 	unsigned int len = 0;
@@ -2866,15 +2866,18 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 		lprintf(LOG_ERR, "No file stream to read.");
 		return (-1);
 	}
+
 	file_offset = ftell(input_file);
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Product Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-	ret = fseek(input_file, offset, SEEK_SET);
+
+	(void)fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Product Info Area!");
 		return (-1);
 	}
+
 	ret = fread(&data, 1, 1, input_file);
 	if ((ret != 1) || ferror(input_file)) {
 		lprintf(LOG_ERR, "Invalid Data!");
@@ -2907,33 +2910,33 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 	/* Product Mfg */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Manufacture Data", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Name */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Name", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Part */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Part/Model Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Version */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Version", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Serial Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Asset Tag */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Asset Tag", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* FRU file ID */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"FRU File ID", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
-	file_offset = ipmi_ek_display_board_info_area(input_file,
+	(void)ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
 	return 0;
 }
@@ -3292,27 +3295,26 @@ ipmi_ek_display_shelf_ip_connection_record(struct ipmi_ek_multi_header *record)
 	int ioffset = START_DATA_OFFSET;
 	if (ioffset > record->header.len) {
 		printf("   Shelf Manager IP Address: %d.%d.%d.%d\n",
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 		ioffset += 4;
 	}
 	if (ioffset > record->header.len) {
 		printf("   Default Gateway Address: %d.%d.%d.%d\n",
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 		ioffset += 4;
 	}
 	if (ioffset > record->header.len) {
-		printf("   Subnet Mask: %d.%d.%d.%d\n", 
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
-		ioffset += 4;
+		printf("   Subnet Mask: %d.%d.%d.%d\n",
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 	}
 }
 
