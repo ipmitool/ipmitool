@@ -1208,6 +1208,38 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
    return return_value;
 }
 
+static int ipmi_ek_get_carrier_count(
+		int index1,
+		struct ipmi_ek_multi_header **list_head)
+{
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record2 = 0;
+
+	for (record = list_head[index1]; record; record = record->next) {
+		if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+			num_amc_record2++;
+		}
+	}
+
+	return num_amc_record2;
+}
+
+static int ipmi_ek_get_amc_count(
+		int index2,
+		struct ipmi_ek_multi_header **list_head)
+{
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record1 = 0;
+
+	for (record = list_head[index2]; record; record = record->next) {
+		if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+			num_amc_record1++;
+		}
+	}
+
+	return num_amc_record1;
+}
+
 /**************************************************************************
 *
 * Function name: ipmi_ek_matching_process
@@ -1236,88 +1268,83 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 *           exist.
 *
 ***************************************************************************/
-static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
-      struct ipmi_ek_multi_header ** list_head,
-      char * opt,
-      struct ipmi_ek_multi_header * pphysical )
+static int ipmi_ek_matching_process(int *file_type, int index1, int index2,
+		struct ipmi_ek_multi_header **list_head,
+		char *opt,
+		struct ipmi_ek_multi_header *pphysical)
 {
-   int result = ERROR_STATUS;
-   struct ipmi_ek_multi_header * record;
-   int num_amc_record1 = 0;/*Number of AMC records in the first module*/
-   int num_amc_record2 = 0;/*Number of AMC records in the second module*/
+	int result = ERROR_STATUS;
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record1 = 0; /* Number of AMC records in the first module */
+	int num_amc_record2 = 0; /* Number of AMC records in the second module */
 
-   /* Comparison between an On-Carrier and an AMC*/
-   if ( file_type[index2] == ON_CARRIER_FRU_FILE ){
-      int index_temp = 0;
-      index_temp = index1;
-      index1 = index2; /*index1 indicate on carrier*/
-      index2 = index_temp; /*index2 indcate an AMC*/
-   }
-   /*Calculate record size for Carrier file*/
-   for (record = list_head[index1]; record; record = record->next ){
-      if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-         num_amc_record2++;
-      }
-   }
-   /*Calculate record size for amc file*/
-   for (record = list_head[index2]; record; record = record->next){
-      if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-         num_amc_record1++;
-      }
-   }
-   if ( (num_amc_record1 > 0) && (num_amc_record2 > 0) ){
-      int index_record1 = 0;
-      int index_record2 = 0;
-      /* Multi records of AMC module */
-      struct ipmi_ek_amc_p2p_connectivity_record * amc_record1 = NULL;
-      /* Multi records of Carrier or an AMC module */
-      struct ipmi_ek_amc_p2p_connectivity_record * amc_record2 = NULL;
+	/* Comparison between an On-Carrier and an AMC*/
+	if (file_type[index2] == ON_CARRIER_FRU_FILE) {
+		int index_temp = 0;
+		index_temp = index1;
+		index1 = index2; /* index1 indicate on carrier */
+		index2 = index_temp; /* index2 indcate an AMC */
+	}
+	/* Calculate record size for Carrier file */
+	num_amc_record2 = ipmi_ek_get_carrier_count(index1, list_head);
+	/* Calculate record size for amc file */
+	num_amc_record1 = ipmi_ek_get_amc_count(index2, list_head);
 
-      amc_record1 = malloc ( num_amc_record1 * \
-                           sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
-      amc_record2 = malloc ( num_amc_record2 * \
-                           sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
+	if ((num_amc_record1 > 0) && (num_amc_record2 > 0)) {
+		int index_record1 = 0;
+		int index_record2 = 0;
+		/* Multi records of AMC module */
+		struct ipmi_ek_amc_p2p_connectivity_record *amc_record1;
+		/* Multi records of Carrier or an AMC module */
+		struct ipmi_ek_amc_p2p_connectivity_record *amc_record2;
 
-      for (record = list_head[index2]; record; record = record->next) {
-         if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-            result = ipmi_ek_create_amc_p2p_record( record,
-                                       &amc_record1[index_record1] );
-            if (result != ERROR_STATUS){
-               struct ipmi_ek_multi_header * current_record = NULL;
+		amc_record1 = malloc(num_amc_record1 * sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
+		amc_record2 = malloc(num_amc_record2 * sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
 
-               for (current_record=list_head[index1];
-                    current_record;
-                    current_record = current_record->next)
-               {
-                  if ( current_record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-                     result = ipmi_ek_create_amc_p2p_record( current_record,
-                                       &amc_record2[index_record2] );
-                     if ( result != ERROR_STATUS ){
-                        if ( result == OK_STATUS ){
-                           /*Compare Link descriptor*/
-                           result = ipmi_ek_compare_link ( pphysical,
-                                    amc_record1[index_record1],
-                                    amc_record2[index_record2],
-                                    opt, file_type[index1], file_type[index2]);
-                        }
-                        index_record2++;
-                     }
-                  } /*end of FRU_AMC_P2P */
-               } /* end of for loop */
-               index_record1++;
-            }
-         }
-      }
-      free(amc_record1) ;
-      amc_record1 = NULL;
-      free(amc_record2) ;
-      amc_record2 = NULL;
-   }
-   else{
-      printf("No amc record is found!\n");
-   }
+		for (record = list_head[index2];
+		     record;
+		     record = record->next)
+		{
+			if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+				result = ipmi_ek_create_amc_p2p_record(record,
+						&amc_record1[index_record1]);
+				if (result != ERROR_STATUS) {
+					struct ipmi_ek_multi_header *current_record;
 
-   return result;
+					for (current_record = list_head[index1];
+					     current_record;
+					     current_record = current_record->next)
+					{
+						if (current_record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+							result = ipmi_ek_create_amc_p2p_record(
+									current_record,
+									&amc_record2[index_record2]);
+							if (result != ERROR_STATUS) {
+								if (result == OK_STATUS) {
+									/* Compare Link descriptor */
+									result = ipmi_ek_compare_link(
+											pphysical,
+											amc_record1[index_record1],
+											amc_record2[index_record2],
+											opt,
+											file_type[index1],
+											file_type[index2]);
+								}
+								index_record2++;
+							}
+						} /* end of FRU_AMC_P2P */
+					} /* end of for loop */
+					index_record1++;
+				}
+			}
+		}
+		free(amc_record1);
+		free(amc_record2);
+	} else {
+		printf("No amc record is found!\n");
+	}
+
+	return result;
 }
 
 /**************************************************************************
