@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -1855,7 +1856,7 @@ void ipmi_lanplus_build_v2x_msg(struct ipmi_intf *intf,		 /* in  */
  */
 static struct ipmi_rq_entry *
 ipmi_lanplus_build_v2x_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req,
-				int isRetry)
+				bool isRetry)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_rq_entry *entry;
@@ -1868,7 +1869,7 @@ ipmi_lanplus_build_v2x_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req,
 	 */
 	static uint8_t curr_seq = 0;
 
-	if (isRetry == 0)
+	if (isRetry == false)
 		curr_seq += 1;
 
 	if (curr_seq >= 64)
@@ -2147,7 +2148,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 					entry = ipmi_lanplus_build_v15_ipmi_cmd(
 						intf, ipmi_request);
 				} else {
-					int isRetry = (try > 0 ? 1 : 0);
+					bool isRetry = (try > 0);
 
 					lprintf(LOG_DEBUG + 1,
 						"BUILDING A v2 COMMAND");
