@@ -35,6 +35,7 @@
 
 #include <sys/types.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -117,7 +118,7 @@ FILE * ipmi_open_file(const char * file, int rw);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
-#define IS_SET(v, b) ((v) & (1 << (b)))
+#define IS_SET(v, b) ((bool)((v) & (1 << (b))))
 
 /* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
 /* For portability, let's simply define our own versions here */
