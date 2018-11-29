@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -52,7 +53,7 @@
 #include <ipmitool/ipmi_isol.h>
 
 static struct termios _saved_tio;
-static int _in_raw_mode = 0;
+static bool _in_raw_mode = false;
 
 extern int verbose;
 
@@ -281,7 +282,7 @@ static void leave_raw_mode(void)
 	if (tcsetattr(fileno(stdin), TCSADRAIN, &_saved_tio) == -1)
 		perror("tcsetattr");
 	else
-		_in_raw_mode = 0;
+		_in_raw_mode = false;
 }
 
 
@@ -305,7 +306,7 @@ static void enter_raw_mode(void)
 	if (tcsetattr(fileno(stdin), TCSADRAIN, &tio) == -1)
 		perror("tcsetattr");
 	else
-		_in_raw_mode = 1;
+		_in_raw_mode = true;
 }
 
 
