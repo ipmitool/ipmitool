@@ -612,93 +612,76 @@ static struct ipmi_rs *ipmi_lan_poll_recv(struct ipmi_intf *intf)
 			entry = ipmi_req_lookup_entry(
 				rsp->payload.ipmi_response.rq_seq,
 				rsp->payload.ipmi_response.cmd);
-			if (entry) {
-				lprintf(LOG_DEBUG + 2,
-					"IPMI Request Match found");
-				if ((intf->target_addr != our_address)
-				    && bridge_possible) {
-					if ((rsp->data_len)
-					    && (rsp->payload.ipmi_response.netfn
-						== 7)
-					    && (rsp->payload.ipmi_response.cmd
-						!= 0x34)) {
-						if (verbose > 2)
-							printbuf(
-								&rsp->data[x],
-								rsp->data_len
-									- x,
-								"bridge command response");
-					}
-					/* bridged command: lose extra header */
-					if (entry->bridging_level
-					    && rsp->payload.ipmi_response.netfn
-						       == 7
-					    && rsp->payload.ipmi_response.cmd
-						       == 0x34) {
-						entry->bridging_level--;
-						if (rsp->data_len - x - 1
-						    == 0) {
-							rsp = !rsp->ccode
-								      ? ipmi_lan_recv_packet(
-										intf)
-								      : NULL;
-							if (!entry->bridging_level)
-								entry->req.msg
-									.cmd =
-									entry->req
-										.msg
-										.target_cmd;
-							if (!rsp) {
-								ipmi_req_remove_entry(
-									entry->rq_seq,
-									entry->req
-										.msg
-										.cmd);
-							}
-							continue;
-						} else {
-							/* The bridged answer
-							 * data are inside the
-							 * incoming packet */
-							memmove(rsp->data + x
-									- 7,
-								rsp->data + x,
-								rsp->data_len
-									- x
-									- 1);
-							rsp->data[x - 8] -= 8;
-							rsp->data_len -= 8;
-							entry->rq_seq =
-								rsp->data[x - 3]
-								>> 2;
-							if (!entry->bridging_level)
-								entry->req.msg
-									.cmd =
-									entry->req
-										.msg
-										.target_cmd;
-							continue;
-						}
-					} else {
-						// x +=
-						// sizeof(rsp->payload.ipmi_response);
-						if (rsp->data[x - 1] != 0)
-							lprintf(LOG_DEBUG,
-								"WARNING: Bridged "
-								"cmd ccode = 0x%02x",
-								rsp->data[x
-									  - 1]);
-					}
-				}
-				ipmi_req_remove_entry(
-					rsp->payload.ipmi_response.rq_seq,
-					rsp->payload.ipmi_response.cmd);
-			} else {
+			if (!entry) {
 				lprintf(LOG_INFO,
 					"IPMI Request Match NOT FOUND");
 				rsp = ipmi_lan_recv_packet(intf);
 				continue;
 			}
+
+			lprintf(LOG_DEBUG + 2, "IPMI Request Match found");
+			if ((intf->target_addr != our_address)
+			    && bridge_possible) {
+				if ((rsp->data_len)
+				    && (rsp->payload.ipmi_response.netfn == 7)
+				    && (rsp->payload.ipmi_response.cmd
+					!= 0x34)) {
+					if (verbose > 2)
+						printbuf(
+							&rsp->data[x],
+							rsp->data_len - x,
+							"bridge command response");
+				}
+				/* bridged command: lose extra header */
+				if (entry->bridging_level
+				    && rsp->payload.ipmi_response.netfn == 7
+				    && rsp->payload.ipmi_response.cmd == 0x34) {
+					entry->bridging_level--;
+					if (rsp->data_len - x - 1 == 0) {
+						rsp = !rsp->ccode
+							      ? ipmi_lan_recv_packet(
+									intf)
+							      : NULL;
+						if (!entry->bridging_level)
+							entry->req.msg.cmd =
+								entry->req.msg
+									.target_cmd;
+						if (!rsp) {
+							ipmi_req_remove_entry(
+								entry->rq_seq,
+								entry->req.msg
+									.cmd);
+						}
+						continue;
+					} else {
+						/* The bridged answer
+						 * data are inside the
+						 * incoming packet */
+						memmove(rsp->data + x - 7,
+							rsp->data + x,
+							rsp->data_len - x - 1);
+						rsp->data[x - 8] -= 8;
+						rsp->data_len -= 8;
+						entry->rq_seq =
+							rsp->data[x - 3] >> 2;
+						if (!entry->bridging_level)
+							entry->req.msg.cmd =
+								entry->req.msg
+									.target_cmd;
+						continue;
+					}
+				} else {
+					// x +=
+					// sizeof(rsp->payload.ipmi_response);
+					if (rsp->data[x - 1] != 0)
+						lprintf(LOG_DEBUG,
+							"WARNING: Bridged "
+							"cmd ccode = 0x%02x",
+							rsp->data[x - 1]);
+				}
+			}
+			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
+					      rsp->payload.ipmi_response.cmd);
 		}
 
 		break;
@@ -1477,7 +1460,8 @@ static int ipmi_lan_keepalive(struct ipmi_intf *intf)
 		.msg = {
 			.netfn = IPMI_NETFN_APP,
 			.cmd = 1,
-	}};
+		}
+	};
 
 	if (!intf->opened)
 		return 0;
