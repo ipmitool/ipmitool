@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <stdbool.h>
 #include <string.h>
 #include <math.h>
 
@@ -111,7 +112,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 	struct ipmi_rq req;
 	static struct sensor_set_thresh_rq set_thresh_rq;
 	struct ipmi_rs *rsp;
-	uint8_t bridged_request = 0;
+	bool bridged_request = false;
 	uint32_t save_addr;
 	uint32_t save_channel;
 
@@ -134,7 +135,7 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 		return NULL;
 
 	if (BRIDGE_TO_SENSOR(intf, target, channel)) {
-		bridged_request = 1;
+		bridged_request = true;
 		save_addr = intf->target_addr;
 		intf->target_addr = target;
 		save_channel = intf->target_channel;
