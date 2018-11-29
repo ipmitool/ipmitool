@@ -247,26 +247,26 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
  * input_filename - user input string
  *
  * returns   0  if path is ok
- * returns (-1) if path is NULL
- * returns (-2) if path is too short
- * returns (-3) if path is too long
+ * returns -1 if path is NULL
+ * returns -2 if path is too short
+ * returns -3 if path is too long
  */
 int
 is_valid_filename(const char *input_filename)
 {
 	if (!input_filename) {
 		lprintf(LOG_ERR, "ERROR: NULL pointer passed.");
-		return (-1);
+		return -1;
 	}
 
 	if (strlen(input_filename) < 1) {
 		lprintf(LOG_ERR, "File/path is invalid.");
-		return (-2);
+		return -2;
 	}
 
 	if (strlen(input_filename) >= 512) {
 		lprintf(LOG_ERR, "File/path must be shorter than 512 bytes.");
-		return (-3);
+		return -3;
 	}
 
 	return 0;
@@ -501,7 +501,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	if (fru->access && ((doffset & 1) || (length & 1))) {
 		lprintf(LOG_ERROR, "Odd offset or length specified");
-		return (-1);
+		return -1;
 	}
 
 	t_ipmi_fru_bloc * fru_bloc = build_fru_bloc(intf, fru, id);
@@ -3772,24 +3772,24 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	uint32_t fileMultiRecSize = 0;
 	if (!pFileName) {
 		lprintf(LOG_ERR, "File expected, but none given.");
-		return (-1);
+		return -1;
 	}
 	if (ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
 							&offFruMultiRec, &fruMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec location from FRU.");
-		return (-1);
+		return -1;
 	}
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
 	if (ipmi_fru_get_multirec_size_from_file(pFileName, &fileMultiRecSize,
 				&offFileMultiRec) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec size from file '%s'.", pFileName);
-		return (-1);
+		return -1;
 	}
 	buf = malloc(fileMultiRecSize);
 	if (!buf) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return (-1);
+		return -1;
 	}
 	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
 				offFileMultiRec) != 0) {
@@ -3798,7 +3798,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 			free(buf);
 			buf = NULL;
 		}
-		return (-1);
+		return -1;
 	}
 	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
@@ -3806,7 +3806,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 			free(buf);
 			buf = NULL;
 		}
-		return (-1);
+		return -1;
 	}
 	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
 				fileMultiRecSize, buf) != 0) {
@@ -3815,7 +3815,7 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 			free(buf);
 			buf = NULL;
 		}
-		return (-1);
+		return -1;
 	}
 	if (buf) {
 		free(buf);
@@ -3918,7 +3918,7 @@ ipmi_fru_get_adjust_size_from_buffer(uint8_t * fru_data, uint32_t *pSize)
 		}
 		if (checksum != 0) {
 			lprintf(LOG_ERR, "Bad checksum in Multi Records");
-			status = (-1);
+			status = -1;
 			if (verbose) {
 				printf("--> FAIL");
 			}
@@ -3950,7 +3950,7 @@ ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
 	uint32_t len = 0;
 	if (!pFileName) {
 		lprintf(LOG_ERR, "Invalid file name given.");
-		return (-1);
+		return -1;
 	}
 	
 	errno = 0;
@@ -3958,21 +3958,21 @@ ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
 	if (!pFile) {
 		lprintf(LOG_ERR, "Error opening file '%s': %i -> %s.", pFileName, errno,
 				strerror(errno));
-		return (-1);
+		return -1;
 	}
 	errno = 0;
 	if (fseek(pFile, offset, SEEK_SET) != 0) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s': %i -> %s.", pFileName, errno,
 				strerror(errno));
 		fclose(pFile);
-		return (-1);
+		return -1;
 	}
 	len = fread(pBufArea, size, 1, pFile);
 	fclose(pFile);
 
 	if (len != 1) {
 		lprintf(LOG_ERR, "Error in file '%s'.", pFileName);
-		return (-1);
+		return -1;
 	}
 	return 0;
 }
@@ -4451,7 +4451,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			rc = __ipmi_fru_print(intf, fru_id);
 		} else {
@@ -4465,15 +4465,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else if (argc < 3) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_fru_read_help();
-			return (-1);
+			return -1;
 		}
 
 		if (is_fru_id(argv[1], &fru_id) != 0)
-			return (-1);
+			return -1;
 
 		/* There is a file name in the parameters */
 		if (is_valid_filename(argv[2]) != 0)
-				return (-1);
+			return -1;
 
 		if (verbose) {
 			printf("FRU ID           : %d\n", fru_id);
@@ -4489,15 +4489,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else if (argc < 3) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_fru_write_help();
-			return (-1);
+			return -1;
 		}
 
 		if (is_fru_id(argv[1], &fru_id) != 0)
-			return (-1);
+			return -1;
 
 		/* There is a file name in the parameters */
 		if (is_valid_filename(argv[2]) != 0)
-				return (-1);
+			return -1;
 
 		if (verbose) {
 			printf("FRU ID           : %d\n", fru_id);
@@ -4513,15 +4513,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else if (argc < 3) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_fru_upgekey_help();
-			return (-1);
+			return -1;
 		}
 
 		if (is_fru_id(argv[1], &fru_id) != 0)
-			return (-1);
+			return -1;
 
 		/* There is a file name in the parameters */
 		if (is_valid_filename(argv[2]) != 0)
-				return (-1);
+			return -1;
 
 		rc = ipmi_fru_upg_ekeying(intf, argv[2], fru_id);
 	}
@@ -4534,25 +4534,25 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if ( (argc >= 3) && (!strncmp(argv[2], "info", 4)) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			rc = ipmi_fru_info_internal_use(intf, fru_id);
 		}
 		else if ( (argc >= 3) && (!strncmp(argv[2], "print", 5)) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			rc = ipmi_fru_read_internal_use(intf, fru_id, NULL);
 		}
 		else if ( (argc >= 4) && (!strncmp(argv[2], "read", 4)) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			/* There is a file name in the parameters */
 			if (is_valid_filename(argv[3]) != 0)
-					return (-1);
+				return -1;
 
 			lprintf(LOG_DEBUG, "FRU ID           : %d", fru_id);
 			lprintf(LOG_DEBUG, "FRU File         : %s", argv[3]);
@@ -4562,11 +4562,11 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else if ( (argc >= 4) && (!strncmp(argv[2], "write", 5)) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			/* There is a file name in the parameters */
 			if (is_valid_filename(argv[3]) != 0)
-					return (-1);
+				return -1;
 
 			lprintf(LOG_DEBUG, "FRU ID           : %d", fru_id);
 			lprintf(LOG_DEBUG, "FRU File         : %s", argv[3]);
@@ -4576,7 +4576,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR,
 					"Either unknown command or not enough parameters given.");
 			ipmi_fru_internaluse_help();
-			return (-1);
+			return -1;
 		}
 	}
 	else if (!strncmp(argv[0], "edit", 4)) {
@@ -4586,12 +4586,12 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_fru_edit_help();
-			return (-1);
+			return -1;
 		}
 		
 		if (argc >= 2) {
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			if (verbose) {
 				printf("FRU ID           : %d\n", fru_id);
@@ -4605,7 +4605,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				if (argc != 6) {
 					lprintf(LOG_ERR, "Not enough parameters given.");
 					ipmi_fru_edit_help();
-					return (-1);
+					return -1;
 				}
 				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], *argv[4],
 						(char *) argv[5]);
@@ -4614,7 +4614,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else {
 				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
 				ipmi_fru_edit_help();
-				return (-1);
+				return -1;
 			}
 		} else {
 			rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
@@ -4627,12 +4627,12 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		} else if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_fru_get_help();
-			return (-1);
+			return -1;
 		}
 
 		if (argc >= 2) {
 			if (is_fru_id(argv[1], &fru_id) != 0)
-				return (-1);
+				return -1;
 
 			if (verbose) {
 				printf("FRU ID           : %d\n", fru_id);
@@ -4647,7 +4647,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			} else {
 				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
 				ipmi_fru_get_help();
-				return (-1);
+				return -1;
 			}
 		} else {
 			rc = ipmi_fru_get_multirec(intf, fru_id, argc, argv);
@@ -4656,7 +4656,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	else {
 		lprintf(LOG_ERR, "Invalid FRU command: %s", argv[0]);
 		ipmi_fru_help();
-		return (-1);
+		return -1;
 	}
 
 	return rc;
@@ -4705,13 +4705,13 @@ f_type, uint8_t f_index, char *f_string)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		printf(" Device not present (No Response)\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 			val2str(rsp->ccode, completion_code_vals));
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 
@@ -4721,7 +4721,7 @@ f_type, uint8_t f_index, char *f_string)
 
 	if (fru.size < 1) {
 		printf(" Invalid FRU size %d", fru.size);
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 	/*
@@ -4742,14 +4742,14 @@ f_type, uint8_t f_index, char *f_string)
 	if (!rsp)
 	{
 		printf(" Device not present (No Response)\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 	if (rsp->ccode)
 	{
 		printf(" Device not present (%s)\n",
 				val2str(rsp->ccode, completion_code_vals));
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 
@@ -4758,18 +4758,17 @@ f_type, uint8_t f_index, char *f_string)
 
 	memcpy(&header, rsp->data + 1, 8);
 
-	if (header.version != 1)
-	{
+	if (header.version != 1) {
 		printf(" Unknown FRU header version 0x%02x",
 			header.version);
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 
 	fru_data = malloc( fru.size );
 	if (!fru_data) {
 		printf("Out of memory!\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 
@@ -4799,14 +4798,14 @@ f_type, uint8_t f_index, char *f_string)
 	else
 	{
 		printf("Wrong field type.");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 	memset(fru_data, 0, fru.size);
 	if( read_fru_area(intf ,&fru, fruId, header_offset ,
 					fru_section_len , fru_data) < 0 )
 	{
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 	/* Convert index from character to decimal */
@@ -4824,7 +4823,7 @@ f_type, uint8_t f_index, char *f_string)
 
 	if (!FRU_FIELD_VALID(fru_area)) {
 		printf("Field not found !\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_out;
 	}
 
@@ -4848,7 +4847,7 @@ f_type, uint8_t f_index, char *f_string)
 				header_offset, fru_section_len, fru_data) < 0 )
 		{
 			printf("Write to FRU data failed.\n");
-			rc = (-1);
+			rc = -1;
 			goto ipmi_fru_set_field_string_out;
 		}
 	}
@@ -4858,7 +4857,7 @@ f_type, uint8_t f_index, char *f_string)
 				ipmi_fru_set_field_string_rebuild(intf,fruId,fru,header,f_type,f_index,f_string)
 		)
 		{
-			rc = (-1);
+			rc = -1;
 			goto ipmi_fru_set_field_string_out;
 		}
 	}
@@ -4929,7 +4928,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	if (!fru_data_old || !fru_data_new) {
 		printf("Out of memory!\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
@@ -4984,7 +4983,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	else
 	{
 		printf("Wrong field type.");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
@@ -5001,7 +5000,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	if (!FRU_FIELD_VALID(fru_area)) {
 		printf("Field not found (1)!\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
@@ -5210,7 +5209,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	else
 	{
 		printf( "Internal error, padding length %i (must be from 0 to 7) ", padding_len );
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
@@ -5220,7 +5219,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	if( write_fru_area( intf, &fru, fruId, 0, 0, fru.size, fru_data_new ) < 0 )
 	{
 		printf("Write to FRU data failed.\n");
-		rc = (-1);
+		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
