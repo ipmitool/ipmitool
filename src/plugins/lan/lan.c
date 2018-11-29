@@ -1362,36 +1362,40 @@ static int check_sol_packet_for_new_data(struct ipmi_rs *rsp)
 	static uint8_t last_received_byte_count = 0;
 	int new_data_size = 0;
 
-	if (rsp && (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)) {
-		uint8_t unaltered_data_len = rsp->data_len;
-		if (rsp->payload.sol_packet.packet_sequence_number
-		    == last_received_sequence_number) {
-			/*
-			 * This is the same as the last packet, but may include
-			 * extra data
-			 */
-			new_data_size =
-				rsp->data_len - last_received_byte_count;
+	if (!rsp) {
+		return new_data_size;
+	}
 
-			if (new_data_size > 0) {
-				/* We have more data to process */
-				memmove(rsp->data,
-					rsp->data + rsp->data_len
-						- new_data_size,
-					new_data_size);
-			}
+	if (rsp->session.payloadtype != IPMI_PAYLOAD_TYPE_SOL) {
+		return new_data_size;
+	}
 
-			rsp->data_len = new_data_size;
-		}
-
+	uint8_t unaltered_data_len = rsp->data_len;
+	if (rsp->payload.sol_packet.packet_sequence_number
+	    == last_received_sequence_number) {
 		/*
-		 * Remember the data for next round
+		 * This is the same as the last packet, but may include
+		 * extra data
 		 */
-		if (rsp && rsp->payload.sol_packet.packet_sequence_number) {
-			last_received_sequence_number =
-				rsp->payload.sol_packet.packet_sequence_number;
-			last_received_byte_count = unaltered_data_len;
+		new_data_size = rsp->data_len - last_received_byte_count;
+
+		if (new_data_size > 0) {
+			/* We have more data to process */
+			memmove(rsp->data,
+				rsp->data + rsp->data_len - new_data_size,
+				new_data_size);
 		}
+
+		rsp->data_len = new_data_size;
+	}
+
+	/*
+	 * Remember the data for next round
+	 */
+	if (rsp->payload.sol_packet.packet_sequence_number) {
+		last_received_sequence_number =
+			rsp->payload.sol_packet.packet_sequence_number;
+		last_received_byte_count = unaltered_data_len;
 	}
 
 	return new_data_size;
