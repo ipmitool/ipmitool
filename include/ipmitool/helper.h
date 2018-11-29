@@ -58,6 +58,12 @@
     #define __UNUSED__(x) x
 #endif
 
+#ifdef FREE
+#error "FREE already defined."
+#else
+#define FREE(PTR) do { free(PTR); (PTR) = NULL; } while(0);
+#endif
+
 /* IPMI spec. - UID 0 reserved, 63 maximum UID which can be used */
 #ifndef IPMI_UID_MIN
 # define IPMI_UID_MIN 1
