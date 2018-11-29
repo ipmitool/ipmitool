@@ -539,8 +539,8 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 {
 	char *buffer;
 	int numRead;
-	int bShouldExit = 0;
-	int bBmcClosedSession = 0;
+	bool bShouldExit = false;
+	bool bBmcClosedSession = false;
 	fd_set read_fds;
 	struct timeval tv;
 	int retval;
@@ -592,12 +592,12 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 						if (rc < 0)
 							bShouldExit =
 								bBmcClosedSession =
-									1;
+									true;
 						else
-							bShouldExit = 1;
+							bShouldExit = true;
 					}
 				} else {
-					bShouldExit = 1;
+					bShouldExit = true;
 				}
 			}
 			/*
@@ -606,7 +606,7 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 			else if (FD_ISSET(intf->fd, &read_fds)) {
 				struct ipmi_rs *rs = intf->recv_sol(intf);
 				if (!rs) {
-					bShouldExit = bBmcClosedSession = 1;
+					bShouldExit = bBmcClosedSession = true;
 				}
 			}
 			/*
@@ -615,7 +615,7 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 			else {
 				lprintf(LOG_ERR,
 					"Error: Select returned with nothing to read");
-				bShouldExit = 1;
+				bShouldExit = true;
 			}
 		} else {
 			/* Every 10 seconds we send a keepalive */
