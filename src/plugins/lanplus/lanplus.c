@@ -844,7 +844,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 		}
 		read_sol_packet(rsp, &offset);
 		extra_data_length = payload_size - (offset - payload_start);
-		if (rsp && extra_data_length) {
+		if (extra_data_length) {
 			rsp->data_len = extra_data_length;
 			memmove(rsp->data, rsp->data + offset, extra_data_length);
 		} else {
