@@ -48,6 +48,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>
@@ -88,7 +89,7 @@ static int ipmi_get_isol_info(struct ipmi_intf *intf,
 		lprintf(LOG_ERR, "Error in Get ISOL Config Command");
 		return -1;
 	}
-	if (rsp->ccode == 0xc1) {
+	if (rsp->ccode == IPMI_CC_INV_CMD) {
 		lprintf(LOG_ERR,
 			"IPMI v1.5 Serial Over Lan (ISOL) not supported!");
 		return -1;
@@ -678,7 +679,7 @@ static int ipmi_isol_activate(struct ipmi_intf *intf)
 	rsp = intf->sendrecv(intf, &req);
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
-		case 0x00:
+		case IPMI_CC_OK:
 			if (rsp->data_len == 4) {
 				break;
 			} else {
