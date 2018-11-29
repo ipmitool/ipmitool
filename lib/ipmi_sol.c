@@ -1479,8 +1479,8 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 {
 	char *buffer;
 	int numRead;
-	int bShouldExit = 0;
-	int bBmcClosedSession = 0;
+	bool bShouldExit = false;
+	bool bBmcClosedSession = false;
 	fd_set read_fds;
 	struct timeval tv;
 	int retval;
@@ -1535,7 +1535,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 				if (retrySol == MAX_SOL_RETRY) {
 					/* no response to Get Device ID
 					 * keepalive message */
-					bShouldExit = 1;
+					bShouldExit = true;
 					continue;
 				} else {
 					retrySol++;
@@ -1578,12 +1578,12 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 						if (rc < 0)
 							bShouldExit =
 								bBmcClosedSession =
-									1;
+									true;
 						else
-							bShouldExit = 1;
+							bShouldExit = true;
 					}
 				} else {
-					bShouldExit = 1;
+					bShouldExit = true;
 				}
 			}
 			/*
@@ -1594,7 +1594,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 				if (rs) {
 					output(rs);
 				} else {
-					bShouldExit = bBmcClosedSession = 1;
+					bShouldExit = bBmcClosedSession = true;
 				}
 			}
 			/*
@@ -1603,7 +1603,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 			else {
 				lprintf(LOG_ERR,
 					"Error: Select returned with nothing to read");
-				bShouldExit = 1;
+				bShouldExit = true;
 			}
 		}
 	}
