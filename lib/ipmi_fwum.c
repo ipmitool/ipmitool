@@ -121,7 +121,7 @@ int ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc < 1) {
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_kfwum_help();
-		return (-1);
+		return -1;
 	}
 	if (strncmp(argv[0], "help", 4) == 0) {
 		printf_kfwum_help();
@@ -136,7 +136,7 @@ int ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		if ((argc < 2) || (strlen(argv[1]) < 1)) {
 			lprintf(LOG_ERR,
 				"Path and file name must be specified.");
-			return (-1);
+			return -1;
 		}
 		printf("Firmware File Name         : %s\n", argv[1]);
 		rc = ipmi_fwum_fwupgrade(intf, argv[1], 0);
@@ -152,7 +152,7 @@ int ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 	} else {
 		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);
 		printf_kfwum_help();
-		rc = (-1);
+		rc = -1;
 	}
 	return rc;
 }
@@ -191,10 +191,10 @@ int ipmi_fwum_info(struct ipmi_intf *intf)
 		printf("Getting Kontron FWUM Info\n");
 	}
 	if (KfwumGetDeviceInfo(intf, 1, &b_info) != 0) {
-		rc = (-1);
+		rc = -1;
 	}
 	if (KfwumGetInfo(intf, 1, &not_used) != 0) {
-		rc = (-1);
+		rc = -1;
 	}
 	return rc;
 }
@@ -205,7 +205,7 @@ int ipmi_fwum_status(struct ipmi_intf *intf)
 		printf("Getting Kontron FWUM Status\n");
 	}
 	if (KfwumGetStatus(intf) != 0) {
-		return (-1);
+		return -1;
 	}
 	return 0;
 }
@@ -216,7 +216,7 @@ int ipmi_fwum_status(struct ipmi_intf *intf)
  * @file: fw file
  * @action: 0 = download, 1 = upload/start upload
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 {
@@ -227,41 +227,41 @@ int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
 	unsigned char not_used;
 	if (!file) {
 		lprintf(LOG_ERR, "No file given.");
-		return (-1);
+		return -1;
 	}
 	if (KfwumGetFileSize(file, &fsize) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (KfwumSetupBuffersFromFile(file, fsize) != 0) {
-		return (-1);
+		return -1;
 	}
 	padding = KfwumCalculateChecksumPadding(firmBuf, fsize);
 	if (KfwumGetInfoFromFirmware(firmBuf, fsize, &fw_info) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (KfwumGetDeviceInfo(intf, 0, &b_info) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (ipmi_kfwum_checkfwcompat(b_info, fw_info) != 0) {
-		return (-1);
+		return -1;
 	}
 	KfwumGetInfo(intf, 0, &not_used);
 	printf_kfwum_info(b_info, fw_info);
 	if (KfwumStartFirmwareImage(intf, fsize, padding) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (KfwumUploadFirmware(intf, firmBuf, fsize) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (KfwumFinishFirmwareImage(intf, fw_info) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (KfwumGetStatus(intf) != 0) {
-		return (-1);
+		return -1;
 	}
 	if (action != 0) {
 		if (KfwumStartFirmwareUpgrade(intf) != 0) {
-			return (-1);
+			return -1;
 		}
 	}
 	return 0;
@@ -272,14 +272,14 @@ int ipmi_fwum_fwupgrade(struct ipmi_intf *intf, char *file, int action)
  * @pFileName : filename ptr
  * @pFileSize : output ptr for filesize
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 {
 	FILE *pFileHandle;
 	pFileHandle = fopen(pFileName, "rb");
 	if (!pFileHandle) {
-		return (-1);
+		return -1;
 	}
 	if (fseek(pFileHandle, 0L, SEEK_END) == 0) {
 		*pFileSize = ftell(pFileHandle);
@@ -288,7 +288,7 @@ int KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
 	if (*pFileSize != 0) {
 		return 0;
 	}
-	return (-1);
+	return -1;
 }
 
 /* KfwumSetupBuffersFromFile  -  small buffers are used to store the file data
@@ -296,11 +296,11 @@ int KfwumGetFileSize(const char *pFileName, unsigned long *pFileSize)
  * @pFileName : filename ptr
  * unsigned long : filesize
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 {
-	int rc = (-1);
+	int rc = -1;
 	FILE *pFileHandle;
 	int count;
 	int modulus;
@@ -309,7 +309,7 @@ int KfwumSetupBuffersFromFile(const char *pFileName, unsigned long fileSize)
 	pFileHandle = fopen(pFileName, "rb");
 	if (!pFileHandle) {
 		lprintf(LOG_ERR, "Failed to open '%s' for reading.", pFileName);
-		return (-1);
+		return -1;
 	}
 	count = fileSize / MAX_BUFFER_SIZE;
 	modulus = fileSize % MAX_BUFFER_SIZE;
@@ -398,7 +398,7 @@ unsigned short KfwumCalculateChecksumPadding(unsigned char *pBuffer,
  * output  : when set to non zero, queried information is displayed
  * pNumBank: output ptr for number of banks
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 		 unsigned char *pNumBank)
@@ -416,11 +416,11 @@ int KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Firmware Get Info Command.");
-		return (-1);
+		return -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "FWUM Firmware Get Info returned %x",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 
 	pGetInfo = (struct KfwumGetInfoResp *)rsp->data;
@@ -496,7 +496,7 @@ int KfwumGetInfo(struct ipmi_intf *intf, unsigned char output,
  * output: when set to non zero, queried information is displayed
  * tKFWUM_BoardInfo: output ptr for IPMC/Board information
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 		       tKFWUM_BoardInfo *pBoardInfo)
@@ -513,10 +513,10 @@ int KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error in Get Device Id Command");
-		return (-1);
+		return -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Device Id returned %x", rsp->ccode);
-		return (-1);
+		return -1;
 	}
 	pGetDevId = (struct ipm_devid_rsp *)rsp->data;
 	pBoardInfo->iana = IPM_DEV_MANUFACTURER_ID(pGetDevId->manufacturer_id);
@@ -542,7 +542,7 @@ int KfwumGetDeviceInfo(struct ipmi_intf *intf, unsigned char output,
  *
  * *intf  : IPMI interface
  *
- * returns 0 on success, otherwise (-1)
+ * returns 0 on success, otherwise -1
  */
 int KfwumGetStatus(struct ipmi_intf *intf)
 {
@@ -569,12 +569,12 @@ int KfwumGetStatus(struct ipmi_intf *intf)
 		if (!rsp) {
 			lprintf(LOG_ERR,
 				"Error in FWUM Firmware Get Status Command.");
-			rc = (-1);
+			rc = -1;
 			break;
 		} else if (rsp->ccode) {
 			lprintf(LOG_ERR, "FWUM Firmware Get Status returned %x",
 				rsp->ccode);
-			rc = (-1);
+			rc = -1;
 			break;
 		}
 		pGetStatus = (struct KfwumGetStatusResp *)rsp->data;
@@ -602,7 +602,7 @@ int KfwumGetStatus(struct ipmi_intf *intf)
  * *intf  : IPMI interface
  *
  * returns 0 on success
- * returns (-1) on error
+ * returns -1 on error
  */
 int KfwumManualRollback(struct ipmi_intf *intf)
 {
@@ -620,12 +620,12 @@ int KfwumManualRollback(struct ipmi_intf *intf)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error in FWUM Manual Rollback Command.");
-		return (-1);
+		return -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 			"Error in FWUM Manual Rollback Command returned %x",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 	printf("FWUM Starting Manual Rollback \n");
 	return 0;
@@ -659,12 +659,12 @@ int KfwumStartFirmwareImage(struct ipmi_intf *intf, unsigned long length,
 	if (!rsp) {
 		lprintf(LOG_ERR,
 			"Error in FWUM Firmware Start Firmware Image Download Command.");
-		return (-1);
+		return -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 			"FWUM Firmware Start Firmware Image Download returned %x",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 	pResp = (struct KfwumStartFirmwareDownloadResp *)rsp->data;
 	printf("Bank holding new firmware  : %d\n", pResp->bank);
@@ -739,7 +739,7 @@ int KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 					retry = 1;
 					continue;
 				}
-				rc = (-1);
+				rc = -1;
 				break;
 			} else if (rsp->ccode == 0xcf) {
 				/* Ok if receive duplicated request */
@@ -749,13 +749,13 @@ int KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 					retry = 1;
 					continue;
 				}
-				rc = (-1);
+				rc = -1;
 				break;
 			} else {
 				lprintf(LOG_ERR,
 					"FWUM Firmware Save Firmware Image Download returned %x",
 					rsp->ccode);
-				rc = (-1);
+				rc = -1;
 				break;
 			}
 		} else {
@@ -792,7 +792,7 @@ int KfwumFinishFirmwareImage(struct ipmi_intf *intf,
 		lprintf(LOG_ERR,
 			"FWUM Firmware Finish Firmware Image Download returned %x",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 	return 0;
 }
@@ -800,7 +800,7 @@ int KfwumFinishFirmwareImage(struct ipmi_intf *intf,
 int KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 			unsigned long totalSize)
 {
-	int rc = (-1);
+	int rc = -1;
 	unsigned long address = 0x0;
 	unsigned char writeSize;
 	unsigned char oldWriteSize;
@@ -825,7 +825,7 @@ int KfwumUploadFirmware(struct ipmi_intf *intf, unsigned char *pBuffer,
 			address = lastAddress;
 			rc = 0;
 		} else if (writeSize == 0) {
-			rc = (-1);
+			rc = -1;
 		} else {
 			if (writeSize != oldWriteSize) {
 				printf("Adjusting length to %d bytes \n",
@@ -869,7 +869,7 @@ int KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 	if (!rsp) {
 		lprintf(LOG_ERR,
 			"Error in FWUM Firmware Start Firmware Upgrade Command");
-		rc = (-1);
+		rc = -1;
 	} else if (rsp->ccode) {
 		if (rsp->ccode == 0xd5) {
 			lprintf(LOG_ERR,
@@ -879,7 +879,7 @@ int KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 				"FWUM Firmware Start Firmware Upgrade returned %x",
 				rsp->ccode);
 		}
-		rc = (-1);
+		rc = -1;
 	}
 	return rc;
 }
@@ -907,13 +907,13 @@ int KfwumGetTraceLog(struct ipmi_intf *intf)
 		if (!rsp) {
 			lprintf(LOG_ERR,
 				"Error in FWUM Firmware Get Trace Log Command");
-			rc = (-1);
+			rc = -1;
 			break;
 		} else if (rsp->ccode) {
 			lprintf(LOG_ERR,
 				"FWUM Firmware Get Trace Log returned %x",
 				rsp->ccode);
-			rc = (-1);
+			rc = -1;
 			break;
 		}
 		for (cmdIdx = 0; cmdIdx < TRACE_LOG_CHUNK_SIZE; cmdIdx++) {
@@ -959,7 +959,7 @@ int KfwumGetInfoFromFirmware(unsigned char *pBuf, unsigned long bufSize,
 	unsigned long offset = 0;
 	if (bufSize
 	    < (IN_FIRMWARE_INFO_OFFSET_LOCATION + IN_FIRMWARE_INFO_SIZE)) {
-		return (-1);
+		return -1;
 	}
 	offset = IN_FIRMWARE_INFO_OFFSET_LOCATION;
 
@@ -1067,7 +1067,7 @@ void KfwumFixTableVersionForOldFirmware(tKFWUM_InFirmwareInfo *pInfo)
  * @boardInfo:
  * @firmInfo:
  *
- * returns 0 if compatible, otherwise (-1)
+ * returns 0 if compatible, otherwise -1
  */
 int ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 			     tKFWUM_InFirmwareInfo firmInfo)
@@ -1075,11 +1075,11 @@ int ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 	int compatible = 0;
 	if (boardInfo.iana != firmInfo.iana) {
 		lprintf(LOG_ERR, "Board IANA does not match firmware IANA.");
-		compatible = (-1);
+		compatible = -1;
 	}
 	if (boardInfo.boardId != firmInfo.boardId) {
 		lprintf(LOG_ERR, "Board IANA does not match firmware IANA.");
-		compatible = (-1);
+		compatible = -1;
 	}
 	if (compatible != 0) {
 		lprintf(LOG_ERR,
