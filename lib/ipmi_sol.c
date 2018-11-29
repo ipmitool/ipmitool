@@ -90,7 +90,7 @@ const struct valstr sol_parameter_vals[] = {
 
 static struct timeval _start_keepalive;
 static struct termios _saved_tio;
-static int _in_raw_mode = 0;
+static bool _in_raw_mode = false;
 static int _disable_keepalive = 0;
 static bool _use_sol_for_keepalive = false;
 
@@ -1125,7 +1125,7 @@ void leave_raw_mode(void)
 	if (tcsetattr(fileno(stdin), TCSADRAIN, &_saved_tio) == -1)
 		perror("tcsetattr");
 	else
-		_in_raw_mode = 0;
+		_in_raw_mode = false;
 }
 
 
@@ -1149,7 +1149,7 @@ void enter_raw_mode(void)
 	if (tcsetattr(fileno(stdin), TCSADRAIN, &tio) == -1)
 		perror("tcsetattr");
 	else
-		_in_raw_mode = 1;
+		_in_raw_mode = true;
 }
 
 
