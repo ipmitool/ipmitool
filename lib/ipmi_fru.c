@@ -33,6 +33,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_mc.h>
@@ -597,7 +598,9 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			break;
 		}
 
-		if (rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) {
+		if (rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
+		    || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
+		    || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES) {
 			if (fru->max_write_size > 8) {
 				fru->max_write_size -= 8;
 				lprintf(LOG_INFO, "Retrying FRU write with request size %d",
@@ -729,8 +732,10 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		if (rsp->ccode) {
 			/* if we get C7h or C8h or CAh return code then we requested too
 			* many bytes at once so try again with smaller size */
-			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca)
-					&& fru->max_read_size > 8) {
+			if ((rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
+			     || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
+			     || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES)
+			    && fru->max_read_size > 8) {
 				if (fru->max_read_size > 32) {
 					/* subtract read length more aggressively */
 					fru->max_read_size -= 8;
@@ -835,9 +840,12 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		if (rsp->ccode) {
 			/* if we get C7 or C8  or CA return code then we requested too
 			* many bytes at once so try again with smaller size */
-			if ((rsp->ccode == 0xc7 || rsp->ccode == 0xc8 || rsp->ccode == 0xca) &&
-				(--fru_data_rqst_size > 8)) {
-				lprintf(LOG_INFO, "Retrying FRU read with request size %d",
+			if ((rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
+			     || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
+			     || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES)
+			    && (--fru_data_rqst_size > 8)) {
+				lprintf(LOG_INFO,
+					"Retrying FRU read with request size %d",
 					fru_data_rqst_size);
 				continue;
 			}
@@ -3261,7 +3269,7 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 		return;
 
 	if (rsp->ccode) {
-		if (rsp->ccode == 0xc3)
+		if (rsp->ccode == IPMI_CC_TIMEOUT)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		return;
 	}
@@ -3329,7 +3337,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 		return;
 
 	if (rsp->ccode) {
-		if (rsp->ccode == 0xc3)
+		if (rsp->ccode == IPMI_CC_TIMEOUT)
 			printf("  Timeout accessing FRU info. (Device not present?)\n");
 		return;
 	}
