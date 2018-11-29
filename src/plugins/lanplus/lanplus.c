@@ -2082,7 +2082,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 	struct ipmi_session *session = intf->session;
 	struct ipmi_rq_entry *entry = NULL;
 	int try_count = 0;
-	int xmit = 1;
+	bool xmit = true;
 	time_t ltime;
 	uint32_t saved_timeout;
 
