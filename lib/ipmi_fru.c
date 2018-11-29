@@ -3792,35 +3792,29 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 		return (-1);
 	}
 	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
-				offFileMultiRec) != 0) {
-		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.", pFileName);
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
+					    offFileMultiRec)
+	    != 0) {
+		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.",
+			pFileName);
+		free(buf);
+		buf = NULL;
 		return (-1);
 	}
 	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
+		free(buf);
+		buf = NULL;
 		return (-1);
 	}
 	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
 				fileMultiRecSize, buf) != 0) {
 		lprintf(LOG_ERR, "Failed to write FRU area.");
-		if (buf) {
-			free(buf);
-			buf = NULL;
-		}
-		return (-1);
-	}
-	if (buf) {
 		free(buf);
 		buf = NULL;
+		return (-1);
 	}
+	free(buf);
+	buf = NULL;
 	lprintf(LOG_INFO, "Done upgrading Ekey.");
 	return 0;
 }
