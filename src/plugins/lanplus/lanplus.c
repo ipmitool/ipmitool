@@ -2048,7 +2048,7 @@ ipmi_lanplus_build_v15_ipmi_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 /*
  * is_sol_packet
  */
-static int is_sol_packet(struct ipmi_rs *rsp)
+static bool is_sol_packet(struct ipmi_rs *rsp)
 {
 	return (rsp
 		&& (rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS)
@@ -2059,7 +2059,7 @@ static int is_sol_packet(struct ipmi_rs *rsp)
 /*
  * sol_response_acks_packet
  */
-static int sol_response_acks_packet(struct ipmi_rs *rsp,
+static bool sol_response_acks_packet(struct ipmi_rs *rsp,
 				    struct ipmi_v2_payload *payload)
 {
 	return (is_sol_packet(rsp) && payload
