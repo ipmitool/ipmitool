@@ -2083,7 +2083,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 	int msg_length;
 	struct ipmi_session *session = intf->session;
 	struct ipmi_rq_entry *entry = NULL;
-	int try = 0;
+	int try_count = 0;
 	int xmit = 1;
 	time_t ltime;
 	uint32_t saved_timeout;
@@ -2096,7 +2096,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 	 * so it will only be valid after the open completes.
 	 */
 	saved_timeout = session->timeout;
-	while (try < intf->ssn_params.retry) {
+	while (try_count < intf->ssn_params.retry) {
 		// ltime = time(NULL);
 
 		if (xmit) {
@@ -2148,7 +2148,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 					entry = ipmi_lanplus_build_v15_ipmi_cmd(
 						intf, ipmi_request);
 				} else {
-					bool isRetry = (try > 0);
+					bool isRetry = (try_count > 0);
 
 					lprintf(LOG_DEBUG + 1,
 						"BUILDING A v2 COMMAND");
@@ -2247,19 +2247,19 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 		switch (payload->payload_type) {
 		case IPMI_PAYLOAD_TYPE_RMCP_OPEN_REQUEST:
 			/* not retryable for timeouts, force no retry */
-			try = intf->ssn_params.retry;
+			try_count = intf->ssn_params.retry;
 			session->v2_data.session_state =
 				LANPLUS_STATE_OPEN_SESSION_SENT;
 			break;
 		case IPMI_PAYLOAD_TYPE_RAKP_1:
 			/* not retryable for timeouts, force no retry */
-			try = intf->ssn_params.retry;
+			try_count = intf->ssn_params.retry;
 			session->v2_data.session_state =
 				LANPLUS_STATE_RAKP_1_SENT;
 			break;
 		case IPMI_PAYLOAD_TYPE_RAKP_3:
 			/* not retryable for timeouts, force no retry */
-			try = intf->ssn_params.retry;
+			try_count = intf->ssn_params.retry;
 			session->v2_data.session_state =
 				LANPLUS_STATE_RAKP_3_SENT;
 			break;
@@ -2329,7 +2329,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 			session->timeout++;
 		}
 
-		try++;
+		try_count++;
 	}
 	session->timeout = saved_timeout;
 
