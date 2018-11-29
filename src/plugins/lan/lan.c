@@ -953,7 +953,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 {
 	struct ipmi_rq_entry *entry;
 	struct ipmi_rs *rsp;
-	int try = 0;
+	int try_count = 0;
 	bool isRetry;
 
 	lprintf(LOG_DEBUG, "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
@@ -969,7 +969,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 	}
 
 	for (;;) {
-		isRetry = (try > 0);
+		isRetry = (try_count > 0);
 
 		entry = ipmi_lan_build_cmd(intf, req, isRetry);
 		if (!entry) {
@@ -980,7 +980,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 
 		if (ipmi_lan_send_packet(intf, entry->msg_data, entry->msg_len)
 		    < 0) {
-			try++;
+			try_count++;
 			usleep(5000);
 			ipmi_req_remove_entry(entry->rq_seq,
 					      entry->req.msg.target_cmd);
@@ -1008,7 +1008,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 			break;
 
 		usleep(5000);
-		if (++try >= intf->ssn_params.retry) {
+		if (++try_count >= intf->ssn_params.retry) {
 			lprintf(LOG_DEBUG,
 				"  No response from remote controller");
 			break;
@@ -1174,7 +1174,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp = NULL;
 	uint8_t *msg;
 	int len;
-	int try = 0;
+	int try_count = 0;
 
 	if (!intf->opened && intf->open) {
 		if (intf->open(intf) < 0)
@@ -1195,7 +1195,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf *intf,
 
 	for (;;) {
 		if (ipmi_lan_send_packet(intf, msg, len) < 0) {
-			try++;
+			try_count++;
 			usleep(5000);
 			continue;
 		}
@@ -1225,7 +1225,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf *intf,
 		}
 
 		usleep(5000);
-		if (++try >= intf->ssn_params.retry) {
+		if (++try_count >= intf->ssn_params.retry) {
 			lprintf(LOG_DEBUG,
 				"  No response from remote controller");
 			break;
