@@ -50,6 +50,7 @@
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_oem.h>
@@ -998,7 +999,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 
 		/* Duplicate Request ccode most likely indicates a response to
 		 * a previous retry. Ignore and keep polling. */
-		if (rsp && rsp->ccode == 0xcf) {
+		if (rsp && rsp->ccode == IPMI_CC_CANT_RESP_DUPLI_REQ) {
 			rsp = ipmi_lan_poll_recv(intf);
 		}
 
@@ -1609,10 +1610,10 @@ static int ipmi_get_session_challenge_cmd(struct ipmi_intf *intf)
 
 	if (rsp->ccode) {
 		switch (rsp->ccode) {
-		case 0x81:
+		case IPMI_CC_GET_SESS_CHALL_INV_USERNAME:
 			lprintf(LOG_ERR, "Invalid user name");
 			break;
-		case 0x82:
+		case IPMI_CC_GET_SESS_CHALL_USER_NOT_ENABLED:
 			lprintf(LOG_ERR, "NULL user name not enabled");
 			break;
 		default:
@@ -1686,31 +1687,31 @@ static int ipmi_activate_session_cmd(struct ipmi_intf *intf)
 	if (rsp->ccode) {
 		fprintf(stderr, "Activate Session error:");
 		switch (rsp->ccode) {
-		case 0x81:
+		case IPMI_CC_ACTIVATE_SESS_NO_SLOT_AVAIL:
 			lprintf(LOG_ERR, "\tNo session slot available");
 			break;
-		case 0x82:
+		case IPMI_CC_ACTIVATE_SESS_NO_SLOT_FOR_USER:
 			lprintf(LOG_ERR,
 				"\tNo slot available for given user - "
 				"limit reached");
 			break;
-		case 0x83:
+		case IPMI_CC_ACTIVATE_SESS_NO_SLOT_GIVEN_PRIV:
 			lprintf(LOG_ERR,
 				"\tNo slot available to support user "
 				"due to maximum privilege capacity");
 			break;
-		case 0x84:
+		case IPMI_CC_ACTIVATE_SESS_SEQ_OUT_OF_RANGE:
 			lprintf(LOG_ERR, "\tSession sequence out of range");
 			break;
-		case 0x85:
+		case IPMI_CC_ACTIVATE_SESS_INV_SESS_ID:
 			lprintf(LOG_ERR, "\tInvalid session ID in request");
 			break;
-		case 0x86:
+		case IPMI_CC_ACTIVATE_SESS_INV_PRIV_REQ:
 			lprintf(LOG_ERR,
 				"\tRequested privilege level "
 				"exceeds limit");
 			break;
-		case 0xd4:
+		case IPMI_CC_INSUFFICIENT_PRIVILEGES:
 			lprintf(LOG_ERR, "\tInsufficient privilege level");
 			break;
 		default:
