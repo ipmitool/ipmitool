@@ -100,7 +100,7 @@ extern int verbose;
  * ipmi_sol_payload_access
  */
 int ipmi_sol_payload_access(struct ipmi_intf *intf, uint8_t channel,
-			    uint8_t userid, int enable)
+			    uint8_t userid, bool enable)
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
@@ -1875,7 +1875,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 		/* Payload enable or disable */
 		uint8_t channel = 0xe;
 		uint8_t userid = 1;
-		int enable = -1;
+		bool enable = true;
 		if (argc == 1 || argc > 4) {
 			print_sol_usage();
 			return -1;
@@ -1891,9 +1891,9 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		if (!strncmp(argv[1], "enable", 6)) {
-			enable = 1;
+			enable = true;
 		} else if (!strncmp(argv[1], "disable", 7)) {
-			enable = 0;
+			enable = false;
 		} else if (!strncmp(argv[1], "status", 6)) {
 			return ipmi_sol_payload_access_status(intf, channel,
 							      userid);
