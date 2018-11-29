@@ -1357,14 +1357,13 @@ void getIpmiPayloadWireRep(struct ipmi_intf *intf,	  /* in out */
 
 
 		msg[len++] = 0x34; /* Send Message rqst */
-		if (bridgedRequest == 2)
-			msg[len++] =
-				(0x40
-				 | intf->transit_channel); /* Track request*/
-		else
-			msg[len++] =
-				(0x40
-				 | intf->target_channel); /* Track request*/
+		if (bridgedRequest == 2) {
+			/* Track request */
+			msg[len++] = (0x40 | intf->transit_channel);
+		} else {
+			/* Track request */
+			msg[len++] = (0x40 | intf->target_channel);
+		}
 
 		payload->payload_length += 7;
 		cs = len;
@@ -1380,9 +1379,8 @@ void getIpmiPayloadWireRep(struct ipmi_intf *intf,	  /* in out */
 			msg[len++] = IPMI_REMOTE_SWID;
 			msg[len++] = curr_seq << 2;
 			msg[len++] = 0x34; /* Send Message rqst */
-			msg[len++] =
-				(0x40
-				 | intf->target_channel); /* Track request*/
+			/* Track request */
+			msg[len++] = (0x40 | intf->target_channel);
 
 			payload->payload_length += 7;
 
