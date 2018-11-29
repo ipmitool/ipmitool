@@ -84,7 +84,7 @@ extern int verbose;
 
 struct ipmi_rq_entry *ipmi_req_entries;
 static struct ipmi_rq_entry *ipmi_req_entries_tail;
-static uint8_t bridge_possible = 0;
+static bool bridge_possible = false;
 
 static int ipmi_lan_send_packet(struct ipmi_intf *intf, uint8_t *data,
 				int data_len);
@@ -1757,7 +1757,7 @@ static int ipmi_set_session_privlvl_cmd(struct ipmi_intf *intf)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t privlvl = intf->ssn_params.privlvl;
-	uint8_t backup_bridge_possible = bridge_possible;
+	bool backup_bridge_possible = bridge_possible;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
 		return 0; /* no need to set higher */
@@ -1768,7 +1768,7 @@ static int ipmi_set_session_privlvl_cmd(struct ipmi_intf *intf)
 	req.msg.data = &privlvl;
 	req.msg.data_len = 1;
 
-	bridge_possible = 0;
+	bridge_possible = false;
 	rsp = intf->sendrecv(intf, &req);
 	bridge_possible = backup_bridge_possible;
 
@@ -1804,7 +1804,7 @@ static int ipmi_close_session_cmd(struct ipmi_intf *intf)
 		return -1;
 
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
-	bridge_possible = 0; /* Not a bridge message */
+	bridge_possible = false; /* Not a bridge message */
 
 	memcpy(&msg_data, &session_id, 4);
 
@@ -1981,7 +1981,7 @@ static int ipmi_lan_open(struct ipmi_intf *intf)
 	intf->manufacturer_id = ipmi_get_oem(intf);
 
 	/* now allow bridging */
-	bridge_possible = 1;
+	bridge_possible = true;
 	return intf->fd;
 
 fail:
