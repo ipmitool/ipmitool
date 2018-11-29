@@ -834,20 +834,18 @@ ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, bool isRetry)
 		msg[len++] = IPMI_REMOTE_SWID;
 		msg[len++] = curr_seq << 2;
 		msg[len++] = 0x34; /* Send Message rqst */
-		entry->req.msg.target_cmd =
-			entry->req.msg.cmd; /* Save target command */
+		/* Save target command */
+		entry->req.msg.target_cmd = entry->req.msg.cmd;
 		entry->req.msg.cmd = 0x34;  /* (fixup request entry) */
 
 		if (intf->transit_addr == intf->my_addr
 		    || intf->transit_addr == 0) {
-			msg[len++] =
-				(0x40
-				 | intf->target_channel); /* Track request*/
+			/* Track request */
+			msg[len++] = (0x40 | intf->target_channel);
 		} else {
 			entry->bridging_level++;
-			msg[len++] =
-				(0x40
-				 | intf->transit_channel); /* Track request*/
+			/* Track request */
+			msg[len++] = (0x40 | intf->transit_channel);
 			cs = len;
 			msg[len++] = intf->transit_addr;
 			msg[len++] = IPMI_NETFN_APP << 2;
@@ -857,9 +855,8 @@ ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, bool isRetry)
 			msg[len++] = intf->my_addr;
 			msg[len++] = curr_seq << 2;
 			msg[len++] = 0x34; /* Send Message rqst */
-			msg[len++] =
-				(0x40
-				 | intf->target_channel); /* Track request */
+			/* Track request */
+			msg[len++] = (0x40 | intf->target_channel);
 		}
 		cs = len;
 	}
