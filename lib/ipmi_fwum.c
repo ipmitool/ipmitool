@@ -41,6 +41,7 @@
 #include <ipmitool/log.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_fwum.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
@@ -723,10 +724,10 @@ int KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 				break;
 			} /* For other interface keep trying */
 		} else if (rsp->ccode) {
-			if (rsp->ccode == 0xc0) {
+			if (rsp->ccode == IPMI_CC_NODE_BUSY) {
 				sleep(1);
-			} else if ((rsp->ccode == 0xc7)
-				   || ((rsp->ccode == 0xc3)
+			} else if ((rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH)
+				   || ((rsp->ccode == IPMI_CC_TIMEOUT)
 				       && (sequenceNumber == 0))) {
 				*pInBufLength -= 1;
 				retry = 1;
@@ -741,10 +742,10 @@ int KfwumSaveFirmwareImage(struct ipmi_intf *intf, unsigned char sequenceNumber,
 				}
 				rc = -1;
 				break;
-			} else if (rsp->ccode == 0xcf) {
+			} else if (rsp->ccode == IPMI_CC_CANT_RESP_DUPLI_REQ) {
 				/* Ok if receive duplicated request */
 				retry = 1;
-			} else if (rsp->ccode == 0xc3) {
+			} else if (rsp->ccode == IPMI_CC_TIMEOUT) {
 				if (retry == 0) {
 					retry = 1;
 					continue;
@@ -786,7 +787,7 @@ int KfwumFinishFirmwareImage(struct ipmi_intf *intf,
 	/* Infinite loop if BMC doesn't reply or replies 0xc0 every time. */
 	do {
 		rsp = intf->sendrecv(intf, &req);
-	} while (!rsp || rsp->ccode == 0xc0);
+	} while (!rsp || rsp->ccode == IPMI_CC_NODE_BUSY);
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR,
@@ -871,7 +872,7 @@ int KfwumStartFirmwareUpgrade(struct ipmi_intf *intf)
 			"Error in FWUM Firmware Start Firmware Upgrade Command");
 		rc = -1;
 	} else if (rsp->ccode) {
-		if (rsp->ccode == 0xd5) {
+		if (rsp->ccode == IPMI_CC_NOT_SUPPORTED_PRESENT_STATE) {
 			lprintf(LOG_ERR,
 				"No firmware available for upgrade.  Download Firmware first.");
 		} else {
