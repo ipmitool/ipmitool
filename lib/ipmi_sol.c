@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -91,7 +92,7 @@ static struct timeval _start_keepalive;
 static struct termios _saved_tio;
 static int _in_raw_mode = 0;
 static int _disable_keepalive = 0;
-static int _use_sol_for_keepalive = 0;
+static bool _use_sol_for_keepalive = false;
 
 extern int verbose;
 
@@ -1508,7 +1509,7 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 
 		if (!ipmi_oem_active(intf, "i82571spt")) {
 			/* Send periodic keepalive packet */
-			if (_use_sol_for_keepalive == 0) {
+			if (!_use_sol_for_keepalive) {
 				keepAliveRet =
 					ipmi_sol_keepalive_using_getdeviceid(
 						intf);
@@ -1935,7 +1936,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
 			if (!strncmp(argv[i], "usesolkeepalive", 15)) {
-				_use_sol_for_keepalive = 1;
+				_use_sol_for_keepalive = true;
 			} else if (!strncmp(argv[i], "nokeepalive", 11)) {
 				_disable_keepalive = 1;
 			} else if (!strncmp(argv[i], "instance=", 9)) {
