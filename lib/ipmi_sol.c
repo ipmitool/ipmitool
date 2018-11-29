@@ -104,7 +104,7 @@ int ipmi_sol_payload_access(struct ipmi_intf *intf, uint8_t channel,
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
-	int rc = (-1);
+	int rc = -1;
 	uint8_t data[6];
 
 	memset(&req, 0, sizeof(req));
@@ -129,13 +129,13 @@ int ipmi_sol_payload_access(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error %sabling SOL payload for user %d on channel %d",
 			enable ? "en" : "dis", userid, channel);
-		rc = (-1);
+		rc = -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR,
 			"Error %sabling SOL payload for user %d on channel %d: %s",
 			enable ? "en" : "dis", userid, channel,
 			val2str(rsp->ccode, completion_code_vals));
-		rc = (-1);
+		rc = -1;
 	} else {
 		rc = 0;
 	}
@@ -217,7 +217,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -240,7 +240,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -257,7 +257,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -280,7 +280,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -297,7 +297,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -324,7 +324,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -341,7 +341,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -365,7 +365,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -382,7 +382,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -406,7 +406,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -424,7 +424,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -447,7 +447,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -464,7 +464,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -487,7 +487,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -504,7 +504,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -529,7 +529,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -546,7 +546,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 		lprintf(LOG_ERR,
 			"Error: No response requesting SOL parameter '%s'",
 			val2str(data[1], sol_parameter_vals));
-		return (-1);
+		return -1;
 	}
 
 	switch (rsp->ccode) {
@@ -574,14 +574,14 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 				"Info: SOL parameter '%s' not supported - can't determine which "
 				"payload port to use on NULL session",
 				val2str(data[1], sol_parameter_vals));
-			return (-1);
+			return -1;
 		}
 		break;
 	default:
 		lprintf(LOG_ERR, "Error requesting SOL parameter '%s': %s",
 			val2str(data[1], sol_parameter_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	return 0;
@@ -1864,7 +1864,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 			channel = 0x0E;
 		} else if (argc == 2) {
 			if (is_ipmi_channel_num(argv[1], &channel) != 0) {
-				return (-1);
+				return -1;
 			}
 		} else {
 			print_sol_usage();
@@ -1882,12 +1882,12 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 		}
 		if (argc >= 3) {
 			if (is_ipmi_channel_num(argv[2], &channel) != 0) {
-				return (-1);
+				return -1;
 			}
 		}
 		if (argc == 4) {
 			if (is_ipmi_user_id(argv[3], &userid) != 0) {
-				return (-1);
+				return -1;
 			}
 		}
 		if (!strncmp(argv[1], "enable", 6)) {
@@ -1914,12 +1914,12 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 			} else {
 				if (is_ipmi_channel_num(argv[3], &channel)
 				    != 0) {
-					return (-1);
+					return -1;
 				}
 			}
 		} else if (argc == 5) {
 			if (is_ipmi_channel_num(argv[3], &channel) != 0) {
-				return (-1);
+				return -1;
 			}
 			if (!strncmp(argv[4], "noguard", 7)) {
 				guard = 0;
@@ -1986,7 +1986,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 			if (str2int(argv[1], &cnt) != 0) {
 				lprintf(LOG_ERR, "Given cnt '%s' is invalid.",
 					argv[1]);
-				return (-1);
+				return -1;
 			}
 			if (cnt <= 0) {
 				cnt = 200;
@@ -1997,7 +1997,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 				lprintf(LOG_ERR,
 					"Given interval '%s' is invalid.",
 					argv[2]);
-				return (-1);
+				return -1;
 			}
 			if (interval < 0) {
 				interval = 0;
