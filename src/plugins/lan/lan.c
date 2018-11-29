@@ -30,6 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -741,7 +742,7 @@ static struct ipmi_rs *ipmi_lan_poll_recv(struct ipmi_intf *intf)
  * +--------------------+
  */
 static struct ipmi_rq_entry *
-ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, int isRetry)
+ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, bool isRetry)
 {
 	struct rmcp_hdr rmcp = {
 		.ver = RMCP_VERSION_1,
@@ -761,7 +762,7 @@ ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, int isRetry)
 	if (our_address == 0)
 		our_address = IPMI_BMC_SLAVE_ADDR;
 
-	if (isRetry == 0)
+	if (isRetry == false)
 		curr_seq++;
 
 	if (curr_seq >= 64)
@@ -966,7 +967,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 	struct ipmi_rq_entry *entry;
 	struct ipmi_rs *rsp;
 	int try = 0;
-	int isRetry = 0;
+	bool isRetry;
 
 	lprintf(LOG_DEBUG, "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
 		intf->opened, intf->open);
@@ -981,7 +982,7 @@ static struct ipmi_rs *ipmi_lan_send_cmd(struct ipmi_intf *intf,
 	}
 
 	for (;;) {
-		isRetry = (try > 0) ? 1 : 0;
+		isRetry = (try > 0);
 
 		entry = ipmi_lan_build_cmd(intf, req, isRetry);
 		if (!entry) {
