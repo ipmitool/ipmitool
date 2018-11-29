@@ -121,7 +121,7 @@ static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf *intf,
 static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf *intf,
 					   uint16_t size);
 
-static uint8_t bridgePossible = 0;
+static bool bridgePossible = false;
 
 struct ipmi_intf ipmi_lanplus_intf = {
 	.name = "lanplus",
@@ -2631,11 +2631,11 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf *intf,
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
-	uint8_t backupBridgePossible;
+	bool backupBridgePossible;
 
 	backupBridgePossible = bridgePossible;
 
-	bridgePossible = 0;
+	bridgePossible = false;
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E | 0x80; // Ask for IPMI v2 data as well
 	msg_data[1] = intf->ssn_params.privlvl;
@@ -2682,7 +2682,7 @@ static int ipmi_close_session_cmd(struct ipmi_intf *intf)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
-	uint8_t backupBridgePossible;
+	bool backupBridgePossible;
 
 	if (!intf->session
 	    || intf->session->v2_data.session_state != LANPLUS_STATE_ACTIVE)
@@ -2691,7 +2691,7 @@ static int ipmi_close_session_cmd(struct ipmi_intf *intf)
 	backupBridgePossible = bridgePossible;
 
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
-	bridgePossible = 0;
+	bridgePossible = false;
 
 	htoipmi32(intf->session->v2_data.bmc_id, msg_data);
 
@@ -3246,7 +3246,7 @@ static int ipmi_set_session_privlvl_cmd(struct ipmi_intf *intf)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	uint8_t backupBridgePossible;
+	bool backupBridgePossible;
 	uint8_t privlvl = intf->ssn_params.privlvl;
 
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
@@ -3254,7 +3254,7 @@ static int ipmi_set_session_privlvl_cmd(struct ipmi_intf *intf)
 
 	backupBridgePossible = bridgePossible;
 
-	bridgePossible = 0;
+	bridgePossible = false;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -3479,7 +3479,7 @@ int ipmi_lanplus_open(struct ipmi_intf *intf)
 		hpm2_detect_max_payload_size(intf);
 	}
 
-	bridgePossible = 1;
+	bridgePossible = true;
 
 	if (!ipmi_oem_active(intf, "i82571spt")) {
 		intf->manufacturer_id = ipmi_get_oem(intf);
