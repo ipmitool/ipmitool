@@ -40,6 +40,7 @@
 #include <ipmitool/ipmi_strings.h>  /* IANA id strings */
 #include <ipmitool/ipmi_time.h>
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -1616,7 +1617,7 @@ static void ipmi_fru_oemkontron_get(int argc,
 				    int off,
 				    struct fru_multirec_oem_header *oh)
 {
-	static int badParams=FALSE;
+	static bool badParams = false;
 	int start = off;
 	int offset = start;
 	offset += sizeof(struct fru_multirec_oem_header);
@@ -1626,104 +1627,102 @@ static void ipmi_fru_oemkontron_get(int argc,
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
 			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
 				printf("usage: fru get <id> <oem>\n");
-				badParams = TRUE;
+				badParams = true;
 				return;
 			}
 		}
 		if( argc<GET_OEM_KONTRON_COMPLETE_ARG_COUNT ){
 			printf("usage: oem <iana> <recordid>\n");
 			printf("usage: oem 15000 3\n");
-			badParams = TRUE;
+			badParams = true;
 			return;
 		}
 	}
 
-	if(!badParams){
+	if (badParams) {
+		return;
+	}
 
-		if(oh->record_id == OEM_KONTRON_INFORMATION_RECORD ) {
+	if (oh->record_id != OEM_KONTRON_INFORMATION_RECORD) {
+		return;
+	}
 
-			uint8_t version;
+	uint8_t version;
 
-			printf("Kontron OEM Information Record\n");
-			version = oh->record_version;
+	printf("Kontron OEM Information Record\n");
+	version = oh->record_version;
 
-			uint8_t blockCount;
-			uint8_t blockIndex=0;
+	uint8_t blockCount;
+	uint8_t blockIndex = 0;
 
-			unsigned int matchInstance = 0;
-			uint8_t instance = 0;
-			
-			if (str2uchar(argv[OEM_KONTRON_INSTANCE_ARG_POS], &instance) != 0) {
-				lprintf(LOG_ERR,
-						"Instance argument '%s' is either invalid or out of range.",
-						argv[OEM_KONTRON_INSTANCE_ARG_POS]);
-				badParams = TRUE;
-				return;
-			}
+	unsigned int matchInstance = 0;
+	uint8_t instance = 0;
 
-			blockCount = fru_data[offset++];
+	if (str2uchar(argv[OEM_KONTRON_INSTANCE_ARG_POS], &instance) != 0) {
+		lprintf(LOG_ERR,
+			"Instance argument '%s' is either invalid or out of range.",
+			argv[OEM_KONTRON_INSTANCE_ARG_POS]);
+		badParams = true;
+		return;
+	}
 
-			for(blockIndex=0;blockIndex<blockCount;blockIndex++){
-				void * pRecordData;
-				uint8_t nameLen;
+	blockCount = fru_data[offset++];
 
-				nameLen = ( fru_data[offset++] &= 0x3F );
-				printf("  Name: %*.*s\n",nameLen, nameLen, (const char *)(fru_data+offset));
+	for (blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+		void *pRecordData;
+		uint8_t nameLen;
 
-				offset+=nameLen;
+		nameLen = (fru_data[offset++] &= 0x3F);
+		printf("  Name: %*.*s\n", nameLen, nameLen,
+		       (const char *)(fru_data + offset));
 
-				pRecordData = &fru_data[offset];
+		offset += nameLen;
 
-				printf("  Record Version: %d\n", version);
-				if( version == 0 )
-				{
-					printf("  Version: %*.*s\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV0 *) pRecordData)->field1);
-					printf("  Build Date: %*.*s\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV0 *) pRecordData)->field2);
-					printf("  Update Date: %*.*s\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV0 *) pRecordData)->field3);
-					printf("  Checksum: %*.*s\n\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV0 *) pRecordData)->crc32);
-					matchInstance++;
-					offset+= sizeof(tOemKontronInformationRecordV0);
-					offset++;
-				}
-				else if ( version == 1 )
-				{
-					printf("  Version: %*.*s\n",
-						OEM_KONTRON_VERSION_FIELD_SIZE,
-						OEM_KONTRON_VERSION_FIELD_SIZE,
-						((tOemKontronInformationRecordV1 *) pRecordData)->field1);
-					printf("  Build Date: %*.*s\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV1 *) pRecordData)->field2);
-					printf("  Update Date: %*.*s\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV1 *) pRecordData)->field3);
-					printf("  Checksum: %*.*s\n\n",
-						OEM_KONTRON_FIELD_SIZE,
-						OEM_KONTRON_FIELD_SIZE,
-						((tOemKontronInformationRecordV1 *) pRecordData)->crc32);
-					matchInstance++;
-					offset+= sizeof(tOemKontronInformationRecordV1);
-					offset++;
-				}
-				else
-				{
-					printf ("  Unsupported version %d\n",version);
-				}
-			}
+		pRecordData = &fru_data[offset];
+
+		printf("  Record Version: %d\n", version);
+		if (version == 0) {
+			printf("  Version: %*.*s\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV0 *)pRecordData)->field1);
+			printf("  Build Date: %*.*s\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV0 *)pRecordData)->field2);
+			printf("  Update Date: %*.*s\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV0 *)pRecordData)->field3);
+			printf("  Checksum: %*.*s\n\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV0 *)pRecordData)->crc32);
+			matchInstance++;
+			offset += sizeof(tOemKontronInformationRecordV0);
+			offset++;
+		} else if (version == 1) {
+			printf("  Version: %*.*s\n",
+			       OEM_KONTRON_VERSION_FIELD_SIZE,
+			       OEM_KONTRON_VERSION_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV1 *)pRecordData)->field1);
+			printf("  Build Date: %*.*s\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV1 *)pRecordData)->field2);
+			printf("  Update Date: %*.*s\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV1 *)pRecordData)->field3);
+			printf("  Checksum: %*.*s\n\n",
+			       OEM_KONTRON_FIELD_SIZE,
+			       OEM_KONTRON_FIELD_SIZE,
+			       ((tOemKontronInformationRecordV1 *)pRecordData)->crc32);
+			matchInstance++;
+			offset += sizeof(tOemKontronInformationRecordV1);
+			offset++;
+		} else {
+			printf("  Unsupported version %d\n", version);
 		}
 	}
 }
