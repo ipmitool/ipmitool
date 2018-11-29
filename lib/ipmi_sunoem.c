@@ -53,6 +53,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>
@@ -240,14 +241,6 @@ static void led_print(const char *name, print_status_t stat, uint8_t state)
 	}
 }
 
-#define CC_NORMAL 0x00
-#define CC_PARAM_OUT_OF_RANGE 0xc9
-#define CC_DEST_UNAVAILABLE 0xd3
-#define CC_UNSPECIFIED_ERR 0xff
-#define CC_INSUFFICIENT_PRIVILEGE 0xd4
-#define CC_INV_CMD 0xc1
-#define CC_INV_DATA_FIELD 0xcc
-
 /*
  * sunoem_led_get(....)
  *
@@ -389,7 +382,7 @@ static void sunoem_led_get_byentity(struct ipmi_intf *intf, uint8_t entity_id,
 			led_print((const char *)e->record.genloc->id_string,
 				  PRINT_ERROR, 0);
 			if (res != SUNOEM_EC_BMC_CCODE_NONZERO || !rsp
-			    || rsp->ccode != CC_DEST_UNAVAILABLE) {
+			    || rsp->ccode != IPMI_CC_DESTINATION_UNAVAILABLE) {
 				ret_get = -1;
 			}
 		}
@@ -509,7 +502,8 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 						  a->record.genloc->id_string,
 					  PRINT_ERROR, 0);
 				if (res != SUNOEM_EC_BMC_CCODE_NONZERO || !rsp
-				    || rsp->ccode != CC_DEST_UNAVAILABLE) {
+				    || rsp->ccode
+					       != IPMI_CC_DESTINATION_UNAVAILABLE) {
 					ret_get = -1;
 				}
 			}
@@ -550,7 +544,7 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 			led_print((const char *)sdr->record.genloc->id_string,
 				  PRINT_ERROR, 0);
 			if (res != SUNOEM_EC_BMC_CCODE_NONZERO || !rsp
-			    || rsp->ccode != CC_DEST_UNAVAILABLE) {
+			    || rsp->ccode != IPMI_CC_DESTINATION_UNAVAILABLE) {
 				ret_get = -1;
 			}
 		}
@@ -1310,11 +1304,9 @@ static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 					error = 1;
 					goto cleanup;
 				}
-				if (rsp->ccode
-				    == IPMI_CC_TIMEOUT) {
+				if (rsp->ccode == IPMI_CC_TIMEOUT) {
 					/* Retry if timed out. */
-					if (retries
-					    == SUNOEM_CLI_MAX_RETRY) {
+					if (retries == SUNOEM_CLI_MAX_RETRY) {
 						/* If it's the last retry. */
 						lprintf(LOG_ERR,
 							"Excessive timeout.");
