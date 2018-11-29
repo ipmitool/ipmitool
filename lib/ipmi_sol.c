@@ -91,7 +91,7 @@ const struct valstr sol_parameter_vals[] = {
 static struct timeval _start_keepalive;
 static struct termios _saved_tio;
 static bool _in_raw_mode = false;
-static int _disable_keepalive = 0;
+static bool _disable_keepalive = false;
 static bool _use_sol_for_keepalive = false;
 
 extern int verbose;
@@ -1938,7 +1938,7 @@ int ipmi_sol_main(struct ipmi_intf *intf, int argc, char **argv)
 			if (!strncmp(argv[i], "usesolkeepalive", 15)) {
 				_use_sol_for_keepalive = true;
 			} else if (!strncmp(argv[i], "nokeepalive", 11)) {
-				_disable_keepalive = 1;
+				_disable_keepalive = true;
 			} else if (!strncmp(argv[i], "instance=", 9)) {
 				if (str2uchar(argv[i] + 9, &instance) != 0) {
 					lprintf(LOG_ERR,
