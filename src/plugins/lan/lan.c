@@ -837,7 +837,7 @@ ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, bool isRetry)
 		msg[len++] = 0x34; /* Send Message rqst */
 		/* Save target command */
 		entry->req.msg.target_cmd = entry->req.msg.cmd;
-		entry->req.msg.cmd = 0x34;  /* (fixup request entry) */
+		entry->req.msg.cmd = 0x34; /* (fixup request entry) */
 
 		if (intf->transit_addr == intf->my_addr
 		    || intf->transit_addr == 0) {
@@ -1408,30 +1408,36 @@ static int check_sol_packet_for_new_data(struct ipmi_rs *rsp)
  */
 static void ack_sol_packet(struct ipmi_intf *intf, struct ipmi_rs *rsp)
 {
-	if (rsp && (rsp->session.payloadtype == IPMI_PAYLOAD_TYPE_SOL)
-	    && (rsp->payload.sol_packet.packet_sequence_number)) {
-		struct ipmi_v2_payload ack;
-
-		memset(&ack, 0, sizeof(struct ipmi_v2_payload));
-
-		ack.payload_type = IPMI_PAYLOAD_TYPE_SOL;
-
-		/*
-		 * Payload length is just the length of the character
-		 * data here.
-		 */
-		ack.payload_length = 0;
-
-		/* ACK packets have sequence numbers of 0 */
-		ack.payload.sol_packet.packet_sequence_number = 0;
-
-		ack.payload.sol_packet.acked_packet_number =
-			rsp->payload.sol_packet.packet_sequence_number;
-
-		ack.payload.sol_packet.accepted_character_count = rsp->data_len;
-
-		ipmi_lan_send_sol_payload(intf, &ack);
+	if (!rsp) {
+		return;
 	}
+
+	if (rsp->session.payloadtype != IPMI_PAYLOAD_TYPE_SOL
+	    || !rsp->payload.sol_packet.packet_sequence_number) {
+		return;
+	}
+
+	struct ipmi_v2_payload ack;
+
+	memset(&ack, 0, sizeof(struct ipmi_v2_payload));
+
+	ack.payload_type = IPMI_PAYLOAD_TYPE_SOL;
+
+	/*
+	 * Payload length is just the length of the character
+	 * data here.
+	 */
+	ack.payload_length = 0;
+
+	/* ACK packets have sequence numbers of 0 */
+	ack.payload.sol_packet.packet_sequence_number = 0;
+
+	ack.payload.sol_packet.acked_packet_number =
+		rsp->payload.sol_packet.packet_sequence_number;
+
+	ack.payload.sol_packet.accepted_character_count = rsp->data_len;
+
+	ipmi_lan_send_sol_payload(intf, &ack);
 }
 
 /*
