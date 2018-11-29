@@ -56,6 +56,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_strings.h>
@@ -165,7 +166,7 @@ int ipmi_sol_payload_access_status(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len != 4) {
 			lprintf(LOG_ERR,
 				"Error parsing SOL payload status for user %d on channel %d",
@@ -221,7 +222,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->set_in_progress = rsp->data[1];
 		} else {
@@ -261,7 +262,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->enabled = rsp->data[1];
 		} else {
@@ -301,7 +302,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->force_encryption =
 				((rsp->data[1] & 0x80) ? 1 : 0);
@@ -345,7 +346,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 3) {
 			params->character_accumulate_level = rsp->data[1];
 			params->character_send_threshold = rsp->data[2];
@@ -386,7 +387,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 3) {
 			params->retry_count = rsp->data[1];
 			params->retry_interval = rsp->data[2];
@@ -428,7 +429,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->non_volatile_bit_rate = rsp->data[1] & 0x0F;
 		} else {
@@ -468,7 +469,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->volatile_bit_rate = rsp->data[1] & 0x0F;
 		} else {
@@ -508,7 +509,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 2) {
 			params->payload_channel = rsp->data[1];
 		} else {
@@ -550,7 +551,7 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	}
 
 	switch (rsp->ccode) {
-	case 0x00:
+	case IPMI_CC_OK:
 		if (rsp->data_len == 3) {
 			params->payload_port =
 				(rsp->data[1]) | (rsp->data[2] << 8);
@@ -1273,7 +1274,7 @@ static int ipmi_sol_deactivate(struct ipmi_intf *intf, int instance)
 
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
-		case 0x00:
+		case IPMI_CC_OK:
 			return 0;
 		case 0x80:
 			lprintf(LOG_ERR,
@@ -1709,7 +1710,7 @@ static int ipmi_sol_activate(struct ipmi_intf *intf, int looptest, int interval,
 
 	if (NULL != rsp) {
 		switch (rsp->ccode) {
-		case 0x00:
+		case IPMI_CC_OK:
 			if (rsp->data_len == 12) {
 				break;
 			} else {
