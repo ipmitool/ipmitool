@@ -1487,17 +1487,17 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 * returns : FALSE if data not changed
 */
 static
-int
+bool
 ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 {
-	int status=FALSE;
+	bool status = false;
 	int ret;
 	char answer;
 
 	printf("Would you like to change this value <y/n> ? ");
 	ret = scanf("%c", &answer);
 	if (ret != 1) {
-		return FALSE;
+		return false;
 	}
 
 	if( answer == 'y' || answer == 'Y' ){
@@ -1514,7 +1514,7 @@ ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 			ret = scanf("%x", holder+i);
 			if (ret != 1) {
 				free(holder);
-				return FALSE;
+				return false;
 			}
 		}
 		for( i=0;i<len;i++ ){
@@ -1523,7 +1523,7 @@ ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 		/* &data[offset++] */
 		free(holder);
 		holder = NULL;
-		status = TRUE;
+		status = true;
 	}
 	else{
 		printf("Entered %c\n",answer);
