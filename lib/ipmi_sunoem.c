@@ -261,7 +261,7 @@ static sunoem_ec_t sunoem_led_get(struct ipmi_intf *intf,
 
 	if (!dev) {
 		*loc_rsp = NULL;
-		return (SUNOEM_EC_INVALID_ARG);
+		return SUNOEM_EC_INVALID_ARG;
 	}
 
 	rqdata[0] = dev->dev_slave_addr;
@@ -290,13 +290,13 @@ static sunoem_ec_t sunoem_led_get(struct ipmi_intf *intf,
 	 */
 	if (!rsp) {
 		*loc_rsp = NULL;
-		return (SUNOEM_EC_BMC_NOT_RESPONDING);
+		return SUNOEM_EC_BMC_NOT_RESPONDING;
 	} else if (rsp->ccode) {
 		*loc_rsp = rsp;
-		return (SUNOEM_EC_BMC_CCODE_NONZERO);
+		return SUNOEM_EC_BMC_CCODE_NONZERO;
 	} else {
 		*loc_rsp = rsp;
-		return (SUNOEM_EC_SUCCESS);
+		return SUNOEM_EC_SUCCESS;
 	}
 }
 
@@ -344,7 +344,7 @@ static struct ipmi_rs *sunoem_led_set(struct ipmi_intf *intf,
 		return NULL;
 	}
 
-	return (rsp);
+	return rsp;
 }
 
 static void sunoem_led_get_byentity(struct ipmi_intf *intf, uint8_t entity_id,
@@ -465,7 +465,7 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
 		ipmi_sunoem_usage();
-		return (0);
+		return 0;
 	}
 
 	if (argc > 1) {
@@ -481,7 +481,7 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 			intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
 
 		if (!alist)
-			return (-1);
+			return -1;
 
 		for (a = alist; a; a = a->next) {
 			if (a->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
@@ -511,9 +511,9 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 		__sdr_list_empty(alist);
 
 		if (ret_get == -1)
-			return (-1);
+			return -1;
 
-		return (0);
+		return 0;
 	}
 
 	/* look up generic device locator record in SDR */
@@ -521,12 +521,12 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (!sdr) {
 		lprintf(LOG_ERR, "No Sensor Data Record found for %s", argv[0]);
-		return (-1);
+		return -1;
 	}
 
 	if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) {
 		lprintf(LOG_ERR, "Invalid SDR type %d", sdr->type);
-		return (-1);
+		return -1;
 	}
 
 	if (!sdr->record.genloc->entity.logical) {
@@ -550,9 +550,9 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 		}
 
 		if (ret_get == -1)
-			return (-1);
+			return -1;
 
-		return (0);
+		return 0;
 	}
 
 	/*
@@ -565,7 +565,7 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 	alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_ENTITY_ASSOC);
 
 	if (!alist)
-		return (-1);
+		return -1;
 
 	for (a = alist; a; a = a->next) {
 		if (a->type != SDR_RECORD_TYPE_ENTITY_ASSOC)
@@ -622,9 +622,9 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 	__sdr_list_empty(alist);
 
 	if (ret_get == -1)
-		return (-1);
+		return -1;
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -672,7 +672,7 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
 		ipmi_sunoem_usage();
-		return (0);
+		return 0;
 	}
 
 	ledmode = str2val(argv[1], sunoem_led_mode_vals);
@@ -680,7 +680,7 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 		ledmode = str2val(argv[1], sunoem_led_mode_optvals);
 		if (ledmode == 0xFF) {
 			lprintf(LOG_NOTICE, "Invalid LED Mode: %s", argv[1]);
-			return (-1);
+			return -1;
 		}
 	}
 
@@ -697,7 +697,7 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 			intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
 
 		if (!alist)
-			return (-1);
+			return -1;
 
 		for (a = alist; a; a = a->next) {
 			if (a->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
@@ -716,9 +716,9 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 		__sdr_list_empty(alist);
 
 		if (ret_set == -1)
-			return (-1);
+			return -1;
 
-		return (0);
+		return 0;
 	}
 
 	/* look up generic device locator records in SDR */
@@ -726,12 +726,12 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (!sdr) {
 		lprintf(LOG_ERR, "No Sensor Data Record found for %s", argv[0]);
-		return (-1);
+		return -1;
 	}
 
 	if (sdr->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR) {
 		lprintf(LOG_ERR, "Invalid SDR type %d", sdr->type);
-		return (-1);
+		return -1;
 	}
 
 	if (!sdr->record.genloc->entity.logical) {
@@ -743,9 +743,9 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 		if (rsp && !rsp->ccode)
 			led_print(argv[0], PRINT_NORMAL, ledmode);
 		else
-			return (-1);
+			return -1;
 
-		return (0);
+		return 0;
 	}
 
 	/*
@@ -758,7 +758,7 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 	alist = ipmi_sdr_find_sdr_bytype(intf, SDR_RECORD_TYPE_ENTITY_ASSOC);
 
 	if (!alist)
-		return (-1);
+		return -1;
 
 	for (a = alist; a; a = a->next) {
 		if (a->type != SDR_RECORD_TYPE_ENTITY_ASSOC)
@@ -819,9 +819,9 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 	__sdr_list_empty(alist);
 
 	if (ret_set == -1)
-		return (-1);
+		return -1;
 
-	return (0);
+	return 0;
 }
 
 static int ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
@@ -838,15 +838,15 @@ static int ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to delete ssh key for UID %d", uid);
-		return (-1);
+		return -1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "Unable to delete ssh key for UID %d: %s", uid,
 			val2str(rsp->ccode, completion_code_vals));
-		return (-1);
+		return -1;
 	}
 
 	printf("Deleted SSH key for user id %d\n", uid);
-	return (0);
+	return 0;
 }
 
 #define SSHKEY_BLOCK_SIZE 64
@@ -864,14 +864,14 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 
 	if (!ifile) {
 		lprintf(LOG_ERR, "Invalid or misisng input filename.");
-		return (-1);
+		return -1;
 	}
 
 	fp = ipmi_open_file_read(ifile);
 	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open file '%s' for reading.",
 			ifile);
-		return (-1);
+		return -1;
 	}
 
 	memset(&req, 0, sizeof(struct ipmi_rq));
@@ -879,11 +879,11 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 	req.msg.cmd = IPMI_SUNOEM_SET_SSH_KEY;
 	req.msg.data = wbuf;
 
-	if (fseek(fp, 0, SEEK_END) == (-1)) {
+	if (fseek(fp, 0, SEEK_END) == -1) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
 		fclose(fp);
 
-		return (-1);
+		return -1;
 	}
 
 	size = (int32_t)ftell(fp);
@@ -891,19 +891,19 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
 		fclose(fp);
 
-		return (-1);
+		return -1;
 	} else if (size == 0) {
 		lprintf(LOG_ERR, "File '%s' is empty.", ifile);
 		fclose(fp);
 
-		return (-1);
+		return -1;
 	}
 
-	if (fseek(fp, 0, SEEK_SET) == (-1)) {
+	if (fseek(fp, 0, SEEK_SET) == -1) {
 		lprintf(LOG_ERR, "Failed to seek in file '%s'.", ifile);
 		fclose(fp);
 
-		return (-1);
+		return -1;
 	}
 
 	printf("Setting SSH key for user id %d...", uid);
@@ -923,7 +923,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 				i_size, ifile);
 			fclose(fp);
 
-			return (-1);
+			return -1;
 		}
 
 		printf(".");
@@ -940,7 +940,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 					r, ifile);
 				fclose(fp);
 
-				return (-1);
+				return -1;
 			}
 			wbuf[1] = (uint8_t)(r / SSHKEY_BLOCK_SIZE);
 		}
@@ -956,7 +956,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 				uid);
 			fclose(fp);
 
-			return (-1);
+			return -1;
 		}
 		if (rsp->ccode) {
 			printf("failed\n");
@@ -965,7 +965,7 @@ static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
 				val2str(rsp->ccode, completion_code_vals));
 			fclose(fp);
 
-			return (-1);
+			return -1;
 		}
 	}
 
@@ -1046,16 +1046,16 @@ static int sunoem_cli_unbufmode_start(FILE *f, struct termios *orig_ts)
 	int rc;
 
 	if ((rc = tcgetattr(fileno(f), &ts))) {
-		return (rc);
+		return rc;
 	}
 	*orig_ts = ts;
 	ts.c_lflag &= ~(ICANON | ECHO | ISIG);
 	ts.c_cc[VMIN] = 1;
 	if ((rc = tcsetattr(fileno(f), TCSAFLUSH, &ts))) {
-		return (rc);
+		return rc;
 	}
 
-	return (0);
+	return 0;
 }
 
 static int sunoem_cli_unbufmode_stop(FILE *f, struct termios *ts)
@@ -1063,10 +1063,10 @@ static int sunoem_cli_unbufmode_stop(FILE *f, struct termios *ts)
 	int rc;
 
 	if ((rc = tcsetattr(fileno(f), TCSAFLUSH, ts))) {
-		return (rc);
+		return rc;
 	}
 
-	return (0);
+	return 0;
 }
 
 static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
@@ -1108,7 +1108,7 @@ static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
 			lprintf(LOG_ERR, "Sun OEM cli command failed");
-			return (-1);
+			return -1;
 		}
 		cli_rsp = (sunoem_cli_msg_t *)rsp->data;
 		if (cli_rsp->command_response || rsp->ccode) {
@@ -1133,7 +1133,7 @@ static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 				 */
 				lprintf(LOG_ERR, "Failed to connect: %s",
 					cli_rsp->buf);
-				return (-1);
+				return -1;
 			} else if (strncmp(cli_rsp->buf, SUNOEM_CLI_BUSY_ERR,
 					   sizeof(SUNOEM_CLI_BUSY_ERR) - 1)
 				   == 0) {
@@ -1146,11 +1146,11 @@ static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 				}
 				lprintf(LOG_ERR, "Failed to connect: %s",
 					cli_rsp->buf);
-				return (-1);
+				return -1;
 			} else {
 				lprintf(LOG_ERR, "Failed to connect: %s",
 					cli_rsp->buf);
-				return (-1);
+				return -1;
 			}
 		}
 		break;
@@ -1182,7 +1182,7 @@ static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 		if (sunoem_cli_unbufmode_start(stdin, &orig_ts)) {
 			lprintf(LOG_ERR, "Failed to set interactive mode: %s",
 				strerror(errno));
-			return (-1);
+			return -1;
 		}
 	}
 	while (!rsp->ccode && cli_rsp->command_response == 0) {
@@ -1347,7 +1347,7 @@ cleanup:
 			lprintf(LOG_ERR,
 				"Failed to restore interactive mode: %s",
 				strerror(errno));
-			return (-1);
+			return -1;
 		}
 	}
 
@@ -1391,7 +1391,7 @@ static int ipmi_sunoem_echo(struct ipmi_intf *intf, int argc, char *argv[])
 	uint32_t total_time, resp_time, min_time, max_time;
 
 	if (argc < 1) {
-		return (1);
+		return 1;
 	}
 
 	if (argc == 2) {
@@ -1399,18 +1399,18 @@ static int ipmi_sunoem_echo(struct ipmi_intf *intf, int argc, char *argv[])
 			quiet_mode = 1;
 		} else {
 			lprintf(LOG_ERR, "Unknown option '%s' given.", argv[1]);
-			return (-1);
+			return -1;
 		}
 	} else if (argc > 2) {
 		lprintf(LOG_ERR,
 			"Too many parameters given. See help for more information.");
-		return (-1);
+		return -1;
 	}
 	/* The number of packets to send/receive */
 	if (str2ushort(argv[0], &num) != 0) {
 		lprintf(LOG_ERR,
 			"Given number of packets is either invalid or out of range.");
-		return (-1);
+		return -1;
 	}
 
 	/* Fill in data packet */
@@ -1504,7 +1504,7 @@ static int ipmi_sunoem_echo(struct ipmi_intf *intf, int argc, char *argv[])
 		       total_time / received, max_time);
 	}
 
-	return (rc);
+	return rc;
 } /* ipmi_sunoem_echo(...) */
 
 #ifdef HAVE_PRAGMA_PACK
@@ -1557,17 +1557,17 @@ static int ipmi_sunoem_getversion(struct ipmi_intf *intf,
 
 	if (!rsp) {
 		lprintf(LOG_ERR, "Sun OEM Get SP Version Failed.");
-		return (-1);
+		return -1;
 	}
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM Get SP Version Failed: %d",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 
 	*version_rsp = (sunoem_version_response_t *)rsp->data;
 
-	return (0);
+	return 0;
 }
 
 static void
@@ -1596,37 +1596,37 @@ static int ipmi_sunoem_checkversion(struct ipmi_intf *intf,
 
 	if (ipmi_sunoem_getversion(intf, &version_rsp)) {
 		lprintf(LOG_ERR, "Unable to get ILOM version");
-		return (-1);
+		return -1;
 	}
 
 	if (version_rsp->major < supp_ver->major)
-		return (-i);
+		return -i;
 	if (version_rsp->major > supp_ver->major)
-		return (i);
+		return i;
 	/*version_rsp->major == supp_ver->major*/
 	++i;
 
 	if (version_rsp->minor < supp_ver->minor)
-		return (-i);
+		return -i;
 	if (version_rsp->minor > supp_ver->minor)
-		return (i);
+		return i;
 	/*version_rsp->minor == supp_ver->minor*/
 	++i;
 
 	if (version_rsp->update < supp_ver->update)
-		return (-i);
+		return -i;
 	if (version_rsp->update > supp_ver->update)
-		return (i);
+		return i;
 	/*version_rsp->update == supp_ver->update*/
 	++i;
 
 	if (version_rsp->micro < supp_ver->micro)
-		return (-i);
+		return -i;
 	if (version_rsp->micro > supp_ver->micro)
-		return (i);
+		return i;
 	/*version_rsp->micro == supp_ver->micro*/
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -1647,7 +1647,7 @@ static int ipmi_sunoem_version(struct ipmi_intf *intf)
 		printf("Version: %s\n", version_rsp->version);
 	}
 
-	return (rc);
+	return rc;
 }
 
 /*
@@ -1692,13 +1692,13 @@ static int ipmi_sunoem_nacname(struct ipmi_intf *intf, int argc, char *argv[])
 	char full_nac_name[LUAPI_MAX_OBJ_PATH_LEN];
 
 	if (argc < 1) {
-		return (1);
+		return 1;
 	}
 
 	if (strlen(argv[0]) > MAX_ID_STR_LEN) {
 		lprintf(LOG_ERR,
 			"Sun OEM nacname command failed: Max size on IPMI name");
-		return (-1);
+		return -1;
 	}
 
 	nacname_req.seq_num = 0;
@@ -1715,12 +1715,12 @@ static int ipmi_sunoem_nacname(struct ipmi_intf *intf, int argc, char *argv[])
 
 		if (!rsp) {
 			lprintf(LOG_ERR, "Sun OEM nacname command failed.");
-			return (-1);
+			return -1;
 		}
 		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM nacname command failed: %d",
 				rsp->ccode);
-			return (-1);
+			return -1;
 		}
 
 		nacname_rsp = (sunoem_nacname_t *)rsp->data;
@@ -1744,12 +1744,12 @@ static int ipmi_sunoem_nacname(struct ipmi_intf *intf, int argc, char *argv[])
 		    > LUAPI_MAX_OBJ_PATH_LEN) {
 			lprintf(LOG_ERR,
 				"Sun OEM nacname command failed: invalid path length");
-			return (-1);
+			return -1;
 		}
 	}
 
 	printf("NAC Name: %s\n", full_nac_name);
-	return (0);
+	return 0;
 }
 
 /* Constants used by ipmi_sunoem_getval */
@@ -1851,13 +1851,13 @@ static int ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
 	supported_version_t supp_ver = {3, 2, 0, 0};
 
 	if (argc < 1) {
-		return (1);
+		return 1;
 	}
 
 	if (strlen(argv[0]) > MAX_SUNOEM_VAL_PAYLOAD) {
 		lprintf(LOG_ERR,
 			"Sun OEM get value command failed: Max size on IPMI name");
-		return (-1);
+		return -1;
 	}
 
 	if ((ipmi_sunoem_checkversion(intf, &supp_ver) < 0)
@@ -1886,12 +1886,12 @@ static int ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
 
 	if (!rsp) {
 		lprintf(LOG_ERR, "Sun OEM getval1 command failed.");
-		return (-1);
+		return -1;
 	}
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM getval1 command failed: %d",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -1909,31 +1909,31 @@ static int ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
 
 		if (!rsp) {
 			lprintf(LOG_ERR, "Sun OEM getval2 command failed.");
-			return (-1);
+			return -1;
 		}
 
 		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM getval2 command failed: %d",
 				rsp->ccode);
-			return (-1);
+			return -1;
 		}
 
 		getval_rsp = (sunoem_getval_t *)rsp->data;
 
 		if (getval_rsp->cmd_code == SUNOEM_DATA_READY) {
 			printf("Target Value: %s\n", getval_rsp->luapi_value);
-			return (0);
+			return 0;
 		} else if (getval_rsp->cmd_code == SUNOEM_DATA_NOT_FOUND) {
 			lprintf(LOG_ERR, "Target: %s not found",
 				getval_req.luapi_value);
-			return (-1);
+			return -1;
 		}
 
 		sleep(1);
 	}
 
 	lprintf(LOG_ERR, "Unable to retrieve target value.");
-	return (-1);
+	return -1;
 }
 
 static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
@@ -1979,14 +1979,14 @@ static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
 		if (!rsp) {
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop name: response is NULL");
-			return (-1);
+			return -1;
 		}
 
 		if (rsp->ccode) {
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop name: request failed: %d",
 				rsp->ccode);
-			return (-1);
+			return -1;
 		}
 
 		setval_rsp = (sunoem_setval_resp_t *)rsp->data;
@@ -1999,7 +1999,7 @@ static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop name: invalid status code: %d",
 				setval_rsp->status_code);
-			return (-1);
+			return -1;
 		}
 		/* Use the tid returned by ILOM */
 		*tid_num = setval_rsp->tid;
@@ -2007,7 +2007,7 @@ static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
 		i += MAX_SUNOEM_VAL_COMPACT_PAYLOAD;
 	}
 
-	return (0);
+	return 0;
 }
 
 static int send_luapi_prop_value(struct ipmi_intf *intf, int len,
@@ -2054,14 +2054,14 @@ static int send_luapi_prop_value(struct ipmi_intf *intf, int len,
 		if (!rsp) {
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop value: response is NULL");
-			return (-1);
+			return -1;
 		}
 
 		if (rsp->ccode) {
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop value: request failed: %d",
 				rsp->ccode);
-			return (-1);
+			return -1;
 		}
 
 		setval_rsp = (sunoem_setval_resp_t *)rsp->data;
@@ -2074,13 +2074,13 @@ static int send_luapi_prop_value(struct ipmi_intf *intf, int len,
 			lprintf(LOG_ERR,
 				"Sun OEM setval prop value: invalid status code: %d",
 				setval_rsp->status_code);
-			return (-1);
+			return -1;
 		}
 
 		/* Increment the string offset */
 		i += MAX_SUNOEM_VAL_COMPACT_PAYLOAD;
 	}
-	return (0);
+	return 0;
 }
 
 static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
@@ -2100,12 +2100,12 @@ static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 	if (prop_len > LUAPI_MAX_OBJ_PATH_LEN) {
 		lprintf(LOG_ERR,
 			"Sun OEM set value command failed: Max size on property name");
-		return (-1);
+		return -1;
 	}
 	if (value_len > LUAPI_MAX_OBJ_VAL_LEN) {
 		lprintf(LOG_ERR,
 			"Sun OEM set value command failed: Max size on property value");
-		return (-1);
+		return -1;
 	}
 
 	/* Test if there is a timeout specified */
@@ -2113,7 +2113,7 @@ static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 		if ((str2int(argv[2], &retries) != 0) || retries < 0) {
 			lprintf(LOG_ERR,
 				"Invalid input given or out of range for time-out parameter.");
-			return (-1);
+			return -1;
 		}
 	} else {
 		retries = GETVAL_MAX_RETRIES;
@@ -2122,12 +2122,12 @@ static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 	/* Send the property name 1st */
 	if (send_luapi_prop_name(intf, prop_len, argv[0], &tid_num) != 0) {
 		/* return if there is an error */
-		return (-1);
+		return -1;
 	}
 
 	if (send_luapi_prop_value(intf, value_len, argv[1], tid_num) != 0) {
 		/* return if there is an error */
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -2147,23 +2147,23 @@ static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 
 		if (!rsp) {
 			lprintf(LOG_ERR, "Sun OEM setval command failed.");
-			return (-1);
+			return -1;
 		}
 
 		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM setval command failed: %d",
 				rsp->ccode);
-			return (-1);
+			return -1;
 		}
 
 		setval_rsp = (sunoem_setval_resp_t *)rsp->data;
 
 		if (setval_rsp->status_code == SUNOEM_DATA_READY) {
 			printf("Sun OEM setval command successful.\n");
-			return (0);
+			return 0;
 		} else if (setval_rsp->status_code != SUNOEM_DATA_NOT_READY) {
 			lprintf(LOG_ERR, "Sun OEM setval command failed.");
-			return (-1);
+			return -1;
 		}
 
 		sleep(1);
@@ -2171,7 +2171,7 @@ static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 	/* If we reached here, retries exceeded */
 	lprintf(LOG_ERR, "Sun OEM setval command failed: Command Timed Out");
 
-	return (-1);
+	return -1;
 }
 
 #define MAX_FILE_DATA_SIZE 1024
@@ -2210,13 +2210,13 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 	supported_version_t supp_ver = IPMI_SUNOEM_GETFILE_VERSION;
 
 	if (argc < 1) {
-		return (-1);
+		return -1;
 	}
 
 	/*check if command is supported by this version of ilom*/
 	if (ipmi_sunoem_checkversion(intf, &supp_ver) < 0) {
 		ipmi_sunoem_print_required_version(&supp_ver);
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -2225,7 +2225,7 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 	 */
 	if (strlen(argv[0]) >= MAX_FILE_DATA_SIZE) {
 		lprintf(LOG_ERR, "File ID >= %d characters", MAX_FILEID_LEN);
-		return (-1);
+		return -1;
 	}
 
 	memset(&getfile_req, 0, sizeof(getfile_req));
@@ -2235,7 +2235,7 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 	fp = ipmi_open_file_write(argv[1]);
 	if (!fp) {
 		lprintf(LOG_ERR, "Unable to open file: %s", argv[1]);
-		return (-1);
+		return -1;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -2257,13 +2257,13 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 		if (!rsp) {
 			lprintf(LOG_ERR, "Sun OEM getfile command failed.");
 			fclose(fp);
-			return (-1);
+			return -1;
 		}
 		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Sun OEM getfile command failed: %d",
 				rsp->ccode);
 			fclose(fp);
-			return (-1);
+			return -1;
 		}
 
 		getfile_rsp = (getfile_rsp_t *)rsp->data;
@@ -2277,7 +2277,7 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 				"Sun OEM getfile invalid data size: %d",
 				data_size);
 			fclose(fp);
-			return (-1);
+			return -1;
 		}
 
 		/* Check if Block Num matches */
@@ -2289,14 +2289,14 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 			lprintf(LOG_ERR, "Expecting: %x Received: %x",
 				getfile_req.block_num, getfile_rsp->block_num);
 			fclose(fp);
-			return (-1);
+			return -1;
 		}
 
 		if (fwrite(getfile_rsp->data, 1, data_size, fp) != data_size) {
 			lprintf(LOG_ERR, "Sun OEM getfile write failed: %d",
 				rsp->ccode);
 			fclose(fp);
-			return (-1);
+			return -1;
 		}
 
 		block_num++;
@@ -2304,7 +2304,7 @@ static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 
 	fclose(fp);
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -2339,13 +2339,13 @@ static int ipmi_sunoem_getbehavior(struct ipmi_intf *intf, int argc,
 	supported_version_t supp_ver = IPMI_SUNOEM_GETBEHAVIOR_VERSION;
 
 	if (argc < 1) {
-		return (-1);
+		return -1;
 	}
 
 	/*check if command is supported by this version of ilom*/
 	if (ipmi_sunoem_checkversion(intf, &supp_ver) < 0) {
 		ipmi_sunoem_print_required_version(&supp_ver);
-		return (-1);
+		return -1;
 	}
 
 	/*
@@ -2355,7 +2355,7 @@ static int ipmi_sunoem_getbehavior(struct ipmi_intf *intf, int argc,
 	if (strlen(argv[0]) >= SUNOEM_BEHAVIORID_SIZE) {
 		lprintf(LOG_ERR, "Behavior ID >= %d characters",
 			SUNOEM_BEHAVIORID_SIZE);
-		return (-1);
+		return -1;
 	}
 
 	memset(&getbehavior_req, 0, sizeof(getbehavior_req));
@@ -2373,20 +2373,20 @@ static int ipmi_sunoem_getbehavior(struct ipmi_intf *intf, int argc,
 
 	if (!rsp) {
 		lprintf(LOG_ERR, "Sun OEM getbehavior command failed.");
-		return (-1);
+		return -1;
 	}
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM getbehavior command failed: %d",
 			rsp->ccode);
-		return (-1);
+		return -1;
 	}
 
 	getbehavior_rsp = (getbehavior_rsp_t *)rsp->data;
 	printf("ILOM behavior %s %s enabled\n", getbehavior_req.behavior_id,
 	       getbehavior_rsp->enabled ? "is" : "is not");
 
-	return (0);
+	return 0;
 }
 
 int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
@@ -2395,7 +2395,7 @@ int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (argc == 0 || strcmp(argv[0], "help") == 0) {
 		ipmi_sunoem_usage();
-		return (0);
+		return 0;
 	} /* if (argc == 0 || strcmp(argv[0], "help") == 0) */
 
 	if (strcmp(argv[0], "cli") == 0) {
@@ -2404,7 +2404,7 @@ int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		   || (strcmp(argv[0], "sbled") == 0)) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 
 		if (strcmp(argv[1], "get") == 0) {
@@ -2418,29 +2418,29 @@ int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		} else if (strcmp(argv[1], "set") == 0) {
 			if (argc < 4) {
 				ipmi_sunoem_usage();
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_sunoem_led_set(intf, argc - 2, &(argv[2]));
 		} else {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 	} else if (strcmp(argv[0], "sshkey") == 0) {
 		uint8_t uid = 0;
 		if (argc < 3) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = str2uchar(argv[2], &uid);
 		if (rc == 0) {
 			/* conversion should be OK. */
 		} else if (rc == 2) {
 			lprintf(LOG_NOTICE, "Invalid interval given.");
-			return (-1);
+			return -1;
 		} else {
 			/* defaults to rc = 3 */
 			lprintf(LOG_NOTICE, "Given interval is too big.");
-			return (-1);
+			return -1;
 		}
 
 		if (strcmp(argv[1], "del") == 0) {
@@ -2450,17 +2450,17 @@ int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		} else if (strcmp(argv[1], "set") == 0) {
 			if (argc < 4) {
 				ipmi_sunoem_usage();
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_sunoem_sshkey_set(intf, uid, argv[3]);
 		} else {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 	} else if (strcmp(argv[0], "ping") == 0) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_echo(intf, argc - 1, &(argv[1]));
 	} else if (strcmp(argv[0], "version") == 0) {
@@ -2468,37 +2468,37 @@ int ipmi_sunoem_main(struct ipmi_intf *intf, int argc, char **argv)
 	} else if (strcmp(argv[0], "nacname") == 0) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_nacname(intf, argc - 1, &(argv[1]));
 	} else if (strcmp(argv[0], "getval") == 0) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_getval(intf, argc - 1, &(argv[1]));
 	} else if (strcmp(argv[0], "setval") == 0) {
 		if (argc < 3) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_setval(intf, argc - 1, &(argv[1]));
 	} else if (strcmp(argv[0], "getfile") == 0) {
 		if (argc < 3) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_getfile(intf, argc - 1, &(argv[1]));
 	} else if (strcmp(argv[0], "getbehavior") == 0) {
 		if (argc < 2) {
 			ipmi_sunoem_usage();
-			return (-1);
+			return -1;
 		}
 		rc = ipmi_sunoem_getbehavior(intf, argc - 1, &(argv[1]));
 	} else {
 		lprintf(LOG_ERR, "Invalid sunoem command: %s", argv[0]);
-		return (-1);
+		return -1;
 	} /* if (strcmp(argv[0], "cli") == 0) */
 
-	return (rc);
+	return rc;
 }
