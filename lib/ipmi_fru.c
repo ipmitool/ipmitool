@@ -101,6 +101,12 @@ static const char * chassis_type_desc[] = {
 	"Blade Enclosure"
 };
 
+static inline bool fru_cc_rq2big(int code) {
+	return (code == IPMI_CC_REQ_DATA_INV_LENGTH
+		|| code == IPMI_CC_REQ_DATA_FIELD_EXCEED
+		|| code == IPMI_CC_CANT_RET_NUM_REQ_BYTES);
+}
+
 /* From lib/dimm_spd.c: */
 int
 ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id);
@@ -598,16 +604,13 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			break;
 		}
 
-		if (rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
-		    || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
-		    || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES) {
-			if (fru->max_write_size > 8) {
-				fru->max_write_size -= 8;
-				lprintf(LOG_INFO, "Retrying FRU write with request size %d",
-						fru->max_write_size);
-				continue;
-			}
-		} else if(rsp->ccode == 0x80) {
+		if (fru_cc_rq2big(rsp->ccode) && fru->max_write_size > 8) {
+			fru->max_write_size -= 8;
+			lprintf(LOG_INFO,
+				"Retrying FRU write with request size %d",
+				fru->max_write_size);
+			continue;
+		} else if (rsp->ccode == 0x80) {
 			rsp->ccode = 0;
 			// Write protected section
 			protected_bloc = 1;
@@ -733,9 +736,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			/* if we get C7h or C8h or CAh return code then we
 			 * requested too many bytes at once so try again with
 			 * smaller size */
-			if ((rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
-			     || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
-			     || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES)
+			if (fru_cc_rq2big(rsp->ccode)
 			    && fru->max_read_size > 8) {
 				if (fru->max_read_size > 32) {
 					/* subtract read length more aggressively */
@@ -842,10 +843,7 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			/* if we get C7 or C8  or CA return code then we
 			 * requested too many bytes at once so try again with
 			 * smaller size */
-			if ((rsp->ccode == IPMI_CC_REQ_DATA_INV_LENGTH
-			     || rsp->ccode == IPMI_CC_REQ_DATA_FIELD_EXCEED
-			     || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES)
-			    && (--fru_data_rqst_size > 8)) {
+			if (fru_cc_rq2big(rsp->ccode) && (--fru_data_rqst_size > 8)) {
 				lprintf(LOG_INFO,
 					"Retrying FRU read with request size %d",
 					fru_data_rqst_size);
