@@ -1940,22 +1940,21 @@ static bool ipmi_fru_oemkontron_edit(int argc, char **argv, uint8_t *fru_data,
 }
 
 /* ipmi_fru_picmg_ext_edit  -  Query new values to replace original FRU content
-*
-* @data:   FRU data
-* @offset: start of the current multi record (start of header)
-* @len:    len of the current record (excluding header)
-* @h:      pointer to record header
-* @oh:     pointer to OEM /PICMG header
-*
-* returns: TRUE if data changed
-* returns: FALSE if data not changed
-*/
-static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
-												int off,int len,
-												struct fru_multirec_header *h,
-												struct fru_multirec_oem_header *oh)
+ *
+ * @data:   FRU data
+ * @offset: start of the current multi record (start of header)
+ * @len:    len of the current record (excluding header)
+ * @h:      pointer to record header
+ * @oh:     pointer to OEM /PICMG header
+ *
+ * returns: TRUE if data changed
+ * returns: FALSE if data not changed
+ */
+static bool ipmi_fru_picmg_ext_edit(uint8_t *fru_data, int off, int len,
+				    struct fru_multirec_header *h,
+				    struct fru_multirec_oem_header *oh)
 {
-	int hasChanged = FALSE;
+	bool hasChanged = false;
 	int start = off;
 	int offset = start;
 	int length = len;
@@ -1975,12 +1974,13 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 				printf("      Maximum Internal Current(@12V): %.2f A (0x%02x)\n",
 								(float)max_current / 10.0f, max_current);
 
-				if( ipmi_fru_query_new_value(fru_data,index,2) ){
-					max_current = fru_data[index];
-					max_current |= fru_data[++index]<<8;
-					printf("      New Maximum Internal Current(@12V): %.2f A (0x%02x)\n",
-								(float)max_current / 10.0f, max_current);
-					hasChanged = TRUE;
+			if (ipmi_fru_query_new_value(fru_data, index, 2)) {
+				max_current = fru_data[index];
+				max_current |= fru_data[++index] << 8;
+				printf("      New Maximum Internal Current(@12V): %.2f A (0x%02x)\n",
+				       (float)max_current / 10.0f, max_current);
+				hasChanged = true;
+			}
 
 				}
 
@@ -2016,10 +2016,9 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 				if( ipmi_fru_query_new_value(fru_data, index, 1) ){
 					current = fru_data[index];
 
-					printf("      New Current draw(@12V): %.2f A (0x%02x)\n",
-								(float)current / 10.0f, current);
-					hasChanged = TRUE;
-				}
+				printf("      New Current draw(@12V): %.2f A (0x%02x)\n",
+				       (float)current / 10.0f, current);
+				hasChanged = true;
 			}
 			break;
 	}
