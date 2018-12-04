@@ -3769,10 +3769,10 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 	return 0;
 }
 
-static int
-ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
-			char * pFileName,
-			uint8_t fruId)
+#define ERR_EXIT do { rc = -1; goto exit; } while(0)
+
+static int ipmi_fru_upg_ekeying(struct ipmi_intf *intf, char *pFileName,
+				uint8_t fruId)
 {
 	struct fru_info fruInfo = {0};
 	uint8_t *buf = NULL;
@@ -3780,14 +3780,16 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	uint32_t fruMultiRecSize = 0;
 	uint32_t offFileMultiRec = 0;
 	uint32_t fileMultiRecSize = 0;
+	int rc = 0;
+
 	if (!pFileName) {
 		lprintf(LOG_ERR, "File expected, but none given.");
-		return -1;
+		ERR_EXIT;
 	}
 	if (ipmi_fru_get_multirec_location_from_fru(intf, fruId, &fruInfo,
 							&offFruMultiRec, &fruMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec location from FRU.");
-		return -1;
+		ERR_EXIT;
 	}
 	lprintf(LOG_DEBUG, "FRU Size        : %lu\n", fruMultiRecSize);
 	lprintf(LOG_DEBUG, "Multi Rec offset: %lu\n", offFruMultiRec);
@@ -3796,39 +3798,39 @@ ipmi_fru_upg_ekeying(struct ipmi_intf * intf,
 	    != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec size from file '%s'.",
 			pFileName);
-		return -1;
+		ERR_EXIT;
 	}
 	buf = malloc(fileMultiRecSize);
 	if (!buf) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return -1;
+		ERR_EXIT;
 	}
 	if (ipmi_fru_get_multirec_from_file(pFileName, buf, fileMultiRecSize,
 					    offFileMultiRec)
 	    != 0) {
 		lprintf(LOG_ERR, "Failed to get multirec from file '%s'.",
 			pFileName);
-		free(buf);
-		buf = NULL;
-		return -1;
+		ERR_EXIT;
 	}
 	if (ipmi_fru_get_adjust_size_from_buffer(buf, &fileMultiRecSize) != 0) {
 		lprintf(LOG_ERR, "Failed to adjust size from buffer.");
-		free(buf);
-		buf = NULL;
-		return -1;
+		ERR_EXIT;
 	}
 	if (write_fru_area(intf, &fruInfo, fruId, 0, offFruMultiRec,
 				fileMultiRecSize, buf) != 0) {
 		lprintf(LOG_ERR, "Failed to write FRU area.");
+		ERR_EXIT;
+	}
+
+	lprintf(LOG_INFO, "Done upgrading Ekey.");
+
+exit:
+	if (buf) {
 		free(buf);
 		buf = NULL;
-		return -1;
 	}
-	free(buf);
-	buf = NULL;
-	lprintf(LOG_INFO, "Done upgrading Ekey.");
-	return 0;
+
+	return rc;
 }
 
 /* ipmi_fru_upgekey_help - print help text for 'upgEkey'
