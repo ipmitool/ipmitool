@@ -1479,15 +1479,15 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 }
 
 /* ipmi_fru_query_new_value  -  Query new values to replace original FRU content
-*
-* @data:   FRU data
-* @offset: offset of the bytes to be modified in data
-* @len:    size of the modified data
-*
-* returns : TRUE if data changed
-* returns : FALSE if data not changed
-*/
-int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
+ *
+ * @data:   FRU data
+ * @offset: offset of the bytes to be modified in data
+ * @len:    size of the modified data
+ *
+ * returns : TRUE if data changed
+ * returns : FALSE if data not changed
+ */
+static int ipmi_fru_query_new_value(uint8_t *data, int offset, size_t len)
 {
 	int status=FALSE;
 	int ret;
