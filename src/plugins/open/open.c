@@ -342,48 +342,61 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	read_timeout.tv_sec = IPMI_OPENIPMI_READ_TIMEOUT;
 	read_timeout.tv_usec = 0;
 	do {
-		retval = select(intf->fd + 1, &rset, NULL, NULL, &read_timeout);
-	} while (retval < 0 && errno == EINTR);
-	if (retval < 0) {
-		lperror(LOG_ERR, "I/O Error");
-		if (data) {
-			free(data);
-			data = NULL;
-		}
-		return NULL;
-	} else if (retval == 0) {
-		lprintf(LOG_ERR, "No data available");
-		if (data) {
-			free(data);
-			data = NULL;
-		}
-		return NULL;
-	}
-	if (FD_ISSET(intf->fd, &rset) == 0) {
-		lprintf(LOG_ERR, "No data available");
-		if (data) {
-			free(data);
-			data = NULL;
-		}
-		return NULL;
-	}
-
-	recv.addr = (unsigned char *)&addr;
-	recv.addr_len = sizeof(addr);
-	recv.msg.data = rsp.data;
-	recv.msg.data_len = sizeof(rsp.data);
-
-	/* get data */
-	if (ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv) < 0) {
-		lperror(LOG_ERR, "Error receiving message");
-		if (errno != EMSGSIZE) {
+		do {
+			retval = select(intf->fd + 1, &rset, NULL, NULL, &read_timeout);
+		} while (retval < 0 && errno == EINTR);
+		if (retval < 0) {
+			lperror(LOG_ERR, "I/O Error");
+			if (data) {
+				free(data);
+				data = NULL;
+			}
+			return NULL;
+		} else if (retval == 0) {
+			lprintf(LOG_ERR, "No data available");
 			if (data) {
 				free(data);
 				data = NULL;
 			}
 			return NULL;
 		}
-	}
+		if (FD_ISSET(intf->fd, &rset) == 0) {
+			lprintf(LOG_ERR, "No data available");
+			if (data) {
+				free(data);
+				data = NULL;
+			}
+			return NULL;
+		}
+
+		recv.addr = (unsigned char *)&addr;
+		recv.addr_len = sizeof(addr);
+		recv.msg.data = rsp.data;
+		recv.msg.data_len = sizeof(rsp.data);
+
+		/* get data */
+		if (ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv) < 0) {
+			lperror(LOG_ERR, "Error receiving message");
+			if (errno != EMSGSIZE) {
+				if (data) {
+					free(data);
+					data = NULL;
+				}
+				return NULL;
+			}
+		}
+
+		/* If the message received wasn't expected, try to grab the
+		 * next message until it's out of messages.  -EAGAIN is
+		 * returned if the list empty, but basically if it returns a
+		 * message, check if it's alright.
+		 */
+		if (_req.msgid != recv.msgid) {
+			lprintf(LOG_NOTICE,
+			        "Received a response with unexpected ID %ld vs. %ld",
+			        recv.msgid, _req.msgid);
+		}
+	} while (_req.msgid != recv.msgid);
 
 	if (verbose > 4) {
 		fprintf(stderr, "Got message:");
