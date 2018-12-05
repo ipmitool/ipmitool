@@ -119,6 +119,17 @@ uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
 #define IS_SET(v, b) ((v) & (1 << (b)))
 
+/**
+ * Free the memory and clear the pointer.
+ * @param[in] ptr - a pointer to your pointer to free.
+ */
+static inline void free_n(void **ptr) {
+	if (ptr && *ptr) {
+		free(*ptr);
+		*ptr = NULL;
+	}
+}
+
 /* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
 /* For portability, let's simply define our own versions here */
 
