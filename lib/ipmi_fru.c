@@ -483,6 +483,11 @@ free_fru_bloc(t_ipmi_fru_bloc *bloc)
 	}
 }
 
+/* By how many bytes to reduce a write command on a size failure. */
+#define FRU_BLOCK_SZ	8
+/* Baseline for a large enough piece to reduce via steps instead of bytes. */
+#define FRU_AREA_MAXIMUM_BLOCK_SZ	32
+
 /*
  * write FRU[doffset:length] from the pFrubuf[soffset:length]
  * rc=1 on success
@@ -605,8 +610,8 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		}
 
 		if (fru_cc_rq2big(rsp->ccode)) {
-			if (fru->max_write_size > 8) {
-				fru->max_write_size -= 8;
+			if (fru->max_write_size > FRU_BLOCK_SZ) {
+				fru->max_write_size -= FRU_BLOCK_SZ;
 				lprintf(LOG_INFO, "Retrying FRU write with request size %d",
 						fru->max_write_size);
 				continue;
@@ -737,10 +742,11 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			/* if we get C7h or C8h or CAh return code then we requested too
 			* many bytes at once so try again with smaller size */
 			if (fru_cc_rq2big(rsp->ccode)
-			    && fru->max_read_size > 8) {
-				if (fru->max_read_size > 32) {
+			    && fru->max_read_size > FRU_BLOCK_SZ)
+			{
+				if (fru->max_read_size > FRU_AREA_MAXIMUM_BLOCK_SZ) {
 					/* subtract read length more aggressively */
-					fru->max_read_size -= 8;
+					fru->max_read_size -= FRU_BLOCK_SZ;
 				} else {
 					/* subtract length less aggressively */
 					fru->max_read_size--;
@@ -842,7 +848,7 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		if (rsp->ccode) {
 			/* if we get C7 or C8  or CA return code then we requested too
 			* many bytes at once so try again with smaller size */
-			if (fru_cc_rq2big(rsp->ccode) && (--fru_data_rqst_size > 8)) {
+			if (fru_cc_rq2big(rsp->ccode) && (--fru_data_rqst_size > FRU_BLOCK_SZ)) {
 				lprintf(LOG_INFO,
 					"Retrying FRU read with request size %d",
 					fru_data_rqst_size);
