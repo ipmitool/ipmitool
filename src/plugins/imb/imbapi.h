@@ -35,6 +35,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *----------------------------------------------------------------------*/
 #ifndef	_WINDEFS_H
 #define	_WINDEFS_H
+
+#include <stddef.h>
+
 #ifndef FALSE
 #define FALSE   0
 #endif
