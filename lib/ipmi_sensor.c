@@ -104,7 +104,8 @@ int ipmi_sensor_get_sensor_reading_factors(
 	}
 }
 
-static struct ipmi_rs *
+static
+struct ipmi_rs *
 ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 				  uint8_t threshold, uint8_t setting,
 				  uint8_t target, uint8_t lun, uint8_t channel)
@@ -156,7 +157,8 @@ ipmi_sensor_set_sensor_thresholds(struct ipmi_intf *intf, uint8_t sensor,
 	return rsp;
 }
 
-static int
+static
+int
 ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 			      struct sdr_record_common_sensor *sensor,
 			      uint8_t sdr_record_type)
@@ -238,10 +240,12 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 	return (sr->s_reading_valid ? 0 : -1);
 }
 
-static void print_thresh_setting(struct sdr_record_full_sensor *full,
-				 uint8_t thresh_is_avail, uint8_t setting,
-				 const char *field_sep, const char *analog_fmt,
-				 const char *discrete_fmt, const char *na_fmt)
+static
+void
+print_thresh_setting(struct sdr_record_full_sensor *full,
+		     uint8_t thresh_is_avail, uint8_t setting,
+		     const char *field_sep, const char *analog_fmt,
+		     const char *discrete_fmt, const char *na_fmt)
 {
 	printf("%s", field_sep);
 	if (!thresh_is_avail) {
@@ -255,10 +259,12 @@ static void print_thresh_setting(struct sdr_record_full_sensor *full,
 	}
 }
 
-static void dump_sensor_fc_thredshold_csv(int thresh_available,
-					  const char *thresh_status,
-					  struct ipmi_rs *rsp,
-					  struct sensor_reading *sr)
+static
+void
+dump_sensor_fc_thredshold_csv(int thresh_available,
+			      const char *thresh_status,
+			      struct ipmi_rs *rsp,
+			      struct sensor_reading *sr)
 {
 	printf("%s", sr->s_id);
 	if (sr->s_reading_valid) {
@@ -295,10 +301,12 @@ static void dump_sensor_fc_thredshold_csv(int thresh_available,
 /* output format
  *   id value units status thresholds....
  */
-static void dump_sensor_fc_thredshold(int thresh_available,
-				      const char *thresh_status,
-				      struct ipmi_rs *rsp,
-				      struct sensor_reading *sr)
+static
+void
+dump_sensor_fc_thredshold(int thresh_available,
+			  const char *thresh_status,
+			  struct ipmi_rs *rsp,
+			  struct sensor_reading *sr)
 {
 	printf("%-16s ", sr->s_id);
 	if (sr->s_reading_valid) {
@@ -333,10 +341,12 @@ static void dump_sensor_fc_thredshold(int thresh_available,
 	printf("\n");
 }
 
-static void dump_sensor_fc_thredshold_verbose(
-	int thresh_available, const char *thresh_status, struct ipmi_intf *intf,
-	struct sdr_record_common_sensor *sensor, struct ipmi_rs *rsp,
-	struct sensor_reading *sr)
+static
+void
+dump_sensor_fc_thredshold_verbose(
+	int thresh_available, const char *thresh_status,
+	struct ipmi_intf *intf, struct sdr_record_common_sensor *sensor,
+	struct ipmi_rs *rsp, struct sensor_reading *sr)
 {
 	printf("Sensor ID              : %s (0x%x)\n", sr->s_id,
 	       sensor->keys.sensor_num);
@@ -424,7 +434,8 @@ static void dump_sensor_fc_thredshold_verbose(
 	printf("\n");
 }
 
-static int
+static
+int
 ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 			       struct sdr_record_common_sensor *sensor,
 			       uint8_t sdr_record_type)
@@ -480,7 +491,9 @@ int ipmi_sensor_print_fc(struct ipmi_intf *intf,
 						     sdr_record_type);
 }
 
-static int ipmi_sensor_list(struct ipmi_intf *intf)
+static
+int
+ipmi_sensor_list(struct ipmi_intf *intf)
 {
 	struct sdr_get_rs *header;
 	struct ipmi_sdr_iterator *itr;
@@ -534,10 +547,12 @@ static const struct valstr threshold_vals[] = {
 	{0x00, NULL},
 };
 
-static int __ipmi_sensor_set_threshold(struct ipmi_intf *intf, uint8_t num,
-				       uint8_t mask, uint8_t setting,
-				       uint8_t target, uint8_t lun,
-				       uint8_t channel)
+static
+int
+__ipmi_sensor_set_threshold(struct ipmi_intf *intf, uint8_t num,
+			    uint8_t mask, uint8_t setting,
+			    uint8_t target, uint8_t lun,
+			    uint8_t channel)
 {
 	struct ipmi_rs *rsp;
 
@@ -557,7 +572,8 @@ static int __ipmi_sensor_set_threshold(struct ipmi_intf *intf, uint8_t num,
 	return 0;
 }
 
-static uint8_t
+static
+uint8_t
 __ipmi_sensor_threshold_value_to_raw(struct sdr_record_full_sensor *full,
 				     double value)
 {
@@ -577,7 +593,8 @@ __ipmi_sensor_threshold_value_to_raw(struct sdr_record_full_sensor *full,
 	}
 }
 
-static int
+static
+int
 ipmi_sensor_get_setting_mask(const char *thresh, uint8_t *settingMask)
 {
 	if (!thresh || !settingMask) {
@@ -602,8 +619,9 @@ ipmi_sensor_get_setting_mask(const char *thresh, uint8_t *settingMask)
 	return 0;
 }
 
-static int ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc,
-				     char **argv)
+static
+int
+ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *id, *thresh;
 	uint8_t settingMask = 0;
@@ -897,8 +915,9 @@ static int ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc,
 	return ret;
 }
 
-static int ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc,
-				   char **argv)
+static
+int
+ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct sdr_record_list *sdr;
 	int i, rc = 0;
@@ -958,7 +977,9 @@ static int ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc,
 	return rc;
 }
 
-static int ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
+static
+int
+ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int i, v;
 	int rc = 0;
