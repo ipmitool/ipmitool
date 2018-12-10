@@ -107,7 +107,9 @@ typedef enum { PRINT_NORMAL = 0, PRINT_ERROR } print_status_t;
 int ret_get = 0;
 int ret_set = 0;
 
-static void ipmi_sunoem_usage(void)
+static
+void
+ipmi_sunoem_usage(void)
 {
 	lprintf(LOG_NOTICE, "Usage: sunoem <command> [option...]");
 	lprintf(LOG_NOTICE, "");
@@ -209,7 +211,9 @@ static void ipmi_sunoem_usage(void)
 #define SUNOEM_FAN_MODE_AUTO 0x00
 #define SUNOEM_FAN_MODE_MANUAL 0x01
 
-static void __sdr_list_empty(struct sdr_record_list *head)
+static
+void
+__sdr_list_empty(struct sdr_record_list *head)
 {
 	struct sdr_record_list *e, *f;
 	for (e = head; e; e = f) {
@@ -224,7 +228,9 @@ static void __sdr_list_empty(struct sdr_record_list *head)
  *  Otherwise, print out the led name and "na".
  *  The state parameter is not referenced if stat is not PRINT_NORMAL.
  */
-static void led_print(const char *name, print_status_t stat, uint8_t state)
+static
+void
+led_print(const char *name, print_status_t stat, uint8_t state)
 {
 	const char *theValue;
 
@@ -250,9 +256,11 @@ static void led_print(const char *name, print_status_t stat, uint8_t state)
  *   SUNOEM_EC_BMC_CCODE_NONZERO   if completion code is nonzero,
  *   SUNOEM_EC_SUCCESS             otherwise.
  */
-static sunoem_ec_t sunoem_led_get(struct ipmi_intf *intf,
-				  struct sdr_record_generic_locator *dev,
-				  int ledtype, struct ipmi_rs **loc_rsp)
+static
+sunoem_ec_t
+sunoem_led_get(struct ipmi_intf *intf,
+	       struct sdr_record_generic_locator *dev,
+	       int ledtype, struct ipmi_rs **loc_rsp)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -300,9 +308,11 @@ static sunoem_ec_t sunoem_led_get(struct ipmi_intf *intf,
 	}
 }
 
-static struct ipmi_rs *sunoem_led_set(struct ipmi_intf *intf,
-				      struct sdr_record_generic_locator *dev,
-				      int ledtype, int ledmode)
+static
+struct ipmi_rs *
+sunoem_led_set(struct ipmi_intf *intf,
+	       struct sdr_record_generic_locator *dev,
+	       int ledtype, int ledmode)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -347,8 +357,10 @@ static struct ipmi_rs *sunoem_led_set(struct ipmi_intf *intf,
 	return rsp;
 }
 
-static void sunoem_led_get_byentity(struct ipmi_intf *intf, uint8_t entity_id,
-				    uint8_t entity_inst, int ledtype)
+static
+void
+sunoem_led_get_byentity(struct ipmi_intf *intf, uint8_t entity_id,
+			uint8_t entity_inst, int ledtype)
 {
 	struct ipmi_rs *rsp;
 	struct sdr_record_list *elist, *e;
@@ -390,9 +402,11 @@ static void sunoem_led_get_byentity(struct ipmi_intf *intf, uint8_t entity_id,
 	__sdr_list_empty(elist);
 }
 
-static void sunoem_led_set_byentity(struct ipmi_intf *intf, uint8_t entity_id,
-				    uint8_t entity_inst, int ledtype,
-				    int ledmode)
+static
+void
+sunoem_led_set_byentity(struct ipmi_intf *intf, uint8_t entity_id,
+			uint8_t entity_inst, int ledtype,
+			int ledmode)
 {
 	struct ipmi_rs *rsp;
 	struct sdr_record_list *elist, *e;
@@ -449,7 +463,9 @@ static void sunoem_led_set_byentity(struct ipmi_intf *intf, uint8_t entity_id,
  *                       0 = go through its controller
  *                       Ignored if LED is local
  */
-static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
+static
+int
+ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct ipmi_rs *rsp;
 	struct sdr_record_list *sdr;
@@ -655,8 +671,9 @@ static int ipmi_sunoem_led_get(struct ipmi_intf *intf, int argc, char **argv)
  *
  * [byte 0]  mode     LED Mode: OFF, ON, STANDBY, SLOW, FAST
  */
-
-static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
+static
+int
+ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct ipmi_rs *rsp;
 	struct sdr_record_list *sdr;
@@ -824,7 +841,9 @@ static int ipmi_sunoem_led_set(struct ipmi_intf *intf, int argc, char **argv)
 	return 0;
 }
 
-static int ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
+static
+int
+ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -850,8 +869,10 @@ static int ipmi_sunoem_sshkey_del(struct ipmi_intf *intf, uint8_t uid)
 }
 
 #define SSHKEY_BLOCK_SIZE 64
-static int ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
-				  char *ifile)
+static
+int
+ipmi_sunoem_sshkey_set(struct ipmi_intf *intf, uint8_t uid,
+		       char *ifile)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1040,7 +1061,9 @@ typedef enum {
 	C_DEL = 0x7f
 } canon_char_t;
 
-static int sunoem_cli_unbufmode_start(FILE *f, struct termios *orig_ts)
+static
+int
+sunoem_cli_unbufmode_start(FILE *f, struct termios *orig_ts)
 {
 	struct termios ts;
 	int rc;
@@ -1058,7 +1081,9 @@ static int sunoem_cli_unbufmode_start(FILE *f, struct termios *orig_ts)
 	return 0;
 }
 
-static int sunoem_cli_unbufmode_stop(FILE *f, struct termios *ts)
+static
+int
+sunoem_cli_unbufmode_stop(FILE *f, struct termios *ts)
 {
 	int rc;
 
@@ -1069,7 +1094,9 @@ static int sunoem_cli_unbufmode_stop(FILE *f, struct termios *ts)
 	return 0;
 }
 
-static int ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_cli(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1373,7 +1400,9 @@ typedef struct {
  * payload size of (sunoem_echo_msg_t) bytes. Each packet is tagged with a
  * sequence number
  */
-static int ipmi_sunoem_echo(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_echo(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1542,8 +1571,10 @@ typedef struct {
 	unsigned char micro;
 } supported_version_t;
 
-static int ipmi_sunoem_getversion(struct ipmi_intf *intf,
-				  sunoem_version_response_t **version_rsp)
+static
+int
+ipmi_sunoem_getversion(struct ipmi_intf *intf,
+		       sunoem_version_response_t **version_rsp)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1570,7 +1601,8 @@ static int ipmi_sunoem_getversion(struct ipmi_intf *intf,
 	return 0;
 }
 
-static void
+static
+void
 ipmi_sunoem_print_required_version(const supported_version_t *supp_ver)
 {
 	lprintf(LOG_ERR,
@@ -1588,8 +1620,10 @@ ipmi_sunoem_print_required_version(const supported_version_t *supp_ver)
  *  - positive value if current ILOM version is greater than required
  *  - 0 if there is an exact ILOM version match
  */
-static int ipmi_sunoem_checkversion(struct ipmi_intf *intf,
-				    supported_version_t *supp_ver)
+static
+int
+ipmi_sunoem_checkversion(struct ipmi_intf *intf,
+			 supported_version_t *supp_ver)
 {
 	sunoem_version_response_t *version_rsp;
 	int i = 1;
@@ -1638,7 +1672,9 @@ static int ipmi_sunoem_checkversion(struct ipmi_intf *intf,
  * - nano #
  * - Revision/Build #
  */
-static int ipmi_sunoem_version(struct ipmi_intf *intf)
+static
+int
+ipmi_sunoem_version(struct ipmi_intf *intf)
 {
 	sunoem_version_response_t *version_rsp;
 	int rc = ipmi_sunoem_getversion(intf, &version_rsp);
@@ -1683,7 +1719,9 @@ typedef struct {
  * If the returned seq_num is identical to the input seq_num, all data
  * has been returned.
  */
-static int ipmi_sunoem_nacname(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_nacname(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1839,7 +1877,9 @@ typedef struct {
 /*
  * Return the ILOM target property value
  */
-static int ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1936,8 +1976,10 @@ static int ipmi_sunoem_getval(struct ipmi_intf *intf, int argc, char *argv[])
 	return -1;
 }
 
-static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
-				char *prop_name, unsigned char *tid_num)
+static
+int
+send_luapi_prop_name(struct ipmi_intf *intf, int len,
+		     char *prop_name, unsigned char *tid_num)
 {
 	int i = 0;
 	struct ipmi_rs *rsp;
@@ -2010,8 +2052,10 @@ static int send_luapi_prop_name(struct ipmi_intf *intf, int len,
 	return 0;
 }
 
-static int send_luapi_prop_value(struct ipmi_intf *intf, int len,
-				 char *prop_value, unsigned char tid_num)
+static
+int
+send_luapi_prop_value(struct ipmi_intf *intf, int len,
+		      char *prop_value, unsigned char tid_num)
 {
 	int i = 0;
 	struct ipmi_rs *rsp;
@@ -2083,7 +2127,9 @@ static int send_luapi_prop_value(struct ipmi_intf *intf, int len,
 	return 0;
 }
 
-static int ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_setval(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -2197,7 +2243,9 @@ typedef struct {
 #pragma pack(pop)
 #endif
 
-static int ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
+static
+int
+ipmi_sunoem_getfile(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -2329,8 +2377,9 @@ typedef struct {
 #pragma pack(pop)
 #endif
 
-static int ipmi_sunoem_getbehavior(struct ipmi_intf *intf, int argc,
-				   char *argv[])
+static
+int
+ipmi_sunoem_getbehavior(struct ipmi_intf *intf, int argc, char *argv[])
 {
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp;
