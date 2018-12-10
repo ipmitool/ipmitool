@@ -1318,8 +1318,8 @@ int
 processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 		    uint16_t buffer_length)
 {
-	static int escape_pending = 0;
-	static int last_was_cr = 1;
+	static bool escape_pending = false;
+	static bool last_was_cr = true;
 	struct ipmi_v2_payload v2_payload;
 	int length = 0;
 	int retval = 0;
@@ -1336,7 +1336,7 @@ processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 		ch = input[i];
 
 		if (escape_pending) {
-			escape_pending = 0;
+			escape_pending = false;
 
 			/*
 			 * Process a possible escape sequence.
@@ -1384,7 +1384,7 @@ processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 		else {
 			if (last_was_cr
 			    && (ch == intf->ssn_params.sol_escape_char)) {
-				escape_pending = 1;
+				escape_pending = true;
 				continue;
 			}
 
