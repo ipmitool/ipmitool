@@ -63,8 +63,10 @@ extern int verbose;
 /*
  * ipmi_get_isol_info
  */
-static int ipmi_get_isol_info(struct ipmi_intf *intf,
-			      struct isol_config_parameters *params)
+static
+int
+ipmi_get_isol_info(struct ipmi_intf *intf,
+		   struct isol_config_parameters *params)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -144,7 +146,9 @@ static int ipmi_get_isol_info(struct ipmi_intf *intf,
 	return 0;
 }
 
-static int ipmi_print_isol_info(struct ipmi_intf *intf)
+static
+int
+ipmi_print_isol_info(struct ipmi_intf *intf)
 {
 	struct isol_config_parameters params = {0};
 	if (ipmi_get_isol_info(intf, &params))
@@ -169,8 +173,10 @@ static int ipmi_print_isol_info(struct ipmi_intf *intf)
 	return 0;
 }
 
-static int ipmi_isol_set_param(struct ipmi_intf *intf, const char *param,
-			       const char *value)
+static
+int
+ipmi_isol_set_param(struct ipmi_intf *intf, const char *param,
+		    const char *value)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -276,7 +282,9 @@ static int ipmi_isol_set_param(struct ipmi_intf *intf, const char *param,
 	return 0;
 }
 
-static void leave_raw_mode(void)
+static
+void
+leave_raw_mode(void)
 {
 	if (!_in_raw_mode)
 		return;
@@ -286,8 +294,9 @@ static void leave_raw_mode(void)
 		_in_raw_mode = false;
 }
 
-
-static void enter_raw_mode(void)
+static
+void
+enter_raw_mode(void)
 {
 	struct termios tio;
 	if (tcgetattr(fileno(stdin), &tio) == -1) {
@@ -310,8 +319,9 @@ static void enter_raw_mode(void)
 		_in_raw_mode = true;
 }
 
-
-static void sendBreak(struct ipmi_intf *intf)
+static
+void
+sendBreak(struct ipmi_intf *intf)
 {
 	struct ipmi_v2_payload v2_payload;
 
@@ -331,7 +341,9 @@ static void sendBreak(struct ipmi_intf *intf)
  * param bRestoreTty specifies whether we will put our self back
  *       in raw mode when we resume
  */
-static void suspendSelf(int bRestoreTty)
+static
+void
+suspendSelf(int bRestoreTty)
 {
 	leave_raw_mode();
 	kill(getpid(), SIGTSTP);
@@ -346,7 +358,9 @@ static void suspendSelf(int bRestoreTty)
  *
  * Send some useful documentation to the user
  */
-static void printiSolEscapeSequences(void)
+static
+void
+printiSolEscapeSequences(void)
 {
 	printf("%c?\n\
 	Supported escape sequences:\n\
@@ -363,13 +377,14 @@ static void printiSolEscapeSequences(void)
 	       ISOL_ESCAPE_CHARACTER, ISOL_ESCAPE_CHARACTER);
 }
 
-
 /*
  * output
  *
  * Send the specified data to stdout
  */
-static void output(struct ipmi_rs *rsp)
+static
+void
+output(struct ipmi_rs *rsp)
 {
 	if (rsp) {
 		int i;
@@ -383,7 +398,9 @@ static void output(struct ipmi_rs *rsp)
 /*
  * ipmi_isol_deactivate
  */
-static int ipmi_isol_deactivate(struct ipmi_intf *intf)
+static
+int
+ipmi_isol_deactivate(struct ipmi_intf *intf)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -427,8 +444,10 @@ static int ipmi_isol_deactivate(struct ipmi_intf *intf)
  *          1 if we should exit
  *        < 0 on error (BMC probably closed the session)
  */
-static int processiSolUserInput(struct ipmi_intf *intf, uint8_t *input,
-				uint16_t buffer_length)
+static
+int
+processiSolUserInput(struct ipmi_intf *intf, uint8_t *input,
+		     uint16_t buffer_length)
 {
 	static int escape_pending = 0;
 	static int last_was_cr = 1;
@@ -535,7 +554,9 @@ static int processiSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 /*
  * ipmi_isol_red_pill
  */
-static int ipmi_isol_red_pill(struct ipmi_intf *intf)
+static
+int
+ipmi_isol_red_pill(struct ipmi_intf *intf)
 {
 	char *buffer;
 	int numRead;
@@ -641,7 +662,9 @@ static int ipmi_isol_red_pill(struct ipmi_intf *intf)
 /*
  * ipmi_isol_activate
  */
-static int ipmi_isol_activate(struct ipmi_intf *intf)
+static
+int
+ipmi_isol_activate(struct ipmi_intf *intf)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -730,7 +753,9 @@ static int ipmi_isol_activate(struct ipmi_intf *intf)
 	return 0;
 }
 
-static void print_isol_set_usage(void)
+static
+void
+print_isol_set_usage(void)
 {
 	lprintf(LOG_NOTICE, "\nISOL set parameters and values: \n");
 	lprintf(LOG_NOTICE, "  enabled                     true | false");
@@ -742,7 +767,9 @@ static void print_isol_set_usage(void)
 	lprintf(LOG_NOTICE, "");
 }
 
-static void print_isol_usage(void)
+static
+void
+print_isol_usage(void)
 {
 	lprintf(LOG_NOTICE, "ISOL Commands: info");
 	lprintf(LOG_NOTICE, "               set <parameter> <setting>");
