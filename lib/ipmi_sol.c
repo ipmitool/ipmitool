@@ -588,11 +588,12 @@ int ipmi_get_sol_info(struct ipmi_intf *intf, uint8_t channel,
 	return 0;
 }
 
-
 /*
  * ipmi_print_sol_info
  */
-static int ipmi_print_sol_info(struct ipmi_intf *intf, uint8_t channel)
+static
+int
+ipmi_print_sol_info(struct ipmi_intf *intf, uint8_t channel)
 {
 	struct sol_config_parameters params = {0};
 	if (ipmi_get_sol_info(intf, channel, &params))
@@ -684,7 +685,6 @@ int ipmi_sol_set_param_isvalid_uint8_t(const char *strval, const char *name,
 	return 0;
 }
 
-
 /*
  * ipmi_sol_set_param
  *
@@ -694,9 +694,11 @@ int ipmi_sol_set_param_isvalid_uint8_t(const char *strval, const char *name,
  * return 0 on success,
  *        -1 on failure
  */
-static int ipmi_sol_set_param(struct ipmi_intf *intf, uint8_t channel,
-			      const char *param, const char *value,
-			      uint8_t guarded)
+static
+int
+ipmi_sol_set_param(struct ipmi_intf *intf, uint8_t channel,
+		   const char *param, const char *value,
+		   uint8_t guarded)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1153,8 +1155,9 @@ void enter_raw_mode(void)
 		_in_raw_mode = true;
 }
 
-
-static void sendBreak(struct ipmi_intf *intf)
+static
+void
+sendBreak(struct ipmi_intf *intf)
 {
 	struct ipmi_v2_payload v2_payload;
 
@@ -1166,7 +1169,6 @@ static void sendBreak(struct ipmi_intf *intf)
 	intf->send_sol(intf, &v2_payload);
 }
 
-
 /*
  * suspendSelf
  *
@@ -1175,7 +1177,9 @@ static void sendBreak(struct ipmi_intf *intf)
  * param bRestoreTty specifies whether we will put our self back
  *       in raw mode when we resume
  */
-static void suspendSelf(int bRestoreTty)
+static
+void
+suspendSelf(int bRestoreTty)
 {
 	leave_raw_mode();
 	kill(getpid(), SIGTSTP);
@@ -1184,13 +1188,14 @@ static void suspendSelf(int bRestoreTty)
 		enter_raw_mode();
 }
 
-
 /*
  * printSolEscapeSequences
  *
  * Send some useful documentation to the user
  */
-static void printSolEscapeSequences(struct ipmi_intf *intf)
+static
+void
+printSolEscapeSequences(struct ipmi_intf *intf)
 {
 	printf("%c?\n\
 	Supported escape sequences:\n\
@@ -1211,13 +1216,14 @@ static void printSolEscapeSequences(struct ipmi_intf *intf)
 	       intf->ssn_params.sol_escape_char);
 }
 
-
 /*
  * output
  *
  * Send the specified data to stdout
  */
-static void output(struct ipmi_rs *rsp)
+static
+void
+output(struct ipmi_rs *rsp)
 {
 	/* Add checks to make sure it is actually SOL data, in general I see
 	 * outside code mostly trying to guard against this happening, but
@@ -1239,11 +1245,12 @@ static void output(struct ipmi_rs *rsp)
 	}
 }
 
-
 /*
  * ipmi_sol_deactivate
  */
-static int ipmi_sol_deactivate(struct ipmi_intf *intf, int instance)
+static
+int
+ipmi_sol_deactivate(struct ipmi_intf *intf, int instance)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1296,7 +1303,6 @@ static int ipmi_sol_deactivate(struct ipmi_intf *intf, int instance)
 	return -1;
 }
 
-
 /*
  * processSolUserInput
  *
@@ -1307,8 +1313,10 @@ static int ipmi_sol_deactivate(struct ipmi_intf *intf, int instance)
  *          1 if we should exit
  *        < 0 on error (BMC probably closed the session)
  */
-static int processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
-			       uint16_t buffer_length)
+static
+int
+processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
+		    uint16_t buffer_length)
 {
 	static int escape_pending = 0;
 	static int last_was_cr = 1;
@@ -1432,7 +1440,9 @@ static int processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 	return retval;
 }
 
-static int ipmi_sol_keepalive_using_sol(struct ipmi_intf *intf)
+static
+int
+ipmi_sol_keepalive_using_sol(struct ipmi_intf *intf)
 {
 	struct ipmi_v2_payload v2_payload;
 	struct timeval end;
@@ -1453,7 +1463,9 @@ static int ipmi_sol_keepalive_using_sol(struct ipmi_intf *intf)
 	return 0;
 }
 
-static int ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf *intf)
+static
+int
+ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf *intf)
 {
 	struct timeval end;
 
@@ -1475,7 +1487,9 @@ static int ipmi_sol_keepalive_using_getdeviceid(struct ipmi_intf *intf)
 /*
  * ipmi_sol_red_pill
  */
-static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
+static
+int
+ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 {
 	char *buffer;
 	int numRead;
@@ -1629,12 +1643,13 @@ static int ipmi_sol_red_pill(struct ipmi_intf *intf, int instance)
 	return 0;
 }
 
-
 /*
  * ipmi_sol_activate
  */
-static int ipmi_sol_activate(struct ipmi_intf *intf, int looptest, int interval,
-			     int instance)
+static
+int
+ipmi_sol_activate(struct ipmi_intf *intf, int looptest, int interval,
+		  int instance)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -1802,11 +1817,12 @@ static int ipmi_sol_activate(struct ipmi_intf *intf, int looptest, int interval,
 	return 0;
 }
 
-
 /*
  * print_sol_usage
  */
-static void print_sol_usage(void)
+static
+void
+print_sol_usage(void)
 {
 	lprintf(LOG_NOTICE, "SOL Commands: info [<channel number>]");
 	lprintf(LOG_NOTICE, "              set <parameter> <value> [channel]");
@@ -1819,11 +1835,12 @@ static void print_sol_usage(void)
 		"              looptest [<loop times> [<loop interval(in ms)> [<instance>]]]");
 }
 
-
 /*
  * print_sol_set_usage
  */
-static void print_sol_set_usage(void)
+static
+void
+print_sol_set_usage(void)
 {
 	lprintf(LOG_NOTICE, "\nSOL set parameters and values: \n");
 	lprintf(LOG_NOTICE,
