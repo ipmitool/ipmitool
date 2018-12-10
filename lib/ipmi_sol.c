@@ -1406,9 +1406,9 @@ processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 	 */
 	if (length) {
 		struct ipmi_rs *rsp = NULL;
-		int try = 0;
+		int try_count = 0;
 
-		while (try < intf->ssn_params.retry) {
+		while (try_count < intf->ssn_params.retry) {
 
 			v2_payload.payload.sol_packet.character_count = length;
 
@@ -1419,7 +1419,7 @@ processSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 			}
 
 			usleep(5000);
-			try++;
+			try_count++;
 		}
 
 		if (!rsp) {
