@@ -343,7 +343,7 @@ sendBreak(struct ipmi_intf *intf)
  */
 static
 void
-suspendSelf(int bRestoreTty)
+suspendSelf(bool bRestoreTty)
 {
 	leave_raw_mode();
 	kill(getpid(), SIGTSTP);
@@ -481,13 +481,13 @@ processiSolUserInput(struct ipmi_intf *intf, uint8_t *input,
 			case 'Z' - 64:
 				printf("%c^Z [suspend ipmitool]\n",
 				       ISOL_ESCAPE_CHARACTER);
-				suspendSelf(1); /* Restore tty back to raw */
+				suspendSelf(true); /* Restore tty back to raw */
 				continue;
 
 			case 'X' - 64:
 				printf("%c^X [suspend ipmitool]\n",
 				       ISOL_ESCAPE_CHARACTER);
-				suspendSelf(0); /* Don't restore to raw mode */
+				suspendSelf(false); /* Don't restore to raw mode */
 				continue;
 
 			case 'B':
