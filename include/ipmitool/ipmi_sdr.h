@@ -857,6 +857,8 @@ struct sensor_reading {
 			     _intf->target_ipmb_addr == _addr)  ||	\
     (_addr == _intf->target_addr && _chan == _intf->target_channel)) )
 
+/* Macro to verfiy Sensor owner ID bit */
+#define SENSOR_OWNER_ID_BIT 0x01
 
 struct ipmi_sdr_iterator *ipmi_sdr_start(struct ipmi_intf *intf,
                                          int use_builtin);
