@@ -522,8 +522,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 					}
 				}
 			}
-			free(filename[type_offset]);
-			filename[type_offset] = NULL;
+			free_n(&filename[type_offset]);
 		}
 	} else if ((strcmp(argv[argument_offset], "print") == 0)
 			|| (strcmp(argv[argument_offset], "summary") == 0)) {
@@ -632,10 +631,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 							option, filename, file_type);
 				}
 				for (i = 0; i < (argc-1); i++) {
-					if (filename[i]) {
-						free(filename[i]);
-						filename[i] = NULL;
-					}
+					free_n(&filename[i]);
 				}
 			} /* End of ERROR_STATUS */
 		} /* End of comparison of invalid option */
@@ -970,8 +966,7 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
                /*Display the current*/
                ipmi_ek_display_current_descriptor( car,
                                     cur_desc, filename[num_file] );
-               free(cur_desc);
-               cur_desc = NULL;
+               free_n(&cur_desc);
             }
             /*Ref: AMC.0 specification, Table 3-10: Module Current Requirement*/
             else if ( list_record[num_file]->data[PICMG_ID_OFFSET]
@@ -1338,8 +1333,8 @@ static int ipmi_ek_matching_process(int *file_type, int index1, int index2,
 				}
 			}
 		}
-		free(amc_record1);
-		free(amc_record2);
+		free_n(&amc_record1);
+		free_n(&amc_record2);
 	} else {
 		printf("No amc record is found!\n");
 	}
@@ -1550,9 +1545,7 @@ ipmi_ek_check_physical_connectivity(
          }
          return_status = ERROR_STATUS;
       }
-      if (port_desc) {
-         free(port_desc);
-         port_desc = NULL;
+         free_n(&port_desc);
       }
    }
    return return_status;
@@ -1744,10 +1737,8 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
       }
    }
 
-   free(record1.matching_result);
-   record1.matching_result = NULL;
-   free(record2.matching_result);
-   record2.matching_result = NULL;
+   free_n(&record1.matching_result);
+   free_n(&record2.matching_result);
 
    return result;
 }
@@ -2769,8 +2760,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		ret = fread(data + 1, size_board, 1, input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid board type size!");
-			free(data);
-			data = NULL;
+			free_n(&data);
 			goto out;
 		}
 		printf("%s type: 0x%02x\n", board_type, len);
@@ -2778,8 +2768,8 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		i = 0;
 		str = (unsigned char *)get_fru_area_str(data, &i);
 		printf("%s\n", str);
-		free(str);
-		free(data);
+		free_n(&str);
+		free_n(&data);
 		(*board_length) -= size_board;
 		goto out;
 	}
@@ -2823,15 +2813,15 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			ret = fread(additional_data + 1, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
-				free(additional_data);
+				free_n(&additional_data);
 				goto out;
 			}
 			printf("Additional Custom Mfg. Data: ");
 			i = 0;
 			str = (unsigned char *)get_fru_area_str(additional_data, &i);
 			printf("%s\n", str);
-			free(str);
-			free(additional_data);
+			free_n(&str);
+			free_n(&additional_data);
 
 			(*board_length) -= size_board;
 			ret = fread(&len, 1, 1, input_file);
@@ -4111,8 +4101,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1,
 				input_file);
 		if ((ret != 1) || ferror(input_file)) {
-			free(*list_record);
-			*list_record = NULL;
+			free_n(list_record);
 			fclose(input_file);
 			lprintf(LOG_ERR, "Invalid Header!");
 			return ERROR_STATUS;
@@ -4236,5 +4225,5 @@ ipmi_ek_remove_record_from_list(struct ipmi_ek_multi_header *record,
 	} else {
 		record->next->prev = record->prev;
 	}
-	free(record);
+	free_n(&record);
 }
