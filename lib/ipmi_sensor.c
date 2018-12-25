@@ -524,8 +524,7 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 				header->type);
 			break;
 		}
-		free(rec);
-		rec = NULL;
+		free_n(&rec);
 
 		/* fix for CR6604909: */
 		/* mask failure of individual reads in sensor list command */
