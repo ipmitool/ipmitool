@@ -547,10 +547,7 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 	} else {
 		lprintf(LOG_NOTICE, "Firmware upgrade procedure failed\n");
 	}
-	if (fwupgCtx.pImageData) {
-		free(fwupgCtx.pImageData);
-		fwupgCtx.pImageData = NULL;
-	}
+	free_n(&fwupgCtx.pImageData);
 	return rc;
 }
 
@@ -1293,8 +1290,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 			}
 		}
 		/* free buffer */
-		free(uploadCmd.req);
-		uploadCmd.req = NULL;
+		free_n(&uploadCmd.req);
 	}
 
 	/* skip can be set in the above condition on failure, which skips the
