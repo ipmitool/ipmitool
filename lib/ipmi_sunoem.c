@@ -218,7 +218,7 @@ __sdr_list_empty(struct sdr_record_list *head)
 	struct sdr_record_list *e, *f;
 	for (e = head; e; e = f) {
 		f = e->next;
-		free(e);
+		free_n(&e);
 	}
 }
 
