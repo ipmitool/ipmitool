@@ -318,10 +318,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 
 	if (ioctl(intf->fd, IPMICTL_SEND_COMMAND, &_req) < 0) {
 		lperror(LOG_ERR, "Unable to send command");
-		if (data) {
-			free(data);
-			data = NULL;
-		}
+		free_n(&data);
 		return NULL;
 	}
 
@@ -330,10 +327,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 	 */
 
 	if (intf->noanswer) {
-		if (data) {
-			free(data);
-			data = NULL;
-		}
+		free_n(&data);
 		return NULL;
 	}
 
@@ -347,25 +341,16 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		} while (retval < 0 && errno == EINTR);
 		if (retval < 0) {
 			lperror(LOG_ERR, "I/O Error");
-			if (data) {
-				free(data);
-				data = NULL;
-			}
+			free_n(&data);
 			return NULL;
 		} else if (retval == 0) {
 			lprintf(LOG_ERR, "No data available");
-			if (data) {
-				free(data);
-				data = NULL;
-			}
+			free_n(&data);
 			return NULL;
 		}
 		if (FD_ISSET(intf->fd, &rset) == 0) {
 			lprintf(LOG_ERR, "No data available");
-			if (data) {
-				free(data);
-				data = NULL;
-			}
+			free_n(&data);
 			return NULL;
 		}
 
@@ -378,10 +363,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		if (ioctl(intf->fd, IPMICTL_RECEIVE_MSG_TRUNC, &recv) < 0) {
 			lperror(LOG_ERR, "Error receiving message");
 			if (errno != EMSGSIZE) {
-				if (data) {
-					free(data);
-					data = NULL;
-				}
+				free_n(&data);
 				return NULL;
 			}
 		}
@@ -453,10 +435,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 		rsp.data[rsp.data_len] = 0;
 	}
 
-	if (data) {
-		free(data);
-		data = NULL;
-	}
+	free_n(&data);
 
 	return &rsp;
 }
