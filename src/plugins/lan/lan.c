@@ -194,12 +194,8 @@ static void ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 			ipmi_req_entries_tail = NULL;
 	}
 
-	if (e->msg_data) {
-		free(e->msg_data);
-		e->msg_data = NULL;
-	}
-	free(e);
-	e = NULL;
+	free_n(&e->msg_data);
+	free_n(&e);
 }
 
 static void ipmi_req_clear_entries(void)
@@ -213,11 +209,10 @@ static void ipmi_req_clear_entries(void)
 			e->req.msg.cmd);
 		if (e->next) {
 			p = e->next;
-			free(e);
+			free_n(&e);
 			e = p;
 		} else {
-			free(e);
-			e = NULL;
+			free_n(&e);
 			break;
 		}
 	}
@@ -416,8 +411,7 @@ static int ipmi_lan_ping(struct ipmi_intf *intf)
 
 	rv = ipmi_lan_send_packet(intf, data, len);
 
-	free(data);
-	data = NULL;
+	free_n(&data);
 
 	if (rv < 0) {
 		lprintf(LOG_ERR, "Unable to send IPMI presence ping packet");
@@ -768,10 +762,7 @@ ipmi_lan_build_cmd(struct ipmi_intf *intf, struct ipmi_rq *req, bool isRetry)
 		// list No need to add once again and we will re-use the
 		// existing node. Only thing we have to do is clear the msg_data
 		// as we create a new one below in the code for it.
-		if (entry->msg_data) {
-			free(entry->msg_data);
-			entry->msg_data = NULL;
-		}
+		free_n(&entry->msg_data);
 	} else {
 		// We don't have this request in the list so we can add it
 		// to the list
@@ -1183,10 +1174,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf *intf,
 	msg = ipmi_lan_build_sol_msg(intf, payload, &len);
 	if (len <= 0 || !msg) {
 		lprintf(LOG_ERR, "Invalid SOL payload packet");
-		if (msg) {
-			free(msg);
-			msg = NULL;
-		}
+		free_n(&msg);
 		return NULL;
 	}
 
@@ -1231,10 +1219,7 @@ ipmi_lan_send_sol_payload(struct ipmi_intf *intf,
 		}
 	}
 
-	if (msg) {
-		free(msg);
-		msg = NULL;
-	}
+	free_n(&msg);
 	return rsp;
 }
 
