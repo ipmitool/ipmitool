@@ -478,8 +478,7 @@ free_fru_bloc(t_ipmi_fru_bloc *bloc)
 	while (bloc) {
 		del = bloc;
 		bloc = bloc->next;
-		free(del);
-		del = NULL;
+		free_n(&del);
 	}
 }
 
@@ -935,8 +934,7 @@ fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
 
 	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
 
-	free(fru_data);
-	fru_data = NULL;
+	free_n(&fru_data);
 }
 
 
@@ -978,8 +976,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, offset, fru_len, fru_data) < 0) {
-		free(fru_data);
-		fru_data = NULL;
+		free_n(&fru_data);
 		return;
 	}
 
@@ -1001,8 +998,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Chassis Part Number   : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1010,8 +1006,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Chassis Serial        : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	/* read any extra fields */
@@ -1022,8 +1017,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 			if (strlen(fru_area) > 0) {
 				printf(" Chassis Extra         : %s\n", fru_area);
 			}
-			free(fru_area);
-			fru_area = NULL;
+			free_n(&fru_area);
 		}
 
 		if (i == j) {
@@ -1031,10 +1025,7 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		}
 	}
 
-	if (fru_data) {
-		free(fru_data);
-		fru_data = NULL;
-	}
+	free_n(&fru_data);
 }
 
 /* fru_area_print_board  -  Print FRU Board Area
@@ -1076,8 +1067,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, offset, fru_len, fru_data) < 0) {
-		free(fru_data);
-		fru_data = NULL;
+		free_n(&fru_data);
 		return;
 	}
 
@@ -1097,8 +1087,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Board Mfg             : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1106,8 +1095,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Board Product         : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1115,8 +1103,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Board Serial          : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1124,8 +1111,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Board Part Number     : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1133,8 +1119,7 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Board FRU ID          : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	/* read any extra fields */
@@ -1145,17 +1130,13 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 			if (strlen(fru_area) > 0) {
 				printf(" Board Extra           : %s\n", fru_area);
 			}
-			free(fru_area);
-			fru_area = NULL;
+			free_n(&fru_area);
 		}
 		if (i == j)
 			break;
 	}
 
-	if (fru_data) {
-		free(fru_data);
-		fru_data = NULL;
-	}
+	free_n(&fru_data);
 }
 
 /* fru_area_print_product  -  Print FRU Product Area
@@ -1196,8 +1177,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 
 	/* read in the full fru */
 	if (read_fru_area(intf, fru, id, offset, fru_len, fru_data) < 0) {
-		free(fru_data);
-		fru_data = NULL;
+		free_n(&fru_data);
 		return;
 	}
 
@@ -1213,8 +1193,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Manufacturer  : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1222,8 +1201,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Name          : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1231,8 +1209,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Part Number   : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1240,8 +1217,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Version       : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1249,8 +1225,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Serial        : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1258,8 +1233,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0) {
 			printf(" Product Asset Tag     : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	fru_area = get_fru_area_str(fru_data, &i);
@@ -1267,8 +1241,7 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (strlen(fru_area) > 0 && verbose > 0) {
 			printf(" Product FRU ID        : %s\n", fru_area);
 		}
-		free(fru_area);
-		fru_area = NULL;
+		free_n(&fru_area);
 	}
 
 	/* read any extra fields */
@@ -1279,17 +1252,13 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 			if (strlen(fru_area) > 0) {
 				printf(" Product Extra         : %s\n", fru_area);
 			}
-			free(fru_area);
-			fru_area = NULL;
+			free_n(&fru_area);
 		}
 		if (i == j)
 			break;
 	}
 
-	if (fru_data) {
-		free(fru_data);
-		fru_data = NULL;
-	}
+	free_n(&fru_data);
 }
 
 /* fru_area_print_multirec  -  Print FRU Multi Record Area
@@ -1481,7 +1450,7 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 
 	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)", last_off, last_off);
 
-	free(fru_data);
+	free_n(&fru_data);
 }
 
 /* ipmi_fru_query_new_value  -  Query new values to replace original FRU content
@@ -1518,7 +1487,7 @@ static bool ipmi_fru_query_new_value(uint8_t *data, int offset, size_t len)
 		for( i=0;i<len;i++ ){
 			ret = scanf("%x", holder+i);
 			if (ret != 1) {
-				free(holder);
+				free_n(&holder);
 				return false;
 			}
 		}
@@ -1526,8 +1495,7 @@ static bool ipmi_fru_query_new_value(uint8_t *data, int offset, size_t len)
 			data[offset++] = (unsigned char) *(holder+i);
 		}
 		/* &data[offset++] */
-		free(holder);
-		holder = NULL;
+		free_n(&holder);
 		status = true;
 	} else {
 		printf("Entered %c\n", answer);
@@ -3208,11 +3176,7 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 				intf->target_addr = save_addr;
 			}
 
-			if (mc) {
-				free(mc);
-				mc = NULL;
-			}
-
+			free_n(&mc);
 			continue;
 		}
 
@@ -3223,15 +3187,11 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 		fru = (struct sdr_record_fru_locator *)
 			ipmi_sdr_get_record(intf, header, itr);
 		if (!fru || !fru->logical) {
-			if (fru) {
-				free(fru);
-				fru = NULL;
-			}
+			free_n(&fru);
 			continue;
 		}
 		rc = ipmi_fru_print(intf, fru);
-		free(fru);
-		fru = NULL;
+		free_n(&fru);
 	}
 
 	ipmi_sdr_end(itr);
@@ -3307,14 +3267,12 @@ ipmi_fru_read_to_bin(struct ipmi_intf * intf,
 			printf("Done\n");
 		} else {
 			lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
-			free(pFruBuf);
-			pFruBuf = NULL;
+			free_n(&pFruBuf);
 			return;
 		}
 		fclose(pFile);
 	}
-	free(pFruBuf);
-	pFruBuf = NULL;
+	free_n(&pFruBuf);
 }
 
 static void
@@ -3378,8 +3336,7 @@ ipmi_fru_write_from_bin(struct ipmi_intf * intf,
 			lprintf(LOG_INFO,"Done");
 		}
 
-	free(pFruBuf);
-	pFruBuf = NULL;
+	free_n(&pFruBuf);
 }
 
 /* ipmi_fru_write_help() - print help text for 'write'
@@ -3582,8 +3539,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 			i += h->len + sizeof (struct fru_multirec_header);
 		} while (!(h->format & 0x80) && (error != 1));
 
-		free(fru_data);
-		fru_data = NULL;
+		free_n(&fru_data);
 	}
 	return 0;
 }
@@ -3767,8 +3723,7 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 			i += h->len + sizeof (struct fru_multirec_header);
 		} while (!(h->format & 0x80) && (error != 1));
 
-		free(fru_data);
-		fru_data = NULL;
+		free_n(&fru_data);
 	}
 	return 0;
 }
@@ -3829,10 +3784,7 @@ static int ipmi_fru_upg_ekeying(struct ipmi_intf *intf, char *pFileName,
 	lprintf(LOG_INFO, "Done upgrading Ekey.");
 
 exit:
-	if (buf) {
-		free(buf);
-		buf = NULL;
-	}
+	free_n(&buf);
 
 	return rc;
 }
@@ -4330,12 +4282,11 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
 					{
 						fwrite(frubuf, size, 1, pFile);
 						printf("Done\n");
-					}
-					else
-					{
-						lprintf(LOG_ERR, "Error opening file %s\n", pFileName);
-						free(frubuf);
-						frubuf = NULL;
+					} else {
+						lprintf(LOG_ERR,
+							"Error opening file %s\n",
+							pFileName);
+						free_n(&frubuf);
 						return -1;
 					}
 					fclose(pFile);
@@ -4343,8 +4294,7 @@ ipmi_fru_read_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileName
 			}
 			printf("\n");
 
-			free(frubuf);
-			frubuf = NULL;
+			free_n(&frubuf);
 		}
 
 	}
@@ -4427,8 +4377,7 @@ ipmi_fru_write_internal_use(struct ipmi_intf * intf, uint8_t id, char * pFileNam
 					lprintf(LOG_ERR, "Unable to read file: %i\n", fru_read_size);
 				}
 
-				free(frubuf);
-				frubuf = NULL;
+				free_n(&frubuf);
 			}
 			fclose(fp);
 			fp = NULL;
@@ -4826,8 +4775,7 @@ f_type, uint8_t f_index, char *f_string)
 	for (i=0; i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
 		if (fru_area) {
-			free(fru_area);
-			fru_area = NULL;
+			free_n(&fru_area);
 		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
@@ -4872,15 +4820,9 @@ f_type, uint8_t f_index, char *f_string)
 		}
 	}
 
-	ipmi_fru_set_field_string_out:
-	if (fru_data) {
-		free(fru_data);
-		fru_data = NULL;
-	}
-	if (fru_area) {
-		free(fru_area);
-		fru_area = NULL;
-	}
+ipmi_fru_set_field_string_out:
+	free_n(&fru_data);
+	free_n(&fru_area);
 
 	return rc;
 }
@@ -5001,11 +4943,9 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	3) Seek to field index */
 	for (i = 0;i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
-		if (fru_area) {
-			free(fru_area);
-			fru_area = NULL;
-		}
-		fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
+		free_n(&fru_area);
+		fru_area = (uint8_t *)get_fru_area_str(fru_data_old,
+						       &fru_field_offset);
 	}
 
 	if (!FRU_FIELD_VALID(fru_area)) {
@@ -5234,19 +5174,10 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	printf("Done.\n");
 
-	ipmi_fru_set_field_string_rebuild_out:
-	if (fru_area) {
-		free(fru_area);
-		fru_area = NULL;
-	}
-	if (fru_data_new) {
-		free(fru_data_new);
-		fru_data_new = NULL;
-	}
-	if (fru_data_old) {
-		free(fru_data_old);
-		fru_data_old = NULL;
-	}
+ipmi_fru_set_field_string_rebuild_out:
+	free_n(&fru_area);
+	free_n(&fru_data_new);
+	free_n(&fru_data_old);
 
 	return rc;
 }
