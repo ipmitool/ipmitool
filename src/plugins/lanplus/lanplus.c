@@ -349,12 +349,8 @@ static void ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 				ipmi_req_entries_tail = NULL;
 		}
 
-		if (e->msg_data) {
-			free(e->msg_data);
-			e->msg_data = NULL;
-		}
-		free(e);
-		e = NULL;
+		free_n(&e->msg_data);
+		free_n(&e);
 	}
 }
 
@@ -368,7 +364,7 @@ static void ipmi_req_clear_entries(void)
 			"cleared list entry seq=0x%02x cmd=0x%02x", e->rq_seq,
 			e->req.msg.cmd);
 		p = e->next;
-		free(e);
+		free_n(&e);
 		e = p;
 	}
 
@@ -561,8 +557,7 @@ int ipmiv2_lan_ping(struct ipmi_intf *intf)
 
 	rv = ipmi_lan_send_packet(intf, data, len);
 
-	free(data);
-	data = NULL;
+	free_n(&data);
 
 	if (rv < 0) {
 		lprintf(LOG_ERR, "Unable to send IPMI presence ping packet");
@@ -1703,8 +1698,7 @@ void ipmi_lanplus_build_v2x_msg(struct ipmi_intf *intf,		 /* in  */
 	default:
 		lprintf(LOG_ERR, "unsupported payload type 0x%x",
 			payload->payload_type);
-		free(msg);
-		msg = NULL;
+		free_n(&msg);
 		assert(0);
 		break;
 	}
@@ -2337,8 +2331,7 @@ struct ipmi_rs *ipmi_lanplus_send_payload(struct ipmi_intf *intf,
 	case IPMI_PAYLOAD_TYPE_RAKP_1:
 	case IPMI_PAYLOAD_TYPE_RAKP_3:
 	case IPMI_PAYLOAD_TYPE_SOL:
-		free(msg_data);
-		msg_data = NULL;
+		free_n(&msg_data);
 		break;
 	}
 
@@ -2782,8 +2775,7 @@ static int ipmi_lanplus_open_session(struct ipmi_intf *intf)
 		    &(session->v2_data.requested_crypt_alg))) {
 		lprintf(LOG_WARNING, "Unsupported cipher suite ID : %d\n",
 			intf->ssn_params.cipher_suite_id);
-		free(msg);
-		msg = NULL;
+		free_n(&msg);
 		return 1;
 	}
 
@@ -2831,8 +2823,7 @@ static int ipmi_lanplus_open_session(struct ipmi_intf *intf)
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
-	free(msg);
-	msg = NULL;
+	free_n(&msg);
 	if (!rsp) {
 		lprintf(LOG_DEBUG, "Timeout in open session response message.");
 		return 2;
@@ -2960,8 +2951,7 @@ static int ipmi_lanplus_rakp1(struct ipmi_intf *intf)
 		lprintf(LOG_ERR,
 			"ERROR generating random number "
 			"in ipmi_lanplus_rakp1");
-		free(msg);
-		msg = NULL;
+		free_n(&msg);
 		return 1;
 	}
 	memcpy(msg + 8, session->v2_data.console_rand, 16);
@@ -2988,8 +2978,7 @@ static int ipmi_lanplus_rakp1(struct ipmi_intf *intf)
 			"ERROR: user name too long.  "
 			"(Exceeds %d characters)",
 			IPMI_MAX_USER_NAME_LENGTH);
-		free(msg);
-		msg = NULL;
+		free_n(&msg);
 		return 1;
 	}
 	memcpy(msg + 28, intf->ssn_params.username, msg[27]);
@@ -3010,8 +2999,7 @@ static int ipmi_lanplus_rakp1(struct ipmi_intf *intf)
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
-	free(msg);
-	msg = NULL;
+	free_n(&msg);
 
 	if (!rsp) {
 		lprintf(LOG_WARNING,
@@ -3131,8 +3119,7 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf *intf)
 						    &auth_length, intf)) {
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating RAKP 3 authcode");
-			free(msg);
-			msg = NULL;
+			free_n(&msg);
 			return 1;
 		} else {
 			/* Success */
@@ -3144,20 +3131,17 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf *intf)
 			/* Error */
 			lprintf(LOG_INFO,
 				"> Error generating session integrity key");
-			free(msg);
-			msg = NULL;
+			free_n(&msg);
 			return 1;
 		} else if (lanplus_generate_k1(session)) {
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
-			free(msg);
-			msg = NULL;
+			free_n(&msg);
 			return 1;
 		} else if (lanplus_generate_k2(session)) {
 			/* Error */
 			lprintf(LOG_INFO, "> Error generating K1 key");
-			free(msg);
-			msg = NULL;
+			free_n(&msg);
 			return 1;
 		}
 	}
@@ -3165,8 +3149,7 @@ static int ipmi_lanplus_rakp3(struct ipmi_intf *intf)
 
 	rsp = ipmi_lanplus_send_payload(intf, &v2_payload);
 
-	free(msg);
-	msg = NULL;
+	free_n(&msg);
 
 	if (session->v2_data.rakp2_return_code != IPMI_RAKP_STATUS_NO_ERRORS) {
 		/*
