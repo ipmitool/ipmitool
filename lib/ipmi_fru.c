@@ -119,31 +119,70 @@ ipmi_intf_set_max_response_data_size(struct ipmi_intf * intf, uint16_t size);
 
 extern int verbose;
 
-static void ipmi_fru_read_to_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
-static void ipmi_fru_write_from_bin(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
-static int ipmi_fru_upg_ekeying(struct ipmi_intf * intf, char * pFileName, uint8_t fruId);
-static int ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf, uint8_t fruId,
-							struct fru_info *pFruInfo, uint32_t * pRetLocation,
-							uint32_t * pRetSize);
-static int ipmi_fru_get_multirec_from_file(char * pFileName, uint8_t * pBufArea,
-						uint32_t size, uint32_t offset);
-static int ipmi_fru_get_multirec_size_from_file(char * pFileName, uint32_t * pSize, uint32_t * pOffset);
-int ipmi_fru_get_adjust_size_from_buffer(uint8_t *pBufArea, uint32_t *pSize);
-static void ipmi_fru_picmg_ext_print(uint8_t * fru_data, int off, int length);
+static
+void
+ipmi_fru_read_to_bin(struct ipmi_intf *intf, char *pFileName,
+		     uint8_t fruId);
 
-static int ipmi_fru_set_field_string(struct ipmi_intf * intf, unsigned
-						char fruId, uint8_t f_type, uint8_t f_index, char *f_string);
-static int
-ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
-											struct fru_info fru, struct fru_header header,
-											uint8_t f_type, uint8_t f_index, char *f_string);
+static
+void
+ipmi_fru_write_from_bin(struct ipmi_intf *intf, char *pFileName,
+			uint8_t fruId);
 
-static void
-fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
-			uint8_t id, uint32_t offset);
+static
 int
-read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
-			uint32_t offset, uint32_t length, uint8_t *frubuf);
+ipmi_fru_upg_ekeying(struct ipmi_intf *intf, char *pFileName,
+		     uint8_t fruId);
+
+static
+int
+ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf *intf,
+					uint8_t fruId,
+					struct fru_info *pFruInfo,
+					uint32_t *pRetLocation,
+					uint32_t *pRetSize);
+
+static
+int
+ipmi_fru_get_multirec_from_file(char *pFileName, uint8_t *pBufArea,
+				uint32_t size, uint32_t offset);
+
+static
+int
+ipmi_fru_get_multirec_size_from_file(char *pFileName,
+				     uint32_t *pSize,
+				     uint32_t *pOffset);
+
+int ipmi_fru_get_adjust_size_from_buffer(uint8_t *pBufArea, uint32_t *pSize);
+
+static
+void
+ipmi_fru_picmg_ext_print(uint8_t *fru_data, int off, int length);
+
+
+static
+int
+ipmi_fru_set_field_string(struct ipmi_intf *intf,
+			  unsigned char fruId, uint8_t f_type,
+			  uint8_t f_index, char *f_string);
+
+static
+int
+ipmi_fru_set_field_string_rebuild(struct ipmi_intf *intf,
+				  uint8_t fruId, struct fru_info fru,
+				  struct fru_header header,
+				  uint8_t f_type, uint8_t f_index,
+				  char *f_string);
+
+static
+void
+fru_area_print_multirec_bloc(struct ipmi_intf *intf,
+			     struct fru_info *fru, uint8_t id,
+			     uint32_t offset);
+
+int read_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,
+		  uint32_t offset, uint32_t length, uint8_t *frubuf);
+
 void free_fru_bloc(t_ipmi_fru_bloc *bloc);
 
 /* get_fru_area_str  -  Parse FRU area string from raw data
