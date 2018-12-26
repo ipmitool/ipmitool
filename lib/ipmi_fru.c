@@ -153,7 +153,9 @@ ipmi_fru_get_multirec_size_from_file(char *pFileName,
 				     uint32_t *pSize,
 				     uint32_t *pOffset);
 
-int ipmi_fru_get_adjust_size_from_buffer(uint8_t *pBufArea, uint32_t *pSize);
+static
+int
+ipmi_fru_get_adjust_size_from_buffer(uint8_t *pBufArea, uint32_t *pSize);
 
 static
 void
@@ -183,7 +185,9 @@ fru_area_print_multirec_bloc(struct ipmi_intf *intf,
 int read_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,
 		  uint32_t offset, uint32_t length, uint8_t *frubuf);
 
-void free_fru_bloc(t_ipmi_fru_bloc *bloc);
+static
+void
+free_fru_bloc(t_ipmi_fru_bloc *bloc);
 
 /* get_fru_area_str  -  Parse FRU area string from raw data
 *
