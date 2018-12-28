@@ -610,7 +610,7 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		}
 
 		if (fru_cc_rq2big(rsp->ccode)) {
-			if (fru->max_write_size > FRU_BLOCK_SZ) {
+			if (fru->max_write_size > FRU_AREA_MAXIMUM_BLOCK_SZ) {
 				fru->max_write_size -= FRU_BLOCK_SZ;
 				lprintf(LOG_INFO, "Retrying FRU write with request size %d",
 						fru->max_write_size);
