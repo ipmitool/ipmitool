@@ -1486,7 +1486,9 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 * returns : TRUE if data changed
 * returns : FALSE if data not changed
 */
-int ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
+static
+int
+ipmi_fru_query_new_value(uint8_t *data,int offset, size_t len)
 {
 	int status=FALSE;
 	int ret;
