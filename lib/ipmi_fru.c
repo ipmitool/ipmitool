@@ -1952,12 +1952,14 @@ ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 * returns: TRUE if data changed
 * returns: FALSE if data not changed
 */
-static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
+static
+bool
+ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 												int off,int len,
 												struct fru_multirec_header *h,
 												struct fru_multirec_oem_header *oh)
 {
-	int hasChanged = FALSE;
+	bool hasChanged = false;
 	int start = off;
 	int offset = start;
 	int length = len;
@@ -1982,7 +1984,7 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 					max_current |= fru_data[++index]<<8;
 					printf("      New Maximum Internal Current(@12V): %.2f A (0x%02x)\n",
 								(float)max_current / 10.0f, max_current);
-					hasChanged = TRUE;
+					hasChanged = true;
 
 				}
 
@@ -2020,7 +2022,7 @@ static int ipmi_fru_picmg_ext_edit(uint8_t * fru_data,
 
 					printf("      New Current draw(@12V): %.2f A (0x%02x)\n",
 								(float)current / 10.0f, current);
-					hasChanged = TRUE;
+					hasChanged = true;
 				}
 			}
 			break;
