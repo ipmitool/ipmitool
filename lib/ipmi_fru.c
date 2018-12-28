@@ -611,8 +611,8 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 						fru->max_write_size);
 				continue;
 			}
-		} else if (rsp->ccode == 0x80) {
-			rsp->ccode = 0;
+		} else if (rsp->ccode == IPMI_CC_FRU_WRITE_PROTECTED_OFFSET) {
+			rsp->ccode = IPMI_CC_OK;
 			// Write protected section
 			protected_bloc = 1;
 		}
@@ -4014,7 +4014,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	}
 
 	if (rsp->ccode) {
-		if (rsp->ccode == 0xc3)
+		if (rsp->ccode == IPMI_CC_TIMEOUT)
 			printf ("  Timeout accessing FRU info. (Device not present?)\n");
 		else
 			printf ("   CCODE = 0x%02x\n", rsp->ccode);
@@ -4046,7 +4046,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	if (!rsp)
 		return -1;
 	if (rsp->ccode) {
-		if (rsp->ccode == 0xc3)
+		if (rsp->ccode == IPMI_CC_TIMEOUT)
 			printf ("  Timeout while reading FRU data. (Device not present?)\n");
 		return -1;
 	}
