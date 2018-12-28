@@ -1818,9 +1818,6 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 		(ap_rsp.payload_udp_port[1] << 8) |
 		ap_rsp.payload_udp_port[0];
 
-	intf->session->timeout = 1;
-
-
 	/* NOTE: the spec does allow for SOL traffic to be sent on
 	 * a different port.  we do not yet support that feature. */
 	if (intf->session->sol_data.port != intf->ssn_params.port)
