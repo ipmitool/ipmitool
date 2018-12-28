@@ -1733,13 +1733,15 @@ static void ipmi_fru_oemkontron_get(int argc,
 	}
 }
 
-static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
+static
+bool
+ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 												int off,int len,
 												struct fru_multirec_header *h,
 												struct fru_multirec_oem_header *oh)
 {
-	static int badParams=FALSE;
-	int hasChanged = FALSE;
+	static bool badParams=false;
+	bool hasChanged = false;
 	int start = off;
 	int offset = start;
 	int length = len;
@@ -1752,7 +1754,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
 			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
 				printf("usage: fru edit <id> <oem> <args...>\n");
-				badParams = TRUE;
+				badParams = true;
 				return hasChanged;
 			}
 		}
@@ -1760,14 +1762,14 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 			printf("usage: oem <iana> <recordid> <format> <args...>\n");
 			printf("usage: oem 15000 3 0 <name> <instance> <field1>"\
 					" <field2> <field3> <crc32>\n");
-			badParams = TRUE;
+			badParams = true;
 			return hasChanged;
 		}
 		if (str2uchar(argv[OEM_KONTRON_RECORDID_ARG_POS], &record_id) != 0) {
 			lprintf(LOG_ERR,
 					"Record ID argument '%s' is either invalid or out of range.",
 					argv[OEM_KONTRON_RECORDID_ARG_POS]);
-			badParams = TRUE;
+			badParams = true;
 			return hasChanged;
 		}
 		if (record_id == OEM_KONTRON_INFORMATION_RECORD) {
@@ -1776,7 +1778,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 					(strlen(argv[i]) != OEM_KONTRON_VERSION_FIELD_SIZE)) {
 					printf("error: version fields must have %d characters\n",
 										OEM_KONTRON_FIELD_SIZE);
-					badParams = TRUE;
+					badParams = true;
 					return hasChanged;
 				}
 			}
@@ -1793,7 +1795,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 				lprintf(LOG_ERR,
 						"Format argument '%s' is either invalid or out of range.",
 						argv[OEM_KONTRON_FORMAT_ARG_POS]);
-				badParams = TRUE;
+				badParams = true;
 				return hasChanged;
 			}
 
@@ -1811,7 +1813,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 					lprintf(LOG_ERR,
 							"Instance argument '%s' is either invalid or out of range.",
 							argv[OEM_KONTRON_INSTANCE_ARG_POS]);
-					badParams = TRUE;
+					badParams = true;
 					return hasChanged;
 				}
 
@@ -1874,7 +1876,7 @@ static int ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 							}
 
 							matchInstance++;
-							hasChanged = TRUE;
+							hasChanged = true;
 						}
 						else if(!strncmp((char *)argv[OEM_KONTRON_NAME_ARG_POS],
 							(const char *)(fru_data+offset), nameLen)){
