@@ -2291,13 +2291,9 @@ HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 			}
 		}
 	}
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Poll upgrade status until completion or timeout*/
-		timeoutSec1 = time(NULL);
-		timeoutSec2 = time(NULL);
-		rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd,
-				pFwupgCtx, 1);
-	}
+	/* Poll upgrade status until completion or timeout*/
+	timeoutSec2 = timeoutSec1 = time(NULL);
+	rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx, 1);
 	while (
 			/* With KCS: Cover the case where we sometime
 			 * receive d5 (on the first get status) from
