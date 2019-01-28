@@ -895,6 +895,7 @@ static struct ipmi_rs *
 serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[SERIAL_BM_MAX_MSG_SIZE];
 	uint8_t msg[SERIAL_BM_MAX_MSG_SIZE], * resp = msg;
 	struct serial_bm_request_ctx req_ctx[3];
 	struct serial_bm_recv_ctx read_ctx;
@@ -904,6 +905,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 		return NULL;
 	}
 
+	rsp.data = rsp_data;
 	/* reset receive context */
 	read_ctx.buffer_size = 0;
 	read_ctx.max_buffer_size = SERIAL_BM_MAX_BUFFER_SIZE;

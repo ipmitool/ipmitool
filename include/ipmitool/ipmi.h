@@ -45,7 +45,8 @@
 # include <config.h>
 #endif
 
-#define IPMI_BUF_SIZE 1024
+/* The maximum buffer size is slightly less than a full UDP packet */
+#define IPMI_BUF_SIZE 65536
 #define IPMI_MAX_MD_SIZE 0x20
 
 #if HAVE_PRAGMA_PACK
@@ -155,7 +156,10 @@ struct ipmi_rq_entry {
 
 struct ipmi_rs {
 	uint8_t ccode;
-	uint8_t data[IPMI_BUF_SIZE];
+
+	/* allocated on a per-interface basis to hold the maximum number of
+	 * bytes the interface can transfer */
+	uint8_t *data;
 
 	/*
 	 * Looks like this is the length of the entire packet, including the RMCP

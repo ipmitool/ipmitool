@@ -211,7 +211,8 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
         uint32_t rs_buf_len = IPMI_BUF_SIZE;
         int32_t rs_len;
 
-	static struct ipmi_rs rsp;	
+	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_BUF_SIZE];
 
         /* achu: FreeIPMI requests have the cmd as the first byte of
          * the data.  Responses have cmd as the first byte and
@@ -298,6 +299,7 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
         }
 
         memset(&rsp, 0, sizeof(struct ipmi_rs));
+        rsp.data = rsp_data;
 	rsp.ccode = (unsigned char)rs_buf[1];
 	rsp.data_len = (int)rs_len - 2;
 

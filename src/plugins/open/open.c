@@ -82,6 +82,7 @@
  * for completion code and 35 bytes of data.
  */
 #define IPMI_OPENIPMI_MAX_RS_DATA_SIZE 35
+#define IPMI_OPENIPMI_MAX_BUFFER_SIZE 256
 
 /* Timeout for reading data from BMC in seconds */
 #define IPMI_OPENIPMI_READ_TIMEOUT 15
@@ -177,6 +178,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	};
 	struct ipmi_req _req;
 	static struct ipmi_rs rsp;
+	static uint8_t rsp_data[IPMI_OPENIPMI_MAX_BUFFER_SIZE];
 	struct timeval read_timeout;
 	static int curr_seq = 0;
 	fd_set rset;
@@ -361,6 +363,7 @@ ipmi_openipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	   return NULL;
 	}
 
+	rsp.data = rsp_data;
 	recv.addr = (unsigned char *) &addr;
 	recv.addr_len = sizeof(addr);
 	recv.msg.data = rsp.data;

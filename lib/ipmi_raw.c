@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/log.h>
@@ -320,7 +321,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t netfn, cmd, lun;
 	uint16_t netfn_tmp = 0;
 	int i;
-	uint8_t data[256];
+	uint8_t *data;
 
 	if (argc == 1 && strncmp(argv[0], "help", 4) == 0) {
 		ipmi_raw_help();
@@ -331,12 +332,10 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_raw_help();
 		return (-1);
 	}
-	else if (argc > sizeof(data))
-	{
-		lprintf(LOG_NOTICE, "Raw command input limit (256 bytes) exceeded");
-		return -1;
+	else if ((argc - 2) > intf->max_request_data_size) {
+		lprintf(LOG_ERR, "Too many parameters for requested interface.");
+		return (-1);
 	}
-
 	lun = intf->target_lun;
 	netfn_tmp = str2val(argv[0], ipmi_netfn_vals);
 	if (netfn_tmp == 0xff) {
@@ -350,10 +349,17 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 		netfn = netfn_tmp;
 	}
 
-	if (is_valid_param(argv[1], &cmd, "command") != 0)
+	if (is_valid_param(argv[1], &cmd, "command") != 0) {
 		return (-1);
+	}
 
-	memset(data, 0, sizeof(data));
+	if (NULL == (data = (uint8_t *)malloc(argc)))
+	{
+		lprintf(LOG_NOTICE, "Failed to allocate buffer for raw command input.");
+		return -1;
+	}
+
+	memset(data, 0, argc);
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = netfn;
 	req.msg.lun = lun;
@@ -363,8 +369,10 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	for (i=2; i<argc; i++) {
 		uint8_t val = 0;
 
-		if (is_valid_param(argv[i], &val, "data") != 0)
+		if (is_valid_param(argv[i], &val, "data") != 0) {
+			free(data);
 			return (-1);
+		}
 
 		req.msg.data[i-2] = val;
 		req.msg.data_len++;
@@ -378,6 +386,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	printbuf(req.msg.data, req.msg.data_len, "RAW REQUEST");
 
 	rsp = intf->sendrecv(intf, &req);
+	free(data);
 
 	if (!rsp) {
 		lprintf(LOG_ERR, "Unable to send RAW command "
