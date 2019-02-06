@@ -59,6 +59,7 @@ dnl
 
 xenable_all_options=yes
 xenable_intf_bmc=no
+xenable_intf_dbus=no
 xenable_intf_dummy=no
 xenable_intf_imb=yes
 xenable_intf_lipmi=yes
@@ -190,6 +191,14 @@ AC_CHECK_LIB([crypto], [MD2_Init],
 	    AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])
 	fi],
 	[], [-lcrypto])
+
+dnl check for libsystemd in case dbus-intf is requested
+AC_CHECK_LIB([systemd], [sd_bus_default],
+	[
+		LIBS="$LIBS -lsystemd"
+		have_systemd=yes
+	],
+	[ have_systemd=no],[])
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
@@ -554,6 +563,25 @@ if test "x$xenable_intf_bmc" = "xyes"; then
 	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB bmc/libintf_bmc.la"
 fi
 
+dnl enable IPMI dbus interface
+AC_ARG_ENABLE([intf-dbus],
+		[AC_HELP_STRING([--enable-intf-dbus],
+			[enable IPMI dbus interface [default=no]])],
+		[xenable_intf_dbus=$enableval],
+		[xenable_intf_dbus=no])
+if test "x$xenable_intf_dbus" != "xno"; then
+	if test "x$have_systemd" != "xyes"; then
+		AC_MSG_ERROR([** Unable to find libsystemd required by dbus-intf.])
+		xenable_intf_dbus=no
+	fi
+fi
+if test "x$xenable_intf_dbus" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_DBUS, [1], [Define to 1 to enable dbus interface.])
+	AC_SUBST(INTF_DBUS, [dbus])
+	AC_SUBST(INTF_DBUS_LIB, [libintf_dbus.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB dbus/libintf_dbus.la"
+fi
+
 dnl enable Dummy interface for testing
 AC_ARG_ENABLE([intf-dummy],
 	[AC_HELP_STRING([--enable-intf-dummy],
@@ -664,6 +692,7 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/free/Makefile
 		src/plugins/imb/Makefile
 		src/plugins/bmc/Makefile
+		src/plugins/dbus/Makefile
 		src/plugins/usb/Makefile
 		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
@@ -681,6 +710,7 @@ AC_MSG_RESULT([  open    : $xenable_intf_open])
 AC_MSG_RESULT([  free    : $xenable_intf_free])
 AC_MSG_RESULT([  imb     : $xenable_intf_imb])
 AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
+AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
 AC_MSG_RESULT([  usb     : $xenable_intf_usb])
 AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
 AC_MSG_RESULT([  serial  : $xenable_intf_serial])

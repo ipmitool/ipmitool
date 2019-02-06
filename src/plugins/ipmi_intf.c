@@ -86,6 +86,9 @@ extern struct ipmi_intf ipmi_dummy_intf;
 #ifdef IPMI_INTF_USB
 extern struct ipmi_intf ipmi_usb_intf;
 #endif
+#ifdef IPMI_INTF_DBUS
+extern struct ipmi_intf ipmi_dbus_intf;
+#endif
 
 struct ipmi_intf * ipmi_intf_table[] = {
 #ifdef IPMI_INTF_OPEN
@@ -118,6 +121,9 @@ struct ipmi_intf * ipmi_intf_table[] = {
 #endif
 #ifdef IPMI_INTF_USB
 	&ipmi_usb_intf,
+#endif
+#ifdef IPMI_INTF_DBUS
+	&ipmi_dbus_intf,
 #endif
 	NULL
 };
