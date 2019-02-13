@@ -42,6 +42,8 @@
 # include <config.h>
 #endif
 
+#define FRU_END_OF_FIELDS 0xc1
+
 #define GET_FRU_INFO		0x10
 #define GET_FRU_DATA		0x11
 #define SET_FRU_DATA		0x12
@@ -587,6 +589,11 @@ struct fru_picmgext_amc_link_desc_record {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
+
+/* IPMI Return codes for Get FRU Inventory Area and Write FRU Inventory Area */
+/* PROTECTED_OFFSET Only expected on write command failures. */
+#define IPMI_CC_FRU_WRITE_PROTECTED_OFFSET 0x80
+#define IPMI_CC_FRU_DEVICE_BUSY 0x81
 
 /* FRU Board manufacturing date */
 #define FRU_BOARD_DATE_UNSPEC 0 /* IPMI FRU Information Storage Definition
