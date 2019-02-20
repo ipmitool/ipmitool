@@ -306,7 +306,8 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:
  *
  */
-static void
+static
+void
 usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -349,7 +350,8 @@ usage(void)
  *                         -1 - failure
  *
  */
-static int
+static
+int
 ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -644,7 +646,8 @@ ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
  * Return:           iDRAC6 type     1 - whoville
  *                                   0 - others
  */
-static int
+static
+int
 ipmi_idracvalidator_command(struct ipmi_intf * intf)
 {
 	int rc;
@@ -703,7 +706,8 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
  *                   1 = Default
  *                   2 = None
  */
-static int
+static
+int
 ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
 {
 	int rc;
@@ -733,7 +737,8 @@ ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
 {
 	uint8_t data[4];
@@ -766,7 +771,8 @@ ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
 {
 	#define LSCC_DATA_LEN 2
@@ -799,7 +805,8 @@ ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp)
 {
@@ -861,7 +868,8 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
 		uint8_t max_length)
 {
@@ -917,7 +925,8 @@ ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 {
 	IPMI_DELL_LCD_CAPS lcd_caps;
@@ -1009,7 +1018,8 @@ out:
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_info(struct ipmi_intf * intf)
 {
 	IPMI_DELL_LCD_CAPS lcd_caps;
@@ -1074,7 +1084,8 @@ out:
  * Output:           lcdstatus       - KVM Status & Lock Status
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 {
 	int rc;
@@ -1102,7 +1113,8 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
  * Output:
  * Return:
  */
-static int
+static
+int
 IsLCDSupported()
 {
 	return LcdSupported;
@@ -1115,7 +1127,8 @@ IsLCDSupported()
  * Output:
  * Return:
  */
-static void
+static
+void
 CheckLCDSupport(struct ipmi_intf * intf)
 {
 	int rc;
@@ -1133,7 +1146,8 @@ CheckLCDSupport(struct ipmi_intf * intf)
  * Output:
  * Return:
  */
-static void
+static
+void
 ipmi_lcd_status_print(LCD_STATUS lcdstatus)
 {
 	switch (lcdstatus.vKVM_status) {
@@ -1171,7 +1185,8 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
  * Return:           -1 on error
  *                   0 if successful
  */
-static int
+static
+int
 ipmi_lcd_get_status(struct ipmi_intf * intf)
 {
 	int rc=0;
@@ -1193,7 +1208,8 @@ ipmi_lcd_get_status(struct ipmi_intf * intf)
  * Return:            -1 on error
  *                    0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 {
 	#define LSCC_DATA_LEN 2
@@ -1239,7 +1255,8 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 {
 	#define LSCC_DATA_LEN 2
@@ -1285,7 +1302,8 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
  * Return:         -1 on error
  *                 0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 {
 	uint8_t data[18];
@@ -1347,7 +1365,8 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
 {
 	int rc = 0;
@@ -1382,7 +1401,8 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp, char * text)
 {
@@ -1407,7 +1427,8 @@ ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
 {
 	int rc = 0;
@@ -1428,7 +1449,8 @@ ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_lcd_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -1516,7 +1538,8 @@ ipmi_lcd_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_mac_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -1558,7 +1581,8 @@ EmbeddedNICMacAddressType EmbeddedNICMacAddress;
 
 EmbeddedNICMacAddressType_10G EmbeddedNICMacAddress_10G;
 
-static void
+static
+void
 InitEmbeddedNICMacAddressValues()
 {
 	uint8_t i;
@@ -1578,7 +1602,8 @@ InitEmbeddedNICMacAddressValues()
 }
 
 uint8_t UseVirtualMacAddress = 0;
-static int
+static
+int
 ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1668,7 +1693,8 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1737,7 +1763,8 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1800,7 +1827,8 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1905,7 +1933,8 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	if (IMC_IDRAC_10G == IMC_Type) {
@@ -1932,7 +1961,8 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_mac_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -1962,7 +1992,8 @@ ipmi_mac_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
@@ -2031,7 +2062,8 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 	return rc;
 }
 
-static int
+static
+int
 IsLANSupported()
 {
 	if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
@@ -2040,7 +2072,8 @@ IsLANSupported()
 	return 1;
 }
 
-static int
+static
+int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set)
 {
@@ -2207,7 +2240,8 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	return INVALID;
 }
 
-static int
+static
+int
 get_nic_selection_mode(int current_arg, char ** argv)
 {
 	if (argv[current_arg]
@@ -2256,7 +2290,8 @@ get_nic_selection_mode(int current_arg, char ** argv)
 	return INVALID;
 }
 
-static int
+static
+int
 ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 {
 	struct ipmi_rs * rsp;
@@ -2292,7 +2327,8 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 {
 	struct ipmi_rs * rsp;
@@ -2320,7 +2356,8 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2377,7 +2414,8 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2433,7 +2471,8 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	return 0;
 }
 
-static void
+static
+void
 ipmi_lan_usage(void)
 {
 	/* TODO:
@@ -2505,7 +2544,8 @@ ipmi_lan_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -2620,7 +2660,8 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:             1 on error
  *                     0 if successful
  */
-static int
+static
+int
 ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 		SensorReadingType* pSensorReadingData)
 {
@@ -2664,7 +2705,8 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 {
 	struct ipmi_rs *rsp;
@@ -2708,7 +2750,8 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 {
 	struct ipmi_rs * rsp = NULL;
@@ -2752,7 +2795,8 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_powermgmt(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2865,7 +2909,8 @@ ipmi_powermgmt(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 {
 	struct ipmi_rs * rsp;
@@ -2916,7 +2961,8 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
  *
  * Return:
  */
-static uint64_t
+static
+uint64_t
 watt_to_btuphr_conversion(uint32_t powerinwatt)
 {
 	uint64_t powerinbtuphr;
@@ -2933,7 +2979,8 @@ watt_to_btuphr_conversion(uint32_t powerinwatt)
  *
  * Return:
  */
-static uint32_t
+static
+uint32_t
 btuphr_to_watt_conversion(uint64_t powerinbtuphr)
 {
 	uint32_t powerinwatt;
@@ -2951,7 +2998,8 @@ btuphr_to_watt_conversion(uint64_t powerinbtuphr)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 {
 	struct ipmi_rs *rsp;
@@ -3019,7 +3067,8 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 {
 	SensorReadingType sensorReadingData;
@@ -3081,7 +3130,8 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		IPMI_INST_POWER_CONSUMPTION_DATA * instpowerconsumptiondata)
 {
@@ -3133,7 +3183,8 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
  *
  * Return:
  */
-static void
+static
+void
 ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata)
 {
 	uint16_t intampsval=0;
@@ -3154,7 +3205,8 @@ ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpower
  *
  * Return:
  */
-static int
+static
+int
 ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
 {
 	int rc = 0;
@@ -3184,7 +3236,8 @@ ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_AVGPOWER_CONSUMP_HISTORY * pavgpower)
 {
@@ -3233,7 +3286,8 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_POWER_CONSUMP_HISTORY * pstPeakpower)
 {
@@ -3290,7 +3344,8 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_POWER_CONSUMP_HISTORY * pstMinpower)
 {
@@ -3348,7 +3403,8 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 {
 	uint64_t tmp;
@@ -3472,7 +3528,8 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 {
 	uint8_t *rdata;
@@ -3522,7 +3579,8 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
 {
 	uint64_t tempbtuphrconv;
@@ -3556,7 +3614,8 @@ ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 {
 	int rc;
@@ -3683,7 +3742,8 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_powermonitor_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3755,7 +3815,8 @@ ipmi_powermonitor_usage(void)
  * Return:			   return code	   0 - success
  *						  -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
@@ -3793,7 +3854,8 @@ get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs)
  * Output: prints the sd card extended info
  * Return: 0 - success -1 - failure
  */
-static int
+static
+int
 ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -3871,7 +3933,8 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
  * Output: prints help or error with help
  * Return: 0 - Success -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** argv)
 {
 	int rc;
@@ -3919,7 +3982,8 @@ ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** ar
  * Output: prints help
  * Return: void
  */
-static void
+static
+void
 ipmi_vFlash_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3940,7 +4004,8 @@ ipmi_vFlash_usage(void)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_setled_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3959,13 +4024,15 @@ ipmi_setled_usage(void)
 "");
 }
 
-static int
+static
+int
 IsSetLEDSupported(void)
 {
 	return SetLEDSupported;
 }
 
-static void
+static
+void
 CheckSetLEDSupport(struct ipmi_intf * intf)
 {
 	struct ipmi_rs *rsp;
@@ -4009,7 +4076,8 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
 		int *slot)
 {
@@ -4061,7 +4129,8 @@ ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
 {
 	struct ipmi_rs *rsp;
@@ -4105,7 +4174,8 @@ ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
  * Description:      This function calculates bits in SES drive update
  * Return:           Mask set with bits for SES backplane update
  */
-static int
+static
+int
 ipmi_getsesmask(int argc, char **argv)
 {
 	int mask = 0;
@@ -4144,7 +4214,8 @@ ipmi_getsesmask(int argc, char **argv)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int b,d,f, mask;
