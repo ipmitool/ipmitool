@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h> /* For free() */
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -123,10 +124,12 @@ uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
  * Free the memory and clear the pointer.
  * @param[in] ptr - a pointer to your pointer to free.
  */
-static inline void free_n(void **ptr) {
-	if (ptr && *ptr) {
-		free(*ptr);
-		*ptr = NULL;
+static inline void free_n(void *ptr) {
+	void **pptr = (void **)ptr;
+
+	if (pptr && *pptr) {
+		free(*pptr);
+		*pptr = NULL;
 	}
 }
 
