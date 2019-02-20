@@ -522,8 +522,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 					}
 				}
 			}
-			free(filename[type_offset]);
-			filename[type_offset] = NULL;
+			free_n(&filename[type_offset]);
 		}
 	} else if ((strcmp(argv[argument_offset], "print") == 0)
 			|| (strcmp(argv[argument_offset], "summary") == 0)) {
@@ -632,10 +631,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 							option, filename, file_type);
 				}
 				for (i = 0; i < (argc-1); i++) {
-					if (filename[i]) {
-						free(filename[i]);
-						filename[i] = NULL;
-					}
+					free_n(&filename[i]);
 				}
 			} /* End of ERROR_STATUS */
 		} /* End of comparison of invalid option */
@@ -970,8 +966,7 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
                /*Display the current*/
                ipmi_ek_display_current_descriptor( car,
                                     cur_desc, filename[num_file] );
-               free(cur_desc);
-               cur_desc = NULL;
+               free_n(&cur_desc);
             }
             /*Ref: AMC.0 specification, Table 3-10: Module Current Requirement*/
             else if ( list_record[num_file]->data[PICMG_ID_OFFSET]
@@ -1208,6 +1203,38 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
    return return_value;
 }
 
+static int ipmi_ek_get_carrier_count(
+		int index1,
+		struct ipmi_ek_multi_header **list_head)
+{
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record2 = 0;
+
+	for (record = list_head[index1]; record; record = record->next) {
+		if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+			num_amc_record2++;
+		}
+	}
+
+	return num_amc_record2;
+}
+
+static int ipmi_ek_get_amc_count(
+		int index2,
+		struct ipmi_ek_multi_header **list_head)
+{
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record1 = 0;
+
+	for (record = list_head[index2]; record; record = record->next) {
+		if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+			num_amc_record1++;
+		}
+	}
+
+	return num_amc_record1;
+}
+
 /**************************************************************************
 *
 * Function name: ipmi_ek_matching_process
@@ -1236,88 +1263,83 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 *           exist.
 *
 ***************************************************************************/
-static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
-      struct ipmi_ek_multi_header ** list_head,
-      char * opt,
-      struct ipmi_ek_multi_header * pphysical )
+static int ipmi_ek_matching_process(int *file_type, int index1, int index2,
+		struct ipmi_ek_multi_header **list_head,
+		char *opt,
+		struct ipmi_ek_multi_header *pphysical)
 {
-   int result = ERROR_STATUS;
-   struct ipmi_ek_multi_header * record;
-   int num_amc_record1 = 0;/*Number of AMC records in the first module*/
-   int num_amc_record2 = 0;/*Number of AMC records in the second module*/
+	int result = ERROR_STATUS;
+	struct ipmi_ek_multi_header *record;
+	int num_amc_record1 = 0; /* Number of AMC records in the first module */
+	int num_amc_record2 = 0; /* Number of AMC records in the second module */
 
-   /* Comparison between an On-Carrier and an AMC*/
-   if ( file_type[index2] == ON_CARRIER_FRU_FILE ){
-      int index_temp = 0;
-      index_temp = index1;
-      index1 = index2; /*index1 indicate on carrier*/
-      index2 = index_temp; /*index2 indcate an AMC*/
-   }
-   /*Calculate record size for Carrier file*/
-   for (record = list_head[index1]; record; record = record->next ){
-      if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-         num_amc_record2++;
-      }
-   }
-   /*Calculate record size for amc file*/
-   for (record = list_head[index2]; record; record = record->next){
-      if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-         num_amc_record1++;
-      }
-   }
-   if ( (num_amc_record1 > 0) && (num_amc_record2 > 0) ){
-      int index_record1 = 0;
-      int index_record2 = 0;
-      /* Multi records of AMC module */
-      struct ipmi_ek_amc_p2p_connectivity_record * amc_record1 = NULL;
-      /* Multi records of Carrier or an AMC module */
-      struct ipmi_ek_amc_p2p_connectivity_record * amc_record2 = NULL;
+	/* Comparison between an On-Carrier and an AMC*/
+	if (file_type[index2] == ON_CARRIER_FRU_FILE) {
+		int index_temp = 0;
+		index_temp = index1;
+		index1 = index2; /* index1 indicate on carrier */
+		index2 = index_temp; /* index2 indcate an AMC */
+	}
+	/* Calculate record size for Carrier file */
+	num_amc_record2 = ipmi_ek_get_carrier_count(index1, list_head);
+	/* Calculate record size for amc file */
+	num_amc_record1 = ipmi_ek_get_amc_count(index2, list_head);
 
-      amc_record1 = malloc ( num_amc_record1 * \
-                           sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
-      amc_record2 = malloc ( num_amc_record2 * \
-                           sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
+	if ((num_amc_record1 > 0) && (num_amc_record2 > 0)) {
+		int index_record1 = 0;
+		int index_record2 = 0;
+		/* Multi records of AMC module */
+		struct ipmi_ek_amc_p2p_connectivity_record *amc_record1;
+		/* Multi records of Carrier or an AMC module */
+		struct ipmi_ek_amc_p2p_connectivity_record *amc_record2;
 
-      for (record = list_head[index2]; record; record = record->next) {
-         if ( record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-            result = ipmi_ek_create_amc_p2p_record( record,
-                                       &amc_record1[index_record1] );
-            if (result != ERROR_STATUS){
-               struct ipmi_ek_multi_header * current_record = NULL;
+		amc_record1 = malloc(num_amc_record1 * sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
+		amc_record2 = malloc(num_amc_record2 * sizeof(struct ipmi_ek_amc_p2p_connectivity_record));
 
-               for (current_record=list_head[index1];
-                    current_record;
-                    current_record = current_record->next)
-               {
-                  if ( current_record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P ){
-                     result = ipmi_ek_create_amc_p2p_record( current_record,
-                                       &amc_record2[index_record2] );
-                     if ( result != ERROR_STATUS ){
-                        if ( result == OK_STATUS ){
-                           /*Compare Link descriptor*/
-                           result = ipmi_ek_compare_link ( pphysical,
-                                    amc_record1[index_record1],
-                                    amc_record2[index_record2],
-                                    opt, file_type[index1], file_type[index2]);
-                        }
-                        index_record2++;
-                     }
-                  } /*end of FRU_AMC_P2P */
-               } /* end of for loop */
-               index_record1++;
-            }
-         }
-      }
-      free(amc_record1) ;
-      amc_record1 = NULL;
-      free(amc_record2) ;
-      amc_record2 = NULL;
-   }
-   else{
-      printf("No amc record is found!\n");
-   }
+		for (record = list_head[index2];
+		     record;
+		     record = record->next)
+		{
+			if (record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+				result = ipmi_ek_create_amc_p2p_record(record,
+						&amc_record1[index_record1]);
+				if (result != ERROR_STATUS) {
+					struct ipmi_ek_multi_header *current_record;
 
-   return result;
+					for (current_record = list_head[index1];
+					     current_record;
+					     current_record = current_record->next)
+					{
+						if (current_record->data[PICMG_ID_OFFSET] == FRU_AMC_P2P) {
+							result = ipmi_ek_create_amc_p2p_record(
+									current_record,
+									&amc_record2[index_record2]);
+							if (result != ERROR_STATUS) {
+								if (result == OK_STATUS) {
+									/* Compare Link descriptor */
+									result = ipmi_ek_compare_link(
+											pphysical,
+											amc_record1[index_record1],
+											amc_record2[index_record2],
+											opt,
+											file_type[index1],
+											file_type[index2]);
+								}
+								index_record2++;
+							}
+						} /* end of FRU_AMC_P2P */
+					} /* end of for loop */
+					index_record1++;
+				}
+			}
+		}
+		free_n(&amc_record1);
+		free_n(&amc_record2);
+	} else {
+		printf("No amc record is found!\n");
+	}
+
+	return result;
 }
 
 /**************************************************************************
@@ -1523,9 +1545,7 @@ ipmi_ek_check_physical_connectivity(
          }
          return_status = ERROR_STATUS;
       }
-      if (port_desc) {
-         free(port_desc);
-         port_desc = NULL;
+         free_n(&port_desc);
       }
    }
    return return_status;
@@ -1717,10 +1737,8 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
       }
    }
 
-   free(record1.matching_result);
-   record1.matching_result = NULL;
-   free(record2.matching_result);
-   record2.matching_result = NULL;
+   free_n(&record1.matching_result);
+   free_n(&record2.matching_result);
 
    return result;
 }
@@ -2414,7 +2432,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	size_t file_offset = 0;
 	struct fru_header header;
 	time_t ts;
-	int ret = 0;
+	int ret;
 	unsigned char data = 0;
 	unsigned char lan_code = 0;
 	unsigned char mfg_date[SIZE_MFG_DATE];
@@ -2478,16 +2496,16 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	if (header.offset.chassis != 0) {
 		long offset = 0;
 		offset = header.offset.chassis * FACTOR_OFFSET;
-		ret = ipmi_ek_display_chassis_info_area(input_file, offset);
+		(void)ipmi_ek_display_chassis_info_area(input_file, offset);
 	}
 	/*** Display FRU Board Info Area ***/
 	while (1) {
 		if (header.offset.board == 0) {
 			break;
 		}
-		ret = fseek(input_file,
-				(header.offset.board * FACTOR_OFFSET),
-				SEEK_SET);
+		(void)fseek(input_file,
+			    (header.offset.board * FACTOR_OFFSET),
+			    SEEK_SET);
 		if (feof(input_file)) {
 			break;
 		}
@@ -2553,27 +2571,27 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		/* Board Mfg */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Manufacture Data", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Product */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Product Name", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Serial */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Serial Number", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Board Part */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Part Number", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* FRU file ID */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "FRU File ID", &board_length);
-		ret = fseek(input_file, file_offset, SEEK_SET);
+		(void)fseek(input_file, file_offset, SEEK_SET);
 
 		/* Additional Custom Mfg. */
 		file_offset = ipmi_ek_display_board_info_area(
@@ -2584,7 +2602,7 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	if (header.offset.product && (!feof(input_file))) {
 		long offset = 0;
 		offset = header.offset.product * FACTOR_OFFSET;
-		ret = ipmi_ek_display_product_info_area(input_file,
+		(void)ipmi_ek_display_product_info_area(input_file,
 				offset);
 	}
 	fclose(input_file);
@@ -2615,7 +2633,7 @@ static int
 ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 {
 	size_t file_offset;
-	int ret = 0;
+	int ret;
 	unsigned char data = 0;
 	unsigned char ch_len = 0;
 	unsigned char ch_type = 0;
@@ -2628,7 +2646,7 @@ ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Chassis Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-	ret = fseek(input_file, offset, SEEK_SET);
+	(void)fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Chassis Info Area!");
 		return (-1);
@@ -2662,13 +2680,13 @@ ipmi_ek_display_chassis_info_area(FILE *input_file, long offset)
 	/* Chassis Part Number*/
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Part Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Chassis Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Chassis Serial Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
-	file_offset = ipmi_ek_display_board_info_area(input_file,
+	(void)ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
 	return 0;
 }
@@ -2704,6 +2722,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 	unsigned char len = 0;
 	unsigned int size_board = 0;
 	int custom_fields = 0;
+
 	if (!input_file || !board_type || !board_length) {
 		return (size_t)(-1);
 	}
@@ -2729,7 +2748,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		printf("%s: None\n", board_type);
 		goto out;
 	}
-	if (strncmp(board_type, "Custom", 6 ) != 0) {
+	if (strncmp(board_type, "Custom", 6) != 0) {
 		unsigned char *data, *str;
 		unsigned int i = 0;
 		data = malloc(size_board + 1); /* Make room for type/length field */
@@ -2741,8 +2760,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		ret = fread(data + 1, size_board, 1, input_file);
 		if ((ret != 1) || ferror(input_file)) {
 			lprintf(LOG_ERR, "Invalid board type size!");
-			free(data);
-			data = NULL;
+			free_n(&data);
 			goto out;
 		}
 		printf("%s type: 0x%02x\n", board_type, len);
@@ -2750,10 +2768,8 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		i = 0;
 		str = (unsigned char *)get_fru_area_str(data, &i);
 		printf("%s\n", str);
-		free(str);
-		str = NULL;
-		free(data);
-		data = NULL;
+		free_n(&str);
+		free_n(&data);
 		(*board_length) -= size_board;
 		goto out;
 	}
@@ -2761,7 +2777,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		if (len == NO_MORE_INFO_FIELD) {
 			unsigned char padding;
 			unsigned char checksum = 0;
-			/* take the rest of data in the area minus 1 byte of 
+			/* take the rest of data in the area minus 1 byte of
 			 * checksum
 			 */
 			if (custom_fields) {
@@ -2797,20 +2813,15 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			ret = fread(additional_data + 1, size_board, 1, input_file);
 			if ((ret != 1) || ferror(input_file)) {
 				lprintf(LOG_ERR, "Invalid Additional Data!");
-				if (additional_data) {
-					free(additional_data);
-					additional_data = NULL;
-				}
+				free_n(&additional_data);
 				goto out;
 			}
 			printf("Additional Custom Mfg. Data: ");
 			i = 0;
 			str = (unsigned char *)get_fru_area_str(additional_data, &i);
 			printf("%s\n", str);
-			free(str);
-			str = NULL;
-			free(additional_data);
-			additional_data = NULL;
+			free_n(&str);
+			free_n(&additional_data);
 
 			(*board_length) -= size_board;
 			ret = fread(&len, 1, 1, input_file);
@@ -2827,7 +2838,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			goto out;
 		}
 	}
- 
+
 out:
 	file_offset = ftell(input_file);
 	return file_offset;
@@ -2857,7 +2868,7 @@ static int
 ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 {
 	size_t file_offset;
-	int ret = 0;
+	int ret;
 	unsigned char ch_len = 0;
 	unsigned char data = 0;
 	unsigned int len = 0;
@@ -2866,15 +2877,18 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 		lprintf(LOG_ERR, "No file stream to read.");
 		return (-1);
 	}
+
 	file_offset = ftell(input_file);
 	printf("%s\n", EQUAL_LINE_LIMITER);
 	printf("Product Info Area\n");
 	printf("%s\n", EQUAL_LINE_LIMITER);
-	ret = fseek(input_file, offset, SEEK_SET);
+
+	(void)fseek(input_file, offset, SEEK_SET);
 	if (feof(input_file)) {
 		lprintf(LOG_ERR, "Invalid Product Info Area!");
 		return (-1);
 	}
+
 	ret = fread(&data, 1, 1, input_file);
 	if ((ret != 1) || ferror(input_file)) {
 		lprintf(LOG_ERR, "Invalid Data!");
@@ -2907,33 +2921,33 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 	/* Product Mfg */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Manufacture Data", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Name */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Name", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Part */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Part/Model Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Version */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Version", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Serial */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Product Serial Number", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Product Asset Tag */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"Asset Tag", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* FRU file ID */
 	file_offset = ipmi_ek_display_board_info_area(input_file,
 			"FRU File ID", &len);
-	ret = fseek(input_file, file_offset, SEEK_SET);
+	(void)fseek(input_file, file_offset, SEEK_SET);
 	/* Custom product info area */
-	file_offset = ipmi_ek_display_board_info_area(input_file,
+	(void)ipmi_ek_display_board_info_area(input_file,
 			"Custom", &len);
 	return 0;
 }
@@ -3292,27 +3306,26 @@ ipmi_ek_display_shelf_ip_connection_record(struct ipmi_ek_multi_header *record)
 	int ioffset = START_DATA_OFFSET;
 	if (ioffset > record->header.len) {
 		printf("   Shelf Manager IP Address: %d.%d.%d.%d\n",
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 		ioffset += 4;
 	}
 	if (ioffset > record->header.len) {
 		printf("   Default Gateway Address: %d.%d.%d.%d\n",
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 		ioffset += 4;
 	}
 	if (ioffset > record->header.len) {
-		printf("   Subnet Mask: %d.%d.%d.%d\n", 
-				record->data[ioffset+0],
-				record->data[ioffset+1],
-				record->data[ioffset+2],
-				record->data[ioffset+3]);
-		ioffset += 4;
+		printf("   Subnet Mask: %d.%d.%d.%d\n",
+		       record->data[ioffset+0],
+		       record->data[ioffset+1],
+		       record->data[ioffset+2],
+		       record->data[ioffset+3]);
 	}
 }
 
@@ -4068,27 +4081,27 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 	}
 	if (data == 0) {
 		lprintf(LOG_ERR, "There is no multi record in the file '%s'",
-				filename);
+			filename);
 		fclose(input_file);
 		return ERROR_STATUS;
 	}
 	/* the offset value is in multiple of 8 bytes. */
 	multi_offset = data * 8;
-	lprintf(LOG_DEBUG, "start multi offset = 0x%02x", 
-			multi_offset);
+	lprintf(LOG_DEBUG, "start multi offset = 0x%02x",
+		multi_offset);
 
 	fseek(input_file, multi_offset, SEEK_SET);
 	while (!feof(input_file)) {
 		*list_record = malloc(sizeof(struct ipmi_ek_multi_header));
 		if (!(*list_record)) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			fclose(input_file);
 			return ERROR_STATUS;
 		}
-		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1, 
+		ret = fread(&(*list_record)->header, START_DATA_OFFSET, 1,
 				input_file);
 		if ((ret != 1) || ferror(input_file)) {
-			free(*list_record);
-			*list_record = NULL;
+			free_n(list_record);
 			fclose(input_file);
 			lprintf(LOG_ERR, "Invalid Header!");
 			return ERROR_STATUS;
@@ -4100,7 +4113,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		(*list_record)->data = malloc((*list_record)->header.len);
 		if (!(*list_record)->data) {
 			lprintf(LOG_ERR, "Failed to allocation memory size %d\n",
-					(*list_record)->header.len);
+				(*list_record)->header.len);
 			record_count++;
 			continue;
 		}
@@ -4114,7 +4127,7 @@ ipmi_ekanalyzer_fru_file2structure(char *filename,
 		}
 		if (verbose > 0)
 			printf("Record %d has length = %02x\n", record_count,
-					(*list_record)->header.len);
+			       (*list_record)->header.len);
 		if (verbose > 1) {
 			int i;
 			printf("Type: %02x", (*list_record)->header.type);
@@ -4212,6 +4225,5 @@ ipmi_ek_remove_record_from_list(struct ipmi_ek_multi_header *record,
 	} else {
 		record->next->prev = record->prev;
 	}
-	free(record);
-	record = NULL;
+	free_n(&record);
 }
