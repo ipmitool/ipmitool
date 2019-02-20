@@ -32,6 +32,7 @@
  * This Code is edited and Implemented the License feature for Delloem
  * Author Harsha S <Harsha_S1@dell.com>
  */
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -50,6 +51,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_delloem.h>
 #include <ipmitool/ipmi_fru.h>
@@ -252,6 +254,14 @@ static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
 static int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set);
+
+static
+inline
+bool
+cc_invalid_or_not_present(int rc)
+{
+	return (rc == IPMI_CC_INV_CMD || rc == IPMI_CC_REQ_DATA_NOT_PRESENT);
+}
 
 /* Function Name:       ipmi_delloem_main
  *
@@ -716,7 +726,7 @@ ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)){
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -748,7 +758,7 @@ ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1)||(rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD configuration: "
 				"Command not supported on this system.");
 		return -1;
@@ -784,7 +794,7 @@ ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error setting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error setting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -848,7 +858,7 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error setting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error setting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -954,7 +964,7 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
 			ERR_OUT;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
+		} else if (cc_invalid_or_not_present(rc)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
@@ -1050,7 +1060,7 @@ ipmi_lcd_get_info(struct ipmi_intf * intf)
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
 			ERR_OUT;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
+		} else if (cc_invalid_or_not_present(rc)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
@@ -1094,7 +1104,7 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD Status");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
@@ -1234,7 +1244,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting LCD status");
 		rc= -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
@@ -1281,7 +1291,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting LCD status");
 		rc = -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		rc = -1;
@@ -2855,7 +2865,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting power management information: "
 				"Command not supported on this system.");
 		return -1;
@@ -2940,7 +2950,7 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rsp->ccode == 0xc1) {
+	} else if (rsp->ccode == IPMI_CC_INV_CMD) {
 		lprintf(LOG_ERR,
 				"Error clearing power values, command not supported on this system.");
 		return -1;
@@ -3021,7 +3031,7 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting power headroom status: "
 				"Command not supported on this system ");
 		return -1;
@@ -3157,7 +3167,7 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3252,7 +3262,7 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting average power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3302,7 +3312,7 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3360,7 +3370,7 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3543,7 +3553,7 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting power cap: "
 				"Command not supported on this system.");
 		return -1;
@@ -3644,7 +3654,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rc == 0xc1) {
+	} else if (rc == IPMI_CC_INV_CMD) {
 		lprintf(LOG_ERR, "Error getting power cap, command not supported on "
 				"this system.");
 		return -1;
