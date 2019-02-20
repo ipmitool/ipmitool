@@ -396,7 +396,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR,
 						"Argument '%s' is either not a number or out of range.",
 						argv[current_arg]);
-				return (-1);
+				return -1;
 			}
 			current_arg++;
 			if (argc <= current_arg) {
@@ -1313,7 +1313,7 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 	int rc = 0;
 	if (bytes_to_store > IPMI_DELL_LCD_STRING_LENGTH_MAX) {
 		lprintf(LOG_ERR, "Out of range Max limit is 62 characters");
-		return (-1);
+		return -1;
 	} else {
 		bytes_to_store = MIN(bytes_to_store, IPMI_DELL_LCD_STRING_LENGTH_MAX);
 		for (ii = 0; ii < 4; ii++) {
@@ -1949,7 +1949,7 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 		return ipmi_macinfo_11g(intf,NicNum);
 	} else {
 		lprintf(LOG_ERR, "Error in getting MAC Address : Not supported platform");
-		return (-1);
+		return -1;
 	}
 }
 /*
@@ -2022,13 +2022,13 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 				return -1;
 			} else if (INVAILD_FAILOVER_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_STRING);
-				return (-1);
+				return -1;
 			} else if (INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_SET);
-				return (-1);
+				return -1;
 			} else if (INVAILD_SHARED_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
 		} else {
@@ -2039,7 +2039,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 			}
 			if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
 		}
@@ -2623,7 +2623,7 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (str2int(argv[current_arg], &val) != 0) {
 			lprintf(LOG_ERR, "Given capacity value '%s' is invalid.",
 					argv[current_arg]);
-			return (-1);
+			return -1;
 		}
 		current_arg++;
 		if (!argv[current_arg]) {
@@ -3213,16 +3213,16 @@ ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
 	IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata = {0,0,0,0};
 	printf("\nPower consumption information\n");
 	rc = ipmi_get_power_consumption_data(intf, unit);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	rc = ipmi_get_instan_power_consmpt_data(intf, &instpowerconsumptiondata);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	ipmi_print_get_instan_power_Amps_data(instpowerconsumptiondata);
 	rc = ipmi_get_power_headroom_command(intf, unit);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	return rc;
@@ -3415,17 +3415,17 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 	IPMI_POWER_CONSUMP_HISTORY stPeakpower;
 
 	rc = ipmi_get_avgpower_consmpt_history(intf, &avgpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 
 	rc = ipmi_get_peakpower_consmpt_history(intf, &stPeakpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 
 	rc = ipmi_get_minpower_consmpt_history(intf, &stMinpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	if (rc != 0) {
@@ -3901,7 +3901,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 				"vFlash SD card is unavailable, please insert the card of");
 		lprintf(LOG_ERR,
 				"size 256MB or greater");
-		return (-1);
+		return -1;
 	}
 
 	printf("vFlash SD Card Properties\n");
