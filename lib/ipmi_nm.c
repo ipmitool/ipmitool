@@ -42,6 +42,8 @@
  ******************************************************************************/
 
 /* Primary Node Manager commands */
+
+/* clang-format off */
 const struct dcmi_cmd nm_cmd_vals[] = {
 	{ 0x00, "discover",   "Discover Node Manager" },
 	{ 0x01, "capability", "Get Node Manager Capabilities" },
@@ -281,6 +283,7 @@ const struct valstr nm_ccode_vals[] = {
 	{ 0xD6, "Command subfunction disabled or unavailable" },
 	{ 0xFF, NULL },
 };
+/* clang-format on */
 
 /* End strings */
 
@@ -288,7 +291,7 @@ const struct valstr nm_ccode_vals[] = {
  * @rsp:       Response data structure
  */
 static int
-chk_nm_rsp(struct ipmi_rs * rsp)
+chk_nm_rsp(struct ipmi_rs *rsp)
 {
 	/* if the response from the intf is NULL then the BMC is experiencing
 	 * some issue and cannot complete the command
@@ -303,15 +306,15 @@ chk_nm_rsp(struct ipmi_rs * rsp)
 	 */
 	if ((rsp->ccode >= 0x80) && (rsp->ccode <= 0xD6)) {
 		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
-		val2str(rsp->ccode, nm_ccode_vals), rsp->ccode);
+		        val2str(rsp->ccode, nm_ccode_vals), rsp->ccode);
 		return 1;
 	} else if (rsp->ccode) {
 		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
-			val2str(rsp->ccode, completion_code_vals), rsp->ccode);
+		        val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return 1;
 	}
 	/* check to make sure this is a DCMI firmware */
-	if(rsp->data[0] != 0x57) {
+	if (rsp->data[0] != 0x57) {
 		printf("\n    A valid NM command was not returned! (%x)", rsp->data[0]);
 		return 1;
 	}
@@ -320,7 +323,7 @@ chk_nm_rsp(struct ipmi_rs * rsp)
 
 /* Node Manager discover */
 static int
-_ipmi_nm_discover(struct ipmi_intf * intf, struct nm_discover *disc)
+_ipmi_nm_discover(struct ipmi_intf *intf, struct nm_discover *disc)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -338,7 +341,7 @@ _ipmi_nm_discover(struct ipmi_intf * intf, struct nm_discover *disc)
 	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
-	memcpy(disc, rsp->data, sizeof (struct nm_discover));
+	memcpy(disc, rsp->data, sizeof(struct nm_discover));
 	return 0;
 }
 /* Get NM capabilities
@@ -351,7 +354,7 @@ _ipmi_nm_discover(struct ipmi_intf * intf, struct nm_discover *disc)
  * @caps:   fills in capability struct
  */
 static int
-_ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain,
+_ipmi_nm_getcapabilities(struct ipmi_intf *intf, uint8_t domain,
                          uint8_t trigger, struct nm_capability *caps)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -372,13 +375,13 @@ _ipmi_nm_getcapabilities(struct ipmi_intf * intf, uint8_t domain,
 	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
-	memcpy(caps, rsp->data, sizeof (struct nm_capability));
+	memcpy(caps, rsp->data, sizeof(struct nm_capability));
 	return 0;
 }
 
 static int
-_ipmi_nm_get_policy(struct ipmi_intf * intf, uint8_t domain,
-                    uint8_t policy_id, struct nm_get_policy *policy)
+_ipmi_nm_get_policy(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id,
+                    struct nm_get_policy *policy)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -398,11 +401,11 @@ _ipmi_nm_get_policy(struct ipmi_intf * intf, uint8_t domain,
 	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
-	memcpy(policy, rsp->data, sizeof (struct nm_get_policy));
+	memcpy(policy, rsp->data, sizeof(struct nm_get_policy));
 	return 0;
 }
 static int
-_ipmi_nm_set_policy(struct ipmi_intf * intf, struct nm_policy *policy)
+_ipmi_nm_set_policy(struct ipmi_intf *intf, struct nm_policy *policy)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -423,7 +426,7 @@ _ipmi_nm_set_policy(struct ipmi_intf * intf, struct nm_policy *policy)
 }
 
 static int
-_ipmi_nm_policy_limiting(struct ipmi_intf * intf, uint8_t domain)
+_ipmi_nm_policy_limiting(struct ipmi_intf *intf, uint8_t domain)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -448,7 +451,7 @@ _ipmi_nm_policy_limiting(struct ipmi_intf * intf, uint8_t domain)
 }
 
 static int
-_ipmi_nm_control(struct ipmi_intf * intf, uint8_t scope,
+_ipmi_nm_control(struct ipmi_intf *intf, uint8_t scope,
                  uint8_t domain, uint8_t policy_id)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -483,7 +486,7 @@ _ipmi_nm_control(struct ipmi_intf * intf, uint8_t scope,
  * @selector: Parameter selector
  */
 static int
-_ipmi_nm_statistics(struct ipmi_intf * intf, uint8_t mode, uint8_t domain,
+_ipmi_nm_statistics(struct ipmi_intf *intf, uint8_t mode, uint8_t domain,
                     uint8_t policy_id, struct nm_statistics *caps)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -505,12 +508,12 @@ _ipmi_nm_statistics(struct ipmi_intf * intf, uint8_t mode, uint8_t domain,
 	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
-	memcpy(caps, rsp->data, sizeof (struct nm_statistics));
+	memcpy(caps, rsp->data, sizeof(struct nm_statistics));
 	return 0;
 }
 
 static int
-_ipmi_nm_reset_stats(struct ipmi_intf * intf, uint8_t mode,
+_ipmi_nm_reset_stats(struct ipmi_intf *intf, uint8_t mode,
                      uint8_t domain, uint8_t policy_id)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -536,7 +539,7 @@ _ipmi_nm_reset_stats(struct ipmi_intf * intf, uint8_t mode,
 }
 
 static int
-_nm_set_range(struct ipmi_intf * intf, uint8_t domain,
+_nm_set_range(struct ipmi_intf *intf, uint8_t domain,
               uint16_t minimum, uint16_t maximum)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -564,7 +567,7 @@ _nm_set_range(struct ipmi_intf * intf, uint8_t domain,
 }
 
 static int
-_ipmi_nm_get_alert(struct ipmi_intf * intf, struct nm_set_alert *alert)
+_ipmi_nm_get_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -582,12 +585,12 @@ _ipmi_nm_get_alert(struct ipmi_intf * intf, struct nm_set_alert *alert)
 	if (chk_nm_rsp(rsp)) {
 		return -1;
 	}
-	memcpy(alert, rsp->data, sizeof (struct nm_set_alert));
+	memcpy(alert, rsp->data, sizeof(struct nm_set_alert));
 	return 0;
 }
 
 static int
-_ipmi_nm_set_alert(struct ipmi_intf * intf, struct nm_set_alert *alert)
+_ipmi_nm_set_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -619,7 +622,7 @@ _ipmi_nm_set_alert(struct ipmi_intf * intf, struct nm_set_alert *alert)
  * This array is filled in for valid thresholds returned.
  */
 static int
-_ipmi_nm_get_thresh(struct ipmi_intf * intf, uint8_t domain,
+_ipmi_nm_get_thresh(struct ipmi_intf *intf, uint8_t domain,
                     uint8_t policy_id, uint16_t *list)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
@@ -645,12 +648,12 @@ _ipmi_nm_get_thresh(struct ipmi_intf * intf, uint8_t domain,
 	if (rsp->data[3] > 1)
 		*list++ = (rsp->data[7] << 8) | rsp->data[6];
 	if (rsp->data[3] > 2)
-		*list   = (rsp->data[9] << 8) | rsp->data[8];
+		*list = (rsp->data[9] << 8) | rsp->data[8];
 	return 0;
 }
 
 static int
-_ipmi_nm_set_thresh(struct ipmi_intf * intf, struct nm_thresh * thresh)
+_ipmi_nm_set_thresh(struct ipmi_intf *intf, struct nm_thresh * thresh)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -693,8 +696,9 @@ _ipmi_nm_set_thresh(struct ipmi_intf * intf, struct nm_thresh * thresh)
  *
  */
 static int
-_ipmi_nm_get_suspend(struct ipmi_intf * intf, uint8_t domain,
-                     uint8_t policy_id, int *count, struct nm_period *periods)
+_ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain,
+                     uint8_t policy_id, int *count,
+                     struct nm_period *periods)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
@@ -717,19 +721,20 @@ _ipmi_nm_get_suspend(struct ipmi_intf * intf, uint8_t domain,
 	}
 	*count = rsp->data[3];
 	for (i = 0; i < rsp->data[3]; i += 3, periods++) {
-		periods->start = rsp->data[4+i];
-		periods->stop  = rsp->data[5+i];
-		periods->repeat = rsp->data[6+i];
+		periods->start = rsp->data[4 + i];
+		periods->stop = rsp->data[5 + i];
+		periods->repeat = rsp->data[6 + i];
 	}
 	return 0;
 }
 
 static int
-_ipmi_nm_set_suspend(struct ipmi_intf * intf, struct nm_suspend *suspend)
+_ipmi_nm_set_suspend(struct ipmi_intf *intf, struct nm_suspend *suspend)
 {
 	struct ipmi_rq req; /* request data to send to the BMC */
 	struct ipmi_rs *rsp;
-	uint8_t msg_data[21]; /* 6 control bytes + 5 suspend periods, 3 bytes per period */
+	uint8_t msg_data[21]; /* 6 control bytes + 5 suspend periods, 3 bytes per
+	                         period */
 	struct nm_period *periods;
 	int i;
 
@@ -740,15 +745,15 @@ _ipmi_nm_set_suspend(struct ipmi_intf * intf, struct nm_suspend *suspend)
 	msg_data[4] = suspend->policy_id;
 	msg_data[5] = suspend->count;
 	for (i = 0, periods = &suspend->period[0];
-	     i < (suspend->count*3);
+	     i < (suspend->count * 3);
 	     i += 3, periods++)
 	{
-		msg_data[6+i] = periods->start;
-		msg_data[7+i] = periods->stop;
-		msg_data[8+i] = periods->repeat;
+		msg_data[6 + i] = periods->start;
+		msg_data[7 + i] = periods->stop;
+		msg_data[8 + i] = periods->repeat;
 	}
 	memset(&req, 0, sizeof(req));
-	req.msg.data_len = 6 + (suspend->count*3);
+	req.msg.data_len = 6 + (suspend->count * 3);
 	req.msg.netfn = IPMI_NETFN_OEM;
 	req.msg.cmd = IPMI_NM_SET_SUSPEND;
 	req.msg.data = msg_data;
@@ -760,10 +765,10 @@ _ipmi_nm_set_suspend(struct ipmi_intf * intf, struct nm_suspend *suspend)
 }
 
 static int
-ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_getcapabilities(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t option;
-	uint8_t domain = 0;  /* default domain of platform */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t trigger = 0; /* default power policy (no trigger) */
 	struct nm_capability caps;
 
@@ -776,22 +781,22 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 			return -1;
 		}
 		switch (option) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			break;
-		case 0x02:  /* Inlet */
+		case 0x02: /* Inlet */
 			trigger = 1;
 			break;
-		case 0x03:  /* Missing power reading */
+		case 0x03: /* Missing power reading */
 			trigger = 2;
 			break;
-		case 0x04:  /* Time after host reset */
+		case 0x04: /* Time after host reset */
 			trigger = 3;
 			break;
-		case 0x05:  /* Boot time policy */
+		case 0x05: /* Boot time policy */
 			trigger = 4;
 			break;
 		default:
@@ -806,33 +811,33 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 		return -1;
 	if (csv_output) {
 		printf("%d,%u,%u,%u,%u,%u,%u,%s\n",
-		       caps.max_settings, caps.max_value,caps.min_value,
-		       caps.min_corr/1000, caps.max_corr/1000,
+		       caps.max_settings, caps.max_value, caps.min_value,
+		       caps.min_corr / 1000, caps.max_corr / 1000,
 		       caps.min_stats, caps.max_stats,
 		       dcmi_val2str(caps.scope & 0xF, nm_domain_vals));
 		return 0;
 	}
 	printf("    power policies:\t\t%d\n", caps.max_settings);
-	switch (trigger&0xF) {
-	case 0:  /* power */
+	switch (trigger & 0xF) {
+	case 0: /* power */
 		printf("    max_power\t\t%7u Watts\n    min_power\t\t%7u Watts\n",
 		       caps.max_value, caps.min_value);
 		break;
-	case 1:  /* Inlet */
+	case 1: /* Inlet */
 		printf("    max_temp\t\t%7u C\n    min_temp\t\t%7u C\n",
 		       caps.max_value, caps.min_value);
 		break;
 	case 2: /* Missing reading time */
 	case 3: /* Time after host reset */
 		printf("    max_time\t\t%7u Secs\n    min_time\t\t%7u Secs\n",
-		       caps.max_value/10, caps.min_value/10);
+		       caps.max_value / 10, caps.min_value / 10);
 		break;
 	case 4: /* boot time policy does not use these values */
 	default:
 		break;
 	}
 	printf("    min_corr\t\t%7u secs\n    max_corr\t\t%7u secs\n",
-	       caps.min_corr/1000, caps.max_corr/1000);
+	       caps.min_corr / 1000, caps.max_corr / 1000);
 	printf("    min_stats\t\t%7u secs\n    max_stats\t\t%7u secs\n",
 	       caps.min_stats, caps.max_stats);
 	printf("    domain scope:\t%s\n",
@@ -841,7 +846,7 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 }
 
 static int
-ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_get_policy(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t option;
 	uint8_t domain = 0; /* default domain of platform */
@@ -860,16 +865,18 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 			return -1;
 		}
 		switch (option) {
-		case 0x03:   /* get domain scope */
+		case 0x03: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			policy.domain |= domain & 0xF;
 			break;
-		case 0x0B:   /* policy id */
+		case 0x0B: /* policy id */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"    Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "    Policy ID must be a positive "
+				        "integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -905,10 +912,10 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 	printf("    Power domain:                             %s\n",
 	       dcmi_val2str(policy.domain & 0xF, nm_domain_vals));
 	printf("    Policy is %s %s%s%s\n",
-	       policy.domain&0x10 ? "enabled" : "not enabled",
-	       policy.domain&0x20 ? "per Domain " : "",
-	       policy.domain&0x40 ? "Globally " : "",
-	       policy.domain&0x80 ? "via DCMI api " : "");
+	       policy.domain & 0x10 ? "enabled" : "not enabled",
+	       policy.domain & 0x20 ? "per Domain " : "",
+	       policy.domain & 0x40 ? "Globally " : "",
+	       policy.domain & 0x80 ? "via DCMI api " : "");
 	printf("    Policy is %sa power control type.\n",
 	       (policy.policy_type & 0x10) ? "" : "not ");
 	printf("    Policy Trigger Type:                      %s\n",
@@ -927,14 +934,14 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 	       policy.stats_period);
 	printf("    Policy retention:                         %s\n",
 	       policy.policy_type & 0x80 ? "volatile" : "non-volatile");
-	if ( (policy_id == 0) && ((policy.domain & 0xf) == 0x3) )
+	if ((policy_id == 0) && ((policy.domain & 0xf) == 0x3))
 		printf("    HW Prot Power domain:                     %s\n",
 		       policy.policy_type & 0x80 ? "Secondary" : "Primary");
 	return 0;
 }
 
 static int
-ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_policy(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t action;
 	uint8_t option;
@@ -949,8 +956,8 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 
 	argv++;
 	argc--;
-	if (!argv[0] ||
-	    0xFF == (action = dcmi_str2val(argv[0], nm_policy_action)))
+	if (!argv[0]
+	    || 0xFF == (action = dcmi_str2val(argv[0], nm_policy_action)))
 	{
 		dcmi_print_strs(nm_policy_action, "Policy commands", LOG_ERR, 0);
 		return -1;
@@ -967,25 +974,26 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 	 */
 	while (--argc > 0) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		if ((option = dcmi_str2val(argv[0], nm_policy_options)) == 0xFF) {
 			dcmi_print_strs(nm_policy_options, "Policy options", LOG_ERR, 0);
 			return -1;
 		}
 		switch (option) {
-		case 0x01:   /* policy enable */
+		case 0x01: /* policy enable */
 			policy.domain |= IPMI_NM_POLICY_ENABLE;
 			break;
-		case 0x02:   /* policy disable */
-			break;   /* value is initialized to zero already */
-		case 0x03:   /* get domain scope */
+		case 0x02: /* policy disable */
+			break; /* value is initialized to zero already */
+		case 0x03: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			policy.domain |= domain & 0xF;
 			break;
-		case 0x04:   /* inlet */
+		case 0x04: /* inlet */
 			if (str2ushort(argv[1], &inlet) < 0) {
 				printf("Inlet Temp value must be 20-45.\n");
 				return -1;
@@ -994,38 +1002,42 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 			policy.policy_limits = 0;
 			policy.trigger_limit = inlet;
 			break;
-		case 0x06:   /* get correction action */
-			if (action == 0x5) break;   /* skip if this is a remove */
+		case 0x06: /* get correction action */
+			if (action == 0x5)
+				break; /* skip if this is a remove */
 			if ((correction = dcmi_str2val(argv[1], nm_correction)) == 0xFF) {
-				dcmi_print_strs(nm_correction, "Correction Actions", LOG_ERR, 0);
+				dcmi_print_strs(nm_correction,
+				                "Correction Actions",
+				                LOG_ERR, 0);
 				return -1;
 			}
 			policy.policy_type |= (correction << 5);
 			break;
-		case 0x07:   /* not implemented */
+		case 0x07: /* not implemented */
 			break;
-		case 0x08:   /* power */
+		case 0x08: /* power */
 			if (str2ushort(argv[1], &power) < 0) {
 				printf("Power limit value must be 0-500.\n");
 				return -1;
 			}
 			policy.policy_limits = power;
 			break;
-		case 0x09:   /* trigger limit */
+		case 0x09: /* trigger limit */
 			if (str2uint(argv[1], &limit) < 0) {
 				printf("Trigger Limit value must be positive integer.\n");
 				return -1;
 			}
 			policy.corr_time = limit;
 			break;
-		case 0x0A:   /* statistics period */
+		case 0x0A: /* statistics period */
 			if (str2ushort(argv[1], &period) < 0) {
-				printf("Statistics Reporting Period must be positive integer.\n");
+				printf("Statistics Reporting Period must be a positive "
+				       "integer.\n");
 				return -1;
 			}
 			policy.stats_period = period;
 			break;
-		case 0x0B:   /* policy ID */
+		case 0x0B: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
 				printf("Policy ID must be a positive integer (0-255)\n");
 				return -1;
@@ -1033,10 +1045,10 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 			policy.policy_id = policy_id;
 			have_policy_id = TRUE;
 			break;
-		case 0x0C:   /* volatile */
+		case 0x0C: /* volatile */
 			policy.policy_type |= 0x80;
 			break;
-		case 0x0D:   /* cores_off, number of cores to disable at boot time */
+		case 0x0D: /* cores_off, number of cores to disable at boot time */
 			policy.policy_type |= 4;
 			if (str2ushort(argv[1], &cores) < 0) {
 				printf("number of cores disabled must be 1-127.\n");
@@ -1066,7 +1078,7 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 		                "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
-	if (action == 0x04)   /* add */
+	if (action == 0x04) /* add */
 		policy.policy_type |= 0x10;
 	if (_ipmi_nm_set_policy(intf, &policy))
 		return -1;
@@ -1075,36 +1087,39 @@ ipmi_nm_policy(struct ipmi_intf * intf, int argc, char **argv)
 /* end policy */
 
 static int
-ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_control(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t action;
-	uint8_t scope = 0;   /* default control scope of global */
-	uint8_t domain = 0;  /* default domain of platform */
+	uint8_t scope = 0; /* default control scope of global */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 
 	argv++;
 	argc--;
 	/* nm_ctl_cmds returns 0 for disable, 1 for enable */
-	if (!argv[0] ||
-	    0xFF == (action = dcmi_str2val(argv[0], nm_ctl_cmds)))
+	if (!argv[0]
+	    || 0xFF == (action = dcmi_str2val(argv[0], nm_ctl_cmds)))
 	{
-		dcmi_print_strs(nm_ctl_cmds, "Control parameters:", LOG_ERR, 0);
-		dcmi_print_strs(nm_ctl_domain, "control Scope (required):", LOG_ERR, 0);
+		dcmi_print_strs(nm_ctl_cmds, "Control parameters:",
+		                LOG_ERR, 0);
+		dcmi_print_strs(nm_ctl_domain, "control Scope (required):",
+		                LOG_ERR, 0);
 		return -1;
 	}
 	argv++;
 	while (--argc) {
 		/* nm_ctl_domain returns correct bit field except for action */
-		if (!argv[0] ||
-		    0xFF == (scope = dcmi_str2val(argv[0], nm_ctl_domain)))
+		if (!argv[0]
+		    || 0xFF == (scope = dcmi_str2val(argv[0], nm_ctl_domain)))
 		{
-			dcmi_print_strs(nm_ctl_domain,
-							"Control Scope (required):", LOG_ERR, 0);
+			dcmi_print_strs(nm_ctl_domain, "Control Scope (required):",
+			                LOG_ERR, 0);
 			return -1;
 		}
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		if (scope == 0x02) { /* domain */
 			if ((domain = dcmi_str2val(argv[0], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
@@ -1112,7 +1127,8 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 			}
 		} else if (scope == 0x04) { /* per_policy */
 			if (str2uchar(argv[0], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -1126,47 +1142,49 @@ ipmi_nm_control(struct ipmi_intf * intf, int argc, char **argv)
 		                "Missing policy_id parameter:", LOG_ERR, 0);
 		return -1;
 	}
-	if (_ipmi_nm_control(intf, scope|(action&1), domain, policy_id) < 0 )
+	if (_ipmi_nm_control(intf, scope | (action & 1), domain, policy_id) < 0)
 		return -1;
 	return 0;
 }
 
 static int
-ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_get_statistics(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t mode = 0;
 	uint8_t option;
-	uint8_t domain = 0;   /* default domain of platform */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
-	int     policy_mode = 0;
-	char   *units = "";
+	int policy_mode = 0;
+	char *units = "";
 	struct nm_statistics stats;
 
 	argv++;
-	if (!argv[0] ||
-	    0xFF == (mode = dcmi_str2val(argv[0], nm_stats_mode)))
+	if (!argv[0]
+	    || 0xFF == (mode = dcmi_str2val(argv[0], nm_stats_mode)))
 	{
 		dcmi_print_strs(nm_stats_mode, "Statistics commands", LOG_ERR, 0);
 		return -1;
 	}
 	while (--argc) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		if ((option = dcmi_str2val(argv[0], nm_stats_opts)) == 0xFF) {
 			dcmi_print_strs(nm_stats_opts, "Control Scope options", LOG_ERR, 0);
 			return -1;
 		}
 		switch (option) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			break;
-		case 0x02:   /* policy ID */
+		case 0x02: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -1256,38 +1274,40 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 }
 
 static int
-ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_reset_statistics(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t mode;
 	uint8_t option;
-	uint8_t domain = 0;   /* default domain of platform */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 
 	argv++;
-	if (!argv[0] ||
-	    0xFF == (mode = dcmi_str2val(argv[0], nm_reset_mode)))
+	if (!argv[0]
+	    || 0xFF == (mode = dcmi_str2val(argv[0], nm_reset_mode)))
 	{
 		dcmi_print_strs(nm_reset_mode, "Reset Statistics Modes:", LOG_ERR, 0);
 		return -1;
 	}
 	while (--argc) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		if ((option = dcmi_str2val(argv[0], nm_stats_opts)) == 0xFF) {
 			dcmi_print_strs(nm_stats_opts, "Reset Scope options", LOG_ERR, 0);
 			return -1;
 		}
 		switch (option) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			break;
-		case 0x02:   /* policy ID */
+		case 0x02: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -1309,7 +1329,7 @@ ipmi_nm_reset_statistics(struct ipmi_intf * intf, int argc, char **argv)
 }
 
 static int
-ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_set_range(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t domain = 0;
 	uint8_t param;
@@ -1325,7 +1345,7 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 			return -1;
 		}
 		switch (param) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
@@ -1333,13 +1353,13 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0x02: /* min */
 			if (str2ushort(argv[1], &minimum) < 0) {
-				lprintf(LOG_ERR,"Power minimum must be a positive integer.\n");
+				lprintf(LOG_ERR, "Power minimum must be a positive integer.\n");
 				return -1;
 			}
 			break;
 		case 0x03: /* max */
 			if (str2ushort(argv[1], &maximum) < 0) {
-				lprintf(LOG_ERR,"Power maximum must be a positive integer.\n");
+				lprintf(LOG_ERR, "Power maximum must be a positive integer.\n");
 				return -1;
 			}
 			break;
@@ -1350,8 +1370,8 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 		argv++;
 	}
 	if ((minimum == 0xFFFF) || (maximum == 0xFFFF)) {
-		lprintf(LOG_ERR,"Missing parameters: nm power range min <minimum> "
-		                                                   "max <maximum>.\n");
+		lprintf(LOG_ERR, "Missing parameters: nm power range min <minimum> "
+		                 "max <maximum>.\n");
 		return -1;
 	}
 	if (_nm_set_range(intf, domain, minimum, maximum) < 0)
@@ -1360,7 +1380,7 @@ ipmi_nm_set_range(struct ipmi_intf * intf, int argc, char **argv)
 }
 
 static int
-ipmi_nm_get_alert(struct ipmi_intf * intf)
+ipmi_nm_get_alert(struct ipmi_intf *intf)
 {
 	struct nm_set_alert alert;
 
@@ -1392,7 +1412,7 @@ ipmi_nm_get_alert(struct ipmi_intf * intf)
 }
 
 static int
-ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_alert(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t param;
 	uint8_t action;
@@ -1403,8 +1423,8 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 
 	argv++;
 	argc--;
-	if (!argv[0] ||
-	    0xFF == (action = dcmi_str2val(argv[0], nm_alert_opts)))
+	if (!argv[0]
+	    || 0xFF == (action = dcmi_str2val(argv[0], nm_alert_opts)))
 	{
 		dcmi_print_strs(nm_alert_opts, "Alert commands", LOG_ERR, 0);
 		return -1;
@@ -1415,7 +1435,8 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 	memset(&alert, 0, sizeof(alert));
 	while (--argc) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		if ((param = dcmi_str2val(argv[0], nm_set_alert_param)) == 0xFF) {
 			dcmi_print_strs(nm_set_alert_param,
 			                "Set alert Parameters:", LOG_ERR, 0);
@@ -1424,24 +1445,27 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 		switch (param) {
 		case 0x01: /* channel */
 			if (str2uchar(argv[1], &chan) < 0) {
-				lprintf(LOG_ERR,"Alert Lan chan must be a positive integer.\n");
+				lprintf(LOG_ERR,
+				        "Alert Lan chan must be a positive integer.\n");
 				return -1;
 			}
-			if (action == 0x03)  /* Clear */
-				chan |= 0x80;   /* deactivate alert receiver */
+			if (action == 0x03) /* Clear */
+				chan |= 0x80; /* deactivate alert receiver */
 			break;
-		case 0x02:  /* dest */
+		case 0x02: /* dest */
 			if (str2uchar(argv[1], &dest) < 0) {
-				lprintf(LOG_ERR,"Alert Destination must be a positive integer.\n");
+				lprintf(LOG_ERR,
+				        "Alert Destination must be a positive integer.\n");
 				return -1;
 			}
 			break;
-		case 0x03:  /* string number */
+		case 0x03: /* string number */
 			if (str2uchar(argv[1], &string) < 0) {
-				lprintf(LOG_ERR,"Alert String # must be a positive integer.\n");
+				lprintf(LOG_ERR,
+				        "Alert String # must be a positive integer.\n");
 				return -1;
 			}
-			string |= 0x80;   /* set string select flag */
+			string |= 0x80; /* set string select flag */
 			break;
 		}
 		argc--;
@@ -1452,7 +1476,8 @@ ipmi_nm_alert(struct ipmi_intf * intf, int argc, char **argv)
 		                "Must set alert chan and dest params.", LOG_ERR, 0);
 		return -1;
 	}
-	if (string == 0xFF) string = 0;
+	if (string == 0xFF)
+		string = 0;
 	alert.chan = chan;
 	alert.dest = dest;
 	alert.string = string;
@@ -1484,11 +1509,11 @@ ipmi_nm_get_thresh(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 }
 
 static int
-ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_thresh(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t option;
 	uint8_t action;
-	uint8_t domain = 0;   /* default domain of platform */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 	struct nm_thresh thresh;
@@ -1506,10 +1531,11 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 	memset(&thresh, 0, sizeof(thresh));
 	while (--argc) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		option = dcmi_str2val(argv[0], nm_thresh_param);
 		switch (option) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
@@ -1517,9 +1543,10 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 			argc--;
 			argv++;
 			break;
-		case 0x02:   /* policy ID */
+		case 0x02: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -1528,11 +1555,15 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 			break;
 		case 0xFF:
 			if (i > 2) {
-				lprintf(LOG_ERR,"Set Threshold requires 1, 2, or 3 threshold integer values.\n");
+				lprintf(LOG_ERR, "Set Threshold requires 1, 2, or 3 "
+				                 "threshold integer values.\n");
 				return -1;
 			}
 			if (str2ushort(argv[0], &thresh.thresholds[i++]) < 0) {
-				lprintf(LOG_ERR,"threshold value %d count must be a positive integer.\n", i);
+				lprintf(LOG_ERR,
+				        "threshold value %d count must be a positive "
+				        "integer.\n",
+				        i);
 				return -1;
 			}
 		default:
@@ -1557,16 +1588,19 @@ ipmi_nm_thresh(struct ipmi_intf * intf, int argc, char **argv)
 static inline int
 click2hour(int click)
 {
-	if ((click*6) < 60) return 0;
-	return ((click*6)/60);
+	if ((click * 6) < 60)
+		return 0;
+	return ((click * 6) / 60);
 }
 
 static inline int
 click2min(int click)
 {
-	if (!click) return 0;
-	if ((click*6) < 60) return click*6;
-	return (click*6)%60;
+	if (!click)
+		return 0;
+	if ((click * 6) < 60)
+		return click * 6;
+	return (click * 6) % 60;
 }
 
 static int
@@ -1583,32 +1617,32 @@ ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 		return -1;
 
 	printf("    Suspend Policy domain:                    %s\n",
-			dcmi_val2str(domain, nm_domain_vals));
-	printf("    Suspend Policy Policy ID:                 %d\n",
-			policy_id);
+	       dcmi_val2str(domain, nm_domain_vals));
+	printf("    Suspend Policy Policy ID:                 %d\n", policy_id);
 	if (!count) {
 		printf("    No suspend Periods.\n");
 		return 0;
 	}
 	for (i = 0; i < count; i++) {
-		printf("    Suspend Period %d:                         %02d:%02d to %02d:%02d",
+		printf("    Suspend Period %d:                         %02d:%02d to "
+		       "%02d:%02d",
 		       i, click2hour(periods[i].start), click2min(periods[i].start),
 		       click2hour(periods[i].stop), click2min(periods[i].stop));
 		if (periods[i].repeat)
 			printf(", ");
 		for (j = 0; j < 7; j++)
-			printf("%s",  (periods[i].repeat >> j)&1 ? days[j] : "");
+			printf("%s", (periods[i].repeat >> j) & 1 ? days[j] : "");
 		printf("\n");
 	}
 	return 0;
 }
 
 static int
-ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t option;
 	uint8_t action;
-	uint8_t domain = 0;   /* default domain of platform */
+	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 	uint8_t count = 0;
@@ -1618,8 +1652,8 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 	argv++;
 	argc--;
 	/* set or get */
-	if (!argv[0] || argc < 3 ||
-	    0xFF == (action = dcmi_str2val(argv[0], nm_suspend_cmds)))
+	if (!argv[0] || argc < 3
+	    || 0xFF == (action = dcmi_str2val(argv[0], nm_suspend_cmds)))
 	{
 		dcmi_print_strs(nm_suspend_cmds, "Suspend commands", LOG_ERR, 0);
 		return -1;
@@ -1627,10 +1661,11 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 	memset(&suspend, 0, sizeof(suspend));
 	while (--argc > 0) {
 		argv++;
-		if (!argv[0]) break;
+		if (!argv[0])
+			break;
 		option = dcmi_str2val(argv[0], nm_thresh_param);
 		switch (option) {
-		case 0x01:   /* get domain scope */
+		case 0x01: /* get domain scope */
 			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
 				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
 				return -1;
@@ -1638,31 +1673,37 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
 			argc--;
 			argv++;
 			break;
-		case 0x02:   /* policy ID */
+		case 0x02: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
-				lprintf(LOG_ERR,"Policy ID must be a positive integer (0-255)\n");
+				lprintf(LOG_ERR,
+				        "Policy ID must be a positive integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
 			argc--;
 			argv++;
 			break;
-		case 0xFF:   /* process periods */
+		case 0xFF: /* process periods */
 			for (i = 0; count < IPMI_NM_SUSPEND_PERIOD_MAX; i += 3, count++) {
 				if (argc < 3) {
-					lprintf(LOG_ERR,"Error: suspend period requires a start, stop, and repeat values.\n");
+					lprintf(LOG_ERR, "Error: suspend period requires a "
+					                 "start, stop, and repeat values.\n");
 					return -1;
 				}
-				if (str2uchar(argv[i+0], &suspend.period[count].start) < 0) {
-					lprintf(LOG_ERR,"suspend start value %d must be 0-239.\n", count);
+				if (str2uchar(argv[i + 0], &suspend.period[count].start) < 0) {
+					lprintf(LOG_ERR, "suspend start value %d must be 0-239.\n",
+					        count);
 					return -1;
 				}
-				if (str2uchar(argv[i+1], &suspend.period[count].stop) < 0) {
-					lprintf(LOG_ERR,"suspend stop value %d  must be 0-239.\n", count);
+				if (str2uchar(argv[i + 1], &suspend.period[count].stop) < 0) {
+					lprintf(LOG_ERR, "suspend stop value %d  must be 0-239.\n",
+					        count);
 					return -1;
 				}
-				if (str2uchar(argv[i+2], &suspend.period[count].repeat) < 0) {
-					lprintf(LOG_ERR,"suspend repeat value %d unable to convert.\n", count);
+				if (str2uchar(argv[i + 2], &suspend.period[count].repeat) < 0) {
+					lprintf(LOG_ERR,
+					        "suspend repeat value %d unable to convert.\n",
+					        count);
 					return -1;
 				}
 				argc -= 3;
@@ -1700,13 +1741,12 @@ ipmi_nm_suspend(struct ipmi_intf * intf, int argc, char **argv)
  * @argv:   argument vector
  */
 int
-ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
+ipmi_nm_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct nm_discover disc;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		dcmi_print_strs(nm_cmd_vals,
-		                "Node Manager Interface commands",
+		dcmi_print_strs(nm_cmd_vals, "Node Manager Interface commands",
 		                LOG_ERR, 0);
 		return -1;
 	}
@@ -1719,7 +1759,7 @@ ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
 		printf("    Node Manager Version %s\n",
 		       dcmi_val2str(disc.nm_version, nm_version_vals));
 		printf("    revision %d.%d%d  patch version %d\n", disc.major_rev,
-		       disc.minor_rev>>4, disc.minor_rev&0xf, disc.patch_version);
+		       disc.minor_rev >> 4, disc.minor_rev & 0xf, disc.patch_version);
 		break;
 	/* capability */
 	case 0x01:

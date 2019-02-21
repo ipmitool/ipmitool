@@ -523,7 +523,8 @@ ipmi_dcmi_prnt_oobDiscover(struct ipmi_intf * intf)
 {
 # ifndef IPMI_INTF_LANPLUS
 	lprintf(LOG_ERR,
-			"DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.");
+	        "DCMI Discovery is available only when "
+	        "IPMI v2.0 (lanplus) support is compiled in.");
 	return (-1);
 # else
 	struct ipmi_session_params *p;
@@ -1692,7 +1693,9 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 		/* no valid options */
 		return -1;
 	}
-	lprintf(LOG_INFO, "DCMI OUT Limit=%d Correction=%d Action=%d Sample=%d\n", val.limit, val.correction, val.action, val.sample);
+	lprintf(LOG_INFO,
+	        "DCMI OUT Limit=%d Correction=%d Action=%d Sample=%d\n",
+	        val.limit, val.correction, val.action, val.sample);
 
 	msg_data[0] = val.grp_id; /* Group Extension Identification */
 	msg_data[1] = 0x00; /* reserved */
@@ -1976,7 +1979,8 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 			                "Set thermalpolicy instance parameters: "
 			                "<volatile/nonvolatile/disabled> "
 			                "<poweroff/nopoweroff/disabled> "
-			                "<sel/nosel/disabled> <templimitByte> <exceptionTime>",
+			                "<sel/nosel/disabled> <templimitByte> "
+			                "<exceptionTime>",
 			                LOG_ERR, 0);
 			return -1;
 		}
@@ -1993,9 +1997,15 @@ ipmi_dcmi_thermalpolicy(struct ipmi_intf * intf, int argc, char **argv)
 			return (-1);
 		}
 
-		persistanceFlag = (uint8_t)dcmi_str2val(argv[4], dcmi_thermalpolicy_set_parameters_vals);
-		actionHardPowerOff = (uint8_t)dcmi_str2val(argv[5], dcmi_thermalpolicy_set_parameters_vals);
-		actionLogToSEL = (uint8_t)dcmi_str2val(argv[6], dcmi_thermalpolicy_set_parameters_vals);
+		persistanceFlag =
+			(uint8_t)dcmi_str2val(argv[4],
+			                      dcmi_thermalpolicy_set_parameters_vals);
+		actionHardPowerOff =
+			(uint8_t)dcmi_str2val(argv[5],
+			                      dcmi_thermalpolicy_set_parameters_vals);
+		actionLogToSEL =
+			(uint8_t)dcmi_str2val(argv[6],
+			                      dcmi_thermalpolicy_set_parameters_vals);
 
 		if (str2uchar(argv[7], &tempLimit) != 0) {
 			lprintf(LOG_ERR,
@@ -2184,7 +2194,8 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 				return (-1);
 			}
 			rsp = ipmi_dcmi_setconfparam(intf,
-			                             dcmi_str2val(argv[1], dcmi_conf_param_vals),
+			                             dcmi_str2val(argv[1],
+			                                          dcmi_conf_param_vals),
 			                             tmp_val);
 		}
 		if (chk_rsp(rsp)) {
