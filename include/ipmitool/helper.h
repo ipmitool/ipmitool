@@ -119,6 +119,7 @@ void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
 #define IS_SET(v, b) ((v) & (1 << (b)))
+#define ERR_OUT do { rc = -1; goto out; } while(0)
 
 /**
  * Free the memory and clear the pointer.
