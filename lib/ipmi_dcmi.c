@@ -130,7 +130,7 @@ const struct dcmi_cmd dcmi_optional_platform_capabilities[] = {
 	DCMI_CMD_END(0xFF)
 };
 
-/* access capabilties */
+/* access capabilities */
 const struct dcmi_cmd dcmi_management_access_capabilities[] = {
 	{ 0x01, "In-band KCS channel available", "" },
 	{ 0x02, "Out-of-band serial TMODE available", "" },
@@ -908,19 +908,19 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 		/* loop through each of the entries in the first byte from the
 		 * struct
 		 */
-		printf("\n         Mandatory platform capabilties\n");
+		printf("\n         Mandatory platform capabilities\n");
 		display_capabilities_attributes(dcmi_mandatory_platform_capabilities,
 		                                cape.data_byte1);
 		/* loop through each of the entries in the second byte from the
 		 * struct
 		 */
-		printf("\n         Optional platform capabilties\n");
+		printf("\n         Optional platform capabilities\n");
 		display_capabilities_attributes(dcmi_optional_platform_capabilities,
 		                                cape.data_byte2);
 		/* loop through each of the entries in the third byte from the
 		 * struct
 		 */
-		printf("\n         Managebility access capabilties\n");
+		printf("\n         Managebility access capabilities\n");
 		display_capabilities_attributes(dcmi_management_access_capabilities,
 		                                cape.data_byte3);
 		break;
