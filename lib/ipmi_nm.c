@@ -20,6 +20,8 @@
  * according to the corresponding specification.
  */
 
+#include <stdbool.h>
+
 #include <ipmitool/ipmi_dcmi.h>
 #include <ipmitool/ipmi_nm.h>
 #include <ipmitool/helper.h>
@@ -313,8 +315,8 @@ chk_nm_rsp(struct ipmi_rs *rsp)
 		        val2str(rsp->ccode, completion_code_vals), rsp->ccode);
 		return 1;
 	}
-	/* check to make sure this is a DCMI firmware */
-	if (rsp->data[0] != 0x57) {
+	/* check to make sure this is an NM firmware */
+	if (!nm_check_id(rsp->data)) {
 		printf("\n    A valid NM command was not returned! (%x)", rsp->data[0]);
 		return 1;
 	}
@@ -329,9 +331,7 @@ _ipmi_nm_discover(struct ipmi_intf *intf, struct nm_discover *disc)
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[3]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_OEM;
 	req.msg.cmd = IPMI_NM_GET_VERSION;
@@ -361,9 +361,7 @@ _ipmi_nm_getcapabilities(struct ipmi_intf *intf, uint8_t domain,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[5]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	msg_data[4] = trigger; /* power control policy or trigger */
 	memset(&req, 0, sizeof(req));
@@ -387,9 +385,7 @@ _ipmi_nm_get_policy(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[5]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	msg_data[4] = policy_id;
 	memset(&req, 0, sizeof(req));
@@ -415,9 +411,7 @@ _ipmi_nm_set_policy(struct ipmi_intf *intf, struct nm_policy *policy)
 	req.msg.cmd = IPMI_NM_SET_POLICY;
 	req.msg.data = (uint8_t *)policy;
 	req.msg.data_len = sizeof(struct nm_policy);
-	policy->intel_id[0] = 0x57;
-	policy->intel_id[1] = 1;
-	policy->intel_id[2] = 0;
+	nm_set_id(policy->intel_id);
 	rsp = intf->sendrecv(intf, &req);
 	if (chk_nm_rsp(rsp)) {
 		return -1;
@@ -435,9 +429,7 @@ _ipmi_nm_policy_limiting(struct ipmi_intf *intf, uint8_t domain)
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_OEM;
 	req.msg.cmd = IPMI_NM_LIMITING;
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	req.msg.data = msg_data;
 	req.msg.data_len = 4;
@@ -458,9 +450,7 @@ _ipmi_nm_control(struct ipmi_intf *intf, uint8_t scope,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[6]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = scope;
 	msg_data[4] = domain;
 	msg_data[5] = policy_id;
@@ -493,9 +483,7 @@ _ipmi_nm_statistics(struct ipmi_intf *intf, uint8_t mode, uint8_t domain,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[6]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = mode;
 	msg_data[4] = domain;
 	msg_data[5] = policy_id;
@@ -520,9 +508,7 @@ _ipmi_nm_reset_stats(struct ipmi_intf *intf, uint8_t mode,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[6]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = mode;
 	msg_data[4] = domain;
 	msg_data[5] = policy_id;
@@ -546,9 +532,7 @@ _nm_set_range(struct ipmi_intf *intf, uint8_t domain,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[8]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	msg_data[4] = minimum & 0xFF;
 	msg_data[5] = minimum >> 8;
@@ -573,9 +557,7 @@ _ipmi_nm_get_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[3]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_OEM;
 	req.msg.cmd = IPMI_NM_GET_ALERT_DS;
@@ -596,9 +578,7 @@ _ipmi_nm_set_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[6]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = alert->chan;
 	msg_data[4] = alert->dest;
 	msg_data[5] = alert->string;
@@ -629,9 +609,7 @@ _ipmi_nm_get_thresh(struct ipmi_intf *intf, uint8_t domain,
 	struct ipmi_rs *rsp;
 	uint8_t msg_data[5]; /* 'raw' data to be sent to the BMC */
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	msg_data[4] = policy_id;
 	memset(&req, 0, sizeof(req));
@@ -660,9 +638,7 @@ _ipmi_nm_set_thresh(struct ipmi_intf *intf, struct nm_thresh * thresh)
 	uint8_t msg_data[IPMI_NM_SET_THRESH_LEN]; /* 'raw' data to be sent to the BMC */
 
 	memset(&msg_data, 0, sizeof(msg_data));
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = thresh->domain;
 	msg_data[4] = thresh->policy_id;
 	msg_data[5] = thresh->count;
@@ -705,9 +681,7 @@ _ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain,
 	uint8_t msg_data[5]; /* 'raw' data to be sent to the BMC */
 	int i;
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = domain;
 	msg_data[4] = policy_id;
 	memset(&req, 0, sizeof(req));
@@ -738,9 +712,7 @@ _ipmi_nm_set_suspend(struct ipmi_intf *intf, struct nm_suspend *suspend)
 	struct nm_period *periods;
 	int i;
 
-	msg_data[0] = 0x57;
-	msg_data[1] = 1;
-	msg_data[2] = 0;
+	nm_set_id(msg_data);
 	msg_data[3] = suspend->domain;
 	msg_data[4] = suspend->policy_id;
 	msg_data[5] = suspend->count;

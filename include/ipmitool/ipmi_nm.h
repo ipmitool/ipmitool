@@ -19,6 +19,7 @@
 #pragma once
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/helper.h>
 
 /* Configuration and control commands per
  * Intel Intelligent Power Node Manager 2.0
@@ -40,6 +41,9 @@
 #define IPMI_NM_SET_ALERT_DS 0xCE
 #define IPMI_NM_GET_ALERT_DS 0xCF
 #define IPMI_NM_LIMITING 0xF2
+
+/* Node Manager identification */
+#define IPMI_NM_ID 0x000157 /* Three bytes */
 
 /* Node Manager Policy Control Flags */
 #define IPMI_NM_GLOBAL_ENABLE 0x01
@@ -169,3 +173,13 @@ struct nm_suspend {
 } __attribute__ ((packed));
 
 int ipmi_nm_main(struct ipmi_intf *intf, int argc, char **argv);
+
+static inline void nm_set_id(void *buf)
+{
+	htoipmi24(IPMI_NM_ID, buf);
+}
+
+static inline bool nm_check_id(void *buf)
+{
+	return IPMI_NM_ID == ipmi24toh(buf);
+}
