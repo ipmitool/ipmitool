@@ -2252,7 +2252,8 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 			retry = 0;
 			if (req.msg.netfn == IPMI_NETFN_PICMG
 					&& req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
-					&& (!isValidSize)) {
+					&& (!isValidSize)
+					&& (rsp->ccode != IPMI_CC_REQ_DATA_INV_LENGTH)) {
 				lprintf(LOG_INFO,
 						"Buffer length is now considered valid");
 				isValidSize = TRUE;
