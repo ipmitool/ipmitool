@@ -24,23 +24,22 @@
 
 /* DCMI commands per DCMI 1.5 SPEC */
 
-#define IPMI_DCMI                   0xDC  /* Group Extension Identification */
-#define IPMI_DCMI_COMPAT            0x01
-#define IPMI_DCMI_GETRED            0x02
-#define IPMI_DCMI_GETLMT            0x03
-#define IPMI_DCMI_SETLMT            0x04
-#define IPMI_DCMI_PWRACT            0x05
-#define IPMI_DCMI_GETASSET          0x06
-#define IPMI_DCMI_SETASSET          0x08
-#define IPMI_DCMI_GETMNGCTRLIDS     0x09
-#define IPMI_DCMI_SETMNGCTRLIDS     0x0A
-#define IPMI_DCMI_SETTERMALLIMIT    0x0B
-#define IPMI_DCMI_GETTERMALLIMIT    0x0C
-#define IPMI_DCMI_GETSNSR           0x07
-#define IPMI_DCMI_PWRMGT            0x08
-#define IPMI_DCMI_GETTEMPRED        0x10
-#define IPMI_DCMI_SETCONFPARAM      0x12
-#define IPMI_DCMI_GETCONFPARAM      0x13
+#define IPMI_DCMI                   0xDC /* Group Extension Identification */
+#define IPMI_DCMI_GET_CAPS          0x01 /* Get Capabilities */
+#define IPMI_DCMI_GET_PWR_READING   0x02 /* Get Power Reading */
+#define IPMI_DCMI_GET_PWR_LIM       0x03 /* Get Power Limit */
+#define IPMI_DCMI_SET_PWR_LIM       0x04 /* Set Power Limit */
+#define IPMI_DCMI_ACT_PWR_LIM       0x05 /* Activate/Deactivate Power Limit */
+#define IPMI_DCMI_GET_ASSET_TAG     0x06 /* Get Asset Tag */
+#define IPMI_DCMI_SET_ASSET_TAG     0x08 /* Set Asset Tag */
+#define IPMI_DCMI_GET_MC_ID         0x09 /* Get Management Controller ID String */
+#define IPMI_DCMI_SET_MC_ID         0x0A /* Set Management Controller ID String */
+#define IPMI_DCMI_SET_THERM_LIM     0x0B /* Set Thermal Limit */
+#define IPMI_DCMI_GET_THERM_LIM     0x0C /* Get Thermal Limit */
+#define IPMI_DCMI_GET_SENSOR_INFO   0x07 /* Get DCMI Sensor Info */
+#define IPMI_DCMI_GET_TEMP          0x10 /* Get Temperature Readings */
+#define IPMI_DCMI_SET_CONF_PARAM    0x12 /* Set DCMI Configuration Parameters */
+#define IPMI_DCMI_GET_CONF_PARAM    0x13 /* Get DCMI Configuration Parameters */
 
 #define IPMI_DCMI_CONFORM           0x0001
 #define IPMI_DCMI_1_1_CONFORM       0x0101

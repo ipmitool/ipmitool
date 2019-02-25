@@ -493,7 +493,7 @@ ipmi_dcmi_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP; /* 0x2C per 1.0 spec */
-	req.msg.cmd = IPMI_DCMI_COMPAT; /* 0x01 per 1.0 spec */
+	req.msg.cmd = IPMI_DCMI_GET_CAPS; /* 0x01 per 1.0 spec */
 	req.msg.data = msg_data; /* 0xDC 0x01 or the msg_data above */
 	req.msg.data_len = 2; /* How many times does req.msg.data need to read */
 
@@ -753,7 +753,7 @@ ipmi_dcmi_getassettag(struct ipmi_intf * intf, uint8_t offset, uint8_t length)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP; /* 0x2C per 1.1 spec */
-	req.msg.cmd = IPMI_DCMI_GETASSET; /* 0x01 per 1.1 spec */
+	req.msg.cmd = IPMI_DCMI_GET_ASSET_TAG; /* 0x01 per 1.1 spec */
 	req.msg.data = msg_data; /* msg_data above */
 	req.msg.data_len = 3; /* How many times does req.msg.data need to read */
 	return intf->sendrecv(intf, &req);
@@ -832,7 +832,7 @@ ipmi_dcmi_setassettag(struct ipmi_intf * intf, uint8_t offset, uint8_t length,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP; /* 0x2C per 1.1 spec */
-	req.msg.cmd = IPMI_DCMI_SETASSET; /* 0x08 per 1.1 spec */
+	req.msg.cmd = IPMI_DCMI_SET_ASSET_TAG; /* 0x08 per 1.1 spec */
 	req.msg.data = msg_data; /* msg_data above */
 	/* How many times does req.msg.data need to read */
 	req.msg.data_len = length + 3;
@@ -898,7 +898,7 @@ ipmi_dcmi_getmngctrlids(struct ipmi_intf * intf, uint8_t offset, uint8_t length)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP; /* 0x2C per 1.1 spec */
-	req.msg.cmd = IPMI_DCMI_GETMNGCTRLIDS; /* 0x09 per 1.1 spec */
+	req.msg.cmd = IPMI_DCMI_GET_MC_ID; /* 0x09 per 1.1 spec */
 	req.msg.data = msg_data; /* msg_data above */
 	/* How many times does req.msg.data need to read */
 	req.msg.data_len = 3;
@@ -966,7 +966,7 @@ ipmi_dcmi_setmngctrlids(struct ipmi_intf * intf, uint8_t offset, uint8_t length,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP; /* 0x2C per 1.1 spec */
-	req.msg.cmd = IPMI_DCMI_SETMNGCTRLIDS; /* 0x0A per 1.1 spec */
+	req.msg.cmd = IPMI_DCMI_SET_MC_ID; /* 0x0A per 1.1 spec */
 	req.msg.data = msg_data; /* msg_data above */
 	/* How many times does req.msg.data need to read */
 	req.msg.data_len = 3 + length;
@@ -1049,7 +1049,7 @@ ipmi_dcmi_discvry_snsr(struct ipmi_intf * intf, uint8_t isnsr, uint8_t offset)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETSNSR;
+	req.msg.cmd = IPMI_DCMI_GET_SENSOR_INFO;
 	req.msg.data = msg_data; /* Contents above */
 	req.msg.data_len = 5; /* how many times does req.msg.data need to read */
 
@@ -1130,7 +1130,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETRED; /* Get power reading */
+	req.msg.cmd = IPMI_DCMI_GET_PWR_READING; /* Get power reading */
 	req.msg.data = msg_data; /* msg_data above */
 	req.msg.data_len = 4; /* how many times does req.msg.data need to read */
 
@@ -1190,7 +1190,7 @@ ipmi_dcmi_getthermalpolicy(struct ipmi_intf * intf, uint8_t entityID,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETTERMALLIMIT; /* Get thermal policy reading */
+	req.msg.cmd = IPMI_DCMI_GET_THERM_LIM; /* Get thermal policy reading */
 	req.msg.data = msg_data; /* msg_data above */
 	req.msg.data_len = 3; /* how many times does req.msg.data need to read */
 
@@ -1250,7 +1250,7 @@ ipmi_dcmi_setthermalpolicy(struct ipmi_intf * intf,
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
 	/* Get thermal policy reading */
-	req.msg.cmd = IPMI_DCMI_SETTERMALLIMIT;
+	req.msg.cmd = IPMI_DCMI_SET_THERM_LIM;
 	req.msg.data = msg_data; /* msg_data above */
 	/* how many times does req.msg.data need to read */
 	req.msg.data_len = 7;
@@ -1288,7 +1288,7 @@ ipmi_dcmi_get_temp_readings(struct ipmi_intf * intf,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETTEMPRED; /* Get thermal policy reading */
+	req.msg.cmd = IPMI_DCMI_GET_TEMP;
 	req.msg.data = msg_data; /* msg_data above */
 	/* how many times does req.msg.data need to read */
 	req.msg.data_len = 5;
@@ -1362,7 +1362,7 @@ ipmi_dcmi_getconfparam(struct ipmi_intf * intf, int param_selector)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETCONFPARAM; /* Get DCMI Config Parameters */
+	req.msg.cmd = IPMI_DCMI_GET_CONF_PARAM;
 	req.msg.data = msg_data; /* Contents above */
 	/* how many times does req.msg.data need to read */
 	req.msg.data_len = 3;
@@ -1443,7 +1443,7 @@ ipmi_dcmi_setconfparam(struct ipmi_intf * intf, uint8_t param_selector,
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_SETCONFPARAM; /* Set DCMI Config Parameters */
+	req.msg.cmd = IPMI_DCMI_SET_CONF_PARAM;
 	req.msg.data = msg_data; /* Contents above */
 	if (param_selector > 3) {
 		/* One bite more */
@@ -1478,7 +1478,7 @@ struct ipmi_rs * ipmi_dcmi_pwr_glimit(struct ipmi_intf * intf)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_GETLMT; /* Get power limit */
+	req.msg.cmd = IPMI_DCMI_GET_PWR_LIM; /* Get power limit */
 	req.msg.data = msg_data; /* Contents above */
 	/* how many times does req.msg.data need to read */
 	req.msg.data_len = 3;
@@ -1722,7 +1722,7 @@ ipmi_dcmi_pwr_slimit(struct ipmi_intf * intf, const char * option,
 	/* msg_data[13] = 0x03; */
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_SETLMT; /* Set power limit */
+	req.msg.cmd = IPMI_DCMI_SET_PWR_LIM; /* Set power limit */
 	req.msg.data = msg_data; /* Contents above */
 	/* how many times does req.msg.data need to read */
 	req.msg.data_len = 15;
@@ -1755,7 +1755,7 @@ ipmi_dcmi_pwr_actdeact(struct ipmi_intf * intf, uint8_t option)
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_DCGRP;
-	req.msg.cmd = IPMI_DCMI_PWRACT; /* Act-deactivate power limit */
+	req.msg.cmd = IPMI_DCMI_ACT_PWR_LIM; /* Act-deactivate power limit */
 	req.msg.data = msg_data; /* Contents above */
 	req.msg.data_len = 4; /* how mant times does req.msg.data need to read */
 
@@ -1793,7 +1793,7 @@ ipmi_dcmi_set_limit(struct ipmi_intf * intf, int argc, char **argv)
 
 		req.msg.netfn = IPMI_NETFN_DCGRP;
 		req.msg.lun = 0x00;
-		req.msg.cmd = IPMI_DCMI_SETLMT; /* Set power limit */
+		req.msg.cmd = IPMI_DCMI_SET_PWR_LIM; /* Set power limit */
 		req.msg.data = data; /* Contents above */
 		req.msg.data_len =  15;
 
