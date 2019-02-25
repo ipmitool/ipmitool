@@ -46,17 +46,32 @@
 /* Primary Node Manager commands */
 
 /* clang-format off */
+
+/* NM commands (local, not from the specification */
+enum {
+	NM_DISCOVER,
+	NM_CAPAB,
+	NM_POL_CTRL,
+	NM_POL_ADD_RM,
+	NM_STATS,
+	NM_POWER,
+	NM_SUSPEND,
+	NM_RESET,
+	NM_ALERT,
+	NM_THRESHOLD
+};
+
 const struct dcmi_cmd nm_cmd_vals[] = {
-	{ 0x00, "discover",   "Discover Node Manager" },
-	{ 0x01, "capability", "Get Node Manager Capabilities" },
-	{ 0x02, "control",    "Enable/Disable Policy Control" },
-	{ 0x03, "policy",     "Add/Remove Policies" },
-	{ 0x04, "statistics", "Get Statistics" },
-	{ 0x05, "power",      "Set Power Draw Range" },
-	{ 0x06, "suspend",    "Set/Get Policy suspend periods" },
-	{ 0x07, "reset",      "Reset Statistics" },
-	{ 0x08, "alert",      "Set/Get/Clear Alert destination" },
-	{ 0x09, "threshold",  "Set/Get Alert Thresholds" },
+	{ NM_DISCOVER, "discover", "Discover Node Manager" },
+	{ NM_CAPAB, "capability", "Get Node Manager Capabilities" },
+	{ NM_POL_CTRL, "control", "Enable/Disable Policy Control" },
+	{ NM_POL_ADD_RM, "policy", "Add/Remove Policies" },
+	{ NM_STATS, "statistics", "Get Statistics" },
+	{ NM_POWER, "power", "Set Power Draw Range" },
+	{ NM_SUSPEND, "suspend", "Set/Get Policy suspend periods" },
+	{ NM_RESET, "reset", "Reset Statistics" },
+	{ NM_ALERT, "alert", "Set/Get/Clear Alert destination" },
+	{ NM_THRESHOLD, "threshold", "Set/Get Alert Thresholds" },
 
 	DCMI_CMD_END(0xFF),
 };
@@ -1750,7 +1765,7 @@ ipmi_nm_main(struct ipmi_intf *intf, int argc, char **argv)
 
 	switch (dcmi_str2val(argv[0], nm_cmd_vals)) {
 	/* discover */
-	case 0x00:
+	case NM_DISCOVER:
 		if (_ipmi_nm_discover(intf, &disc))
 			return -1;
 		printf("    Node Manager Version %s\n",
@@ -1759,47 +1774,47 @@ ipmi_nm_main(struct ipmi_intf *intf, int argc, char **argv)
 		       disc.minor_rev >> 4, disc.minor_rev & 0xf, disc.patch_version);
 		break;
 	/* capability */
-	case 0x01:
+	case NM_CAPAB:
 		if (ipmi_nm_getcapabilities(intf, argc, argv))
 			return -1;
 		break;
 	/*  policy control enable-disable */
-	case 0x02:
+	case NM_POL_CTRL:
 		if (ipmi_nm_control(intf, argc, argv))
 			return -1;
 		break;
 	/* policy */
-	case 0x03:
+	case NM_POL_ADD_RM:
 		if (ipmi_nm_policy(intf, argc, argv))
 			return -1;
 		break;
 	/* Get statistics */
-	case 0x04:
+	case NM_STATS:
 		if (ipmi_nm_get_statistics(intf, argc, argv))
 			return -1;
 		break;
 	/* set power draw range */
-	case 0x05:
+	case NM_POWER:
 		if (ipmi_nm_set_range(intf, argc, argv))
 			return -1;
 		break;
 	/* set/get suspend periods */
-	case 0x06:
+	case NM_SUSPEND:
 		if (ipmi_nm_suspend(intf, argc, argv))
 			return -1;
 		break;
 	/* reset statistics */
-	case 0x07:
+	case NM_RESET:
 		if (ipmi_nm_reset_statistics(intf, argc, argv))
 			return -1;
 		break;
 	/* set/get alert destination */
-	case 0x08:
+	case NM_ALERT:
 		if (ipmi_nm_alert(intf, argc, argv))
 			return -1;
 		break;
 	/* set/get alert thresholds */
-	case 0x09:
+	case NM_THRESHOLD:
 		if (ipmi_nm_thresh(intf, argc, argv))
 			return -1;
 		break;
