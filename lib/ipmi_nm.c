@@ -306,39 +306,46 @@ const struct valstr nm_ccode_vals[] = {
 
 /* End strings */
 
-/* check the Node Manager response from the BMC
+/* Check whether the Node Manager response from the BMC is an error
  * @rsp:       Response data structure
  */
-static int
-chk_nm_rsp(struct ipmi_rs *rsp)
+static bool
+is_nm_error(struct ipmi_rs *rsp)
 {
+	bool rc = true; /* There IS an error */
+
 	/* if the response from the intf is NULL then the BMC is experiencing
 	 * some issue and cannot complete the command
 	 */
 	if (!rsp) {
 		lprintf(LOG_ERR, "\n    No response to NM request");
-		return 1;
+		goto out;
 	}
-	/* if the completion code is greater than zero there was an error.  We'll
-	 * use val2str from helper.c to print the error from either the DCMI
-	 * completion code struct or the generic IPMI completion_code_vals struct
+
+	/* if the completion code is greater than zero there was an error.
+	 * We'll use val2str from helper.c to print the error from either the
+	 * DCMI completion code dictionary or the generic IPMI codes dictionary.
 	 */
-	if ((rsp->ccode >= IPMI_NM_CC_POLICY_ID_INVALID)
-	    && (rsp->ccode <= IPMI_NM_CC_POLICY_DOMAIN_ERR)) {
-		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
-		        val2str(rsp->ccode, nm_ccode_vals), rsp->ccode);
-		return 1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
-		        val2str(rsp->ccode, completion_code_vals), rsp->ccode);
-		return 1;
+	if (rsp->ccode) {
+		/* Try to find the code in NM dictionary */
+		lprintf(LOG_ERR, "\n    NM request failed: %s",
+		        specific_val2str(rsp->ccode,
+		                         nm_ccode_vals,
+		                         completion_code_vals),
+		        rsp->ccode);
+		goto out;
 	}
-	/* check to make sure this is an NM firmware */
+
+	/* The code was OK, but was it an NM firmware at all? */
 	if (!nm_check_id(rsp->data)) {
-		printf("\n    A valid NM command was not returned! (%x)", rsp->data[0]);
-		return 1;
+		printf("\n    No valid NM ID in response! (%06x)",
+		       ipmi24toh(rsp->data));
+		goto out;
 	}
-	return 0;
+
+	rc = false; /* No error */
+out:
+	return rc;
 }
 
 /* Node Manager discover */
@@ -356,7 +363,7 @@ _ipmi_nm_discover(struct ipmi_intf *intf, struct nm_discover *disc)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	memcpy(disc, rsp->data, sizeof(struct nm_discover));
@@ -388,7 +395,7 @@ _ipmi_nm_getcapabilities(struct ipmi_intf *intf, uint8_t domain,
 	req.msg.data = msg_data;
 	req.msg.data_len = 5;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	memcpy(caps, rsp->data, sizeof(struct nm_capability));
@@ -412,7 +419,7 @@ _ipmi_nm_get_policy(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id,
 	req.msg.data = msg_data;
 	req.msg.data_len = 5;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	memcpy(policy, rsp->data, sizeof(struct nm_get_policy));
@@ -431,7 +438,7 @@ _ipmi_nm_set_policy(struct ipmi_intf *intf, struct nm_policy *policy)
 	req.msg.data_len = sizeof(struct nm_policy);
 	nm_set_id(policy->intel_id);
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -455,7 +462,7 @@ _ipmi_nm_policy_limiting(struct ipmi_intf *intf, uint8_t domain)
 	/* check for special case error of no policy is limiting */
 	if (rsp && (rsp->ccode == IPMI_NM_CC_POLICY_LIMIT_NONE))
 		return 0x80;
-	else if (chk_nm_rsp(rsp))
+	else if (is_nm_error(rsp))
 		return -1;
 	return rsp->data[0];
 }
@@ -478,7 +485,7 @@ _ipmi_nm_control(struct ipmi_intf *intf, uint8_t scope,
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -511,7 +518,7 @@ _ipmi_nm_statistics(struct ipmi_intf *intf, uint8_t mode, uint8_t domain,
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	memcpy(caps, rsp->data, sizeof(struct nm_statistics));
@@ -536,7 +543,7 @@ _ipmi_nm_reset_stats(struct ipmi_intf *intf, uint8_t mode,
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -562,7 +569,7 @@ _nm_set_range(struct ipmi_intf *intf, uint8_t domain,
 	req.msg.data = msg_data;
 	req.msg.data_len = 8;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -582,7 +589,7 @@ _ipmi_nm_get_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	memcpy(alert, rsp->data, sizeof(struct nm_set_alert));
@@ -606,7 +613,7 @@ _ipmi_nm_set_alert(struct ipmi_intf *intf, struct nm_set_alert *alert)
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -636,7 +643,7 @@ _ipmi_nm_get_thresh(struct ipmi_intf *intf, uint8_t domain,
 	req.msg.data = msg_data;
 	req.msg.data_len = 5;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	if (rsp->data[3] > 0)
@@ -678,7 +685,7 @@ _ipmi_nm_set_thresh(struct ipmi_intf *intf, struct nm_thresh * thresh)
 	req.msg.data = msg_data;
 	req.msg.data_len = 6 + (thresh->count * 2);
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
@@ -708,7 +715,7 @@ _ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain,
 	req.msg.data = msg_data;
 	req.msg.data_len = 5;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	*count = rsp->data[3];
@@ -748,7 +755,7 @@ _ipmi_nm_set_suspend(struct ipmi_intf *intf, struct nm_suspend *suspend)
 	req.msg.cmd = IPMI_NM_SET_SUSPEND;
 	req.msg.data = msg_data;
 	rsp = intf->sendrecv(intf, &req);
-	if (chk_nm_rsp(rsp)) {
+	if (is_nm_error(rsp)) {
 		return -1;
 	}
 	return 0;
