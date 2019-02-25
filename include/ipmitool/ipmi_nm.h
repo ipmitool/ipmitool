@@ -60,6 +60,22 @@
 #define IPMI_NM_RESET_TRIGGER 0x03
 #define IPMI_NM_BOOT_TRIGGER 0x04
 
+/* Node Manager status codes, as per
+ * "Intel Intelligent Power Node Manager 3.0
+ * External Interface Specification using IPMI"
+ */
+#define IPMI_NM_CC_POLICY_ID_INVALID 0x80
+#define IPMI_NM_CC_POLICY_DOMAIN_INVALID 0x81
+#define IPMI_NM_CC_POLICY_TRIGGER_UNKNOWN 0x82
+#define IPMI_NM_CC_POLICY_CORRECTION_RANGE 0x85
+#define IPMI_NM_CC_POLICY_TRIGGER_RANGE 0x86
+#define IPMI_NM_CC_POLICY_STATS_RANGE 0x89
+#define IPMI_NM_CC_POLICY_LIMIT_NONE 0xA1
+#define IPMI_NM_CC_POLICY_PARAM_BUSY 0xD5
+#define IPMI_NM_CC_POLICY_VALUE_INVALID 0x8B
+#define IPMI_NM_CC_STATS_MODE_INVALID 0x88
+#define IPMI_NM_CC_POWER_LIMIT_RANGE 0x84
+
 /* Policy Exception Actions flags */
 #define IPMI_NM_POLICY_ALERT 0x01
 #define IPMI_NM_POLICY_SHUT 0x02

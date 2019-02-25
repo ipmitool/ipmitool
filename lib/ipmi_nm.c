@@ -269,20 +269,37 @@ const struct dcmi_cmd nm_suspend_cmds[] = {
 };
 
 const struct valstr nm_ccode_vals[] = {
-	{ 0x80, "Policy ID Invalid" },
-	{ 0x81, "Domain ID Invalid" },
-	{ 0x82, "Unknown policy trigger type" },
-	{ 0x84, "Power Limit out of range" },
-	{ 0x85, "Correction Time out of range" },
-	{ 0x86, "Policy Trigger value out of range" },
-	{ 0x88, "Invalid Mode" },
-	{ 0x89, "Statistics Reporting Period out of range" },
-	{ 0x8B, "Invalid value for Aggressive CPU correction field" },
-	{ 0xA1, "No policy is currently limiting for the specified domain ID" },
-	{ 0xC4, "No space available" },
-	{ 0xD4, "Insufficient privilege level due wrong responder LUN" },
-	{ 0xD5, "Policy exists and param unchangeable while enabled" },
-	{ 0xD6, "Command subfunction disabled or unavailable" },
+	{ IPMI_NM_CC_POLICY_ID_INVALID,
+	  "Policy ID Invalid" },
+	{ IPMI_NM_CC_POLICY_DOMAIN_INVALID,
+	  "Domain ID Invalid" },
+	{ IPMI_NM_CC_POLICY_LIMIT_NONE,
+	  "No policy is currently limiting for the specified domain ID" },
+	{ IPMI_NM_CC_POLICY_CORRECTION_RANGE,
+	  "Correction Time out of range" },
+	{ IPMI_NM_CC_POLICY_TRIGGER_UNKNOWN,
+	  "Unknown policy trigger type" },
+	{ IPMI_NM_CC_POLICY_TRIGGER_RANGE,
+	  "Policy Trigger value out of range" },
+	{ IPMI_NM_CC_POLICY_PARAM_BUSY,
+	  "Policy exists and param unchangeable while enabled" },
+	{ IPMI_NM_CC_POLICY_DOMAIN_ERR,
+	  "Policies in given power domain cannot be created in the "
+	  "current configuration" },
+	{ IPMI_NM_CC_POLICY_STATS_RANGE,
+	  "Statistics Reporting Period out of range" },
+	{ IPMI_NM_CC_POLICY_VALUE_INVALID,
+	  "Invalid value for Aggressive CPU correction field" },
+	{ IPMI_NM_CC_POWER_LIMIT_RANGE,
+	  "Power Limit out of range" },
+	{ IPMI_NM_CC_STATS_MODE_INVALID,
+	  "Invalid Mode" },
+	{ IPMI_CC_OUT_OF_SPACE,
+	  "No space available" },
+	{ IPMI_CC_INSUFFICIENT_PRIVILEGES,
+	  "Insufficient privilege level or other security restriction" },
+	{ IPMI_CC_ILLEGAL_COMMAND_DISABLED,
+	  "Command subfunction disabled or unavailable" },
 	{ 0xFF, NULL },
 };
 /* clang-format on */
@@ -306,7 +323,8 @@ chk_nm_rsp(struct ipmi_rs *rsp)
 	 * use val2str from helper.c to print the error from either the DCMI
 	 * completion code struct or the generic IPMI completion_code_vals struct
 	 */
-	if ((rsp->ccode >= 0x80) && (rsp->ccode <= 0xD6)) {
+	if ((rsp->ccode >= IPMI_NM_CC_POLICY_ID_INVALID)
+	    && (rsp->ccode <= IPMI_NM_CC_POLICY_DOMAIN_ERR)) {
 		lprintf(LOG_ERR, "\n    NM request failed because: %s (%x)",
 		        val2str(rsp->ccode, nm_ccode_vals), rsp->ccode);
 		return 1;
@@ -435,7 +453,7 @@ _ipmi_nm_policy_limiting(struct ipmi_intf *intf, uint8_t domain)
 	req.msg.data_len = 4;
 	rsp = intf->sendrecv(intf, &req);
 	/* check for special case error of no policy is limiting */
-	if (rsp && (rsp->ccode == 0xA1))
+	if (rsp && (rsp->ccode == IPMI_NM_CC_POLICY_LIMIT_NONE))
 		return 0x80;
 	else if (chk_nm_rsp(rsp))
 		return -1;
