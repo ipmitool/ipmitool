@@ -1212,8 +1212,8 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH && !bufLengthIsSet) {
 					rc = HPMFWUPG_SUCCESS;
 					/* Retry with a smaller buffer length */
-					if (strstr(intf->name,"lan") && bufLength > 8) {
-						bufLength-= 8;
+					if (strstr(intf->name,"lan") && bufLength > 2) {
+						bufLength >>= 1;
 						lprintf(LOG_INFO,
 								"Trying reduced buffer length: %d",
 								bufLength);
