@@ -59,5 +59,17 @@ int log_level_get(void);
 void lprintf(int level, const char * format, ...);
 void lperror(int level, const char * format, ...);
 
+/**
+ * @brief Print to log or to STDOUT depending on the \p ll argument.
+ * @param[in] ll  Log level. Negative values meant "print to stdout".
+ * @param[in] fmt The printf format string. No '\n' is needed at the end.
+ */
+#define uprintf(ll, fmt, ...) do { \
+	if (ll < 0) \
+		printf(fmt "\n", ##__VA_ARGS__); \
+	else \
+		lprintf(ll, fmt, ##__VA_ARGS__); \
+} while(0)
+
 #endif /*IPMITOOL_LOG_H*/
 

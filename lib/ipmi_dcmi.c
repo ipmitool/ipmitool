@@ -332,11 +332,14 @@ const struct dcmi_cmd dcmi_sampling_vals[] = {
  * purpose but with out the extra formatting.  This function simply prints
  * the dcmi_cmd struct provided.  verthorz specifies to print vertically or
  * horizontally.  If the string is printed horizontally then a | will be
- * printed between each instance of vs[i].str until it is NULL
+ * printed between each instance of vs[i].str until it is NULL.
+ * Note that vs[i].desc is not printed in horizontal mode.
  *
  * @vs:         value string list to print
  * @title:      name of this value string list
- * @loglevel:   what log level to print, -1 for stdout
+ * @loglevel:   what log level to print, -1 for stdout.
+ *              if loglevel is -1 _and_ verthorz is non-zero,
+ *              then output is to stderr.
  * @verthorz:   printed vertically or horizontally, 0 or 1
  */
 void
@@ -346,46 +349,38 @@ dcmi_print_strs(const struct dcmi_cmd * vs,
                 int verthorz)
 {
 	int i;
+	char *buf;
 
 	if (!vs)
 		return;
 
 	if (title) {
-		if (loglevel < 0)
-			printf("\n%s\n", title);
-		else
-			lprintf(loglevel, "\n%s", title);
+		uprintf(loglevel, "\n%s", title);
 	}
+
 	for (i = 0; vs[i].str; i++) {
-		if (loglevel < 0) {
-			if (vs[i].val < 256)
-				if (verthorz == 0)
-					printf("    %s    %s\n", vs[i].str, vs[i].desc);
-				else
-					printf("%s", vs[i].str);
-			else if (verthorz == 0)
-				printf("    %s    %s\n", vs[i].str, vs[i].desc);
+		if (verthorz) {
+			/* Horizontal printing requires that there is no \n
+			 * at the end of individual printouts, hence we can't
+			 * use uprintf or lprintf here.
+			 */
+			fprintf(stderr, "%s", vs[i].str);
+			/* Check to see if this is NOT the last element in vs.str.
+			 * If so, print the | else terminate the line.
+			 */
+			if (vs[i+1].str)
+				fprintf(stderr, " | ");
 			else
-				printf("%s", vs[i].str);
+				fprintf(stderr, "\n");
 		} else {
-			if (vs[i].val < 256)
-				lprintf(loglevel, "    %s    %s", vs[i].str, vs[i].desc);
-			else
-				lprintf(loglevel, "    %s    %s", vs[i].str, vs[i].desc);
-		}
-		/* Check to see if this is NOT the last element in vs.str if true
-		 * print the | else don't print anything.
-		 */
-		if (verthorz == 1 && vs[i+1].str)
-			printf(" | ");
-	}
-	if (verthorz == 0) {
-		if (loglevel < 0) {
-			printf("\n");
-		} else {
-			lprintf(loglevel, "");
+			uprintf(loglevel, "    %10s    %s", vs[i].str, vs[i].desc);
 		}
 	}
+
+	if (verthorz)
+		fprintf(stderr, "\n");
+	else
+		uprintf(loglevel, "");
 }
 
 /* This was taken from str2val() from helper.c.  It serves the same
