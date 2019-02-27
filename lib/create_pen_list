@@ -67,7 +67,9 @@ parse_pen_list() {
       }
 
       END {
-          print "{ " PEN ", \"" ENTERPRISE "\" },"
+          if(PEN) {
+            print "{ " PEN ", \"" ENTERPRISE "\" },"
+          }
       }'
 }
 
