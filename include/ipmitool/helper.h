@@ -39,6 +39,8 @@
 #include <string.h>
 #include <stdlib.h> /* For free() */
 
+#define BIT(x)   (1 << x)       /* Select the Bit */
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 #ifndef TRUE

@@ -37,6 +37,10 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
 
+/* Max Size of the description String to be displyed for the Each sel entry */
+#define	SIZE_OF_DESC	128
+#define	MAX_DIMM_STR	32	/* Max Size of DIMM string */
+
 #define IPMI_CMD_GET_SEL_INFO		0x40
 #define IPMI_CMD_GET_SEL_ALLOC_INFO	0x41
 #define IPMI_CMD_RESERVE_SEL		0x42

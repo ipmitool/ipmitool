@@ -33,6 +33,9 @@ POSSIBILITY OF SUCH DAMAGE.
 # include <config.h>
 #endif
 
+#include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_sel.h>
+
 #pragma pack(1)
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -366,5 +369,8 @@ typedef struct _SensorReadingType
 }SensorReadingType;
 uint16_t compareinputwattage(IPMI_POWER_SUPPLY_INFO* powersupplyinfo, uint16_t inputwattage);
 int ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv);
+
+char *
+oem_dell_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
 
 #endif /*IPMI_DELLOEM_H*/
