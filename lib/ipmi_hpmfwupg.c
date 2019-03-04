@@ -53,6 +53,8 @@ uint16_t
 ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
 
 extern int verbose;
+static unsigned char isValidSize = FALSE;
+static int errorCount = 0;
 
 int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
 		int activate, int, int);
@@ -1190,6 +1192,8 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		lengthOfBlock = firmwareLength;
 		totalSent = 0x00;
 		displayFWLength= firmwareLength;
+		isValidSize = FALSE;
+		errorCount = 0;
 		time(&start);
 		while ((pData < (pDataTemp+lengthOfBlock)) && (rc == HPMFWUPG_SUCCESS)) {
 			if ((pData+bufLength) <= (pDataTemp+lengthOfBlock)) {
@@ -2148,13 +2152,11 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	}
 	timeoutSec1 = time(NULL);
 	do {
-		static unsigned char isValidSize = FALSE;
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
 			#define HPM_LAN_PACKET_RESIZE_LIMIT 6
 			/* also covers lanplus */
 			if (strstr(intf->name, "lan")) {
-				static int errorCount=0;
 				static struct ipmi_rs fakeRsp;
 				lprintf(LOG_DEBUG,
 						"HPM: no response available");
