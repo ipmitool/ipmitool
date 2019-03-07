@@ -924,10 +924,10 @@ ipmi_nm_get_policy(struct ipmi_intf *intf, int argc, char **argv)
 	printf("    Power domain:                             %s\n",
 	       dcmi_val2str(policy.domain & 0xF, nm_domain_vals));
 	printf("    Policy is %s %s%s%s\n",
-	       policy.domain & 0x10 ? "enabled" : "not enabled",
-	       policy.domain & 0x20 ? "per Domain " : "",
-	       policy.domain & 0x40 ? "Globally " : "",
-	       policy.domain & 0x80 ? "via DCMI api " : "");
+	       (policy.domain & 0x10) ? "enabled" : "not enabled",
+	       (policy.domain & 0x20) ? "per Domain " : "",
+	       (policy.domain & 0x40) ? "Globally " : "",
+	       (policy.domain & 0x80) ? "via DCMI api " : "");
 	printf("    Policy is %sa power control type.\n",
 	       (policy.policy_type & 0x10) ? "" : "not ");
 	printf("    Policy Trigger Type:                      %s\n",
@@ -945,10 +945,10 @@ ipmi_nm_get_policy(struct ipmi_intf *intf, int argc, char **argv)
 	printf("    Statistics Reporting Period:              %u seconds\n",
 	       policy.stats_period);
 	printf("    Policy retention:                         %s\n",
-	       policy.policy_type & 0x80 ? "volatile" : "non-volatile");
+	       (policy.policy_type & 0x80) ? "volatile" : "non-volatile");
 	if ((policy_id == 0) && ((policy.domain & 0xf) == 0x3))
 		printf("    HW Prot Power domain:                     %s\n",
-		       policy.policy_type & 0x80 ? "Secondary" : "Primary");
+		       (policy.policy_type & 0x80) ? "Secondary" : "Primary");
 	return 0;
 }
 
@@ -1080,8 +1080,10 @@ ipmi_nm_policy(struct ipmi_intf *intf, int argc, char **argv)
 		argv++;
 	}
 	if (action == 0x06) { /* limiting */
-		if ((limit = _ipmi_nm_policy_limiting(intf, domain) == -1))
+		limit = _ipmi_nm_policy_limiting(intf, domain);
+		if (limit == (uint32_t) -1) {
 			return -1;
+		}
 		printf("limit %x\n", limit);
 		return 0;
 	}
@@ -1426,7 +1428,6 @@ ipmi_nm_get_alert(struct ipmi_intf *intf)
 static int
 ipmi_nm_alert(struct ipmi_intf *intf, int argc, char **argv)
 {
-	uint8_t param;
 	uint8_t action;
 	uint8_t chan = -1;
 	uint8_t dest = -1;
@@ -1449,12 +1450,7 @@ ipmi_nm_alert(struct ipmi_intf *intf, int argc, char **argv)
 		argv++;
 		if (!argv[0])
 			break;
-		if ((param = dcmi_str2val(argv[0], nm_set_alert_param)) == 0xFF) {
-			dcmi_print_strs(nm_set_alert_param,
-			                "Set alert Parameters:", LOG_ERR, 0);
-			return -1;
-		}
-		switch (param) {
+		switch (dcmi_str2val(argv[0], nm_set_alert_param)) {
 		case 0x01: /* channel */
 			if (str2uchar(argv[1], &chan) < 0) {
 				lprintf(LOG_ERR,
@@ -1479,6 +1475,10 @@ ipmi_nm_alert(struct ipmi_intf *intf, int argc, char **argv)
 			}
 			string |= 0x80; /* set string select flag */
 			break;
+		case 0xFF: /* error, print usage */
+			dcmi_print_strs(nm_set_alert_param,
+			                "Set alert Parameters:", LOG_ERR, 0);
+			return -1;
 		}
 		argc--;
 		argv++;
@@ -1643,7 +1643,9 @@ ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 		if (periods[i].repeat)
 			printf(", ");
 		for (j = 0; j < 7; j++)
-			printf("%s", (periods[i].repeat >> j) & 1 ? days[j] : "");
+			printf("%s", ((periods[i].repeat >> j) & 1)
+			             ? days[j]
+			             : "");
 		printf("\n");
 	}
 	return 0;
@@ -1696,7 +1698,6 @@ static
 int
 ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 {
-	uint8_t option;
 	uint8_t action;
 	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
@@ -1718,8 +1719,8 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 		argv++;
 		if (!argv[0])
 			break;
-		option = dcmi_str2val(argv[0], nm_thresh_param);
-		switch (option) {
+	
+		switch (dcmi_str2val(argv[0], nm_thresh_param)) {
 		case 0x01: /* get domain scope */
 			domain = dcmi_str2val(argv[1], nm_domain_vals);
 			if (0xFF == domain) {
