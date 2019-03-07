@@ -1649,7 +1649,51 @@ ipmi_nm_get_suspend(struct ipmi_intf *intf, uint8_t domain, uint8_t policy_id)
 	return 0;
 }
 
-static int
+static
+bool
+nm_suspend_process_periods(int *argc, char **argv, struct nm_suspend *suspend)
+{
+	bool err = true;
+	int count = 0;
+
+	for (; *argc > 0 && count < IPMI_NM_SUSPEND_PERIOD_MAX;
+	     *argc -= 3, argv += 3, count++)
+	{
+		if (*argc < 3) {
+			lprintf(LOG_ERR,
+			        "Error: suspend period requires a "
+			        "start, stop, and repeat values.\n");
+			goto out;
+		}
+		if (str2uchar(argv[0], &suspend->period[count].start) < 0) {
+			lprintf(LOG_ERR,
+			        "suspend start value %d must be 0-239.\n",
+			        count);
+			goto out;
+		}
+		if (str2uchar(argv[1], &suspend->period[count].stop) < 0) {
+			lprintf(LOG_ERR,
+			        "suspend stop value %d  must be 0-239.\n",
+			        count);
+			goto out;
+		}
+		if (str2uchar(argv[2], &suspend->period[count].repeat) < 0) {
+			lprintf(LOG_ERR,
+			        "suspend repeat value %d unable to convert.\n",
+			        count);
+			goto out;
+		}
+	}
+
+	if (*argc <= 0) {
+		err = false;
+	}
+out:
+	return err;
+}
+
+static
+int
 ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t option;
@@ -1657,9 +1701,7 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 	uint8_t domain = 0; /* default domain of platform */
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
-	uint8_t count = 0;
 	struct nm_suspend suspend;
-	int i;
 
 	argv++;
 	argc--;
@@ -1667,7 +1709,8 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 	if (!argv[0] || argc < 3
 	    || 0xFF == (action = dcmi_str2val(argv[0], nm_suspend_cmds)))
 	{
-		dcmi_print_strs(nm_suspend_cmds, "Suspend commands", LOG_ERR, 0);
+		dcmi_print_strs(nm_suspend_cmds,
+		                "Suspend commands", LOG_ERR, 0);
 		return -1;
 	}
 	memset(&suspend, 0, sizeof(suspend));
@@ -1678,8 +1721,10 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 		option = dcmi_str2val(argv[0], nm_thresh_param);
 		switch (option) {
 		case 0x01: /* get domain scope */
-			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
-				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
+			domain = dcmi_str2val(argv[1], nm_domain_vals);
+			if (0xFF == domain) {
+				dcmi_print_strs(nm_domain_vals,
+				                "Domain Scope:", LOG_ERR, 0);
 				return -1;
 			}
 			argc--;
@@ -1688,7 +1733,8 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 		case 0x02: /* policy ID */
 			if (str2uchar(argv[1], &policy_id) < 0) {
 				lprintf(LOG_ERR,
-				        "Policy ID must be a positive integer (0-255)\n");
+				        "Policy ID must be a positive "
+				        "integer (0-255)\n");
 				return -1;
 			}
 			have_policy_id = TRUE;
@@ -1696,34 +1742,12 @@ ipmi_nm_suspend(struct ipmi_intf *intf, int argc, char **argv)
 			argv++;
 			break;
 		case 0xFF: /* process periods */
-			for (i = 0; count < IPMI_NM_SUSPEND_PERIOD_MAX; i += 3, count++) {
-				if (argc < 3) {
-					lprintf(LOG_ERR, "Error: suspend period requires a "
-					                 "start, stop, and repeat values.\n");
-					return -1;
-				}
-				if (str2uchar(argv[i + 0], &suspend.period[count].start) < 0) {
-					lprintf(LOG_ERR, "suspend start value %d must be 0-239.\n",
-					        count);
-					return -1;
-				}
-				if (str2uchar(argv[i + 1], &suspend.period[count].stop) < 0) {
-					lprintf(LOG_ERR, "suspend stop value %d  must be 0-239.\n",
-					        count);
-					return -1;
-				}
-				if (str2uchar(argv[i + 2], &suspend.period[count].repeat) < 0) {
-					lprintf(LOG_ERR,
-					        "suspend repeat value %d unable to convert.\n",
-					        count);
-					return -1;
-				}
-				argc -= 3;
-				if (argc <= 0)
-					break;
+			if (nm_suspend_process_periods(&argc, argv, &suspend)) {
+				return -1;
 			}
-			if (argc <= 0)
+			if (argc <= 0) {
 				break;
+			}
 			break;
 		default:
 			break;
