@@ -780,9 +780,7 @@ ipmi_dcmi_prnt_getassettag(struct ipmi_intf * intf)
 	taglength = rsp->data[1];
 	printf("\n Asset tag: ");
 	while (taglength) {
-		/* TODO: Add parentheses for clarity */
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
-		                                           : taglength % DCMI_MAX_BYTE_SIZE;
+		getlength = __min(taglength, DCMI_MAX_BYTE_SIZE);
 		rsp = ipmi_dcmi_getassettag(intf, offset, getlength);
 		/* macro has no effect here where can generate sig segv
 		 * if rsp occurs with null
@@ -854,9 +852,7 @@ ipmi_dcmi_prnt_setassettag(struct ipmi_intf * intf, uint8_t * data)
 	}
 	printf("\n Set Asset Tag: ");
 	while (taglength) {
-		/* TODO: Use a macro or an inline for this repeating calculation */
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
-		                                           : taglength % DCMI_MAX_BYTE_SIZE;
+		getlength = __min(taglength, DCMI_MAX_BYTE_SIZE);
 		memcpy(tmpData, data + offset, getlength);
 		rsp = ipmi_dcmi_setassettag(intf, offset, getlength, tmpData);
 		if (chk_rsp(rsp)) {
@@ -874,7 +870,7 @@ ipmi_dcmi_prnt_setassettag(struct ipmi_intf * intf, uint8_t * data)
 
 /* Management Controller Identifier String is provided in order to accommodate
  * the requirement for the management controllers to identify themselves.
- * 
+ *
  * @intf:   ipmi interface handler
  * @offset: offset to read
  * @length: number of bytes to read (16 bytes maximum)
@@ -920,9 +916,7 @@ ipmi_dcmi_prnt_getmngctrlids(struct ipmi_intf * intf)
 
 	printf("\n Get Management Controller Identifier String: ");
 	while (taglength) {
-		/* TODO: Use a macro or an inline for this repeating calculation */
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
-		                                           : taglength % DCMI_MAX_BYTE_SIZE;
+		getlength = __min(taglength, DCMI_MAX_BYTE_SIZE);
 		rsp = ipmi_dcmi_getmngctrlids(intf, offset, getlength);
 
 		if (chk_rsp(rsp)) {
@@ -998,9 +992,7 @@ ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
 
 	printf("\n Set Management Controller Identifier String Command: ");
 	while (taglength) {
-		/* TODO: Use a macro or an inline for this repeating calculation */
-		getlength = taglength / DCMI_MAX_BYTE_SIZE ? DCMI_MAX_BYTE_SIZE
-		                                           : taglength % DCMI_MAX_BYTE_SIZE;
+		getlength = __min(taglength, DCMI_MAX_BYTE_SIZE);
 		memcpy(tmpData, data + offset, getlength);
 		rsp = ipmi_dcmi_setmngctrlids(intf, offset, getlength, tmpData);
 		/* because after call "Set mc id string" RMCP+ will go down
@@ -1294,7 +1286,7 @@ static int
 ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	int i,j, tota_inst, get_inst, offset = 0;
+	int i,j, total_inst, get_inst, offset = 0;
 	/* Print sensor description */
 	printf("\n\tEntity ID\t\t\tEntity Instance\t   Temp. Readings");
 	for (i = 0; dcmi_temp_read_vals[i].str; i++) {
@@ -1307,11 +1299,9 @@ ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 		}
 		/* Total number of available instances for the Entity ID */
 		offset = 0;
-		tota_inst = rsp->data[1];
-		while (tota_inst > 0) {
-			get_inst = ((tota_inst / DCMI_MAX_BYTE_TEMP_READ_SIZE) ?
-			            DCMI_MAX_BYTE_TEMP_READ_SIZE :
-			            (tota_inst % DCMI_MAX_BYTE_TEMP_READ_SIZE));
+		total_inst = rsp->data[1];
+		while (total_inst > 0) {
+			get_inst = __min(total_inst, DCMI_MAX_BYTE_TEMP_READ_SIZE);
 			rsp = ipmi_dcmi_get_temp_readings(intf,
 			                                  dcmi_temp_read_vals[i].val,
 			                                  offset, 0);
@@ -1330,7 +1320,7 @@ ipmi_dcmi_prnt_get_temp_readings(struct ipmi_intf * intf)
 				       (rsp->data[j+3] & 127));
 			}
 			offset += get_inst;
-			tota_inst -= get_inst;
+			total_inst -= get_inst;
 		}
 	}
 	return 0;
