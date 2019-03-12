@@ -53,6 +53,8 @@ uint16_t
 ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
 
 extern int verbose;
+static unsigned char isValidSize = FALSE;
+static int invalidCount = 0;
 
 int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
 		int activate, int, int);
@@ -1190,6 +1192,8 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		lengthOfBlock = firmwareLength;
 		totalSent = 0x00;
 		displayFWLength= firmwareLength;
+		isValidSize = FALSE;
+		invalidCount = 0;
 		time(&start);
 		while ((pData < (pDataTemp+lengthOfBlock)) && (rc == HPMFWUPG_SUCCESS)) {
 			if ((pData+bufLength) <= (pDataTemp+lengthOfBlock)) {
@@ -2148,13 +2152,10 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	}
 	timeoutSec1 = time(NULL);
 	do {
-		static unsigned char isValidSize = FALSE;
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
-			#define HPM_LAN_PACKET_RESIZE_LIMIT 6
 			/* also covers lanplus */
 			if (strstr(intf->name, "lan")) {
-				static int errorCount=0;
 				static struct ipmi_rs fakeRsp;
 				lprintf(LOG_DEBUG,
 						"HPM: no response available");
@@ -2162,7 +2163,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 						"HPM: the command may be rejected for security reasons");
 				if (req.msg.netfn == IPMI_NETFN_PICMG
 						&& req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
-						&& errorCount < HPM_LAN_PACKET_RESIZE_LIMIT
+						&& invalidCount < HPM_LAN_PACKET_RESIZE_LIMIT
 						&& (!isValidSize)) {
 					lprintf(LOG_DEBUG,
 							"HPM: upload firmware block API called");
@@ -2170,7 +2171,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 							"HPM: returning length error to force resize");
 					fakeRsp.ccode = IPMI_CC_REQ_DATA_INV_LENGTH;
 					rsp = &fakeRsp;
-					errorCount++;
+					invalidCount++;
 				} else if (req.msg.netfn == IPMI_NETFN_PICMG
 						&& (req.msg.cmd == HPMFWUPG_ACTIVATE_FIRMWARE
 							|| req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK)) {
