@@ -680,7 +680,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
 			} else if (chipset_type == 3) {
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%d(P%dM%d)",
-						((data2 & 0xf) >> 4) > 4
+						((data2 & 0xff) >> 4) > 4
 						? '@' - 4 + ((data2 & 0xff) >> 4)
 						: '@' + ((data2 & 0xff) >> 4),
 						(data2 & 0xf) - 0x09, (data3 & 0x0f) + 1,
@@ -696,7 +696,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 			} else if (chipset_type == 6) {
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
 						(data2 >> 4) + 0x40,
-						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
+						(data2 & 0xf) + 0x27, (data3 & 0x07) + 1);
 			} else {
 				/* No description. */
 				desc[0] = '\0';
