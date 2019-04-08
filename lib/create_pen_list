@@ -45,7 +45,7 @@ if [ -z "$OUTFILE" ]; then
 fi
 
 parse_pen_list() {
-  iconv -f utf8 -t ascii//TRANSLIT//IGNORE \
+  iconv -f UTF-8 -t ascii//TRANSLIT//IGNORE \
     | awk '
       /^[0-9]+/ {
         if(PEN) {
