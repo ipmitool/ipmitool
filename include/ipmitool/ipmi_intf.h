@@ -244,6 +244,9 @@ struct ipmi_intf {
 struct ipmi_intf * ipmi_intf_load(char * name);
 void ipmi_intf_print(struct ipmi_intf_support * intflist);
 
+uint16_t ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
+uint16_t ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf);
+
 void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
 void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
