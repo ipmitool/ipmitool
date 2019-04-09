@@ -1,7 +1,8 @@
 [Unit]
 Description=Exchange Information between BMC and OS
-After=ipmi.service network.target
-Requires=ipmi.service
+After=network.target
+AssertFileIsExecutable=/usr/bin/ipmitool
+AssertPathExistsGlob=/dev/ipmi*
 
 [Service]
 Type=oneshot
