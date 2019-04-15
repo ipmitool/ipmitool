@@ -671,6 +671,25 @@ AC_TRY_COMPILE([],[
 		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
 )
 
+dnl if no environment variable is set, set the default value for the default intf
+if test "${xenable_intf_open}" = "xyes"; then
+   DEFAULT_INTF_NO_ENV=open
+else dnl macOS does not build open interface, it defaults to lan
+   DEFAULT_INTF_NO_ENV=lan
+fi
+dnl allow for a default interface to be set on configure
+AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default=${DEFAULT_INTF_NO_ENV})])
+
+dnl set the default value for the default interface environment variable
+if test "x${DEFAULT_INTF}" == "x"; then
+	echo "DEFAULT_INTF not found in environment; setting to ${DEFAULT_INTF_NO_ENV}"
+	DEFAULT_INTF=${DEFAULT_INTF_NO_ENV}
+fi
+
+xdefault_intf_is_enabled="xenable_intf_${DEFAULT_INTF}"
+if test "x${!xdefault_intf_is_enabled}" != "xyes"; then
+	AC_MSG_ERROR([** Cannot set ${DEFAULT_INTF} as default; ${DEFAULT_INTF} is not enabled. :${!xdefault_intf_is_enabled}:])
+fi
 
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
@@ -703,7 +722,7 @@ AC_OUTPUT
 AC_MSG_RESULT([])
 AC_MSG_RESULT([ipmitool $VERSION])
 AC_MSG_RESULT([])
-AC_MSG_RESULT([Interfaces])
+AC_MSG_RESULT([Interfaces (default=$DEFAULT_INTF)])
 AC_MSG_RESULT([  lan     : $xenable_intf_lan])
 AC_MSG_RESULT([  lanplus : $xenable_intf_lanplus])
 AC_MSG_RESULT([  open    : $xenable_intf_open])
