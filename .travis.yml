@@ -1,10 +1,12 @@
+os: linux
+dist: xenial
 language: C
 sudo: enabled
 before_install:
-  - sudo apt-get install -y libssl-dev
+  - sudo apt-get install -y libssl-dev libsystemd-dev
 before_script:
  - ./bootstrap
 script:
- - ./configure --enable-intf-dummy
+ - ./configure --enable-intf-dummy --enable-intf-dbus
  - make
  - sudo make install
