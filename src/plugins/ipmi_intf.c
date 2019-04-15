@@ -128,6 +128,26 @@ struct ipmi_intf * ipmi_intf_table[] = {
 	NULL
 };
 
+/* get_default_interface - return the interface that was chosen by configure
+ *
+ * returns a valid interface pointer
+ */
+static struct ipmi_intf *get_default_interface(void)
+{
+	static const char *default_intf_name = DEFAULT_INTF;
+	struct ipmi_intf ** intf;
+	for (intf = ipmi_intf_table; intf && *intf; intf++) {
+		if (!strcmp(default_intf_name, (*intf)->name)) {
+			return *intf;
+		}
+	}
+	/* code should never reach this because the configure script checks
+	 * to see that the default interface is actually enabled, but we have
+	 * to return some valid value here, so the first entry works
+	 */
+	return ipmi_intf_table[0];
+}
+
 /* ipmi_intf_print  -  Print list of interfaces
  *
  * no meaningful return code
@@ -135,10 +155,11 @@ struct ipmi_intf * ipmi_intf_table[] = {
 void ipmi_intf_print(struct ipmi_intf_support * intflist)
 {
 	struct ipmi_intf ** intf;
+	struct ipmi_intf *def_intf;
 	struct ipmi_intf_support * sup;
-	int def = 1;
 	int found;
 
+	def_intf = get_default_interface();
 	lprintf(LOG_NOTICE, "Interfaces:");
 
 	for (intf = ipmi_intf_table; intf && *intf; intf++) {
@@ -157,8 +178,7 @@ void ipmi_intf_print(struct ipmi_intf_support * intflist)
 
 		lprintf(LOG_NOTICE, "\t%-12s  %s %s",
 			(*intf)->name, (*intf)->desc,
-			def ? "[default]" : "");
-		def = 0;
+			def_intf == (*intf) ? "[default]" : "");
 	}
 	lprintf(LOG_NOTICE, "");
 }
@@ -177,7 +197,7 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 	struct ipmi_intf * i;
 
 	if (!name) {
-		i = ipmi_intf_table[0];
+		i = get_default_interface();
 		if (i->setup && (i->setup(i) < 0)) {
 			lprintf(LOG_ERR, "Unable to setup "
 				"interface %s", name);
