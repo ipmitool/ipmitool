@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
@@ -65,6 +66,7 @@
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_pef.h>
+#include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_picmg.h>
@@ -318,6 +320,7 @@ ipmi_main(int argc, char ** argv,
 	uint8_t target_addr = 0;
 	uint8_t target_channel = 0;
 
+	uint8_t u8tmp = 0;
 	uint8_t transit_addr = 0;
 	uint8_t transit_channel = 0;
 	uint8_t target_lun     = 0;
@@ -342,12 +345,18 @@ ipmi_main(int argc, char ** argv,
 	char * seloem   = NULL;
 	int port = 0;
 	int devnum = 0;
-	int cipher_suite_id = 3; /* See table 22-19 of the IPMIv2 spec */
+#ifdef IPMI_INTF_LANPLUS
+	/* lookup best cipher suite available */
+	enum cipher_suite_ids cipher_suite_id = IPMI_LANPLUS_CIPHER_SUITE_RESERVED;
+#endif /* IPMI_INTF_LANPLUS */
 	int argflag, i, found;
 	int rc = -1;
 	int ai_family = AF_UNSPEC;
 	char sol_escape_char = SOL_ESCAPE_CHARACTER_DEFAULT;
 	char * devfile  = NULL;
+
+	/* Set program locale according to system settings */
+	setlocale(LC_ALL, "");
 
 	/* save program name */
 	progname = strrchr(argv[0], '/');
@@ -420,19 +429,18 @@ ipmi_main(int argc, char ** argv,
 				goto out_free;
 			}
 			break;
+#ifdef IPMI_INTF_LANPLUS
 		case 'C':
-			if (str2int(optarg, &cipher_suite_id) != 0) {
-				lprintf(LOG_ERR, "Invalid parameter given or out of range for '-C'.");
+			/* Cipher Suite ID is a byte as per IPMI specification */
+			if (str2uchar(optarg, &u8tmp) != 0) {
+				lprintf(LOG_ERR, "Invalid parameter given or out of "
+				                 "range [0-255] for '-C'.");
 				rc = -1;
 				goto out_free;
 			}
-			/* add check Cipher is -gt 0 */
-			if (cipher_suite_id < 0) {
-				lprintf(LOG_ERR, "Cipher suite ID %i is invalid.", cipher_suite_id);
-				rc = -1;
-				goto out_free;
-			}
+			cipher_suite_id = u8tmp;
 			break;
+#endif /* IPMI_INTF_LANPLUS */
 		case 'v':
 			verbose++;
 			break;
@@ -868,7 +876,9 @@ ipmi_main(int argc, char ** argv,
 
 	ipmi_intf_session_set_lookupbit(ipmi_main_intf, lookupbit);
 	ipmi_intf_session_set_sol_escape_char(ipmi_main_intf, sol_escape_char);
+#ifdef IPMI_INTF_LANPLUS
 	ipmi_intf_session_set_cipher_suite_id(ipmi_main_intf, cipher_suite_id);
+#endif /* IPMI_INTF_LANPLUS */
 
 	ipmi_main_intf->devnum = devnum;
 
@@ -974,7 +984,7 @@ ipmi_main(int argc, char ** argv,
 
 	/* parse local SDR cache if given */
 	if (sdrcache) {
-		ipmi_sdr_list_cache_fromfile(ipmi_main_intf, sdrcache);
+		ipmi_sdr_list_cache_fromfile(sdrcache);
 	}
 	/* Parse SEL OEM file if given */
 	if (seloem) {

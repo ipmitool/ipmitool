@@ -60,8 +60,7 @@ static void ipmi_kontron_help(void);
 static int ipmi_kontron_set_serial_number(struct ipmi_intf *intf);
 static int ipmi_kontron_set_mfg_date (struct ipmi_intf *intf);
 static void ipmi_kontron_nextboot_help(void);
-static int ipmi_kontron_nextboot_set(struct ipmi_intf *intf, int argc,
-		char **argv);
+static int ipmi_kontron_nextboot_set(struct ipmi_intf *intf, char **argv);
 static int ipmi_kontronoem_send_set_large_buffer(struct ipmi_intf *intf,
 		unsigned char channel, unsigned char size);
 
@@ -107,7 +106,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 			ipmi_kontron_nextboot_help();
 			return (-1);
 		}
-		rc = ipmi_kontron_nextboot_set(intf, (argc - 1), (argv + 1));
+		rc = ipmi_kontron_nextboot_set(intf, (argv + 1));
 		if (rc == 0) {
 			printf("Nextboot set successfully\n");
 		} else {
@@ -656,7 +655,7 @@ ipmi_kontron_nextboot_help(void)
  * returns 1 if successful
  */
 static int
-ipmi_kontron_nextboot_set(struct ipmi_intf *intf, int argc, char **argv)
+ipmi_kontron_nextboot_set(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;

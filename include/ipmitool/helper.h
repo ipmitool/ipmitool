@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h> /* For free() */
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -50,6 +51,12 @@
 
 #ifndef tboolean
 #define tboolean   int
+#endif
+
+#ifdef __GNUC__
+    #define __UNUSED__(x) x __attribute__((unused))
+#else
+    #define __UNUSED__(x) x
 #endif
 
 /* IPMI spec. - UID 0 reserved, 63 maximum UID which can be used */
@@ -112,6 +119,19 @@ void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
 #define IS_SET(v, b) ((v) & (1 << (b)))
+
+/**
+ * Free the memory and clear the pointer.
+ * @param[in] ptr - a pointer to your pointer to free.
+ */
+static inline void free_n(void *ptr) {
+	void **pptr = (void **)ptr;
+
+	if (pptr && *pptr) {
+		free(*pptr);
+		*pptr = NULL;
+	}
+}
 
 /* le16toh(), hto16le(), et. al. don't exist for Windows or Apple */
 /* For portability, let's simply define our own versions here */

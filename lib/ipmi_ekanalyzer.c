@@ -38,6 +38,7 @@
 #include <ipmitool/helper.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_time.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -217,8 +218,7 @@ static void ipmi_ek_add_record2list( struct ipmi_ek_multi_header ** record,
       struct ipmi_ek_multi_header ** list_last );
 
 static void ipmi_ek_display_record( struct ipmi_ek_multi_header * record,
-      struct ipmi_ek_multi_header * list_head,
-      struct ipmi_ek_multi_header * list_last );
+      struct ipmi_ek_multi_header * list_head);
 
 static void ipmi_ek_remove_record_from_list(
       struct ipmi_ek_multi_header * record,
@@ -235,7 +235,7 @@ static int ipmi_ekanalyzer_fru_file2structure( char * filename,
 *****************************************************************************/
 static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       struct ipmi_ek_multi_header ** list_head,
-      struct ipmi_ek_multi_header ** list_last, char * opt,
+      char * opt,
       struct ipmi_ek_multi_header * pphysical );
 
 static int ipmi_ek_get_resource_descriptor( int port_count, int index,
@@ -455,7 +455,7 @@ ipmi_ek_get_file_type(char *argument)
 *
 ***************************************************************************/
 int
-ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
+ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 {
 	int rc = ERROR_STATUS;
 	int file_type[MAX_FILE_NUMBER];
@@ -512,7 +512,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *intf, int argc, char **argv)
 				/* Convert from binary data into multi record structure */
 				rc = ipmi_ekanalyzer_fru_file2structure (filename[type_offset],
 						&list_head, &list_record, &list_last );
-				ipmi_ek_display_record(list_record, list_head, list_last);
+				ipmi_ek_display_record(list_record, list_head);
 				/* Remove record of list */
 				while (list_head) {
 					ipmi_ek_remove_record_from_list(list_head,
@@ -1187,7 +1187,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
                         }
                         return_value = ipmi_ek_matching_process( file_type,
                                              match_pair, num_file, list_head,
-                                             list_last, opt, pcarrier_p2p);
+                                             opt, pcarrier_p2p);
                      }
                   }
                }
@@ -1223,8 +1223,6 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 *        index2: position of the second record in the list of the record
 *        ipmi_ek_multi_header ** list_head: pointer to the header of a
 *                 linked list that contain FRU multi record
-*        ipmi_ek_multi_header ** list_last: pointer to the tale of a
-*                 linked list that contain FRU multi record
 *        opt: string that contain display option such as "match", "unmatch", or
 *               "all".
 *        pphysical: a pointer that contain a carrier p2p connectivity record
@@ -1240,7 +1238,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 ***************************************************************************/
 static int ipmi_ek_matching_process( int * file_type, int index1, int index2,
       struct ipmi_ek_multi_header ** list_head,
-      struct ipmi_ek_multi_header ** list_last, char * opt,
+      char * opt,
       struct ipmi_ek_multi_header * pphysical )
 {
    int result = ERROR_STATUS;
@@ -2415,13 +2413,12 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	FILE *input_file;
 	size_t file_offset = 0;
 	struct fru_header header;
-	time_t tval;
+	time_t ts;
 	int ret = 0;
 	unsigned char data = 0;
 	unsigned char lan_code = 0;
 	unsigned char mfg_date[SIZE_MFG_DATE];
 	unsigned int board_length = 0;
-	struct tm *strtm;
 
 	input_file = fopen(filename, "r");
 	if (!input_file) {
@@ -2544,36 +2541,40 @@ ipmi_ek_display_fru_header_detail(char *filename)
 			fclose(input_file);
 			return (-1);
 		}
-		tval = ((mfg_date[2] << 16) + (mfg_date[1] << 8)
-				+ (mfg_date[0]));
-		tval = tval * 60;
-		tval = tval + secs_from_1970_1996;
-		if(time_in_utc)
-			strtm = gmtime(&tval);
-		else
-			strtm = localtime(&tval);
-		printf("Board Mfg Date: %ld, %s", tval, asctime(strtm));
+
+		ts = ipmi_fru2time_t(mfg_date);
+		printf("Board Mfg Date: %ld, %s\n",
+		       (IPMI_TIME_UNSPECIFIED == ts)
+		       ? FRU_BOARD_DATE_UNSPEC
+		       : ts,
+		       ipmi_timestamp_numeric(ts));
 		board_length -= SIZE_MFG_DATE;
+
 		/* Board Mfg */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Manufacture Data", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Product */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Product Name", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Serial */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Serial Number", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Board Part */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Board Part Number", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* FRU file ID */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "FRU File ID", &board_length);
 		ret = fseek(input_file, file_offset, SEEK_SET);
+
 		/* Additional Custom Mfg. */
 		file_offset = ipmi_ek_display_board_info_area(
 				input_file, "Custom", &board_length);
@@ -2947,7 +2948,6 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 *
 * Input: record: a pointer to current record
 *        list_head: a pointer to header of the list
-*        list_last: a pointer to tale of the list
 *
 * Output: None
 *
@@ -2958,8 +2958,7 @@ ipmi_ek_display_product_info_area(FILE *input_file, long offset)
 ***************************************************************************/
 static void
 ipmi_ek_display_record(struct ipmi_ek_multi_header *record,
-		struct ipmi_ek_multi_header *list_head,
-		struct ipmi_ek_multi_header *list_last)
+		struct ipmi_ek_multi_header *list_head)
 {
 	if (!list_head) {
 		printf("***empty list***\n");

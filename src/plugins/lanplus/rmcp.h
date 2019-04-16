@@ -45,23 +45,10 @@
 #define RMCP_TYPE_NORM		0x00
 #define RMCP_TYPE_ACK		0x01
 
-static const struct valstr rmcp_type_vals[] __attribute__((unused)) = {
-	{ RMCP_TYPE_NORM,	"Normal RMCP" },
-	{ RMCP_TYPE_ACK,	"RMCP ACK" },
-	{ 0,			NULL }
-};
-
 #define RMCP_CLASS_MASK		0x1f
 #define RMCP_CLASS_ASF		0x06
 #define RMCP_CLASS_IPMI		0x07
 #define RMCP_CLASS_OEM		0x08
-
-static const struct valstr rmcp_class_vals[] __attribute__((unused)) = {
-	{ RMCP_CLASS_ASF,	"ASF" },
-	{ RMCP_CLASS_IPMI,	"IPMI" },
-	{ RMCP_CLASS_OEM,	"OEM" },
-	{ 0,			NULL }
-};
 
 /* RMCP message header */
 #ifdef HAVE_PRAGMA_PACK

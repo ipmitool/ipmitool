@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_time.h>
 #include <ipmitool/log.h>
 
 extern int verbose;
@@ -77,6 +78,307 @@ static const char * pef_flag_fmts[][3] = {
 	{"abled",     "dis",      "en"},
 };
 static const char * listitem[] =	{" | %s", ",%s", "%s"};
+
+static struct bit_desc_map
+pef_b2s_actions = {
+BIT_DESC_MAP_ALL,
+{	{"Alert",			PEF_ACTION_ALERT},
+	{"Power-off",			PEF_ACTION_POWER_DOWN},
+	{"Reset",			PEF_ACTION_RESET},
+	{"Power-cycle",			PEF_ACTION_POWER_CYCLE},
+	{"OEM-defined",			PEF_ACTION_OEM},
+	{"Diagnostic-interrupt",	PEF_ACTION_DIAGNOSTIC_INTERRUPT},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_severities = {
+BIT_DESC_MAP_ANY,
+{	{"Non-recoverable",	PEF_SEVERITY_NON_RECOVERABLE},
+	{"Critical",		PEF_SEVERITY_CRITICAL},
+	{"Warning",		PEF_SEVERITY_WARNING},
+	{"OK",			PEF_SEVERITY_OK},
+	{"Information",		PEF_SEVERITY_INFORMATION},
+	{"Monitor",		PEF_SEVERITY_MONITOR},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_sensortypes = {
+BIT_DESC_MAP_LIST,
+{	{"Any",					255},
+	{"Temperature",				1},
+	{"Voltage",				2},
+	{"Current",				3},
+	{"Fan",					4},
+	{"Chassis Intrusion",			5},
+	{"Platform security breach",		6},
+	{"Processor",				7},
+	{"Power supply",			8},
+	{"Power Unit",				9},
+	{"Cooling device",			10},
+	{"Other (units-based)",			11},
+	{"Memory",				12},
+	{"Drive Slot",				13},
+	{"POST memory resize",			14},
+	{"POST error",				15},
+	{"Logging disabled",			16},
+	{"Watchdog 1",				17},
+	{"System event",			18},
+	{"Critical Interrupt",			19},
+	{"Button",				20},
+	{"Module/board",			21},
+	{"uController/coprocessor",		22},
+	{"Add-in card",				23},
+	{"Chassis",				24},
+	{"Chipset",				25},
+	{"Other (FRU)",				26},
+	{"Cable/interconnect",			27},
+	{"Terminator",				28},
+	{"System boot",				29},
+	{"Boot error",				30},
+	{"OS boot",				31},
+	{"OS critical stop",			32},
+	{"Slot/connector",			33},
+	{"ACPI power state",			34},
+	{"Watchdog 2",				35},
+	{"Platform alert",			36},
+	{"Entity presence",			37},
+	{"Monitor ASIC/IC",			38},
+	{"LAN",					39},
+	{"Management subsystem health",		40},
+	{"Battery",				41},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_1 = {
+BIT_DESC_MAP_LIST,
+{	{"<LNC",	0},		/* '<' : getting worse */
+	{">LNC",	1},		/* '>' : getting better */
+	{"<LC",		2},
+	{">LC",		3},
+	{"<LNR",	4},
+	{">LNR",	5},
+	{">UNC",	6},
+	{"<UNC",	7},
+	{">UC",		8},
+	{"<UC",		9},
+	{">UNR",	10},
+	{"<UNR",	11},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_2 = {
+BIT_DESC_MAP_LIST,
+{	{"transition to idle",		0},
+	{"transition to active",	1},
+	{"transition to busy",		2},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_3 = {
+BIT_DESC_MAP_LIST,
+{	{"state deasserted",	0},
+	{"state asserted",	1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_4 = {
+BIT_DESC_MAP_LIST,
+{	{"predictive failure deasserted",	0},
+	{"predictive failure asserted",		1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_5 = {
+BIT_DESC_MAP_LIST,
+{	{"limit not exceeded",	0},
+	{"limit exceeded",	1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_6 = {
+BIT_DESC_MAP_LIST,
+{	{"performance met",	0},
+	{"performance lags",	1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_7 = {
+BIT_DESC_MAP_LIST,
+{	{"ok",			0},
+	{"<warn",		1},		/* '<' : getting worse */
+	{"<fail",		2},
+	{"<dead",		3},
+	{">warn",		4},		/* '>' : getting better */
+	{">fail",		5},
+	{"dead",		6},
+	{"monitor",		7},
+	{"informational",	8},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_8 = {
+BIT_DESC_MAP_LIST,
+{	{"device removed/absent",	0},
+	{"device inserted/present",	1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_9 = {
+BIT_DESC_MAP_LIST,
+{	{"device disabled",	0},
+	{"device enabled",	1},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_10 = {
+BIT_DESC_MAP_LIST,
+{	{"transition to running",	0},
+	{"transition to in test",	1},
+	{"transition to power off",	2},
+	{"transition to online",	3},
+	{"transition to offline",	4},
+	{"transition to off duty",	5},
+	{"transition to degraded",	6},
+	{"transition to power save",	7},
+	{"install error",		8},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_11 = {
+BIT_DESC_MAP_LIST,
+{	{"fully redundant",		0},
+	{"redundancy lost",		1},
+	{"redundancy degraded",		2},
+	{"<non-redundant/sufficient",	3},		/* '<' : getting worse */
+	{">non-redundant/sufficient",	4},		/* '>' : getting better */
+	{"non-redundant/insufficient",	5},
+	{"<redundancy degraded",	6},
+	{">redundancy degraded",	7},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_gentype_12 = {
+BIT_DESC_MAP_LIST,
+{	{"D0 power state",	0},
+	{"D1 power state",	1},
+	{"D2 power state",	2},
+	{"D3 power state",	3},
+	{NULL}
+}	};
+
+static struct bit_desc_map *
+pef_b2s_generic_ER[] = {
+	&pef_b2s_gentype_1,
+	&pef_b2s_gentype_2,
+	&pef_b2s_gentype_3,
+	&pef_b2s_gentype_4,
+	&pef_b2s_gentype_5,
+	&pef_b2s_gentype_6,
+	&pef_b2s_gentype_7,
+	&pef_b2s_gentype_8,
+	&pef_b2s_gentype_9,
+	&pef_b2s_gentype_10,
+	&pef_b2s_gentype_11,
+	&pef_b2s_gentype_12,
+};
+#define PEF_B2S_GENERIC_ER_ENTRIES ARRAY_SIZE(pef_b2s_generic_ER)
+
+static struct bit_desc_map
+pef_b2s_policies = {
+BIT_DESC_MAP_LIST,
+{	{"Match-always",		PEF_POLICY_FLAGS_MATCH_ALWAYS},
+	{"Try-next-entry",		PEF_POLICY_FLAGS_PREV_OK_SKIP},
+	{"Try-next-set",		PEF_POLICY_FLAGS_PREV_OK_NEXT_POLICY_SET},
+	{"Try-next-channel",		PEF_POLICY_FLAGS_PREV_OK_NEXT_CHANNEL_IN_SET},
+	{"Try-next-destination",	PEF_POLICY_FLAGS_PREV_OK_NEXT_DESTINATION_IN_SET},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_ch_medium = {
+#define PEF_CH_MEDIUM_TYPE_IPMB		1
+#define PEF_CH_MEDIUM_TYPE_ICMB_10	2
+#define PEF_CH_MEDIUM_TYPE_ICMB_09	3
+#define PEF_CH_MEDIUM_TYPE_LAN		4
+#define PEF_CH_MEDIUM_TYPE_SERIAL	5
+#define PEF_CH_MEDIUM_TYPE_XLAN		6
+#define PEF_CH_MEDIUM_TYPE_PCI_SMBUS	7
+#define PEF_CH_MEDIUM_TYPE_SMBUS_V1X	8
+#define PEF_CH_MEDIUM_TYPE_SMBUS_V2X	9
+#define PEF_CH_MEDIUM_TYPE_USB_V1X	10
+#define PEF_CH_MEDIUM_TYPE_USB_V2X	11
+#define PEF_CH_MEDIUM_TYPE_SYSTEM	12
+BIT_DESC_MAP_LIST,
+{	{"IPMB (I2C)",			PEF_CH_MEDIUM_TYPE_IPMB},
+	{"ICMB v1.0",			PEF_CH_MEDIUM_TYPE_ICMB_10},
+	{"ICMB v0.9",			PEF_CH_MEDIUM_TYPE_ICMB_09},
+	{"802.3 LAN",			PEF_CH_MEDIUM_TYPE_LAN},
+	{"Serial/Modem (RS-232)",	PEF_CH_MEDIUM_TYPE_SERIAL},
+	{"Other LAN",			PEF_CH_MEDIUM_TYPE_XLAN},
+	{"PCI SMBus",			PEF_CH_MEDIUM_TYPE_PCI_SMBUS},
+	{"SMBus v1.0/1.1",		PEF_CH_MEDIUM_TYPE_SMBUS_V1X},
+	{"SMBus v2.0",			PEF_CH_MEDIUM_TYPE_SMBUS_V2X},
+	{"USB 1.x",			PEF_CH_MEDIUM_TYPE_USB_V1X},
+	{"USB 2.x",			PEF_CH_MEDIUM_TYPE_USB_V2X},
+	{"System I/F (KCS,SMIC,BT)",	PEF_CH_MEDIUM_TYPE_SYSTEM},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_control = {
+BIT_DESC_MAP_ALL,
+{	{"PEF",				PEF_CONTROL_ENABLE},
+	{"PEF event messages",		PEF_CONTROL_ENABLE_EVENT_MESSAGES},
+	{"PEF startup delay",		PEF_CONTROL_ENABLE_STARTUP_DELAY},
+	{"Alert startup delay",		PEF_CONTROL_ENABLE_ALERT_STARTUP_DELAY},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_lan_desttype = {
+BIT_DESC_MAP_LIST,
+{	{"Acknowledged",	PEF_LAN_DEST_TYPE_ACK},
+	{"PET",			PEF_LAN_DEST_TYPE_PET},
+	{"OEM 1",		PEF_LAN_DEST_TYPE_OEM_1},
+	{"OEM 2",		PEF_LAN_DEST_TYPE_OEM_2},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_serial_desttype = {
+BIT_DESC_MAP_LIST,
+{	{"Acknowledged",	PEF_SERIAL_DEST_TYPE_ACK},
+	{"TAP page",		PEF_SERIAL_DEST_TYPE_TAP},
+	{"PPP PET",		PEF_SERIAL_DEST_TYPE_PPP},
+	{"Basic callback",	PEF_SERIAL_DEST_TYPE_BASIC_CALLBACK},
+	{"PPP callback",	PEF_SERIAL_DEST_TYPE_PPP_CALLBACK},
+	{"OEM 1",		PEF_SERIAL_DEST_TYPE_OEM_1},
+	{"OEM 2",		PEF_SERIAL_DEST_TYPE_OEM_2},
+	{NULL}
+}	};
+
+static struct bit_desc_map
+pef_b2s_tap_svc_confirm = {
+BIT_DESC_MAP_LIST,
+{	{"ACK",			PEF_SERIAL_TAP_CONFIRMATION_ACK_AFTER_ETX},
+	{"211+ACK",		PEF_SERIAL_TAP_CONFIRMATION_211_ACK_AFTER_ETX},
+	{"{211|213}+ACK",	PEF_SERIAL_TAP_CONFIRMATION_21X_ACK_AFTER_ETX},
+	{NULL}
+}	};
 
 static int ipmi_pef2_list_filters(struct ipmi_intf *);
 
@@ -602,7 +904,8 @@ _ipmi_set_pef_policy_entry(struct ipmi_intf *intf, uint8_t policy_id,
 }
 
 static void
-ipmi_pef_print_oem_lan_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
+ipmi_pef_print_oem_lan_dest(struct ipmi_intf *intf,
+                            uint8_t dest)
 {
 	char address[128];
 	int len;
@@ -865,7 +1168,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
 	if (!dest || tbl_size == 0)	/* Page alerting not supported */
 		return;
 	if (dest > tbl_size) {
-		ipmi_pef_print_oem_lan_dest(intf, ch, dest - tbl_size);
+		ipmi_pef_print_oem_lan_dest(intf, dest - tbl_size);
 		return;
 	}
 
@@ -903,7 +1206,7 @@ ipmi_pef_print_serial_dest(struct ipmi_intf *intf, uint8_t ch, uint8_t dest)
 }
 
 static void
-ipmi_pef_print_dest(struct ipmi_intf * intf, uint8_t ch, uint8_t dest)
+ipmi_pef_print_dest(uint8_t dest)
 {	/*
 	// print generic alert destination info
 	*/
@@ -1183,6 +1486,7 @@ ipmi_pef2_get_info(struct ipmi_intf *intf)
 		ipmi_pef_print_guid(guid_ptr);
 	}
 	ipmi_pef_print_flags(&pef_b2s_actions, P_SUPP, pcap.actions);
+	putchar('\n');
 	return 0;
 }
 
@@ -1193,8 +1497,6 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct pef_cfgparm_selector psel;
-	char tbuf[40];
-	uint32_t timei;
 	time_t ts;
 
 	memset(&req, 0, sizeof(req));
@@ -1206,15 +1508,9 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 			"Last S/W processed ID");
 		return (-1);
 	}
-	memcpy(&timei, rsp->data, sizeof(timei));
-#if WORDS_BIGENDIAN
-	timei = BSWAP_32(timei);
-#endif
-	ts = (time_t)timei;
 
-	strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", gmtime(&ts));
-
-	ipmi_pef_print_str("Last SEL addition", tbuf);
+	ts = ipmi32toh(rsp->data);
+	ipmi_pef_print_str("Last SEL addition", ipmi_timestamp_numeric(ts));
 	ipmi_pef_print_2xd("Last SEL record ID", rsp->data[5], rsp->data[4]);
 	ipmi_pef_print_2xd("Last S/W processed ID", rsp->data[7], rsp->data[6]);
 	ipmi_pef_print_2xd("Last BMC processed ID", rsp->data[9], rsp->data[8]);
@@ -1242,6 +1538,7 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 		return (-1);
 	}
 	ipmi_pef_print_flags(&pef_b2s_actions, P_ACTV, rsp->data[1]);
+	putchar('\n');
 	return 0;
 }
 
@@ -1337,7 +1634,7 @@ ipmi_pef2_list_policies(struct ipmi_intf *intf)
 					dest);
 			break;
 		default:
-			ipmi_pef_print_dest(intf, channel_info.channel, dest);
+			ipmi_pef_print_dest(dest);
 			break;
 		}
 		printf("\n");

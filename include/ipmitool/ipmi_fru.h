@@ -36,10 +36,13 @@
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_time.h>
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+
+#define FRU_END_OF_FIELDS 0xc1
 
 #define GET_FRU_INFO		0x10
 #define GET_FRU_DATA		0x11
@@ -192,9 +195,6 @@ struct fru_multirec_powersupply {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
-
-static const char * combined_voltage_desc[] __attribute__((unused)) = {
-"12 V", "-12 V", "5 V", "3.3 V"};
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
@@ -590,20 +590,28 @@ struct fru_picmgext_amc_link_desc_record {
 #pragma pack(0)
 #endif
 
+/* IPMI Return codes for Get FRU Inventory Area and Write FRU Inventory Area */
+/* PROTECTED_OFFSET Only expected on write command failures. */
+#define IPMI_CC_FRU_WRITE_PROTECTED_OFFSET 0x80
+#define IPMI_CC_FRU_DEVICE_BUSY 0x81
+
 /* FRU Board manufacturing date */
-static const uint64_t secs_from_1970_1996 = 820454400;
-static const char * chassis_type_desc[] __attribute__((unused)) = {
-	"Unspecified", "Other", "Unknown",
-	"Desktop", "Low Profile Desktop", "Pizza Box",
-	"Mini Tower", "Tower",
-	    "Portable", "LapTop", "Notebook", "Hand Held",
-	    "Docking Station", "All in One", "Sub Notebook",
-	    "Space-saving", "Lunch Box", "Main Server Chassis",
-	    "Expansion Chassis", "SubChassis", "Bus Expansion Chassis",
-	    "Peripheral Chassis", "RAID Chassis", "Rack Mount Chassis",
-	    "Sealed-case PC", "Multi-system Chassis", "CompactPCI",
-	    "AdvancedTCA", "Blade", "Blade Enclosure"
-};
+#define FRU_BOARD_DATE_UNSPEC 0 /* IPMI FRU Information Storage Definition
+                                   v1.0 rev 1.3, Table 11-1 */
+static inline time_t ipmi_fru2time_t(void *mfg_date) {
+	const uint64_t secs_from_1970_1996 = 820454400;
+	uint32_t fru_ts = ipmi24toh(mfg_date);
+	time_t ts;
+
+	if (FRU_BOARD_DATE_UNSPEC == fru_ts) {
+		ts = IPMI_TIME_UNSPECIFIED;
+	}
+	else {
+		ts = fru_ts * 60 + secs_from_1970_1996;
+	}
+
+	return ts;
+}
 
 typedef struct ipmi_fru_bloc {
 	struct ipmi_fru_bloc * next;

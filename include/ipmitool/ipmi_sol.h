@@ -92,17 +92,16 @@ struct activate_payload_rsp {
  * function will return -1 if value is not valid, or
  * will return 0 if valid.
  */
-int ipmi_sol_set_param_isvalid_uint8_t( const char *strval,
-					const char *name,
-					int base,
-					uint8_t minval,
-					uint8_t maxval,
-					uint8_t *out_value);
+int ipmi_sol_set_param_isvalid_uint8_t(const char *strval,
+				       const char *name,
+				       uint8_t minval,
+				       uint8_t maxval,
+				       uint8_t *out_value);
 
 int ipmi_sol_main(struct ipmi_intf *, int, char **);
-int ipmi_get_sol_info(struct ipmi_intf             * intf,
-					  uint8_t                  channel,
-					  struct sol_config_parameters * params);
+int ipmi_get_sol_info(struct ipmi_intf *intf,
+		      uint8_t channel,
+		      struct sol_config_parameters *params);
 
 
 #endif /* IPMI_SOL_H */

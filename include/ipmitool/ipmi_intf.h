@@ -62,13 +62,45 @@ enum LANPLUS_SESSION_STATE {
 #define IPMI_SIK_BUFFER_SIZE      IPMI_MAX_MD_SIZE
 #define IPMI_KG_BUFFER_SIZE       21 /* key plus null byte */
 
+enum cipher_suite_ids {
+	IPMI_LANPLUS_CIPHER_SUITE_0 = 0,
+	IPMI_LANPLUS_CIPHER_SUITE_1 = 1,
+	IPMI_LANPLUS_CIPHER_SUITE_2 = 2,
+	IPMI_LANPLUS_CIPHER_SUITE_3 = 3,
+	IPMI_LANPLUS_CIPHER_SUITE_4 = 4,
+	IPMI_LANPLUS_CIPHER_SUITE_5 = 5,
+	IPMI_LANPLUS_CIPHER_SUITE_6 = 6,
+	IPMI_LANPLUS_CIPHER_SUITE_7 = 7,
+	IPMI_LANPLUS_CIPHER_SUITE_8 = 8,
+	IPMI_LANPLUS_CIPHER_SUITE_9 = 9,
+	IPMI_LANPLUS_CIPHER_SUITE_10 = 10,
+	IPMI_LANPLUS_CIPHER_SUITE_11 = 11,
+	IPMI_LANPLUS_CIPHER_SUITE_12 = 12,
+	IPMI_LANPLUS_CIPHER_SUITE_13 = 13,
+	IPMI_LANPLUS_CIPHER_SUITE_14 = 14,
+#ifdef HAVE_CRYPTO_SHA256
+	IPMI_LANPLUS_CIPHER_SUITE_15 = 15,
+	IPMI_LANPLUS_CIPHER_SUITE_16 = 16,
+	IPMI_LANPLUS_CIPHER_SUITE_17 = 17,
+#endif /* HAVE_CRYPTO_SHA256 */
+	IPMI_LANPLUS_CIPHER_SUITE_RESERVED = 0xff,
+};
+
+struct cipher_suite_info {
+	enum cipher_suite_ids cipher_suite_id;
+	uint8_t auth_alg;
+	uint8_t integrity_alg;
+	uint8_t crypt_alg;
+	uint32_t iana;
+};
+
 struct ipmi_session_params {
 	char * hostname;
 	uint8_t username[17];
 	uint8_t authcode_set[IPMI_AUTHCODE_BUFFER_SIZE + 1];
 	uint8_t authtype_set;
 	uint8_t privlvl;
-	uint8_t cipher_suite_id;
+	enum cipher_suite_ids cipher_suite_id;
 	char sol_escape_char;
 	int password;
 	int port;
@@ -217,7 +249,10 @@ void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
 void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
 void ipmi_intf_session_set_lookupbit(struct ipmi_intf * intf, uint8_t lookupbit);
-void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf, uint8_t cipher_suite_id);
+#ifdef IPMI_INTF_LANPLUS
+void ipmi_intf_session_set_cipher_suite_id(struct ipmi_intf * intf,
+                                           enum cipher_suite_ids cipher_suite_id);
+#endif /* IPMI_INTF_LANPLUS */
 void ipmi_intf_session_set_sol_escape_char(struct ipmi_intf * intf, char sol_escape_char);
 void ipmi_intf_session_set_kgkey(struct ipmi_intf *intf, const uint8_t *kgkey);
 void ipmi_intf_session_set_port(struct ipmi_intf * intf, int port);

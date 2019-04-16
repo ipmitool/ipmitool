@@ -113,7 +113,7 @@ int HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		int option,
 		int *pFlagColdReset);
 int
-HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
+HpmfwupgPreUpgradeCheck(
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		int componentMask, int option);
 
@@ -503,10 +503,9 @@ HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename, int activate,
 			lprintf(LOG_NOTICE, "\nPerforming upgrade stage:");
 		}
 		if (option & VIEW_MODE) {
-			rc = HpmfwupgPreUpgradeCheck(intf,
-					&fwupgCtx,componentMask, VIEW_MODE);
+			rc = HpmfwupgPreUpgradeCheck(&fwupgCtx,componentMask, VIEW_MODE);
 		} else {
-			rc = HpmfwupgPreUpgradeCheck(intf, &fwupgCtx,
+			rc = HpmfwupgPreUpgradeCheck(&fwupgCtx,
 					componentMask, option);
 			if (rc == HPMFWUPG_SUCCESS) {
 				if (verbose) {
@@ -830,7 +829,7 @@ HpmfwupgValidateActionRecordChecksum(struct HpmfwupgActionRecord *pActionRecord)
  * is same as target version.
  */
 int
-HpmfwupgPreUpgradeCheck(struct ipmi_intf *intf,
+HpmfwupgPreUpgradeCheck(
 		struct HpmfwupgUpgradeCtx *pFwupgCtx,
 		int componentMask, int option)
 {
@@ -1386,27 +1385,26 @@ int
 HpmfwupgGetBufferFromFile(char *imageFilename,
 		struct HpmfwupgUpgradeCtx *pFwupgCtx)
 {
-	int rc = HPMFWUPG_SUCCESS;
+	int rc = HPMFWUPG_ERROR;
 	int ret = 0;
 	FILE *pImageFile = fopen(imageFilename, "rb");
 	if (!pImageFile) {
 		lprintf(LOG_ERR, "Cannot open image file '%s'",
 				imageFilename);
-		return HPMFWUPG_ERROR;
+		goto ret_no_close;
 	}
 	/* Get the raw data in file */
 	ret = fseek(pImageFile, 0, SEEK_END);
 	if (ret != 0) {
 		lprintf(LOG_ERR, "Failed to seek in the image file '%s'",
 				imageFilename);
-		return HPMFWUPG_ERROR;
+		goto ret_close;
 	}
 	pFwupgCtx->imageSize  = ftell(pImageFile);
 	pFwupgCtx->pImageData = malloc(sizeof(unsigned char)*pFwupgCtx->imageSize);
 	if (!pFwupgCtx->pImageData) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		fclose(pImageFile);
-		return HPMFWUPG_ERROR;
+		goto ret_close;
 	}
 	rewind(pImageFile);
 	ret = fread(pFwupgCtx->pImageData,
@@ -1418,9 +1416,14 @@ HpmfwupgGetBufferFromFile(char *imageFilename,
 				"Failed to read file %s size %d", 
 				imageFilename,
 				pFwupgCtx->imageSize);
-		rc = HPMFWUPG_ERROR;
+		goto ret_close;
 	}
+
+	rc = HPMFWUPG_SUCCESS;
+
+ret_close:
 	fclose(pImageFile);
+ret_no_close:
 	return rc;
 }
 
@@ -2291,13 +2294,9 @@ HpmfwupgWaitLongDurationCmd(struct ipmi_intf *intf,
 			}
 		}
 	}
-	if (rc == HPMFWUPG_SUCCESS) {
-		/* Poll upgrade status until completion or timeout*/
-		timeoutSec1 = time(NULL);
-		timeoutSec2 = time(NULL);
-		rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd,
-				pFwupgCtx, 1);
-	}
+	/* Poll upgrade status until completion or timeout*/
+	timeoutSec2 = timeoutSec1 = time(NULL);
+	rc = HpmfwupgGetUpgradeStatus(intf, &upgStatusCmd, pFwupgCtx, 1);
 	while (
 			/* With KCS: Cover the case where we sometime
 			 * receive d5 (on the first get status) from

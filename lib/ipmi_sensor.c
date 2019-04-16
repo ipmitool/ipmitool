@@ -532,7 +532,7 @@ ipmi_sensor_list(struct ipmi_intf *intf)
 		/* rc = (r == 0) ? rc : r; */
 	}
 
-	ipmi_sdr_end(intf, itr);
+	ipmi_sdr_end(itr);
 
 	return rc;
 }

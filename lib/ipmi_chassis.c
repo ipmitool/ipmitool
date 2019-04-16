@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_chassis.h>
+#include <ipmitool/ipmi_time.h>
 
 extern int verbose;
 
@@ -699,45 +700,19 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 		case 6:
 		{
 			unsigned long session_id;
-			unsigned long timestamp;
-			char time_buf[40];
-			time_t out_time;
-			struct tm *strtm;
+			uint32_t timestamp;
 
 			session_id  = ((unsigned long) rsp->data[3]);
 			session_id |= (((unsigned long) rsp->data[4])<<8);
 			session_id |= (((unsigned long) rsp->data[5])<<16);
 			session_id |= (((unsigned long) rsp->data[6])<<24);
 
-			timestamp  = ((unsigned long) rsp->data[7]);
-			timestamp |= (((unsigned long) rsp->data[8])<<8);
-			timestamp |= (((unsigned long) rsp->data[9])<<16);
-			timestamp |= (((unsigned long) rsp->data[10])<<24);
-
-			memset(time_buf, 0, 40);
-			if(time_in_utc)
-				strtm = gmtime(&out_time);
-			else
-				strtm = localtime(&out_time);
-
-			strftime(
-					time_buf,
-					sizeof(time_buf),
-					"%m/%d/%Y %H:%M:%S", strtm
-			);
+			timestamp = ipmi32toh(&rsp->data[7]);
 
 			printf(" Boot Initiator Info :\n");
 			printf("    Channel Number : %d\n", (rsp->data[2] & 0x0f));
 			printf("    Session Id     : %08lXh\n",session_id);
-			if(timestamp != 0)
-			{
-				printf("    Timestamp      : %08lXh, %s\n",timestamp,time_buf);
-			}
-			else
-			{
-				printf("    Timestamp      : %08lXh, undefined\n",timestamp);
-			}
-
+			printf("    Timestamp      : %s\n", ipmi_timestamp_numeric(timestamp));
 		}
 		break;
 		case 7:

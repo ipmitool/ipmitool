@@ -36,7 +36,6 @@
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <endian.h>
 
 #include <arpa/inet.h>
 
@@ -47,6 +46,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_time.h>
 
 extern int verbose;
 
@@ -731,8 +731,6 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 		[GUID_DUMP] = "Unknown (data dumped)"
 	};
 
-	char tbuf[40] = { 0 };
-	struct tm *tm;
 	int rc;
 
 	rc = _ipmi_mc_get_guid(intf, (ipmi_guid_t *)guid_data);
@@ -776,12 +774,7 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 		printf(" (%d)\n", GUID_VERSION((int)guid.time_hi_and_version));
 		break;
 	case GUID_VERSION_TIME:
-		if(time_in_utc)
-			tm = gmtime(&guid.time);
-		else
-			tm = localtime(&guid.time);
-		strftime(tbuf, sizeof(tbuf), "%m/%d/%Y %H:%M:%S", tm);
-		printf("\nTimestamp     : %s\n", tbuf);
+		printf("\nTimestamp     : %s\n", ipmi_timestamp_numeric(guid.time));
 		break;
 	default:
 		printf("\n");

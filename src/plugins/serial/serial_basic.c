@@ -816,12 +816,14 @@ serial_bm_wait_response(struct ipmi_intf * intf,
 
 /*
  *	Get message from receive message queue
+ *
+ * Note: kept max_len in case later use.
  */
 static int
 serial_bm_get_message(struct ipmi_intf * intf,
 		struct serial_bm_request_ctx * req_ctx,
 		struct serial_bm_recv_ctx * read_ctx,
-		uint8_t * msg, size_t max_len)
+		uint8_t * msg, size_t __UNUSED__(max_len))
 {
 	uint8_t data[SERIAL_BM_MAX_MSG_SIZE];
 	struct serial_bm_request_ctx tmp_ctx;

@@ -773,50 +773,7 @@ struct sdr_record_list {
 #pragma pack(0)
 #endif
 
-
-/* unit description codes (IPMI v1.5 section 37.16) */
-#define UNIT_MAX	0x90
-static const char *unit_desc[] __attribute__ ((unused)) = {
-"unspecified",
-	    "degrees C", "degrees F", "degrees K",
-	    "Volts", "Amps", "Watts", "Joules",
-	    "Coulombs", "VA", "Nits",
-	    "lumen", "lux", "Candela",
-	    "kPa", "PSI", "Newton",
-	    "CFM", "RPM", "Hz",
-	    "microsecond", "millisecond", "second", "minute", "hour",
-	    "day", "week", "mil", "inches", "feet", "cu in", "cu feet",
-	    "mm", "cm", "m", "cu cm", "cu m", "liters", "fluid ounce",
-	    "radians", "steradians", "revolutions", "cycles",
-	    "gravities", "ounce", "pound", "ft-lb", "oz-in", "gauss",
-	    "gilberts", "henry", "millihenry", "farad", "microfarad",
-	    "ohms", "siemens", "mole", "becquerel", "PPM", "reserved",
-	    "Decibels", "DbA", "DbC", "gray", "sievert",
-	    "color temp deg K", "bit", "kilobit", "megabit", "gigabit",
-	    "byte", "kilobyte", "megabyte", "gigabyte", "word", "dword",
-	    "qword", "line", "hit", "miss", "retry", "reset",
-	    "overflow", "underrun", "collision", "packets", "messages",
-	    "characters", "error", "correctable error", "uncorrectable error",};
-
-/* sensor type codes (IPMI v1.5 table 36.3) 
-  / Updated to v2.0 Table 42-3, Sensor Type Codes */
 #define SENSOR_TYPE_MAX 0x2C
-static const char *sensor_type_desc[] __attribute__ ((unused)) = {
-"reserved",
-	    "Temperature", "Voltage", "Current", "Fan",
-	    "Physical Security", "Platform Security", "Processor",
-	    "Power Supply", "Power Unit", "Cooling Device", "Other",
-	    "Memory", "Drive Slot / Bay", "POST Memory Resize",
-	    "System Firmwares", "Event Logging Disabled", "Watchdog1",
-	    "System Event", "Critical Interrupt", "Button",
-	    "Module / Board", "Microcontroller", "Add-in Card",
-	    "Chassis", "Chip Set", "Other FRU", "Cable / Interconnect",
-	    "Terminator", "System Boot Initiated", "Boot Error",
-	    "OS Boot", "OS Critical Stop", "Slot / Connector",
-	    "System ACPI Power State", "Watchdog2", "Platform Alert",
-	    "Entity Presence", "Monitor ASIC", "LAN",
-	    "Management Subsys Health", "Battery", "Session Audit",
-	    "Version Change", "FRU State" };
 
 struct sensor_reading {
 	char		s_id[17];		/* name of the sensor */
@@ -864,11 +821,10 @@ struct sdr_get_rs *ipmi_sdr_get_next_header(struct ipmi_intf *intf,
 					    struct ipmi_sdr_iterator *i);
 uint8_t *ipmi_sdr_get_record(struct ipmi_intf *intf, struct sdr_get_rs *header,
 			     struct ipmi_sdr_iterator *i);
-void ipmi_sdr_end(struct ipmi_intf *intf, struct ipmi_sdr_iterator *i);
+void ipmi_sdr_end(struct ipmi_sdr_iterator *i);
 int ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type);
 
-int ipmi_sdr_print_name_from_rawentry(struct ipmi_intf *intf,uint16_t id,
-                                      uint8_t type,uint8_t * raw);
+int ipmi_sdr_print_name_from_rawentry(uint16_t id, uint8_t type,uint8_t * raw);
 int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf *intf,
@@ -912,15 +868,9 @@ int ipmi_sdr_get_reservation(struct ipmi_intf *intf, int use_builtin,
 
 int ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 				    struct sdr_record_eventonly_sensor *sensor);
-int ipmi_sdr_print_sensor_generic_locator(struct ipmi_intf *intf,
-					  struct sdr_record_generic_locator
-					  *fru);
-int ipmi_sdr_print_sensor_fru_locator(struct ipmi_intf *intf,
-				      struct sdr_record_fru_locator *fru);
-int ipmi_sdr_print_sensor_mc_locator(struct ipmi_intf *intf,
-				     struct sdr_record_mc_locator *mc);
-int ipmi_sdr_print_sensor_entity_assoc(struct ipmi_intf *intf,
-				       struct sdr_record_entity_assoc *assoc);
+int ipmi_sdr_print_sensor_generic_locator(struct sdr_record_generic_locator *fru);
+int ipmi_sdr_print_sensor_fru_locator(struct sdr_record_fru_locator *fru);
+int ipmi_sdr_print_sensor_mc_locator(struct sdr_record_mc_locator *mc);
 
 struct sdr_record_list *ipmi_sdr_find_sdr_byentity(struct ipmi_intf *intf,
 						   struct entity_id *entity);
@@ -933,8 +883,8 @@ struct sdr_record_list *ipmi_sdr_find_sdr_byid(struct ipmi_intf *intf,
 struct sdr_record_list *ipmi_sdr_find_sdr_bytype(struct ipmi_intf *intf,
 						 uint8_t type);
 int ipmi_sdr_list_cache(struct ipmi_intf *intf);
-int ipmi_sdr_list_cache_fromfile(struct ipmi_intf *intf, const char *ifile);
-void ipmi_sdr_list_empty(struct ipmi_intf *intf);
+int ipmi_sdr_list_cache_fromfile(const char *ifile);
+void ipmi_sdr_list_empty(void);
 int ipmi_sdr_print_info(struct ipmi_intf *intf);
 void ipmi_sdr_print_discrete_state(struct ipmi_intf *intf,
 				const char *desc, uint8_t sensor_type,

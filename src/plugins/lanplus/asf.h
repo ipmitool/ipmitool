@@ -41,20 +41,6 @@
 #define ASF_TYPE_PING		0x80
 #define ASF_TYPE_PONG		0x40
 
-static const struct valstr asf_type_vals[] __attribute__((unused)) = {
-	{ 0x10, "Reset" },
-	{ 0x11, "Power-up" },
-	{ 0x12, "Unconditional Power-down" },
-	{ 0x13, "Power Cycle" },
-	{ 0x40, "Presence Pong" },
-	{ 0x41, "Capabilities Response" },
-	{ 0x42, "System State Response" },
-	{ 0x80, "Presence Ping" },
-	{ 0x81, "Capabilities Request" },
-	{ 0x82, "System State Request" },
-	{ 0x00, NULL }
-};
-
 /* ASF message header */
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)

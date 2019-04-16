@@ -1,4 +1,5 @@
 .deps
+.dirstamp
 .libs
 *.o
 *.lo

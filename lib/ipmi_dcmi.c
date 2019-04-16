@@ -56,6 +56,7 @@
 #include <ipmitool/ipmi_entity.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_time.h>
 
 #include "../src/plugins/lanplus/lanplus.h"
 
@@ -129,7 +130,7 @@ const struct dcmi_cmd dcmi_optional_platform_capabilities[] = {
 	DCMI_CMD_END(0xFF)
 };
 
-/* access capabilties */
+/* access capabilities */
 const struct dcmi_cmd dcmi_management_access_capabilities[] = {
 	{ 0x01, "In-band KCS channel available", "" },
 	{ 0x02, "Out-of-band serial TMODE available", "" },
@@ -907,19 +908,19 @@ ipmi_dcmi_prnt_getcapabilities(struct ipmi_intf * intf, uint8_t selector)
 		/* loop through each of the entries in the first byte from the
 		 * struct
 		 */
-		printf("\n         Mandatory platform capabilties\n");
+		printf("\n         Mandatory platform capabilities\n");
 		display_capabilities_attributes(dcmi_mandatory_platform_capabilities,
 		                                cape.data_byte1);
 		/* loop through each of the entries in the second byte from the
 		 * struct
 		 */
-		printf("\n         Optional platform capabilties\n");
+		printf("\n         Optional platform capabilities\n");
 		display_capabilities_attributes(dcmi_optional_platform_capabilities,
 		                                cape.data_byte2);
 		/* loop through each of the entries in the third byte from the
 		 * struct
 		 */
-		printf("\n         Managebility access capabilties\n");
+		printf("\n         Managebility access capabilities\n");
 		display_capabilities_attributes(dcmi_management_access_capabilities,
 		                                cape.data_byte3);
 		break;
@@ -1399,11 +1400,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct power_reading val;
-	struct tm tm_t;
-	time_t t;
 	uint8_t msg_data[4]; /* number of request data bytes */
-	memset(&tm_t, 0, sizeof(tm_t));
-	memset(&t, 0, sizeof(t));
 
 	msg_data[0] = IPMI_DCMI; /* Group Extension Identification */
 	if (sample_time) {
@@ -1429,8 +1426,6 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	/* rsp->data[0] is equal to response data byte 2 in spec */
 	/* printf("Group Extension Identification: %02x\n", rsp->data[0]); */
 	memcpy(&val, rsp->data, sizeof (val));
-	t = val.time_stamp;
-	gmtime_r(&t, &tm_t);
 	printf("\n");
 	printf("    Instantaneous power reading:              %8d Watts\n",
 	       val.curr_pwr);
@@ -1441,7 +1436,7 @@ ipmi_dcmi_pwr_rd(struct ipmi_intf * intf, uint8_t sample_time)
 	printf("    Average power reading over sample period: %8d Watts\n",
 	       val.avg_pwr);
 	printf("    IPMI timestamp:                           %s",
-	       asctime(&tm_t));
+	       ipmi_timestamp_numeric(ipmi32toh(&val.time_stamp)));
 	printf("    Sampling period:                          ");
 	if (sample_time)
 		printf("%s \n", val2str2(val.sample,dcmi_sampling_vals));
@@ -2876,12 +2871,8 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	uint8_t policy_id = -1;
 	uint8_t have_policy_id = FALSE;
 	int     policy_mode = 0;
-	int     cut;
 	char   *units = "";
-	char    datebuf[27];
 	struct nm_statistics stats;
-	struct tm tm_t;
-	time_t t;
 
 	argv++;
 	if (!argv[0] ||
@@ -2943,11 +2934,6 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	}
 	if (_ipmi_nm_statistics(intf, mode, domain, policy_id, &stats))
 		return -1;
-	t = stats.time_stamp;
-	gmtime_r(&t, &tm_t);
-	sprintf(datebuf, "%s", asctime(&tm_t));
-	cut = strlen(datebuf) -1;
-	datebuf[cut] = 0;
 	if (csv_output) {
 		printf("%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%d\n",
 		       val2str2(stats.id_state & 0xF, nm_domain_vals),
@@ -2964,7 +2950,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 		       stats.min_value,
 		       stats.max_value,
 		       stats.ave_value,
-		       datebuf,
+		       ipmi_timestamp_numeric(ipmi32toh(&stats.time_stamp)),
 		       stats.stat_period);
 		return 0;
 	}
@@ -2992,7 +2978,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	printf("    Average reading over sample period:       %8d %s\n",
 	       stats.ave_value, units);
 	printf("    IPMI timestamp:                           %s\n",
-	       datebuf);
+	       ipmi_timestamp_numeric(ipmi32toh(&stats.time_stamp)));
 	printf("    Sampling period:                          %08d Seconds.\n",
 	       stats.stat_period);
 	printf("\n");
@@ -3984,14 +3970,14 @@ ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
 	}
 	if (!header) {
 		lprintf(LOG_DEBUG, "header == NULL");
-		ipmi_sdr_end(intf, itr);
+		ipmi_sdr_end(itr);
 		return (-1);
 	}
 	/* yes, we found the SDR for this record ID, now get full record */
 	rec = ipmi_sdr_get_record(intf, header, itr);
 	if (!rec) {
 		lprintf(LOG_DEBUG, "rec == NULL");
-		ipmi_sdr_end(intf, itr);
+		ipmi_sdr_end(itr);
 		return (-1);
 	}
 	if ((header->type == SDR_RECORD_TYPE_FULL_SENSOR) ||
@@ -4004,6 +3990,6 @@ ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id)
 	}
 	free(rec);
 	rec = NULL;
-	ipmi_sdr_end(intf, itr);
+	ipmi_sdr_end(itr);
 	return rc;
 }

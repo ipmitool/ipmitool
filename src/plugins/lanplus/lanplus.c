@@ -102,15 +102,14 @@ static void getIpmiPayloadWireRep(
 								  uint8_t    rq_seq,
 								  uint8_t curr_seq);
 static void getSolPayloadWireRep(
-								  struct ipmi_intf       * intf,
 								 uint8_t          * msg,
 								 struct ipmi_v2_payload * payload);
 static void read_open_session_response(struct ipmi_rs * rsp, int offset);
 static void read_rakp2_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
 static void read_rakp4_message(struct ipmi_rs * rsp, int offset, uint8_t alg);
-static void read_session_data(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
-static void read_session_data_v15(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
-static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset, struct ipmi_session *s);
+static void read_session_data(struct ipmi_rs * rsp, int * offset);
+static void read_session_data_v15(struct ipmi_rs * rsp, int * offset);
+static void read_session_data_v2x(struct ipmi_rs * rsp, int * offset);
 static void read_ipmi_response(struct ipmi_rs * rsp, int * offset);
 static void read_sol_packet(struct ipmi_rs * rsp, int * offset);
 static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
@@ -118,7 +117,6 @@ static struct ipmi_rs * ipmi_lanplus_send_sol(
 											  struct ipmi_intf * intf,
 											  struct ipmi_v2_payload * payload);
 static int check_sol_packet_for_new_data(
-									 struct ipmi_intf * intf,
 									 struct ipmi_rs *rsp);
 static void ack_sol_packet(
 							struct ipmi_intf * intf,
@@ -163,114 +161,110 @@ extern int verbose;
  * returns 0 on success
  *         1 on failure
  */
-int lanplus_get_requested_ciphers(int       cipher_suite_id,
-								  uint8_t * auth_alg,
-								  uint8_t * integrity_alg,
-								  uint8_t * crypt_alg)
+int
+lanplus_get_requested_ciphers(enum cipher_suite_ids cipher_suite_id,
+                              uint8_t *auth_alg,
+                              uint8_t *integrity_alg,
+                              uint8_t *crypt_alg)
 {
-#ifdef HAVE_CRYPTO_SHA256
-	if ((cipher_suite_id < 0) || (cipher_suite_id > 17)) {
-		return 1;
-	}
-#else
-	if ((cipher_suite_id < 0) || (cipher_suite_id > 14))
-		return 1;
-#endif /* HAVE_CRYPTO_SHA256 */
 		/* See table 22-19 for the source of the statement */
 	switch (cipher_suite_id)
 	{
-	case 0:
+	case IPMI_LANPLUS_CIPHER_SUITE_0:
 		*auth_alg      = IPMI_AUTH_RAKP_NONE;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 1:
+	case IPMI_LANPLUS_CIPHER_SUITE_1:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 2:
+	case IPMI_LANPLUS_CIPHER_SUITE_2:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 3:
+	case IPMI_LANPLUS_CIPHER_SUITE_3:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 4:
+	case IPMI_LANPLUS_CIPHER_SUITE_4:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 5:
+	case IPMI_LANPLUS_CIPHER_SUITE_5:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA1;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
-	case 6:
+	case IPMI_LANPLUS_CIPHER_SUITE_6:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 7:
+	case IPMI_LANPLUS_CIPHER_SUITE_7:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 8:
+	case IPMI_LANPLUS_CIPHER_SUITE_8:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 9:
+	case IPMI_LANPLUS_CIPHER_SUITE_9:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 10:
+	case IPMI_LANPLUS_CIPHER_SUITE_10:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
-	case 11:
+	case IPMI_LANPLUS_CIPHER_SUITE_11:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 12:
+	case IPMI_LANPLUS_CIPHER_SUITE_12:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
-	case 13:
+	case IPMI_LANPLUS_CIPHER_SUITE_13:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_128;
 		break;
-	case 14:
+	case IPMI_LANPLUS_CIPHER_SUITE_14:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_MD5;
 		*integrity_alg = IPMI_INTEGRITY_MD5_128;
 		*crypt_alg     = IPMI_CRYPT_XRC4_40;
 		break;
 #ifdef HAVE_CRYPTO_SHA256
-	case 15:
+	case IPMI_LANPLUS_CIPHER_SUITE_15:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_NONE;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 16:
+	case IPMI_LANPLUS_CIPHER_SUITE_16:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
 		*crypt_alg     = IPMI_CRYPT_NONE;
 		break;
-	case 17:
+	case IPMI_LANPLUS_CIPHER_SUITE_17:
 		*auth_alg      = IPMI_AUTH_RAKP_HMAC_SHA256;
 		*integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
 		*crypt_alg     = IPMI_CRYPT_AES_CBC_128;
 		break;
 #endif /* HAVE_CRYPTO_SHA256 */
+	case IPMI_LANPLUS_CIPHER_SUITE_RESERVED:
+	default:
+		return 1;
 	}
 
 	return 0;
@@ -500,7 +494,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
  * asf.data[f:a]= 0x000000000000
  */
 static int
-ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
+ipmi_handle_pong(struct ipmi_rs *rsp)
 {
 	struct rmcp_pong {
 		struct rmcp_hdr rmcp;
@@ -510,7 +504,7 @@ ipmi_handle_pong(struct ipmi_intf * intf, struct ipmi_rs * rsp)
 		uint8_t sup_entities;
 		uint8_t sup_interact;
 		uint8_t reserved[6];
-	} * pong;
+	} *pong;
 
 	if (!rsp)
 		return -1;
@@ -630,7 +624,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 
 	if (rmcp_rsp->class == RMCP_CLASS_ASF) {
 		/* might be ping response packet */
-		rv = ipmi_handle_pong(intf, rsp);
+		rv = ipmi_handle_pong(rsp);
 		return (rv <= 0) ? NULL : rsp;
 	}
 
@@ -660,7 +654,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 	 * -------------------------------------------------------------------
 	 */
 
-	read_session_data(rsp, &offset, intf->session);
+	read_session_data(rsp, &offset);
 
 	/*
 	 * Skip packets that are not intended for this session
@@ -796,7 +790,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 			 * rsp->data_len becomes the length of that data
 			 */
 			extra_data_length = payload_size - (offset - payload_start) - 1;
-			if (extra_data_length) {
+			if (extra_data_length > 0) {
 				rsp->data_len = extra_data_length;
 				memmove(rsp->data, rsp->data + offset, extra_data_length);
 			} else {
@@ -850,7 +844,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 		}
 		read_sol_packet(rsp, &offset);
 		extra_data_length = payload_size - (offset - payload_start);
-		if (rsp && extra_data_length) {
+		if (extra_data_length > 0) {
 			rsp->data_len = extra_data_length;
 			memmove(rsp->data, rsp->data + offset, extra_data_length);
 		} else {
@@ -1136,21 +1130,19 @@ read_rakp4_message(
  * param offset  [in/out] should point to the beginning of the session when
  *               this function is called.  The offset will be adjusted to
  *               point to the end of the session when this function exits.
- * param session holds our session state
  */
 void
 read_session_data(
 				  struct ipmi_rs * rsp,
-				  int * offset,
-				  struct ipmi_session * s)
+				  int * offset)
 {
 	/* We expect to read different stuff depending on the authtype */
 	rsp->session.authtype = rsp->data[*offset];
 
 	if (rsp->session.authtype == IPMI_SESSION_AUTHTYPE_RMCP_PLUS)
-		read_session_data_v2x(rsp, offset, s);
+		read_session_data_v2x(rsp, offset);
 	else
-		read_session_data_v15(rsp, offset, s);
+		read_session_data_v15(rsp, offset);
 }
 
 
@@ -1176,8 +1168,7 @@ read_session_data(
 void
 read_session_data_v2x(
 					  struct ipmi_rs      * rsp,
-					  int                 * offset,
-					  struct ipmi_session * s)
+					  int                 * offset)
 {
 	rsp->session.authtype = rsp->data[(*offset)++];
 
@@ -1205,7 +1196,7 @@ read_session_data_v2x(
 /*
  * read_session_data_v15
  *
- * Initialize the ipmi_rsp from the session header of the packet. 
+ * Initialize the ipmi_rsp from the session header of the packet.
  *
  * The offset should point the first byte of the the IPMI session when this
  * function is called.  When this function exits, the offset will point to
@@ -1220,8 +1211,7 @@ read_session_data_v2x(
  */
 void read_session_data_v15(
 							struct ipmi_rs * rsp,
-							int * offset,
-							struct ipmi_session * s)
+							int * offset)
 {
 	/* All v15 messages are IPMI messages */
 	rsp->session.payloadtype = IPMI_PAYLOAD_TYPE_IPMI;
@@ -1485,7 +1475,6 @@ void getIpmiPayloadWireRep(
  * param payload [in] holds the v2 payload with our SOL data
  */
 void getSolPayloadWireRep(
-						  struct ipmi_intf       * intf,  /* in out */
 						  uint8_t          * msg,     /* output */
 						  struct ipmi_v2_payload * payload) /* input */
 {
@@ -1691,7 +1680,7 @@ ipmi_lanplus_build_v2x_msg(
 		break;
 
 	case IPMI_PAYLOAD_TYPE_SOL:
-		getSolPayloadWireRep(intf,
+		getSolPayloadWireRep(
 							 msg + IPMI_LANPLUS_OFFSET_PAYLOAD,
 							 payload);
 
@@ -2532,7 +2521,6 @@ ipmi_lanplus_send_sol(
  */
 static int
 check_sol_packet_for_new_data(
-							  struct ipmi_intf * intf,
 							  struct ipmi_rs *rsp)
 {
 	static uint8_t last_received_sequence_number = 0;
@@ -2648,7 +2636,7 @@ ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		 * Remembers the data sent, and alters the data to just
 		 * include the new stuff.
 		 */
-		check_sol_packet_for_new_data(intf, rsp);
+		check_sol_packet_for_new_data(rsp);
 	}
 	return rsp;
 }
@@ -3381,6 +3369,62 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	return 0;
 }
 
+static uint8_t
+ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
+{
+	enum cipher_suite_ids best_suite = IPMI_LANPLUS_CIPHER_SUITE_RESERVED;
+#ifdef HAVE_CRYPTO_SHA256
+	struct cipher_suite_info suites[MAX_CIPHER_SUITE_COUNT];
+	size_t nr_suites = ARRAY_SIZE(suites);
+
+	/* cipher suite best order is chosen with this criteria:
+	 * HMAC-MD5 and MD5 are BAD; xRC4 is bad; AES128 is required
+	 * HMAC-SHA256 > HMAC-SHA1
+	 * secure authentication > encrypted content
+	 *
+	 * With xRC4 out, all cipher suites with MD5 out, and cipher suite 3
+	 * being required by the spec, the only better defined standard cipher
+	 * suite is 17. So if SHA256 is available, we should try to use that,
+	 * otherwise, fall back to 3.
+	 */
+	const enum cipher_suite_ids cipher_order_preferred[] = {
+		IPMI_LANPLUS_CIPHER_SUITE_17,
+		IPMI_LANPLUS_CIPHER_SUITE_3,
+	};
+	const size_t nr_preferred = ARRAY_SIZE(cipher_order_preferred);
+	size_t ipref, i;
+
+	if (ipmi_get_channel_cipher_suites(intf, "ipmi", IPMI_LAN_CHANNEL_E,
+	                                   suites, &nr_suites) < 0)
+	{
+		/* default legacy behavior - fall back to cipher suite 3 */
+		return IPMI_LANPLUS_CIPHER_SUITE_3;
+	}
+	for (ipref = 0;
+	     ipref < nr_preferred &&
+	     IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite;
+	     ipref++)
+	{
+		for (i = 0; i < nr_suites; i++) {
+			if (cipher_order_preferred[ipref]
+			    == suites[i].cipher_suite_id)
+			{
+				best_suite = cipher_order_preferred[ipref];
+				break;
+			}
+		}
+	}
+#endif /* HAVE_CRYPTO_SHA256 */
+	if (IPMI_LANPLUS_CIPHER_SUITE_RESERVED == best_suite) {
+		/* IPMI 2.0 spec requires that cipher suite 3 is implemented
+		 * so we should always be able to fall back to that if better
+		 * options are not available. */
+		best_suite = IPMI_LANPLUS_CIPHER_SUITE_3;
+	}
+	lprintf(LOG_INFO, "Using best available cipher suite %d\n", best_suite);
+	return best_suite;
+}
+
 /**
  * ipmi_lanplus_open
  */
@@ -3431,7 +3475,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	/* Setup our lanplus session state */
 	memset(session, 0, sizeof(struct ipmi_session));
 	session->timeout = params->timeout;
-	memcpy(&session->authcode, &params->authcode_set, sizeof(session->authcode));
+	memcpy(&session->authcode,
+	       &params->authcode_set,
+	       sizeof(session->authcode));
 	session->v2_data.auth_alg         = IPMI_AUTH_RAKP_NONE;
 	session->v2_data.crypt_alg        = IPMI_CRYPT_NONE;
 	session->sol_data.sequence_number = 1;
@@ -3450,15 +3496,30 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		goto fail;
 	}
 
-	if (!ipmi_oem_active(intf, "i82571spt") && ! auth_cap.v20_data_available) {
+	if (!ipmi_oem_active(intf, "i82571spt") &&
+	    !auth_cap.v20_data_available)
+	{
 		lprintf(LOG_INFO, "This BMC does not support IPMI v2 / RMCP+");
 		goto fail;
 	}
 
 	/*
-	 * If the open/rakp1/rakp3 sequence encounters a timeout, the whole sequence
-	 * needs to restart. The individual messages are not individually retryable,
-	 * as the session state is advancing.
+	 * If no cipher suite was provided, query the channel cipher suite list
+	 * and pick the best one available
+	 */
+	if (IPMI_LANPLUS_CIPHER_SUITE_RESERVED ==
+	    intf->ssn_params.cipher_suite_id)
+	{
+		ipmi_intf_session_set_cipher_suite_id(
+			intf,
+			ipmi_find_best_cipher_suite(intf)
+		);
+	}
+
+	/*
+	 * If the open/rakp1/rakp3 sequence encounters a timeout, the whole
+	 * sequence needs to restart. The individual messages are not
+	 * individually retryable, as the session state is advancing.
 	 */
 	for (retry = 0; retry < IPMI_LAN_RETRY; retry++) {
 		session->v2_data.session_state = LANPLUS_STATE_PRESESSION;
@@ -3631,7 +3692,7 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 					 /* rsp was SOL data instead of our answer */
 					 /* since it didn't go through the sol recv, do sol recv stuff here */
 					 ack_sol_packet(intf, rsp);
-					 check_sol_packet_for_new_data(intf, rsp);
+					 check_sol_packet_for_new_data(rsp);
 					 if (rsp->data_len)
 								intf->session->sol_data.sol_input_handler(rsp);
 		rsp = ipmi_lan_poll_recv(intf);
@@ -3666,7 +3727,7 @@ static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 
 static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
 {
-	if (intf->ssn_params.cipher_suite_id == 3) {
+	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*
 		 * encrypted payload can only be multiple of 16 bytes
 		 */
@@ -3684,7 +3745,7 @@ static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t siz
 
 static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
 {
-	if (intf->ssn_params.cipher_suite_id == 3) {
+	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*
 		 * encrypted payload can only be multiple of 16 bytes
 		 */
