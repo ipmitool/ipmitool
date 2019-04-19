@@ -68,8 +68,9 @@ static struct sdr_record_list *sdr_list_head = NULL;
 static struct sdr_record_list *sdr_list_tail = NULL;
 static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
-/* unit description codes (IPMI v1.5 section 37.16) */
-#define UNIT_MAX	0x90
+/* IPMI 2.0 Table 43-15, Sensor Unit Type Codes */
+#define UNIT_TYPE_MAX 92 /* This is the ID of "grams" */
+#define UNIT_TYPE_LONGEST_NAME 19 /* This is the length of "color temp deg K" */
 static const char *unit_desc[] = {
 	"unspecified",
 	"degrees C",
@@ -161,7 +162,9 @@ static const char *unit_desc[] = {
 	"characters",
 	"error",
 	"correctable error",
-	"uncorrectable error"
+	"uncorrectable error",
+	"fatal error",
+	"grams"
 };
 
 /* sensor type codes (IPMI v1.5 table 36.3)
@@ -220,35 +223,60 @@ void printf_sdr_usage();
 uint16_t
 ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf);
 
-/* ipmi_sdr_get_unit_string  -  return units for base/modifier
+/** ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
- * @pct:	units are a percentage
- * @type:	unit type
- * @base:	base
- * @modifier:	modifier
+ * @param[in] pct       Indicates that units are a percentage
+ * @param[in] relation  Modifier unit to base unit relation
+ *                      (SDR_UNIT_MOD_NONE, SDR_UNIT_MOD_MUL,
+ *                      or SDR_UNIT_MOD_DIV)
+ * @param[in] base      The base unit type id
+ * @param[in] modifier  The modifier unit type id
  *
- * returns pointer to static string
+ * @returns a pointer to static string
  */
 const char *
-ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifier)
+ipmi_sdr_get_unit_string(bool pct, uint8_t relation,
+                         uint8_t base, uint8_t modifier)
 {
-	static char unitstr[16];
+	/*
+	 * Twice as long as the longest possible unit name, plus
+	 * two characters for '%' and relation (either '*' or '/'),
+	 * plus the terminating null-byte.
+	 */
+	static char unitstr[2 * UNIT_TYPE_LONGEST_NAME + 2 + 1];
+
 	/*
 	 * By default, if units are supposed to be percent, we will pre-pend
 	 * the percent string  to the textual representation of the units.
 	 */
-	char *pctstr = pct ? "% " : "";
-	memset(unitstr, 0, sizeof (unitstr));
-	switch (type) {
-	case 2:
-		snprintf(unitstr, sizeof (unitstr), "%s%s * %s",
-			 pctstr, unit_desc[base], unit_desc[modifier]);
+	const char *pctstr = pct ? "% " : "";
+	const char *basestr;
+	const char *modstr;
+
+	if (base <= UNIT_TYPE_MAX) {
+		basestr = unit_desc[base];
+	}
+	else {
+		basestr = "invalid";
+	}
+
+	if (modifier <= UNIT_TYPE_MAX) {
+		modstr = unit_desc[base];
+	}
+	else {
+		modstr = "invalid";
+	}
+
+	switch (relation) {
+	case SDR_UNIT_MOD_MUL:
+		snprintf(unitstr, sizeof (unitstr), "%s%s*%s",
+			 pctstr, basestr, modstr);
 		break;
-	case 1:
+	case SDR_UNIT_MOD_DIV:
 		snprintf(unitstr, sizeof (unitstr), "%s%s/%s",
-			 pctstr, unit_desc[base], unit_desc[modifier]);
+			 pctstr, basestr, modstr);
 		break;
-	case 0:
+	case SDR_UNIT_MOD_NONE:
 	default:
 		/*
 		 * Display the text "percent" only when the Base unit is
@@ -257,8 +285,8 @@ ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifi
 		if (base == 0 && pct) {
 			snprintf(unitstr, sizeof(unitstr), "percent");
 		} else {
-			snprintf(unitstr, sizeof (unitstr), "%s%s", 
-				pctstr, unit_desc[base]);
+			snprintf(unitstr, sizeof (unitstr), "%s%s",
+			         pctstr, basestr);
 		}
 		break;
 	}

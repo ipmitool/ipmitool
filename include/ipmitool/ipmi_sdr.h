@@ -37,6 +37,7 @@
 # include <config.h>
 #endif
 
+#include <stdbool.h>
 #include <inttypes.h>
 #include <math.h>
 #include <ipmitool/bswap.h>
@@ -381,6 +382,29 @@ struct sdr_record_common_sensor {
 
 	struct sdr_record_mask mask;
 
+/* IPMI 2.0, Table 43-1, byte 21[7:6] Analog (numeric) Data Format */
+#define SDR_UNIT_FMT_UNSIGNED 0 /* unsigned */
+#define SDR_UNIT_FMT_1S_COMPL 1 /* 1's complement (signed) */
+#define SDR_UNIT_FMT_2S_COMPL 2 /* 2's complement (signed) */
+#define SDR_UNIT_FMT_NA 3 /* does not return analog (numeric) reading */
+/* IPMI 2.0, Table 43-1, byte 21[5:3] Rate */
+#define SDR_UNIT_RATE_NONE 0 /* none */
+#define SDR_UNIT_RATE_MICROSEC 1 /* per us */
+#define SDR_UNIT_RATE_MILLISEC 2 /* per ms */
+#define SDR_UNIT_RATE_SEC 3 /* per s */
+#define SDR_UNIT_RATE_MIN 4 /* per min */
+#define SDR_UNIT_RATE_HR 5 /* per hour */
+#define SDR_UNIT_RATE_DAY 6 /* per day */
+#define SDR_UNIT_RATE_RSVD 7 /* reserved */
+/* IPMI 2.0, Table 43-1, byte 21[2:1] Modifier Unit */
+#define SDR_UNIT_MOD_NONE 0 /* none */
+#define SDR_UNIT_MOD_DIV 1 /* Basic Unit / Modifier Unit */
+#define SDR_UNIT_MOD_MUL 2 /* Basic Unit * Mofifier Unit */
+#define SDR_UNIT_MOD_RSVD 3 /* Reserved */
+/* IPMI 2.0, Table 43-1, byte 21[0] Percentage */
+#define SDR_UNIT_PCT_NO 0
+#define SDR_UNIT_PCT_YES 1
+
 	struct {
 #if WORDS_BIGENDIAN
 		uint8_t analog:2;
@@ -394,8 +418,8 @@ struct sdr_record_common_sensor {
 		uint8_t analog:2;
 #endif
 		struct {
-			uint8_t base;
-			uint8_t modifier;
+			uint8_t base; /* Base unit type code per IPMI 2.0 Table 43-15 */
+			uint8_t modifier; /* Modifier unit type code per Table 43-15 */
 		} ATTRIBUTE_PACKING type;
 	} ATTRIBUTE_PACKING unit;
 } ATTRIBUTE_PACKING;
@@ -833,8 +857,8 @@ void ipmi_sdr_print_sensor_hysteresis(struct sdr_record_common_sensor *sensor,
 		 struct sdr_record_full_sensor   *full,
 		 uint8_t hysteresis_value,
 		 const char *hdrstr);
-const char *ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type,
-				      uint8_t base, uint8_t modifier);
+const char *ipmi_sdr_get_unit_string(bool pct, uint8_t type,
+                                     uint8_t base, uint8_t modifier);
 struct sensor_reading *
 ipmi_sdr_read_sensor_value(struct ipmi_intf *intf,
 		struct sdr_record_common_sensor *sensor,
