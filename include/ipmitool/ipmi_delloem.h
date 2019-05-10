@@ -179,6 +179,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #define GET_MISCELLANEOUS_CMD (uint8_t)0xD0
 #define GET_HWCAPABILITY_SUB_CMD (uint8_t)0x12
 
+/* sel print options*/
+#define SEL_PRINT_ALL 0
+#define SEL_PRINT_FIRST 1
+#define SEL_PRINT_LAST 2
+
+/* SDR structure constants */
+#define MAX_SDR_SIZE 64
+#define MAX_SDR_ENTRIES 300
+
 
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
