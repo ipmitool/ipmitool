@@ -94,7 +94,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	req.msg.data = rqdata;
 
 	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
+	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM || chmed == IPMI_CHANNEL_MEDIUM_SMBUS_1 || chmed == IPMI_CHANNEL_MEDIUM_SMBUS_2) {
 		/* system interface, need extra generator ID */
 		req.msg.data_len = 8;
 		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
@@ -507,7 +507,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	req.msg.data_len = 7;
 
 	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
+	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM || chmed == IPMI_CHANNEL_MEDIUM_SMBUS_1 || chmed == IPMI_CHANNEL_MEDIUM_SMBUS_2) {
 		/* system interface, need extra generator ID */
 		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
 		req.msg.data_len = 8;
