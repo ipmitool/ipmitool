@@ -34,6 +34,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
+#include <limits.h>
 
 #include <ipmitool/bswap.h>
 #include <ipmitool/helper.h>
@@ -44,14 +46,34 @@
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_time.h>
 
+#define CHASSIS_BOOT_MBOX_IANA_SZ 3
+#define CHASSIS_BOOT_MBOX_BLOCK_SZ 16
+#define CHASSIS_BOOT_MBOX_BLOCK0_SZ \
+	(CHASSIS_BOOT_MBOX_BLOCK_SZ - CHASSIS_BOOT_MBOX_IANA_SZ)
+#define CHASSIS_BOOT_MBOX_MAX_BLOCK 0xFF
+#define CHASSIS_BOOT_MBOX_MAX_BLOCKS (CHASSIS_BOOT_MBOX_MAX_BLOCK + 1)
+
+typedef struct {
+	uint8_t iana[CHASSIS_BOOT_MBOX_IANA_SZ];
+	uint8_t data[CHASSIS_BOOT_MBOX_BLOCK0_SZ];
+} mbox_b0_data_t;
+
+typedef struct {
+	uint8_t block;
+	union {
+		uint8_t data[CHASSIS_BOOT_MBOX_BLOCK_SZ];
+		mbox_b0_data_t b0;
+	};
+} mbox_t;
+
 extern int verbose;
 
-const static struct valstr get_bootparam_cc_vals[] = {
+static const struct valstr get_bootparam_cc_vals[] = {
 	{ 0x80, "Unsupported parameter" },
 	{ 0x00, NULL }
 };
 
-const static struct valstr set_bootparam_cc_vals[] = {
+static const struct valstr set_bootparam_cc_vals[] = {
 	{ 0x80, "Unsupported parameter" },
 	{ 0x81, "Attempt to set 'in progress' while not in 'complete' state" },
 	{ 0x82, "Parameter is read-only" },
@@ -458,28 +480,42 @@ ipmi_chassis_selftest(struct ipmi_intf * intf)
 }
 
 static int
-ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * data, int len)
+ipmi_chassis_set_bootparam(struct ipmi_intf * intf,
+                           uint8_t param, void *data, int len)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t msg_data[16];
+	struct {
+		uint8_t param;
+		uint8_t data[];
+	} *msg_data;
+	int rc = -1;
+	size_t msgsize = 1 + len; /* Single-byte parameter plus the data */
+	static const uint8_t BOOTPARAM_MASK = 0x7F;
 
-	memset(msg_data, 0, 16);
-	msg_data[0] = param & 0x7f;
-	memcpy(msg_data+1, data, len);
+	msg_data = malloc(msgsize);
+	if (!msg_data) {
+		goto out;
+	}
+	memset(msg_data, 0, msgsize);
+
+	msg_data->param = param & BOOTPARAM_MASK;
+	memcpy(msg_data->data, data, len);
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
 	req.msg.cmd = 0x8;
-	req.msg.data = msg_data;
-	req.msg.data_len = len + 1;
+	req.msg.data = (uint8_t *)msg_data;
+	req.msg.data_len = msgsize;
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting Chassis Boot Parameter %d", param);
 		return -1;
 	}
-	if (rsp->ccode) {
+
+	rc = rsp->ccode;
+	if (rc) {
 		if (param != 0) {
 			lprintf(LOG_ERR,
 				"Set Chassis Boot Parameter %d failed: %s",
@@ -488,35 +524,122 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 				                 set_bootparam_cc_vals,
 				                 completion_code_vals));
 		}
-		return rsp->ccode;
+		goto out;
 	}
 
 	lprintf(LOG_DEBUG, "Chassis Set Boot Parameter %d to %s", param, buf2str(data, len));
-	return IPMI_CC_OK;
+
+out:
+	free_n(&msg_data);
+	return rc;
+}
+
+/* Flags to ipmi_chassis_get_bootparam() */
+typedef enum {
+	PARAM_NO_GENERIC_INFO, /* Do not print generic boot parameter info */
+	PARAM_NO_DATA_DUMP, /* Do not dump parameter data */
+	PARAM_NO_RANGE_ERROR, /* Do not report out of range info to user */
+	PARAM_SPECIFIC /* Parameter-specific flags start with this */
+} chassis_bootparam_flags_t;
+
+/* Flags to ipmi_chassis_get_bootparam() for Boot Mailbox parameter (7) */
+typedef enum {
+	MBOX_PARSE_USE_TEXT = PARAM_SPECIFIC, /* Use text output vs. hex */
+	MBOX_PARSE_ALLBLOCKS /* Parse all blocks, not just one */
+} chassis_bootmbox_parse_t;
+
+#define BP_FLAG(x) (1 << (x))
+
+static
+void
+chassis_bootmailbox_parse(void *buf, size_t len, int flags)
+{
+	void *blockdata;
+	size_t datalen;
+	bool use_text = flags & BP_FLAG(MBOX_PARSE_USE_TEXT);
+	bool all_blocks = flags & BP_FLAG(MBOX_PARSE_ALLBLOCKS);
+
+	mbox_t *mbox;
+
+	if (!buf || !len) {
+		return;
+	}
+
+	mbox = buf;
+	blockdata = mbox->data;
+	datalen = len - sizeof(mbox->block);
+	if (!all_blocks) {
+		/* Print block selector only if a single block is printed */
+		printf(" Selector       : %d\n", mbox->block);
+	}
+	if (!mbox->block) {
+		uint32_t iana = ipmi24toh(mbox->b0.iana);
+		/* For block zero print the IANA Private Enterprise Number */
+		printf(" IANA PEN       : %" PRIu32 " [%s]\n",
+		       iana,
+		       val2str(iana, ipmi_oem_info));
+		blockdata = mbox->b0.data;
+		datalen -= sizeof(mbox->b0.iana);
+	}
+
+	printf(" Block ");
+	if (all_blocks) {
+		printf("%3" PRIu8 " Data : ", mbox->block);
+	}
+	else {
+		printf("Data     : ");
+	}
+	if (use_text) {
+		/* Ensure the data string is null-terminated */
+		unsigned char text[CHASSIS_BOOT_MBOX_BLOCK_SZ + 1] = { 0 };
+		memcpy(text, blockdata, datalen);
+		printf("'%s'\n", text);
+	}
+	else {
+		printf("%s\n", buf2str(blockdata, datalen));
+	}
 }
 
 static int
-ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
+ipmi_chassis_get_bootparam(struct ipmi_intf * intf,
+                           int argc, char *argv[], int flags)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[3];
 	uint8_t param_id = 0;
+	bool skip_generic = flags & BP_FLAG(PARAM_NO_GENERIC_INFO);
+	bool skip_data = flags & BP_FLAG(PARAM_NO_DATA_DUMP);
+	bool skip_range = flags & BP_FLAG(PARAM_NO_RANGE_ERROR);
+	int rc = -1;
 
-	if (!arg)
-		return -1;
-
-	if (str2uchar(arg, &param_id) != 0) {
-		lprintf(LOG_ERR, "Invalid parameter '%s' given instead of bootparam.",
-				arg);
-		return (-1);
+	if (argc < 1 || !argv[0]) {
+		goto out;
 	}
+
+	if (str2uchar(argv[0], &param_id)) {
+		lprintf(LOG_ERR,
+		        "Invalid parameter '%s' given instead of bootparam.",
+		        argv[0]);
+		goto out;
+	}
+
+	--argc;
+	++argv;
 
 	memset(msg_data, 0, 3);
 
 	msg_data[0] = param_id & 0x7f;
-	msg_data[1] = 0;
-	msg_data[2] = 0;
+
+	if (argc) {
+		if (str2uchar(argv[0], &msg_data[1])) {
+			lprintf(LOG_ERR,
+				"Invalid argument '%s' given to"
+				" bootparam %" PRIu8,
+				argv[0], msg_data[1]);
+			goto out;
+		}
+	}
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_CHASSIS;
@@ -526,13 +649,18 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
-		lprintf(LOG_ERR, "Error Getting Chassis Boot Parameter %s", arg);
+		lprintf(LOG_ERR,
+		        "Error Getting Chassis Boot Parameter %" PRIu8,
+		        msg_data[0]);
+		return -1;
+	}
+	if (IPMI_CC_PARAM_OUT_OF_RANGE == rsp->ccode && skip_range) {
 		return -1;
 	}
 	if (rsp->ccode) {
 		lprintf(LOG_ERR,
-		        "Get Chassis Boot Parameter %s failed: %s",
-		        arg,
+		        "Get Chassis Boot Parameter %" PRIu8 " failed: %s",
+		        msg_data[0],
 		        specific_val2str(rsp->ccode,
 		                         get_bootparam_cc_vals,
 		                         completion_code_vals));
@@ -545,10 +673,17 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 	param_id = 0;
 	param_id = (rsp->data[1] & 0x7f);
 
-	printf("Boot parameter version: %d\n", rsp->data[0]);
-	printf("Boot parameter %d is %s\n", rsp->data[1] & 0x7f,
-			(rsp->data[1] & 0x80) ? "invalid/locked" : "valid/unlocked");
-	printf("Boot parameter data: %s\n", buf2str(rsp->data+2, rsp->data_len - 2));
+	if (!skip_generic) {
+		printf("Boot parameter version: %d\n", rsp->data[0]);
+		printf("Boot parameter %d is %s\n", rsp->data[1] & 0x7f,
+		       (rsp->data[1] & 0x80)
+		       ? "invalid/locked"
+		       : "valid/unlocked");
+		if (!skip_data) {
+			printf("Boot parameter data: %s\n",
+			       buf2str(rsp->data+2, rsp->data_len - 2));
+		}
+	}
 
 	switch(param_id)
 	{
@@ -736,17 +871,18 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 		}
 		break;
 		case 7:
-		{
-			printf(" Selector   : %d\n", rsp->data[2] );
-			printf(" Block Data : %s\n", buf2str(rsp->data+3, rsp->data_len - 2));
-		}
-		break;
+			chassis_bootmailbox_parse(rsp->data + 2,
+			                          rsp->data_len - 2,
+			                          flags);
+			break;
 		default:
-			printf(" Undefined byte\n");
+			printf(" Unsupported parameter %" PRIu8 "\n", param_id);
 			break;
 	}
 
-	return 0;
+	rc = IPMI_CC_OK;
+out:
+	return rc;
 }
 
 static int
@@ -1024,6 +1160,296 @@ out:
 	return rc;
 }
 
+static void chassis_bootmailbox_help()
+{
+	lprintf(LOG_NOTICE,
+"bootmbox get [text] [block <block>]\n"
+"  Read the entire Boot Initiator Mailbox or the specified <block>.\n"
+"  If 'text' option is specified, the data is output as plain text, otherwise\n"
+"  hex dump mode is used.\n"
+"\n"
+"bootmbox set text [block <block>] <IANA_PEN> \"<data_string>\"\n"
+"bootmbox set [block <block>] <IANA_PEN> <data_byte> [<data_byte> ...]\n"
+"  Write the specified <block> or the entire Boot Initiator Mailbox.\n"
+"  It is required to specify a decimal IANA Enterprise Number recognized\n"
+"  by the boot initiator on the target system. Refer to your target system\n"
+"  manufacturer for details. The rest of the arguments are either separate\n"
+"  data byte values separated by spaces, or a single text string argument.\n"
+"\n"
+"  When single block write is requested, the total length of <data> may not\n"
+"  exceed 13 bytes for block 0, or 16 bytes otherwise.\n"
+"\n"
+"bootmbox help\n"
+"  Show this help.");
+}
+
+static
+int
+chassis_set_bootmailbox(struct ipmi_intf *intf, int16_t block, bool use_text,
+                        int argc, char *argv[])
+{
+	int rc = -1;
+	int32_t iana = 0;
+	size_t blocks = 0;
+	size_t datasize = 0;
+	off_t string_offset = 0;
+
+	lprintf(LOG_INFO, "Writing Boot Mailbox...");
+
+	if (argc < 1 || str2int(argv[0], &iana)) {
+		lprintf(LOG_ERR,
+		        "No valid IANA PEN specified!\n");
+		chassis_bootmailbox_help();
+		goto out;
+	}
+	++argv;
+	--argc;
+
+	if (argc < 1) {
+		lprintf(LOG_ERR,
+		        "No data provided!\n");
+		chassis_bootmailbox_help();
+		goto out;
+	}
+
+	/*
+	 * Initialize the data size. For text mode it is just the
+	 * single argument string length plus one byte for \0 termination.
+	 * For byte mode the length is the number of byte arguments without
+	 * any additional termination.
+	 */
+	if (!use_text) {
+		datasize = argc;
+	}
+	else {
+		datasize = strlen(argv[0]) + 1; /* Include the terminator */
+	}
+
+	lprintf(LOG_INFO, "Data size: %u", datasize);
+
+	/* Decide how many blocks we will be writing */
+	if (block >= 0) {
+		blocks = 1;
+	}
+	else {
+		/*
+		 * We need to write all data, so calculate the data
+		 * size in blocks and set the starting block to zero.
+		 */
+		blocks = datasize;
+		blocks += CHASSIS_BOOT_MBOX_BLOCK_SZ - 1;
+		blocks /= CHASSIS_BOOT_MBOX_BLOCK_SZ;
+
+		block = 0;
+	}
+
+	lprintf(LOG_INFO, "Blocks to write: %d", blocks);
+
+	if (blocks > CHASSIS_BOOT_MBOX_MAX_BLOCKS) {
+		lprintf(LOG_ERR,
+		        "Data size %zu exceeds maximum (%d)",
+		        datasize,
+		        (CHASSIS_BOOT_MBOX_BLOCK_SZ
+		         * CHASSIS_BOOT_MBOX_MAX_BLOCKS)
+		        - CHASSIS_BOOT_MBOX_IANA_SZ);
+		goto out;
+	}
+
+	/* Indicate that we're touching the boot parameters */
+	chassis_bootparam_set_in_progress(intf, SET_IN_PROGRESS);
+
+	for (size_t bindex = 0;
+	     datasize > 0 && bindex < blocks;
+	     ++bindex, ++block)
+	{
+		/* The request data structure */
+		mbox_t mbox = { .block = block, {{0}} };
+
+		/* Destination for input data */
+		uint8_t *data = mbox.data;
+
+		/* The maximum amount of data this block may hold */
+		size_t maxblocksize = sizeof(mbox.data);
+
+		/* The actual amount of data in this block */
+		size_t blocksize;
+		off_t unused = 0;
+
+		/* Block 0 needs special care as it has IANA PEN specifier */
+		if (!block) {
+			data = mbox.b0.data;
+			maxblocksize = sizeof(mbox.b0.data);
+			htoipmi24(iana, mbox.b0.iana);
+		}
+
+		/*
+		 * Find out how many bytes we are going to write to this
+		 * block.
+		 */
+		if (datasize > maxblocksize) {
+			blocksize = maxblocksize;
+		}
+		else {
+			blocksize = datasize;
+		}
+
+		/* Remember how much data remains */
+		datasize -= blocksize;
+
+		if (!use_text) {
+			args2buf(argc, argv, data, blocksize);
+			argc -= blocksize;
+			argv += blocksize;
+		}
+		else {
+			memcpy(data, argv[0] + string_offset, blocksize);
+			string_offset += blocksize;
+		}
+
+		lprintf(LOG_INFO, "Block %3" PRId16 ": %s", block,
+		        buf2str_extended(data, blocksize, " "));
+
+		unused = maxblocksize - blocksize;
+		rc = ipmi_chassis_set_bootparam(intf,
+		                                IPMI_CHASSIS_BOOTPARAM_INIT_MBOX,
+		                                &mbox,
+		                                sizeof(mbox) - unused);
+		if (IPMI_CC_PARAM_OUT_OF_RANGE == rc) {
+			lprintf(LOG_ERR,
+			        "Hit end of mailbox writing block %" PRId16,
+			        block);
+		}
+		if (rc) {
+			goto complete;
+		}
+	}
+
+	lprintf(LOG_INFO,
+	        "Wrote %zu blocks of Boot Initiator Mailbox",
+	        blocks);
+	chassis_bootparam_set_in_progress(intf, COMMIT_WRITE);
+
+	rc = chassis_bootparam_clear_ack(intf, BIOS_POST_ACK | OS_LOADER_ACK);
+
+complete:
+	chassis_bootparam_set_in_progress(intf, SET_COMPLETE);
+out:
+	return rc;
+}
+
+static
+int
+chassis_get_bootmailbox(struct ipmi_intf *intf,
+                        int16_t block, bool use_text)
+{
+	int rc = IPMI_CC_UNSPECIFIED_ERROR;
+	char param_str[2]; /* Max "7" */
+	char block_str[4]; /* Max "255" */
+	char *bpargv[] = { param_str, block_str };
+	int flags;
+
+	flags = use_text ? BP_FLAG(MBOX_PARSE_USE_TEXT) : 0;
+
+	snprintf(param_str, sizeof(param_str),
+	         "%" PRIu8, IPMI_CHASSIS_BOOTPARAM_INIT_MBOX);
+
+	if (block >= 0) {
+		snprintf(block_str, sizeof(block_str),
+		         "%" PRIu8, (uint8_t)block);
+
+		rc = ipmi_chassis_get_bootparam(intf,
+		                                ARRAY_SIZE(bpargv),
+		                                bpargv,
+		                                flags);
+	}
+	else {
+		int currblk;
+
+		flags |= BP_FLAG(MBOX_PARSE_ALLBLOCKS);
+		for (currblk = 0; currblk <= UCHAR_MAX; ++currblk) {
+			snprintf(block_str, sizeof(block_str),
+			         "%" PRIu8, (uint8_t)currblk);
+
+			if (currblk) {
+				/*
+				 * If block 0 succeeded, we don't want to
+				 * print generic info for each next block,
+				 * and we don't want range error to be
+				 * reported when we hit the end of blocks.
+				 */
+				flags |= BP_FLAG(PARAM_NO_GENERIC_INFO);
+				flags |= BP_FLAG(PARAM_NO_RANGE_ERROR);
+			}
+
+			rc = ipmi_chassis_get_bootparam(intf,
+			                                ARRAY_SIZE(bpargv),
+			                                bpargv,
+			                                flags);
+
+			if (rc) {
+				if (currblk) {
+					rc = IPMI_CC_OK;
+				}
+				break;
+			}
+		}
+	}
+
+	return rc;
+}
+
+static
+int
+chassis_bootmailbox(struct ipmi_intf *intf, int argc, char *argv[])
+{
+	int rc = IPMI_CC_UNSPECIFIED_ERROR;
+	bool use_text = false; /* Default to data dump I/O mode */
+	int16_t block = -1; /* By default print all blocks */
+	const char *cmd;
+
+	if ((argc < 1) || !strcmp(argv[0], "help")) {
+		chassis_bootmailbox_help();
+		goto out;
+	} else {
+		cmd = argv[0];
+		++argv;
+		--argc;
+
+		if (argc > 0 && !strcmp(argv[0], "text")) {
+			use_text = true;
+			++argv;
+			--argc;
+		}
+
+		if (argc > 0 && !strcmp(argv[0], "block")) {
+			if (argc < 2) {
+				chassis_bootmailbox_help();
+				goto out;
+			}
+			if(str2short(argv[1], &block)) {
+				lprintf(LOG_ERR,
+				        "Invalid block %s", argv[1]);
+				goto out;
+			}
+			argv += 2;
+			argc -= 2;
+
+		}
+
+		if (!strcmp(cmd, "get")) {
+			rc = chassis_get_bootmailbox(intf, block, use_text);
+		}
+		else if (!strcmp(cmd, "set")) {
+			rc = chassis_set_bootmailbox(intf, block, use_text,
+			                             argc, argv);
+		}
+	}
+
+out:
+	return rc;
+}
+
+
 static int
 ipmi_chassis_power_policy(struct ipmi_intf * intf, uint8_t policy)
 {
@@ -1134,7 +1560,10 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
-		lprintf(LOG_NOTICE, "Chassis Commands:  status, power, identify, policy, restart_cause, poh, bootdev, bootparam, selftest");
+		lprintf(LOG_NOTICE, "Chassis Commands:\n"
+		                    "  status, power, policy, restart_cause\n"
+		                    "  poh, identify, selftest,\n"
+		                    "  bootdev, bootparam, bootmbox");
 	}
 	else if (strncmp(argv[0], "status", 6) == 0) {
 		rc = ipmi_chassis_status(intf);
@@ -1222,7 +1651,10 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else {
 			if (strncmp(argv[1], "get", 3) == 0) {
-				rc = ipmi_chassis_get_bootparam(intf, argv[2]);
+				rc = ipmi_chassis_get_bootparam(intf,
+								argc - 2,
+								argv + 2,
+								0);
 			}
 			else if (strncmp(argv[1], "set", 3) == 0) {
 			    unsigned char set_flag=0;
@@ -1361,6 +1793,9 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else
 			rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
 		}
+	}
+	else if (!strcmp(argv[0], "bootmbox")) {
+		rc = chassis_bootmailbox(intf, argc -1, argv + 1);
 	}
 	else {
 		lprintf(LOG_ERR, "Invalid chassis command: %s", argv[0]);
