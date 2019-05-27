@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> /* For free() */
+#include <stdbool.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -91,6 +92,8 @@ int str2short(const char * str, int16_t * shrt_ptr);
 int str2ushort(const char * str, uint16_t * ushrt_ptr);
 int str2char(const char * str, int8_t * chr_ptr);
 int str2uchar(const char * str, uint8_t * uchr_ptr);
+
+bool args2buf(int argc, char *argv[], uint8_t *out, size_t len);
 
 int eval_ccode(const int ccode);
 
