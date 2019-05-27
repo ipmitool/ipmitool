@@ -169,6 +169,13 @@ static inline uint32_t ipmi24toh(void *ipmi24)
 	return h;
 }
 
+static inline void htoipmi24(uint32_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = (h >> 8) & 0xFF;
+	ipmi[2] = (h >> 16) & 0xFF; /* MSB */
+}
+
 static inline uint32_t ipmi32toh(void *ipmi32)
 {
 	uint8_t *ipmi = ipmi32;
