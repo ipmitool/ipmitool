@@ -1080,3 +1080,35 @@ ipmi_get_oem_id(struct ipmi_intf *intf)
 
 	return oem_id;
 }
+
+/** Parse command line arguments as numeric byte values (dec or hex)
+ *  and store them in a \p len sized buffer \p out.
+ *
+ * @param[in] argc Number of arguments
+ * @param[in] argv Array of arguments
+ * @param[out] out The output buffer
+ * @param[in] len Length of the output buffer in bytes (no null-termination
+ *                is assumed, the input data is treated as raw byte values,
+ *                not as a string.
+ *
+ * @returns A success status indicator
+ * @return false Error
+ * @return true Success
+ */
+bool
+args2buf(int argc, char *argv[], uint8_t *out, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len && i < (size_t)argc; ++i) {
+		uint8_t byte;
+
+		if (str2uchar(argv[i], &byte)) {
+			lprintf(LOG_ERR, "Bad byte value: %s", argv[i]);
+			return false;
+		}
+
+		out[i] = byte;
+	}
+	return true;
+}
