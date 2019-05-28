@@ -472,11 +472,11 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 			lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
 					param, val2str(rsp->ccode, completion_code_vals));
 		}
-		return -1;
+		return rsp->ccode;
 	}
 
 	lprintf(LOG_DEBUG, "Chassis Set Boot Parameter %d to %s", param, buf2str(data, len));
-	return 0;
+	return IPMI_CC_OK;
 }
 
 static int
@@ -842,77 +842,81 @@ ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
 	return(rsp->data[2]);
 }
 
+typedef enum {
+	SET_COMPLETE,
+	SET_IN_PROGRESS,
+	COMMIT_WRITE,
+	RESERVED
+} progress_t;
+
+
+static
+void
+chassis_bootparam_set_in_progress(struct ipmi_intf *intf, progress_t progress)
+{
+	/*
+	 * By default try to set/clear set-in-progress parameter before/after
+	 * changing any boot parameters. If setting fails, the code will set
+	 * this flag to false and stop trying to fiddle with it for future
+	 * requests.
+	 */
+	static bool use_progress = true;
+	uint8_t flag = progress;
+	int rc;
+
+	if (!use_progress) {
+		return;
+	}
+
+	rc = ipmi_chassis_set_bootparam(intf,
+	                                IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
+	                                &flag, 1);
+
+	/*
+	 * Only disable future checks if set in progress status setting failed.
+	 * Setting of other statuses may fail legitimately.
+	 */
+	if (rc && SET_IN_PROGRESS == progress) {
+		use_progress = false;
+	}
+}
+
 static int
 ipmi_chassis_set_bootvalid(struct ipmi_intf *intf, uint8_t set_flag, uint8_t clr_flag)
 {
 	int bootvalid;
-	uint8_t flags[5];
-	int rc = 0;
-	int use_progress = 1;
-	uint8_t param_id = IPMI_CHASSIS_BOOTPARAM_FLAG_VALID;
+	uint8_t flags[2];
+	int rc = IPMI_CC_UNSPECIFIED_ERROR;
 
-	if (use_progress) {
-		/* set set-in-progress flag */
-		memset(flags, 0, 5);
-		flags[0] = 0x01;
-		rc = ipmi_chassis_set_bootparam(intf,
-				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
-		if (rc < 0)
-			use_progress = 0;
-	}
+	chassis_bootparam_set_in_progress(intf, SET_IN_PROGRESS);
 
 	memset(flags, 0, 5);
 	flags[0] = 0x01;
 	flags[1] = 0x01;
 	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
-			flags, 2);
+	                                flags, 2);
 
-	if (rc < 0) {
-		if (use_progress) {
-			/* set-in-progress = set-complete */
-			memset(flags, 0, 5);
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
-		return -1;
+	if (rc) {
+		goto out;
 	}
 
 	bootvalid = ipmi_chassis_get_bootvalid(intf);
-
 	if (bootvalid < 0) {
-		if (use_progress) {
-			/* set-in-progress = set-complete */
-			memset(flags, 0, 5);
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
-		return -1;
+		lprintf(LOG_ERR, "Failed to read boot valid flag");
+		rc = bootvalid;
+		goto out;
 	}
+
 	flags[0] = (bootvalid & ~clr_flag) | set_flag;
-
-	rc = ipmi_chassis_set_bootparam(intf, param_id, flags, 1);
-
-	if (rc == 0) {
-		if (use_progress) {
-			/* set-in-progress = commit-write */
-			memset(flags, 0, 5);
-			flags[0] = 0x02;
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
+	rc = ipmi_chassis_set_bootparam(intf,
+	                                IPMI_CHASSIS_BOOTPARAM_FLAG_VALID,
+	                                flags, 1);
+	if (IPMI_CC_OK == rc) {
+		chassis_bootparam_set_in_progress(intf, COMMIT_WRITE);
 	}
 
-	if (use_progress) {
-		/* set-in-progress = set-complete */
-		memset(flags, 0, 5);
-		ipmi_chassis_set_bootparam(intf,
-				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-				flags, 1);
-	}
-
+out:
+	chassis_bootparam_set_in_progress(intf, SET_COMPLETE);
 	return rc;
 }
 
@@ -921,17 +925,8 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 {
 	uint8_t flags[5];
 	int rc = 0;
-	int use_progress = 1;
 
-	if (use_progress) {
-		/* set set-in-progress flag */
-		memset(flags, 0, 5);
-		flags[0] = 0x01;
-		rc = ipmi_chassis_set_bootparam(intf,
-				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS, flags, 1);
-		if (rc < 0)
-			use_progress = 0;
-	}
+	chassis_bootparam_set_in_progress(intf, SET_IN_PROGRESS);
 
 	memset(flags, 0, 5);
 	flags[0] = 0x01;
@@ -940,14 +935,7 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 			flags, 2);
 
 	if (rc < 0) {
-		if (use_progress) {
-			/* set-in-progress = set-complete */
-			memset(flags, 0, 5);
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
-		return -1;
+		goto out;
 	}
 
 	if (!iflags)
@@ -982,42 +970,23 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 		flags[1] |= 0x18;
 	else {
 		lprintf(LOG_ERR, "Invalid argument: %s", arg);
-		if (use_progress) {
-			/* set-in-progress = set-complete */
-			memset(flags, 0, 5);
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
-		return -1;
+		rc = -1;
+		goto out;
 	}
 
 	/* set flag valid bit */
 	flags[0] |= 0x80;
 
-	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_BOOT_FLAGS,
-			flags, 5);
-	if (rc == 0) {
-		if (use_progress) {
-			/* set-in-progress = commit-write */
-			memset(flags, 0, 5);
-			flags[0] = 0x02;
-			ipmi_chassis_set_bootparam(intf,
-					IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-					flags, 1);
-		}
-
+	rc = ipmi_chassis_set_bootparam(intf,
+	                                IPMI_CHASSIS_BOOTPARAM_BOOT_FLAGS,
+	                                flags, 5);
+	if (IPMI_CC_OK == rc) {
+		chassis_bootparam_set_in_progress(intf, COMMIT_WRITE);
 		printf("Set Boot Device to %s\n", arg);
 	}
 
-	if (use_progress) {
-		/* set-in-progress = set-complete */
-		memset(flags, 0, 5);
-		ipmi_chassis_set_bootparam(intf,
-				IPMI_CHASSIS_BOOTPARAM_SET_IN_PROGRESS,
-				flags, 1);
-	}
-
+out:
+	chassis_bootparam_set_in_progress(intf, SET_COMPLETE);
 	return rc;
 }
 
