@@ -881,20 +881,36 @@ chassis_bootparam_set_in_progress(struct ipmi_intf *intf, progress_t progress)
 	}
 }
 
+typedef enum {
+	BIOS_POST_ACK = 1 << 0,
+	OS_LOADER_ACK = 1 << 1,
+	OS_SERVICE_PARTITION_ACK = 1 << 2,
+	SMS_ACK = 1 << 3,
+	OEM_ACK = 1 << 4,
+	RESERVED_ACK_MASK = 7 << 5
+} bootinfo_ack_t;
+
+static
+int
+chassis_bootparam_clear_ack(struct ipmi_intf *intf, bootinfo_ack_t flag)
+{
+	uint8_t flags[2] = { flag & ~RESERVED_ACK_MASK,
+	                     flag & ~RESERVED_ACK_MASK };
+
+	return ipmi_chassis_set_bootparam(intf,
+	                                  IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
+	                                  flags, 2);
+}
+
 static int
 ipmi_chassis_set_bootvalid(struct ipmi_intf *intf, uint8_t set_flag, uint8_t clr_flag)
 {
 	int bootvalid;
 	uint8_t flags[2];
-	int rc = IPMI_CC_UNSPECIFIED_ERROR;
+	int rc;
 
 	chassis_bootparam_set_in_progress(intf, SET_IN_PROGRESS);
-
-	memset(flags, 0, 5);
-	flags[0] = 0x01;
-	flags[1] = 0x01;
-	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
-	                                flags, 2);
+	rc = chassis_bootparam_clear_ack(intf, BIOS_POST_ACK);
 
 	if (rc) {
 		goto out;
@@ -924,22 +940,17 @@ static int
 ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 {
 	uint8_t flags[5];
-	int rc = 0;
+	int rc;
 
 	chassis_bootparam_set_in_progress(intf, SET_IN_PROGRESS);
-
-	memset(flags, 0, 5);
-	flags[0] = 0x01;
-	flags[1] = 0x01;
-	rc = ipmi_chassis_set_bootparam(intf, IPMI_CHASSIS_BOOTPARAM_INFO_ACK,
-			flags, 2);
+	rc = chassis_bootparam_clear_ack(intf, BIOS_POST_ACK);
 
 	if (rc < 0) {
 		goto out;
 	}
 
 	if (!iflags)
-		memset(flags, 0, 5);
+		memset(flags, 0, sizeof(flags));
 	else
 		memcpy(flags, iflags, sizeof (flags));
 
