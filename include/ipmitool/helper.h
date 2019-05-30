@@ -80,6 +80,10 @@ struct oemvalstr {
 	const char * str;
 };
 
+const char *
+specific_val2str(uint16_t val,
+                 const struct valstr *specific,
+                 const struct valstr *generic);
 const char * val2str(uint16_t val, const struct valstr * vs);
 const char * oemval2str(uint32_t oem,uint16_t val, const struct oemvalstr * vs);
 
