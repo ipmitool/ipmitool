@@ -319,26 +319,74 @@ mac2str(const uint8_t *buf)
 	return buf2str_extended(buf, 6, ":");
 }
 
-const char * val2str(uint16_t val, const struct valstr *vs)
+/**
+ * Find the index of value in a valstr array
+ *
+ * @param[in] val The value to search for
+ * @param[in] vs  The valstr array to search in
+ * @return >=0    The index into \p vs
+ * @return -1     Error: value \p val was not found in \p vs
+ */
+static
+inline
+off_t find_val_idx(uint16_t val, const struct valstr *vs)
 {
-	static char un_str[32];
-	int i;
-
-	for (i = 0; vs[i].str; i++) {
-		if (vs[i].val == val)
-			return vs[i].str;
+	if (vs) {
+		for (off_t i = 0; vs[i].str; ++i) {
+			if (vs[i].val == val) {
+				return i;
+			}
+		}
 	}
 
+	return -1;
+}
+
+/**
+ * Generate a statically allocated 'Unknown' string for the provided value.
+ * The function is not thread-safe (as most of ipmitool).
+ *
+ * @param[in] val The value to put into the string
+ * @returns       A pointer to a statically allocated string
+ */
+static
+inline
+const char *unknown_val_str(uint16_t val)
+{
+	static char un_str[32];
 	memset(un_str, 0, 32);
 	snprintf(un_str, 32, "Unknown (0x%02X)", val);
 
 	return un_str;
 }
 
+const char *
+specific_val2str(uint16_t val,
+                 const struct valstr *specific,
+                 const struct valstr *generic)
+{
+	int i;
+
+	if (0 <= (i = find_val_idx(val, specific))) {
+		return specific[i].str;
+	}
+
+	if (0 <= (i = find_val_idx(val, generic))) {
+		return generic[i].str;
+	}
+
+	return unknown_val_str(val);
+}
+
+const char * val2str(uint16_t val, const struct valstr *vs)
+{
+	return specific_val2str(val, NULL, vs);
+}
+
+
 const char * oemval2str(uint32_t oem, uint16_t val,
                                              const struct oemvalstr *vs)
 {
-	static char un_str[32];
 	int i;
 
 	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str; i++) {
@@ -349,10 +397,7 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 		}
 	}
 
-	memset(un_str, 0, 32);
-	snprintf(un_str, 32, "Unknown (0x%X)", val);
-
-	return un_str;
+	return unknown_val_str(val);
 }
 
 /* str2double - safely convert string to double
