@@ -46,6 +46,18 @@
 
 extern int verbose;
 
+const static struct valstr get_bootparam_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x00, NULL }
+};
+
+const static struct valstr set_bootparam_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x81, "Attempt to set 'in progress' while not in 'complete' state" },
+	{ 0x82, "Parameter is read-only" },
+	{ 0x00, NULL }
+};
+
 int
 ipmi_chassis_power_status(struct ipmi_intf * intf)
 {
@@ -469,8 +481,12 @@ ipmi_chassis_set_bootparam(struct ipmi_intf * intf, uint8_t param, uint8_t * dat
 	}
 	if (rsp->ccode) {
 		if (param != 0) {
-			lprintf(LOG_ERR, "Set Chassis Boot Parameter %d failed: %s",
-					param, val2str(rsp->ccode, completion_code_vals));
+			lprintf(LOG_ERR,
+				"Set Chassis Boot Parameter %d failed: %s",
+				param,
+				specific_val2str(rsp->ccode,
+				                 set_bootparam_cc_vals,
+				                 completion_code_vals));
 		}
 		return rsp->ccode;
 	}
@@ -514,8 +530,12 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf, char * arg)
 		return -1;
 	}
 	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Get Chassis Boot Parameter %s failed: %s",
-				arg, val2str(rsp->ccode, completion_code_vals));
+		lprintf(LOG_ERR,
+		        "Get Chassis Boot Parameter %s failed: %s",
+		        arg,
+		        specific_val2str(rsp->ccode,
+		                         get_bootparam_cc_vals,
+		                         completion_code_vals));
 		return -1;
 	}
 
@@ -832,7 +852,10 @@ ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
 	}
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get Chassis Boot Parameter %d failed: %s",
-			param_id, val2str(rsp->ccode, completion_code_vals));
+		        param_id,
+		        specific_val2str(rsp->ccode,
+		                         get_bootparam_cc_vals,
+		                         completion_code_vals));
 		return -1;
 	}
 
