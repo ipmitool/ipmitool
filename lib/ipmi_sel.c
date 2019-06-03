@@ -454,10 +454,10 @@ get_kontron_evt_desc(struct ipmi_intf *__UNUSED__(intf), struct sel_event_record
 }
 
 char *
-get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
+get_viking_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 {
 	/*
-	 * Newisys OEM event descriptions can be retrieved through an
+	 * Viking OEM event descriptions can be retrieved through an
 	 * OEM IPMI command.
 	 */
 	struct ipmi_rs * rsp;
@@ -495,17 +495,17 @@ get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 	/* Verify our response before we use it */
 	if (rsp->data_len < 5)
 	{
-		lprintf(LOG_ERR, "Newisys OEM response too short");
+		lprintf(LOG_ERR, "Viking OEM response too short");
 		return NULL;
 	}
 	else if (rsp->data_len != (4 + rsp->data[3]))
 	{
-		lprintf(LOG_ERR, "Newisys OEM response has unexpected length");
+		lprintf(LOG_ERR, "Viking OEM response has unexpected length");
 		return NULL;
 	}
-	else if (IPM_DEV_MANUFACTURER_ID(rsp->data) != IPMI_OEM_NEWISYS)
+	else if (IPM_DEV_MANUFACTURER_ID(rsp->data) != IPMI_OEM_VIKING)
 	{
-		lprintf(LOG_ERR, "Newisys OEM response has unexpected length");
+		lprintf(LOG_ERR, "Viking OEM response has unexpected length");
 		return NULL;
 	}
 
@@ -1205,8 +1205,8 @@ ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 
 	switch (ipmi_get_oem(intf))
 	{
-	case IPMI_OEM_NEWISYS:
-		desc = get_newisys_evt_desc(intf, rec);
+	case IPMI_OEM_VIKING:
+		desc = get_viking_evt_desc(intf, rec);
 		break;
 	case IPMI_OEM_KONTRON:
 		desc =  get_kontron_evt_desc(intf, rec);
