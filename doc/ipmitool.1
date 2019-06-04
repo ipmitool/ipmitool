@@ -473,6 +473,34 @@ Force boot into BIOS Setup.
 
 Force boot from Floppy/primary removable media.
 .RE
+
+.TP
+\fIbootmbox\fP \fIget\fP [text] [block <\fBblock#\fP>]
+
+Read the Boot Initiator Mailbox in hex dump or in text mode.
+
+By default the whole mailbox is read. If block number is specified,
+that particular block is read. For block 0 or when the whole
+mailbox is read, the Boot Initiator IANA Enterprise Number and
+the corresponding enterprise name are printed.
+
+.TP
+\fIbootmbox\fP \fIset\fP text [block <\fBblock#\fP>] <\fBIANA_PEN\fP> "<\fBdata_string\fP>"
+
+Write the specified <block> or the entire Boot Initiator Mailbox in text mode.
+It is required to specify a decimal IANA Enterprise Number recognized
+by the boot initiator on the target system. Refer to your target system
+manufacturer for details. The rest of the arguments are a text string.
+
+When single block write is requested, the total length of <data> may not
+exceed 13 bytes for block 0, or 16 bytes otherwise.
+
+.TP
+\fIbootmbox\fP \fIset\fP [block <\fBblock#\fP>] <\fBIANA_PEN\fP> <\fBdata_byte\fP> [<\fBdata_byte\fP> ...]
+
+Same as above, but the arguments after IANA PEN are separate
+data byte values separated by spaces.
+
 .TP 
 \fIbootparam\fP \fIget\fP <\fBopt_id\fR> [<\fBopt_param\fR>]
 
