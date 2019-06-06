@@ -672,13 +672,13 @@ AC_TRY_COMPILE([],[
 )
 
 dnl if no environment variable is set, set the default value for the default intf
-if test "${xenable_intf_open}" = "xyes"; then
+if test "${xenable_intf_open}" = "yes"; then
    DEFAULT_INTF_NO_ENV=open
 else dnl macOS does not build open interface, it defaults to lan
    DEFAULT_INTF_NO_ENV=lan
 fi
 dnl allow for a default interface to be set on configure
-AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default=${DEFAULT_INTF_NO_ENV})])
+AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default='open' if available, 'lan' otherwise)])
 
 dnl set the default value for the default interface environment variable
 if test "x${DEFAULT_INTF}" == "x"; then
