@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> /* For free() */
+#include <stdbool.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -79,6 +80,10 @@ struct oemvalstr {
 	const char * str;
 };
 
+const char *
+specific_val2str(uint16_t val,
+                 const struct valstr *specific,
+                 const struct valstr *generic);
 const char * val2str(uint16_t val, const struct valstr * vs);
 const char * oemval2str(uint32_t oem,uint16_t val, const struct oemvalstr * vs);
 
@@ -91,6 +96,8 @@ int str2short(const char * str, int16_t * shrt_ptr);
 int str2ushort(const char * str, uint16_t * ushrt_ptr);
 int str2char(const char * str, int8_t * chr_ptr);
 int str2uchar(const char * str, uint8_t * uchr_ptr);
+
+bool args2buf(int argc, char *argv[], uint8_t *out, size_t len);
 
 int eval_ccode(const int ccode);
 
@@ -164,6 +171,13 @@ static inline uint32_t ipmi24toh(void *ipmi24)
 	h |= ipmi[0]; /* LSB */
 
 	return h;
+}
+
+static inline void htoipmi24(uint32_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = (h >> 8) & 0xFF;
+	ipmi[2] = (h >> 16) & 0xFF; /* MSB */
 }
 
 static inline uint32_t ipmi32toh(void *ipmi32)

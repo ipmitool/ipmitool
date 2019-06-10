@@ -473,36 +473,94 @@ Force boot into BIOS Setup.
 
 Force boot from Floppy/primary removable media.
 .RE
+
+.TP
+\fIbootmbox\fP \fIget\fP [text] [block <\fBblock#\fP>]
+
+Read the Boot Initiator Mailbox in hex dump or in text mode.
+
+By default the whole mailbox is read. If block number is specified,
+that particular block is read. For block 0 or when the whole
+mailbox is read, the Boot Initiator IANA Enterprise Number and
+the corresponding enterprise name are printed.
+
+.TP
+\fIbootmbox\fP \fIset\fP text [block <\fBblock#\fP>] <\fBIANA_PEN\fP> "<\fBdata_string\fP>"
+
+Write the specified <block> or the entire Boot Initiator Mailbox in text mode.
+It is required to specify a decimal IANA Enterprise Number recognized
+by the boot initiator on the target system. Refer to your target system
+manufacturer for details. The rest of the arguments are a text string.
+
+When single block write is requested, the total length of <data> may not
+exceed 13 bytes for block 0, or 16 bytes otherwise.
+
+.TP
+\fIbootmbox\fP \fIset\fP [block <\fBblock#\fP>] <\fBIANA_PEN\fP> <\fBdata_byte\fP> [<\fBdata_byte\fP> ...]
+
+Same as above, but the arguments after IANA PEN are separate
+data byte values separated by spaces.
+
 .TP 
-\fIbootparam\fP
+\fIbootparam\fP \fIget\fP <\fBopt_id\fR> [<\fBopt_param\fR>]
+
+Get value of system boot option number <\fBopt_id\fR>. Some boot
+options (e.g. option 7) can also take an optional numeric parameter.
+
+.TP 
+\fIbootparam\fP \fIset\fP bootflag <\fBdevice\fR> [options=...]
+
+Set a boot flag. Valid devices are:
+
 .RS
-.TP 
-\fIforce_pxe\fP
+.IP \fIforce_pxe\fP
 
 Force PXE boot
-.TP 
-\fIforce_disk\fP
+.IP \fIforce_disk\fP
 
 Force boot from default Hard-drive
-.TP 
-\fIforce_safe\fP
+.IP \fIforce_safe\fP
 
 Force boot from default Hard-drive, request Safe Mode
-.TP 
-\fIforce_diag\fP
+.IP \fIforce_diag\fP
 
 Force boot from Diagnostic Partition
-.TP 
-\fIforce_cdrom\fP
+.IP \fIforce_cdrom\fP
 
 Force boot from CD/DVD
-.TP 
-\fIforce_bios\fP
+.IP \fIforce_bios\fP
 
 Force boot into BIOS Setup
+
+.PP
+Valid options are:
+
+.IP \fIPEF\fP
+
+Clear valid bit on reset/power cycle cause by PEF
+
+.IP \fItimeout\fP
+
+Automatically clear boot flag valid bit on timeout
+
+.IP \fIwatchdog\fP
+
+Clear valid bit on reset/power cycle cause by watchdog
+
+.IP \fIreset\fP
+
+Clear valid bit on push button reset/soft reset
+
+.IP \fIpower\fP
+
+Clear valid bit on power up via power push button or wake event
 .RE
+
 .TP 
 \fIselftest\fP
+
+Get the chassis self-test results
+
 .RE
 .TP 
 \fIdcmi\fP
