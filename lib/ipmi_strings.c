@@ -30,28 +30,51 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <ctype.h>
+#include <limits.h>
 #include <stddef.h>
+
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sel.h>  /* for IPMI_OEM */
-
-const struct valstr ipmi_oem_info[] = {
-
-/* These are at the top so they are found first */
-   { IPMI_OEM_UNKNOWN, "Unknown" },
-   { IPMI_OEM_RESERVED, "Unspecified" },
-
-/* The included file is auto-generated from official IANA PEN list */
-#include "ipmi_pen_list.inc.c"
+#include <ipmitool/log.h>
 
 /*
- * This debug ID is at the bottom so that if IANA assigns it to
- * any entity, that IANA's value is found first and reported.
+ * These are put at the head so they are found first because they
+ * may overlap with IANA specified numbers found in the registry.
  */
-   { IPMI_OEM_DEBUG, "A Debug Assisting Company, Ltd." },
-   { -1 , NULL },
+static const struct valstr ipmi_oem_info_head[] = {
+	{ IPMI_OEM_UNKNOWN, "Unknown" }, /* IPMI Unknown */
+	{ IPMI_OEM_RESERVED, "Unspecified" }, /* IPMI Reserved */
+	{ UINT32_MAX , NULL },
 };
+
+/*
+ * These are our own technical values. We don't want them to take precedence
+ * over IANA's defined values, so they go at the very end of the array.
+ */
+static const struct valstr ipmi_oem_info_tail[] = {
+	{ IPMI_OEM_DEBUG, "A Debug Assisting Company, Ltd." },
+	{ UINT32_MAX , NULL },
+};
+
+/*
+ * This is used when ipmi_oem_info couldn't be allocated.
+ * ipmitool would report all OEMs as unknown, but would be functional otherwise.
+ */
+static const struct valstr ipmi_oem_info_dummy[] = {
+	{ UINT32_MAX , NULL },
+};
+
+/* This will point to an array filled from IANA's enterprise numbers registry */
+const struct valstr *ipmi_oem_info;
+
+/* Single-linked list of OEM valstrs */
+typedef struct oem_valstr_list_s {
+	struct valstr valstr;
+	struct oem_valstr_list_s *next;
+} oem_valstr_list_t;
 
 const struct oemvalstr ipmi_oem_product_info[] = {
    /* Keep OEM grouped together */
@@ -754,3 +777,316 @@ const struct oemvalstr picmg_busres_shmc_status_vals[] = {
 
  { 0xffffff, 0x00,  NULL }
 };
+
+
+/**
+ * A helper function to count repetitions of the same byte
+ * at the beginning of a string.
+ */
+static
+size_t count_bytes(const char *s, unsigned char c)
+{
+	size_t count;
+
+	for (count = 0; s && s[0] == c; ++s, ++count);
+
+	return count;
+}
+
+/**
+ * Parse the IANA PEN registry file.
+ *
+ * See https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
+ * The expected entry format is:
+ *
+ * Decimal
+ * | Organization
+ * | | Contact
+ * | | | Email
+ * | | | |
+ * 0
+ *   Reserved
+ *     Internet Assigned Numbers Authority
+ *       iana&iana.org
+ *
+ * That is, IANA PEN at position 0, enterprise name at position 2.
+ */
+#define IANA_NAME_OFFSET 2
+#define IANA_PEN_REGISTRY "/usr/share/misc/enterprise-numbers"
+static
+int oem_info_list_load(oem_valstr_list_t **list)
+{
+	FILE *in = NULL;
+	char *home;
+	oem_valstr_list_t *oemlist = *list;
+	int count = 0;
+
+	/*
+	 * First try to open user's local registry if HOME is set
+	 */
+	if ((home = getenv("HOME"))) {
+		char path[PATH_MAX + 1] = { 0 };
+		strncpy(path, home, sizeof(path));
+		strncat(path, "/.local" IANA_PEN_REGISTRY, PATH_MAX);
+		in = fopen(path, "r");
+	}
+
+	if (!in) {
+		/*
+		 * Now open the system default file
+		 */
+		in = fopen(IANA_PEN_REGISTRY, "r");
+		if (!in) {
+			lperror(LOG_ERR, "IANA PEN registry open failed");
+			return -1;
+		}
+	}
+
+	/*
+	 * Read the registry file line by line, fill in the linked list,
+	 * and count the entries. No sorting is done, entries will come in
+	 * reverse registry order.
+	 */
+	while (!feof(in)) {
+		oem_valstr_list_t *item;
+		char *line = NULL;
+		char *endptr = NULL;
+		size_t len = 0;
+		long iana;
+
+		if (!getline(&line, &len, in)) {
+			/* Either an EOF or an empty line. Start over. */
+			continue;
+		}
+
+		/*
+		 * Check if the line starts with a digit. If so, take it as IANA PEN.
+		 * Any numbers not starting at position 0 are discarded.
+		 */
+		iana = strtol(line, &endptr, 10);
+		if (!isdigit(line[0]) || endptr == line) {
+			free_n(&line);
+			continue;
+		}
+		free_n(&line);
+
+		/*
+		 * Now as we have the enterprise number, we're expecting the
+		 * organization name to immediately follow.
+		 */
+		len = 0;
+		if (!getline(&line, &len, in)) {
+			/*
+			 * Either an EOF or an empty line. Neither one can happen in
+			 * a valid registry entry. Start over.
+			 */
+			continue;
+		}
+
+		if (len < IANA_NAME_OFFSET + 1
+		    || count_bytes(line, ' ') != IANA_NAME_OFFSET)
+		{
+			/*
+			 * This is not a valid line, it doesn't start with
+			 * a correct-sized indentation or is too short.
+			 * Start over.
+			 */
+			free_n(&line);
+			continue;
+		}
+
+		/* Adjust to real line length, don't count the indentation */
+		len = strnlen(line + IANA_NAME_OFFSET, len - IANA_NAME_OFFSET);
+
+		/* Don't count the trailing newline */
+		if (line[IANA_NAME_OFFSET + len - 1] == '\n') {
+			--len;
+		}
+
+		item = malloc(sizeof(oem_valstr_list_t));
+		if (!item) {
+			lperror(LOG_ERR, "IANA PEN registry entry allocation failed");
+			free_n(&line);
+			/* Just stop reading, and process what has already been read */
+			break;
+		}
+
+		/*
+		 * Looks like we have a valid entry, store it in the list.
+		 */
+		item->valstr.val = iana;
+		item->valstr.str = malloc(len + 1); /* Add 1 for \0 terminator */
+		if (!item->valstr.str) {
+			lperror(LOG_ERR, "IANA PEN registry string allocation failed");
+			free_n(&line);
+			free_n(&item);
+			/* Just stop reading, and process what has already been read */
+			break;
+		}
+		strncpy((void *)item->valstr.str, line + IANA_NAME_OFFSET, len);
+		((char *)(item->valstr.str))[len] = 0;
+		free_n(&line);
+		item->next = oemlist;
+		oemlist = item;
+		++count;
+	}
+	fclose (in);
+
+	*list = oemlist;
+	return count;
+}
+
+/**
+ * Free the allocated list items and, if needed, strings.
+ */
+static
+void
+oem_info_list_free(oem_valstr_list_t **list, bool free_strings)
+{
+		while ((*list)->next) {
+			oem_valstr_list_t *item = *list;
+			*list = item->next;
+			if (free_strings) {
+				free_n(&item->valstr.str);
+			}
+			free_n(&item);
+		}
+}
+
+/**
+ * Initialize the ipmi_oem_info array from a list
+ */
+static
+bool
+oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
+{
+	/* Do not count terminators */
+	size_t head_entries = ARRAY_SIZE(ipmi_oem_info_head) - 1;
+	size_t tail_entries = ARRAY_SIZE(ipmi_oem_info_tail) - 1;
+	static oem_valstr_list_t *item;
+	bool rc = false;
+
+	/* Include static entries and the terminator */
+	count += head_entries + tail_entries + 1;
+
+	/*
+	 * Allocate as much memory as needed to accomodata all the entries
+	 * of the loaded linked list, plus the static head and tail, not including
+	 * their terminating entries, plus the terminating entry for the new
+	 * array.
+	 */
+	ipmi_oem_info = malloc(count * sizeof(*ipmi_oem_info));
+
+	if (!ipmi_oem_info) {
+		/*
+		 * We can't identify OEMs without an allocated ipmi_oem_info.
+		 * Report an error, set the pointer to dummy and clean up.
+		 */
+		lperror(LOG_ERR, "IANA PEN registry array allocation failed");
+		ipmi_oem_info = ipmi_oem_info_dummy;
+		goto out;
+	}
+
+	lprintf(LOG_DEBUG + 3, "  Allocating %6zu entries", count);
+
+    /* Add a terminator at the very end */
+	--count;
+	((struct valstr *)ipmi_oem_info)[count].val = -1;
+	((struct valstr *)ipmi_oem_info)[count].str = NULL;
+
+	/* Add tail entries from the end */
+	while (count-- < SIZE_MAX && tail_entries--) {
+		((struct valstr *)ipmi_oem_info)[count] = 
+			ipmi_oem_info_tail[tail_entries];
+
+		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
+	}
+
+	/* Now add the loaded entries */
+	item = oemlist;
+	while (count < SIZE_MAX && item->next) {
+		((struct valstr *)ipmi_oem_info)[count] =
+			item->valstr;
+
+		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
+
+		item = item->next;
+		--count;
+	}
+
+	/* Now add head entries */
+	while (count < SIZE_MAX && head_entries--) {
+		((struct valstr *)ipmi_oem_info)[count] =
+			ipmi_oem_info_head[head_entries];
+		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
+		--count;
+	}
+
+	rc = true;
+
+out:
+	return rc;
+}
+
+int ipmi_oem_info_init()
+{
+	oem_valstr_list_t terminator = { { -1, NULL}, NULL }; /* Terminator */
+	oem_valstr_list_t *oemlist = &terminator;
+	bool free_strings = true;
+	size_t count;
+	int rc = -4;
+
+	lprintf(LOG_INFO, "Loading IANA PEN Registry...");
+
+	if (ipmi_oem_info) {
+		lprintf(LOG_INFO, "IANA PEN Registry is already loaded");
+		rc = 0;
+		goto out;
+	}
+
+	if (!(count = oem_info_list_load(&oemlist))) {
+		/*
+		 * We can't identify OEMs without a loaded registry.
+		 * Set the pointer to dummy and return.
+		 */
+		ipmi_oem_info = ipmi_oem_info_dummy;
+		goto out;
+	}
+
+	/* In the array was allocated, don't free the strings at cleanup */
+	free_strings = !oem_info_init_from_list(oemlist, count);
+
+	rc = IPMI_CC_OK;
+
+out:
+	oem_info_list_free(&oemlist, free_strings);
+	return rc;
+}
+
+void ipmi_oem_info_free()
+{
+	/* Start with the dynamically allocated entries */
+	size_t i = ARRAY_SIZE(ipmi_oem_info_head) - 1;
+
+	if (ipmi_oem_info == ipmi_oem_info_dummy) {
+		return;
+	}
+
+	/*
+	 * Proceed dynamically allocated entries until we hit the first
+	 * entry of ipmi_oem_info_tail[], which is statically allocated.
+	 */
+	while (ipmi_oem_info
+	       && ipmi_oem_info[i].val < UINT32_MAX
+	       && ipmi_oem_info[i].str != ipmi_oem_info_tail[0].str)
+	{
+		free_n(&((struct valstr *)ipmi_oem_info)[i].str);
+		++i;
+	}
+
+	/* Free the array itself */
+	free_n(&ipmi_oem_info);
+}
