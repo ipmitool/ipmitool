@@ -29,6 +29,5 @@ control/prototype
 control/rpmmacros
 src/ipmievd
 src/ipmitool
-lib/ipmi_pen_list.inc.c
 cscope.out
 tags
