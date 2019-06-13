@@ -691,6 +691,32 @@ if test "x${!xdefault_intf_is_enabled}" != "xyes"; then
 	AC_MSG_ERROR([** Cannot set ${DEFAULT_INTF} as default; ${DEFAULT_INTF} is not enabled. :${!xdefault_intf_is_enabled}:])
 fi
 
+AC_ARG_VAR(IANADIR, [Configure the path to IANA PEN dictionary (default=DATAROOTDIR/misc)])
+AC_ARG_VAR(IANAUSERDIR, [Configure the path to IANA PEN dictionary wihtin the user's HOME directory (default=.local/usr/share/misc)])
+
+if test "x${IANADIR}" == "x"; then
+	echo Set IANA PEN dictionary search path to ${datarootdir}/misc
+	IANADIR="${datarootdir}/misc"
+fi
+
+if test "x${IANAUSERDIR}" == "x"; then
+	IANAUSERDIR=".local/usr/share/misc"
+	echo Set user\'s IANA PEN dictionary search path to ${IANAUSERDIR}
+fi
+
+AH_TEMPLATE([IANADIR],[The path to system IANA PEN dictionary])
+AC_DEFINE_UNQUOTED(IANADIR, "`eval "echo ${IANADIR}"`", [])
+
+AH_TEMPLATE([IANAUSERDIR],[The subpath to user IANA PEN dictionary within the user's HOME])
+AC_DEFINE_UNQUOTED(IANAUSERDIR, "`eval "echo ${IANAUSERDIR}"`", [])
+
+AH_TEMPLATE([PATH_SEPARATOR], [The path separator string])
+#if defined _WIN32 || defined __CYGWIN__
+AC_DEFINE(PATH_SEPARATOR, "\\")
+#else
+AC_DEFINE(PATH_SEPARATOR, "/")
+#endif
+
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
 		doc/Makefile
