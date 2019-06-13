@@ -41,11 +41,37 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	$(distdir).tar.gz $(distdir).tar.bz2
 
 SUBDIRS = lib src include doc contrib control
+IANA_PEN = http://www.iana.org/assignments/enterprise-numbers
 
 dist-hook:
 	cp control/ipmitool.spec $(distdir)
 
-install-data-local:
+.PHONY: install-pen-database
+
+if DOWNLOAD
+
+enterprise-numbers:
+	@echo Downloading IANA PEN database...
+	@$(DOWNLOAD) "$(IANA_PEN)" > tmpfile.$$PPID || {\
+		echo "FAILED to download the IANA PEN database"; \
+		rm tmpfile.$$PPID; \
+		false; \
+	}
+	@mv tmpfile.$$PPID $@
+
+install-pen-database: enterprise-numbers
+	mkdir -m 755 -p $(IANADIR)
+	$(INSTALL_DATA) $< -t $(IANADIR)/
+
+else
+
+install-pen-database:
+	@echo "*** NOT installing the IANA PEN database."
+	@echo "*** Don't know how to download it."
+
+endif
+
+install-data-local: install-pen-database
 	mkdir -p $(DESTDIR)$(DOCDIR)
 	$(INSTALL_DATA) $(DOCLIST) $(DESTDIR)$(DOCDIR)
 
