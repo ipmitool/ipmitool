@@ -217,6 +217,16 @@ Reading Sensors...
 .br 
 Waiting for Events...
 .br 
+
+.SH FILES
+.TP
+.B @IANADIR@/enterprise-numbers
+system IANA PEN registry taken from http://www.iana.org/assignments/enterprise-numbers
+.TP
+.B ~/@IANAUSERDIR@/enterprise-numbers
+user's override for the system IANA PEN registry, this file if it exists is loaded instead
+of the system registry (see above).
+
 .SH "AUTHOR"
 Duncan Laurie <duncan@iceblink.org>
 .SH "SEE ALSO"
