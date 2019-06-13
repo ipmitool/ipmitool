@@ -812,7 +812,7 @@ size_t count_bytes(const char *s, unsigned char c)
  * That is, IANA PEN at position 0, enterprise name at position 2.
  */
 #define IANA_NAME_OFFSET 2
-#define IANA_PEN_REGISTRY "/usr/share/misc/enterprise-numbers"
+#define IANA_PEN_REGISTRY "enterprise-numbers"
 static
 int oem_info_list_load(oem_valstr_list_t **list)
 {
@@ -826,8 +826,9 @@ int oem_info_list_load(oem_valstr_list_t **list)
 	 */
 	if ((home = getenv("HOME"))) {
 		char path[PATH_MAX + 1] = { 0 };
-		strncpy(path, home, sizeof(path));
-		strncat(path, "/.local" IANA_PEN_REGISTRY, PATH_MAX);
+		snprintf(path, PATH_MAX, "%s%s",
+		         home,
+		         PATH_SEPARATOR IANAUSERDIR PATH_SEPARATOR IANA_PEN_REGISTRY);
 		in = fopen(path, "r");
 	}
 
@@ -835,7 +836,7 @@ int oem_info_list_load(oem_valstr_list_t **list)
 		/*
 		 * Now open the system default file
 		 */
-		in = fopen(IANA_PEN_REGISTRY, "r");
+		in = fopen(IANADIR PATH_SEPARATOR IANA_PEN_REGISTRY, "r");
 		if (!in) {
 			lperror(LOG_ERR, "IANA PEN registry open failed");
 			return -1;
@@ -923,8 +924,17 @@ int oem_info_list_load(oem_valstr_list_t **list)
 			/* Just stop reading, and process what has already been read */
 			break;
 		}
-		strncpy((void *)item->valstr.str, line + IANA_NAME_OFFSET, len);
-		((char *)(item->valstr.str))[len] = 0;
+
+		/*
+		 * Most other valstr arrays are constant and all of them aren't meant
+		 * for modification, so the string inside 'struct valstr' is const.
+		 * Here we're loading the strings dynamically so we intentionally
+		 * cast to a non-const type to be able to modify data here and
+		 * keep the compiler silent about it. Restrictions still apply to
+		 * other places where these strings are used.
+		 */
+		snprintf((void *)item->valstr.str, len + 1,
+		         "%s", line + IANA_NAME_OFFSET);
 		free_n(&line);
 		item->next = oemlist;
 		oemlist = item;
