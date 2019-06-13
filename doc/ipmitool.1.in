@@ -3817,7 +3817,16 @@ Chassis Power is on
 > ipmitool \-I lan \-H 1.2.3.4 \-f passfile chassis power on
 .br 
 Chassis Power Control: Up/On
-	
+
+.SH FILES
+.TP
+.B @IANADIR@/enterprise-numbers
+system IANA PEN registry taken from http://www.iana.org/assignments/enterprise-numbers
+.TP
+.B ~/@IANAUSERDIR@/enterprise-numbers
+user's override for the system IANA PEN registry, this file if it exists is loaded instead
+of the system registry (see above).
+
 .SH "AUTHORS"
 Originally written by Duncan Laurie <duncan@iceblink.org>.
 .br

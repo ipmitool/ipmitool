@@ -4,6 +4,7 @@ dnl
 m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
 AC_INIT([ipmitool], [1.8.18git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
+AC_CONFIG_COMMANDS_PRE([export prefix=$prefix])
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER(config.h)
@@ -742,6 +743,9 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
 		src/plugins/dummy/Makefile])
+
+AC_CONFIG_FILES([doc/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmitool.1])
+AC_CONFIG_FILES([doc/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmievd.8])
 
 AC_OUTPUT
 
