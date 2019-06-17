@@ -52,6 +52,14 @@
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_sdr.h>
 
+static
+inline
+bool
+is_system(const struct channel_info_t *chinfo)
+{
+	return (IPMI_CHANNEL_MEDIUM_SYSTEM == chinfo.medium
+	        || CH_SYSTEM == chinfo.channel);
+}
 
 static void
 ipmi_event_msg_print(struct ipmi_intf * intf, struct platform_event_msg * pmsg)
@@ -84,7 +92,7 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t rqdata[8];
-	uint8_t chmed;
+	struct channel_info_t chinfo;
 
 	memset(&req, 0, sizeof(req));
 	memset(rqdata, 0, 8);
@@ -93,8 +101,14 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	req.msg.cmd = 0x02;
 	req.msg.data = rqdata;
 
-	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
+	ipmi_current_channel_info(intf, &chinfo);
+	if (chinfo.channel == CH_UNKNOWN) {
+	    lprintf(LOG_ERR, "Failed to send the platform event "
+	                     "via an unknown channel");
+	    return -3;
+	}
+
+	if (is_system(&chinfo)) {
 		/* system interface, need extra generator ID */
 		req.msg.data_len = 8;
 		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
@@ -491,7 +505,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	char buf[1024];
 	char * ptr, * tok;
 	int i, j;
-	uint8_t chmed;
+	struct channel_info_t chinfo;
 	int rc = 0;
 
 	if (!file)
@@ -506,8 +520,14 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	req.msg.data = rqdata;
 	req.msg.data_len = 7;
 
-	chmed = ipmi_current_channel_medium(intf);
-	if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) {
+	ipmi_current_channel_info(intf, &chinfo);
+	if (chinfo.channel == CH_UNKNOWN) {
+	    lprintf(LOG_ERR, "Failed to send the event from file "
+	                     "via an unknown channel");
+	    return -3;
+	}
+
+	if (is_system(&chinfo)) {
 		/* system interface, need extra generator ID */
 		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
 		req.msg.data_len = 8;
@@ -546,8 +566,9 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			if (i == 7)
 				break;
 			j = i++;
-			if (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM)
+			if (is_system(&chinfo)) {
 				j++;
+			}
 			rqdata[j] = (uint8_t)strtol(tok, NULL, 0);
 			tok = strtok(NULL, " ");
 		}
@@ -561,7 +582,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		sel_event.record_id = 0;
 		sel_event.sel_type.standard_type.gen_id = 2;
 
-		j = (chmed == IPMI_CHANNEL_MEDIUM_SYSTEM) ? 1 : 0;
+		j = (int)is_system(&chinfo);
 		sel_event.sel_type.standard_type.evm_rev = rqdata[j++];
 		sel_event.sel_type.standard_type.sensor_type = rqdata[j++];
 		sel_event.sel_type.standard_type.sensor_num = rqdata[j++];
