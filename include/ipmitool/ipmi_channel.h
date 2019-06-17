@@ -57,6 +57,28 @@
 #define IPMI_CHANNEL_SESSION_MULTI 0x80
 #define IPMI_CHANNEL_SESSION_BASED 0xC0
 
+/* Fixed channel numbers as per Table 6-1 */
+typedef enum {
+	CH_PRIMARY_IPMB,
+	CH_IMP_SPECIFIC_1,
+	CH_IMP_SPECIFIC_2,
+	CH_IMP_SPECIFIC_3,
+	CH_IMP_SPECIFIC_4,
+	CH_IMP_SPECIFIC_5,
+	CH_IMP_SPECIFIC_6,
+	CH_IMP_SPECIFIC_7,
+	CH_IMP_SPECIFIC_8,
+	CH_IMP_SPECIFIC_9,
+	CH_IMP_SPECIFIC_A,
+	CH_IMP_SPECIFIC_B,
+	CH_RSVD1,
+	CH_RSVD2,
+	CH_CURRENT,
+	CH_SYSTEM,
+	CH_TOTAL,
+	CH_UNKNOWN = UINT8_MAX
+} ipmi_channel_num_t;
+
 /* (22.24) Get Channel Info */
 struct channel_info_t {
 	uint8_t channel;
@@ -189,7 +211,8 @@ int _ipmi_set_channel_access(struct ipmi_intf *intf,
                              uint8_t privilege_option);
 
 uint8_t ipmi_get_channel_medium(struct ipmi_intf * intf, uint8_t channel);
-uint8_t ipmi_current_channel_medium(struct ipmi_intf * intf);
+void ipmi_current_channel_info(struct ipmi_intf *intf,
+                               struct channel_info_t *chinfo);
 int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);
 int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
                               uint8_t channel, uint8_t priv);
