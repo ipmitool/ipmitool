@@ -69,7 +69,8 @@ ipmi_event_msg_print(struct ipmi_intf * intf, struct platform_event_msg * pmsg)
 	memset(&sel_event, 0, sizeof(struct sel_event_record));
 
 	sel_event.record_id = 0;
-	sel_event.sel_type.standard_type.gen_id = 2;
+	htoipmi16(EVENT_GENERATOR(SMS, 0),
+	          (void *)&sel_event.sel_type.standard_type.gen_id);
 
 	sel_event.sel_type.standard_type.evm_rev        = pmsg->evm_rev;
 	sel_event.sel_type.standard_type.sensor_type    = pmsg->sensor_type;
@@ -498,41 +499,17 @@ static int
 ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 {
 	FILE * fp;
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	struct sel_event_record sel_event;
-	uint8_t rqdata[PLATFORM_EVENT_DATA_LEN_MAX];
-	uint8_t *rqdata_start = rqdata;
+	/* For ease of filling in from file data */
+	union {
+		struct platform_event_msg emsg;
+		uint8_t bytes[sizeof(struct platform_event_msg)];
+	} __attribute__ ((packed)) rqdata;
 	char buf[1024];
 	char * ptr, * tok;
-	struct channel_info_t chinfo;
 	int rc = 0;
 
 	if (!file)
 		return -1;
-
-	memset(rqdata, 0, sizeof(rqdata));
-
-	/* setup Platform Event Message command */
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = IPMI_CMD_PLATFORM_EVENT;
-	req.msg.data = rqdata;
-	req.msg.data_len = PLATFORM_EVENT_DATA_LEN_NON_SI;
-
-	ipmi_current_channel_info(intf, &chinfo);
-	if (chinfo.channel == CH_UNKNOWN) {
-	    lprintf(LOG_ERR, "Failed to send the event from file "
-	                     "via an unknown channel");
-	    return -3;
-	}
-
-	if (is_system(&chinfo)) {
-		/* system interface, need extra generator ID, see Fig. 29-2 */
-		rqdata[0] = EVENT_GENERATOR(REMOTE_CONSOLE, 1);
-		req.msg.data_len = PLATFORM_EVENT_DATA_LEN_SI;
-		rqdata_start++;
-	}
 
 	fp = ipmi_open_file_read(file);
 	if (!fp)
@@ -542,6 +519,9 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		size_t count = 0;
 		if (!fgets(buf, 1024, fp))
 			continue;
+
+		/* Each line is a new event */
+		memset(&rqdata, 0, sizeof(rqdata));
 
 		/* clip off optional comment tail indicated by # */
 		ptr = strchr(buf, '#');
@@ -566,7 +546,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		while (tok) {
 			if (count == sizeof(struct platform_event_msg))
 				break;
-			if (0 > str2uchar(tok, &rqdata_start[count])) {
+			if (0 > str2uchar(tok, &rqdata.bytes[count])) {
 				lprintf(LOG_ERR, "Invalid token in file: [%s]", tok);
 				rc = -1;
 				break;
@@ -576,35 +556,14 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		}
 		if (count < sizeof(struct platform_event_msg)) {
 			lprintf(LOG_ERR, "Invalid Event: %s",
-			       buf2str(rqdata, sizeof(rqdata)));
+			       buf2str(rqdata.bytes, sizeof(rqdata.bytes)));
 			continue;
 		}
 
-		memset(&sel_event, 0, sizeof(struct sel_event_record));
-		sel_event.record_id = 0;
-		sel_event.sel_type.standard_type.gen_id = 2;
-
-		/*
-		 * Standard SEL record matches the platform event message
-		 * format starting with the evm_rev field.
-		 * Hence, just copy the message to the record at evm_rev.
-		 */
-		memcpy(&sel_event.sel_type.standard_type.evm_rev,
-		       rqdata_start,
-		       sizeof(struct platform_event_msg));
-
-		ipmi_sel_print_std_entry(intf, &sel_event);
-		
-		rsp = intf->sendrecv(intf, &req);
-		if (!rsp) {
-			lprintf(LOG_ERR, "Platform Event Message command failed");
-			rc = -1;
-		}
-		else if (rsp->ccode) {
-			lprintf(LOG_ERR, "Platform Event Message command failed: %s",
-				val2str(rsp->ccode, completion_code_vals));
-			rc = -1;
-		}
+		/* Now actually send it, failures will be logged by the sender */
+		rc = ipmi_send_platform_event(intf, &rqdata.emsg);
+		if (IPMI_CC_OK != rc)
+			break;
 	}
 
 	fclose(fp);
