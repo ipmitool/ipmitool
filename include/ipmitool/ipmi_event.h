@@ -61,6 +61,33 @@ struct platform_event_msg {
 #pragma pack(0)
 #endif
 
+/* See IPMI 2.0 Specification, Appendix G, Table G-1, "Event Commands"  */
+typedef enum {
+	IPMI_CMD_SET_EVENT_RCVR = 0,
+	IPMI_CMD_GET_EVENT_RCVR,
+	IPMI_CMD_PLATFORM_EVENT
+} ipmi_event_cmd_t;
+
+typedef enum {
+	PLATFORM_EVENT_DATA_LEN_NON_SI = sizeof(struct platform_event_msg),
+	PLATFORM_EVENT_DATA_LEN_SI, /* System interfaces require generator ID */
+	PLATFORM_EVENT_DATA_LEN_MAX = PLATFORM_EVENT_DATA_LEN_SI
+} ipmi_platform_event_data_len_t;
+
+/* See Table 5-4 */
+typedef enum {
+	EVENT_SWID_BIOS_BASE = 0x00, /* BIOS */
+	EVENT_SWID_SMI_BASE = 0x10, /* SMI Handler */
+	EVENT_SWID_SMS_BASE = 0x20, /* System Management Software */
+	EVENT_SWID_OEM_BASE = 0x30, /* OEM */
+	EVENT_SWID_REMOTE_CONSOLE_BASE = 0x40, /* Remote Console SW */
+	EVENT_SWID_TERMINAL_MODE_BASE = 0x47 /* Terminal Mode RC SW */
+} ipmi_event_swid_t;
+#define EVENT_SWID(base, index) ((EVENT_SWID_##base##_BASE + index) & 0x7F)
+
+/* See Figure 29-2, Table 32-1 */
+#define EVENT_GENERATOR(base, index) (EVENT_SWID(base,index) << 1 | 1)
+
 int  ipmi_event_main(struct ipmi_intf *, int, char **);
 
 #endif /*IPMI_EVENT_H*/

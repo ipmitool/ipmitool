@@ -57,8 +57,8 @@ inline
 bool
 is_system(const struct channel_info_t *chinfo)
 {
-	return (IPMI_CHANNEL_MEDIUM_SYSTEM == chinfo.medium
-	        || CH_SYSTEM == chinfo.channel);
+	return (IPMI_CHANNEL_MEDIUM_SYSTEM == chinfo->medium
+	        || CH_SYSTEM == chinfo->channel);
 }
 
 static void
@@ -91,15 +91,17 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint8_t rqdata[8];
+	uint8_t rqdata[PLATFORM_EVENT_DATA_LEN_MAX];
+	uint8_t *rqdata_start = rqdata;
 	struct channel_info_t chinfo;
 
 	memset(&req, 0, sizeof(req));
-	memset(rqdata, 0, 8);
+	memset(rqdata, 0, sizeof(rqdata));
 
 	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = 0x02;
+	req.msg.cmd = IPMI_CMD_PLATFORM_EVENT;
 	req.msg.data = rqdata;
+	req.msg.data_len = PLATFORM_EVENT_DATA_LEN_NON_SI;
 
 	ipmi_current_channel_info(intf, &chinfo);
 	if (chinfo.channel == CH_UNKNOWN) {
@@ -109,15 +111,13 @@ ipmi_send_platform_event(struct ipmi_intf * intf, struct platform_event_msg * em
 	}
 
 	if (is_system(&chinfo)) {
-		/* system interface, need extra generator ID */
-		req.msg.data_len = 8;
-		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
-		memcpy(rqdata+1, emsg, sizeof(struct platform_event_msg));
+		/* system interface, need extra generator ID, see Fig. 29-2 */
+		req.msg.data_len = PLATFORM_EVENT_DATA_LEN_SI;
+		rqdata[0] = EVENT_GENERATOR(SMS, 0);
+		rqdata_start++;
 	}
-	else {
-		req.msg.data_len = 7;
-		memcpy(rqdata, emsg, sizeof(struct platform_event_msg));
-	}
+
+	memcpy(rqdata_start, emsg, sizeof(struct platform_event_msg));
 
 	ipmi_event_msg_print(intf, emsg);
 
@@ -501,24 +501,24 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct sel_event_record sel_event;
-	uint8_t rqdata[8];
+	uint8_t rqdata[PLATFORM_EVENT_DATA_LEN_MAX];
+	uint8_t *rqdata_start = rqdata;
 	char buf[1024];
 	char * ptr, * tok;
-	int i, j;
 	struct channel_info_t chinfo;
 	int rc = 0;
 
 	if (!file)
 		return -1;
 
-	memset(rqdata, 0, 8);
+	memset(rqdata, 0, sizeof(rqdata));
 
 	/* setup Platform Event Message command */
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
-	req.msg.cmd = 0x02;
+	req.msg.cmd = IPMI_CMD_PLATFORM_EVENT;
 	req.msg.data = rqdata;
-	req.msg.data_len = 7;
+	req.msg.data_len = PLATFORM_EVENT_DATA_LEN_NON_SI;
 
 	ipmi_current_channel_info(intf, &chinfo);
 	if (chinfo.channel == CH_UNKNOWN) {
@@ -528,9 +528,10 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 	}
 
 	if (is_system(&chinfo)) {
-		/* system interface, need extra generator ID */
-		rqdata[0] = 0x41;   // As per Fig. 29-2 and Table 5-4
-		req.msg.data_len = 8;
+		/* system interface, need extra generator ID, see Fig. 29-2 */
+		rqdata[0] = EVENT_GENERATOR(REMOTE_CONSOLE, 1);
+		req.msg.data_len = PLATFORM_EVENT_DATA_LEN_SI;
+		rqdata_start++;
 	}
 
 	fp = ipmi_open_file_read(file);
@@ -538,6 +539,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		return -1;
 
 	while (feof(fp) == 0) {
+		size_t count = 0;
 		if (!fgets(buf, 1024, fp))
 			continue;
 
@@ -560,19 +562,19 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 
 		/* parse the event, 7 bytes with optional comment */
 		/* 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event */
-		i = 0;
 		tok = strtok(ptr, " ");
 		while (tok) {
-			if (i == 7)
+			if (count == sizeof(struct platform_event_msg))
 				break;
-			j = i++;
-			if (is_system(&chinfo)) {
-				j++;
+			if (0 > str2uchar(tok, &rqdata_start[count])) {
+				lprintf(LOG_ERR, "Invalid token in file: [%s]", tok);
+				rc = -1;
+				break;
 			}
-			rqdata[j] = (uint8_t)strtol(tok, NULL, 0);
 			tok = strtok(NULL, " ");
+			++count;
 		}
-		if (i < 7) {
+		if (count < sizeof(struct platform_event_msg)) {
 			lprintf(LOG_ERR, "Invalid Event: %s",
 			       buf2str(rqdata, sizeof(rqdata)));
 			continue;
@@ -582,15 +584,14 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 		sel_event.record_id = 0;
 		sel_event.sel_type.standard_type.gen_id = 2;
 
-		j = (int)is_system(&chinfo);
-		sel_event.sel_type.standard_type.evm_rev = rqdata[j++];
-		sel_event.sel_type.standard_type.sensor_type = rqdata[j++];
-		sel_event.sel_type.standard_type.sensor_num = rqdata[j++];
-		sel_event.sel_type.standard_type.event_type = rqdata[j] & 0x7f;
-		sel_event.sel_type.standard_type.event_dir = (rqdata[j++] & 0x80) >> 7;
-		sel_event.sel_type.standard_type.event_data[0] = rqdata[j++];
-		sel_event.sel_type.standard_type.event_data[1] = rqdata[j++];
-		sel_event.sel_type.standard_type.event_data[2] = rqdata[j++];
+		/*
+		 * Standard SEL record matches the platform event message
+		 * format starting with the evm_rev field.
+		 * Hence, just copy the message to the record at evm_rev.
+		 */
+		memcpy(&sel_event.sel_type.standard_type.evm_rev,
+		       rqdata_start,
+		       sizeof(struct platform_event_msg));
 
 		ipmi_sel_print_std_entry(intf, &sel_event);
 		
