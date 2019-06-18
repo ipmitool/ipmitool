@@ -329,7 +329,7 @@ mac2str(const uint8_t *buf)
  */
 static
 inline
-off_t find_val_idx(uint16_t val, const struct valstr *vs)
+off_t find_val_idx(uint32_t val, const struct valstr *vs)
 {
 	if (vs) {
 		for (off_t i = 0; vs[i].str; ++i) {
@@ -351,7 +351,7 @@ off_t find_val_idx(uint16_t val, const struct valstr *vs)
  */
 static
 inline
-const char *unknown_val_str(uint16_t val)
+const char *unknown_val_str(uint32_t val)
 {
 	static char un_str[32];
 	memset(un_str, 0, 32);
@@ -361,7 +361,7 @@ const char *unknown_val_str(uint16_t val)
 }
 
 const char *
-specific_val2str(uint16_t val,
+specific_val2str(uint32_t val,
                  const struct valstr *specific,
                  const struct valstr *generic)
 {
@@ -378,14 +378,14 @@ specific_val2str(uint16_t val,
 	return unknown_val_str(val);
 }
 
-const char * val2str(uint16_t val, const struct valstr *vs)
+const char *val2str(uint32_t val, const struct valstr *vs)
 {
 	return specific_val2str(val, NULL, vs);
 }
 
 
-const char * oemval2str(uint32_t oem, uint16_t val,
-                                             const struct oemvalstr *vs)
+const char *oemval2str(uint32_t oem, uint32_t val,
+                       const struct oemvalstr *vs)
 {
 	int i;
 
@@ -642,7 +642,7 @@ int str2uchar(const char * str, uint8_t * uchr_ptr)
 	return 0;
 } /* str2uchar(...) */
 
-uint16_t str2val(const char *str, const struct valstr *vs)
+uint32_t str2val32(const char *str, const struct valstr *vs)
 {
 	int i;
 
