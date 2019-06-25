@@ -1,6 +1,10 @@
 .deps
 .dirstamp
 .libs
+.*.swp
+*.log
+*.rej
+*.orig
 *.o
 *.lo
 *.la
