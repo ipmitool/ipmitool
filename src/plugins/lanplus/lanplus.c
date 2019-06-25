@@ -762,12 +762,6 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 						printbuf(&rsp->data[offset], (rsp->data_len-offset-1),
 								"bridge command response");
 						/*
-						 * decrement payload size
-						 * (cks2 for outer Send Message)
-						 */
-						payload_size--;
-
-						/*
 						 * need to make a loop for embedded bridged response
 						 */
 						loop++;
@@ -793,6 +787,9 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 			if (extra_data_length > 0) {
 				rsp->data_len = extra_data_length;
 				memmove(rsp->data, rsp->data + offset, extra_data_length);
+				offset = 0;
+				payload_start = 0;
+				payload_size = extra_data_length;
 			} else {
 				rsp->data_len = 0;
 			}
