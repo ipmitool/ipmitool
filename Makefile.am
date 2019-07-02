@@ -60,8 +60,8 @@ enterprise-numbers:
 	@mv tmpfile.$$PPID $@
 
 install-pen-database: enterprise-numbers
-	mkdir -m 755 -p $(IANADIR)
-	$(INSTALL_DATA) $< -t $(IANADIR)/
+	mkdir -m 755 -p $(DESTDIR)$(IANADIR)
+	$(INSTALL_DATA) $< -t $(DESTDIR)$(IANADIR)/
 
 else
 
