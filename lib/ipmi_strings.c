@@ -269,7 +269,8 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_ADLINK_24339, 0x0410, "MXN-0410" },
    { IPMI_OEM_ADLINK_24339, 0x2600, "MCN-2600" },
    { IPMI_OEM_ADLINK_24339, 0x1500, "MCN-1500" },
-
+   /* Super Micro */
+   { IPMI_OEM_SUPERMICRO, 0x0664, "SMT-X9" },
    /* YADRO */
    { IPMI_OEM_YADRO, 0x0001, "VESNIN BMC" },
    { IPMI_OEM_YADRO, 0x000A, "TATLIN Storage Controller BMC" },
