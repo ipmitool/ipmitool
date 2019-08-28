@@ -399,7 +399,7 @@ IPMItool homepage
 http://github.com/ipmitool/ipmitool
 
 IPMItool manpage
-https://github.com/ipmitool/ipmitool/blob/master/doc/ipmitool.1
+https://github.com/ipmitool/ipmitool/blob/master/doc/ipmitool.1.in
 
 Intelligent Platform Management Interface specification
 https://www.intel.com/content/www/us/en/servers/ipmi/ipmi-home.html
