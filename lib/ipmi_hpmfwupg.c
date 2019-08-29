@@ -48,10 +48,6 @@
 # include <config.h>
 #endif
 
-/* From src/plugins/ipmi_intf.c: */
-uint16_t
-ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
-
 extern int verbose;
 
 int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
