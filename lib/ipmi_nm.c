@@ -48,6 +48,9 @@
 /* clang-format off */
 
 /* NM commands (local, not from the specification */
+
+#define NM_UNDEF 0xFF
+
 enum {
 	NM_DISCOVER,
 	NM_CAPAB,
@@ -61,6 +64,8 @@ enum {
 	NM_THRESHOLD
 };
 
+#define NM_CMD_END DCMI_CMD_END(NM_UNDEF)
+
 const struct dcmi_cmd nm_cmd_vals[] = {
 	{ NM_DISCOVER, "discover", "Discover Node Manager" },
 	{ NM_CAPAB, "capability", "Get Node Manager Capabilities" },
@@ -73,14 +78,14 @@ const struct dcmi_cmd nm_cmd_vals[] = {
 	{ NM_ALERT, "alert", "Set/Get/Clear Alert destination" },
 	{ NM_THRESHOLD, "threshold", "Set/Get Alert Thresholds" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_ctl_cmds[] = {
 	{ 0x01, "enable",  "<control scope>" },
 	{ 0x00, "disable", "<control scope>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_ctl_domain[] = {
@@ -88,18 +93,27 @@ const struct dcmi_cmd nm_ctl_domain[] = {
 	{ 0x02, "per_domain", "<platform|CPU|Memory> (default is platform)" },
 	{ 0x04, "per_policy", "<0-255>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 /* Node Manager Domain codes */
-const struct dcmi_cmd nm_domain_vals[] = {
-	{ 0x00, "platform",   "" },
-	{ 0x01, "CPU",        "" },
-	{ 0x02, "Memory",     "" },
-	{ 0x03, "protection", "" },
-	{ 0x04, "I/O",        "" },
 
-	DCMI_CMD_END(0xFF),
+enum {
+	NM_DOM_PLATFORM,
+	NM_DOM_CPU,
+	NM_DOM_MEMORY,
+	NM_DOM_PROT,
+	NM_DOM_IO,
+};
+
+const struct dcmi_cmd nm_domain_vals[] = {
+	{ NM_DOM_PLATFORM, "platform", "" },
+	{ NM_DOM_CPU, "CPU", "" },
+	{ NM_DOM_MEMORY, "Memory", "" },
+	{ NM_DOM_PROT, "protection", "" },
+	{ NM_DOM_IO, "I/O", "" },
+
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_version_vals[] = {
@@ -109,17 +123,25 @@ const struct dcmi_cmd nm_version_vals[] = {
 	{ 0x04, "2.5", "" },
 	{ 0x05, "3.0", "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
+};
+
+enum {
+	NM_CAP_DOMAIN = 0x10,
+	NM_CAP_INLET,
+	NM_CAP_MISSING,
+	NM_CAP_RESET,
+	NM_CAP_BOOT,
 };
 
 const struct dcmi_cmd nm_capability_opts[] = {
-	{ 0x01, "domain",  "<platform|CPU|Memory> (default is platform)" },
-	{ 0x02, "inlet",   "Inlet temp trigger" },
-	{ 0x03, "missing", "Missing Power reading trigger" },
-	{ 0x04, "reset",   "Time after Host reset trigger" },
-	{ 0x05, "boot",    "Boot time policy" },
+	{ NM_CAP_DOMAIN, "domain", "<platform|CPU|Memory> (default is platform)" },
+	{ NM_CAP_INLET, "inlet", "Inlet temp trigger" },
+	{ NM_CAP_MISSING, "missing", "Missing Power reading trigger" },
+	{ NM_CAP_RESET, "reset", "Time after Host reset trigger" },
+	{ NM_CAP_BOOT, "boot", "Boot time policy" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct  dcmi_cmd nm_policy_type_vals[] = {
@@ -129,14 +151,14 @@ const struct  dcmi_cmd nm_policy_type_vals[] = {
 	{ 0x03, "Time after Host reset trigger",           "" },
 	{ 0x04, "number of cores to disable at boot time", "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_stats_opts[] = {
 	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-255>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_stats_mode[] = {
@@ -151,7 +173,7 @@ const struct dcmi_cmd nm_stats_mode[] = {
 	{ 0x1E, "mem_throttling", "memory throttling" },
 	{ 0x1F, "comm_fail",      "host communication failures" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_policy_action[] = {
@@ -166,7 +188,7 @@ const struct dcmi_cmd nm_policy_action[] = {
 	                      "[domain <platform|CPU|Memory>]" },
 	{ 0x06, "limiting", "nm policy limiting [domain <platform|CPU|Memory>]" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 const struct dcmi_cmd nm_policy_options[] = {
 	{ 0x01, "enable",    "" },
@@ -181,7 +203,7 @@ const struct dcmi_cmd nm_policy_options[] = {
 	{ 0x0C, "volatile",  "save policy in volatiel memory" },
 	{ 0x0D, "cores_off", "at boot time, disable N cores" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 /* if "trigger" command used from nm_policy_options */
@@ -191,7 +213,7 @@ const struct dcmi_cmd nm_trigger[] = {
 	{ 0x02, "reset", "" },
 	{ 0x03, "boot",  "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 /* if "correction" used from nm_policy_options */
@@ -200,7 +222,7 @@ const struct dcmi_cmd nm_correction[] = {
 	{ 0x01, "soft", "" },
 	{ 0x02, "hard", "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 /* returned codes from get policy */
@@ -209,7 +231,7 @@ const struct dcmi_cmd nm_correction_vals[] = {
 	{ 0x01, "no T-state use", "" },
 	{ 0x02, "use T-states",   "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 /* if "exception" used from nm_policy_options */
@@ -218,7 +240,7 @@ const struct dcmi_cmd nm_exception[] = {
 	{ 0x01, "alert",    "" },
 	{ 0x02, "shutdown", "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_reset_mode[] = {
@@ -230,7 +252,7 @@ const struct dcmi_cmd nm_reset_mode[] = {
 	{ 0x1E, "memory",     "" },
 	{ 0x1F, "comm",       "" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_power_range[] = {
@@ -238,7 +260,7 @@ const struct dcmi_cmd nm_power_range[] = {
 	{ 0x02, "min",    "min <integer value>" },
 	{ 0x03, "max",    "max <integer value>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_alert_opts[] = {
@@ -246,7 +268,7 @@ const struct dcmi_cmd nm_alert_opts[] = {
 	{ 0x02, "get",   "nm alert get" },
 	{ 0x03, "clear", "nm alert clear dest <dest>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_set_alert_param[] = {
@@ -254,7 +276,7 @@ const struct dcmi_cmd nm_set_alert_param[] = {
 	{ 0x02, "dest",   "dest <destination>" },
 	{ 0x03, "string", "string <string>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_thresh_cmds[] = {
@@ -262,15 +284,14 @@ const struct dcmi_cmd nm_thresh_cmds[] = {
 	                              "policy_id <policy> thresh_array" },
 	{ 0x02, "get", "nm thresh get [domain <platform|CPU|Memory>] "
 	                              "policy_id <policy>" },
-
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_thresh_param[] = {
 	{ 0x01, "domain",    "<platform|CPU|Memory> (default is platform)" },
 	{ 0x02, "policy_id", "<0-255>" },
 
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct dcmi_cmd nm_suspend_cmds[] = {
@@ -279,8 +300,7 @@ const struct dcmi_cmd nm_suspend_cmds[] = {
 		                                     "<stop> <pattern>" },
 	{ 0x02, "get", "nm suspend get [domain <platform|CPU|Memory]> "
 	                               "policy_id <policy>" },
-
-	DCMI_CMD_END(0xFF),
+	NM_CMD_END,
 };
 
 const struct valstr nm_ccode_vals[] = {
@@ -320,6 +340,35 @@ const struct valstr nm_ccode_vals[] = {
 /* clang-format on */
 
 /* End strings */
+
+/**
+ * @brief Get the NM subcommand number from command line arguments
+ * @param[in] argc Number of elements in \p argv
+ * @param[in] argv Array of command line arguments with \p argc elements
+ * @param[in] cmds Array of acceptable NM subcommands
+ * @param[in] cmd  The name of the parent command
+ * @param[in] expected_args The minimum expected number of arguments to the
+ *                          subcommand
+ */
+static
+uint8_t nm_get_cmd(int argc, const char **argv,
+                   struct dcmi_cmd *cmds,
+                   const char *cmd,
+                   int expected_args)
+{
+	uint8_t action = NM_UNDEF;
+
+	if (argv[0] && argc > expected_args)
+		action = dcmi_str2val(argv[0], cmds);
+
+	if(NM_UNDEF == action)
+	{
+		uprintf(LOG_ERR, "%s:", cmd);
+		dcmi_print_strs(cmds, NULL, LOG_ERR, 0);
+	}
+
+	return action;
+}
 
 /* Check whether the Node Manager response from the BMC is an error
  * @rsp:       Response data structure
@@ -782,45 +831,25 @@ ipmi_nm_getcapabilities(struct ipmi_intf *intf, int argc, char **argv)
 	uint8_t option;
 	uint8_t domain = 0; /* default domain of platform */
 	uint8_t trigger = 0; /* default power policy (no trigger) */
-	struct nm_capability caps;
+	struct nm_capability caps = {0};
 
-	while (--argc > 0) {
-		argv++;
-		if (!argv[0]) break;
-		if ((option = dcmi_str2val(argv[0], nm_capability_opts)) == 0xFF) {
-			dcmi_print_strs(nm_capability_opts,
-			                "Capability commands", LOG_ERR, 0);
-			return -1;
-		}
-		switch (option) {
-		case 0x01: /* get domain scope */
-			if ((domain = dcmi_str2val(argv[1], nm_domain_vals)) == 0xFF) {
-				dcmi_print_strs(nm_domain_vals, "Domain Scope:", LOG_ERR, 0);
-				return -1;
-			}
-			break;
-		case 0x02: /* Inlet */
-			trigger = 1;
-			break;
-		case 0x03: /* Missing power reading */
-			trigger = 2;
-			break;
-		case 0x04: /* Time after host reset */
-			trigger = 3;
-			break;
-		case 0x05: /* Boot time policy */
-			trigger = 4;
-			break;
-		default:
-			break;
-		}
-		argc--;
-		argv++;
+	trigger = nm_get_cmd(argc, argv, nm_capability_opts,
+	                     "Capability commands", 0);
+	if (NM_UNDEF == trigger) {
+		return -1;
 	}
-	trigger |= 0x10;
-	memset(&caps, 0, sizeof(caps));
+
+	if (NM_CAP_DOMAIN == trigger) {
+		/* get domain scope */
+		domain = nm_get_cmd(--argc, ++argv, nm_domain_vals,
+		                    "Domain Scope", 0);
+		if (NM_UNDEF == domain)
+			domain = NM_DOM_PLATFORM;
+	}
+
 	if (_ipmi_nm_getcapabilities(intf, domain, trigger, &caps))
 		return -1;
+
 	if (csv_output) {
 		printf("%d,%u,%u,%u,%u,%u,%u,%s\n",
 		       caps.max_settings, caps.max_value, caps.min_value,
@@ -829,25 +858,27 @@ ipmi_nm_getcapabilities(struct ipmi_intf *intf, int argc, char **argv)
 		       dcmi_val2str(caps.scope & 0xF, nm_domain_vals));
 		return 0;
 	}
+
 	printf("    power policies:\t\t%d\n", caps.max_settings);
-	switch (trigger & 0xF) {
-	case 0: /* power */
+	switch (trigger) {
+	case NM_CAP_DOMAIN: /* power */
 		printf("    max_power\t\t%7u Watts\n    min_power\t\t%7u Watts\n",
 		       caps.max_value, caps.min_value);
 		break;
-	case 1: /* Inlet */
+	case NM_CAP_INLET: /* Inlet */
 		printf("    max_temp\t\t%7u C\n    min_temp\t\t%7u C\n",
 		       caps.max_value, caps.min_value);
 		break;
-	case 2: /* Missing reading time */
-	case 3: /* Time after host reset */
+	case NM_CAP_MISSING: /* Missing reading time */
+	case NM_CAP_RESET: /* Time after host reset */
 		printf("    max_time\t\t%7u Secs\n    min_time\t\t%7u Secs\n",
 		       caps.max_value / 10, caps.min_value / 10);
 		break;
-	case 4: /* boot time policy does not use these values */
+	case NM_CAP_BOOT: /* boot time policy does not use these values */
 	default:
 		break;
 	}
+
 	printf("    min_corr\t\t%7u secs\n    max_corr\t\t%7u secs\n",
 	       caps.min_corr / 1000, caps.max_corr / 1000);
 	printf("    min_stats\t\t%7u secs\n    max_stats\t\t%7u secs\n",
@@ -1781,74 +1812,86 @@ int
 ipmi_nm_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct nm_discover disc;
+	const char *cmdstr = argv[0];
+	uint8_t cmd;
+	int rc = -1;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (!argc || !strcmp(cmdstr, "help")) {
 		dcmi_print_strs(nm_cmd_vals, "Node Manager Interface commands",
 		                LOG_ERR, 0);
-		return -1;
+		return rc;
 	}
 
-	switch (dcmi_str2val(argv[0], nm_cmd_vals)) {
+	/*
+	 * Get the command number and shift the argument list for
+	 * subsequent handler calls to have their subcommand in argv[0]
+	 */
+	cmd = nm_get_cmd(argc--, argv++, nm_cmd_vals,
+	                 "Node Manager Interface", 0);
+	switch (cmd) {
 	/* discover */
 	case NM_DISCOVER:
-		if (_ipmi_nm_discover(intf, &disc))
-			return -1;
+		rc = _ipmi_nm_discover(intf, &disc);
+		if (rc) break;
+
 		printf("    Node Manager Version %s\n",
 		       dcmi_val2str(disc.nm_version, nm_version_vals));
-		printf("    revision %d.%d%d  patch version %d\n", disc.major_rev,
-		       disc.minor_rev >> 4, disc.minor_rev & 0xf, disc.patch_version);
+		printf("    revision %d.%d%d  patch version %d\n",
+		       disc.major_rev,
+		       disc.minor_rev >> 4,
+		       disc.minor_rev & 0xf,
+		       disc.patch_version);
 		break;
+
 	/* capability */
 	case NM_CAPAB:
-		if (ipmi_nm_getcapabilities(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_getcapabilities(intf, argc, argv);
 		break;
+
 	/*  policy control enable-disable */
 	case NM_POL_CTRL:
-		if (ipmi_nm_control(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_control(intf, argc, argv);
 		break;
+
 	/* policy */
 	case NM_POL_ADD_RM:
-		if (ipmi_nm_policy(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_policy(intf, argc, argv);
 		break;
+
 	/* Get statistics */
 	case NM_STATS:
-		if (ipmi_nm_get_statistics(intf, argc, argv))
-			return -1;
+		rc =  ipmi_nm_get_statistics(intf, argc, argv);
 		break;
+
 	/* set power draw range */
 	case NM_POWER:
-		if (ipmi_nm_set_range(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_set_range(intf, argc, argv);
 		break;
+
 	/* set/get suspend periods */
 	case NM_SUSPEND:
-		if (ipmi_nm_suspend(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_suspend(intf, argc, argv);
 		break;
+
 	/* reset statistics */
 	case NM_RESET:
-		if (ipmi_nm_reset_statistics(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_reset_statistics(intf, argc, argv);
 		break;
+
 	/* set/get alert destination */
 	case NM_ALERT:
-		if (ipmi_nm_alert(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_alert(intf, argc, argv);
 		break;
+
 	/* set/get alert thresholds */
 	case NM_THRESHOLD:
-		if (ipmi_nm_thresh(intf, argc, argv))
-			return -1;
+		rc = ipmi_nm_thresh(intf, argc, argv);
 		break;
+
 	default:
-		dcmi_print_strs(nm_cmd_vals,
-		                "Node Manager Interface commands", LOG_ERR, 0);
 		break;
 	}
-	return 0;
+	return rc;
 }
 
 /* end nm */
