@@ -259,11 +259,15 @@ system.  It is thus recommended that IPMI password management only be done
 over IPMIv2.0 \fIlanplus\fP interface or the system interface on the
 local station.
 
-For IPMI v1.5, the maximum password length is 16 characters.
-Passwords longer than 16 characters will be truncated.
+For IPMI v1.5, the maximum password length is 16 characters; longer
+passwords might be truncated or rejected by the server, or rejected
+by
+.BR ipmitool .
 
-For IPMI v2.0, the maximum password length is 20 characters;
-longer passwords are truncated.
+For IPMI v2.0, the maximum password length is 20 characters; longer
+passwords will be rejected by
+.BR ipmitool .
+
 .SH "COMMANDS"
 .TP 
 \fIhelp\fP
@@ -3526,12 +3530,13 @@ Displays a list of user information for all defined userids.
 
 Sets the username associated with the given userid.
 .TP 
-\fIpassword\fP <\fBuserid\fR> [<\fBpassword\fR>]
+\fIpassword\fP <\fBuserid\fR> [<\fBpassword\fR> [<\fB16|20\fR>]]
 .br 
 
 Sets the password for the given userid.  If no password is given,
 the password is cleared (set to the NULL password).  Be careful when
-removing passwords from administrator\-level accounts.
+removing passwords from administrator\-level accounts.  If specified,
+16 or 20 determines the maximum password length.
 .RE
 .TP 
 \fIdisable\fP <\fBuserid\fR>
