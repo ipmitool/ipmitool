@@ -657,24 +657,25 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 		}
 	} else {
 		password = argv[3];
-		if (argc > 4) {
-			if ((str2uchar(argv[4], &password_type) != 0)
-					|| (password_type != 16 && password_type != 20)) {
-				lprintf(LOG_ERR, "Invalid password length '%s'", argv[4]);
-				return (-1);
-			}
-		} else {
-			password_type = 16;
-		}
 	}
+	
+        if (argc > 4) {
+                if ((str2uchar(argv[4], &password_type) != 0)
+                                || (password_type != 16 && password_type != 20)) {
+                        lprintf(LOG_ERR, "Invalid password length '%s'", argv[4]);
+                        return (-1);
+                }
+        } else if (strlen(password) > 16) {
+                password_type = 20;
+        }
 
-	if (!password) {
-		lprintf(LOG_ERR, "Unable to parse password argument.");
-		return (-1);
-	} else if (strlen(password) > 20) {
-		lprintf(LOG_ERR, "Password is too long (> 20 bytes)");
-		return (-1);
-	}
+        if (!password) {
+                lprintf(LOG_ERR, "Unable to parse password argument.");
+                return (-1);
+        } else if (strlen(password) > password_type) {
+                lprintf(LOG_ERR, "Password is too long (> %d bytes)", password_type);
+                return (-1);
+        }
 
 	ccode = _ipmi_set_user_password(intf, user_id,
 			IPMI_PASSWORD_SET_PASSWORD, password,
