@@ -434,7 +434,7 @@ print_user_usage(void)
 	lprintf(LOG_NOTICE,
 "               set name     <user id> <username>");
 	lprintf(LOG_NOTICE,
-"               set password <user id> [<password> <16|20>]");
+"               set password <user id> [<password> [<16|20>]]");
 	lprintf(LOG_NOTICE,
 "               disable      <user id>");
 	lprintf(LOG_NOTICE,
