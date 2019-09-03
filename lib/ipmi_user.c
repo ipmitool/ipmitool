@@ -626,12 +626,17 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	return 0;
 }
 
+#define USER_PW_IPMI15_LEN 16 /* IPMI 1.5 only allowed for 16 bytes */
+#define USER_PW_IPMI20_LEN 20 /* IPMI 2.0 allows for 20 bytes */
+#define USER_PW_MAX_LEN USER_PW_IPMI20_LEN
+
 int
 ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *password = NULL;
 	int ccode = 0;
-	uint8_t password_type = 16;
+	uint8_t password_type = USER_PW_IPMI15_LEN;
+	size_t password_len;
 	uint8_t user_id = 0;
 	if (is_ipmi_user_id(argv[2], &user_id)) {
 		return (-1);
@@ -640,53 +645,63 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 	if (argc == 3) {
 		/* We need to prompt for a password */
 		char *tmp;
+		size_t tmplen;
 		password = ask_password(user_id);
 		if (!password) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (-1);
 		}
 		tmp = ask_password(user_id);
+		tmplen = strnlen(tmp, USER_PW_MAX_LEN + 1);
 		if (!tmp) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
 			return (-1);
 		}
-		if (strlen(password) != strlen(tmp)
-				|| strncmp(password, tmp, strlen(tmp))) {
-			lprintf(LOG_ERR, "Passwords do not match.");
+		if (strncmp(password, tmp, tmplen)) {
+			lprintf(LOG_ERR, "Passwords do not match or are "
+			                 "longer than %d", USER_PW_MAX_LEN);
 			return (-1);
 		}
 	} else {
 		password = argv[3];
 	}
-	
-        if (argc > 4) {
-                if ((str2uchar(argv[4], &password_type) != 0)
-                                || (password_type != 16 && password_type != 20)) {
-                        lprintf(LOG_ERR, "Invalid password length '%s'", argv[4]);
-                        return (-1);
-                }
-        } else if (strlen(password) > 16) {
-                password_type = 20;
-        }
 
-        if (!password) {
-                lprintf(LOG_ERR, "Unable to parse password argument.");
-                return (-1);
-        } else if (strlen(password) > password_type) {
-                lprintf(LOG_ERR, "Password is too long (> %d bytes)", password_type);
-                return (-1);
-        }
+	if (!password) {
+		lprintf(LOG_ERR, "Unable to parse password argument.");
+		return (-1);
+	}
+
+	password_len = strnlen(password, USER_PW_MAX_LEN + 1);
+
+	if (argc > 4) {
+		if ((str2uchar(argv[4], &password_type) != 0)
+		    || (password_type != USER_PW_IPMI15_LEN
+		        && password_type != USER_PW_IPMI20_LEN))
+		{
+			lprintf(LOG_ERR, "Invalid password length '%s'",
+			        argv[4]);
+			return (-1);
+		}
+	} else if (password_len > USER_PW_IPMI15_LEN) {
+		password_type = USER_PW_IPMI20_LEN;
+	}
+
+	if (password_len > password_type) {
+		lprintf(LOG_ERR, "Password is too long (> %d bytes)",
+		        password_type);
+		return (-1);
+	}
 
 	ccode = _ipmi_set_user_password(intf, user_id,
-			IPMI_PASSWORD_SET_PASSWORD, password,
-			password_type > 16);
+	                                IPMI_PASSWORD_SET_PASSWORD, password,
+	                                password_type > USER_PW_IPMI15_LEN);
 	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
-			user_id);
+		        user_id);
 		return (-1);
 	} else {
 		printf("Set User Password command successful (user %d)\n",
-				user_id);
+		       user_id);
 		return 0;
 	}
 }
