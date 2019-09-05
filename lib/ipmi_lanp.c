@@ -1260,7 +1260,7 @@ ipmi_lan_set_vlan_id(struct ipmi_intf *intf,  uint8_t chan, char *string)
 				rc = 0;
 				goto out;
 			}
-			if (IPMI_LANP_IS_VLAN_VALID(id)) {
+			if (!IPMI_LANP_IS_VLAN_VALID(id)) {
 				lprintf(LOG_ERR,
 				        "Retrieved VLAN ID %i is out of "
 				        "range <%d..%d>.",
@@ -1285,7 +1285,7 @@ ipmi_lan_set_vlan_id(struct ipmi_intf *intf,  uint8_t chan, char *string)
 			goto out;
 		}
 
-		if (IPMI_LANP_IS_VLAN_VALID(id)) {
+		if (!IPMI_LANP_IS_VLAN_VALID(id)) {
 			lprintf(LOG_NOTICE,
 			        "VLAN ID must be between %d and %d.",
 			        IPMI_LANP_VLAN_ID_MIN,
