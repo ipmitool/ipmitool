@@ -96,6 +96,7 @@ struct cipher_suite_info {
 
 struct ipmi_session_params {
 	char * hostname;
+	char * srcaddr;
 	uint8_t username[17];
 	uint8_t authcode_set[IPMI_AUTHCODE_BUFFER_SIZE + 1];
 	uint8_t authtype_set;

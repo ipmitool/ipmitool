@@ -238,6 +238,19 @@ ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 }
 
 void
+ipmi_intf_session_set_srcaddr(struct ipmi_intf * intf, char * srcaddr)
+{
+	if (intf->ssn_params.srcaddr) {
+		free(intf->ssn_params.srcaddr);
+		intf->ssn_params.srcaddr = NULL;
+	}
+	if (!srcaddr) {
+		return;
+	}
+	intf->ssn_params.srcaddr = strdup(srcaddr);
+}
+
+void
 ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
 {
 	memset(intf->ssn_params.username, 0, 17);
@@ -383,6 +396,35 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 		return -1;
 	}
 
+	struct in6_addr saddr6_storage;
+	struct in_addr saddr_storage;
+	int saddr_family = AF_INET;
+	if (params->srcaddr) {
+		lprintf(LOG_DEBUG, "Specified source address: %s", params->srcaddr);
+
+		if (strstr(params->srcaddr, ":") != NULL) {
+			saddr_family = AF_INET6;
+		}
+
+		if (saddr_family == AF_INET) {
+			if (inet_pton(saddr_family, params->srcaddr, &saddr_storage) != 1) {
+				lprintf(LOG_ERR, "IPv4 source address parse for %s failed",
+				        params->srcaddr);
+				return -1;
+			}
+		} else if (saddr_family == AF_INET6) {
+			if (inet_pton(saddr_family, params->srcaddr, &saddr6_storage) != 1) {
+				lprintf(LOG_ERR, "IPv6 source address parse for %s failed",
+				        params->srcaddr);
+				return -1;
+			}
+		} else {
+			lprintf(LOG_ERR, "Source address %s has unsupported family",
+			        params->srcaddr);
+			return -1;
+		}
+	}
+
 	/* getaddrinfo() returns a list of address structures.
 	 * Try each address until we successfully connect(2).
 	 * If socket(2) (or connect(2)) fails, we (close the socket
@@ -400,13 +442,34 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 			continue;
 		}
 
+		/* If source addr specified, match family */
+		if (params->srcaddr) {
+			if (rp->ai_family != saddr_family) {
+				continue;
+			}
+		}
+
 		if (rp->ai_family == AF_INET) {
+			if (params->srcaddr) {
+				/* Set up for bind() if source address specified */
+				struct sockaddr_in bindaddr;
+				bindaddr.sin_family = AF_INET;
+				bindaddr.sin_addr = saddr_storage;
+				bindaddr.sin_port = 0;
+
+				if (bind(intf->fd, (struct sockaddr*)&bindaddr, sizeof(struct sockaddr_in)) != 0) {
+					lprintf(LOG_ERR, "Could not bind source address %s",
+					        params->srcaddr);
+					return -1;
+				}
+			}
 			if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
 				hints.ai_family = rp->ai_family;
 				break;  /* Success */
 			}
 		}  else if (rp->ai_family == AF_INET6) {
 			struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)rp->ai_addr;
+
 			char hbuf[NI_MAXHOST];
 			socklen_t len;
 
@@ -418,6 +481,7 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						hbuf,
 						addr6->sin6_scope_id);
 				}
+
 				if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {
 					hints.ai_family = rp->ai_family;
 					break;  /* Success */
@@ -469,6 +533,20 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 							if (IN6_IS_ADDR_LINKLOCAL(&tmp6->sin6_addr)
 									&& (tmp6->sin6_addr.s6_addr[1] != 0)) {
 								addr6->sin6_scope_id = ntohs(tmp6->sin6_addr.s6_addr[1]);
+							}
+						}
+
+						/* If source address specified, check for match*/
+						if (params->srcaddr) {
+							bool eq = true;
+							for (int i = 0; i < sizeof(((struct in6_addr*)0)->s6_addr); i++) {
+								if (tmp6->sin6_addr.s6_addr[i] != saddr6_storage.s6_addr[i]) {
+									eq = false;
+									break;
+								}
+							}
+							if (!eq) {
+								continue;
 							}
 						}
 
