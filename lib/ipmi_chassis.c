@@ -1714,9 +1714,9 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					/* data 1 */
 					{"valid", 0, (1<<7), (1<<7),
 						"Boot flags valid"},
-					{"persistent", 0, (1<<6), (1<<6),
+					{"persistent", 0, (0xe0), (1<<6),
 						"Changes are persistent for all future boots"},
-					{"efiboot", 0, (1<<5), (1<<5),
+					{"efiboot", 0, (0xe0), (1<<5),
 						"Extensible Firmware Interface Boot (EFI)"},
 					/* data 2 */
 					{"clear-cmos", 1, (1<<7), (1<<7),
