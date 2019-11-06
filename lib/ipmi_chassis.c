@@ -1976,7 +1976,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 						BF3_OFFSET,
 						BF3_SLEEP_LOCKOUT_MASK,
 						BF3_SLEEP_LOCKOUT,
-						"Log Out Sleep Button"
+						"Lock out the Sleep button"
 					},
 					{
 						"cons_redirect=default",
@@ -1999,8 +1999,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 						BF3_OFFSET,
 						BF3_CONSOLE_REDIR_MASK,
 						BF3_CONSOLE_REDIR_ENABLE,
-						"Suppress (skip) console "
-							"redirection if enabled"
+						"Request console redirection "
+							"be enabled"
 					},
 					/* data 4 */
 					/* data4[7:4] reserved */
@@ -2035,9 +2035,11 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (optionError) {
 				lprintf(LOG_NOTICE, "Legal options settings are:");
-				lprintf(LOG_NOTICE, "\thelp:\tprint this message");
+				lprintf(LOG_NOTICE, "  %-22s: %s",
+				                    "help",
+				                    "print this message");
 				for (op = options; op->name; ++op) {
-					lprintf(LOG_NOTICE, "\t%s:\t%s", op->name, op->desc);
+					lprintf(LOG_NOTICE, "  %-22s: %s", op->name, op->desc);
 				}
 				return (-1);
 			}
