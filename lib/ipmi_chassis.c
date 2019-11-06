@@ -1712,6 +1712,205 @@ ipmi_chassis_set_bootflag_help()
 	get_bootparam_options("options=help", &set_flag, &clr_flag);
 }
 
+/*
+ * Sugar. Macros for internal use by bootdev_parse_options() to make
+ * the structure initialization look better
+ */
+#define BF1_OFFSET 0
+#define BF2_OFFSET 1
+#define BF3_OFFSET 2
+#define BF4_OFFSET 3
+#define BF_BYTE_COUNT 5
+
+/* A helper for ipmi_chassis_main() to parse bootdev options */
+static
+bool
+bootdev_parse_options(char *optstring, uint8_t flags[])
+{
+	char *token;
+	char *saveptr = NULL;
+	int optionError = 0;
+	static struct {
+		char *name;
+		off_t offset;
+		unsigned char mask;
+		unsigned char value;
+		char *desc;
+	} *op, options[] = {
+		/* data 1 */
+		{
+			"valid",
+			BF1_OFFSET,
+			BF1_VALID_MASK,
+			BF1_VALID,
+			"Boot flags valid"
+		},
+		{
+			"persistent",
+			BF1_OFFSET,
+			BF1_PERSIST_MASK,
+			BF1_PERSIST,
+			"Changes are persistent for "
+				"all future boots"
+		},
+		{
+			"efiboot",
+			BF1_OFFSET,
+			BF1_BOOT_TYPE_MASK,
+			BF1_BOOT_TYPE_EFI,
+			"Extensible Firmware Interface "
+				"Boot (EFI)"
+		},
+		/* data 2 */
+		{
+			"clear-cmos",
+			BF2_OFFSET,
+			BF2_CMOS_CLEAR_MASK,
+			BF2_CMOS_CLEAR,
+			"CMOS clear"
+		},
+		{
+			"lockkbd",
+			BF2_OFFSET,
+			BF2_KEYLOCK_MASK,
+			BF2_KEYLOCK,
+			"Lock Keyboard"
+		},
+		/* data2[5:2] is parsed elsewhere */
+		{
+			"screenblank",
+			BF2_OFFSET,
+			BF2_BLANK_SCREEN_MASK,
+			BF2_BLANK_SCREEN,
+			"Screen Blank"
+		},
+		{
+			"lockoutreset",
+			BF2_OFFSET,
+			BF2_RESET_LOCKOUT_MASK,
+			BF2_RESET_LOCKOUT,
+			"Lock out Reset buttons"
+		},
+		/* data 3 */
+		{
+			"lockout_power",
+			BF3_OFFSET,
+			BF3_POWER_LOCKOUT_MASK,
+			BF3_POWER_LOCKOUT,
+			"Lock out (power off/sleep "
+				"request) via Power Button"
+		},
+		{
+			"verbose=default",
+			BF3_OFFSET,
+			BF3_VERBOSITY_MASK,
+			BF3_VERBOSITY_DEFAULT,
+			"Request quiet BIOS display"
+		},
+		{
+			"verbose=no",
+			BF3_OFFSET,
+			BF3_VERBOSITY_MASK,
+			BF3_VERBOSITY_QUIET,
+			"Request quiet BIOS display"
+		},
+		{
+			"verbose=yes",
+			BF3_OFFSET,
+			BF3_VERBOSITY_MASK,
+			BF3_VERBOSITY_VERBOSE,
+			"Request verbose BIOS display"
+		},
+		{
+			"force_pet",
+			BF3_OFFSET,
+			BF3_EVENT_TRAPS_MASK,
+			BF3_EVENT_TRAPS,
+			"Force progress event traps"
+		},
+		{
+			"upw_bypass",
+			BF3_OFFSET,
+			BF3_PASSWD_BYPASS_MASK,
+			BF3_PASSWD_BYPASS,
+			"User password bypass"
+		},
+		{
+			"lockout_sleep",
+			BF3_OFFSET,
+			BF3_SLEEP_LOCKOUT_MASK,
+			BF3_SLEEP_LOCKOUT,
+			"Lock out the Sleep button"
+		},
+		{
+			"cons_redirect=default",
+			BF3_OFFSET,
+			BF3_CONSOLE_REDIR_MASK,
+			BF3_CONSOLE_REDIR_DEFAULT,
+			"Console redirection occurs per "
+				"BIOS configuration setting"
+		},
+		{
+			"cons_redirect=skip",
+			BF3_OFFSET,
+			BF3_CONSOLE_REDIR_MASK,
+			BF3_CONSOLE_REDIR_SUPPRESS,
+			"Suppress (skip) console "
+				"redirection if enabled"
+		},
+		{
+			"cons_redirect=enable",
+			BF3_OFFSET,
+			BF3_CONSOLE_REDIR_MASK,
+			BF3_CONSOLE_REDIR_ENABLE,
+			"Request console redirection "
+				"be enabled"
+		},
+		/* data 4 */
+		/* data4[7:4] reserved */
+		/* data4[3] BIOS Shared Mode Override, not implemented here */
+		/* data4[2:0] BIOS Mux Control Override, not implemented here */
+
+		/* data5 reserved */
+
+		{NULL}	/* End marker */
+	};
+
+	memset(&flags[0], 0, BF_BYTE_COUNT);
+	token = strtok_r(optstring, ",", &saveptr);
+	while (token) {
+		if (strcmp(token, "help") == 0) {
+			optionError = 1;
+			break;
+		}
+		for (op = options; op->name; ++op) {
+			if (strcmp(token, op->name) == 0) {
+				flags[op->offset] &= ~(op->mask);
+				flags[op->offset] |= op->value;
+				break;
+			}
+		}
+		if (!op->name) {
+			/* Option not found */
+			optionError = 1;
+			lprintf(LOG_ERR, "Invalid option: %s", token);
+		}
+		token = strtok_r(NULL, ",", &saveptr);
+	}
+	if (optionError) {
+		lprintf(LOG_NOTICE, "Legal options settings are:");
+		lprintf(LOG_NOTICE, "  %-22s: %s",
+		        "help",
+		        "print this message");
+		for (op = options; op->name; ++op) {
+			lprintf(LOG_NOTICE, "  %-22s: %s", op->name, op->desc);
+		}
+		return false;
+	}
+
+	return true;
+}
+
 int
 ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -1858,195 +2057,13 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
 			}
 			else if (strncmp(argv[2], "options=", 8) == 0) {
-				char *token;
-				char *saveptr = NULL;
-				int optionError = 0;
-				unsigned char flags[5];
-				static struct {
-					char *name;
-					off_t offset;
-					#define BF1_OFFSET 0
-					#define BF2_OFFSET 1
-					#define BF3_OFFSET 2
-					#define BF4_OFFSET 3
-					unsigned char mask;
-					unsigned char value;
-					char *desc;
-				} *op, options[] = {
-					/* data 1 */
-					{
-						"valid",
-						BF1_OFFSET,
-						BF1_VALID_MASK,
-						BF1_VALID,
-						"Boot flags valid"
-					},
-					{
-						"persistent",
-						BF1_OFFSET,
-						BF1_PERSIST_MASK,
-						BF1_PERSIST,
-						"Changes are persistent for "
-							"all future boots"
-					},
-					{
-						"efiboot",
-						BF1_OFFSET,
-						BF1_BOOT_TYPE_MASK,
-						BF1_BOOT_TYPE_EFI,
-						"Extensible Firmware Interface "
-							"Boot (EFI)"
-					},
-					/* data 2 */
-					{
-						"clear-cmos",
-						BF2_OFFSET,
-						BF2_CMOS_CLEAR_MASK,
-						BF2_CMOS_CLEAR,
-						"CMOS clear"
-					},
-					{
-						"lockkbd",
-						BF2_OFFSET,
-						BF2_KEYLOCK_MASK,
-						BF2_KEYLOCK,
-						"Lock Keyboard"
-					},
-					/* data2[5:2] is parsed elsewhere */
-					{
-						"screenblank",
-						BF2_OFFSET,
-						BF2_BLANK_SCREEN_MASK,
-						BF2_BLANK_SCREEN,
-						"Screen Blank"
-					},
-					{
-						"lockoutreset",
-						BF2_OFFSET,
-						BF2_RESET_LOCKOUT_MASK,
-						BF2_RESET_LOCKOUT,
-						"Lock out Reset buttons"
-					},
-					/* data 3 */
-					{
-						"lockout_power",
-						BF3_OFFSET,
-						BF3_POWER_LOCKOUT_MASK,
-						BF3_POWER_LOCKOUT,
-						"Lock out (power off/sleep "
-							"request) via Power Button"
-					},
-					{
-						"verbose=default",
-						BF3_OFFSET,
-						BF3_VERBOSITY_MASK,
-						BF3_VERBOSITY_DEFAULT,
-						"Request quiet BIOS display"
-					},
-					{
-						"verbose=no",
-						BF3_OFFSET,
-						BF3_VERBOSITY_MASK,
-						BF3_VERBOSITY_QUIET,
-						"Request quiet BIOS display"
-					},
-					{
-						"verbose=yes",
-						BF3_OFFSET,
-						BF3_VERBOSITY_MASK,
-						BF3_VERBOSITY_VERBOSE,
-						"Request verbose BIOS display"
-					},
-					{
-						"force_pet",
-						BF3_OFFSET,
-						BF3_EVENT_TRAPS_MASK,
-						BF3_EVENT_TRAPS,
-						"Force progress event traps"
-					},
-					{
-						"upw_bypass",
-						BF3_OFFSET,
-						BF3_PASSWD_BYPASS_MASK,
-						BF3_PASSWD_BYPASS,
-						"User password bypass"
-					},
-					{
-						"lockout_sleep",
-						BF3_OFFSET,
-						BF3_SLEEP_LOCKOUT_MASK,
-						BF3_SLEEP_LOCKOUT,
-						"Lock out the Sleep button"
-					},
-					{
-						"cons_redirect=default",
-						BF3_OFFSET,
-						BF3_CONSOLE_REDIR_MASK,
-						BF3_CONSOLE_REDIR_DEFAULT,
-						"Console redirection occurs per "
-							"BIOS configuration setting"
-					},
-					{
-						"cons_redirect=skip",
-						BF3_OFFSET,
-						BF3_CONSOLE_REDIR_MASK,
-						BF3_CONSOLE_REDIR_SUPPRESS,
-						"Suppress (skip) console "
-							"redirection if enabled"
-					},
-					{
-						"cons_redirect=enable",
-						BF3_OFFSET,
-						BF3_CONSOLE_REDIR_MASK,
-						BF3_CONSOLE_REDIR_ENABLE,
-						"Request console redirection "
-							"be enabled"
-					},
-					/* data 4 */
-					/* data4[7:4] reserved */
-					/* data4[3] BIOS Shared Mode Override, not implemented here */
-					/* data4[2:0] BIOS Mux Control Override, not implemented here */
-
-					/* data5 reserved */
-
-					{NULL}	/* End marker */
-				};
-
-			memset(&flags[0], 0, sizeof(flags));
-			token = strtok_r(argv[2] + 8, ",", &saveptr);
-			while (token) {
-				if (strcmp(token, "help") == 0) {
-					optionError = 1;
-					break;
-				}
-				for (op = options; op->name; ++op) {
-					if (strcmp(token, op->name) == 0) {
-						flags[op->offset] &= ~(op->mask);
-						flags[op->offset] |= op->value;
-						break;
-					}
-				}
-				if (!op->name) {
-					/* Option not found */
-					optionError = 1;
-					lprintf(LOG_ERR, "Invalid option: %s", token);
-				}
-				token = strtok_r(NULL, ",", &saveptr);
+				uint8_t flags[BF_BYTE_COUNT];
+				if (!bootdev_parse_options(argv[2] + 8, flags))
+					return -1;
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
 			}
-			if (optionError) {
-				lprintf(LOG_NOTICE, "Legal options settings are:");
-				lprintf(LOG_NOTICE, "  %-22s: %s",
-				                    "help",
-				                    "print this message");
-				for (op = options; op->name; ++op) {
-					lprintf(LOG_NOTICE, "  %-22s: %s", op->name, op->desc);
-				}
-				return (-1);
-			}
-			rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
-		}
-		else
-			rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
+			else
+				rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
 		}
 	}
 	else if (!strcmp(argv[0], "bootmbox")) {
