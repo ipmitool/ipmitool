@@ -53,6 +53,96 @@
 #define CHASSIS_BOOT_MBOX_MAX_BLOCK 0xFF
 #define CHASSIS_BOOT_MBOX_MAX_BLOCKS (CHASSIS_BOOT_MBOX_MAX_BLOCK + 1)
 
+/* Get/Set system boot option boot flags bit definitions */
+/* Boot flags byte 1 bits */
+#define BF1_VALID_SHIFT 7
+#define BF1_INVALID 0
+#define BF1_VALID (1 << BF1_VALID_SHIFT)
+#define BF1_VALID_MASK BF1_VALID
+
+#define BF1_PERSIST_SHIFT 6
+#define BF1_ONCE 0
+#define BF1_PERSIST (1 << BF1_PERSIST_SHIFT)
+#define BF1_PERSIST_MASK BF1_PERSIST
+
+#define BF1_BOOT_TYPE_SHIFT 5
+#define BF1_BOOT_TYPE_LEGACY 0
+#define BF1_BOOT_TYPE_EFI (1 << BF1_BOOT_TYPE_SHIFT)
+#define BF1_BOOT_TYPE_MASK BF1_BOOT_TYPE_EFI
+
+/* Boot flags byte 2 bits */
+#define BF2_CMOS_CLEAR_SHIFT 7
+#define BF2_CMOS_CLEAR (1 << BF2_CMOS_CLEAR_SHIFT)
+#define BF2_CMOS_CLEAR_MASK BF2_CMOS_CLEAR
+
+#define BF2_KEYLOCK_SHIFT 6
+#define BF2_KEYLOCK (1 << BF2_KEYLOCK_SHIFT)
+#define BF2_KEYLOCK_MASK BF2_KEYLOCK
+
+#define BF2_BOOTDEV_SHIFT 2
+#define BF2_BOOTDEV_DEFAULT (0 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_PXE (1 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_HDD (2 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_HDD_SAFE (3 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_DIAG_PART (4 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_CDROM (5 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_SETUP (6 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_REMOTE_FDD (7 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_REMOTE_CDROM (8 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_REMOTE_PRIMARY_MEDIA (9 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_REMOTE_HDD (11 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_FDD  (15 << BF2_BOOTDEV_SHIFT)
+#define BF2_BOOTDEV_MASK (0xF << BF2_BOOTDEV_SHIFT)
+
+#define BF2_BLANK_SCREEN_SHIFT 1
+#define BF2_BLANK_SCREEN (1 << BF2_BLANK_SCREEN_SHIFT)
+#define BF2_BLANK_SCREEN_MASK BF2_BLANK_SCREEN
+
+#define BF2_RESET_LOCKOUT_SHIFT 0
+#define BF2_RESET_LOCKOUT (1 << BF2_RESET_LOCKOUT_SHIFT)
+#define BF2_RESET_LOCKOUT_MASK BF2_RESET_LOCKOUT
+
+/* Boot flags byte 3 bits */
+#define BF3_POWER_LOCKOUT_SHIFT 7
+#define BF3_POWER_LOCKOUT (1 << BF3_POWER_LOCKOUT_SHIFT)
+#define BF3_POWER_LOCKOUT_MASK BF3_POWER_LOCKOUT
+
+#define BF3_VERBOSITY_SHIFT 5
+#define BF3_VERBOSITY_DEFAULT (0 << BF3_VERBOSITY_SHIFT)
+#define BF3_VERBOSITY_QUIET (1 << BF3_VERBOSITY_SHIFT)
+#define BF3_VERBOSITY_VERBOSE (2 << BF3_VERBOSITY_SHIFT)
+#define BF3_VERBOSITY_MASK (3 << BF3_VERBOSITY_SHIFT)
+
+#define BF3_EVENT_TRAPS_SHIFT 4
+#define BF3_EVENT_TRAPS (1 << BF3_EVENT_TRAPS_SHIFT)
+#define BF3_EVENT_TRAPS_MASK BF3_EVENT_TRAPS
+
+#define BF3_PASSWD_BYPASS_SHIFT 3
+#define BF3_PASSWD_BYPASS (1 << BF3_PASSWD_BYPASS_SHIFT)
+#define BF3_PASSWD_BYPASS_MASK BF3_PASSWD_BYPASS
+
+#define BF3_SLEEP_LOCKOUT_SHIFT 2
+#define BF3_SLEEP_LOCKOUT (1 << BF3_SLEEP_LOCKOUT_SHIFT)
+#define BF3_SLEEP_LOCKOUT_MASK BF3_SLEEP_LOCKOUT
+
+#define BF3_CONSOLE_REDIR_SHIFT 0
+#define BF3_CONSOLE_REDIR_DEFAULT (0 << BF3_CONSOLE_REDIR_SHIFT)
+#define BF3_CONSOLE_REDIR_SUPPRESS (1 << BF3_CONSOLE_REDIR_SHIFT)
+#define BF3_CONSOLE_REDIR_ENABLE (2 << BF3_CONSOLE_REDIR_SHIFT)
+#define BF3_CONSOLE_REDIR_MASK (3 << BF3_CONSOLE_REDIR_SHIFT)
+
+/* Boot flags byte 4 bits */
+#define BF4_SHARED_MODE_SHIFT 3
+#define BF4_SHARED_MODE (1 << BF4_SHARED_MODE_SHIFT)
+#define BF4_SHARED_MODE_MASK BF4_SHARED_MODE
+
+#define BF4_BIOS_MUX_SHIFT 0
+#define BF4_BIOS_MUX_DEFAULT (0 << BF4_BIOS_MUX_SHIFT)
+#define BF4_BIOS_MUX_BMC (1 << BF4_BIOS_MUX_SHIFT)
+#define BF4_BIOS_MUX_SYSTEM (2 << BF4_BIOS_MUX_SHIFT)
+#define BF4_BIOS_MUX_MASK (7 << BF4_BIOS_MUX_SHIFT)
+
+
 typedef struct {
 	uint8_t iana[CHASSIS_BOOT_MBOX_IANA_SZ];
 	uint8_t data[CHASSIS_BOOT_MBOX_BLOCK0_SZ];
@@ -776,79 +866,147 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf,
 		{
 			printf(   " Boot Flags :\n");
 
-			if((rsp->data[2]&0x80) == 0x80)
+			if(rsp->data[2] & BF1_VALID)
 				printf("   - Boot Flag Valid\n");
 			else
 				printf("   - Boot Flag Invalid\n");
 
-			if((rsp->data[2]&0x40) == 0x40)
+			if(rsp->data[2] & BF1_PERSIST)
 				printf("   - Options apply to all future boots\n");
 			else
 				printf("   - Options apply to only next boot\n");
 
-			if((rsp->data[2]&0x20) == 0x20)
+			if(rsp->data[2] & BF1_BOOT_TYPE_EFI)
 				printf("   - BIOS EFI boot \n");
 			else
 				printf("   - BIOS PC Compatible (legacy) boot \n");
 
-			if((rsp->data[3]&0x80) == 0x80)
+			if(rsp->data[3] & BF2_CMOS_CLEAR)
 				printf("   - CMOS Clear\n");
-			if((rsp->data[3]&0x40) == 0x40)
+			if(rsp->data[3] & BF2_KEYLOCK)
 				printf("   - Lock Keyboard\n");
 			printf("   - Boot Device Selector : ");
-			switch( ((rsp->data[3]>>2)&0x0f))
+			switch(rsp->data[3] & BF2_BOOTDEV_MASK)
 			{
-				case 0: printf("No override\n"); break;
-				case 1: printf("Force PXE\n"); break;
-				case 2: printf("Force Boot from default Hard-Drive\n"); break;
-				case 3: printf("Force Boot from default Hard-Drive, request Safe-Mode\n"); break;
-				case 4: printf("Force Boot from Diagnostic Partition\n"); break;
-				case 5: printf("Force Boot from CD/DVD\n"); break;
-				case 6: printf("Force Boot into BIOS Setup\n"); break;
-				case 15: printf("Force Boot from Floppy/primary removable media\n"); break;
-				default: printf("Flag error\n"); break;
+			case BF2_BOOTDEV_DEFAULT:
+				printf("No override\n");
+				break;
+			case BF2_BOOTDEV_PXE:
+				printf("Force PXE\n");
+				break;
+			case BF2_BOOTDEV_HDD:
+				printf("Force Boot from default Hard-Drive\n");
+				break;
+			case BF2_BOOTDEV_HDD_SAFE:
+				printf("Force Boot from default Hard-Drive, "
+				       "request Safe-Mode\n");
+				break;
+			case BF2_BOOTDEV_DIAG_PART:
+				printf("Force Boot from Diagnostic Partition\n");
+				break;
+			case BF2_BOOTDEV_CDROM:
+				printf("Force Boot from CD/DVD\n");
+				break;
+			case BF2_BOOTDEV_SETUP:
+				printf("Force Boot into BIOS Setup\n");
+				break;
+			case BF2_BOOTDEV_REMOTE_FDD:
+				printf("Force Boot from remotely connected "
+				       "Floppy/primary removable media\n");
+				break;
+			case BF2_BOOTDEV_REMOTE_CDROM:
+				printf("Force Boot from remotely connected "
+				       "CD/DVD\n");
+				break;
+			case BF2_BOOTDEV_REMOTE_PRIMARY_MEDIA:
+				printf("Force Boot from primary remote media\n");
+				break;
+			case BF2_BOOTDEV_REMOTE_HDD:
+				printf("Force Boot from remotely connected "
+				       "Hard-Drive\n");
+				break;
+			case BF2_BOOTDEV_FDD:
+				printf("Force Boot from Floppy/primary "
+				       "removable media\n");
+				break;
+			default:
+				 printf("Flag error\n");
+				 break;
 			}
-			if((rsp->data[3]&0x02) == 0x02)
+			if(rsp->data[3] & BF2_BLANK_SCREEN)
 				printf("   - Screen blank\n");
-			if((rsp->data[3]&0x01) == 0x01)
+			if(rsp->data[3] & BF2_RESET_LOCKOUT)
 				printf("   - Lock out Reset buttons\n");
 
-			if((rsp->data[4]&0x80) == 0x80)
-				printf("   - Lock out (power off/sleep request) vi Power Button\n");
-			printf("   - Console Redirection control : ");
-			switch( ((rsp->data[4]>>5)&0x03))
-			{
-				case 0: printf("System Default\n"); break;
-				case 1: printf("Request Quiet Display\n"); break;
-				case 2: printf("Request Verbose Display\n"); break;
-				default: printf("Flag error\n"); break;
-			}
-			if((rsp->data[4]&0x10) == 0x10)
-				printf("   - Force progress event traps\n");
-			if((rsp->data[4]&0x08) == 0x08)
-				printf("   - User password bypass\n");
-			if((rsp->data[4]&0x04) == 0x04)
-				printf("   - Lock Out Sleep Button\n");
-			if((rsp->data[4]&0x02) == 0x02)
-				printf("   - Lock Out Sleep Button\n");
+			if(rsp->data[4] & BF3_POWER_LOCKOUT)
+				printf("   - Lock out (power off/sleep "
+				       "request) via Power Button\n");
+
 			printf("   - BIOS verbosity : ");
-			switch( ((rsp->data[4]>>0)&0x03))
+			switch(rsp->data[4] & BF3_VERBOSITY_MASK)
 			{
-				case 0: printf("Console redirection occurs per BIOS configuration setting (default)\n"); break;
-				case 1: printf("Suppress (skip) console redirection if enabled\n"); break;
-				case 2: printf("Request console redirection be enabled\n"); break;
-				default: printf("Flag error\n"); break;
+			case BF3_VERBOSITY_DEFAULT:
+				printf("System Default\n");
+				break;
+			case BF3_VERBOSITY_QUIET:
+				printf("Request Quiet Display\n");
+				break;
+			case BF3_VERBOSITY_VERBOSE:
+				printf("Request Verbose Display\n");
+				break;
+			default:
+				printf("Flag error\n");
+				break;
+			}
+			if(rsp->data[4] & BF3_EVENT_TRAPS)
+				printf("   - Force progress event traps\n");
+			if(rsp->data[4] & BF3_PASSWD_BYPASS)
+				printf("   - User password bypass\n");
+			if(rsp->data[4] & BF3_SLEEP_LOCKOUT)
+				printf("   - Lock Out Sleep Button\n");
+			printf("   - Console Redirection control : ");
+			switch(rsp->data[4] & BF3_CONSOLE_REDIR_MASK)
+			{
+			case BF3_CONSOLE_REDIR_DEFAULT:
+				printf(
+				       "Console redirection occurs per BIOS "
+				       "configuration setting (default)\n");
+				break;
+			case BF3_CONSOLE_REDIR_SUPPRESS:
+				printf("Suppress (skip) console redirection "
+				       "if enabled\n");
+				break;
+			case BF3_CONSOLE_REDIR_ENABLE:
+				printf("Request console redirection be "
+				       "enabled\n");
+				break;
+			default:
+				printf("Flag error\n");
+				break;
 			}
 
-			if((rsp->data[5]&0x08) == 0x08)
+			if(rsp->data[5] & BF4_SHARED_MODE)
 				printf("   - BIOS Shared Mode Override\n");
 			printf("   - BIOS Mux Control Override : ");
-			switch( ((rsp->data[5]>>0)&0x07))
-			{
-				case 0: printf("BIOS uses recommended setting of the mux at the end of POST\n"); break;
-				case 1: printf("Requests BIOS to force mux to BMC at conclusion of POST/start of OS boot\n"); break;
-				case 2: printf("Requests BIOS to force mux to system at conclusion of POST/start of OS boot\n"); break;
-				default: printf("Flag error\n"); break;
+			switch (rsp->data[5] & BF4_BIOS_MUX_MASK) {
+			case BF4_BIOS_MUX_DEFAULT:
+				printf("BIOS uses recommended setting of the "
+				       "mux at the end of POST\n");
+				break;
+			case BF4_BIOS_MUX_BMC:
+				printf(
+				       "Requests BIOS to force mux to BMC at "
+				       "conclusion of POST/start of OS boot\n");
+				break;
+			case BF4_BIOS_MUX_SYSTEM:
+				printf(
+				       "Requests BIOS to force mux to system "
+				       "at conclusion of POST/start of "
+				       "OS boot\n");
+				break;
+			default:
+				printf("Flag error\n");
+				break;
 			}
 		}
 		break;
@@ -1706,49 +1864,144 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 				unsigned char flags[5];
 				static struct {
 					char *name;
-					int i;
+					off_t offset;
+					#define BF1_OFFSET 0
+					#define BF2_OFFSET 1
+					#define BF3_OFFSET 2
+					#define BF4_OFFSET 3
 					unsigned char mask;
 					unsigned char value;
 					char *desc;
-				} options[] = {
+				} *op, options[] = {
 					/* data 1 */
-					{"valid", 0, (1<<7), (1<<7),
-						"Boot flags valid"},
-					{"persistent", 0, (1<<6), (1<<6),
-						"Changes are persistent for all future boots"},
-					{"efiboot", 0, (1<<5), (1<<5),
-						"Extensible Firmware Interface Boot (EFI)"},
+					{
+						"valid",
+						BF1_OFFSET,
+						BF1_VALID_MASK,
+						BF1_VALID,
+						"Boot flags valid"
+					},
+					{
+						"persistent",
+						BF1_OFFSET,
+						BF1_PERSIST_MASK,
+						BF1_PERSIST,
+						"Changes are persistent for "
+							"all future boots"
+					},
+					{
+						"efiboot",
+						BF1_OFFSET,
+						BF1_BOOT_TYPE_MASK,
+						BF1_BOOT_TYPE_EFI,
+						"Extensible Firmware Interface "
+							"Boot (EFI)"
+					},
 					/* data 2 */
-					{"clear-cmos", 1, (1<<7), (1<<7),
-						"CMOS clear"},
-					{"lockkbd", 1, (1<<6), (1<<6),
-						"Lock Keyboard"},
+					{
+						"clear-cmos",
+						BF2_OFFSET,
+						BF2_CMOS_CLEAR_MASK,
+						BF2_CMOS_CLEAR,
+						"CMOS clear"
+					},
+					{
+						"lockkbd",
+						BF2_OFFSET,
+						BF2_KEYLOCK_MASK,
+						BF2_KEYLOCK,
+						"Lock Keyboard"
+					},
 					/* data2[5:2] is parsed elsewhere */
-					{"screenblank", 1, (1<<1), (1<<1),
-						"Screen Blank"},
-					{"lockoutreset", 1, (1<<0), (1<<0),
-						"Lock out Resetbuttons"},
+					{
+						"screenblank",
+						BF2_OFFSET,
+						BF2_BLANK_SCREEN_MASK,
+						BF2_BLANK_SCREEN,
+						"Screen Blank"
+					},
+					{
+						"lockoutreset",
+						BF2_OFFSET,
+						BF2_RESET_LOCKOUT_MASK,
+						BF2_RESET_LOCKOUT,
+						"Lock out Reset buttons"
+					},
 					/* data 3 */
-					{"lockout_power", 2, (1<<7), (1<<7),
-						"Lock out (power off/sleep request) via Power Button"},
-					{"verbose=default", 2, (3<<5), (0<<5),
-						"Request quiet BIOS display"},
-					{"verbose=no", 2, (3<<5), (1<<5),
-						"Request quiet BIOS display"},
-					{"verbose=yes", 2, (3<<5), (2<<5),
-						"Request verbose BIOS display"},
-					{"force_pet", 2, (1<<4), (1<<4),
-						"Force progress event traps"},
-					{"upw_bypass", 2, (1<<3), (1<<3),
-						"User password bypass"},
-					{"lockout_sleep", 2, (1<<2), (1<<2),
-						"Log Out Sleep Button"},
-					{"cons_redirect=default", 2, (3<<0), (0<<0),
-						"Console redirection occurs per BIOS configuration setting"},
-					{"cons_redirect=skip", 2, (3<<0), (1<<0),
-						"Suppress (skip) console redirection if enabled"},
-					{"cons_redirect=enable", 2, (3<<0), (2<<0),
-						"Suppress (skip) console redirection if enabled"},
+					{
+						"lockout_power",
+						BF3_OFFSET,
+						BF3_POWER_LOCKOUT_MASK,
+						BF3_POWER_LOCKOUT,
+						"Lock out (power off/sleep "
+							"request) via Power Button"
+					},
+					{
+						"verbose=default",
+						BF3_OFFSET,
+						BF3_VERBOSITY_MASK,
+						BF3_VERBOSITY_DEFAULT,
+						"Request quiet BIOS display"
+					},
+					{
+						"verbose=no",
+						BF3_OFFSET,
+						BF3_VERBOSITY_MASK,
+						BF3_VERBOSITY_QUIET,
+						"Request quiet BIOS display"
+					},
+					{
+						"verbose=yes",
+						BF3_OFFSET,
+						BF3_VERBOSITY_MASK,
+						BF3_VERBOSITY_VERBOSE,
+						"Request verbose BIOS display"
+					},
+					{
+						"force_pet",
+						BF3_OFFSET,
+						BF3_EVENT_TRAPS_MASK,
+						BF3_EVENT_TRAPS,
+						"Force progress event traps"
+					},
+					{
+						"upw_bypass",
+						BF3_OFFSET,
+						BF3_PASSWD_BYPASS_MASK,
+						BF3_PASSWD_BYPASS,
+						"User password bypass"
+					},
+					{
+						"lockout_sleep",
+						BF3_OFFSET,
+						BF3_SLEEP_LOCKOUT_MASK,
+						BF3_SLEEP_LOCKOUT,
+						"Log Out Sleep Button"
+					},
+					{
+						"cons_redirect=default",
+						BF3_OFFSET,
+						BF3_CONSOLE_REDIR_MASK,
+						BF3_CONSOLE_REDIR_DEFAULT,
+						"Console redirection occurs per "
+							"BIOS configuration setting"
+					},
+					{
+						"cons_redirect=skip",
+						BF3_OFFSET,
+						BF3_CONSOLE_REDIR_MASK,
+						BF3_CONSOLE_REDIR_SUPPRESS,
+						"Suppress (skip) console "
+							"redirection if enabled"
+					},
+					{
+						"cons_redirect=enable",
+						BF3_OFFSET,
+						BF3_CONSOLE_REDIR_MASK,
+						BF3_CONSOLE_REDIR_ENABLE,
+						"Suppress (skip) console "
+							"redirection if enabled"
+					},
 					/* data 4 */
 					/* data4[7:4] reserved */
 					/* data4[3] BIOS Shared Mode Override, not implemented here */
@@ -1757,7 +2010,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					/* data5 reserved */
 
 					{NULL}	/* End marker */
-			}, *op;
+				};
 
 			memset(&flags[0], 0, sizeof(flags));
 			token = strtok_r(argv[2] + 8, ",", &saveptr);
@@ -1768,8 +2021,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				for (op = options; op->name; ++op) {
 					if (strcmp(token, op->name) == 0) {
-						flags[op->i] &= op->mask;
-						flags[op->i] |= op->value;
+						flags[op->offset] &= ~(op->mask);
+						flags[op->offset] |= op->value;
 						break;
 					}
 				}
