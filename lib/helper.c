@@ -669,38 +669,22 @@ print_valstr(const struct valstr * vs, const char * title, int loglevel)
 		return;
 
 	if (title) {
-		if (loglevel < 0)
-			printf("\n%s:\n\n", title);
-		else
-			lprintf(loglevel, "\n%s:\n", title);
+		uprintf(loglevel, "\n%s:\n", title);
 	}
 
-	if (loglevel < 0) {
-		printf("  VALUE\tHEX\tSTRING\n");
-		printf("==============================================\n");
-	} else {
-		lprintf(loglevel, "  VAL\tHEX\tSTRING");
-		lprintf(loglevel, "==============================================");
-	}
+	uprintf(loglevel, "  VALUE\tHEX\tSTRING");
+	uprintf(loglevel, "==============================================");
 
 	for (i = 0; vs[i].str; i++) {
-		if (loglevel < 0) {
-			if (vs[i].val < 256)
-				printf("  %d\t0x%02x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
-			else
-				printf("  %d\t0x%04x\t%s\n", vs[i].val, vs[i].val, vs[i].str);
-		} else {
-			if (vs[i].val < 256)
-				lprintf(loglevel, "  %d\t0x%02x\t%s", vs[i].val, vs[i].val, vs[i].str);
-			else
-				lprintf(loglevel, "  %d\t0x%04x\t%s", vs[i].val, vs[i].val, vs[i].str);
-		}
+		if (vs[i].val < 256)
+			uprintf(loglevel, "  %d\t0x%02x\t%s",
+			        vs[i].val, vs[i].val, vs[i].str);
+		else
+			uprintf(loglevel, "  %d\t0x%04x\t%s",
+			        vs[i].val, vs[i].val, vs[i].str);
 	}
 
-	if (loglevel < 0)
-		printf("\n");
-	else
-		lprintf(loglevel, "");
+	uprintf(loglevel, "");
 }
 
 /* print_valstr_2col  -  print value string list in two columns to log or stdout
@@ -718,37 +702,22 @@ print_valstr_2col(const struct valstr * vs, const char * title, int loglevel)
 		return;
 
 	if (title) {
-		if (loglevel < 0)
-			printf("\n%s:\n\n", title);
-		else
-			lprintf(loglevel, "\n%s:\n", title);
+		uprintf(loglevel, "\n%s:\n", title);
 	}
 
 	for (i = 0; vs[i].str; i++) {
 		if (!vs[i+1].str) {
 			/* last one */
-			if (loglevel < 0) {
-				printf("  %4d  %-32s\n", vs[i].val, vs[i].str);
-			} else {
-				lprintf(loglevel, "  %4d  %-32s\n", vs[i].val, vs[i].str);
-			}
+			uprintf(loglevel, "  %4d  %-32s\n", vs[i].val, vs[i].str);
 		}
 		else {
-			if (loglevel < 0) {
-				printf("  %4d  %-32s    %4d  %-32s\n",
-				       vs[i].val, vs[i].str, vs[i+1].val, vs[i+1].str);
-			} else {
-				lprintf(loglevel, "  %4d  %-32s    %4d  %-32s\n",
-					vs[i].val, vs[i].str, vs[i+1].val, vs[i+1].str);
-			}
+			uprintf(loglevel, "  %4d  %-32s    %4d  %-32s\n",
+			        vs[i].val, vs[i].str, vs[i+1].val, vs[i+1].str);
 			i++;
 		}
 	}
 
-	if (loglevel < 0)
-		printf("\n");
-	else
-		lprintf(loglevel, "");
+	uprintf(loglevel, ""); /* Empty spacer line */
 }
 
 /* ipmi_csum  -  calculate an ipmi checksum

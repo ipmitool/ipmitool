@@ -65,6 +65,7 @@
 #include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_ime.h>
 #include <ipmitool/ipmi_dcmi.h>
+#include <ipmitool/ipmi_nm.h>
 #include <ipmitool/ipmi_vita.h>
 #include <ipmitool/ipmi_quantaoem.h>
 
