@@ -1714,7 +1714,8 @@ ipmi_chassis_set_bootflag_help()
 
 /*
  * Sugar. Macros for internal use by bootdev_parse_options() to make
- * the structure initialization look better
+ * the structure initialization look better. Can't use scope-limited
+ * static consts for initializers with gcc5, alas.
  */
 #define BF1_OFFSET 0
 #define BF2_OFFSET 1
@@ -1730,13 +1731,15 @@ bootdev_parse_options(char *optstring, uint8_t flags[])
 	char *token;
 	char *saveptr = NULL;
 	int optionError = 0;
-	static struct {
+
+	static const struct bootdev_opt_s {
 		char *name;
 		off_t offset;
 		unsigned char mask;
 		unsigned char value;
 		char *desc;
-	} *op, options[] = {
+	} *op;
+	static const struct bootdev_opt_s options[] = {
 		/* data 1 */
 		{
 			"valid",
@@ -2047,23 +2050,30 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "  bios  : Force boot into BIOS Setup");
 			lprintf(LOG_NOTICE, "  floppy: Force boot from Floppy/primary removable media");
 		} else {
-			if (argc < 3)
-				rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
-			else if (strncmp(argv[2], "clear-cmos=", 11) == 0) {
-				if (strncmp(argv[2]+11, "yes", 3) == 0) {
-					uint8_t flags[5] = {0, (1<<7), 0, 0, 0};
-					rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
-				} else
-					rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
+			static const char *kw = "options=";
+			static const int kw_len = 8;
+			char *optstr = NULL;
+			uint8_t flags[BF_BYTE_COUNT];
+			bool use_flags = false;
+
+			if (argc >= 3) {
+				if (!strcmp(argv[2], "clear-cmos=yes")) {
+					/* Exclusive clear-cmos, no other flags */
+					optstr = "clear-cmos";
+				}
+				else if (!strncmp(argv[2], kw, kw_len)) {
+					optstr = argv[2] + kw_len;
+				}
 			}
-			else if (strncmp(argv[2], "options=", 8) == 0) {
-				uint8_t flags[BF_BYTE_COUNT];
-				if (!bootdev_parse_options(argv[2] + 8, flags))
+			if (optstr) {
+				if (!bootdev_parse_options(optstr, flags))
 					return -1;
-				rc = ipmi_chassis_set_bootdev(intf, argv[1], flags);
+				use_flags = true;
 			}
-			else
-				rc = ipmi_chassis_set_bootdev(intf, argv[1], NULL);
+			rc = ipmi_chassis_set_bootdev(intf, argv[1],
+			                              use_flags
+			                              ? flags
+			                              : NULL);
 		}
 	}
 	else if (!strcmp(argv[0], "bootmbox")) {
