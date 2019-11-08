@@ -255,7 +255,7 @@ ipmi_chassis_identify(struct ipmi_intf * intf, char * arg)
 	req.msg.cmd = 0x4;
 
 	if (arg) {
-		if (strncmp(arg, "force", 5) == 0) {
+		if (!strcmp(arg, "force")) {
 			identify_data.force_on = 1;
 		} else {
 			if ( (rc = str2uchar(arg, &identify_data.interval)) != 0) {
@@ -1273,29 +1273,43 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 
 	if (!arg)
 		flags[1] |= 0x00;
-	else if (strncmp(arg, "none", 4) == 0)
+	else if (!strcmp(arg, "none"))
 		flags[1] |= 0x00;
-	else if (strncmp(arg, "pxe", 3) == 0 ||
-		strncmp(arg, "force_pxe", 9) == 0)
+	else if (!strcmp(arg, "pxe") ||
+		!strcmp(arg, "force_pxe"))
+	{
 		flags[1] |= 0x04;
-	else if (strncmp(arg, "disk", 4) == 0 ||
-		strncmp(arg, "force_disk", 10) == 0)
+	}
+	else if (!strcmp(arg, "disk") ||
+		!strcmp(arg, "force_disk"))
+	{
 		flags[1] |= 0x08;
-	else if (strncmp(arg, "safe", 4) == 0 ||
-		strncmp(arg, "force_safe", 10) == 0)
+	}
+	else if (!strcmp(arg, "safe") ||
+		!strcmp(arg, "force_safe"))
+	{
 		flags[1] |= 0x0c;
-	else if (strncmp(arg, "diag", 4) == 0 ||
-		strncmp(arg, "force_diag", 10) == 0)
+	}
+	else if (!strcmp(arg, "diag") ||
+		!strcmp(arg, "force_diag"))
+	{
 		flags[1] |= 0x10;
-	else if (strncmp(arg, "cdrom", 5) == 0 ||
-		strncmp(arg, "force_cdrom", 11) == 0)
+	}
+	else if (!strcmp(arg, "cdrom") ||
+		!strcmp(arg, "force_cdrom"))
+	{
 		flags[1] |= 0x14;
-	else if (strncmp(arg, "floppy", 6) == 0 ||
-		strncmp(arg, "force_floppy", 12) == 0)
+	}
+	else if (!strcmp(arg, "floppy") ||
+		!strcmp(arg, "force_floppy"))
+	{
 		flags[1] |= 0x3c;
-	else if (strncmp(arg, "bios", 4) == 0 ||
-		strncmp(arg, "force_bios", 10) == 0)
+	}
+	else if (!strcmp(arg, "bios") ||
+		!strcmp(arg, "force_bios"))
+	{
 		flags[1] |= 0x18;
+	}
 	else {
 		lprintf(LOG_ERR, "Invalid argument: %s", arg);
 		rc = -1;
@@ -1666,25 +1680,25 @@ ipmi_power_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 	uint8_t ctl = 0;
 
-	if ((argc < 1) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (argc < 1 || !strcmp(argv[0], "help")) {
 		lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
 		return 0;
 	}
-	if (strncmp(argv[0], "status", 6) == 0) {
+	if (!strcmp(argv[0], "status")) {
 		rc = ipmi_chassis_print_power_status(intf);
 		return rc;
 	}
-	if ((strncmp(argv[0], "up", 2) == 0) || (strncmp(argv[0], "on", 2) == 0))
+	if (!strcmp(argv[0], "up") || !strcmp(argv[0], "on"))
 		ctl = IPMI_CHASSIS_CTL_POWER_UP;
-	else if ((strncmp(argv[0], "down", 4) == 0) || (strncmp(argv[0], "off", 3) == 0))
+	else if (!strcmp(argv[0], "down") || !strcmp(argv[0], "off"))
 		ctl = IPMI_CHASSIS_CTL_POWER_DOWN;
-	else if (strncmp(argv[0], "cycle", 5) == 0)
+	else if (!strcmp(argv[0], "cycle"))
 		ctl = IPMI_CHASSIS_CTL_POWER_CYCLE;
-	else if (strncmp(argv[0], "reset", 5) == 0)
+	else if (!strcmp(argv[0], "reset"))
 		ctl = IPMI_CHASSIS_CTL_HARD_RESET;
-	else if (strncmp(argv[0], "diag", 4) == 0)
+	else if (!strcmp(argv[0], "diag"))
 		ctl = IPMI_CHASSIS_CTL_PULSE_DIAG;
-	else if ((strncmp(argv[0], "acpi", 4) == 0) || (strncmp(argv[0], "soft", 4) == 0))
+	else if (!strcmp(argv[0], "acpi") || !strcmp(argv[0], "soft"))
 		ctl = IPMI_CHASSIS_CTL_ACPI_SOFT;
 	else {
 		lprintf(LOG_ERR, "Invalid chassis power command: %s", argv[0]);
@@ -1919,42 +1933,51 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = -1;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		lprintf(LOG_NOTICE, "Chassis Commands:\n"
 		                    "  status, power, policy, restart_cause\n"
 		                    "  poh, identify, selftest,\n"
 		                    "  bootdev, bootparam, bootmbox");
 	}
-	else if (strncmp(argv[0], "status", 6) == 0) {
+	else if (!strcmp(argv[0], "status")) {
 		rc = ipmi_chassis_status(intf);
 	}
-	else if (strncmp(argv[0], "selftest", 8) == 0) {
+	else if (!strcmp(argv[0], "selftest")) {
 		rc = ipmi_chassis_selftest(intf);
 	}
-	else if (strncmp(argv[0], "power", 5) == 0) {
+	else if (!strcmp(argv[0], "power")) {
 		uint8_t ctl = 0;
 
-		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+		if (argc < 2 || !strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
 			rc = 0;
 			goto out;
 		}
-		if (strncmp(argv[1], "status", 6) == 0) {
+		if (!strcmp(argv[1], "status")) {
 			rc = ipmi_chassis_print_power_status(intf);
 			goto out;
 		}
-		if ((strncmp(argv[1], "up", 2) == 0) || (strncmp(argv[1], "on", 2) == 0))
+		if (!strcmp(argv[1], "up") ||
+		    !strcmp(argv[1], "on"))
+		{
 			ctl = IPMI_CHASSIS_CTL_POWER_UP;
-		else if ((strncmp(argv[1], "down", 4) == 0) || (strncmp(argv[1], "off", 3) == 0))
+		}
+		else if (!strcmp(argv[1], "down") ||
+		         !strcmp(argv[1], "off"))
+		{
 			ctl = IPMI_CHASSIS_CTL_POWER_DOWN;
-		else if (strncmp(argv[1], "cycle", 5) == 0)
+		}
+		else if (!strcmp(argv[1], "cycle"))
 			ctl = IPMI_CHASSIS_CTL_POWER_CYCLE;
-		else if (strncmp(argv[1], "reset", 5) == 0)
+		else if (!strcmp(argv[1], "reset"))
 			ctl = IPMI_CHASSIS_CTL_HARD_RESET;
-		else if (strncmp(argv[1], "diag", 4) == 0)
+		else if (!strcmp(argv[1], "diag"))
 			ctl = IPMI_CHASSIS_CTL_PULSE_DIAG;
-		else if ((strncmp(argv[1], "acpi", 4) == 0) || (strncmp(argv[1], "soft", 4) == 0))
+		else if (!strcmp(argv[1], "acpi") ||
+		         !strcmp(argv[1], "soft"))
+		{
 			ctl = IPMI_CHASSIS_CTL_ACPI_SOFT;
+		}
 		else {
 			lprintf(LOG_ERR, "Invalid chassis power command: %s", argv[1]);
 			goto out;
@@ -1962,11 +1985,11 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		rc = ipmi_chassis_power_control(intf, ctl);
 	}
-	else if (strncmp(argv[0], "identify", 8) == 0) {
+	else if (!strcmp(argv[0], "identify")) {
 		if (argc < 2) {
 			rc = ipmi_chassis_identify(intf, NULL);
 		}
-		else if (strncmp(argv[1], "help", 4) == 0) {
+		else if (!strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE, "chassis identify <interval>");
 			lprintf(LOG_NOTICE, "                 default is 15 seconds");
 			lprintf(LOG_NOTICE, "                 0 to turn off");
@@ -1975,14 +1998,14 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_chassis_identify(intf, argv[1]);
 		}
 	}
-	else if (strncmp(argv[0], "poh", 3) == 0) {
+	else if (!strcmp(argv[0], "poh")) {
 		rc = ipmi_chassis_poh(intf);
 	}
-	else if (strncmp(argv[0], "restart_cause", 13) == 0) {
+	else if (!strcmp(argv[0], "restart_cause")) {
 		rc = ipmi_chassis_restart_cause(intf);
 	}
-	else if (strncmp(argv[0], "policy", 4) == 0) {
-		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+	else if (!strcmp(argv[0], "policy")) {
+		if (argc < 2 || !strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE, "chassis policy <state>");
 			lprintf(LOG_NOTICE, "   list        : return supported policies");
 			lprintf(LOG_NOTICE, "   always-on   : turn on when power is restored");
@@ -1990,13 +2013,13 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "   always-off  : stay off after power is restored");
 		} else {
 			uint8_t ctl;
-			if (strncmp(argv[1], "list", 4) == 0)
+			if (!strcmp(argv[1], "list"))
 				ctl = IPMI_CHASSIS_POLICY_NO_CHANGE;
-			else if (strncmp(argv[1], "always-on", 9) == 0)
+			else if (!strcmp(argv[1], "always-on"))
 				ctl = IPMI_CHASSIS_POLICY_ALWAYS_ON;
-			else if (strncmp(argv[1], "previous", 8) == 0)
+			else if (!strcmp(argv[1], "previous"))
 				ctl = IPMI_CHASSIS_POLICY_PREVIOUS;
-			else if (strncmp(argv[1], "always-off", 10) == 0)
+			else if (!strcmp(argv[1], "always-off"))
 				ctl = IPMI_CHASSIS_POLICY_ALWAYS_OFF;
 			else {
 				lprintf(LOG_ERR, "Invalid chassis policy: %s", argv[1]);
@@ -2005,22 +2028,22 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_chassis_power_policy(intf, ctl);
 		}
 	}
-	else if (strncmp(argv[0], "bootparam", 9) == 0) {
-		if ((argc < 3) || (strncmp(argv[1], "help", 4) == 0)) {
+	else if (!strcmp(argv[0], "bootparam")) {
+		if (argc < 3 || !strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE, "bootparam get <param #>");
 		    ipmi_chassis_set_bootflag_help();
 		}
 		else {
-			if (strncmp(argv[1], "get", 3) == 0) {
+			if (!strcmp(argv[1], "get")) {
 				rc = ipmi_chassis_get_bootparam(intf,
 								argc - 2,
 								argv + 2,
 								0);
 			}
-			else if (strncmp(argv[1], "set", 3) == 0) {
+			else if (!strcmp(argv[1], "set")) {
 			    unsigned char set_flag=0;
 			    unsigned char clr_flag=0;
-				if (strncmp(argv[2], "help", 4) == 0  ||
+				if (!strcmp(argv[2], "help")  ||
 						argc < 4 || (argc >= 4 &&
 							 strncmp(argv[2], "bootflag", 8) != 0)) {
 					ipmi_chassis_set_bootflag_help();
@@ -2038,8 +2061,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_NOTICE, "bootparam get|set <option> [value ...]");
 		}
 	}
-	else if (strncmp(argv[0], "bootdev", 7) == 0) {
-		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
+	else if (!strcmp(argv[0], "bootdev")) {
+		if (argc < 2 || !strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE, "bootdev <device> [clear-cmos=yes|no]");
 			lprintf(LOG_NOTICE, "bootdev <device> [options=help,...]");
 			lprintf(LOG_NOTICE, "  none  : Do not change boot device order");
