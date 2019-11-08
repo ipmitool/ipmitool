@@ -1917,7 +1917,7 @@ bootdev_parse_options(char *optstring, uint8_t flags[])
 int
 ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int rc = 0;
+	int rc = -1;
 
 	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
 		lprintf(LOG_NOTICE, "Chassis Commands:\n"
@@ -1936,11 +1936,12 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		if ((argc < 2) || (strncmp(argv[1], "help", 4) == 0)) {
 			lprintf(LOG_NOTICE, "chassis power Commands: status, on, off, cycle, reset, diag, soft");
-			return 0;
+			rc = 0;
+			goto out;
 		}
 		if (strncmp(argv[1], "status", 6) == 0) {
 			rc = ipmi_chassis_print_power_status(intf);
-			return rc;
+			goto out;
 		}
 		if ((strncmp(argv[1], "up", 2) == 0) || (strncmp(argv[1], "on", 2) == 0))
 			ctl = IPMI_CHASSIS_CTL_POWER_UP;
@@ -1956,7 +1957,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			ctl = IPMI_CHASSIS_CTL_ACPI_SOFT;
 		else {
 			lprintf(LOG_ERR, "Invalid chassis power command: %s", argv[1]);
-			return -1;
+			goto out;
 		}
 
 		rc = ipmi_chassis_power_control(intf, ctl);
@@ -2067,7 +2068,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			if (optstr) {
 				if (!bootdev_parse_options(optstr, flags))
-					return -1;
+					goto out;
+
 				use_flags = true;
 			}
 			rc = ipmi_chassis_set_bootdev(intf, argv[1],
@@ -2081,8 +2083,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	else {
 		lprintf(LOG_ERR, "Invalid chassis command: %s", argv[0]);
-		return -1;
 	}
 
+out:
 	return rc;
 }
