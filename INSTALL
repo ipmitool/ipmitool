@@ -22,7 +22,8 @@ project is tested automatically to build cleanly for the following
    - Ubuntu 16.04 Xenial
    - MacOS X 10.14 (Xcode 10.2)
 
-   For Ubuntu 16.04 it is recommended to do the following before building:
+   For Ubuntu 16.04 or Ubuntu 18.04 it is recommended to do the following
+   before building:
 $ sudo apt install automake gcc git libncurses-dev libreadline-dev libssl-dev libsystemd-dev libtool make wget
 
    For Fedora 31 it is recommended to do the following before building:
