@@ -4767,6 +4767,45 @@ f_type, uint8_t f_index, char *f_string)
 	}
 	/* Convert index from character to decimal */
 	f_index= f_index - 0x30;
+	
+	if (f_type == 'b' && f_index == 9)		// use index '9' for editing 'board mfg date', by slash.wu@ztsystems.com
+	{
+		int y, m, d, h, min;
+		struct tm board_mfg_date;
+		time_t total_secs;
+	
+		sscanf(f_string, "%4d%2d%2d%2d%2d", &y, &m, &d, &h, &min);
+		board_mfg_date.tm_year = y - 1900;
+		board_mfg_date.tm_mon = m - 1;
+		board_mfg_date.tm_mday = d;
+		board_mfg_date.tm_hour = h;
+		board_mfg_date.tm_min = min;
+		board_mfg_date.tm_sec = 0;
+		total_secs = mktime(&board_mfg_date);
+		total_secs -= secs_from_1970_1996;
+		total_secs /= 60;			// mins
+	
+		memcpy(&fru_data[3], &total_secs, 3);
+	
+		checksum = 0;
+	/* Calculate Header Checksum */
+		for (i = 0; i < fru_section_len - 1; i++)
+		{
+			checksum += fru_data[i];
+		}
+		checksum = (~checksum) + 1;
+		fru_data[fru_section_len - 1] = checksum;
+	
+	/* Write the updated section to the FRU data; source offset => 0 */
+		if (write_fru_area(intf, &fru, fruId, 0, header_offset, fru_section_len, fru_data) < 0)
+		{
+			printf("Write to FRU data failed.\n");
+			rc = (-1);
+			goto ipmi_fru_set_field_string_out;
+		}
+		else
+			goto ipmi_fru_set_field_string_out;
+	}
 
 	/*Seek to field index */
 	for (i=0; i <= f_index; i++) {
