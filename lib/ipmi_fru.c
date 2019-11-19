@@ -4770,6 +4770,7 @@ f_type, uint8_t f_index, char *f_string)
 	
 	if (f_type == 'b' && f_index == 9)		// use index '9' for editing 'board mfg date', by slash.wu@ztsystems.com
 	{
+		const uint64_t secs_from_1970_1996 = 820454400;
 		int y, m, d, h, min;
 		struct tm board_mfg_date;
 		time_t total_secs;
