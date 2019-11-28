@@ -1865,7 +1865,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 		/* set new ipaddr */
 		memcpy(data+3, temp, 4);
 		printf("Setting LAN Alert %d IP Address to %d.%d.%d.%d\n", alert,
@@ -1880,7 +1880,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 		/* set new macaddr */
 		memcpy(data+7, temp, 6);
 		printf("Setting LAN Alert %d MAC Address to "
@@ -1894,7 +1894,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 
 		if (strncasecmp(argv[1], "def", 3) == 0 ||
 		    strncasecmp(argv[1], "default", 7) == 0) {
@@ -1920,7 +1920,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 
 		if (strncasecmp(argv[1], "on", 2) == 0 ||
 		    strncasecmp(argv[1], "yes", 3) == 0) {
@@ -1945,7 +1945,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 
 		if (strncasecmp(argv[1], "pet", 3) == 0) {
 			printf("Setting LAN Alert %d destination to PET Trap\n", alert);
@@ -1973,7 +1973,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 
 		if (str2uchar(argv[1], &data[2]) != 0) {
 			lprintf(LOG_ERR, "Invalid time: %s", argv[1]);
@@ -1989,7 +1989,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		if (!p) {
 			return (-1);
 		}
-		memcpy(data, p->data, p->data_len);
+		memcpy(data, p->data, __min(p->data_len, sizeof(data)));
 
 		if (str2uchar(argv[1], &data[3]) != 0) {
 			lprintf(LOG_ERR, "Invalid retry: %s", argv[1]);
