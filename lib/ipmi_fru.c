@@ -3078,7 +3078,7 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		return 0;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, fru->id_string, fru->id_code & 0x01f);
+	memcpy(desc, fru->id_string, __min(fru->id_code & 0x01f, sizeof(desc)));
 	desc[fru->id_code & 0x01f] = 0;
 	printf("FRU Device Description : %s (ID %d)\n", desc, fru->device_id);
 

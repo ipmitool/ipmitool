@@ -2254,7 +2254,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 		return -1;
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (sensor->id_code & 0x1f) + 1, sensor->id_string);
 
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
@@ -2303,7 +2303,7 @@ ipmi_sdr_print_sensor_mc_locator(struct sdr_record_mc_locator *mc)
 		return -1;
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (mc->id_code & 0x1f) + 1, "%s", mc->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (mc->id_code & 0x1f) + 1, mc->id_string);
 
 	if (verbose == 0) {
 		if (csv_output)
@@ -2394,7 +2394,7 @@ ipmi_sdr_print_sensor_generic_locator(struct sdr_record_generic_locator *dev)
 	char desc[17];
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (dev->id_code & 0x1f) + 1, "%s", dev->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (dev->id_code & 0x1f) + 1, dev->id_string);
 
 	if (!verbose) {
 		if (csv_output)
@@ -2449,7 +2449,7 @@ ipmi_sdr_print_sensor_fru_locator(struct sdr_record_fru_locator *fru)
 	char desc[17];
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (fru->id_code & 0x1f) + 1, "%s", fru->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (fru->id_code & 0x1f) + 1, fru->id_string);
 
 	if (!verbose) {
 		if (csv_output)
@@ -2634,35 +2634,43 @@ ipmi_sdr_print_name_from_rawentry(uint16_t id,
 
    int rc =0;
    char desc[17];
+   const char *id_string;
+   uint8_t id_code;
    memset(desc, ' ', sizeof (desc));
 
    switch ( type) {
       case SDR_RECORD_TYPE_FULL_SENSOR:
       record.full = (struct sdr_record_full_sensor *) raw;
-      snprintf(desc, (record.full->id_code & 0x1f) +1, "%s",
-               (const char *)record.full->id_string);
+      id_code = record.full->id_code;
+      id_string = record.full->id_string;
       break;
+
       case SDR_RECORD_TYPE_COMPACT_SENSOR:
       record.compact = (struct sdr_record_compact_sensor *) raw	;
-      snprintf(desc, (record.compact->id_code & 0x1f)  +1, "%s",
-               (const char *)record.compact->id_string);
+      id_code = record.compact->id_code;
+      id_string = record.compact->id_string;
       break;
+
       case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
       record.eventonly  = (struct sdr_record_eventonly_sensor *) raw ;
-      snprintf(desc, (record.eventonly->id_code & 0x1f)  +1, "%s",
-               (const char *)record.eventonly->id_string);
-      break;            
+      id_code = record.eventonly->id_code;
+      id_string = record.eventonly->id_string;
+      break;
+
       case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
       record.mcloc  = (struct sdr_record_mc_locator *) raw ;
-      snprintf(desc, (record.mcloc->id_code & 0x1f)  +1, "%s",
-               (const char *)record.mcloc->id_string);		
+      id_code = record.mcloc->id_code;
+      id_string = record.mcloc->id_string;
       break;
+
       default:
       rc = -1;
-      break;
-   }   
+   }
+   if (!rc) {
+       snprintf(desc, sizeof(desc), "%.*s", (id_code & 0x1f) + 1, id_string);
+   }
 
-      lprintf(LOG_INFO, "ID: 0x%04x , NAME: %-16s", id, desc);
+   lprintf(LOG_INFO, "ID: 0x%04x , NAME: %-16s", id, desc);
    return rc;
 }
 
