@@ -309,8 +309,10 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 		}
 		else
 		{
-			memcpy(&session_info,  rsp->data, rsp->data_len);
-			print_session_info(&session_info, rsp->data_len);
+			memcpy(&session_info,  rsp->data,
+			       __min(rsp->data_len, sizeof(session_info)));
+			print_session_info(&session_info,
+			                   __min(rsp->data_len, sizeof(session_info)));
 		}
 		break;
 		
@@ -341,8 +343,10 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 				break;
 			}
 
-			memcpy(&session_info,  rsp->data, rsp->data_len);
-			print_session_info(&session_info, rsp->data_len);
+			memcpy(&session_info,  rsp->data,
+			       __min(rsp->data_len, sizeof(session_info)));
+			print_session_info(&session_info,
+			                   __min(rsp->data_len, sizeof(session_info)));
 			
 		} while (i <= session_info.session_slot_count);
 		break;
