@@ -616,30 +616,24 @@ fi
 
 AC_SUBST(IPMITOOL_INTF_LIB)
 
-if test "x$xenable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
-	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
-	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
-	if test "x$have_curses" != "xyes" || test "x$have_readline" != "xyes"; then
-		xenable_ipmishell=no
-	fi
-fi
-
-dnl check for readline library to enable ipmi shell
 AC_ARG_ENABLE([ipmishell],
 	[AC_HELP_STRING([--enable-ipmishell],
 			[enable IPMI shell interface [default=auto]])],
 	[xenable_ipmishell=$enableval],
 	[])
+
+dnl check for readline library to enable ipmi shell
 if test "x$xenable_ipmishell" = "xyes"; then
 	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
 	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
 	if test "x$have_curses" != "xyes"; then
 		AC_MSG_ERROR([** Unable to find curses required by ipmishell.])
+		xenable_ipmishell=no
 	fi
 	if test "x$have_readline" != "xyes"; then
 		AC_MSG_ERROR([** Unable to find readline required by ipmishell.])
+		xenable_ipmishell=no
 	fi
 	AC_DEFINE(HAVE_READLINE, [1], [Define to 1 if readline present.])
 fi
