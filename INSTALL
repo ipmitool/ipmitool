@@ -33,7 +33,7 @@ Basic Installation
 
    Briefly, the followong shell command should configure, build, and
 install this package:
-   `./bootstrap && ./configure && make && make install`
+   `./bootstrap && ./configure && make && sudo make install`
 
    The following more-detailed instructions are generic; see the
 `README' file for instructions specific to this package.  Some
