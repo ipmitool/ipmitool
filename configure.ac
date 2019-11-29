@@ -624,13 +624,7 @@ AC_ARG_ENABLE([ipmishell],
 
 dnl check for readline library to enable ipmi shell
 if test "x$xenable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
-	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
-	if test "x$have_curses" != "xyes"; then
-		AC_MSG_ERROR([** Unable to find curses required by ipmishell.])
-		xenable_ipmishell=no
-	fi
 	if test "x$have_readline" != "xyes"; then
 		AC_MSG_ERROR([** Unable to find readline required by ipmishell.])
 		xenable_ipmishell=no
