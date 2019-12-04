@@ -28,7 +28,7 @@
 # LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
 # EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-DOCDIR = $(datadir)/doc/$(PACKAGE)
+DOCDIR = $(datadir)/man/$(PACKAGE)
 DOCLIST = $(top_srcdir)/README $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
 
 EXTRA_DIST = $(DOCLIST) bootstrap
@@ -40,7 +40,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	mkinstalldirs config.h.in stamp-h.in \
 	$(distdir).tar.gz $(distdir).tar.bz2
 
-SUBDIRS = lib src include doc contrib control
+SUBDIRS = lib src include man contrib control
 IANA_PEN = http://www.iana.org/assignments/enterprise-numbers
 
 dist-hook:

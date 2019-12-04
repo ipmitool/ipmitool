@@ -739,7 +739,7 @@ AC_DEFINE(PATH_SEPARATOR, "/")
 
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
-		doc/Makefile
+		man/Makefile
 		contrib/Makefile
 		control/Makefile
 		control/pkginfo
@@ -763,8 +763,8 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/serial/Makefile
 		src/plugins/dummy/Makefile])
 
-AC_CONFIG_FILES([doc/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmitool.1])
-AC_CONFIG_FILES([doc/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmievd.8])
+AC_CONFIG_FILES([man/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" man/ipmitool.1])
+AC_CONFIG_FILES([man/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" man/ipmievd.8])
 
 AC_OUTPUT
 
