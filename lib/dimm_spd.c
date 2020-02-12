@@ -1621,7 +1621,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	struct ipmi_rq req;
 	struct fru_info fru;
 	uint8_t *spd_data, msg_data[4];
-	int len, offset;
+	uint32_t len, offset;
 
 	msg_data[0] = id;
 
@@ -1697,6 +1697,13 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		}
 
 		len = rsp->data[0];
+		if(rsp->data_len < 1
+		   || len > rsp->data_len - 1
+		   || len > fru.size - offset)
+		{
+			printf(" Not enough buffer size");
+			return -1;
+		}
 		memcpy(&spd_data[offset], rsp->data + 1, len);
 		offset += len;
 	} while (offset < fru.size);

@@ -1408,7 +1408,8 @@ chassis_set_bootmailbox(struct ipmi_intf *intf, int16_t block, bool use_text,
 		 * We need to write all data, so calculate the data
 		 * size in blocks and set the starting block to zero.
 		 */
-		blocks = datasize;
+		blocks = CHASSIS_BOOT_MBOX_IANA_SZ;
+		blocks += datasize;
 		blocks += CHASSIS_BOOT_MBOX_BLOCK_SZ - 1;
 		blocks /= CHASSIS_BOOT_MBOX_BLOCK_SZ;
 
