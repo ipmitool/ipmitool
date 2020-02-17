@@ -2762,7 +2762,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	else {
 		bool error = true; /* Assume the string is invalid */
 		/* Now let's extract time_t from the supplied string */
-		if (!strptime(time_string, time_format, &tm)) {
+		if (strptime(time_string, time_format, &tm) != NULL) {
 			tm.tm_isdst = (-1); /* look up DST information */
 			t = mktime(&tm);
 			if (t >= 0) {
