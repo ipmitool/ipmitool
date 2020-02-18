@@ -1620,8 +1620,10 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct fru_info fru;
-	uint8_t *spd_data, msg_data[4];
+	uint8_t *spd_data = NULL;
+	uint8_t msg_data[4];
 	uint32_t len, offset;
+	int rc = -1;
 
 	msg_data[0] = id;
 
@@ -1634,12 +1636,12 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		printf(" Device not present (No Response)\n");
-		return -1;
+		goto end;
 	}
 	if (rsp->ccode) {
 		printf(" Device not present (%s)\n",
 		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		goto end;
 	}
 
 	fru.size = (rsp->data[1] << 8) | rsp->data[0];
@@ -1651,7 +1653,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 
 	if (fru.size < 1) {
 		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
-		return -1;
+		goto end;
 	}
 
         spd_data = malloc(fru.size);
@@ -1659,7 +1661,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
         if (!spd_data) {
 		printf(" Unable to malloc memory for spd array of size=%d\n",
 		       fru.size);
-		return -1;
+		goto end;
         }
 
 	memset(&req, 0, sizeof(req));
@@ -1679,21 +1681,17 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
 			printf(" Device not present (No Response)\n");
-                        free(spd_data);
-                        spd_data = NULL;
-			return -1;
+			goto end;
 		}
 		if (rsp->ccode) {
 			printf(" Device not present (%s)\n",
 			       val2str(rsp->ccode, completion_code_vals));
 
-                        free(spd_data);
-                        spd_data = NULL;
 			/* Timeouts are acceptable. No DIMM in the socket */
 			if (rsp->ccode == 0xc3)
-				return 1;
+				rc = 1;
 
-			return -1;
+			goto end;
 		}
 
 		len = rsp->data[0];
@@ -1702,7 +1700,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		   || len > fru.size - offset)
 		{
 			printf(" Not enough buffer size");
-			return -1;
+			goto end;
 		}
 		memcpy(&spd_data[offset], rsp->data + 1, len);
 		offset += len;
@@ -1710,8 +1708,10 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 
 	/* now print spd info */
 	ipmi_spd_print(spd_data, offset);
-        free(spd_data);
-        spd_data = NULL;
+	rc = 0;
 
-	return 0;
+end:
+	free_n(&spd_data);
+
+	return rc;
 }
