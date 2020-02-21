@@ -1883,24 +1883,24 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 	int showProperties = 0;
 
-	if (argc == 0 || (!strncmp(argv[0], "help", 4))) {
+	if (argc == 0 || (!strcmp(argv[0], "help"))) {
 		ipmi_picmg_help();
 		return 0;
 	}
 
 	/* Get PICMG properties is called to obtain version information */
-	if (argc !=0 && !strncmp(argv[0], "properties", 10)) {
+	if (argc !=0 && !strcmp(argv[0], "properties")) {
 		showProperties =1;
 	}
 	rc = ipmi_picmg_properties(intf,showProperties);
 
 	/* address info command */
-	if (!strncmp(argv[0], "addrinfo", 8)) {
+	if (!strcmp(argv[0], "addrinfo")) {
 		rc = ipmi_picmg_getaddr(intf, argc-1, &argv[1]);
 	}
-	else if (!strncmp(argv[0], "busres", 6)) {
+	else if (!strcmp(argv[0], "busres")) {
 		if (argc > 1) {
-			if (!strncmp(argv[1], "summary", 7)) {
+			if (!strcmp(argv[1], "summary")) {
 				ipmi_picmg_bused_resource(intf, PICMG_BUSED_RESOURCE_SUMMARY );
 			}
 		} else {
@@ -1908,7 +1908,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
       }
 	}
 	/* fru control command */
-	else if (!strncmp(argv[0], "frucontrol", 10)) {
+	else if (!strcmp(argv[0], "frucontrol")) {
 		if (argc > 2) {
 			rc = ipmi_picmg_fru_control(intf, &(argv[1]));
 		}
@@ -1928,7 +1928,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	/* fru activation command */
-	else if (!strncmp(argv[0], "activate", 8)) {
+	else if (!strcmp(argv[0], "activate")) {
 		if (argc > 1) {
 			rc = ipmi_picmg_fru_activation(intf, &(argv[1]), PICMG_FRU_ACTIVATE);
 		}
@@ -1939,7 +1939,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	/* fru deactivation command */
-	else if (!strncmp(argv[0], "deactivate", 10)) {
+	else if (!strcmp(argv[0], "deactivate")) {
 		if (argc > 1) {
 			rc = ipmi_picmg_fru_activation(intf, &(argv[1]), PICMG_FRU_DEACTIVATE);
 		}else {
@@ -1949,15 +1949,15 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	/* activation policy command */
-	else if (!strncmp(argv[0], "policy", 6)) {
+	else if (!strcmp(argv[0], "policy")) {
 		if (argc > 1) {
-			if (!strncmp(argv[1], "get", 3)) {
+			if (!strcmp(argv[1], "get")) {
 				if (argc > 2) {
 					rc = ipmi_picmg_fru_activation_policy_get(intf, &(argv[2]));
 				} else {
 					lprintf(LOG_NOTICE, "usage: get <fruid>");
 				}
-			} else if (!strncmp(argv[1], "set", 3)) {
+			} else if (!strcmp(argv[1], "set")) {
 				if (argc > 4) {
 					rc = ipmi_picmg_fru_activation_policy_set(intf, &(argv[2]));
 				} else {
@@ -1982,18 +1982,18 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	/* portstate command */
-	else if (!strncmp(argv[0], "portstate", 9)) {
+	else if (!strcmp(argv[0], "portstate")) {
 
 		lprintf(LOG_DEBUG,"PICMG: portstate API");
 
 		if (argc > 1) {
-			if (!strncmp(argv[1], "get", 3)) {
+			if (!strcmp(argv[1], "get")) {
 				int32_t iface;
 				uint8_t channel = 0;
 
 				lprintf(LOG_DEBUG,"PICMG: get");
 
-				if(!strncmp(argv[1], "getall", 6)) {
+				if(!strcmp(argv[1], "getall")) {
 					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
 						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
 							if(!(( iface == FRU_PICMGEXT_DESIGN_IF_FABRIC ) &&
@@ -2005,7 +2005,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getgranted", 10)) {
+				else if(!strcmp(argv[1], "getgranted")) {
 					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
 						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
 							rc = ipmi_picmg_portstate_get(intf,iface,channel,
@@ -2013,7 +2013,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getdenied", 9)){
+				else if(!strcmp(argv[1], "getdenied")){
 					for(iface=0;iface<=PICMG_EKEY_MAX_INTERFACE;iface++) {
 						for(channel=1;channel<=PICMG_EKEY_MAX_CHANNEL;channel++) {
 							rc = ipmi_picmg_portstate_get(intf,iface,channel,
@@ -2036,7 +2036,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "<intf> <chn>|getall|getgranted|getdenied");
 				}
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (!strcmp(argv[1], "set")) {
 					if (argc == 9) {
 						int32_t interface = 0;
 						int32_t port = 0;
@@ -2079,18 +2079,18 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* amc portstate command */
-	else if (!strncmp(argv[0], "amcportstate", 12)) {
+	else if (!strcmp(argv[0], "amcportstate")) {
 
 		lprintf(LOG_DEBUG,"PICMG: amcportstate API");
 
 		if (argc > 1) {
-			if (!strncmp(argv[1], "get", 3)){
+			if (!strcmp(argv[1], "get")){
 				int32_t device;
 				uint8_t channel;
 
 				lprintf(LOG_DEBUG,"PICMG: get");
 
-				if(!strncmp(argv[1], "getall", 6)){
+				if(!strcmp(argv[1], "getall")){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
 					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
@@ -2102,7 +2102,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getgranted", 10)){
+				else if(!strcmp(argv[1], "getgranted")){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
 					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
@@ -2114,7 +2114,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getdenied", 9)){
+				else if(!strcmp(argv[1], "getdenied")){
 					int maxDevice = PICMG_EKEY_AMC_MAX_DEVICE;
 					if( PicmgCardType != PICMG_CARD_TYPE_ATCA ){
 						maxDevice = 0;
@@ -2147,7 +2147,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "<chn> <device>|getall|getgranted|getdenied");
 				}
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (!strcmp(argv[1], "set")) {
 				if (argc > 7) {
 					int32_t device = -1;
 					int32_t port = 0;
@@ -2194,9 +2194,9 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* ATCA led commands */
-	else if (!strncmp(argv[0], "led", 3)) {
+	else if (!strcmp(argv[0], "led")) {
 		if (argc > 1) {
-			if (!strncmp(argv[1], "prop", 4)) {
+			if (!strcmp(argv[1], "prop")) {
 				if (argc > 2) {
 					rc = ipmi_picmg_get_led_properties(intf, &(argv[2]));
 				}
@@ -2204,7 +2204,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "led prop <FRU-ID>");
 				}
 			}
-			else if (!strncmp(argv[1], "cap", 3)) {
+			else if (!strcmp(argv[1], "cap")) {
 				if (argc > 3) {
 					rc = ipmi_picmg_get_led_capabilities(intf, &(argv[2]));
 				}
@@ -2212,7 +2212,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "led cap <FRU-ID> <LED-ID>");
 				}
 			}
-			else if (!strncmp(argv[1], "get", 3)) {
+			else if (!strcmp(argv[1], "get")) {
 				if (argc > 3) {
 					rc = ipmi_picmg_get_led_state(intf, &(argv[2]));
 				}
@@ -2220,7 +2220,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					lprintf(LOG_NOTICE, "led get <FRU-ID> <LED-ID>");
 				}
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (!strcmp(argv[1], "set")) {
 				if (argc > 6) {
 					rc = ipmi_picmg_set_led_state(intf, &(argv[2]));
 				}
@@ -2262,9 +2262,9 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* power commands */
-	else if (!strncmp(argv[0], "power", 5)) {
+	else if (!strcmp(argv[0], "power")) {
 		if (argc > 1) {
-			if (!strncmp(argv[1], "get", 3)) {
+			if (!strcmp(argv[1], "get")) {
 				if (argc > 3) {
 					rc = ipmi_picmg_get_power_level(intf, &(argv[2]));
 				}
@@ -2279,7 +2279,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					return -1;
 				}
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (!strcmp(argv[1], "set")) {
 				if (argc > 4) {
 					rc = ipmi_picmg_set_power_level(intf, &(argv[2]));
 				}
@@ -2306,9 +2306,9 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 	}/* clk commands*/
-	else if (!strncmp(argv[0], "clk", 3)) {
+	else if (!strcmp(argv[0], "clk")) {
 		if (argc > 1) {
-			if (!strncmp(argv[1], "get", 3)) {
+			if (!strcmp(argv[1], "get")) {
 				int8_t clk_res = -1;            
 				uint8_t clk_id;
 				uint8_t max_res = 15;
@@ -2317,7 +2317,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					max_res = 0;
 				}
 
-				if(!strncmp(argv[1], "getall", 6)) {
+				if(!strcmp(argv[1], "getall")) {
 					if( verbose ) { printf("Getting all clock state\n") ;}	
 					for(clk_res=0;clk_res<=max_res;clk_res++) {
 						for(clk_id=0;clk_id<=15;clk_id++) {
@@ -2326,7 +2326,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getdenied", 6)) {
+				else if(!strcmp(argv[1], "getdenied")) {
 					if( verbose ) { printf("Getting disabled clocks\n") ;}	
 					for(clk_res=0;clk_res<=max_res;clk_res++) {
 						for(clk_id=0;clk_id<=15;clk_id++) {
@@ -2335,7 +2335,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 						}
 					}
 				}
-				else if(!strncmp(argv[1], "getgranted", 6)) {
+				else if(!strcmp(argv[1], "getgranted")) {
 					if( verbose ) { printf("Getting enabled clocks\n") ;}	
 					for(clk_res=0;clk_res<=max_res;clk_res++) {
 						for(clk_id=0;clk_id<=15;clk_id++) {
@@ -2364,7 +2364,7 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 					return -1;
 				}
 			}
-			else if (!strncmp(argv[1], "set", 3)) {
+			else if (!strcmp(argv[1], "set")) {
 				if (argc > 7) {
 					rc = ipmi_picmg_clk_set(intf, argc-1, &(argv[2]));
 				}

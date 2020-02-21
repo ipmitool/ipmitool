@@ -190,7 +190,7 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	if (!name) {
 		if (!cmd->func || !cmd->name)
 			return -1;
-		else if (strncmp(cmd->name, "default", 7) == 0)
+		else if (strcmp(cmd->name, "default") == 0)
 			return cmd->func(intf, 0, NULL);
 		else {
 			lprintf(LOG_ERR, "No command provided!");
@@ -200,12 +200,12 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	}
 
 	for (cmd=intf->cmdlist; cmd->func; cmd++) {
-		if (strncmp(name, cmd->name, __maxlen(cmd->name, name)) == 0)
+		if (strcmp(name, cmd->name) == 0)
 			break;
 	}
 	if (!cmd->func) {
 		cmd = intf->cmdlist;
-		if (strncmp(cmd->name, "default", 7) == 0)
+		if (strcmp(cmd->name, "default") == 0)
 			return cmd->func(intf, argc+1, argv-1);
 
 		lprintf(LOG_ERR, "Invalid command: %s", name);
@@ -380,8 +380,8 @@ ipmi_main(int argc, char ** argv,
 			if (intflist) {
 				found = 0;
 				for (sup=intflist; sup->name; sup++) {
-					if (strncmp(sup->name, intfname, strlen(intfname)) == 0 &&
-							strncmp(sup->name, intfname, strlen(sup->name)) == 0 &&
+					if (strcmp(sup->name, intfname) == 0 &&
+							strcmp(sup->name, intfname) == 0 &&
 							sup->supported == 1)
 						found = 1;
 				}
@@ -609,8 +609,8 @@ ipmi_main(int argc, char ** argv,
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
-			if (strncmp(oemtype, "list", 4) == 0 ||
-					strncmp(oemtype, "help", 4) == 0) {
+			if (strcmp(oemtype, "list") == 0 ||
+					strcmp(oemtype, "help") == 0) {
 				ipmi_oem_print();
 				rc = 0;
 				goto out_free;
@@ -778,7 +778,7 @@ ipmi_main(int argc, char ** argv,
 
 	/* check for command before doing anything */
 	if (argc-optind > 0 &&
-			strncmp(argv[optind], "help", 4) == 0) {
+			strcmp(argv[optind], "help") == 0) {
 		ipmi_cmd_print(cmdlist);
 		rc = 0;
 		goto out_free;

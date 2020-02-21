@@ -238,19 +238,19 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 	else if (strcmp(param, "bit-rate") == 0)
 	{
 		data[1] = ISOL_BAUD_RATE_PARAM;
-		if (strncmp(value, "9.6", 3) == 0) {
+		if (strcmp(value, "9.6") == 0) {
 			data[2] = 0x06;
 		}
-		else if (strncmp(value, "19.2", 4) == 0) {
+		else if (strcmp(value, "19.2") == 0) {
 			data[2] = 0x07;
 		}
-		else if (strncmp(value, "38.4", 4) == 0) {
+		else if (strcmp(value, "38.4") == 0) {
 			data[2] = 0x08;
 		}
-		else if (strncmp(value, "57.6", 4) == 0) {
+		else if (strcmp(value, "57.6") == 0) {
 			data[2] = 0x09;
 		}
-		else if (strncmp(value, "115.2", 5) == 0) {
+		else if (strcmp(value, "115.2") == 0) {
 			data[2] = 0x0A;
 		}
 		else {
@@ -790,20 +790,20 @@ int ipmi_isol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Help
 	 */
-	if (!argc || !strncmp(argv[0], "help", 4))
+	if (!argc || !strcmp(argv[0], "help"))
 		print_isol_usage();
 
 	/*
 	 * Info
 	 */
-	else if (!strncmp(argv[0], "info", 4)) {
+	else if (!strcmp(argv[0], "info")) {
 		ret = ipmi_print_isol_info(intf);
 	}
 
 	/*
 	 * Set a parameter value
 	 */
-	else if (!strncmp(argv[0], "set", 3)) {
+	else if (!strcmp(argv[0], "set")) {
 		if (argc < 3) {
 			print_isol_set_usage();
 			return -1;
@@ -814,7 +814,7 @@ int ipmi_isol_main(struct ipmi_intf * intf, int argc, char ** argv)
 	/*
 	 * Activate
 	 */
- 	else if (!strncmp(argv[0], "activate", 8)) {
+ 	else if (!strcmp(argv[0], "activate")) {
 		ret = ipmi_isol_activate(intf);
 	}
 	

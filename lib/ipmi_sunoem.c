@@ -459,7 +459,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 	 * sunoem led/sbled get <id> [type]
 	 */
 
-	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 1 || strcmp(argv[0], "help") == 0) {
 		ipmi_sunoem_usage();
 		return (0);
 	}
@@ -471,7 +471,7 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 					"Unknown ledtype, will use data from the SDR oem field");
 	}
 
-	if (strncasecmp(argv[0], "all", 3) == 0) {
+	if (strcasecmp(argv[0], "all") == 0) {
 		/* do all generic sensors */
 		alist = ipmi_sdr_find_sdr_bytype(intf,
 		SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
@@ -657,7 +657,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 	 * sunoem led/sbled set <id> <mode> [type]
 	 */
 
-	if (argc < 2 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 2 || strcmp(argv[0], "help") == 0) {
 		ipmi_sunoem_usage();
 		return (0);
 	}
@@ -678,7 +678,7 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 					"Unknown ledtype, will use data from the SDR oem field");
 	}
 
-	if (strncasecmp(argv[0], "all", 3) == 0) {
+	if (strcasecmp(argv[0], "all") == 0) {
 		/* do all generic sensors */
 		alist = ipmi_sdr_find_sdr_bytype(intf,
 		SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
@@ -1096,10 +1096,8 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 		}
 		cli_rsp = (sunoem_cli_msg_t *) rsp->data;
 		if (cli_rsp->command_response || rsp->ccode) {
-			if (strncmp(cli_rsp->buf, SUNOEM_CLI_INVALID_VER_ERR,
-					sizeof(SUNOEM_CLI_INVALID_VER_ERR) - 1) == 0
-					|| strncmp(&(cli_rsp->buf[1]), SUNOEM_CLI_INVALID_VER_ERR,
-							sizeof(SUNOEM_CLI_INVALID_VER_ERR) - 1) == 0) {
+			if (strcmp(cli_rsp->buf, SUNOEM_CLI_INVALID_VER_ERR) == 0
+					|| strcmp(&(cli_rsp->buf[1]), SUNOEM_CLI_INVALID_VER_ERR) == 0) {
 				if (SunOemCliActingVersion == SUNOEM_CLI_VERSION) {
 					/* Server doesn't support version SUNOEM_CLI_VERSION
 					 Fall back to legacy version, and try again*/
@@ -1109,8 +1107,7 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 				/* Server doesn't support legacy version either */
 				lprintf(LOG_ERR, "Failed to connect: %s", cli_rsp->buf);
 				return (-1);
-			} else if (strncmp(cli_rsp->buf, SUNOEM_CLI_BUSY_ERR,
-					sizeof(SUNOEM_CLI_BUSY_ERR) - 1) == 0) {
+			} else if (strcmp(cli_rsp->buf, SUNOEM_CLI_BUSY_ERR) == 0) {
 				if (retries++ < SUNOEM_CLI_MAX_RETRY) {
 					lprintf(LOG_INFO, "Failed to connect: %s, retrying",
 							cli_rsp->buf);
@@ -1196,7 +1193,7 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 			} else if (arg_num >= argc) {
 				/* Last arg was sent. Set EOF */
 				cli_req.command_response = SUNOEM_CLI_CMD_EOF;
-			} else if (strncmp(argv[arg_num], "@wait=", 6) == 0) {
+			} else if (strcmp(argv[arg_num], "@wait=") == 0) {
 				/* This is a wait command */
 				char *s = &argv[arg_num][6];
 				delay = 0;
@@ -1799,7 +1796,7 @@ ipmi_sunoem_getval(struct ipmi_intf * intf, int argc, char *argv[])
 	}
 
 	if ((ipmi_sunoem_checkversion(intf, &supp_ver) < 0)
-			&& (!strncmp(argv[0], sp_path, strlen(sp_path)))) {
+			&& (!strcmp(argv[0], sp_path))) {
 		argv[0][1] = 'X'; /*replace SP by X to gain access to hidden properties*/
 		memmove(&argv[0][2], &argv[0][3], strlen(argv[0]) - 2);
 	}
