@@ -819,48 +819,48 @@ ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 static int
 ipmi_vita_get_cmd(int argc, char **argv)
 {
-	if (argc < 1 || !strncmp(argv[0], "help", 4)) {
+	if (argc < 1 || !strcmp(argv[0], "help")) {
 		return VITA_CMD_HELP;
 	}
 
 	/* Get VSO Properties */
-	if (!strncmp(argv[0], "properties", 10)) {
+	if (!strcmp(argv[0], "properties")) {
 		return VITA_CMD_PROPERTIES;
 	}
 
 	/* FRU Control command */
-	if (!strncmp(argv[0], "frucontrol", 10)) {
+	if (!strcmp(argv[0], "frucontrol")) {
 		return VITA_CMD_FRUCONTROL;
 	}
 
 	/* Get FRU Address Info command */
-	if (!strncmp(argv[0], "addrinfo", 8)) {
+	if (!strcmp(argv[0], "addrinfo")) {
 		return VITA_CMD_ADDRINFO;
 	}
 
 	/* Set FRU Activation (activate) command */
-	if (!strncmp(argv[0], "activate", 8)) {
+	if (!strcmp(argv[0], "activate")) {
 		return VITA_CMD_ACTIVATE;
 	}
 
 	/* Set FRU Activation (deactivate) command */
-	if (!strncmp(argv[0], "deactivate", 10)) {
+	if (!strcmp(argv[0], "deactivate")) {
 		return VITA_CMD_DEACTIVATE;
 	}
 
 	/* FRU State Policy Bits commands */
-	if (!strncmp(argv[0], "policy", 6)) {
+	if (!strcmp(argv[0], "policy")) {
 		if (argc < 2) {
 			return VITA_CMD_UNKNOWN;
 		}
 
 		/* Get FRU State Policy Bits command */
-		if (!strncmp(argv[1], "get", 3)) {
+		if (!strcmp(argv[1], "get")) {
 			return VITA_CMD_POLICY_GET;
 		}
 
 		/* Set FRU State Policy Bits command */
-		if (!strncmp(argv[1], "set", 3)) {
+		if (!strcmp(argv[1], "set")) {
 			return VITA_CMD_POLICY_SET;
 		}
 
@@ -869,28 +869,28 @@ ipmi_vita_get_cmd(int argc, char **argv)
 	}
 
 	/* FRU LED commands */
-	if (!strncmp(argv[0], "led", 3)) {
+	if (!strcmp(argv[0], "led")) {
 		if (argc < 2) {
 			return VITA_CMD_UNKNOWN;
 		}
 
 		/* FRU LED Get Properties */
-		if (!strncmp(argv[1], "prop", 4)) {
+		if (!strcmp(argv[1], "prop")) {
 			return VITA_CMD_LED_PROP;
 		}
 
 		/* FRU LED Get Capabilities */
-		if (!strncmp(argv[1], "cap", 3)) {
+		if (!strcmp(argv[1], "cap")) {
 			return VITA_CMD_LED_CAP;
 		}
 
 		/* FRU LED Get State */
-		if (!strncmp(argv[1], "get", 3)) {
+		if (!strcmp(argv[1], "get")) {
 			return VITA_CMD_LED_GET;
 		}
 
 		/* FRU LED Set State */
-		if (!strncmp(argv[1], "set", 3)) {
+		if (!strcmp(argv[1], "set")) {
 			return VITA_CMD_LED_SET;
 		}
 

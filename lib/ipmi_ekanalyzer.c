@@ -561,7 +561,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 			option = argv[argument_offset];
 			index ++;
 			argc--;
-		} else if ( strncmp(&argv[argument_offset][2], "=", 1) == 0) {
+		} else if ( strcmp(&argv[argument_offset][2], "=") == 0) {
 			/* since the command line must receive xx=filename,
 			 * so the position of "=" sign is 2
 			 */
@@ -2729,7 +2729,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		printf("%s: None\n", board_type);
 		goto out;
 	}
-	if (strncmp(board_type, "Custom", 6 ) != 0) {
+	if (strcmp(board_type, "Custom") != 0) {
 		unsigned char *data, *str;
 		unsigned int i = 0;
 		data = malloc(size_board + 1); /* Make room for type/length field */

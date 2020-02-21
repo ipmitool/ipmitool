@@ -269,25 +269,25 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 	current_arg = 0;
-	if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) {
+	if (argc == 0 || strcmp(argv[0], "help") == 0) {
 		usage();
 		return 0;
 	}
-	if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
+	if (0 ==strcmp(argv[current_arg], "lcd")) {
 		rc = ipmi_delloem_lcd_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "mac\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "mac") == 0) {
 		/* mac address*/
 		rc = ipmi_delloem_mac_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "lan\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "lan") == 0) {
 		/* lan address*/
 		rc = ipmi_delloem_lan_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "setled\0", 7) == 0) {
+	} else if (strcmp(argv[current_arg], "setled") == 0) {
 		/* SetLED support */
 		rc = ipmi_delloem_setled_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) {
+	} else if (strcmp(argv[current_arg], "powermonitor") == 0) {
 		/*Powermanagement report processing*/
 		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0) {
+	} else if (strcmp(argv[current_arg], "vFlash") == 0) {
 		/* vFlash Support */
 		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
 	} else {
@@ -368,15 +368,15 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (!IsLCDSupported()) {
 		lprintf(LOG_ERR, "lcd is not supported on this system.");
 		return -1;
-	} else if (strncmp(argv[current_arg], "info\0", 5) == 0) {
+	} else if (strcmp(argv[current_arg], "info") == 0) {
 		if (iDRAC_FLAG_ALL) {
 			rc = ipmi_lcd_get_info_wh(intf);
 		} else {
 			rc = ipmi_lcd_get_info(intf);
 		}
-	} else if (strncmp(argv[current_arg], "status\0", 7) == 0) {
+	} else if (strcmp(argv[current_arg], "status") == 0) {
 		rc = ipmi_lcd_get_status(intf);
-	} else if (strncmp(argv[current_arg], "set\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "set") == 0) {
 		/* ipmitool delloem lcd set*/
 		uint8_t line_number = 0;
 		current_arg++;
@@ -384,7 +384,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			ipmi_lcd_usage();
 			return -1;
 		}
-		if (strncmp(argv[current_arg], "line\0", 5) == 0) {
+		if (strcmp(argv[current_arg], "line") == 0) {
 			current_arg++;
 			if (argc <= current_arg) {
 				usage();
@@ -402,7 +402,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return -1;
 			}
 		}
-		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)
+		if ((strcmp(argv[current_arg], "mode") == 0)
 				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
@@ -413,13 +413,13 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "none\0", 5) == 0) {
+			if (strcmp(argv[current_arg], "none") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_NONE, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "modelname\0", 10) == 0) {
+			} else if (strcmp(argv[current_arg], "modelname") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "userdefined\0", 12) == 0) {
+			} else if (strcmp(argv[current_arg], "userdefined") == 0) {
 				current_arg++;
 				if (argc <= current_arg) {
 					ipmi_lcd_usage();
@@ -427,38 +427,38 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
 						0xFF, 0XFF, argv[current_arg]);
-			} else if (strncmp(argv[current_arg], "ipv4address\0", 12) == 0) {
+			} else if (strcmp(argv[current_arg], "ipv4address") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV4ADRESS,
 						0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "macaddress\0", 11) == 0) {
+			} else if (strcmp(argv[current_arg], "macaddress") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_IDRAC_MAC_ADDRESS,
 							0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "systemname\0", 11) == 0) {
+			} else if (strcmp(argv[current_arg], "systemname") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_OS_SYSTEM_NAME, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "servicetag\0", 11) == 0) {
+			} else if (strcmp(argv[current_arg], "servicetag") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SERVICE_TAG, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "ipv6address\0", 12) == 0) {
+			} else if (strcmp(argv[current_arg], "ipv6address") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV6ADRESS,
 						0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "ambienttemp\0", 12) == 0) {
+			} else if (strcmp(argv[current_arg], "ambienttemp") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_AMBEINT_TEMP, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "systemwatt\0", 11) == 0) {
+			} else if (strcmp(argv[current_arg], "systemwatt") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SYSTEM_WATTS, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "assettag\0", 9) == 0) {
+			} else if (strcmp(argv[current_arg], "assettag") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_ASSET_TAG, 0xFF,
 						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
+			} else if (strcmp(argv[current_arg], "help") == 0) {
 				ipmi_lcd_usage();
 			} else {
 				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
 						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13) == 0)
+		} else if ((strcmp(argv[current_arg], "lcdqualifier") == 0)
 				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
@@ -469,22 +469,22 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
+			if (strcmp(argv[current_arg], "watt") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x00, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "btuphr\0",7) == 0) {
+			} else if (strcmp(argv[current_arg], "btuphr") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x01, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "celsius\0", 8) == 0) {
+			} else if (strcmp(argv[current_arg], "celsius") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x02, 0xFF, NULL);
-			} else if (strncmp(argv[current_arg], "fahrenheit", 11) == 0) {
+			} else if (strcmp(argv[current_arg], "fahrenheit") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x03, 0xFF, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
+			} else if (strcmp(argv[current_arg], "help") == 0) {
 				ipmi_lcd_usage();
 			} else {
 				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
 						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "errordisplay\0", 13) == 0)
+		} else if ((strcmp(argv[current_arg], "errordisplay") == 0)
 				&& (iDRAC_FLAG_ALL)) {
 			current_arg++;
 			if (argc <= current_arg) {
@@ -495,26 +495,26 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				ipmi_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "sel\0", 4) == 0) {
+			if (strcmp(argv[current_arg], "sel") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
 						IPMI_DELL_LCD_ERROR_DISP_SEL, NULL);
-			} else if (strncmp(argv[current_arg], "simple\0", 7) == 0) {
+			} else if (strcmp(argv[current_arg], "simple") == 0) {
 				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
 						IPMI_DELL_LCD_ERROR_DISP_VERBOSE, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
+			} else if (strcmp(argv[current_arg], "help") == 0) {
 				ipmi_lcd_usage();
 			} else {
 				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
 						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "none\0", 5) == 0)
+		} else if ((strcmp(argv[current_arg], "none") == 0)
 				&& (iDRAC_FLAG==0)) {
 			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_NONE, NULL);
-		} else if ((strncmp(argv[current_arg], "default\0", 8) == 0)
+		} else if ((strcmp(argv[current_arg], "default") == 0)
 				&& (iDRAC_FLAG==0)) {
 			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, NULL);
-		} else if ((strncmp(argv[current_arg], "custom\0", 7) == 0)
+		} else if ((strcmp(argv[current_arg], "custom") == 0)
 				&& (iDRAC_FLAG==0)) {
 			current_arg++;
 			if (argc <= current_arg) {
@@ -523,43 +523,43 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
 					argv[current_arg]);
-		} else if (strncmp(argv[current_arg], "vkvm\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "vkvm") == 0) {
 			current_arg++;
 			if (argc <= current_arg) {
 				ipmi_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "active\0", 7) == 0) {
+			if (strcmp(argv[current_arg], "active") == 0) {
 				rc = ipmi_lcd_set_kvm(intf, 1);
-			} else if (strncmp(argv[current_arg], "inactive\0", 9) == 0) {
+			} else if (strcmp(argv[current_arg], "inactive") == 0) {
 				rc = ipmi_lcd_set_kvm(intf, 0);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
+			} else if (strcmp(argv[current_arg], "help") == 0) {
 				ipmi_lcd_usage();
 			} else {
 				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
 						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
-		} else if (strncmp(argv[current_arg], "frontpanelaccess\0", 17) == 0) {
+		} else if (strcmp(argv[current_arg], "frontpanelaccess") == 0) {
 			current_arg++;
 			if (argc <= current_arg) {
 				ipmi_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "viewandmodify\0", 14) == 0) {
+			if (strcmp(argv[current_arg], "viewandmodify") == 0) {
 				rc = ipmi_lcd_set_lock(intf, 0);
-			} else if (strncmp(argv[current_arg], "viewonly\0", 9)==0) {
+			} else if (strcmp(argv[current_arg], "viewonly")==0) {
 				rc =  ipmi_lcd_set_lock(intf, 1);
-			} else if (strncmp(argv[current_arg], "disabled\0", 9)==0) {
+			} else if (strcmp(argv[current_arg], "disabled")==0) {
 				rc =  ipmi_lcd_set_lock(intf, 2);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
+			} else if (strcmp(argv[current_arg], "help") == 0) {
 				ipmi_lcd_usage();
 			} else {
 				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
 						argv[current_arg]);
 				ipmi_lcd_usage();
 			}
-		} else if( (strncmp(argv[current_arg], "help\0", 5) == 0)
+		} else if( (strcmp(argv[current_arg], "help") == 0)
 				&& (iDRAC_FLAG==0)) {
 			ipmi_lcd_usage();
 		} else {
@@ -1516,9 +1516,9 @@ ipmi_delloem_mac_main(struct ipmi_intf * intf, int argc, char ** argv)
 	ipmi_idracvalidator_command(intf);
 	if (argc == 1) {
 		rc = ipmi_macinfo(intf, 0xff);
-	} else if (strncmp(argv[current_arg], "list\0", 5) == 0) {
+	} else if (strcmp(argv[current_arg], "list") == 0) {
 		rc = ipmi_macinfo(intf, 0xff);
-	} else if (strncmp(argv[current_arg], "get\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "get") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			ipmi_mac_usage();
@@ -1964,7 +1964,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 	if (!IsLANSupported()) {
 		lprintf(LOG_ERR, "lan is not supported on this system.");
 		return -1;
-	} else if (strncmp(argv[current_arg], "set\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "set") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			ipmi_lan_usage();
@@ -2000,12 +2000,12 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
 		}
 		return 0;
-	} else if (strncmp(argv[current_arg], "get\0", 4) == 0) {
+	} else if (strcmp(argv[current_arg], "get") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			rc = ipmi_lan_get_nic_selection(intf);
 			return rc;
-		} else if (strncmp(argv[current_arg], "active\0", 7) == 0) {
+		} else if (strcmp(argv[current_arg], "active") == 0) {
 			rc = ipmi_lan_get_active_nic(intf);
 			return rc;
 		} else {
@@ -2056,13 +2056,13 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	nic_set[0] = rsp->data[0];
 	nic_set[1] = rsp->data[1];
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "dedicated\0", 10) == 0) {
+			&& strcmp(argv[current_arg], "dedicated") == 0) {
 		nic_set[0] = 1;
 		nic_set[1] = 0;
 		return 0;
 	}
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "shared\0", 7) == 0) {
+			&& strcmp(argv[current_arg], "shared") == 0) {
 		/* placeholder */
 	} else {
 		return INVALID;
@@ -2070,7 +2070,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "with\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "with") == 0) {
 		/* placeholder */
 	} else {
 		return INVALID;
@@ -2078,14 +2078,14 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "failover\0", 9) == 0) {
+			&& strcmp(argv[current_arg], "failover") == 0) {
 		failover = 1;
 	}
 	if (failover) {
 		current_arg++;
 	}
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom1\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "lom1") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2104,7 +2104,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		}
 		return 0;
 	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom2\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "lom2") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2123,7 +2123,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		}
 		return 0;
 	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom3\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "lom3") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2142,7 +2142,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		}
 		return 0;
 	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom4\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "lom4") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2161,7 +2161,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		}
 		return 0;
 	} else if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "none\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "none") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type) ) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2173,7 +2173,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		}
 		return 0;
 	} else if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "all\0", 4) == 0) {
+			&& strcmp(argv[current_arg], "all") == 0) {
 		/* placeholder */
 	} else {
 		return INVALID;
@@ -2181,7 +2181,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 
 	current_arg++;
 	if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "loms\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "loms") == 0) {
 		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
 			return INVAILD_SHARED_MODE;
 		}
@@ -2198,11 +2198,11 @@ static int
 get_nic_selection_mode(int current_arg, char ** argv)
 {
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "dedicated\0", 10) == 0) {
+			&& strcmp(argv[current_arg], "dedicated") == 0) {
 		return DEDICATED;
 	}
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "shared\0", 7) == 0) {
+			&& strcmp(argv[current_arg], "shared") == 0) {
 		if (!argv[current_arg+1]) {
 			return SHARED;
 		}
@@ -2210,7 +2210,7 @@ get_nic_selection_mode(int current_arg, char ** argv)
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "with\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "with") == 0) {
 		/* place holder */
 	} else {
 		return INVALID;
@@ -2218,7 +2218,7 @@ get_nic_selection_mode(int current_arg, char ** argv)
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "failover\0", 9) == 0) {
+			&& strcmp(argv[current_arg], "failover\0") == 0) {
 		/* place holder */
 	} else {
 		return INVALID;
@@ -2226,10 +2226,10 @@ get_nic_selection_mode(int current_arg, char ** argv)
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom2\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "lom2") == 0) {
 		return SHARED_WITH_FAILOVER_LOM2;
 	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "all\0", 4) == 0) {
+			&& strcmp(argv[current_arg], "all") == 0) {
 		/* place holder */
 	} else {
 		return INVALID;
@@ -2237,7 +2237,7 @@ get_nic_selection_mode(int current_arg, char ** argv)
 
 	current_arg++;
 	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "loms\0", 5) == 0) {
+			&& strcmp(argv[current_arg], "loms") == 0) {
 		return SHARED_WITH_FAILOVER_ALL_LOMS;
 	}
 	return INVALID;
@@ -2504,58 +2504,58 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 	ipmi_idracvalidator_command(intf);
 	if (argc == 1) {
 		rc = ipmi_powermgmt(intf);
-	} else if (strncmp(argv[current_arg], "status\0", 7) == 0) {
+	} else if (strcmp(argv[current_arg], "status") == 0) {
 		rc = ipmi_powermgmt(intf);
-	} else if (strncmp(argv[current_arg], "clear\0", 6) == 0) {
+	} else if (strcmp(argv[current_arg], "clear") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			ipmi_powermonitor_usage();
 			return -1;
-		} else if (strncmp(argv[current_arg], "peakpower\0", 10) == 0) {
+		} else if (strcmp(argv[current_arg], "peakpower") == 0) {
 			rc = ipmi_powermgmt_clear(intf, 1);
-		} else if (strncmp(argv[current_arg], "cumulativepower\0", 16) == 0) {
+		} else if (strcmp(argv[current_arg], "cumulativepower") == 0) {
 			rc = ipmi_powermgmt_clear(intf, 0);
 		} else {
 			ipmi_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "powerconsumption\0", 17) == 0) {
+	} else if (strcmp(argv[current_arg], "powerconsumption") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			rc = ipmi_print_get_power_consmpt_data(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "watt") == 0) {
 			rc = ipmi_print_get_power_consmpt_data(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
+		} else if (strcmp(argv[current_arg], "btuphr") == 0) {
 			rc = ipmi_print_get_power_consmpt_data(intf, btuphr);
 		} else {
 			ipmi_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "powerconsumptionhistory\0", 23) == 0) {
+	} else if (strcmp(argv[current_arg], "powerconsumptionhistory") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			rc = ipmi_print_power_consmpt_history(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "watt") == 0) {
 			rc = ipmi_print_power_consmpt_history(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
+		} else if (strcmp(argv[current_arg], "btuphr") == 0) {
 			rc = ipmi_print_power_consmpt_history(intf, btuphr);
 		} else {
 			ipmi_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "getpowerbudget\0", 15) == 0) {
+	} else if (strcmp(argv[current_arg], "getpowerbudget") == 0) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			rc=ipmi_print_power_cap(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "watt") == 0) {
 			rc = ipmi_print_power_cap(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
+		} else if (strcmp(argv[current_arg], "btuphr") == 0) {
 			rc = ipmi_print_power_cap(intf, btuphr);
 		} else {
 			ipmi_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "setpowerbudget\0", 15) == 0) {
+	} else if (strcmp(argv[current_arg], "setpowerbudget") == 0) {
 		int val;
 		current_arg++;
 		if (!argv[current_arg]) {
@@ -2575,19 +2575,19 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 		current_arg++;
 		if (!argv[current_arg]) {
 			ipmi_powermonitor_usage();
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "watt") == 0) {
 			rc = ipmi_set_power_cap(intf,watt,val);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
+		} else if (strcmp(argv[current_arg], "btuphr") == 0) {
 			rc = ipmi_set_power_cap(intf, btuphr,val);
-		} else if (strncmp(argv[current_arg], "percent\0", 8) == 0) {
+		} else if (strcmp(argv[current_arg], "percent") == 0) {
 			rc = ipmi_set_power_cap(intf,percent,val);
 		} else {
 			ipmi_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "enablepowercap\0", 15) == 0) {
+	} else if (strcmp(argv[current_arg], "enablepowercap") == 0) {
 		ipmi_set_power_capstatus_command(intf,1);
-	} else if (strncmp(argv[current_arg], "disablepowercap\0", 16) == 0) {
+	} else if (strcmp(argv[current_arg], "disablepowercap") == 0) {
 		ipmi_set_power_capstatus_command(intf,0);
 	} else {
 		ipmi_powermonitor_usage();
@@ -3862,7 +3862,7 @@ static int
 ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** argv)
 {
 	int rc;
-	if (strncmp(intf->name,"wmi\0",4) && strncmp(intf->name, "open\0",5)) {
+	if (strcmp(intf->name,"wmi") && strcmp(intf->name, "open")) {
 		lprintf(LOG_ERR,
 				"vFlash support is enabled only for wmi and open interface.");
 		lprintf(LOG_ERR, "Its not enabled for lan and lanplus interface.");
@@ -3874,12 +3874,12 @@ ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** ar
 		return 0;
 	}
 	ipmi_idracvalidator_command(intf);
-	if (!strncmp(argv[current_arg], "info\0", 5)) {
+	if (!strcmp(argv[current_arg], "info")) {
 		current_arg++;
 		if (!argv[current_arg]) {
 			ipmi_vFlash_usage();
 			return -1;
-		} else if (strncmp(argv[current_arg], "Card\0", 5) == 0) {
+		} else if (strcmp(argv[current_arg], "Card") == 0) {
 			current_arg++;
 			if (argv[current_arg]) {
 				ipmi_vFlash_usage();

@@ -167,8 +167,8 @@ void ipmi_intf_print(struct ipmi_intf_support * intflist)
 		if (intflist) {
 			found = 0;
 			for (sup=intflist; sup->name; sup++) {
-				if (strncmp(sup->name, (*intf)->name, strlen(sup->name)) == 0 &&
-				    strncmp(sup->name, (*intf)->name, strlen((*intf)->name)) == 0 &&
+				if (strcmp(sup->name, (*intf)->name) == 0 &&
+				    strcmp(sup->name, (*intf)->name) == 0 &&
 				    sup->supported == 1)
 					found = 1;
 			}
@@ -211,7 +211,7 @@ struct ipmi_intf * ipmi_intf_load(char * name)
 	     intf++)
 	{
 		i = *intf;
-		if (strncmp(name, i->name, strlen(name)) == 0) {
+		if (strcmp(name, i->name) == 0) {
 			if (i->setup && (i->setup(i) < 0)) {
 				lprintf(LOG_ERR, "Unable to setup "
 					"interface %s", name);

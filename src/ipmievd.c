@@ -192,7 +192,7 @@ ipmi_event_intf_load(char * name)
 	     intf++)
 	{
 		i = *intf;
-		if (strncmp(name, i->name, strlen(name)) == 0) {
+		if (strcmp(name, i->name) == 0) {
 			return i;
 		}
 	}
@@ -705,32 +705,32 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	sprintf(pidfile, "%s%d", DEFAULT_PIDFILE, eintf->intf->devnum);
 
 	for (i = 0; i < argc; i++) {
-		if (strncasecmp(argv[i], "help", 4) == 0) {
+		if (strcasecmp(argv[i], "help") == 0) {
 			ipmievd_usage();
 			return 0;
 		}
-		if (strncasecmp(argv[i], "daemon", 6) == 0) {
+		if (strcasecmp(argv[i], "daemon") == 0) {
 			daemon = 1;
 		}
-		else if (strncasecmp(argv[i], "nodaemon", 8) == 0) {
+		else if (strcasecmp(argv[i], "nodaemon") == 0) {
 			daemon = 0;
 		}
-		else if (strncasecmp(argv[i], "daemon=", 7) == 0) {
-			if (strncasecmp(argv[i]+7, "on", 2) == 0 ||
-			    strncasecmp(argv[i]+7, "yes", 3) == 0)
+		else if (strcasecmp(argv[i], "daemon=") == 0) {
+			if (strcasecmp(argv[i]+7, "on") == 0 ||
+			    strcasecmp(argv[i]+7, "yes") == 0)
 				daemon = 1;
-			else if (strncasecmp(argv[i]+7, "off", 3) == 0 ||
-				 strncasecmp(argv[i]+7, "no", 2) == 0)
+			else if (strcasecmp(argv[i]+7, "off") == 0 ||
+				 strcasecmp(argv[i]+7, "no") == 0)
 				daemon = 0;
 		}
-		else if (strncasecmp(argv[i], "timeout=", 8) == 0) {
+		else if (strcasecmp(argv[i], "timeout=") == 0) {
 			if ( (str2int(argv[i]+8, &selwatch_timeout) != 0) || 
 					selwatch_timeout < 0) {
 				lprintf(LOG_ERR, "Invalid input given or out of range for time-out.");
 				return (-1);
 			}
 		}
-		else if (strncasecmp(argv[i], "pidfile=", 8) == 0) {
+		else if (strcasecmp(argv[i], "pidfile=") == 0) {
 			memset(pidfile, 0, 64);
 			strncpy(pidfile, argv[i]+8,
 				__min(strlen((const char *)(argv[i]+8)), 63));
@@ -845,7 +845,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_event_intf * eintf;
 
 	/* only one interface works for this */
-	if (strncmp(intf->name, "open", 4) != 0) {
+	if (strcmp(intf->name, "open") != 0) {
 		lprintf(LOG_ERR, "Invalid Interface for OpenIPMI Event Handler: %s", intf->name);
 		return -1;
 	}

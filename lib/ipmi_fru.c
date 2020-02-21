@@ -1631,7 +1631,7 @@ static void ipmi_fru_oemkontron_get(int argc,
 	if(!badParams){
 		/* the 'OEM' field is already checked in caller */
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
-			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
+			if(strcmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS])){
 				printf("usage: fru get <id> <oem>\n");
 				badParams = true;
 				return;
@@ -1749,7 +1749,7 @@ ipmi_fru_oemkontron_edit( int argc, char ** argv,uint8_t * fru_data,
 	if(!badParams){
 		/* the 'OEM' field is already checked in caller */
 		if( argc > OEM_KONTRON_SUBCOMMAND_ARG_POS ){
-			if(strncmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS],3)){
+			if(strcmp("oem", argv[OEM_KONTRON_SUBCOMMAND_ARG_POS])){
 				printf("usage: fru edit <id> <oem> <args...>\n");
 				badParams = true;
 				return hasChanged;
@@ -3515,7 +3515,7 @@ ipmi_fru_edit_multirec(struct ipmi_intf * intf, uint8_t id ,
 				if( argc <=2 ) {
 					suppliedIana =  IPMI_OEM_PICMG;
 				}  else {
-					if( !strncmp( argv[2] , "oem" , 3 )) {
+					if( !strcmp( argv[2] , "oem")) {
 						/* Expect IANA number next */
 						if( argc <= 3 ) {
 							lprintf(LOG_ERR, "oem iana <record> <format> [<args>]");
@@ -3713,7 +3713,7 @@ ipmi_fru_get_multirec(struct ipmi_intf * intf, uint8_t id ,
 
 				uint32_t suppliedIana = 0 ;
 				/* Now makes sure this is really PICMG record */
-				if( !strncmp( argv[2] , "oem" , 3 )) {
+				if( !strcmp( argv[2] , "oem")) {
 					/* Expect IANA number next */
 					if( argc <= 3 ) {
 						lprintf(LOG_ERR, "oem iana <record> <format>");
@@ -4424,12 +4424,12 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc < 1) {
 		rc = ipmi_fru_print_all(intf);
 	}
-	else if (strncmp(argv[0], "help", 4) == 0) {
+	else if (strcmp(argv[0], "help") == 0) {
 		ipmi_fru_help();
 		return 0;
 	}
-	else if (strncmp(argv[0], "print", 5) == 0 ||
-		strncmp(argv[0], "list", 4) == 0) {
+	else if (strcmp(argv[0], "print") == 0 ||
+		strcmp(argv[0], "list") == 0) {
 		if (argc > 1) {
 			if (strcmp(argv[1], "help") == 0) {
 				lprintf(LOG_NOTICE, "fru print [fru id] - print information about FRU(s)");
@@ -4444,7 +4444,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_fru_print_all(intf);
 		}
 	}
-	else if (!strncmp(argv[0], "read", 5)) {
+	else if (!strcmp(argv[0], "read")) {
 		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_read_help();
 			return 0;
@@ -4468,7 +4468,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* TODO - rc is missing */
 		ipmi_fru_read_to_bin(intf, argv[2], fru_id);
 	}
-	else if (!strncmp(argv[0], "write", 5)) {
+	else if (!strcmp(argv[0], "write")) {
 		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_write_help();
 			return 0;
@@ -4492,7 +4492,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		/* TODO - rc is missing */
 		ipmi_fru_write_from_bin(intf, argv[2], fru_id);
 	}
-	else if (!strncmp(argv[0], "upgEkey", 7)) {
+	else if (!strcmp(argv[0], "upgEkey")) {
 		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_upgekey_help();
 			return 0;
@@ -4511,27 +4511,27 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		rc = ipmi_fru_upg_ekeying(intf, argv[2], fru_id);
 	}
-	else if (!strncmp(argv[0], "internaluse", 11)) {
+	else if (!strcmp(argv[0], "internaluse")) {
 		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_internaluse_help();
 			return 0;
 		}
 
-		if ( (argc >= 3) && (!strncmp(argv[2], "info", 4)) ) {
+		if ( (argc >= 3) && (!strcmp(argv[2], "info")) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return -1;
 
 			rc = ipmi_fru_info_internal_use(intf, fru_id);
 		}
-		else if ( (argc >= 3) && (!strncmp(argv[2], "print", 5)) ) {
+		else if ( (argc >= 3) && (!strcmp(argv[2], "print")) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return -1;
 
 			rc = ipmi_fru_read_internal_use(intf, fru_id, NULL);
 		}
-		else if ( (argc >= 4) && (!strncmp(argv[2], "read", 4)) ) {
+		else if ( (argc >= 4) && (!strcmp(argv[2], "read")) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return -1;
@@ -4545,7 +4545,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 			rc = ipmi_fru_read_internal_use(intf, fru_id, argv[3]);
 		}
-		else if ( (argc >= 4) && (!strncmp(argv[2], "write", 5)) ) {
+		else if ( (argc >= 4) && (!strcmp(argv[2], "write")) ) {
 
 			if (is_fru_id(argv[1], &fru_id) != 0)
 				return -1;
@@ -4565,7 +4565,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 	}
-	else if (!strncmp(argv[0], "edit", 4)) {
+	else if (!strcmp(argv[0], "edit")) {
 		if (argc > 1 && strcmp(argv[1], "help") == 0) {
 			ipmi_fru_edit_help();
 			return 0;
@@ -4587,7 +4587,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		if (argc >= 3) {
-			if (!strncmp(argv[2], "field", 5)) {
+			if (!strcmp(argv[2], "field")) {
 				if (argc != 6) {
 					lprintf(LOG_ERR, "Not enough parameters given.");
 					ipmi_fru_edit_help();
@@ -4595,7 +4595,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 				}
 				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], *argv[4],
 						(char *) argv[5]);
-			} else if (!strncmp(argv[2], "oem", 3)) {
+			} else if (!strcmp(argv[2], "oem")) {
 				rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
 			} else {
 				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
@@ -4606,8 +4606,8 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
 		}
 	}
-	else if (!strncmp(argv[0], "get", 4)) {
-		if (argc > 1 && (strncmp(argv[1], "help", 4) == 0)) {
+	else if (!strcmp(argv[0], "get")) {
+		if (argc > 1 && (strcmp(argv[1], "help") == 0)) {
 			ipmi_fru_get_help();
 			return 0;
 		} else if (argc < 2) {
@@ -4628,7 +4628,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 
 		if (argc >= 3) {
-			if (!strncmp(argv[2], "oem", 3)) {
+			if (!strcmp(argv[2], "oem")) {
 				rc = ipmi_fru_get_multirec(intf, fru_id, argc, argv);
 			} else {
 				lprintf(LOG_ERR, "Invalid command: %s", argv[2]);
