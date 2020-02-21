@@ -232,7 +232,7 @@ ipmi_event_find_offset(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t even
 	for (evt = ipmi_get_first_event_sensor_type(intf, sensor_type, event_type);
 			evt; evt = ipmi_get_next_event_sensor_type(evt)) {
 		if (evt->desc &&
-			strncasecmp(desc, evt->desc, __maxlen(desc, evt->desc)) == 0) {
+			strcasecmp(desc, evt->desc) == 0) {
 			return evt->offset;
 		}
 	}
@@ -270,9 +270,9 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 	if (!evdir)
 		emsg.event_dir = EVENT_DIR_ASSERT;
-	else if (strncasecmp(evdir, "assert", 6) == 0)
+	else if (strcmp(evdir, "assert") == 0)
 		emsg.event_dir = EVENT_DIR_ASSERT;
-	else if (strncasecmp(evdir, "deassert", 8) == 0)
+	else if (strcmp(evdir, "deassert") == 0)
 		emsg.event_dir = EVENT_DIR_DEASSERT;
 	else {
 		lprintf(LOG_ERR, "Invalid event direction %s.  Must be 'assert' or 'deassert'", evdir);
@@ -318,7 +318,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		int hilo = 0;
 		off = 1;
 
-		if (!state || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strcmp(state, "list") == 0) {
 			printf("Sensor States:\n");
 			printf("  lnr : Lower Non-Recoverable \n");
 			printf("  lcr : Lower Critical\n");
@@ -329,12 +329,12 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 			return -1;
 		}
 
-		if (0 != strncasecmp(state, "lnr", 3) &&
-		    0 != strncasecmp(state, "lcr", 3) &&
-		    0 != strncasecmp(state, "lnc", 3) &&
-		    0 != strncasecmp(state, "unc", 3) &&
-		    0 != strncasecmp(state, "ucr", 3) &&
-		    0 != strncasecmp(state, "unr", 3))
+		if (0 != strcmp(state, "lnr") &&
+		    0 != strcmp(state, "lcr") &&
+		    0 != strcmp(state, "lnc") &&
+		    0 != strcmp(state, "unc") &&
+		    0 != strcmp(state, "ucr") &&
+		    0 != strcmp(state, "unr"))
 		{
 			lprintf(LOG_ERR, "Invalid threshold identifier %s", state);
 			return -1;
@@ -415,7 +415,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (!state || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strcasecmp(state, "list") == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			printf("Sensor State Shortcuts:\n");
 			for (x = 0; x < sizeof(digi_on)/sizeof(*digi_on); x++) {
@@ -426,12 +426,12 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 		off = 0;
 		for (x = 0; x < sizeof(digi_on)/sizeof(*digi_on); x++) {
-			if (strncasecmp(state, digi_on[x], strlen(digi_on[x])) == 0) {
+			if (strcasecmp(state, digi_on[x]) == 0) {
 				emsg.event_data[0] = 1;
 				off = 1;
 				break;
 			}
-			else if (strncasecmp(state, digi_off[x], strlen(digi_off[x])) == 0) {
+			else if (strcasecmp(state, digi_off[x]) == 0) {
 				emsg.event_data[0] = 0;
 				off = 1;
 				break;
@@ -455,7 +455,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (!state || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strcasecmp(state, "list") == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
@@ -475,7 +475,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		/* 
 		 * print list of available states for this sensor
 		 */
-		if (!state || strncasecmp(state, "list", 4) == 0) {
+		if (!state || strcasecmp(state, "list") == 0) {
 			print_sensor_states(intf, emsg.sensor_type, emsg.event_type);
 			return 0;
 		}
@@ -596,11 +596,11 @@ ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 
-	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc == 0 || strcmp(argv[0], "help") == 0) {
 		ipmi_event_usage();
 		return 0;
 	}
-	if (strncmp(argv[0], "file", 4) == 0) {
+	if (strcmp(argv[0], "file") == 0) {
 		if (argc < 2) {
 			ipmi_event_usage();
 			return 0;

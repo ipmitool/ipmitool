@@ -1074,7 +1074,7 @@ ipmi_sol_set_param(struct ipmi_intf * intf,
 		return -1;
 	}
 
-	if (!(!strncmp(param, "set-in-progress", 15) && !strncmp(value, "commit-write", 12)) &&
+	if (!(!strcmp(param, "set-in-progress") && !strcmp(value, "commit-write")) &&
 	    rsp->ccode) {
 		switch (rsp->ccode) {
 		case 0x80:
@@ -1705,7 +1705,7 @@ ipmi_sol_activate(struct ipmi_intf * intf, int looptest, int interval,
 	 * This command is only available over RMCP+ (the lanplus
 	 * interface).
 	 */
-	if (strncmp(intf->name, "lanplus", 7) != 0)
+	if (strcmp(intf->name, "lanplus") != 0)
 	{
 		lprintf(LOG_ERR, "Error: This command is only available over the "
 			   "lanplus interface");
@@ -1908,10 +1908,10 @@ int
 ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
-	if (!argc || !strncmp(argv[0], "help", 4)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		/* Help */
 		print_sol_usage();
-	} else if (!strncmp(argv[0], "info", 4)) {
+	} else if (!strcmp(argv[0], "info")) {
 		/* Info */
 		uint8_t channel;
 		if (argc == 1) {
@@ -1926,7 +1926,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 		retval = ipmi_print_sol_info(intf, channel);
-	} else if (!strncmp(argv[0], "payload", 7)) {
+	} else if (!strcmp(argv[0], "payload")) {
 		/* Payload enable or disable */
 		uint8_t channel = 0xe;
 		uint8_t userid = 1;
@@ -1945,25 +1945,25 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 				return (-1);
 			}
 		}
-		if (!strncmp(argv[1], "enable", 6)) {
+		if (!strcmp(argv[1], "enable")) {
 			enable = 1;
-		} else if (!strncmp(argv[1], "disable", 7)) {
+		} else if (!strcmp(argv[1], "disable")) {
 			enable = 0;
-		} else if (!strncmp(argv[1], "status", 6)) {
+		} else if (!strcmp(argv[1], "status")) {
 			return ipmi_sol_payload_access_status(intf, channel, userid);
 		} else {
 			print_sol_usage();
 			return -1;
 		}
 		retval = ipmi_sol_payload_access(intf, channel, userid, enable);
-	} else if (!strncmp(argv[0], "set", 3)) {
+	} else if (!strcmp(argv[0], "set")) {
 		/* Set a parameter value */
 		uint8_t channel = 0xe;
 		uint8_t guard = 1;
 		if (argc == 3) {
 			channel = 0xe;
 		} else if (argc == 4) {
-			if (!strncmp(argv[3], "noguard", 7)) {
+			if (!strcmp(argv[3], "noguard")) {
 				guard = 0;
 			} else {
 				if (is_ipmi_channel_num(argv[3], &channel) != 0) {
@@ -1974,7 +1974,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			if (is_ipmi_channel_num(argv[3], &channel) != 0) {
 				return (-1);
 			}
-			if (!strncmp(argv[4], "noguard", 7)) {
+			if (!strcmp(argv[4], "noguard")) {
 				guard = 0;
 			}
 		} else {
@@ -1982,16 +1982,16 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 		retval = ipmi_sol_set_param(intf, channel, argv[1], argv[2], guard);
-	} else if (!strncmp(argv[0], "activate", 8)) {
+	} else if (!strcmp(argv[0], "activate")) {
 		/* Activate */
 		int i;
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
-			if (!strncmp(argv[i], "usesolkeepalive", 15)) {
+			if (!strcmp(argv[i], "usesolkeepalive")) {
 				_use_sol_for_keepalive = 1;
-			} else if (!strncmp(argv[i], "nokeepalive", 11)) {
+			} else if (!strcmp(argv[i], "nokeepalive")) {
 				_disable_keepalive = 1;
-			} else if (!strncmp(argv[i], "instance=", 9)) {
+			} else if (!strcmp(argv[i], "instance=")) {
 				if (str2uchar(argv[i] + 9, &instance) != 0) {
 					lprintf(LOG_ERR, "Given instance '%s' is invalid.", argv[i] + 9);
 					print_sol_usage();
@@ -2003,12 +2003,12 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		}
 		retval = ipmi_sol_activate(intf, 0, 0, instance);
-	} else if (!strncmp(argv[0], "deactivate", 10)) {
+	} else if (!strcmp(argv[0], "deactivate")) {
 		/* Deactivate */
 		int i;
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
-			if (!strncmp(argv[i], "instance=", 9)) {
+			if (!strcmp(argv[i], "instance=")) {
 				if (str2uchar(argv[i] + 9, &instance) != 0) {
 					lprintf(LOG_ERR,
 							"Given instance '%s' is invalid.",
@@ -2022,7 +2022,7 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 		}
 		retval = ipmi_sol_deactivate(intf, instance);
-	} else if (!strncmp(argv[0], "looptest", 8)) {
+	} else if (!strcmp(argv[0], "looptest")) {
 		/* SOL loop test: Activate and then Deactivate */
 		int cnt = 200;
 		int interval = 100; /* Unit is: ms */
