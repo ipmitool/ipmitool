@@ -99,7 +99,7 @@ int hpm2_get_capabilities(struct ipmi_intf * intf,
 		lprintf(LOG_DEBUG, "IPM Controller is not HPM.2 compatible");
 		return rsp->ccode;
 	} else if (rsp->ccode) {
-		lprintf(LOG_NOTICE, "Get HPM.x Capabilities request failed,"
+		lprintf(LOG_DEBUG, "Get HPM.x Capabilities request failed,"
 				" compcode = %x", rsp->ccode);
 		return rsp->ccode;
 	}
