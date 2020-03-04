@@ -40,8 +40,10 @@
 #include <ipmitool/ipmi_sdr.h>
 
 #define OEM_QCT_NETFN 0x36
-#define OEM_QCT_GET_INFO 0x65
+#define OEM_QCT_NETFN_30 0x30
 
+#define OEM_QCT_GET_INFO 0x65
+#define OEM_QCT_GET_PLATFORM 0x7f // only for grantley platform
 typedef enum
 {
 	OEM_QCT_PLATFORM_UNKNOWN = 0,
