@@ -240,7 +240,7 @@ static int
 ipmi_lan_send_packet(struct ipmi_intf * intf, uint8_t * data, int data_len)
 {
 	if (verbose > 2)
-		printbuf(data, data_len, "send_packet");
+		print_buf(data, data_len, "send_packet");
 
 	return send(intf->fd, data, data_len, 0);
 }
@@ -305,7 +305,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	rsp.data_len = ret;
 
 	if (verbose > 2)
-		printbuf(rsp.data, rsp.data_len, "recv_packet");
+		print_buf(rsp.data, rsp.data_len, "recv_packet");
 
 	return &rsp;
 }
@@ -562,7 +562,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 			rsp->ccode          = rsp->data[x++];
 			
 			if (verbose > 2)
-				printbuf(rsp->data, rsp->data_len, "ipmi message header");
+				print_buf(rsp->data, rsp->data_len, "ipmi message header");
 			
 			lprintf(LOG_DEBUG+1, "<< IPMI Response Session Header");
 			lprintf(LOG_DEBUG+1, "<<   Authtype   : %s",
@@ -598,7 +598,7 @@ ipmi_lan_poll_recv(struct ipmi_intf * intf)
 					if ((rsp->data_len) && (rsp->payload.ipmi_response.netfn == 7) &&
 					    (rsp->payload.ipmi_response.cmd != 0x34)) {
 						if (verbose > 2)
-							printbuf(&rsp->data[x], rsp->data_len-x,
+							print_buf(&rsp->data[x], rsp->data_len-x,
 								 "bridge command response");
 					}
 					/* bridged command: lose extra header */
@@ -1464,7 +1464,7 @@ ipmi_get_auth_capabilities_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "get_auth_capabilities");
+		print_buf(rsp->data, rsp->data_len, "get_auth_capabilities");
 
 	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get Auth Capabilities command failed: %s",
@@ -1579,7 +1579,7 @@ ipmi_get_session_challenge_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "get_session_challenge");
+		print_buf(rsp->data, rsp->data_len, "get_session_challenge");
 
 	if (rsp->ccode) {
 		switch (rsp->ccode) {
@@ -1655,7 +1655,7 @@ ipmi_activate_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "activate_session");
+		print_buf(rsp->data, rsp->data_len, "activate_session");
 
 	if (rsp->ccode) {
 		fprintf(stderr, "Activate Session error:");
@@ -1746,7 +1746,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
+		print_buf(rsp->data, rsp->data_len, "set_session_privlvl");
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
@@ -1789,7 +1789,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "close_session");
+		print_buf(rsp->data, rsp->data_len, "close_session");
 
 	if (rsp->ccode == 0x87) {
 		lprintf(LOG_ERR, "Failed to Close Session: invalid "

@@ -180,8 +180,8 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 
 	if (verbose > 2)
 	{
-		printbuf((const uint8_t *)buffer, bufferLength, ">> rakp2 mac input buffer");
-		printbuf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp2 mac key");
+		print_buf((const uint8_t *)buffer, bufferLength, ">> rakp2 mac input buffer");
+		print_buf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp2 mac key");
 	}
 
 	/*
@@ -201,7 +201,7 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 
 	if (verbose > 2)
 	{
-		printbuf(mac, macLength, ">> rakp2 mac as computed by the remote console");
+		print_buf(mac, macLength, ">> rakp2 mac as computed by the remote console");
 	}
 
 	return (memcmp(bmc_mac, mac, macLength) == 0);
@@ -313,8 +313,8 @@ lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 
 	if (verbose > 2)
 	{
-		printbuf((const uint8_t *)buffer, bufferLength, ">> rakp4 mac input buffer");
-		printbuf(session->v2_data.sik, session->v2_data.sik_len,
+		print_buf((const uint8_t *)buffer, bufferLength, ">> rakp4 mac input buffer");
+		print_buf(session->v2_data.sik, session->v2_data.sik_len,
 				">> rakp4 mac key (sik)");
 	}
 
@@ -334,8 +334,8 @@ lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 
 	if (verbose > 2)
 	{
-		printbuf(bmc_mac, macLength, ">> rakp4 mac as computed by the BMC");
-		printbuf(mac,     macLength, ">> rakp4 mac as computed by the remote console");
+		print_buf(bmc_mac, macLength, ">> rakp4 mac as computed by the BMC");
+		print_buf(mac,     macLength, ">> rakp4 mac as computed by the remote console");
 	}
 
 	if (ipmi_oem_active(intf, "intelplus")) {
@@ -485,8 +485,8 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 
 	if (verbose > 2)
 	{
-		printbuf((const uint8_t *)input_buffer, input_buffer_length, ">> rakp3 mac input buffer");
-		printbuf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
+		print_buf((const uint8_t *)input_buffer, input_buffer_length, ">> rakp3 mac input buffer");
+		print_buf((const uint8_t *)session->authcode, IPMI_AUTHCODE_BUFFER_SIZE, ">> rakp3 mac key");
 	}
     
 	lanplus_HMAC(session->v2_data.auth_alg,
@@ -498,7 +498,7 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 				 mac_length);
 
 	if (verbose > 2)
-		printbuf((const uint8_t *)output_buffer, *mac_length, "generated rakp3 mac");
+		print_buf((const uint8_t *)output_buffer, *mac_length, "generated rakp3 mac");
 
 	
 	free(input_buffer);
@@ -636,7 +636,7 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 
 	
 	if (verbose >= 2)
-		printbuf((const uint8_t *)input_buffer, input_buffer_length, "session integrity key input");
+		print_buf((const uint8_t *)input_buffer, input_buffer_length, "session integrity key input");
 
 	lanplus_HMAC(session->v2_data.auth_alg,
 				 input_key,
@@ -672,7 +672,7 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 	 * 12 for SHA1 96
 	 */
 	if (verbose >= 2) {
-		printbuf(session->v2_data.sik, session->v2_data.sik_len,
+		print_buf(session->v2_data.sik, session->v2_data.sik_len,
 				"Generated session integrity key");
 	}
 	return 0;
@@ -733,7 +733,7 @@ lanplus_generate_k1(struct ipmi_session * session)
 	}
 
 	if (verbose >= 2)
-		printbuf(session->v2_data.k1, session->v2_data.k1_len, "Generated K1");
+		print_buf(session->v2_data.k1, session->v2_data.k1_len, "Generated K1");
 
 	return 0;
 }
@@ -793,7 +793,7 @@ lanplus_generate_k2(struct ipmi_session * session)
 	}
 
 	if (verbose >= 2)
-		printbuf(session->v2_data.k2, session->v2_data.k2_len, "Generated K2");
+		print_buf(session->v2_data.k2, session->v2_data.k2_len, "Generated K2");
 
 	return 0;
 }
@@ -877,7 +877,7 @@ lanplus_encrypt_payload(uint8_t crypt_alg,
 	}
 
 	if (verbose > 2)
-		printbuf(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE, ">> Initialization vector");
+		print_buf(output, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE, ">> Initialization vector");
 
 
 
@@ -973,12 +973,12 @@ lanplus_has_valid_auth_code(struct ipmi_rs * rs, struct ipmi_session * session)
 	if (verbose > 3)
 	{
 		lprintf(LOG_DEBUG+2, "Validating authcode");
-		printbuf(session->v2_data.k1, session->v2_data.k1_len, "K1");
-		printbuf(rs->data + IPMI_LANPLUS_OFFSET_AUTHTYPE,
+		print_buf(session->v2_data.k1, session->v2_data.k1_len, "K1");
+		print_buf(rs->data + IPMI_LANPLUS_OFFSET_AUTHTYPE,
 				 rs->data_len - IPMI_LANPLUS_OFFSET_AUTHTYPE - authcode_length,
 				 "Authcode Input Data");
-		printbuf(generated_authcode, generated_authcode_length, "Generated authcode");
-		printbuf(bmc_authcode,       authcode_length, "Expected authcode");
+		print_buf(generated_authcode, generated_authcode_length, "Generated authcode");
+		print_buf(bmc_authcode,       authcode_length, "Expected authcode");
 	}
 
 	assert(generated_authcode_length >= authcode_length);

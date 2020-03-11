@@ -296,7 +296,7 @@ set_lan_param_wait(struct ipmi_intf *intf, uint8_t chan,
 
 	lprintf(LOG_DEBUG, "Waiting for Set LAN Parameter to complete...");
 	if (verbose > 1)
-		printbuf(data, len, "SET DATA");
+		print_buf(data, len, "SET DATA");
 
 	for (;;) {
 		p = get_lan_param(intf, chan, param);
@@ -307,7 +307,7 @@ set_lan_param_wait(struct ipmi_intf *intf, uint8_t chan,
 			continue;
 		}
 		if (verbose > 1)
-			printbuf(p->data, p->data_len, "READ DATA");
+			print_buf(p->data, p->data_len, "READ DATA");
 		if (p->data_len != len) {
 			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0) {
@@ -978,7 +978,7 @@ ipmi_lan_set_auth(struct ipmi_intf *intf, uint8_t chan, char *level, char *types
 	}
 
 	if (verbose > 1)
-		printbuf(data, 5, "authtype data");
+		print_buf(data, 5, "authtype data");
 
 	return set_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE, data, 5);
 }

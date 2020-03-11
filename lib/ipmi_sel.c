@@ -1534,7 +1534,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		return (-1);
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "sel_info");
+		print_buf(rsp->data, rsp->data_len, "sel_info");
 
 	printf("SEL Information\n");
         version = rsp->data[0];
@@ -2278,7 +2278,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "sel_info");
+		print_buf(rsp->data, rsp->data_len, "sel_info");
 
 	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
 		lprintf(LOG_ERR, "SEL has no entries");

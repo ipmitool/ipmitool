@@ -2599,7 +2599,7 @@ ipmi_sdr_print_sensor_oem(struct sdr_record_oem *oem)
 		return -1;
 
 	if (verbose > 2)
-		printbuf(oem->data, oem->data_len, "OEM Record");
+		print_buf(oem->data, oem->data_len, "OEM Record");
 
 	/* intel manufacturer id */
 	if (oem->data[0] == 0x57 &&

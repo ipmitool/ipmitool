@@ -259,7 +259,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	lprintf(LOG_INFO, "RAW I2C REQ (i2caddr=%x readbytes=%d writebytes=%d)",
 		i2caddr, rsize, wsize);
-	printbuf(wdata, wsize, "WRITE DATA");
+	print_buf(wdata, wsize, "WRITE DATA");
 
 	rsp = ipmi_master_write_read(intf, bus, i2caddr, wdata, wsize, rsize);
 	if (!rsp) {
@@ -378,7 +378,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
            intf->target_channel & 0x0f, req.msg.netfn,req.msg.lun , 
            req.msg.cmd, req.msg.data_len);
 
-	printbuf(req.msg.data, req.msg.data_len, "RAW REQUEST");
+	print_buf(req.msg.data, req.msg.data_len, "RAW REQUEST");
 
 	rsp = intf->sendrecv(intf, &req);
 

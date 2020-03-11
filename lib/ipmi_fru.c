@@ -327,7 +327,7 @@ build_fru_bloc(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id)
 	}
 
 	if (verbose > 1) {
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 	}
 
 	memcpy(&header, rsp->data + 1, 8);
@@ -2978,7 +2978,7 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 	}
 
 	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 
 	memcpy(&header, rsp->data + 1, 8);
 
@@ -4035,7 +4035,7 @@ ipmi_fru_get_multirec_location_from_fru(struct ipmi_intf * intf,
 	}
 
 	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 
 	memcpy(&header, rsp->data + 1, 8);
 
@@ -4157,7 +4157,7 @@ ipmi_fru_get_internal_use_info(  struct ipmi_intf * intf,
 	}
 
 	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 
 	memcpy(&header, rsp->data + 1, 8);
 
@@ -4741,7 +4741,7 @@ f_type, uint8_t f_index, char *f_string)
 	}
 
 	if (verbose > 1)
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 
 	memcpy(&header, rsp->data + 1, 8);
 

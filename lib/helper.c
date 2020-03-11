@@ -209,7 +209,7 @@ ipmi_parse_hex(const char *str, uint8_t *out, int size)
 	return len;
 }
 
-void printbuf(const uint8_t * buf, int len, const char * desc)
+void print_buf(const uint8_t * buf, int len, const char * desc)
 {
 	int i;
 

@@ -508,7 +508,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
 		/*
 		 * We got back cipher suite data -- store it.
 		 * printf("copying data to offset %d\n", offset);
-		 * printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		 * print_buf(rsp->data + 1, rsp->data_len - 1, "this is the data");
 		 */
 		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
 		offset += rsp->data_len - 1;
