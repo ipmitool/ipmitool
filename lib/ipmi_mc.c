@@ -48,6 +48,10 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
 
+#ifdef HAVE_JSON_C
+#include <json-c/json.h>
+#endif
+
 extern int verbose;
 
 static int ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv,
@@ -418,6 +422,10 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	struct ipm_devid_rsp *devid;
 	int i;
 	const char *product=NULL;
+#ifdef HAVE_JSON_C
+	char tmp[255];
+	json_object *jObj_main;
+#endif
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -436,6 +444,31 @@ ipmi_mc_get_deviceid(struct ipmi_intf * intf)
 	}
 
 	devid = (struct ipm_devid_rsp *) rsp->data;
+	if (output_format == 2) {
+#ifdef HAVE_JSON_C
+		jObj_main = json_object_new_object();
+		json_object_object_add(jObj_main,"device_id", json_object_new_int(devid->device_id));
+		json_object_object_add(jObj_main,"device_rev", json_object_new_int(devid->device_revision & IPM_DEV_DEVICE_ID_REV_MASK));
+
+		sprintf(tmp, "%u.%02x", devid->fw_rev1 & IPM_DEV_FWREV1_MAJOR_MASK, devid->fw_rev2);
+		json_object_object_add(jObj_main,"fw_rev", json_object_new_string(tmp));
+
+		sprintf(tmp, "%x.%x", IPM_DEV_IPMI_VERSION_MAJOR(devid->ipmi_version), IPM_DEV_IPMI_VERSION_MINOR(devid->ipmi_version));
+		json_object_object_add(jObj_main,"ipmi_version", json_object_new_string(tmp));
+
+		json_object_object_add(jObj_main,"manufacturer_id", json_object_new_int(IPM_DEV_MANUFACTURER_ID(devid->manufacturer_id)));
+		json_object_object_add(jObj_main,"product_id", json_object_new_int(buf2short((uint8_t *)(devid->product_id))));
+
+		json_object_object_add(jObj_main,"device_available", json_object_new_boolean(!(devid->fw_rev1 & IPM_DEV_FWREV1_AVAIL_MASK)));
+		json_object_object_add(jObj_main,"provides_sdr", json_object_new_boolean(devid->device_revision & IPM_DEV_DEVICE_ID_SDR_MASK));
+
+		json_object_object_add(jObj_main,"adtl_device_support", json_object_new_int(devid->adtl_device_support));
+
+		printf("%s\n", json_object_to_json_string(jObj_main));
+
+		return 0;
+#endif
+	}
 	printf("Device ID                 : %i\n",
 		devid->device_id);
 	printf("Device Revision           : %i\n",
