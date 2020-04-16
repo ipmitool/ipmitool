@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006 Kontron Canada, Inc.  All Rights Reserved.
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2020 Joyent, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,6 +47,10 @@
 
 #if HAVE_CONFIG_H
 # include <config.h>
+#endif
+
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
 extern int verbose;
