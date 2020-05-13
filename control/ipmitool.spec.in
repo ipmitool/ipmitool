@@ -57,7 +57,7 @@ fi
 %attr(755,root,root) %{_sbindir}/*
 %{_datadir}/ipmitool/*
 %{_mandir}/man*/*
-%doc %{_datadir}/doc/ipmitool
+%doc %{_datadir}/man/ipmitool
 
 
 %changelog

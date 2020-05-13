@@ -33,7 +33,7 @@ control/prototype
 control/rpmmacros
 src/ipmievd
 src/ipmitool
-doc/ipmievd.8
-doc/ipmitool.1
+man/ipmievd.8
+man/ipmitool.1
 cscope.out
 tags
