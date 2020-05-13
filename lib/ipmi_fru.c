@@ -663,7 +663,10 @@ int
 read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			uint32_t offset, uint32_t length, uint8_t *frubuf)
 {
-	uint32_t off = offset, tmp, finish;
+	uint32_t off = offset;
+	uint32_t tmp;
+	uint32_t finish;
+	uint32_t size_left_in_buffer;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
@@ -676,10 +679,12 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	finish = offset + length;
 	if (finish > fru->size) {
+		memset(frubuf + fru->size, 0, length - fru->size);
 		finish = fru->size;
 		lprintf(LOG_NOTICE, "Read FRU Area length %d too large, "
 			"Adjusting to %d",
 			offset + length, finish - offset);
+		length = finish - offset;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -715,6 +720,7 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		}
 	}
 
+	size_left_in_buffer = length;
 	do {
 		tmp = fru->access ? off >> 1 : off;
 		msg_data[0] = id;
@@ -756,9 +762,18 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		}
 
 		tmp = fru->access ? rsp->data[0] << 1 : rsp->data[0];
+		if(rsp->data_len < 1
+		   || tmp > rsp->data_len - 1
+		   || tmp > size_left_in_buffer)
+		{
+			printf(" Not enough buffer size");
+			return -1;
+		}
+
 		memcpy(frubuf, rsp->data + 1, tmp);
 		off += tmp;
 		frubuf += tmp;
+		size_left_in_buffer -= tmp;
 		/* sometimes the size returned in the Info command
 		* is too large.  return 0 so higher level function
 		* still attempts to parse what was returned */
@@ -791,7 +806,9 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			uint32_t offset, uint32_t length, uint8_t *frubuf)
 {
 	static uint32_t fru_data_rqst_size = 20;
-	uint32_t off = offset, tmp, finish;
+	uint32_t off = offset;
+	uint32_t tmp, finish;
+	uint32_t size_left_in_buffer;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
@@ -804,10 +821,12 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	finish = offset + length;
 	if (finish > fru->size) {
+		memset(frubuf + fru->size, 0, length - fru->size);
 		finish = fru->size;
 		lprintf(LOG_NOTICE, "Read FRU Area length %d too large, "
 			"Adjusting to %d",
 			offset + length, finish - offset);
+		length = finish - offset;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -822,6 +841,8 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	if (fru->access && fru_data_rqst_size > 16)
 #endif
 		fru_data_rqst_size = 16;
+
+	size_left_in_buffer = length;
 	do {
 		tmp = fru->access ? off >> 1 : off;
 		msg_data[0] = id;
@@ -853,8 +874,16 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 		}
 
 		tmp = fru->access ? rsp->data[0] << 1 : rsp->data[0];
+		if(rsp->data_len < 1
+		   || tmp > rsp->data_len - 1
+		   || tmp > size_left_in_buffer)
+		{
+			printf(" Not enough buffer size");
+			return -1;
+		}
 		memcpy((frubuf + off)-offset, rsp->data + 1, tmp);
 		off += tmp;
+		size_left_in_buffer -= tmp;
 
 		/* sometimes the size returned in the Info command
 		* is too large.  return 0 so higher level function
@@ -3049,7 +3078,7 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		return 0;
 
 	memset(desc, 0, sizeof(desc));
-	memcpy(desc, fru->id_string, fru->id_code & 0x01f);
+	memcpy(desc, fru->id_string, __min(fru->id_code & 0x01f, sizeof(desc)));
 	desc[fru->id_code & 0x01f] = 0;
 	printf("FRU Device Description : %s (ID %d)\n", desc, fru->device_id);
 

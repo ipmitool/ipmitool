@@ -2743,6 +2743,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	struct tm tm = {0};
+	uint8_t msg_data[4] = {0};
 	time_t t;
 	const char *time_format = "%x %X"; /* Use locale-defined format */
 
@@ -2787,8 +2788,9 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	 * At this point `t` is UTC. Convert it to LE and send.
 	 */
 
+	req.msg.data = msg_data;
 	htoipmi32(t, req.msg.data);
-	req.msg.data_len = 4;
+	req.msg.data_len = sizeof(msg_data);
 
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp || rsp->ccode) {

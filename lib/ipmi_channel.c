@@ -498,7 +498,10 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
 			lprintf(LOG_ERR, "Unable to Get Channel Cipher Suites");
 			return -1;
 		}
-		if (rsp->ccode || rsp->data_len < 1) {
+		if (rsp->ccode
+		    || rsp->data_len < 1
+		    || rsp->data_len > sizeof(uint8_t) + MAX_CIPHER_SUITE_DATA_LEN)
+		{
 			lprintf(LOG_ERR, "Get Channel Cipher Suites failed: %s",
 					val2str(rsp->ccode, completion_code_vals));
 			return -1;

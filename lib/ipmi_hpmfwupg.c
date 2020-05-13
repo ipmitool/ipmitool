@@ -50,6 +50,8 @@
 
 extern int verbose;
 
+VERSIONINFO gVersionInfo[HPMFWUPG_COMPONENT_ID_MAX];
+
 int HpmfwupgUpgrade(struct ipmi_intf *intf, char *imageFilename,
 		int activate, int, int);
 int HpmfwupgValidateImageIntegrity(struct HpmfwupgUpgradeCtx *pFwupgCtx);
