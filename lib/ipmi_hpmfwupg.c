@@ -49,10 +49,6 @@
 # include <config.h>
 #endif
 
-#ifndef MAX
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
 extern int verbose;
 
 VERSIONINFO gVersionInfo[HPMFWUPG_COMPONENT_ID_MAX];
@@ -1996,7 +1992,7 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 			rollbackTimeout = 0;
 		}
 		/* Use the greater of the two timeouts (header and target caps) */
-		rollbackTimeout = MAX(rollbackTimeout,
+		rollbackTimeout = __max(rollbackTimeout,
 				pFwupgCtx->targetCap.rollbackTimeout) * 5;
 	} else {
 		rollbackTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
@@ -2071,7 +2067,7 @@ HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelftest
 		/* Getting selftest timeout from new image */
 		struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 			pFwupgCtx->pImageData;
-		selfTestTimeout = MAX(pImageHeader->selfTestTimeout,
+		selfTestTimeout = __max(pImageHeader->selfTestTimeout,
 		pFwupgCtx->targetCap.selftestTimeout) * 5;
 	} else {
 		selfTestTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
