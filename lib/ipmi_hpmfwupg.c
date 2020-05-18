@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006 Kontron Canada, Inc.  All Rights Reserved.
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2020 Joyent, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1991,7 +1992,7 @@ HpmfwupgQueryRollbackStatus(struct ipmi_intf *intf,
 			rollbackTimeout = 0;
 		}
 		/* Use the greater of the two timeouts (header and target caps) */
-		rollbackTimeout = MAX(rollbackTimeout,
+		rollbackTimeout = __max(rollbackTimeout,
 				pFwupgCtx->targetCap.rollbackTimeout) * 5;
 	} else {
 		rollbackTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
@@ -2066,7 +2067,7 @@ HpmfwupgQuerySelftestResult(struct ipmi_intf *intf, struct HpmfwupgQuerySelftest
 		/* Getting selftest timeout from new image */
 		struct HpmfwupgImageHeader *pImageHeader = (struct HpmfwupgImageHeader*)
 			pFwupgCtx->pImageData;
-		selfTestTimeout = MAX(pImageHeader->selfTestTimeout,
+		selfTestTimeout = __max(pImageHeader->selfTestTimeout,
 		pFwupgCtx->targetCap.selftestTimeout) * 5;
 	} else {
 		selfTestTimeout = HPMFWUPG_DEFAULT_UPGRADE_TIMEOUT;
