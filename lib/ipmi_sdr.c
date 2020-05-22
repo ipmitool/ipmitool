@@ -3161,7 +3161,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 
 		rsp = intf->sendrecv(intf, &req);
 
-		if (!rsp || rsp->ccode == 0xca) {
+		if (!rsp || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES) {
 		    sdr_max_read_len = sdr_rq.length - 1;
 		    if (sdr_max_read_len > 0) {
 			/* no response may happen if requests are bridged
@@ -3172,7 +3172,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			data = NULL;
 			return NULL;
 		    }
-		} else if (rsp->ccode == 0xc5) {
+		} else if (rsp->ccode == IPMI_CC_RES_CANCELED) {
 			/* lost reservation */
 			lprintf(LOG_DEBUG, "SDR reservation cancelled. "
 				"Sleeping a bit and retrying...");
