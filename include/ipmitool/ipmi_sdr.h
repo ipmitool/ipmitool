@@ -104,6 +104,24 @@ enum {
 #define GET_SENSOR_READING	0x2d
 #define GET_SENSOR_TYPE		0x2f
 
+/*
+ * IPMI Specification limits the length of the ID string to 16 bytes for
+ * SDR records, although the ID type/length code may contain a number up
+ * to 31 (0x1F). See IPMI 2.0 Specification Tables 43-6 through 43-8.
+ */
+#define SDR_TYPECODE_LEN_MASK 0x1f
+#define SDR_ID_STRING_MAX 16
+#define SDR_ID_STRLEN_BYTYPE(typelen) \
+	((size_t)__max(typelen & SDR_TYPECODE_LEN_MASK, SDR_ID_STRING_MAX))
+#define SDR_ID_STRLEN(sdr) SDR_ID_STRLEN_BYTYPE((sdr)->id_code)
+
+#define SDR_ID_TO_CSTRING(cstring, sdr) \
+	do { \
+		memset((cstring), 0, sizeof(cstring)); \
+		snprintf((cstring), sizeof(cstring), "%.*s", \
+		         SDR_ID_STRLEN(sdr), (sdr)->id_string); \
+	} while(0)
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
@@ -466,7 +484,7 @@ struct sdr_record_compact_sensor {
 	uint8_t __reserved[3];
 	uint8_t oem;		/* reserved for OEM use */
 	uint8_t id_code;	/* sensor ID string type/length code */
-	uint8_t id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t id_string[SDR_ID_STRING_MAX]; /* sensor ID string bytes */
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -517,7 +535,7 @@ struct sdr_record_eventonly_sensor {
 	uint8_t __reserved;
 	uint8_t oem;		/* reserved for OEM use */
 	uint8_t id_code;	/* sensor ID string type/length code */
-	uint8_t id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t id_string[SDR_ID_STRING_MAX]; /* sensor ID string bytes */
 
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
@@ -587,7 +605,7 @@ struct sdr_record_full_sensor {
 	uint8_t __reserved[2];
 	uint8_t oem;		/* reserved for OEM use */
 	uint8_t id_code;	/* sensor ID string type/length code */
-	uint8_t id_string[16];	/* sensor ID string bytes, only if id_code != 0 */
+	uint8_t id_string[SDR_ID_STRING_MAX]; /* sensor ID string bytes */
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -619,7 +637,7 @@ struct sdr_record_mc_locator {
 	struct entity_id entity;
 	uint8_t oem;
 	uint8_t id_code;
-	uint8_t id_string[16];
+	uint8_t id_string[SDR_ID_STRING_MAX];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -652,7 +670,7 @@ struct sdr_record_fru_locator {
 	struct entity_id entity;
 	uint8_t oem;
 	uint8_t id_code;
-	uint8_t id_string[16];
+	uint8_t id_string[SDR_ID_STRING_MAX];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -686,7 +704,7 @@ struct sdr_record_generic_locator {
 	struct entity_id entity;
 	uint8_t oem;
 	uint8_t id_code;
-	uint8_t id_string[16];
+	uint8_t id_string[SDR_ID_STRING_MAX];
 } ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
@@ -800,9 +818,12 @@ struct sdr_record_list {
 #define SENSOR_TYPE_MAX 0x2C
 
 struct sensor_reading {
-	char		s_id[17];		/* name of the sensor */
-	struct sdr_record_full_sensor    *full;
-	struct sdr_record_compact_sensor *compact;
+	char		s_id[SDR_ID_STRING_MAX + 1]; /* sensor name, null-terminated */
+	union {
+		struct sdr_record_full_sensor    *full;
+		struct sdr_record_compact_sensor *compact;
+		void *raw;
+	};
 	uint8_t		s_reading_valid;	/* read value valididity */
 	uint8_t		s_scanning_disabled;	/* read of value disabled */
 	uint8_t		s_reading_unavailable;	/* read value unavailable */
@@ -848,7 +869,7 @@ uint8_t *ipmi_sdr_get_record(struct ipmi_intf *intf, struct sdr_get_rs *header,
 void ipmi_sdr_end(struct ipmi_sdr_iterator *i);
 int ipmi_sdr_print_sdr(struct ipmi_intf *intf, uint8_t type);
 
-int ipmi_sdr_print_name_from_rawentry(uint16_t id, uint8_t type,uint8_t * raw);
+int sdr_get_name_from_rawentry(uint8_t type, void *raw, char *buf, size_t len);
 int ipmi_sdr_print_rawentry(struct ipmi_intf *intf, uint8_t type, uint8_t * raw,
 			    int len);
 int ipmi_sdr_print_listentry(struct ipmi_intf *intf,

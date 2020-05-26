@@ -3042,7 +3042,6 @@ __ipmi_fru_print(struct ipmi_intf * intf, uint8_t id)
 int
 ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 {
-	char desc[17];
 	uint8_t  bridged_request = 0;
 	uint32_t save_addr;
 	uint32_t save_channel;
@@ -3077,10 +3076,10 @@ ipmi_fru_print(struct ipmi_intf * intf, struct sdr_record_fru_locator * fru)
 		fru->device_id == 0)
 		return 0;
 
-	memset(desc, 0, sizeof(desc));
-	memcpy(desc, fru->id_string, __min(fru->id_code & 0x01f, sizeof(desc)));
-	desc[fru->id_code & 0x01f] = 0;
-	printf("FRU Device Description : %s (ID %d)\n", desc, fru->device_id);
+	printf("FRU Device Description : %.*s (ID %d)\n"
+	       , SDR_ID_STRLEN(fru)
+	       , fru->id_string
+	       , fru->device_id);
 
 	switch (fru->dev_type_modifier) {
 	case 0x00:
@@ -3192,7 +3191,9 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 				/* set new target address to satellite controller */
 				intf->target_addr = mc->dev_slave_addr;
 
-				printf("FRU Device Description : %-16s\n", mc->id_string);
+				printf("FRU Device Description : %.*s\n"
+				       , SDR_ID_STRLEN(fru)
+				       , fru->id_string);
 
 				/* print the FRU by issuing FRU commands to the satellite     */
 				/* controller.						      */

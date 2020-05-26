@@ -250,6 +250,7 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
 
   while ((header = ipmi_sdr_get_next_header(intf, itr))) {
     struct sdr_record_list *sdrr;
+    char desc[SDR_ID_STRING_MAX + 1];
 
     sdrr = malloc(sizeof (struct sdr_record_list));
     if (!sdrr) {
@@ -263,7 +264,8 @@ sdrr_get_records(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr,
     sdrr->type = header->type;
     sdrr->length = header->length;
     sdrr->raw = ipmi_sdr_get_record(intf, header, itr);
-    (void)ipmi_sdr_print_name_from_rawentry(sdrr->id, sdrr->type,sdrr->raw);
+    (void)sdr_get_name_from_rawentry(sdrr->type, sdrr->raw, desc, sizeof(desc));
+    lprintf(LOG_INFO, "ID: 0x%04x , NAME: %s", sdrr->id, desc);
 
     /* put in the record queue */
     if (!queue->head)
