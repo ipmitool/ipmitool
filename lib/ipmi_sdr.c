@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012 Hewlett-Packard Development Company, L.P.
+ * Copyright 2020 Joyent, Inc.
  *
  * Based on code from
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
@@ -3159,7 +3160,8 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			sdr_rq.length, sdr_rq.offset);
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp) {
+
+		if (!rsp || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES) {
 		    sdr_max_read_len = sdr_rq.length - 1;
 		    if (sdr_max_read_len > 0) {
 			/* no response may happen if requests are bridged
@@ -3170,14 +3172,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			data = NULL;
 			return NULL;
 		    }
-		}
-
-		switch (rsp->ccode) {
-		case 0xca:
-			/* read too many bytes at once */
-			sdr_max_read_len = sdr_rq.length - 1;
-			continue;
-		case 0xc5:
+		} else if (rsp->ccode == IPMI_CC_RES_CANCELED) {
 			/* lost reservation */
 			lprintf(LOG_DEBUG, "SDR reservation cancelled. "
 				"Sleeping a bit and retrying...");
@@ -3202,7 +3197,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		}
 
 		memcpy(data + i, rsp->data + 2, sdr_rq.length);
-		i += sdr_max_read_len;
+		i += sdr_rq.length;
 	}
 
 	return data;
