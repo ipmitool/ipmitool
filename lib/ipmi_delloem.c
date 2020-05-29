@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2008, Dell Inc
+ * Copyright(c) 2008, Dell Inc
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  * this list of conditions and the following disclaimer.
  *
- * - Redistributions in binary form must reproduce the above copyright notice,
+ * - Redistributions in binary form must reproduce the above copyright notice, 
  * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
  * - Neither the name of Dell Inc nor the names of its contributors
- * may be used to endorse or promote products derived from this software 
+ * may be used to endorse or promote products derived from this software
  * without specific prior written permission.
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
  * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
@@ -63,67 +63,114 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_time.h>
+#include <ipmitool/ipmi_cc.h>
+/*------------dell oem specific headers------------------*/
+#include <ipmitool/cssipmix.h>
+#include <ipmitool/cssstat.h>
+#include <ipmitool/cssipmi.h>
+#include <ipmitool/cssapi.h>
+#include <ipmitool/csssupt.h>
+#include <ipmitool/cssdprod.h>
+#include <ipmitool/cmnsdd.h>	
+#include <ipmitool/cmnslf.h>
+ 
 
-#define DELL_OEM_NETFN	(uint8_t)(0x30)
-#define GET_IDRAC_VIRTUAL_MAC	(uint8_t)(0xC9)
-/* 11g Support Macros */
-#define INVALID	(-1)
-#define SHARED	0
-#define SHARED_WITH_FAILOVER_LOM2	1
-#define DEDICATED	2
-#define SHARED_WITH_FAILOVER_ALL_LOMS	3
-/* 11g Support Macros */
-#define SHARED 				0
-#define SHARED_WITH_FAILOVER_LOM2 	1
-#define DEDICATED 			2
-#define SHARED_WITH_FAILOVER_ALL_LOMS 	3
-/* 12g Support Strings for nic selection */
-#define	INVAILD_FAILOVER_MODE		-2
-#define	INVAILD_FAILOVER_MODE_SETTINGS	-3
-#define	INVAILD_SHARED_MODE		-4
+#define BIT(x)  (1 << x)
+#define DELL_OEM_NETFN (uint8_t)0x30
+#define GET_IDRAC_VIRTUAL_MAC (uint8_t)0xC9 /* 11g Support Macros */
+#define INVALID -1
+#define SHARED 0
+#define SHARED_WITH_FAILOVER_LOM2 1
+#define DEDICATED 2
+#define SHARED_WITH_FAILOVER_ALL_LOMS 3 /* 11g Support Macros */
+#define SHARED 0
+#define SHARED_WITH_FAILOVER_LOM2 1
+#define DEDICATED 2
+#define SHARED_WITH_FAILOVER_ALL_LOMS 3 /* 12g Support Strings for nic selection */
+#define INVAILD_FAILOVER_MODE -2
+#define INVAILD_FAILOVER_MODE_SETTINGS -3
+#define INVAILD_SHARED_MODE -4
+#define INVAILD_FAILOVER_MODE_STRING "ERROR: Cannot set shared with failover lom same as current shared lom."
+#define INVAILD_FAILOVER_MODE_SET "ERROR: Cannot set shared with failover loms when NIC is set to dedicated Mode."
+#define INVAILD_SHARED_MODE_SET_STRING "ERROR: Cannot set shared Mode for Blades."
+#define LOM_ROW 6
+#define LOM_COL 10
+#define NIC_ROW 4
+#define NIC_COL 50
+#define NIC_12G_COL 50
 
-#define	INVAILD_FAILOVER_MODE_STRING "ERROR: Cannot set shared with failover lom same as current shared lom."
-#define	INVAILD_FAILOVER_MODE_SET "ERROR: Cannot set shared with failover loms when NIC is set to dedicated Mode."
-#define	INVAILD_SHARED_MODE_SET_STRING "ERROR: Cannot set shared Mode for Blades."
+#ifdef SUPPORT_8_LOM
+#define MAX_NUM_LOMS_IDX 11
+#define RESERVED_LOM_IDX 6
+#define FAILOVER_LOM_START_IDX  2
+#define FAILOVER_LOM_STRING_IDX 8
+#else
+#define MAX_NUM_LOMS_IDX 6
+#define RESERVED_LOM_IDX 6
+#define FAILOVER_LOM_START_IDX  2
+#define FAILOVER_LOM_STRING_IDX 3
+#endif
+#define SHARED_LOM1_IDX 2
+#define SHARED_LOM2_IDX 3
+#define SHARED_LOM3_IDX 4
+#define SHARED_LOM4_IDX 5
+#ifdef SUPPORT_8_LOM
+#define SHARED_LOM5_IDX 7
+#define SHARED_LOM6_IDX 8
+#define SHARED_LOM7_IDX 9
+#define SHARED_LOM8_IDX 10
+#endif
+#define SHARED_FAILOVER_LOM1_IDX 2
+#define SHARED_FAILOVER_LOM2_IDX 3
+#define SHARED_FAILOVER_LOM3_IDX 4
+#define SHARED_FAILOVER_LOM4_IDX 5
+#define SHARED_FAILOVER_ALL_IDX  6
+#ifdef SUPPORT_8_LOM
+#define SHARED_FAILOVER_LOM5_IDX 7
+#define SHARED_FAILOVER_LOM6_IDX 8
+#define SHARED_FAILOVER_LOM7_IDX 9
+#define SHARED_FAILOVER_LOM8_IDX 10
+#endif
 
-char AciveLOM_String [6] [10] = {
-	"None",
-	"LOM1",
-	"LOM2",
-	"LOM3",
-	"LOM4",
+char acivelom_string[LOM_ROW][LOM_COL] = {
+	"None", 
+	"LOM1", 
+	"LOM2", 
+	"LOM3", 
+	"LOM4", 
 	"dedicated"
 };
+
 /* 11g Support Strings for nic selection */
-char NIC_Selection_Mode_String [4] [50] = {
-	"shared",
-	"shared with failover lom2",
-	"dedicated",
+char nic_selection_mode_string[NIC_ROW][NIC_COL] = {
+	"shared", 
+	"shared with failover lom2", 
+	"dedicated", 
 	"shared with Failover all loms"
 };
 
-char NIC_Selection_Mode_String_12g[] [50] = {
-	"dedicated",
-	"shared with lom1",
-	"shared with lom2",
-	"shared with lom3",
-	"shared with lom4",
-	"shared with failover lom1",
-	"shared with failover lom2",
-	"shared with failover lom3",
-	"shared with failover lom4",
+char nic_selection_mode_string_12g[][NIC_12G_COL] = {
+	"dedicated", 
+	"shared with lom1", 
+	"shared with lom2", 
+	"shared with lom3", 
+	"shared with lom4", 
+	"shared with failover lom1", 
+	"shared with failover lom2", 
+	"shared with failover lom3", 
+	"shared with failover lom4", 
 	"shared with failover all loms"
 };
 
-const struct vFlashstr vFlash_completion_code_vals[] = {
-	{0x00, "SUCCESS"},
-	{0x01, "NO_SD_CARD"},
-	{0x63, "UNKNOWN_ERROR"},
+const struct vflashstr vflash_completion_code_vals[] = {
+	{0x00, "SUCCESS"}, 
+	{0x01, "NO_SD_CARD"}, 
+	{0x63, "UNKNOWN_ERROR"}, 
 	{0x00, NULL}
 };
 
-static int current_arg =0;
-uint8_t iDRAC_FLAG=0;
+static int current_arg = 0;
+uint8_t iDRAC_FLAG = 0;
 
 /*
  * new flags for
@@ -131,171 +178,210 @@ uint8_t iDRAC_FLAG=0;
  * 12G || 13G -> _12_13
  *
  */
-uint8_t iDRAC_FLAG_ALL=0;
-uint8_t iDRAC_FLAG_12_13=0;
+uint8_t iDRAC_FLAG_ALL = 0;
+uint8_t iDRAC_FLAG_12_13 = 0;
 
-LCD_MODE lcd_mode;
-static uint8_t LcdSupported=0;
-static uint8_t SetLEDSupported=0;
+lcd_mode_t lcd_mode;
+static uint8_t lcdsupported = 0;
+static uint8_t ledsupported = 0;
+int g_modularsupportlom = 0;
+float power_efficiency = 0;
 
 volatile uint8_t IMC_Type = IMC_IDRAC_10G;
+struct fw_ver {
+	uint8_t major_ver;
+	uint8_t minor_ver;
+	uint8_t build_no_msb;
+	uint8_t build_no_lsb;
+	uint8_t pla_data_msb;
+	uint8_t pla_data_lsb;
+	uint8_t lc_ver_msb;
+	uint8_t lc_ver_lsb;
+};
 
-POWER_HEADROOM powerheadroom;
+typedef struct _sdrlist
+{
+	uint8_t data[MAX_SDR_SIZE];
+	uint8_t bislast;
+} sdrlist;
 
-uint8_t PowercapSetable_flag=0;
-uint8_t PowercapstatusFlag=0;
+
+sdrlist sdr[MAX_SDR_ENTRIES];
+uint16_t currentsdr;
+uint16_t totalsdrcount;
+ 
+
+power_headroom powerheadroom;
+
+uint8_t powercapsetable_flag = 0;
+uint8_t powercapstatusflag = 0;
+int boardoffsetptr;
+int productoffsetptr;
 
 static void usage(void);
+/* Systeminfo Function prototypes */
+static int oem_dell_sysinfo_main(struct ipmi_intf *intf, int argc, char **argv);
+static char* oem_dell_get_bib_info(uint8_t *fru_data, uint8_t bib_type);
+static int oem_dell_sysinfo_get_tag(struct ipmi_intf *intf, char *tagstring, uint8_t tag_type, uint8_t length);
+static void oem_dell_sysinfo_print_board(struct ipmi_intf *intf, struct
+					fru_info *fru, uint8_t id, uint32_t offset, uint8_t ipmi_version);
+static int oem_dell_sysinfo_fru(struct ipmi_intf *intf, uint8_t id, uint8_t ipmi_version);
+static int oem_dell_sysinfo_id(struct ipmi_intf *intf );
+static void oem_dell_sysinfo_usage(void);
+/* SEL Function prototypes */
+static int oem_dell_sel_main (struct ipmi_intf * intf, int argc, char ** argv);
+int oem_dell_sel_print(struct ipmi_intf * intf, uint16_t count, int printOption);
+unsigned short oem_dell_sel_get_record(struct ipmi_intf * intf, uint16_t curr_id,uint8_t* sel_entry);
+int oem_dell_sel_sysinfo(struct ipmi_intf *intf, DECODING_METHOD *method);
+static int  oem_dell_sel_get(struct ipmi_intf * intf, uint16_t id);
+static void oem_dell_sel_usage(void);
+/* SDR Function prototypes */
+static int oem_dell_sdr_main (struct ipmi_intf * intf, int argc, char ** argv);
+int oem_dell_sdr_reserve(struct ipmi_intf *intf, uint16_t * reserve_id);
+int oem_dell_sdr_get(struct ipmi_intf *intf, uint16_t reserveId, uint8_t* datapt, uint16_t recordId);
+static int oem_dell_build_sdr_first(struct ipmi_intf *intf, uint8_t *data);
+int oem_dell__build_sdr_next(struct ipmi_intf *intf, uint8_t *sdr_in, uint8_t *data);
+SDRType* oem_dell__get_first(void);
+SDRType* oem_dell__get_next(SDRType* pprevioussdr);
+static int oem_dell_sdr_build_table(struct ipmi_intf *intf);
+int oem_dell_sensor_get_sensor_reading(unsigned char sensorowner, unsigned char sensornumber,IPMISensorReadingType*sensorreadingdata,void* x);
+static int oem_dell_sensor_print(SDRType* psdr, int* psensorindex, struct ipmi_intf * intf);
+static int oem_dell_sensor(struct ipmi_intf* intf, uint8_t sensornumin);
+static int oem_dell_sensor_get(struct ipmi_intf* intf, int argc, char **argv);
+static void oem_dell_sensor_usage(void);
 /* LCD Function prototypes */
-static int ipmi_delloem_lcd_main(struct ipmi_intf *intf, int argc,
-		char **argv);
-int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring,
-		uint8_t max_length, uint8_t field_type);
-static int ipmi_idracvalidator_command(struct ipmi_intf *intf);
-static int ipmi_lcd_get_configure_command_wh(struct ipmi_intf *intf);
-static int ipmi_lcd_get_configure_command(struct ipmi_intf *intf,
-		uint8_t *command);
-static int ipmi_lcd_set_configure_command(struct ipmi_intf *intf, int command);
-static int ipmi_lcd_set_configure_command_wh(struct ipmi_intf *intf, uint32_t  mode,
-		uint16_t lcdquallifier,uint8_t errordisp);
-static int ipmi_lcd_get_single_line_text(struct ipmi_intf *intf,
-		char *lcdstring, uint8_t max_length);
-static int ipmi_lcd_get_info_wh(struct ipmi_intf *intf);
-static int ipmi_lcd_get_info(struct ipmi_intf *intf);
-static int ipmi_lcd_get_status_val(struct ipmi_intf *intf,
-		LCD_STATUS *lcdstatus);
-static int IsLCDSupported();
-static void CheckLCDSupport(struct ipmi_intf *intf);
-static void ipmi_lcd_status_print(LCD_STATUS lcdstatus);
-static int ipmi_lcd_get_status(struct ipmi_intf *intf);
-static int ipmi_lcd_set_kvm(struct ipmi_intf *intf, char status);
-static int ipmi_lcd_set_lock(struct ipmi_intf *intf,  char lock);
-static int ipmi_lcd_set_single_line_text(struct ipmi_intf *intf, char *text);
-static int ipmi_lcd_set_text(struct ipmi_intf *intf, char *text);
-static int ipmi_lcd_configure_wh(struct ipmi_intf *intf, uint32_t mode,
-		uint16_t lcdquallifier, uint8_t errordisp, char *text);
-static int ipmi_lcd_configure(struct ipmi_intf *intf, int command, char *text);
-static void ipmi_lcd_usage(void);
+static int oem_dell_lcd_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring, uint8_t max_length, uint8_t field_type);
+static int oem_dell_idracvalidator_command(struct ipmi_intf *intf);
+static int oem_dell_lcd_get_configure_command_wh(struct ipmi_intf *intf);
+static int oem_dell_lcd_get_configure_command(struct ipmi_intf *intf, uint8_t *command);
+static int oem_dell_lcd_set_configure_command(struct ipmi_intf *intf, int command);
+static int oem_dell_lcd_set_configure_command_wh(struct ipmi_intf *intf, uint32_t  mode, 
+						 uint16_t lcdquallifier, uint8_t errordisp);
+static int oem_dell_lcd_get_single_line_text(struct ipmi_intf *intf, char *lcdstring, uint8_t max_length);
+static int oem_dell_lcd_get_info_wh(struct ipmi_intf *intf);
+static int oem_dell_lcd_get_info(struct ipmi_intf *intf);
+static int oem_dell_lcd_get_status_val(struct ipmi_intf *intf, lcd_status *lcdstatus);
+static int oem_dell_is_lcd_supported(void);
+static void oem_dell_check_lcd_support(struct ipmi_intf *intf);
+static void oem_dell_ipmi_lcd_status_print(lcd_status lcdstatus);
+static int oem_dell_lcd_get_status(struct ipmi_intf *intf);
+static int oem_dell_lcd_set_kvm(struct ipmi_intf *intf, char status);
+static int oem_dell_lcd_set_lock(struct ipmi_intf *intf, char lock);
+static int oem_dell_lcd_set_single_line_text(struct ipmi_intf *intf, char *text);
+static int oem_dell_lcd_set_text(struct ipmi_intf *intf, char *text, int line_number);
+static int oem_dell_lcd_configure_wh(struct ipmi_intf *intf, uint32_t mode, 
+				uint16_t lcdquallifier, uint8_t errordisp, int8_t line_number, char *text);
+static int oem_dell_lcd_configure(struct ipmi_intf *intf, int command, int8_t line_number, char *text);
+static void oem_dell_lcd_usage(void);
 /* MAC Function prototypes */
-static int ipmi_delloem_mac_main(struct ipmi_intf *intf, int argc, char **argv);
-static void InitEmbeddedNICMacAddressValues();
-static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf *intf,
-		uint8_t NicNum);
-static int ipmi_macinfo_drac_idrac_mac(struct ipmi_intf *intf,uint8_t NicNum);
-static int ipmi_macinfo_10g(struct ipmi_intf *intf, uint8_t NicNum);
-static int ipmi_macinfo_11g(struct ipmi_intf *intf, uint8_t NicNum);
-static int ipmi_macinfo(struct ipmi_intf *intf, uint8_t NicNum);
-static void ipmi_mac_usage(void);
+static int oem_dell_mac_main(struct ipmi_intf *intf, int argc, char **argv);
+static void oem_dell_init_embedded_nic_mac_address_values(void);
+static int oem_dell_macinfo_drac_idrac_virtual_mac(struct ipmi_intf *intf, uint8_t nicnum);
+static int oem_dell_macinfo_drac_idrac_mac(struct ipmi_intf *intf, uint8_t nicnum);
+static int oem_dell_macinfo_10g(struct ipmi_intf *intf, uint8_t nicnum);
+static int oem_dell_macinfo_11g(struct ipmi_intf *intf, uint8_t nicnum);
+static int oem_dell_macinfo(struct ipmi_intf *intf, uint8_t nicnum);
+static void oem_dell_mac_usage(void);
 /* LAN Function prototypes */
-static int ipmi_delloem_lan_main(struct ipmi_intf *intf, int argc, char **argv);
-static int IsLANSupported();
-static int get_nic_selection_mode(int current_arg, char **argv);
-static int ipmi_lan_set_nic_selection(struct ipmi_intf *intf,
-		uint8_t nic_selection);
-static int ipmi_lan_get_nic_selection(struct ipmi_intf *intf);
-static int ipmi_lan_get_active_nic(struct ipmi_intf *intf);
-static void ipmi_lan_usage(void);
-static int ipmi_lan_set_nic_selection_12g(struct ipmi_intf *intf,
-		uint8_t *nic_selection);
+static int oem_dell_lan_main(struct ipmi_intf *intf, int argc, char **argv);
+static int oem_dell_islansupported(void);
+static int oem_dell_get_nic_selection_mode(int current_arg, char **argv);
+static int oem_dell_lan_set_nic_selection(struct ipmi_intf *intf, uint8_t nic_selection);
+static int oem_dell_lan_get_nic_selection(struct ipmi_intf *intf);
+static int oem_dell_lan_get_active_nic(struct ipmi_intf *intf);
+static void oem_dell_lan_usage(void);
+static int oem_dell_lan_set_nic_selection_12g(struct ipmi_intf *intf, uint8_t *nic_selection);
 /* Power monitor Function prototypes */
-static int ipmi_delloem_powermonitor_main(struct ipmi_intf *intf, int argc,
-		char **argv);
-static int ipmi_get_sensor_reading(struct ipmi_intf *intf,
-		unsigned char sensorNumber, SensorReadingType *pSensorReadingData);
-static int ipmi_get_power_capstatus_command(struct ipmi_intf *intf);
-static int ipmi_set_power_capstatus_command(struct ipmi_intf *intf,
-		uint8_t val);
-static int ipmi_powermgmt(struct ipmi_intf *intf);
-static int ipmi_powermgmt_clear(struct ipmi_intf *intf, uint8_t clearValue);
-static uint64_t watt_to_btuphr_conversion(uint32_t powerinwatt);
-static uint32_t btuphr_to_watt_conversion(uint64_t powerinbtuphr);
-static int ipmi_get_power_headroom_command(struct ipmi_intf *intf, uint8_t unit);
-static int ipmi_get_power_consumption_data(struct ipmi_intf *intf, uint8_t unit);
-static int ipmi_get_instan_power_consmpt_data(struct ipmi_intf *intf,
-		IPMI_INST_POWER_CONSUMPTION_DATA *instpowerconsumptiondata);
-static void ipmi_print_get_instan_power_Amps_data(
-		IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata);
-static int ipmi_print_get_power_consmpt_data(struct ipmi_intf *intf,
-		uint8_t  unit);
-static int ipmi_get_avgpower_consmpt_history(struct ipmi_intf *intf,
-		IPMI_AVGPOWER_CONSUMP_HISTORY *pavgpower);
-static int ipmi_get_peakpower_consmpt_history(struct ipmi_intf *intf,
-		IPMI_POWER_CONSUMP_HISTORY *pstPeakpower);
-static int ipmi_get_minpower_consmpt_history(struct ipmi_intf *intf,
-		IPMI_POWER_CONSUMP_HISTORY *pstMinpower);
-static int ipmi_print_power_consmpt_history(struct ipmi_intf *intf, int unit);
-static int ipmi_get_power_cap(struct ipmi_intf *intf,
-		IPMI_POWER_CAP *ipmipowercap);
-static int ipmi_print_power_cap(struct ipmi_intf *intf, uint8_t unit);
-static int ipmi_set_power_cap(struct ipmi_intf *intf, int unit, int val);
-static void ipmi_powermonitor_usage(void);
-/* vFlash Function prototypes */
-static int ipmi_delloem_vFlash_main(struct ipmi_intf *intf, int argc,
-		char **argv);
-const char *get_vFlash_compcode_str(uint8_t vflashcompcode,
-		const struct vFlashstr *vs);
-static int ipmi_get_sd_card_info(struct ipmi_intf *intf);
-static int ipmi_delloem_vFlash_process(struct ipmi_intf *intf, int current_arg,
-		char **argv);
-static void ipmi_vFlash_usage(void);
+static int oem_dell_get_power_supply_rating(struct ipmi_intf* intf);
+static int oem_dell_powermonitor_main(struct ipmi_intf *intf, int argc, char **argv);
+static void oem_dell_time_to_str(time_t rawTime, char *strTime);
+static int oem_dell_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber, sensorreadingtype *psensorreadingdata);
+static int oem_dell_get_power_capstatus_command(struct ipmi_intf *intf);
+static int oem_dell_set_power_capstatus_command(struct ipmi_intf *intf, uint8_t val);
+static int oem_dell_powermgmt(struct ipmi_intf *intf);
+static int oem_dell_powermgmt_clear(struct ipmi_intf *intf, uint8_t clearValue);
+static uint64_t oem_dell_watt_to_btuphr_conversion(uint32_t powerinwatt);
+static uint32_t oem_dell_btuphr_to_watt_conversion(uint64_t powerinbtuphr);
+static int oem_dell_get_power_headroom_command(struct ipmi_intf *intf, uint8_t unit);
+static int oem_dell_get_power_consumption_data(struct ipmi_intf *intf, uint8_t unit);
+static int oem_dell_get_instan_power_consmpt_data(struct ipmi_intf *intf, 
+						ipmi_inst_power_consumption_data *instpowerconsumptiondata);
+static void oem_dell_print_get_instan_power_Amps_data(ipmi_inst_power_consumption_data instpowerconsumptiondata);
+static int oem_dell_print_get_power_consmpt_data(struct ipmi_intf *intf, uint8_t  unit);
+static int oem_dell_get_avgpower_consmpt_history(struct ipmi_intf *intf, ipmi_avgpower_consump_history *pavgpower);
+static int oem_dell_get_peakpower_consmpt_history(struct ipmi_intf *intf, ipmi_power_consump_history *pstpeakpower);
+static int oem_dell_get_minpower_consmpt_history(struct ipmi_intf *intf, ipmi_power_consump_history *pstminpower);
+static int oem_dell_print_power_consmpt_history(struct ipmi_intf *intf, int unit);
+static int oem_dell_get_power_cap(struct ipmi_intf *intf, ipmi_power_cap *ipmipowercap);
+static int oem_dell_print_power_cap(struct ipmi_intf *intf, uint8_t unit);
+static int oem_dell_set_power_cap(struct ipmi_intf *intf, int unit, int val);
+static int oem_dell_get_power_supply_fruinfo(struct ipmi_intf *intf, uint8_t id,
+                       struct fru_header header, struct fru_info fru);
+static void oem_dell_powermonitor_usage(void);
+/* vflash Function prototypes */
+static int oem_dell_vflash_main(struct ipmi_intf *intf, int argc, char **argv);
+const char* get_vflash_compcode_str(uint8_t vflashcompcode, const struct vflashstr *vs);
+static int oem_dell_get_sd_card_info(struct ipmi_intf *intf);
+static int oem_dell_vflash_process(struct ipmi_intf *intf, int current_arg, char **argv);
+static void oem_dell_vflash_usage(void);
+static int make_int(const char *str, int *value);
 /* LED Function prototypes */
-static int ipmi_getsesmask(int, char **argv);
-static void CheckSetLEDSupport(struct ipmi_intf *intf);
-static int IsSetLEDSupported(void);
-static void ipmi_setled_usage(void);
-static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc,
-		char **argv);
-static int ipmi_setled_state(struct ipmi_intf *intf, int bayId, int slotId,
-		int state);
-static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
-		int *bayId, int *slotId);
-static int
-get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
-		char ** argv, char *nic_set);
+static int oem_dell_get_nic_selection_mode_12g(struct ipmi_intf *intf, int current_arg, char **argv, char *nic_set);
 
-/* Function Name:       ipmi_delloem_main
+/* Function Name:       ipmi_oem_dell_main
  *
  * Description:         This function processes the delloem command
  * Input:               intf    - ipmi interface
- *                       argc    - no of arguments
- *                       argv    - argument string array
+ *                      argc    - no of arguments
+ *                      argv    - argument string array
  * Output:
  *
  * Return:              return code     0 - success
- *                                      -1 - failure
+ *                                     -1 - failure
  */
 int
-ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_delloem_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	current_arg = 0;
-	if (argc == 0 || strncmp(argv[0], "help\0", 5) == 0) {
+	oem_dell_idracvalidator_command(intf);
+	oem_dell_check_lcd_support(intf);
+	if(argc == 0 || strcmp(argv[0], "help") == 0) {
 		usage();
 		return 0;
 	}
-	if (0 ==strncmp(argv[current_arg], "lcd\0", 4)) {
-		rc = ipmi_delloem_lcd_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "mac\0", 4) == 0) {
+	/* System information */
+	if(strcmp(argv[current_arg], "sysinfo") == 0) {
+		rc = oem_dell_sysinfo_main(intf, argc, argv);
+	}
+	else if((oem_dell_is_lcd_supported() && (0 ==strncmp(argv[current_arg], "lcd\0", 4)))) {
+		rc = oem_dell_lcd_main(intf, argc, argv);
+		/* Sel Support*/
+	}else if ((0 ==strncmp(argv[current_arg], "sel\0", 4)) ) {
+		rc = oem_dell_sel_main (intf,argc,argv);
+		/* SDR Support*/
+	}else if (0 ==(strncmp(argv[current_arg], "sensor\0", 7))) {
+		rc = oem_dell_sdr_main (intf,argc,argv);
+	} else if(strcmp(argv[current_arg], "mac") == 0) {
 		/* mac address*/
-		rc = ipmi_delloem_mac_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "lan\0", 4) == 0) {
+		rc = oem_dell_mac_main(intf, argc, argv);
+	} else if(oem_dell_islansupported() && strcmp(argv[current_arg], "lan") == 0) {
 		/* lan address*/
-		rc = ipmi_delloem_lan_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "setled\0", 7) == 0) {
-		/* SetLED support */
-		rc = ipmi_delloem_setled_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "powermonitor\0", 13) == 0) {
+		rc = oem_dell_lan_main(intf, argc, argv);
+	} else if(strcmp(argv[current_arg], "powermonitor") == 0) {
 		/*Powermanagement report processing*/
-		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
-	} else if (strncmp(argv[current_arg], "vFlash\0", 7) == 0) {
-		/* vFlash Support */
-		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
-	} else {
+		rc = oem_dell_powermonitor_main(intf, argc, argv);
+	} else if(strcmp(argv[current_arg], "vflash") == 0) {
+		/* vflash Support */
+		rc = oem_dell_vflash_main(intf, argc, argv);
+	} else{
 		usage();
 		return -1;
 	}
 	return rc;
 }
+
 /*
  * Function Name:     usage
  *
@@ -306,38 +392,738 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:
  *
  */
-static void
-usage(void)
+static
+void usage(void)
 {
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"usage: delloem <command> [option...]");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"commands:");
+	lprintf(LOG_NOTICE, 
+			"    sysinfo");
+	if (oem_dell_is_lcd_supported())
 	lprintf(LOG_NOTICE,
-"");
+			"    lcd");
 	lprintf(LOG_NOTICE,
-"usage: delloem <command> [option...]");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"commands:");
-	lprintf(LOG_NOTICE,
-"    lcd");
-	lprintf(LOG_NOTICE,
-"    mac");
-	lprintf(LOG_NOTICE,
-"    lan");
-	lprintf(LOG_NOTICE,
-"    setled");
-	lprintf(LOG_NOTICE,
-"    powermonitor");
-	lprintf(LOG_NOTICE,
-"    vFlash");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"For help on individual commands type:");
-	lprintf(LOG_NOTICE,
-"delloem <command> help");
+			"    sel");
+	lprintf(LOG_NOTICE, 
+			"    sensor");	
+	lprintf(LOG_NOTICE, 
+			"    mac");
+	lprintf(LOG_NOTICE, 
+			"    lan");
+	lprintf(LOG_NOTICE, 
+			"    powermonitor");
+	lprintf(LOG_NOTICE, 
+			"    vflash");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"For help on individual commands type:");
+	lprintf(LOG_NOTICE, 
+			"delloem <command> help");
+}
+
+/*
+* Function Name:       oem_dell_sysinfo_main
+*
+* Description:         This function processes the delloem sysinfo command
+* Input:               intf    - ipmi interface
+                       argc    - no of arguments
+                       argv    - argument string array
+* Output:
+*
+* Return:              return code     0 - success
+*                         -1 - failure
+*
+*/
+
+static
+int oem_dell_sysinfo_main(struct ipmi_intf *intf, int argc, char **argv)
+{
+	int rc = 0;
+	current_arg++;
+	if(argc <= current_arg) {
+		rc = oem_dell_sysinfo_id(intf);
+	} else{
+		oem_dell_sysinfo_usage();
+	}
+	return rc;
+}
+
+/*
+* Function Name: oem_dell_get_bib_info
+*
+* Description:This function retrieves following info from BIB(BIOS information block)
+* section of the FRU:
+*              o PDRODUCT_MODEL
+*              o ASSET_TAG
+*              o SERVICE_TAG
+*              o BIOS_VERSION
+*
+* Input: fru_data - pointer to fru area
+* bib_type - Product / Asset tag / Service tag / Bios version
+* Output:
+* Return:bib_data - BIOS information block data
+*
+*/
+static
+char* oem_dell_get_bib_info(uint8_t *fru_data, uint8_t bib_type)
+{
+	uint16_t bib_offset = 0, bib_info_area = 0; 
+	uint16_t bib_length = 0, bib_end, length = 0;
+	uint32_t offset = 0;
+	char *bib_data =  NULL;
+
+	/* get BIB fields */
+	if(fru_data[FRU_OFFSET_66] == IPMI_CC_TIMEOUT) {
+		bib_offset = (fru_data[FRU_OFFSET_68] << FRU_SHIFT) | fru_data[FRU_OFFSET_67];
+	} else if(fru_data[FRU_OFFSET_69] == IPMI_CC_TIMEOUT) {
+		bib_offset = (fru_data[FRU_OFFSET_6B] << FRU_SHIFT) | fru_data[FRU_OFFSET_6A];
+	}
+	bib_info_area = bib_offset + FRU_VAL;
+	bib_length = (fru_data[bib_info_area+2]<<FRU_SHIFT) | fru_data[bib_info_area+1];
+	bib_end = bib_info_area + bib_length;
+
+	/* find BIB field */
+	offset = bib_info_area;
+	while((offset <= bib_end) && (fru_data[offset] != bib_type)) {
+		offset += fru_data[offset+1]+3;
+	}
+	if(fru_data[offset] == bib_type) {/* bib info found */
+		if(bib_type == BIB_TYPE_PDRODUCT_MODEL) {
+			length = fru_data[offset+1]-FRU_VAL;
+		} else{
+			length = fru_data[offset+1];
+		}
+
+		bib_data = malloc(length+1);
+		memset(bib_data, 0, length+1);
+		if(bib_type == BIB_TYPE_PDRODUCT_MODEL) {
+			memcpy(bib_data, &fru_data[offset+8], length);
+		} else{
+			memcpy(bib_data, &fru_data[offset+2], length);
+		}
+		bib_data[length] = '\0';
+		/*printf("BIOS version: %s\n", bib_data);*/
+	} else{
+		bib_data = NULL;
+	}
+	return bib_data;
+}
+
+/*
+* Function Name: oem_dell_sysinfo_get_tag
+*
+* Description:This function retrieves tag string
+*
+* Input: intf - pointer to interface
+* tag_type - either assettag / servicetag
+* length- length of the tagstring
+* Output: tagstring - assettag  / servicetag string
+*
+* Return:0
+*
+*/
+
+static
+int oem_dell_sysinfo_get_tag(struct ipmi_intf *intf, 
+		char *tagstring, uint8_t tag_type, uint8_t length)
+{
+	struct ipmi_rs *rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data_offset = 0;
+	uint8_t data[4] = {0};
+	ipmi_dell_tag *tagblock = NULL;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = sizeof(data);
+	req.msg.data = data;
+	data[data_offset++] = 0; /* get parameter*/
+	data[data_offset++] = tag_type; /* get asset tag*/
+	data[data_offset++] = 0;
+	data[data_offset++] = 0;
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				" Error getting asset tag");
+		return -1;
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				" Error getting asset tag: %s", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	tagblock = (ipmi_dell_tag *)(void *) rsp->data;
+	memset(tagstring, 0, length);
+	memcpy(tagstring, &tagblock->tag, tagblock->length);
+	tagstring[length] = '\0' ;
+	return 0;
+
 }
 /*
- * Function Name:       ipmi_delloem_lcd_main
+* Function Name: oem_dell_sysinfo_print_board
+*
+* Description:This function prints FRU Board Area for sysinfo command
+* Input: intf - pointer to ipmi interface
+* fru- pointer to fru area
+* id- fru id
+* offset- offset to fru area
+* ipmi_version- ipmi version
+* Output:
+*
+* Return:
+*
+*/
+static
+void oem_dell_sysinfo_print_board(struct ipmi_intf *intf, struct fru_info *fru, 
+				uint8_t id, uint32_t offset, uint8_t ipmi_version)
+{
+	char *fru_area = NULL;
+	uint8_t *fru_data = NULL, *fru_data_tmp = NULL;
+	uint8_t language = 0;
+	uint32_t fru_len = 0, area_len = 0, i = 0, j = 0;
+	uint16_t length = 0;
+	
+	i = offset;
+	fru_data_tmp = fru_data = malloc(fru->size + 1);
+	if( NULL == fru_data ) {
+		lprintf(LOG_ERR, " Out of memory!");
+		return;
+	}
+	memset(fru_data, 0, fru->size + 1);
+	if(read_fru_area(intf, fru, id, i, 2, fru_data_tmp) == 0) /* read enough to check length field */
+		fru_len = 8 * fru_data[1]; //fru_len = 8 * fru_data[i + 1];
+	if(fru_len <= 0) {
+		free_n(&fru_data);
+		return;
+	}
+	fru_len = 0x200;
+	i = 0;
+	if(read_fru_area(intf, fru, id, i, fru_len, fru_data_tmp) < 0) { /* read in the full fru */
+		free_n(&fru_data);
+		return;
+	}
+	boardoffsetptr = (fru_data[BOARD_OFFSET])*OFFSETMULTIPLIER;
+	productoffsetptr = (fru_data[PRODUCT_OFFSET])*OFFSETMULTIPLIER;
+	if(iDRAC_FLAG == IDRAC_14G)
+		language = fru_data[boardoffsetptr+BOARDLANGOFFSET];
+	else if(iDRAC_FLAG == IDRAC_13G)
+		language = fru_data[10];
+	if(language == 0x00) {
+		printf("Board Language Code : English\n");
+	} else{
+		printf("Board Language Code : Unknown\n");
+	}
+	if(iDRAC_FLAG == IDRAC_14G)
+		i = boardoffsetptr+BOARDPRODUCTMANFLENOFFSET;
+	else if(iDRAC_FLAG == IDRAC_13G) {
+		i = 8;
+		i++; /* skip fru area version */
+		area_len = fru_data[i++] * 8; /* fru area length */
+		i++; /* skip fru board language */
+		i += 3; /* skip mfg. date time */
+	}
+	fru_area = get_fru_area_str(fru_data, &i);
+	if((NULL != fru_area) && (strlen(fru_area) > 0)) {
+		free_n(&fru_area);
+	}
+	fru_area = get_fru_area_str(fru_data, &i);
+	if((NULL != fru_area) && (strlen(fru_area) > 0)) {
+		printf("Board Product Name  : %s\n", fru_area);
+		free_n(&fru_area);
+	}
+	fru_area = get_fru_area_str(fru_data, &i);
+	if(NULL != fru_area && strlen(fru_area) > 0) {
+		printf("Board Serial Number : %s\n", fru_area);
+		free_n(&fru_area);
+	}
+	fru_area = get_fru_area_str(fru_data, &i);
+	if(NULL != fru_area && strlen(fru_area) > 0)
+	{
+		printf("Board Part Number   : %s\n", fru_area);
+		free_n(&fru_area);
+	}
+	fru_area = get_fru_area_str(fru_data, &i);
+	if(NULL != fru_area && strlen(fru_area) > 0)
+	{
+		if(*fru_area<48)
+			*fru_area = '\0';
+		printf("Board FRU File ID   : %s\n", fru_area);
+		free_n(&fru_area);
+	}
+	while((fru_data[i] != IPMI_CC_INV_CMD) && (i < offset + area_len)) /* read any extra fields */
+	{
+		
+		j = i;
+		fru_area = get_fru_area_str(fru_data, &i);
+		if(NULL != fru_area && strlen(fru_area) > 0) {
+			printf(" Board Extra           : %s\n", fru_area);
+			free_n(&fru_area);
+		}
+		if(i == j)
+			break;
+	}
+	if(ipmi_version == 0x51) {
+		length = (fru_data[0x72] << 8) |(fru_data[0x71]); /* get host name */
+		fru_area = malloc(length+1);
+		memset(fru_area, 0, length+1);
+		memcpy(fru_area, &fru_data[0x75], length);
+		fru_area[length] = '\0';
+		printf("Host Name           : %s\n", fru_area);
+		free_n(&fru_area);
+
+		fru_area = oem_dell_get_bib_info(fru_data, BIB_TYPE_PDRODUCT_MODEL);
+		if(NULL != fru_area && strlen(fru_area) > 0) {
+			printf("Product Model       : %s\n", fru_area);
+			free_n(&fru_area);
+		}
+		fru_area = oem_dell_get_bib_info(fru_data, BIB_TYPE_ASSET_TAG);
+		if(NULL != fru_area && strlen(fru_area) > 0) {
+			printf("##Asset Tag           : %s\n", fru_area);
+			free_n(&fru_area);
+		}
+		fru_area = oem_dell_get_bib_info(fru_data, BIB_TYPE_SERVICE_TAG);
+		if(NULL != fru_area && strlen(fru_area) > 0) {
+			printf("Service Tag         : %s\n", fru_area);
+			free_n(&fru_area);
+		}
+		fru_area = oem_dell_get_bib_info(fru_data, BIB_TYPE_BIOS_VERSION);
+		if(NULL != fru_area && strlen(fru_area) > 0) {
+			printf("BIOS version        : %s\n", fru_area);
+			free_n(&fru_area);
+		}
+	}
+	free_n(&fru_data);
+}
+
+/*****************************************************************
+ * Function Name: oem_dell_sysinfo_fru
+ *
+ * Description:This function prints the 'fru' portion of the sysinfo command
+ * Input: intf - pointer to ipmi interface
+ *id- fru id
+ *ipmi_version- ipmi version
+ * Output:
+ *
+ * Return:0
+ *
+ ******************************************************************/
+static
+int oem_dell_sysinfo_fru(struct ipmi_intf *intf, uint8_t id, uint8_t ipmi_version)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req = {0};
+	struct fru_info fru = {0};
+	struct fru_header header = {0};
+	uint8_t msg_data[4] = {0};
+	uint8_t input_length = 0;
+	memset(&fru, 0, sizeof(struct fru_info));
+	memset(&header, 0, sizeof(struct fru_header));
+	memset(msg_data, 0, 4); /*  get info about this FRU  */
+	msg_data[0] = id;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp) {
+		printf(" Device not present(No Response)\n");
+		return -1;
+	}
+	if( rsp->ccode ) {
+		printf(" Device not present(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+	lprintf(LOG_DEBUG, 
+			"fru.size = %d bytes(accessed by %s)", 
+			fru.size, fru.access ? "words" : "bytes");
+	if(fru.size < 1) {
+		lprintf(LOG_ERR, 
+				" Invalid FRU size %d", fru.size);
+		return -1;
+	}
+
+	/*
+	 * retrieve the FRU header
+	 */
+	msg_data[input_length++] = id;
+	msg_data[input_length++] = 0;
+	msg_data[input_length++] = 0;
+	msg_data[input_length++] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = REQ_MSG_LEN;
+
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp) {
+		printf(" Device not present(No Response)\n");
+		return 1;
+	}
+	if( rsp->ccode ) {
+		printf(" Device not present(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return 1;
+	}
+
+	if(verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	if(header.version != 1)
+	{
+		lprintf(LOG_ERR, 
+				" Unknown FRU header version 0x%02x", 
+				header.version);
+		return -1;
+	}
+
+	/* offsets need converted to bytes
+	 * but that conversion is not done to the structure
+	 * because we may end up with offset > 255
+	 * which would overflow our 1-byte offset field */
+
+
+#define IPMI_DELL_OS_NAME_LENGTH_MAX 254
+
+	char assettag[IPMI_DELL_SYSINFO_ASSET_TAG_LENGTH+1] = {0};
+	char servicetag[IPMI_DELL_SYSINFO_SERVICE_TAG_LENGTH+1] = {0};
+	char hostname[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char productmodel[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char osname[IPMI_DELL_OS_NAME_LENGTH_MAX+1] = {0};
+	char biosversion[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+	char osversion[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
+
+	/* Print board area */
+	if((header.offset.board*8) >= sizeof(struct fru_header))
+		oem_dell_sysinfo_print_board(intf, &fru, id, header.offset.board*8, ipmi_version);
+
+	/* Print the rest of the sysinfo command */
+	if(ipmi_version == 0x51) {
+
+		/*all the remaining info for ipmi 1.5 systems is printed in the oem_dell_sysinfo_print_board
+		  function call above. */
+	} else{
+		/* for IPMI 2.0 we get the remaining info from the "get system info" IPMI command rather
+		 * than from the 'get fru data' command */
+
+
+		ipmi_lcd_get_platform_model_name(intf, hostname, IPMI_DELL_LCD_STRING_LENGTH_MAX, 
+				IPMI_DELL_SYSINFO_HOST_NAME);
+		printf("Host Name           : %s\n", hostname);
+
+
+		ipmi_lcd_get_platform_model_name(intf, productmodel, IPMI_DELL_LCD_STRING_LENGTH_MAX, 
+				IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR);
+		printf("Product Model       : %s\n", productmodel);
+
+		oem_dell_sysinfo_get_tag(intf, assettag, IPMI_DELL_SYSINFO_ASSET_TAG, 
+				IPMI_DELL_SYSINFO_ASSET_TAG_LENGTH);
+		printf("Asset Tag           : %s\n", assettag);
+
+		oem_dell_sysinfo_get_tag(intf, servicetag, IPMI_DELL_SYSINFO_SERVICE_TAG, 
+				IPMI_DELL_SYSINFO_SERVICE_TAG_LENGTH);
+		printf("Service Tag         : %s\n", servicetag);
+
+		ipmi_lcd_get_platform_model_name(intf, biosversion, IPMI_DELL_LCD_STRING_LENGTH_MAX, 
+				IPMI_DELL_SYSINFO_BIOS_VERSION);
+		printf("BIOS Version        : %s\n", biosversion);
+
+		ipmi_lcd_get_platform_model_name(intf, osname, IPMI_DELL_OS_NAME_LENGTH_MAX, 
+				IPMI_DELL_SYSINFO_OS_NAME);
+		printf("System OS Name      : %s\n", osname);
+
+		ipmi_lcd_get_platform_model_name(intf, osversion, IPMI_DELL_OS_NAME_LENGTH_MAX, 
+				IPMI_DELL_SYSINFO_OS_VERSION_NUMBER);
+		printf("System OS Version   : %s\n", osversion);
+	}
+	return 0;
+}
+
+/*****************************************************************
+ * Function Name: oem_dell_sysinfo_id
+ *
+ * Description:This function prints the 'id' portion of the sysinfo command
+ * Input: intf - pointer to ipmi interface
+ *type- fru type
+ * Output:
+ *
+ * Return:
+ *
+ ******************************************************************/
+static
+int oem_dell_sysinfo_id(struct ipmi_intf *intf)
+{
+	struct ipmi_rs *rsp = NULL;
+	struct ipmi_rq req = {0};
+	int rc = 0;
+	struct ipm_devid_rsp *dev_id = NULL;
+	struct sdr_repo_info_rs *repo_info = NULL;
+	uint8_t ipmi_version = 0;
+	uint8_t data[4] = {0};
+	uint8_t input_length = 0;
+	struct fw_ver firmware_ver = {0};
+
+	/* 20 80 01 52 51 9f a2 02 00 00 00 00 00 00 00 <- raw data */
+	memset(&req, 0, sizeof(req));
+
+	if((iDRAC_FLAG == IDRAC_13G) ||(iDRAC_FLAG == IDRAC_14G))
+		data[input_length] = IPMI_IDRAC_VER2;
+	else if(iDRAC_FLAG == IDRAC_12G)
+		data[input_length] = IPMI_IDRAC_VER1;
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = SYSINFO_ID_CMD;
+	req.msg.data = data;
+	req.msg.data_len = 1;
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp)
+	{
+		printf(" Error Getting the Firmware version \n");
+		return -1;
+	}
+	if(rsp->ccode == IPMI_CC_INV_CMD)
+	{
+		memset(&firmware_ver, 0, sizeof(struct fw_ver));
+	}
+	else if(rsp->ccode)
+	{
+		printf(" Error getting device ID(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	else
+		memcpy(&firmware_ver, rsp->data, sizeof(struct fw_ver));
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp)
+	{
+		printf(" Error getting device ID(No Response)\n");
+		return -1;
+	}
+	if(rsp->ccode)
+	{
+		printf(" Error getting device ID(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	dev_id = (struct ipm_devid_rsp *)(void *) rsp->data;
+	printf("Device ID           : %0.2d\n", dev_id->device_id);
+	printf("Device Revision     : %0.2d\n", dev_id->device_revision & 0x7F);
+	if((iDRAC_FLAG == IDRAC_12G) || (iDRAC_FLAG == IDRAC_13G)
+			||(iDRAC_FLAG == IDRAC_14G))
+	{
+		if(firmware_ver.major_ver == 0)
+		{
+			printf("Firmware Version    : %d.%0.2d(Build %02d)\n", 
+					dev_id->fw_rev1 & 0x7F, dev_id->fw_rev2, 
+					dev_id->aux_fw_rev[1]);
+		}
+		else
+		{
+			if((iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G))
+			{
+				printf
+					("Firmware Version    : %d.%0.2d.%02d.%02d(Build %02d)\n", 
+					 firmware_ver.major_ver, firmware_ver.minor_ver, 
+					(firmware_ver.pla_data_msb << 8 | firmware_ver.pla_data_lsb), 
+					(firmware_ver.lc_ver_msb << 8 | firmware_ver.lc_ver_lsb), 
+					(firmware_ver.build_no_msb << 8 | firmware_ver.
+					  build_no_lsb));
+			}
+			else
+			{
+				printf("Firmware Version    : %d.%0.2d.%02d(Build %02d)\n", 
+						firmware_ver.major_ver, firmware_ver.minor_ver, 
+						(firmware_ver.pla_data_msb << 8 | firmware_ver.
+						 pla_data_lsb), 
+						(firmware_ver.build_no_msb << 8 | firmware_ver.
+						 build_no_lsb));
+			}
+		}
+	}
+	else
+	{
+		/*DF427387 Fix for Build Version Number
+		*Byte:  1314   15       16
+		*Data: <platform ID> <Build Number> <RES> <RES>
+		*/
+		printf("Firmware Version    : %d.%0.2x.%02d\n", dev_id->fw_rev1 & 0x7F, 
+				dev_id->fw_rev2, dev_id->aux_fw_rev[1]);
+	}
+
+	/* BCD value. byte->hex conversion used. */
+	printf("IPMI Version        : %d.%d\n", dev_id->ipmi_version & 0x0F, 
+			dev_id->ipmi_version >> 4);
+	ipmi_version = dev_id->ipmi_version;
+
+	printf("Manufacturer ID     : %lu\n", 
+			(long)IPM_DEV_MANUFACTURER_ID(dev_id->manufacturer_id));
+	printf("Product ID          : %d\n", 
+			dev_id->product_id[1] * 256 + dev_id->product_id[0]);
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_SELF_TEST;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+	rsp = intf->sendrecv(intf, &req);
+
+	if(rsp->data[0] == 0x55)
+	{
+		printf("Status              : No error\n");
+	}
+	else if(rsp->data[0] == 0x56)
+	{
+		printf
+			("Status              : Self Test Function not implemented in this controller\n");
+	}
+	else if(rsp->data[0] == 0x58)
+	{
+		printf
+			("Status              : Fatal Hardware Error(BMC is inoperative)\n");
+	}
+	else if(rsp->data[0] == 0x57)
+	{
+		printf("Status              : ");
+		if(rsp->data[1] & IPMI_VAL1)
+		{
+			printf("Controller operational firmware corrupte ");
+		}
+		if(rsp->data[1] & IPMI_VAL2)
+		{
+			printf("Controller update 'boot block' firmware corrupte ");
+		}
+		if(rsp->data[1] & IPMI_VAL3)
+		{
+			printf("Internal Use Area of BMC FRU corrupted ");
+		}
+		if(rsp->data[1] & IPMI_VAL4)
+		{
+			printf("SDR Repository Empty ");
+		}
+		if(rsp->data[1] & IPMI_VAL5)
+		{
+			printf("IPMB signal lines do not respond ");
+		}
+		if(rsp->data[1] & IPMI_VAL6)
+		{
+			printf("Cannot access BMC FRU device ");
+		}
+		if(rsp->data[1] & IPMI_VAL7)
+		{
+			printf("Cannot access SDR Repository ");
+		}
+		if(rsp->data[1] & IPMI_VAL8)
+		{
+			printf("Cannot access SEL device");
+		}
+		printf("\n");
+	}
+	else if(rsp->data[0] != 0xFF)
+	{
+		printf
+			("Status              : Internal Failure. Refer to particular device's specification for definition\n");
+	}
+	else
+	{
+		printf("Status              : \n");
+	}
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR_REPO_INFO;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp)
+	{
+		printf(" Error getting SDR version(No Response)\n");
+		return -1;
+	}
+	if(rsp->ccode)
+	{
+		printf(" Error getting SDR version(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	repo_info = (struct sdr_repo_info_rs *)(void *) rsp->data;
+	printf("SDR Version         : %d.%d\n", repo_info->version & 0x0F, 
+			repo_info->version >> 4);
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_GUID;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+	rsp = intf->sendrecv(intf, &req);
+	if(NULL == rsp)
+	{
+		printf(" Error getting device GUID(No Response)\n");
+		return -1;
+	}
+	if(rsp->ccode)
+	{
+		printf(" Error getting device GUID(%s)\n", 
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+	printf
+		("GUID                : %.2X%.2X%.2X%.2X-%.2X%.2X-%.2X%.2X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X\n", 
+		 rsp->data[15], rsp->data[14], rsp->data[13], rsp->data[12], 
+		 rsp->data[11], rsp->data[10], rsp->data[9], rsp->data[8], rsp->data[7], 
+		 rsp->data[6], rsp->data[5], rsp->data[4], rsp->data[3], rsp->data[2], 
+		 rsp->data[1], rsp->data[0]);
+	rc = oem_dell_sysinfo_fru(intf, 0, ipmi_version);
+	return rc;
+}
+/*****************************************************************
+* Function Name: oem_dell_sysinfo_usage
+*
+* Description: This function prints help message for sysinfo command
+* Input:
+* Output:
+*
+* Return:
+*
+******************************************************************/
+
+static
+void oem_dell_sysinfo_usage(void)
+{
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   sysinfo");
+	lprintf(LOG_NOTICE, 
+			"      Show system information");
+}
+/*
+ * Function Name:       oem_dell_lcd_main
  *
  * Description:         This function processes the delloem lcd command
  * Input:               intf    - ipmi interface
@@ -349,229 +1135,237 @@ usage(void)
  *                         -1 - failure
  *
  */
-static int
-ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
+static
+int oem_dell_lcd_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	current_arg++;
-	if (argc < current_arg) {
+	if(argc < current_arg) {
 		usage();
 		return -1;
 	}
 	/* ipmitool delloem lcd info*/
-	if (argc == 1 || strcmp(argv[current_arg], "help") == 0) {
-		ipmi_lcd_usage();
+	if(argc == 1 || strcmp(argv[current_arg], "help") == 0) {
+		oem_dell_lcd_usage();
 		return 0;
 	}
-	CheckLCDSupport(intf);
-	ipmi_idracvalidator_command(intf);
-	if (!IsLCDSupported()) {
-		lprintf(LOG_ERR, "lcd is not supported on this system.");
+	oem_dell_check_lcd_support(intf);
+	oem_dell_idracvalidator_command(intf);
+	if(!oem_dell_is_lcd_supported()) {
+		lprintf(LOG_ERR, 
+				"lcd is not supported on this system.");
 		return -1;
-	} else if (strncmp(argv[current_arg], "info\0", 5) == 0) {
-		if (iDRAC_FLAG_ALL) {
-			rc = ipmi_lcd_get_info_wh(intf);
-		} else {
-			rc = ipmi_lcd_get_info(intf);
+	} else if(strcmp(argv[current_arg], "info") == 0) {
+		if(iDRAC_FLAG_ALL) {
+			rc = oem_dell_lcd_get_info_wh(intf);
+		} else{
+			rc = oem_dell_lcd_get_info(intf);
 		}
-	} else if (strncmp(argv[current_arg], "status\0", 7) == 0) {
-		rc = ipmi_lcd_get_status(intf);
-	} else if (strncmp(argv[current_arg], "set\0", 4) == 0) {
+	} else if(strcmp(argv[current_arg], "status") == 0) {
+		rc = oem_dell_lcd_get_status(intf);
+	} else if(strcmp(argv[current_arg], "set") == 0) {
 		/* ipmitool delloem lcd set*/
 		uint8_t line_number = 0;
 		current_arg++;
-		if (argc <= current_arg) {
-			ipmi_lcd_usage();
+		if(argc <= current_arg) {
+			oem_dell_lcd_usage();
 			return -1;
 		}
-		if (strncmp(argv[current_arg], "line\0", 5) == 0) {
+		if(strcmp(argv[current_arg], "line") == 0) {
 			current_arg++;
-			if (argc <= current_arg) {
+			if(argc <= current_arg) {
 				usage();
 				return -1;
 			}
-			if (str2uchar(argv[current_arg], &line_number) != 0) {
-				lprintf(LOG_ERR,
-						"Argument '%s' is either not a number or out of range.",
+			if(str2uchar(argv[current_arg], &line_number) != 0) {
+				lprintf(LOG_ERR, 
+						"Argument '%s' is either not a number or out of range.", 
 						argv[current_arg]);
-				return (-1);
+				return(-1);
 			}
 			current_arg++;
-			if (argc <= current_arg) {
+			if(argc <= current_arg) {
 				usage();
 				return -1;
 			}
 		}
-		if ((strncmp(argv[current_arg], "mode\0", 5) == 0)
-				&& (iDRAC_FLAG_ALL)) {
+		if((strcmp(argv[current_arg], "mode") == 0)
+				&&(iDRAC_FLAG_ALL)) {
 			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (!argv[current_arg]) {
-				ipmi_lcd_usage();
+			if(NULL == argv[current_arg] ) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "none\0", 5) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_NONE, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "modelname\0", 10) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "userdefined\0", 12) == 0) {
+			if(strcmp(argv[current_arg], "none") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_NONE, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "modelname") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "userdefined") == 0) {
 				current_arg++;
-				if (argc <= current_arg) {
-					ipmi_lcd_usage();
+				if(argc <= current_arg) {
+					oem_dell_lcd_usage();
 					return -1;
 				}
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
-						0xFF, 0XFF, argv[current_arg]);
-			} else if (strncmp(argv[current_arg], "ipv4address\0", 12) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV4ADRESS,
-						0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "macaddress\0", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_IDRAC_MAC_ADDRESS,
-							0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "systemname\0", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_OS_SYSTEM_NAME, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "servicetag\0", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SERVICE_TAG, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "ipv6address\0", 12) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV6ADRESS,
-						0xFF, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "ambienttemp\0", 12) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_AMBEINT_TEMP, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "systemwatt\0", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_SYSTEM_WATTS, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "assettag\0", 9) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, IPMI_DELL_LCD_ASSET_TAG, 0xFF,
-						0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
-				ipmi_lcd_usage();
-			} else {
-				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED, 
+						0xFF, 0XFF, line_number, argv[current_arg]);
+			} else if(strcmp(argv[current_arg], "ipv4address") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV4ADRESS, 
+						0xFF, 0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "macaddress") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_IDRAC_MAC_ADDRESS, 
+						0xFF, 0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "systemname") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_OS_SYSTEM_NAME, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "servicetag") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_SERVICE_TAG, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "ipv6address") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_iDRAC_IPV6ADRESS, 
+						0xFF, 0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "ambienttemp") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_AMBEINT_TEMP, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "systemwatt") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_SYSTEM_WATTS, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "assettag") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, IPMI_DELL_LCD_ASSET_TAG, 0xFF, 
+						0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "help") == 0) {
+				oem_dell_lcd_usage();
+			} else{
+				lprintf(LOG_ERR, 
+						"Invalid DellOEM command: %s", 
 						argv[current_arg]);
-				ipmi_lcd_usage();
+				oem_dell_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "lcdqualifier\0", 13) == 0)
-				&& (iDRAC_FLAG_ALL)) {
+		} else if((strcmp(argv[current_arg], "lcdqualifier") == 0)
+				&&(iDRAC_FLAG_ALL)) {
 			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (!argv[current_arg]) {
-				ipmi_lcd_usage();
+			if( NULL == argv[current_arg] ) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x00, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "btuphr\0",7) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x01, 0XFF, NULL);
-			} else if (strncmp(argv[current_arg], "celsius\0", 8) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x02, 0xFF, NULL);
-			} else if (strncmp(argv[current_arg], "fahrenheit", 11) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0x03, 0xFF, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
-				ipmi_lcd_usage();
-			} else {
-				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+			if(strcmp(argv[current_arg], "watt") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0x00, 0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "btuphr") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0x01, 0XFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "celsius") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0x02, 0xFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "fahrenheit") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0x03, 0xFF, 0, NULL);
+			} else if(strcmp(argv[current_arg], "help") == 0) {
+				oem_dell_lcd_usage();
+			} else{
+				lprintf(LOG_ERR, 
+						"Invalid DellOEM command: %s", 
 						argv[current_arg]);
-				ipmi_lcd_usage();
+				oem_dell_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "errordisplay\0", 13) == 0)
-				&& (iDRAC_FLAG_ALL)) {
+		} else if((strcmp(argv[current_arg], "errordisplay") == 0)
+				&&(iDRAC_FLAG_ALL)) {
 			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (!argv[current_arg]) {
-				ipmi_lcd_usage();
+			if( NULL == argv[current_arg] ) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			if (strncmp(argv[current_arg], "sel\0", 4) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
-						IPMI_DELL_LCD_ERROR_DISP_SEL, NULL);
-			} else if (strncmp(argv[current_arg], "simple\0", 7) == 0) {
-				rc = ipmi_lcd_configure_wh(intf, 0xFF, 0xFF,
-						IPMI_DELL_LCD_ERROR_DISP_VERBOSE, NULL);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
-				ipmi_lcd_usage();
-			} else {
-				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+			if(strcmp(argv[current_arg], "sel") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0xFF, 
+						IPMI_DELL_LCD_ERROR_DISP_SEL, 0, NULL);
+			} else if(strcmp(argv[current_arg], "simple") == 0) {
+				rc = oem_dell_lcd_configure_wh(intf, 0xFF, 0xFF, 
+						IPMI_DELL_LCD_ERROR_DISP_VERBOSE, 0, NULL);
+			} else if(strcmp(argv[current_arg], "help") == 0) {
+				oem_dell_lcd_usage();
+			} else{
+				lprintf(LOG_ERR, 
+						"Invalid DellOEM command: %s", 
 						argv[current_arg]);
-				ipmi_lcd_usage();
+				oem_dell_lcd_usage();
 			}
-		} else if ((strncmp(argv[current_arg], "none\0", 5) == 0)
-				&& (iDRAC_FLAG==0)) {
-			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_NONE, NULL);
-		} else if ((strncmp(argv[current_arg], "default\0", 8) == 0)
-				&& (iDRAC_FLAG==0)) {
-			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, NULL);
-		} else if ((strncmp(argv[current_arg], "custom\0", 7) == 0)
-				&& (iDRAC_FLAG==0)) {
+		} else if((strcmp(argv[current_arg], "none") == 0)
+				&&(iDRAC_FLAG == 0)) {
+			rc = oem_dell_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_NONE, 0, NULL);
+		} else if((strcmp(argv[current_arg], "default") == 0)
+				&&(iDRAC_FLAG == 0)) {
+			rc = oem_dell_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_DEFAULT, 0, NULL);
+		} else if((strcmp(argv[current_arg], "custom") == 0)
+				&&(iDRAC_FLAG == 0)) {
 			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
 				return -1;
 			}
-			rc = ipmi_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED,
+			rc = oem_dell_lcd_configure(intf, IPMI_DELL_LCD_CONFIG_USER_DEFINED, 
+					line_number, argv[current_arg]);
+		} else if(strcmp(argv[current_arg], "vkvm") == 0) {
+			current_arg++;
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
+				return -1;
+			}
+			if(strcmp(argv[current_arg], "active") == 0) {
+				rc = oem_dell_lcd_set_kvm(intf, 1);
+			} else if(strcmp(argv[current_arg], "inactive") == 0) {
+				rc = oem_dell_lcd_set_kvm(intf, 0);
+			} else if(strcmp(argv[current_arg], "help") == 0) {
+				oem_dell_lcd_usage();
+			} else{
+				lprintf(LOG_ERR, 
+						"Invalid DellOEM command: %s", 
+						argv[current_arg]);
+				oem_dell_lcd_usage();
+			}
+		} else if(strcmp(argv[current_arg], "frontpanelaccess") == 0) {
+			current_arg++;
+			if(argc <= current_arg) {
+				oem_dell_lcd_usage();
+				return -1;
+			}
+			if(strcmp(argv[current_arg], "viewandmodify") == 0) {
+				rc = oem_dell_lcd_set_lock(intf, 0);
+			} else if(strcmp(argv[current_arg], "viewonly") == 0) {
+				rc =  oem_dell_lcd_set_lock(intf, 1);
+			} else if(strcmp(argv[current_arg], "disabled") == 0) {
+				rc =  oem_dell_lcd_set_lock(intf, 2);
+			} else if(strcmp(argv[current_arg], "help") == 0) {
+				oem_dell_lcd_usage();
+			} else{
+				lprintf(LOG_ERR, 
+						"Invalid DellOEM command: %s", 
+						argv[current_arg]);
+				oem_dell_lcd_usage();
+			}
+		} else if((strcmp(argv[current_arg], "help") == 0)
+				&&(iDRAC_FLAG == 0)) {
+			oem_dell_lcd_usage();
+		} else{
+			lprintf(LOG_ERR, 
+					"Invalid DellOEM command: %s", 
 					argv[current_arg]);
-		} else if (strncmp(argv[current_arg], "vkvm\0", 5) == 0) {
-			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
-				return -1;
-			}
-			if (strncmp(argv[current_arg], "active\0", 7) == 0) {
-				rc = ipmi_lcd_set_kvm(intf, 1);
-			} else if (strncmp(argv[current_arg], "inactive\0", 9) == 0) {
-				rc = ipmi_lcd_set_kvm(intf, 0);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
-				ipmi_lcd_usage();
-			} else {
-				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
-						argv[current_arg]);
-				ipmi_lcd_usage();
-			}
-		} else if (strncmp(argv[current_arg], "frontpanelaccess\0", 17) == 0) {
-			current_arg++;
-			if (argc <= current_arg) {
-				ipmi_lcd_usage();
-				return -1;
-			}
-			if (strncmp(argv[current_arg], "viewandmodify\0", 14) == 0) {
-				rc = ipmi_lcd_set_lock(intf, 0);
-			} else if (strncmp(argv[current_arg], "viewonly\0", 9)==0) {
-				rc =  ipmi_lcd_set_lock(intf, 1);
-			} else if (strncmp(argv[current_arg], "disabled\0", 9)==0) {
-				rc =  ipmi_lcd_set_lock(intf, 2);
-			} else if (strncmp(argv[current_arg], "help\0", 5) == 0) {
-				ipmi_lcd_usage();
-			} else {
-				lprintf(LOG_ERR, "Invalid DellOEM command: %s",
-						argv[current_arg]);
-				ipmi_lcd_usage();
-			}
-		} else if( (strncmp(argv[current_arg], "help\0", 5) == 0)
-				&& (iDRAC_FLAG==0)) {
-			ipmi_lcd_usage();
-		} else {
-			lprintf(LOG_ERR, "Invalid DellOEM command: %s",
-					argv[current_arg]);
-			ipmi_lcd_usage();
+			oem_dell_lcd_usage();
 			return -1;
 		}
-	} else {
-		lprintf(LOG_ERR, "Invalid DellOEM command: %s",
+	} else{
+		lprintf(LOG_ERR, 
+				"Invalid DellOEM command: %s", 
 				argv[current_arg]);
-		ipmi_lcd_usage();
+		oem_dell_lcd_usage();
 		return -1;
 	}
 	return rc;
@@ -587,55 +1381,57 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
  * returns: 0 => success, other value means error
  */
 int
-ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
-		uint8_t max_length, uint8_t field_type)
+ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring, 
+					uint8_t max_length, uint8_t field_type)
 {
 	int bytes_copied = 0;
-	int ii = 0;
+	int i = 0;
 	int lcdstring_len = 0;
 	int rc = 0;
-	IPMI_DELL_LCD_STRING lcdstringblock;
+	ipmi_dell_lcd_string lcdstringblock = {0};
 
-	for (ii = 0; ii < 4; ii++) {
+	for(i = 0; i < 4; i++) {
 		int bytes_to_copy;
-		rc = ipmi_mc_getsysinfo(intf, field_type, ii, 0, sizeof(lcdstringblock),
+		rc = ipmi_mc_getsysinfo(intf, field_type, i, 0, sizeof(lcdstringblock), 
 				&lcdstringblock);
-		if (rc < 0) {
-			lprintf(LOG_ERR, "Error getting platform model name");
+		if(rc < 0) {
+			lprintf(LOG_ERR, 
+					"Error getting platform model name");
 			break;
-		} else if (rc > 0) {
-			lprintf(LOG_ERR, "Error getting platform model name: %s",
+		} else if(rc > 0) {
+			lprintf(LOG_ERR, 
+					"Error getting platform model name: %s", 
 					val2str(rc, completion_code_vals));
 			break;
 		}
 		/* first block is different - 14 bytes*/
-		if (ii == 0) {
+		if(i == 0) {
 			lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
-			lcdstring_len = MIN(lcdstring_len,max_length);
+			lcdstring_len = MIN(lcdstring_len, max_length);
 			bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
-			memcpy(lcdstring, lcdstringblock.lcd_string.selector_0_string.data,
+			memcpy(lcdstring, lcdstringblock.lcd_string.selector_0_string.data, 
 					bytes_to_copy);
-		} else {
+		} else{
 			int string_offset;
-			bytes_to_copy = MIN(lcdstring_len - bytes_copied,
+			bytes_to_copy = MIN(lcdstring_len - bytes_copied, 
 					IPMI_DELL_LCD_STRINGN_SIZE);
-			if (bytes_to_copy < 1) {
+			if(bytes_to_copy < 1) {
 				break;
 			}
 			string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE
-				* (ii-1);
-			memcpy(lcdstring + string_offset,
+				*(i - 1);
+			memcpy(lcdstring + string_offset, 
 					lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
 		}
 		bytes_copied += bytes_to_copy;
-		if (bytes_copied >= lcdstring_len) {
+		if(bytes_copied >= lcdstring_len) {
 			break;
 		}
 	}
 	return rc;
 }
 /*
- * Function Name:    ipmi_idracvalidator_command
+ * Function Name:    oem_dell_idracvalidator_command
  *
  * Description:      This function returns the iDRAC6 type
  * Input:            intf            - ipmi interface
@@ -644,19 +1440,19 @@ ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
  * Return:           iDRAC6 type     1 - whoville
  *                                   0 - others
  */
-static int
-ipmi_idracvalidator_command(struct ipmi_intf * intf)
+static
+int oem_dell_idracvalidator_command(struct ipmi_intf *intf)
 {
-	int rc;
-	uint8_t data[11];
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_IDRAC_VALIDATOR, 2, 0, sizeof(data),
+	int rc = 0;
+	uint8_t data[11] = {0};
+	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_IDRAC_VALIDATOR, 2, 0, sizeof(data), 
 			data);
-	if (rc < 0) {
+	if(rc < 0) {
 		/*lprintf(LOG_ERR, " Error getting IMC type"); */
 		return -1;
-	} else if (rc > 0) {
-		/*lprintf(LOG_ERR, " Error getting IMC type: %s",
-		val2str(rsp->ccode, completion_code_vals));  */
+	} else if(rc > 0) {
+		/*lprintf(LOG_ERR, " Error getting IMC type: %s", 
+		  val2str(rsp->ccode, completion_code_vals));  */
 		return -1;
 	}
 	/*
@@ -665,24 +1461,30 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
 	iDRAC_FLAG_ALL = 0;
 	iDRAC_FLAG_12_13 = 0;
 	/* Support the 11G Monolithic, modular, Maisy and Coaster */
-	if ((IMC_IDRAC_11G_MONOLITHIC == data[10])
-			|| (IMC_IDRAC_11G_MODULAR == data[10])
-			|| (IMC_MASER_LITE_BMC == data[10])
-			|| (IMC_MASER_LITE_NU == data[10])) {
-		iDRAC_FLAG=IDRAC_11G;
+	if((IMC_IDRAC_11G_MONOLITHIC == data[10])
+			||(IMC_IDRAC_11G_MODULAR == data[10])
+			||(IMC_MASER_LITE_BMC == data[10])
+			||(IMC_MASER_LITE_NU == data[10])) {
+		iDRAC_FLAG = IDRAC_11G;
 		iDRAC_FLAG_ALL = 1;
 	} else if((IMC_IDRAC_12G_MONOLITHIC == data[10])
-			|| (IMC_IDRAC_12G_MODULAR == data[10])) {
+			||(IMC_IDRAC_12G_MODULAR == data[10])) {
 		iDRAC_FLAG = IDRAC_12G;
 		iDRAC_FLAG_ALL = 1;
 		iDRAC_FLAG_12_13 = 1;
-	} else if ((IMC_IDRAC_13G_MONOLITHIC == data[10])
-			|| (IMC_IDRAC_13G_MODULAR == data[10])
-			|| (IMC_IDRAC_13G_DCS == data[10])) {
-		iDRAC_FLAG=IDRAC_13G;
+	} else if((IMC_IDRAC_13G_MONOLITHIC == data[10])
+			||(IMC_IDRAC_13G_MODULAR == data[10])
+			||(IMC_IDRAC_13G_DCS == data[10])) {
+		iDRAC_FLAG = IDRAC_13G;
 		iDRAC_FLAG_ALL = 1;
 		iDRAC_FLAG_12_13 = 1;
-	} else {
+	} else if((IMC_IDRAC_14G_MONOLITHIC == data[10])
+			||(IMC_IDRAC_14G_MODULAR == data[10])
+			||(IMC_IDRAC_14G_DCS == data[10])) {
+		iDRAC_FLAG = IDRAC_14G;
+		iDRAC_FLAG_ALL = 1;
+		iDRAC_FLAG_12_13 = 1;
+	} else{
 		iDRAC_FLAG = 0;
 		iDRAC_FLAG_ALL = 0;
 		iDRAC_FLAG_12_13 = 0;
@@ -691,7 +1493,7 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
 	return 0;
 }
 /*
- * Function Name:    ipmi_lcd_get_configure_command_wh
+ * Function Name:    oem_dell_lcd_get_configure_command_wh
  *
  * Description:      This function returns current lcd configuration for Dell OEM LCD command
  * Input:            intf            - ipmi interface
@@ -703,27 +1505,39 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
  *                   1 = Default
  *                   2 = None
  */
-static int
-ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
+static
+int oem_dell_lcd_get_configure_command_wh(struct ipmi_intf *intf)
 {
-	int rc;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0,
-			sizeof(lcd_mode), &lcd_mode);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting LCD configuration");
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = 4;
+	req.msg.data = data;
+	data[0] = 0;
+	data[1] = IPMI_DELL_LCD_CONFIG_SELECTOR;
+	data[2] = 0;
+	data[3] = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, " Error getting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)){
-		lprintf(LOG_ERR, "Error getting LCD configuration: "
-				"Command not supported on this system.");
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error getting LCD configuration: %s",
-				val2str(rc, completion_code_vals));
-		return -1;
-	}
+	}else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)){
+        	lprintf(LOG_ERR, " Error getting LCD configuration:                                                                                                                                                                   Command not supported on this system.");
+	}else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, " Error getting LCD configuration: %s",
+			val2str(rsp->ccode, completion_code_vals));
+ 		return -1;
+ 	}
+
 	return 0;
 }
 /*
- * Function Name:    ipmi_lcd_get_configure_command
+ * Function Name:    oem_dell_lcd_get_configure_command
  *
  * Description:   This function returns current lcd configuration for Dell OEM
  * LCD command
@@ -733,31 +1547,44 @@ ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
-ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
+static
+int oem_dell_lcd_get_configure_command(struct ipmi_intf *intf, uint8_t *command)
 {
-	uint8_t data[4];
-	int rc;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_CONFIG_SELECTOR, 0, 0,
-			sizeof(data), data);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting LCD configuration");
-		return -1;
-	} else if ((rc == 0xc1)||(rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting LCD configuration: "
-				"Command not supported on this system.");
-		return -1;
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error getting LCD configuration: %s",
-				val2str(rc, completion_code_vals));
-		return -1;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = 4;
+	req.msg.data = data;
+	data[0] = 0;
+	data[1] = IPMI_DELL_LCD_CONFIG_SELECTOR;
+	data[2] = 0;
+	data[3] = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error getting LCD configuration");
 	}
-	/* rsp->data[0] is the rev */
-	*command = data[1];
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+	    lprintf(LOG_ERR, " Error getting LCD configuration: Command not supported on this system.");
+ 		return -1;
+    	}
+	else if (rsp->ccode > 0)
+	{
+		lprintf(LOG_ERR, " Error getting LCD configuration: %s",
+			val2str(rsp->ccode, completion_code_vals));
+ 		return -1;
+ 	}
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_lcd_set_configure_command
+ * Function Name:    oem_dell_lcd_set_configure_command
  *
  * Description:      This function updates current lcd configuration
  * Input:            intf            - ipmi interface
@@ -766,30 +1593,43 @@ ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
  * Output:
  * Return:
  */
-static int
-ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
+static
+int oem_dell_lcd_set_configure_command(struct ipmi_intf *intf, int command)
 {
-	#define LSCC_DATA_LEN 2
-	uint8_t data[2];
-	int rc;
-	data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
-	data[1] = command;                      /* command - custom, default, none */
-	rc = ipmi_mc_setsysinfo(intf, 2, data);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error setting LCD configuration");
-		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error setting LCD configuration: "
-				"Command not supported on this system.");
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error setting LCD configuration: %s",
-				val2str(rc, completion_code_vals));
-		return -1;
+#define LSCC_DATA_LEN 2
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[2] = {0};
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_SET_SYS_INFO;
+	req.msg.data_len = 2;
+	req.msg.data = data;
+	data[1] = command;			/* command - custom, default, none */
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration");
+ 		return -1;
 	}
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration:                                                                                                                                                                           Command not supported on this system.");
+	}
+	else if (rsp->ccode > 0)
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration: %s",
+			val2str(rsp->ccode, completion_code_vals));
+
+ 		return -1;
+ 	}
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_lcd_set_configure_command
+ * Function Name:    oem_dell_lcd_set_configure_command
  *
  * Description:      This function updates current lcd configuration
  * Input:            intf            - ipmi interface
@@ -799,60 +1639,74 @@ ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
  * Output:
  * Return:
  */
-static int
-ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
-		uint16_t lcdquallifier, uint8_t errordisp)
+static
+int oem_dell_lcd_set_configure_command_wh(struct ipmi_intf *intf, uint32_t  mode, 
+				uint16_t lcdquallifier, uint8_t errordisp)
 {
-	#define LSCC_DATA_LEN 2
-	uint8_t data[13];
-	int rc;
-	ipmi_lcd_get_configure_command_wh(intf);
-	data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
-	if (mode != 0xFF) {
-		data[1] = mode & 0xFF; /* command - custom, default, none*/
-		data[2] = (mode & 0xFF00) >> 8;
-		data[3] = (mode & 0xFF0000) >> 16;
-		data[4] = (mode & 0xFF000000) >> 24;
-	} else {
-		data[1] = (lcd_mode.lcdmode) & 0xFF; /* command - custom, default, none*/
-		data[2] = ((lcd_mode.lcdmode) & 0xFF00) >> 8;
-		data[3] = ((lcd_mode.lcdmode) & 0xFF0000) >> 16;
-		data[4] = ((lcd_mode.lcdmode) & 0xFF000000) >> 24;
+	uint8_t input_length = 0;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[13] = {0};
+
+	oem_dell_lcd_get_configure_command_wh(intf);
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_SET_SYS_INFO;
+	req.msg.data_len = 13;
+	req.msg.data = data;
+	data[input_length++] = IPMI_DELL_LCD_CONFIG_SELECTOR;
+	if(mode != 0xFF) {
+		data[input_length++] = mode & 0xFF; /* command - custom, default, none*/
+		data[input_length++] = (mode & 0xFF00) >> 8;
+		data[input_length++] = (mode & 0xFF0000) >> 16;
+		data[input_length++] = (mode & 0xFF000000) >> 24;
+	} else{
+		data[input_length++] = (lcd_mode.lcdmode) & 0xFF; /* command - custom, default, none*/
+		data[input_length++] = ((lcd_mode.lcdmode) & 0xFF00) >> 8;
+		data[input_length++] = ((lcd_mode.lcdmode) & 0xFF0000) >> 16;
+		data[input_length++] = ((lcd_mode.lcdmode) & 0xFF000000) >> 24;
 	}
-	if (lcdquallifier != 0xFF) {
+	if(lcdquallifier != 0xFF) {
 		if(lcdquallifier == 0x01) {
-			data[5] = (lcd_mode.lcdquallifier) | 0x01; /* command - custom, default, none*/
-		} else  if (lcdquallifier == 0x00) {
-			data[5] = (lcd_mode.lcdquallifier) & 0xFE; /* command - custom, default, none*/
-		} else if (lcdquallifier == 0x03) {
-			data[5] = (lcd_mode.lcdquallifier) | 0x02; /* command - custom, default, none*/
-		} else if (lcdquallifier == 0x02) {
-			data[5] = (lcd_mode.lcdquallifier) & 0xFD;
+			data[input_length++] = (lcd_mode.lcdquallifier) | 0x01; /* command - custom, default, none*/
+		} else  if(lcdquallifier == 0x00) {
+			data[input_length++] = (lcd_mode.lcdquallifier) & 0xFE; /* command - custom, default, none*/
+		} else if(lcdquallifier == 0x03) {
+			data[input_length++] = (lcd_mode.lcdquallifier) | 0x02; /* command - custom, default, none*/
+		} else if(lcdquallifier == 0x02) {
+			data[input_length++] = (lcd_mode.lcdquallifier) & 0xFD;
 		}
-	} else {
-		data[5] = lcd_mode.lcdquallifier;
+	} else{
+		data[input_length++] = lcd_mode.lcdquallifier;
 	}
-	if (errordisp != 0xFF) {
-		data[11] = errordisp;
-	} else {
-		data[11] = lcd_mode.error_display;
+	if(errordisp != 0xFF) {
+		input_length += 6;
+		data[input_length] = errordisp;
+	} else{
+		input_length += 6;
+		data[input_length] = lcd_mode.error_display;
 	}
-	rc = ipmi_mc_setsysinfo(intf, 13, data);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error setting LCD configuration");
-		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error setting LCD configuration: "
-				"Command not supported on this system.");
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error setting LCD configuration: %s",
-				val2str(rc, completion_code_vals));
-		return -1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration");
+ 		return -1;
 	}
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration: Command not supported on this system.");
+	}
+	else if (rsp->ccode > 0)
+	{
+		lprintf(LOG_ERR, " Error setting LCD configuration: %s",
+			val2str(rsp->ccode, completion_code_vals));
+ 		return -1;
+ 	}		
 	return 0;
 }
 /*
- * Function Name:    ipmi_lcd_get_single_line_text
+ * Function Name:    oem_dell_lcd_get_single_line_text
  *
  * Description:    This function updates current lcd configuration
  * Input:          intf            - ipmi interface
@@ -861,269 +1715,369 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Output:
  * Return:
  */
-static int
-ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
-		uint8_t max_length)
+static
+int oem_dell_lcd_get_single_line_text(struct ipmi_intf *intf, char *lcdstring, 
+							uint8_t max_length)
 {
-	IPMI_DELL_LCD_STRING lcdstringblock;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+	ipmi_dell_lcd_string * lcdstringblock;
 	int lcdstring_len = 0;
 	int bytes_copied = 0;
-	int ii, rc;
-	for (ii = 0; ii < 4; ii++) {
+	int i = 0 ;
+	for(i = 0; i < 4; i++) {
 		int bytes_to_copy;
-		rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STRING_SELECTOR, ii, 0,
-				sizeof(lcdstringblock), &lcdstringblock);
-		if (rc < 0) {
-			lprintf(LOG_ERR, "Error getting text data");
+
+		req.msg.netfn = IPMI_NETFN_APP;
+		req.msg.lun = 0;
+		req.msg.cmd = IPMI_GET_SYS_INFO;
+		req.msg.data_len = 4;
+		req.msg.data = data;
+		data[0] = 0;				/* get parameter*/
+		data[1] = IPMI_DELL_LCD_STRING_SELECTOR;
+		data[2] = i;				/* block selector*/
+		data[3] = 00;				/* set selector (n/a)*/
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			lprintf(LOG_ERR, " Error getting text data");		
 			return -1;
-		} else if (rc > 0) {
-			lprintf(LOG_ERR, "Error getting text data: %s",
-					val2str(rc, completion_code_vals));
+		} else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, " Error getting text data: %s",
+				val2str(rsp->ccode, completion_code_vals));
 			return -1;
 		}
+
+		lcdstringblock = (ipmi_dell_lcd_string *) (void *) rsp->data;
+		
 		/* first block is different - 14 bytes*/
-		if (0 == ii) {
-			lcdstring_len = lcdstringblock.lcd_string.selector_0_string.length;
-			if (lcdstring_len < 1 || lcdstring_len > max_length) {
+		if(0 == i) {
+			lcdstring_len = lcdstringblock->lcd_string.selector_0_string.length;
+
+			if (lcdstring_len < 1 || lcdstring_len > max_length)
 				break;
-			}
 			bytes_to_copy = MIN(lcdstring_len, IPMI_DELL_LCD_STRING1_SIZE);
-			memcpy(lcdstring, lcdstringblock.lcd_string.selector_0_string.data,
+			memcpy(lcdstring, lcdstringblock->lcd_string.selector_0_string.data, 
 					bytes_to_copy);
-		} else {
+		} else{
 			int string_offset;
-			bytes_to_copy = MIN(lcdstring_len - bytes_copied,
+			bytes_to_copy = MIN(lcdstring_len - bytes_copied, 
 					IPMI_DELL_LCD_STRINGN_SIZE);
-			if (bytes_to_copy < 1) {
+			if(bytes_to_copy < 1) 
 				break;
-			}
 			string_offset = IPMI_DELL_LCD_STRING1_SIZE + IPMI_DELL_LCD_STRINGN_SIZE
-				* (ii-1);
-			memcpy(lcdstring+string_offset,
-					lcdstringblock.lcd_string.selector_n_data, bytes_to_copy);
+				*(i - 1);
+			memcpy(lcdstring+string_offset, 
+					lcdstringblock->lcd_string.selector_n_data, bytes_to_copy);
 		}
 		bytes_copied += bytes_to_copy;
-		if (bytes_copied >= lcdstring_len) {
+		if(bytes_copied >= lcdstring_len) {
 			break;
 		}
 	}
 	return 0;
 }
 /*
- * Function Name:    ipmi_lcd_get_info_wh
+ * Function Name:    oem_dell_lcd_get_info_wh
  *
  * Description:     This function prints current lcd configuration for whoville platform
  * Input:           intf            - ipmi interface
  * Output:
  * Return:
  */
-static int
-ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
+static
+int oem_dell_lcd_get_info_wh(struct ipmi_intf *intf)
 {
-	IPMI_DELL_LCD_CAPS lcd_caps;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+	ipmi_dell_lcd_caps lcd_caps = {0};
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 	int rc;
 	printf("LCD info\n");
-	if (ipmi_lcd_get_configure_command_wh(intf) != 0) {
+	if(oem_dell_lcd_get_configure_command_wh(intf) != 0) {
 		return -1;
 	}
-	if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT) {
+	if(lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_DEFAULT) {
 		char text[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-		if (ipmi_lcd_get_platform_model_name(intf, text,
-					IPMI_DELL_LCD_STRING_LENGTH_MAX,
+		if(ipmi_lcd_get_platform_model_name(intf, text, 
+					IPMI_DELL_LCD_STRING_LENGTH_MAX, 
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			return(-1);
 		}
 		printf("    Setting:Model name\n");
 		printf("    Line 1:  %s\n", text);
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_NONE) {
-		printf("    Setting:   none\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED) {
-		printf("    Setting: User defined\n");
-		rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
-				sizeof(lcd_caps), &lcd_caps);
-		if (rc < 0) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities.");
+		if (text == NULL)
 			return -1;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities: "
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_NONE) {
+		printf("    Setting:   none\n");
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_CONFIG_USER_DEFINED) {
+		req.msg.netfn = IPMI_NETFN_APP;
+		req.msg.lun = 0;
+		req.msg.cmd = IPMI_GET_SYS_INFO;
+		req.msg.data_len = 4;
+		req.msg.data = data;
+		data[0] = 0;				/* get parameter*/
+		data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
+		data[2] = 0;				/* set selector (n/a)*/
+		data[3] = 0;				/* block selector (n/a)*/
+
+		printf("    Setting: User defined\n");
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL)
+		{
+			lprintf(LOG_ERR, 
+					"Error getting LCD capabilities.");
+			return -1;
+		} else if((rsp->ccode == IPMI_CC_INV_CMD) || (rsp->ccode == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+			lprintf(LOG_ERR, 
+					"Error getting LCD capabilities: "
 					"Command not supported on this system.");
-		} else if (rc > 0) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
+		} else if( rsp->ccode > 0) {
+			lprintf(LOG_ERR, 
+					"Error getting LCD capabilities: %s", 
 					val2str(rc, completion_code_vals));
 			return -1;
 		}
-		if (lcd_caps.number_lines > 0) {
+
+		memcpy(&lcd_caps,rsp->data,sizeof(ipmi_dell_lcd_caps));
+
+		if(lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
-			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
+			rc = oem_dell_lcd_get_single_line_text(intf, lcdstring, 
 					lcd_caps.max_chars[0]);
 			printf("    Text:    %s\n", lcdstring);
-		} else {
+		} else{
 			printf("    No lines to show\n");
 		}
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV4ADRESS) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV4ADRESS) {
 		printf("    Setting:   IPV4 Address\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_IDRAC_MAC_ADDRESS) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_IDRAC_MAC_ADDRESS) {
 		printf("    Setting:   MAC Address\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_OS_SYSTEM_NAME) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_OS_SYSTEM_NAME) {
 		printf("    Setting:   OS System Name\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_SERVICE_TAG) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_SERVICE_TAG) {
 		printf("    Setting:   System Tag\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV6ADRESS) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_iDRAC_IPV6ADRESS) {
 		printf("    Setting:  IPV6 Address\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_ASSET_TAG) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_ASSET_TAG) {
 		printf("    Setting:  Asset Tag\n");
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_AMBEINT_TEMP) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_AMBEINT_TEMP) {
 		printf("    Setting:  Ambient Temp\n");
-		if (lcd_mode.lcdquallifier & 0x02) {
+		if(lcd_mode.lcdquallifier & 0x02) {
 			printf("    Unit:  F\n");
-		} else {
+		} else{
 			printf("    Unit:  C\n");
 		}
-	} else if (lcd_mode.lcdmode == IPMI_DELL_LCD_SYSTEM_WATTS) {
+	} else if(lcd_mode.lcdmode == IPMI_DELL_LCD_SYSTEM_WATTS) {
 		printf("    Setting:  System Watts\n");
-		if (lcd_mode.lcdquallifier & 0x01) {
+		if(lcd_mode.lcdquallifier & 0x01) {
 			printf("    Unit:  BTU/hr\n");
-		} else {
+		} else{
 			printf("    Unit:  Watt\n");
 		}
 	}
-	if (lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_SEL) {
+	if(lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_SEL) {
 		printf("    Error Display:  SEL\n");
-	} else if (lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_VERBOSE) {
+	} else if(lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_VERBOSE) {
 		printf("    Error Display:  Simple\n");
 	}
 	return 0;
 }
 /*
- * Function Name:    ipmi_lcd_get_info
+ * Function Name:    oem_dell_lcd_get_info
  *
  * Description:      This function prints current lcd configuration for platform other than whoville
  * Input:            intf            - ipmi interface
  * Output:
  * Return:
  */
-static int
-ipmi_lcd_get_info(struct ipmi_intf * intf)
+static
+int oem_dell_lcd_get_info(struct ipmi_intf *intf)
 {
-	IPMI_DELL_LCD_CAPS lcd_caps;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+	ipmi_dell_lcd_caps * lcd_caps;
 	uint8_t command = 0;
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-	int rc;
+	int rc ;
 
 	printf("LCD info\n");
 
-	if (ipmi_lcd_get_configure_command(intf, &command) != 0) {
+	if(oem_dell_lcd_get_configure_command(intf, &command) != 0) {
 		return -1;
 	}
-	if (command == IPMI_DELL_LCD_CONFIG_DEFAULT) {
-		memset(lcdstring,0,IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
-		if (ipmi_lcd_get_platform_model_name(intf, lcdstring,
-					IPMI_DELL_LCD_STRING_LENGTH_MAX,
+	if(command == IPMI_DELL_LCD_CONFIG_DEFAULT) {
+		memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
+		if(ipmi_lcd_get_platform_model_name(intf, lcdstring, 
+					IPMI_DELL_LCD_STRING_LENGTH_MAX, 
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			return(-1);
 		}
 		printf("    Setting: default\n");
 		printf("    Line 1:  %s\n", lcdstring);
-	} else if (command == IPMI_DELL_LCD_CONFIG_NONE) {
+	} else if(command == IPMI_DELL_LCD_CONFIG_NONE) {
 		printf("    Setting:   none\n");
-	} else if (command == IPMI_DELL_LCD_CONFIG_USER_DEFINED) {
+	} else if(command == IPMI_DELL_LCD_CONFIG_USER_DEFINED) {
+		req.msg.netfn = IPMI_NETFN_APP;
+		req.msg.lun = 0;
+		req.msg.cmd = IPMI_GET_SYS_INFO;
+		req.msg.data_len = 4;
+		req.msg.data = data;
+		data[0] = 0;				/* get parameter */
+		data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
+		data[2] = 0;				/* set selector (n/a) */
+		data[3] = 0;				/* block selector (n/a) */
 		printf("    Setting: custom\n");
-		rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
-				sizeof(lcd_caps), &lcd_caps);
-		if (rc < 0) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities.");
-			return -1;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities: "
-					"Command not supported on this system.");
-		} else if (rc > 0) {
-			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
-					val2str(rc, completion_code_vals));
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL)
+		{
+			lprintf(LOG_ERR, " Error getting LCD capabilities.");
 			return -1;
 		}
-		if (lcd_caps.number_lines > 0) {
+		else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+		{
+			lprintf(LOG_ERR, " Error getting LCD capabilities: Command not supported on this system.");
+		}
+		else if (rsp->ccode > 0)
+		{
+			lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+		lcd_caps = (ipmi_dell_lcd_caps *)(void *)rsp->data;
+		if(lcd_caps->number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
-			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
-					lcd_caps.max_chars[0]);
+			rc = oem_dell_lcd_get_single_line_text(intf, lcdstring, 
+					lcd_caps->max_chars[0]);
 			printf("    Text:    %s\n", lcdstring);
-		} else {
+		} else{
 			printf("    No lines to show\n");
 		}
 	}
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_lcd_get_status_val
+ * Function Name:    oem_dell_lcd_get_status_val
  *
  * Description:      This function gets current lcd configuration
  * Input:            intf            - ipmi interface
  * Output:           lcdstatus       - KVM Status & Lock Status
  * Return:
  */
-static int
-ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
+static
+int oem_dell_lcd_get_status_val(struct ipmi_intf *intf, lcd_status *lcdstatus)
 {
-	int rc;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0,
-			sizeof(*lcdstatus), lcdstatus);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting LCD Status");
-		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting LCD status: "
-				"Command not supported on this system.");
-		return -1;
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error getting LCD Status: %s",
-				val2str(rc, completion_code_vals));
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = 4;
+	req.msg.data = data;
+	data[0] = 0;				/* get parameter */
+	data[1] = IPMI_DELL_LCD_STATUS_SELECTOR;
+	data[2] = 0;				/* block selector */
+	data[3] = 0;
+    /* set selector (n/a) */
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error getting LCD Status");
 		return -1;
 	}
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+		lprintf(LOG_ERR, " Error getting LCD status: Command not supported on this system.");
+		return -1;
+	}
+	else if (rsp->ccode > 0)
+	{
+	lprintf(LOG_ERR, " Error getting LCD Status: %s",
+		val2str(rsp->ccode, completion_code_vals));
+	return -1;
+	}
+
+	/*lcdstatus= (LCD_STATUS* ) rsp->data; */
+	lcdstatus->vkvm_status = rsp->data[1];
+	lcdstatus->lock_status = rsp->data[2];
+
 	return 0;
 }
+
 /*
- * Function Name:    IsLCDSupported
+ * Function Name:    oem_dell_is_lcd_supported
  *
  * Description:   This function returns whether lcd supported or not
  * Input:
  * Output:
  * Return:
  */
-static int
-IsLCDSupported()
+static
+int oem_dell_is_lcd_supported(void)
 {
-	return LcdSupported;
+	return lcdsupported;
 }
+
 /*
- * Function Name:         CheckLCDSupport
+ * Function Name:         oem_dell_CheckLCDSupport
  *
  * Description:  This function checks whether lcd supported or not
  * Input:        intf            - ipmi interface
  * Output:
  * Return:
  */
-static void
-CheckLCDSupport(struct ipmi_intf * intf)
+static
+void oem_dell_check_lcd_support(struct ipmi_intf *intf)
 {
-	int rc;
-	LcdSupported = 0;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_STATUS_SELECTOR, 0, 0, 0, NULL);
-	if (rc == 0) {
-		LcdSupported = 1;
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+	lcdsupported = 0;
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = 4;
+	req.msg.data = data;
+	data[0] = 0;				/* get parameter */
+	data[1] = IPMI_DELL_LCD_STATUS_SELECTOR;
+	data[2] = 0;				/* block selector */
+	data[3] = 0;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		return;
 	}
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+		return;
+	}
+	else if (rsp->ccode > 0)
+	{
+		return;
+ 	}
+	lcdsupported = 1;
+
 }
+
 /*
- * Function Name:     ipmi_lcd_status_print
+ * Function Name:     oem_dell_ipmi_lcd_status_print
  *
  * Description:    This function prints current lcd configuration KVM Status & Lock Status
  * Input:          lcdstatus - KVM Status & Lock Status
  * Output:
  * Return:
  */
-static void
-ipmi_lcd_status_print(LCD_STATUS lcdstatus)
+static
+void oem_dell_ipmi_lcd_status_print(lcd_status lcdstatus)
 {
-	switch (lcdstatus.vKVM_status) {
+	switch(lcdstatus.vkvm_status) {
 		case 0x00:
 			printf("LCD KVM Status :Inactive\n");
 			break;
@@ -1134,7 +2088,7 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
 			printf("LCD KVM Status :Invalid Status\n");
 			break;
 	}
-	switch (lcdstatus.lock_status) {
+	switch(lcdstatus.lock_status) {
 		case 0x00:
 			printf("LCD lock Status :View and modify\n");
 			break;
@@ -1149,8 +2103,9 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
 			break;
 	}
 }
+
 /*
- * Function Name:     ipmi_lcd_get_status
+ * Function Name:     oem_dell_lcd_get_status
  *
  * Description:      This function gets current lcd KVM active status & lcd access mode
  * Input:            intf            - ipmi interface
@@ -1158,20 +2113,21 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
  * Return:           -1 on error
  *                   0 if successful
  */
-static int
-ipmi_lcd_get_status(struct ipmi_intf * intf)
+static
+int oem_dell_lcd_get_status(struct ipmi_intf *intf)
 {
-	int rc=0;
-	LCD_STATUS  lcdstatus;
-	rc =ipmi_lcd_get_status_val( intf, &lcdstatus);
-	if (rc < 0) {
+	int rc = 0;
+	lcd_status  lcdstatus = {0};
+	rc = oem_dell_lcd_get_status_val( intf, &lcdstatus);
+	if(rc < 0) {
 		return -1;
 	}
-	ipmi_lcd_status_print(lcdstatus);
+	oem_dell_ipmi_lcd_status_print(lcdstatus);
 	return rc;
 }
+
 /*
- * Function Name:     ipmi_lcd_set_kvm
+ * Function Name:     oem_dell_lcd_set_kvm
  *
  * Description:       This function sets lcd KVM active status
  * Input:             intf            - ipmi interface
@@ -1180,17 +2136,18 @@ ipmi_lcd_get_status(struct ipmi_intf * intf)
  * Return:            -1 on error
  *                    0 if successful
  */
-static int
-ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
+static
+int oem_dell_lcd_set_kvm(struct ipmi_intf *intf, char status)
 {
-	#define LSCC_DATA_LEN 2
-	LCD_STATUS lcdstatus;
-	int rc=0;
-	struct ipmi_rs * rsp = NULL;
+#define DATA_LEN 5
+	lcd_status lcdstatus;
+	int rc = 0;
+	struct ipmi_rs *rsp = NULL;
 	struct ipmi_rq req = {0};
-	uint8_t data[5];
-	rc = ipmi_lcd_get_status_val(intf,&lcdstatus);
-	if (rc < 0) {
+	uint8_t data[5] = {0};
+	uint8_t input_length = 0;
+	rc = oem_dell_lcd_get_status_val(intf, &lcdstatus);
+	if(rc < 0) {
 		return -1;
 	}
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -1198,45 +2155,49 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 	req.msg.cmd = IPMI_SET_SYS_INFO;
 	req.msg.data_len = 5;
 	req.msg.data = data;
-	data[0] = IPMI_DELL_LCD_STATUS_SELECTOR;
-	data[1] = status; /* active- inactive */
-	data[2] = lcdstatus.lock_status; /* full-veiw-locked */
+	data[input_length++] = IPMI_DELL_LCD_STATUS_SELECTOR;
+	data[input_length++] = status; /* active- incative*/
+	data[input_length++] = lcdstatus.lock_status; /* full-veiw-locked */
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error setting LCD status");
-		rc= -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting LCD status: "
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error setting LCD status");
+		rc = -1;
+	} else if((rsp->ccode == IPMI_CC_INV_CMD) || (rsp->ccode == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error setting LCD status: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error setting LCD status: %s", 
 				val2str(rsp->ccode, completion_code_vals));
-		rc= -1;
+		rc = -1;
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_set_lock
+ * Function Name:   oem_dell_lcd_set_lock
  *
  * Description:     This function sets lcd access mode
  * Input:           intf            - ipmi interface
- *                  lock    - View and modify / View only / Disabled
+ *                  lock    - View and modify / View only / Diabled
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
-ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
+static
+int oem_dell_lcd_set_lock(struct ipmi_intf *intf,  char lock)
 {
-	#define LSCC_DATA_LEN 2
-	LCD_STATUS lcdstatus;
-	int rc =0;
-	struct ipmi_rs * rsp = NULL;
+	lcd_status lcdstatus;
+	int rc = 0;
+	struct ipmi_rs *rsp = NULL;
 	struct ipmi_rq req = {0};
 	uint8_t data[5];
-	rc = ipmi_lcd_get_status_val(intf,&lcdstatus);
-	if (rc < 0) {
+	uint8_t input_length = 0 ;
+	rc = oem_dell_lcd_get_status_val(intf, &lcdstatus);
+	if(rc < 0) {
 		return -1;
 	}
 	req.msg.netfn = IPMI_NETFN_APP;
@@ -1244,26 +2205,30 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 	req.msg.cmd = IPMI_SET_SYS_INFO;
 	req.msg.data_len = 5;
 	req.msg.data = data;
-	data[0] = IPMI_DELL_LCD_STATUS_SELECTOR;
-	data[1] = lcdstatus.vKVM_status; /* active- inactive */
-	data[2] = lock; /* full- veiw-locked */
+	data[input_length++] = IPMI_DELL_LCD_STATUS_SELECTOR;
+	data[input_length++] = lcdstatus.vkvm_status; /* active- incative */
+	data[input_length++] = lock; /* full- veiw-locked */
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error setting LCD status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error setting LCD status");
 		rc = -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting LCD status: "
+	} else if((rsp->ccode == IPMI_CC_INV_CMD) || (rsp->ccode == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting LCD status: "
 				"Command not supported on this system.");
 		rc = -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error setting LCD status: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error setting LCD status: %s", 
 				val2str(rsp->ccode, completion_code_vals));
-		rc= -1;
+		rc = -1;
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_set_single_line_text
+ * Function Name:   oem_dell_lcd_set_single_line_text
  *
  * Description:    This function sets lcd line text
  * Input:          intf            - ipmi interface
@@ -1272,142 +2237,186 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
  * Return:         -1 on error
  *                 0 if successful
  */
-static int
-ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
+static
+int oem_dell_lcd_set_single_line_text(struct ipmi_intf *intf, char *text)
 {
-	uint8_t data[18];
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[18] = {0};
+	uint8_t input_length = 0;
 	int bytes_to_store = strlen(text);
 	int bytes_stored = 0;
-	int ii;
+	int i;
 	int rc = 0;
-	if (bytes_to_store > IPMI_DELL_LCD_STRING_LENGTH_MAX) {
-		lprintf(LOG_ERR, "Out of range Max limit is 62 characters");
-		return (-1);
-	} else {
+	if(bytes_to_store > IPMI_DELL_LCD_STRING_LENGTH_MAX) {
+		lprintf(LOG_ERR, 
+				"Out of range Max limit is 62 characters");
+		return(-1);
+	} else{
 		bytes_to_store = MIN(bytes_to_store, IPMI_DELL_LCD_STRING_LENGTH_MAX);
-		for (ii = 0; ii < 4; ii++) {
+		for(i = 0; i < 4; i++) {
 			/*first block, 2 bytes parms and 14 bytes data*/
-			if (0 == ii) {
-				int size_of_copy = MIN((bytes_to_store - bytes_stored),
+			input_length = 0;
+			if(0 == i) {
+				int size_of_copy = MIN((bytes_to_store - bytes_stored), 
 						IPMI_DELL_LCD_STRING1_SIZE);
-				if (size_of_copy < 0) {
+				if(size_of_copy < 0) {
 					/* allow 0 string length*/
 					break;
 				}
-				data[0] = IPMI_DELL_LCD_STRING_SELECTOR;
-				data[1] = ii; /* block number to use (0)*/
-				data[2] = 0; /*string encoding*/
-				data[3] = bytes_to_store; /* total string length*/
+				req.msg.netfn = IPMI_NETFN_APP;
+				req.msg.lun = 0;
+				req.msg.cmd = IPMI_SET_SYS_INFO;
+				req.msg.data_len = size_of_copy + 4; /* chars, selectors and sizes*/
+				req.msg.data = data;
+				data[input_length++] = IPMI_DELL_LCD_STRING_SELECTOR;
+				data[input_length++] = i; /* block number to use(0)*/
+				data[input_length++] = 0; /*string encoding*/
+				data[input_length++] = bytes_to_store; /* total string length*/
 				memcpy(data + 4, text+bytes_stored, size_of_copy);
 				bytes_stored += size_of_copy;
-			} else {
-				int size_of_copy = MIN((bytes_to_store - bytes_stored),
+			} else{
+				int size_of_copy = MIN((bytes_to_store - bytes_stored), 
 						IPMI_DELL_LCD_STRINGN_SIZE);
-				if (size_of_copy <= 0) {
+				if(size_of_copy <= 0) {
 					break;
 				}
-				data[0] = IPMI_DELL_LCD_STRING_SELECTOR;
-				data[1] = ii; /* block number to use (1,2,3)*/
+				req.msg.netfn = IPMI_NETFN_APP;
+				req.msg.lun = 0;
+				req.msg.cmd = IPMI_SET_SYS_INFO;
+				req.msg.data_len = size_of_copy + 2;
+				req.msg.data = data;
+				data[input_length++] = IPMI_DELL_LCD_STRING_SELECTOR;
+				data[input_length++] = i; /* block number to use(1, 2, 3)*/
 				memcpy(data + 2, text+bytes_stored, size_of_copy);
 				bytes_stored += size_of_copy;
 			}
-			rc = ipmi_mc_setsysinfo(intf, 18, data);
-			if (rc < 0) {
-				lprintf(LOG_ERR, "Error setting text data");
+			rsp = intf->sendrecv(intf, &req);
+			if (rsp == NULL) {
+				lprintf(LOG_ERR, 
+						"Error setting text data");
 				rc = -1;
-			} else if (rc > 0) {
-				lprintf(LOG_ERR, "Error setting text data: %s",
-						val2str(rc, completion_code_vals));
+			} else if (rsp->ccode > 0) {
+				lprintf(LOG_ERR, " Error setting text data: %s",
+					val2str(rsp->ccode, completion_code_vals));			
 				rc = -1;
 			}
 		}
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_set_text
+ * Function Name:   oem_dell_lcd_set_text
  *
  * Description:     This function sets lcd line text
  * Input:           intf            - ipmi interface
  *                  text    - lcd string
+ *                  line_number- line number
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
-ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
+static
+int oem_dell_lcd_set_text(struct ipmi_intf *intf, char *text, int line_number)
 {
 	int rc = 0;
-	IPMI_DELL_LCD_CAPS lcd_caps;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_LCD_GET_CAPS_SELECTOR, 0, 0,
-			sizeof(lcd_caps), &lcd_caps);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting LCD capabilities");
+	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t data[4] = {0};
+	ipmi_dell_lcd_caps * lcd_caps;
+
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_GET_SYS_INFO;
+	req.msg.data_len = 4;
+	req.msg.data = data;
+	data[0] = 0;				/* get parameter*/
+	data[1] = IPMI_DELL_LCD_GET_CAPS_SELECTOR;
+	data[2] = 0;				/* set selector (n/a)*/
+	data[3] = 0;				/* block selector (n/a)*/
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, 
+				"Error getting LCD capabilities");
 		return -1;
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
-				val2str(rc, completion_code_vals));
+	} else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, " Error getting LCD capabilities: %s",
+			val2str(rsp->ccode, completion_code_vals));
+
 		return -1;
 	}
-	if (lcd_caps.number_lines > 0) {
-		rc = ipmi_lcd_set_single_line_text(intf, text);
-	} else {
-		lprintf(LOG_ERR, "LCD does not have any lines that can be set");
+
+	lcd_caps = (ipmi_dell_lcd_caps *)(void *)rsp->data;
+
+	if( lcd_caps->number_lines ) {
+		rc = oem_dell_lcd_set_single_line_text(intf, text);
+	} else{
+		lprintf(LOG_ERR, 
+				"LCD does not have any lines that can be set");
 		rc = -1;
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_configure_wh
+ * Function Name:   oem_dell_lcd_configure_wh
  *
  * Description:     This function updates the current lcd configuration
  * Input:           intf            - ipmi interface
  *                  lcdquallifier- lcd quallifier
  *                  errordisp       - error number
+ *                  line_number-line number
  *                  text            - lcd string
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
-ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
-		uint16_t lcdquallifier, uint8_t errordisp, char * text)
+static
+int oem_dell_lcd_configure_wh(struct ipmi_intf *intf, uint32_t  mode, 
+				uint16_t lcdquallifier, uint8_t errordisp, int8_t line_number, char *text)
 {
 	int rc = 0;
-	if (IPMI_DELL_LCD_CONFIG_USER_DEFINED == mode) {
+	if(IPMI_DELL_LCD_CONFIG_USER_DEFINED == mode) {
 		/* Any error was reported earlier. */
-		rc = ipmi_lcd_set_text(intf, text);
+		rc = oem_dell_lcd_set_text(intf, text, line_number);
 	}
-	if (rc == 0) {
-		rc = ipmi_lcd_set_configure_command_wh(intf, mode ,lcdquallifier,errordisp);
+	if(rc == 0) {
+		rc = oem_dell_lcd_set_configure_command_wh(intf, mode , lcdquallifier, errordisp);
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_configure
+ * Function Name:   oem_dell_lcd_configure
  *
  * Description:     This function updates the current lcd configuration
  * Input:           intf            - ipmi interface
  *                  command- lcd command
+ *                  line_number-line number
  *                  text            - lcd string
  * Output:
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
-ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
+static
+int oem_dell_lcd_configure(struct ipmi_intf *intf, int command, 
+				int8_t line_number, char *text)
 {
 	int rc = 0;
-	if (IPMI_DELL_LCD_CONFIG_USER_DEFINED == command) {
-		rc = ipmi_lcd_set_text(intf, text);
+	if(IPMI_DELL_LCD_CONFIG_USER_DEFINED == command) {
+		rc = oem_dell_lcd_set_text(intf, text, line_number);
 	}
-	if (rc == 0) {
-		rc = ipmi_lcd_set_configure_command(intf, command);
+	if(rc == 0) {
+		rc = oem_dell_lcd_set_configure_command(intf, command);
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_lcd_usage
+ * Function Name:   oem_dell_lcd_usage
  *
  * Description:   This function prints help message for lcd command
  * Input:
@@ -1415,84 +2424,1205 @@ ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
  *
  * Return:
  */
-static void
-ipmi_lcd_usage(void)
+static
+void oem_dell_lcd_usage(void)
 {
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"Generic DELL HW:");
-	lprintf(LOG_NOTICE,
-"   lcd set {none}|{default}|{custom <text>}");
-	lprintf(LOG_NOTICE,
-"      Set LCD text displayed during non-fault conditions");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"iDRAC 11g or iDRAC 12g or  iDRAC 13g :");
-	lprintf(LOG_NOTICE,
-"   lcd set {mode}|{lcdqualifier}|{errordisplay}");
-	lprintf(LOG_NOTICE,
-"      Allows you to set the LCD mode and user-defined string.");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
-	lprintf(LOG_NOTICE,
-"   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
-	lprintf(LOG_NOTICE,
-"   {systemwatt }|{assettag}|{userdefined}<text>");
-	lprintf(LOG_NOTICE,
-"	   Allows you to set the LCD display mode to any of the preceding");
-	lprintf(LOG_NOTICE,
-"      parameters");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
-	lprintf(LOG_NOTICE,
-"      Allows you to set the unit for the system ambient temperature mode.");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd set errordisplay {sel}|{simple}");
-	lprintf(LOG_NOTICE,
-"      Allows you to set the error display.");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd info");
-	lprintf(LOG_NOTICE,
-"      Show LCD text that is displayed during non-fault conditions");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd set vkvm{active}|{inactive}");
-	lprintf(LOG_NOTICE,
-"      Set vKVM active and inactive, message will be displayed on lcd");
-	lprintf(LOG_NOTICE,
-"      when vKVM is active and vKVM session is in progress");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}");
-	lprintf(LOG_NOTICE,
-"      Set LCD mode to view and modify, view only or disabled ");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lcd status");
-	lprintf(LOG_NOTICE,
-"      Show LCD Status for vKVM display<active|inactive>");
-	lprintf(LOG_NOTICE,
-"      and Front Panel access mode {viewandmodify}|{viewonly}|{disabled}");
-	lprintf(LOG_NOTICE,
-"");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"Generic DELL HW:");
+    if(iDRAC_FLAG==0)
+    {
+		lprintf(LOG_NOTICE, "   lcd set {none}|{default}|{custom <text>}");
+		lprintf(LOG_NOTICE, "      Set LCD text displayed during non-fault conditions");
+    }
+    else if( (iDRAC_FLAG==IDRAC_11G) || (iDRAC_FLAG==IDRAC_12G) || (iDRAC_FLAG==IDRAC_13G) || (iDRAC_FLAG==IDRAC_14G) )
+    {
+        lprintf(LOG_NOTICE, "   lcd set {mode}|{lcdqualifier}|{errordisplay}");
+		lprintf(LOG_NOTICE, "      Allows you to set the LCD mode and user-defined string.");
+        lprintf(LOG_NOTICE, "");
+        lprintf(LOG_NOTICE, "   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|");
+        lprintf(LOG_NOTICE, "   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}");
+        lprintf(LOG_NOTICE, "   {systemwatt }|{assettag}|{userdefined}<text>");
+		lprintf(LOG_NOTICE, "	   Allows you to set the LCD display mode to any of the preceding parameters");
+		lprintf(LOG_NOTICE, "");
+        lprintf(LOG_NOTICE, "   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}");
+		lprintf(LOG_NOTICE, "      Allows you to set the unit for the system ambient temperature mode.");
+        lprintf(LOG_NOTICE, "");
+        lprintf(LOG_NOTICE, "   lcd set errordisplay {sel}|{simple}");
+		lprintf(LOG_NOTICE, "      Allows you to set the error display.");
+    }
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lcd info");
+	lprintf(LOG_NOTICE, "      Show LCD text that is displayed during non-fault conditions");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lcd set vkvm{active}|{inactive}");
+	lprintf(LOG_NOTICE, "   	Set vKVM active and inactive, message will be displayed on lcd");
+        lprintf(LOG_NOTICE, "	when vKVM is active and vKVM session is in progress");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}");
+	lprintf(LOG_NOTICE, "      Set LCD mode to view and modify, view only or disabled ");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lcd status");
+	lprintf(LOG_NOTICE, "   	Show LCD Status for vKVM display<active|inactive>");
+	lprintf(LOG_NOTICE, " 	and Front Panel access mode {viewandmodify}|{viewonly}|{disabled} ");
+	lprintf(LOG_NOTICE, "");
 }
+
+/*****************************************************************
+* Function Name:       oem_dell_sel_main
+*
+* Description:         This function processes the delloem sel command
+* Input:               intf    - ipmi interface
+                       argc    - no of arguments
+                       argv    - argument string array
+* Output:
+*
+* Return:              return code     0 - success
+*                         -1 - failure
+*
+******************************************************************/
+static 
+int oem_dell_sel_main (struct ipmi_intf * intf, int argc, char ** argv)
+{
+    int rc = 0;
+
+	current_arg++;
+	if (argc == 1)
+	{
+		rc = oem_dell_sel_print(intf, 0xFFFF,0);
+	}
+	else if (strncmp(argv[current_arg], "list\0", 5) == 0)
+	{
+		current_arg++;
+		int count = 0;
+		char *countstr = NULL;
+		if (argv[current_arg] == NULL)
+		{
+			rc = oem_dell_sel_print(intf, 0xFFFF,0);
+		}
+		else if ( (strncmp(argv[current_arg], "first\0", 6) == 0) ||
+				  (argc == 3)
+				)
+		{
+			current_arg++;
+			countstr = argv[current_arg];
+			if(argc == 3)
+			{
+				countstr = argv[2];
+			}
+			if (countstr)
+			{
+				if (make_int(countstr,&count) < 0)
+				{
+					lprintf(LOG_ERR, "Numeric argument required; got '%s'",
+							countstr);
+					return -1;
+				}
+			}
+
+			if (count == 0)
+			{
+				rc = oem_dell_sel_print(intf, 0xFFFF,0);
+			}
+			else
+			{
+				rc = oem_dell_sel_print(intf, count, 1);
+			}
+		}
+		else if (strncmp(argv[current_arg], "last\0", 5) == 0)
+		{
+			current_arg++;
+			countstr = argv[current_arg];
+			if (countstr)
+			{
+				if (make_int(countstr,&count) < 0)
+				{
+					lprintf(LOG_ERR, "Numeric argument required; got '%s'",
+							countstr);
+					return -1;
+				}
+			}
+			if (count == 0)
+			{
+				rc = oem_dell_sel_print(intf, 0xFFFF,0);
+			}
+			else
+			{
+				rc = oem_dell_sel_print(intf, count, 2);
+			}
+
+		}
+		else
+		{
+			oem_dell_sel_usage();
+			return -1;
+		}
+
+	}
+	else
+	{
+		oem_dell_sel_usage();
+		return -1;
+	}
+	return rc;
+
+}
+/*****************************************************************
+* Function Name: 	ipmi_sel_get
+*
+* Description:	This function prints the sel info
+* Input: 		intf 		- ipmi interface
+*			id		- sel id
+* Output:
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+static
+int oem_dell_sel_get(struct ipmi_intf * intf, uint16_t id)
+{
+	uint16_t curr_id, next_id;
+	int rc;
+
+	curr_id = 0x0000;
+	next_id = 0x0000;
+	while (curr_id != 0xFFFF) {
+		curr_id = next_id;
+	}
+
+	DECODING_METHOD method;
+	rc = oem_dell_sel_sysinfo(intf, &method);
+	if (rc == -1) {
+		return -1;
+	}
+	printf("CompletionCode = %d\n", method.completionCode);
+	printf("deviceId = %d\n", method.deviceID);
+	printf("deviceRevision = %d\n", method.deviceRevision);
+	printf("firmwareMajor = %d\n", method.firmwareMajor);
+	printf("firmwareMinor = %d\n", method.firmwareMinor);
+	printf("ipmiVersion = %d\n", method.ipmiVersion);
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sdr_reserve
+*
+* Description:	This function obtains SDR reservation ID
+* Input: 		intf 		- ipmi interface
+* Output:	reserve_id- reservation id
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+int
+oem_dell_sdr_reserve(struct ipmi_intf *intf, uint16_t * reserve_id)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+
+	/* obtain reservation ID */
+	memset(&req, 0, sizeof (req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR_RESERVE_REPO;
+	rsp = intf->sendrecv(intf, &req);
+	/* be slient for errors, they are handled by calling function */
+	if (rsp == NULL)
+		return -1;
+	if (rsp->ccode > 0)
+		return -1;
+
+
+	*reserve_id = ((struct sdr_reserve_repo_rs *) &(rsp->data))->reserve_id;
+	lprintf(LOG_DEBUG, "SDR reservation ID %04x", *reserve_id);
+
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sdr_get
+*
+* Description:	This function obtains SDR data
+* Input: 		intf 		- ipmi interface
+*			datapt	- SDR data pointer
+*			recordId - reservation id
+* Output:
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+
+int oem_dell_sdr_get(struct ipmi_intf *intf, uint16_t reserveId,
+	uint8_t* datapt, uint16_t recordId)
+{
+	#define MAX_BUF_SIZE 16
+
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[6] = {0};
+	uint8_t orgremain;
+	uint8_t length;
+	uint8_t offset;
+	uint8_t remain;
+	int rc;
+
+	memset(&req, 0, sizeof (req));
+
+
+	/* Get header info */
+	memset(msg_data, 0, 6);
+	msg_data[0] = reserveId & 0xff;
+	msg_data[1] = (reserveId >> 8) & 0xff;
+	msg_data[2] = recordId & 0xff;
+	msg_data[3] = (recordId >> 8) & 0xff;
+	msg_data[4] = 0x00;	/* offset */
+	msg_data[5] = 0x05;	/* length */
+
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR;
+	req.msg.data = msg_data;
+	req.msg.data_len = 6;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+			return -1;
+		} else if (rsp->ccode > 0) {
+			return -1;
+		}
+
+	memcpy((uint8_t*)datapt, (uint8_t*)rsp->data + 2, 5);
+	orgremain = datapt[4];
+	remain = datapt[4];
+	offset = 5;
+	while (remain > 0) {
+		if (remain  < MAX_BUF_SIZE) {
+			length = remain;
+		} else {
+			length = MAX_BUF_SIZE;
+		}
+		memset(msg_data, 0, 6);
+		msg_data[0] = reserveId & 0xff;
+		msg_data[1] = (reserveId >> 8) & 0xff;
+		msg_data[2] = recordId & 0xff;
+		msg_data[3] = (recordId >> 8) & 0xff;
+		msg_data[4] = offset;	/* offset */
+		msg_data[5] = length;	/* length */
+
+		req.msg.netfn = IPMI_NETFN_STORAGE;
+		req.msg.lun = 0;
+		req.msg.cmd = GET_SDR;
+		req.msg.data = msg_data;
+		req.msg.data_len = 6;
+
+
+
+		rsp = intf->sendrecv(intf, &req);
+		if (rsp == NULL) {
+			return -1;
+		} else if (rsp->ccode > 0) {
+			return -1;
+		}
+
+		memcpy(datapt+offset, rsp->data + 2, length);
+
+		offset += length;
+		remain -= length;
+
+	}
+	rc = 0;
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_build_sdr_first
+*
+* Description:	This function obtains first SDR
+* Input: 		intf 		- ipmi interface
+*			data		- SDR data pointer
+* Output:
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+
+static int oem_dell_build_sdr_first(struct ipmi_intf *intf, uint8_t *data)
+{
+	uint16_t reserve_id;
+	int rc;
+
+	rc = oem_dell_sdr_reserve(intf, &reserve_id);
+	if (rc == -1) {
+		return rc;
+	}
+	rc = oem_dell_sdr_get(intf, reserve_id, data, 0x00);
+	return rc;
+
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_build_sdr_next
+*
+* Description:	This function obtains the next SDR
+* Input: 		intf 		- ipmi interface
+*			sdr_in	- sdr id
+*			data		- SDR data pointer
+* Output:
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+
+int oem_dell_build_sdr_next(struct ipmi_intf *intf, uint8_t *sdr_in,
+	uint8_t *data)
+{
+	uint16_t reserve_id, record_id;
+	int rc;
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	uint8_t msg_data[6];
+
+	memset(&req, 0, sizeof (req));
+	/* Get next record ID */
+	memset(msg_data, 0, 6);
+	msg_data[0] = 0x00;
+	msg_data[1] = 0x00;
+	msg_data[2] = sdr_in[0]; /* record id */
+	msg_data[3] = sdr_in[1]; /* record id */
+	msg_data[4] = 0x00; /* offset */
+	msg_data[5] = 0x0f; /* length */
+
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR;
+	req.msg.data = msg_data;
+	req.msg.data_len = 6;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		return -1;
+	}
+	else if (rsp->ccode > 0)
+	{
+		return -1;
+	}
+	record_id = (rsp->data[1] << 8) | rsp->data[0];
+
+	if (record_id == 0xFFFF)
+	{
+		return 1;
+	}
+
+	rc = oem_dell_sdr_reserve(intf, &reserve_id);
+	if (rc == -1)
+	{
+		return rc;
+	}
+	rc = oem_dell_sdr_get(intf, reserve_id, data, record_id);
+	if (rc == -1)
+	{
+		return rc;
+	}
+	memset(&req, 0, sizeof (req));
+	/* Get next record ID */
+	memset(msg_data, 0, 6);
+	msg_data[0] = 0x00;
+	msg_data[1] = 0x00;
+	msg_data[2] = sdr_in[0]; /* record id */
+	msg_data[3] = sdr_in[1]; /* record id */
+	msg_data[4] = 0x00;	/* offset */
+	msg_data[5] = 0x0f;	/* length */
+
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SDR;
+	req.msg.data = msg_data;
+	req.msg.data_len = 6;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		return -1;
+	}
+	else if (rsp->ccode > 0)
+	{
+		return -1;
+	}
+	data [0] = rsp->data[0];
+	data [1] = rsp->data[1];
+	record_id = (rsp->data[1] << 8) | rsp->data[0];
+	if (record_id != 0xFFFF)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sdr_get_first
+*
+* Description:	This function returns first record
+* Input:
+* Output:
+* Return:
+*
+******************************************************************/
+
+SDRType* oem_dell_sdr_get_first(void)
+{
+	currentsdr = 0;
+	return ((SDRType*)(sdr[0].data));
+}
+/*****************************************************************
+* Function Name: 	oem_dell_sdr_get_next
+*
+* Description:	This function returns the next record
+* Input: 		pPreviousSDR - previous sdr id
+* Output:
+* Return:
+*
+******************************************************************/
+
+SDRType* oem_dell_sdr_get_next(SDRType* pprevioussdr)
+{
+	if ((currentsdr + 1) < totalsdrcount) {
+		currentsdr++;
+		return ((SDRType*)(sdr[currentsdr].data));
+	} else {
+		return NULL;
+	}
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sdr_build_table
+*
+* Description:	This function reads all SDR data into memory
+* Input: 		intf - ipmi interface
+* Output:
+* Return:
+*
+*****************************************************************/
+static int oem_dell_sdr_build_table(struct ipmi_intf *intf)
+{
+	SDRType* sdr_cur;
+	SDRType* sdr_next;
+	IPMISDR current;
+	IPMISDR next;
+	sdr_cur = &current;
+	sdr_next = &next;
+	int rc;
+	int i = 0;
+	int count;
+
+	count = 0;
+	do {
+		rc = oem_dell_build_sdr_first(intf, sdr[0].data);
+		count ++;
+	} while ( (rc == -1) && (count < 3) );
+	if (rc == -1)
+	{
+		printf("error: cannot access sdr info:\n");
+		return rc;
+	}
+
+	i = 0;
+
+	do {
+
+		count = 0;
+		do {
+			rc = oem_dell_build_sdr_next(intf, sdr[i].data, sdr[i+1].data);
+			count++;
+		} while ( (rc == -1) && (count < 3) );
+		 if (rc == -1) {
+			printf("Error: Cannot access SDR info\n");
+
+			 return rc;
+		 }
+
+		 i++;
+	}while ((rc != 1) && ((i+1)<MAX_SDR_ENTRIES));
+
+	i++;
+
+	if (i >= MAX_SDR_ENTRIES) {
+		printf("Error: SDR number limit exceeded.\n");
+		return -1;
+	}
+
+	totalsdrcount = i;
+
+	return 0;
+
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sel_get_record
+*
+* Description:	This function updates the sel record
+* Input: 		intf		- ipmi interface
+*			curr_id 	- current sdr id
+* Output:	sel_entry - sel record
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+uint16_t oem_dell_sel_get_record(struct ipmi_intf * intf, uint16_t curr_id,
+		uint8_t* sel_entry)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	uint8_t msg_data[6];
+	uint16_t next;
+
+	memset(msg_data, 0, 6);
+	msg_data[0] = 0x00;	/* no reserve id, not partial get */
+	msg_data[1] = 0x00;
+	msg_data[2] = curr_id & 0xff;
+	msg_data[3] = (curr_id >> 8) & 0xff;
+	msg_data[4] = 0x00;	/* offset */
+	msg_data[5] = 0xff;	/* length */
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_CMD_GET_SEL_ENTRY;
+	req.msg.data = msg_data;
+	req.msg.data_len = 6;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+			lprintf(LOG_ERR, " Error getting sel record");
+			return (-1) ;
+	} else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, " Error getting sel record: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return (-1);
+	}
+
+	/* save next entry id */
+	next = (rsp->data[1] << 8) | rsp->data[0];
+
+	memcpy((void*)sel_entry, (void*)&rsp->data[2], 16);
+
+	return next;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sel_print
+*
+* Description:	This function prints the sel records
+* Input: 		intf		- ipmi interface
+*			count 	- no of records to print
+* Output:	printOption - first few records / last few records
+* Return:		-1 on error
+*			0 if successful
+*
+******************************************************************/
+int oem_dell_sel_print(struct ipmi_intf * intf, uint16_t count, int printoption)
+{
+	CSLFUSERAPI pfnapilist;
+	DECODING_METHOD	method;
+	unsigned char	severity;
+	uint8_t	index = 1;
+	int status = COMMON_STATUS_BAD_PARAMETER;
+	unsigned short	timestrsize = LOG_DATE_STR_SIZE;
+	unsigned short	descriptionstrsize = EVENT_DESC_STR_SIZE;
+	uint16_t next_id;
+	uint8_t	sel_entry[0xff];
+	uint16_t last = 0;
+	uint16_t totalentries = 0;
+	uint16_t start_id = 0,start_cnt=0;
+	uint16_t start = 1;
+	int rc;
+	int error_count;
+
+
+	char logtimestring[LOG_DATE_STR_SIZE];
+	char datestring[LOG_DATE_STR_SIZE];
+	char descriptionstring[EVENT_DESC_STR_SIZE];
+
+	rc = oem_dell_sdr_build_table(intf);
+	if (rc == -1) {
+		return rc;
+	}
+
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = IPMI_CMD_GET_SEL_INFO;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, " Error getting sel info");
+		return -1;
+	} else if (rsp->ccode > 0) {
+		lprintf(LOG_ERR, " Error getting sel info: %s",
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	totalentries = ((rsp->data[2] << 8) | rsp->data[1]);
+
+	if (printoption == SEL_PRINT_FIRST) {
+
+		if(count > totalentries)
+			last = totalentries;
+		else
+			last = count;
+	}
+	if (printoption == SEL_PRINT_LAST){
+
+		if (count <=  totalentries)
+		{
+			start_id = totalentries - count;
+			start = start_id+1;
+			index = start;
+			last = totalentries;
+		}
+		else
+		{
+			start_id = 0;
+			start = start_id+1;
+			index = start;
+			last = totalentries;
+		}
+	}
+	if(printoption == SEL_PRINT_ALL){
+
+		last = totalentries;
+		start = 0;
+	}
+
+
+	/* set decoding method */
+	rc = oem_dell_sel_sysinfo(intf, &method);
+	if (rc == -1) {
+		return -1;
+	}
+
+	status = CSLFSetDecodingMethod(&method);
+	if (COMMON_STATUS_SUCCESS == status)
+	{
+		/* clear API structure */
+		memset((void*) &pfnapilist, 0, sizeof(CSLFUSERAPI));
+		pfnapilist.GetFirstSDR = (GETFIRSTSDRFN)oem_dell_sdr_get_first;
+		pfnapilist.GetNextSDR = (GETNEXTSDRFN)oem_dell_sdr_get_next;
+
+		CSLFAttach(&pfnapilist);
+		start_cnt = start;
+		while (start_cnt <= last)
+		{
+
+			error_count = 0;
+			do {
+				next_id = oem_dell_sel_get_record(intf, start, sel_entry);
+				error_count ++;
+				if (next_id == 0)
+				{
+					printf("SDR is NULL and error_count is %d\n", error_count);
+				}
+			} while ( (next_id == 0 ) && (error_count < 3) );
+
+			if (next_id == 0) {
+				CSLFDetach();
+				/*error message handled in ipmi_sel_get_record*/
+				return -1;
+			}
+			start_cnt++;
+			start = next_id;
+			{
+
+				logtimestring[0] = 0;
+				datestring[0] = 0;
+				descriptionstring[0] = 0;
+
+
+				status = CSLFSELEntryToStr(
+						(void*)sel_entry,
+						0,
+						logtimestring,
+						&timestrsize,
+						descriptionstring,
+						&descriptionstrsize,
+						&severity,
+						(void*)intf);
+
+
+				/*Convert date string*/
+				status = CSLFSELUnixToCTime(logtimestring, datestring);
+
+
+				printf("Severity          : %s\n", g_StatusTable[severity]);
+				printf("Date and Time     : %s\n", datestring);
+				printf("Description       : %s\n", descriptionstring);
+				printf("Event Data        : 0x%02x 0x%02x 0x%02x\n\n",sel_entry[13],sel_entry[14],sel_entry[15]);
+			}
+		}
+		CSLFDetach();
+	}
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sel_sysinfo
+*
+* Description:	This function update the decoding method
+* Input: 		intf		- ipmi interface
+* Output:	method 	- device id, device rev, fw major, fw minor, ipmi ver
+* Return:
+*
+******************************************************************/
+int oem_dell_sel_sysinfo(struct ipmi_intf *intf, DECODING_METHOD *method)
+{
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+
+	memset(&req, 0, sizeof (req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.lun = 0;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data = NULL;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+			lprintf(LOG_ERR, " Error getting system info");
+			return -1;
+		} else if (rsp->ccode > 0) {
+			lprintf(LOG_ERR, " Error getting system info: %s",
+				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+
+	method->completionCode = rsp->ccode;
+	method->deviceID		= rsp->data[0];
+	method->deviceRevision	= rsp->data[1];
+	method->firmwareMajor	= rsp->data[2];
+	method->firmwareMinor	= rsp->data[3];
+	method->ipmiVersion		= rsp->data[4];
+	method->supportFlags	= rsp->data[5];
+	method->manufactureID[0]= rsp->data[6];
+	method->manufactureID[1]= rsp->data[7];
+	method->manufactureID[2]= rsp->data[8];
+	method->productID[0]	= rsp->data[9];
+	method->productID[1]	= rsp->data[10];
+	method->auxiliary[0]	= rsp->data[11];
+	method->auxiliary[1]	= rsp->data[12];
+	method->auxiliary[2]	= rsp->data[13];
+	method->auxiliary[3]	= rsp->data[14];
+
+	return 1;
+
+
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sel_usage
+*
+* Description: 	This function prints help message for sel command
+* Input:
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static void
+oem_dell_sel_usage(void)
+{
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sel list");
+	lprintf(LOG_NOTICE, "      When used without any arguments, entire contents of SEL are displayed");
+	lprintf(LOG_NOTICE, "      first <count>");
+	lprintf(LOG_NOTICE, "         Displays first (least recent) count entries in SEL. Count of 0 will display all entries");
+	lprintf(LOG_NOTICE, "      last <count>");
+	lprintf(LOG_NOTICE, "         Displays last (most recent) count entries in SEL. Count of 0 will display all entries");
+	lprintf(LOG_NOTICE, "");
+}
+
+/*****************************************************************
+* Function Name: 	make_int
+*
+* Description:	This function convert string into integer
+* Input: 		str		- decimal number string
+* Output:	value 	- integer value
+* Return:
+*
+******************************************************************/
+static int make_int(const char *str, int *value)
+{
+	char *tmp=NULL;
+	*value = strtol(str,&tmp,0);
+	if ( tmp-str != strlen(str) )
+	{
+		return -1;
+	}
+	return 0;
+}
+
+/*****************************************************************
+* Function Name:       oem_dell_sdr_main
+*
+* Description:         This function processes the delloem sdr command
+* Input:               intf    - ipmi interface
+                       argc    - no of arguments
+                       argv    - argument string array
+* Output:
+*
+* Return:              return code     0 - success
+*                         -1 - failure
+*
+******************************************************************/
+static 
+int oem_dell_sdr_main (struct ipmi_intf * intf, int argc, char ** argv)
+{
+    int rc = 0;
+
+	current_arg++;
+	if (argc == 1)
+	{
+		rc = oem_dell_sensor(intf, 0xff);
+	}
+	else if (strncmp(argv[current_arg], "list\0", 5) == 0)
+	{
+		rc = oem_dell_sensor(intf, 0xff);
+	}
+	else if (strncmp(argv[current_arg], "get\0", 4) == 0)
+	{
+		current_arg++;
+		if (argv[current_arg] == NULL)
+		{
+			oem_dell_sensor_usage();
+			return -1;
+		}
+		int currIdInt;
+		make_int(argv[current_arg],&currIdInt);
+		if(currIdInt<0||currIdInt>255)
+		{
+			lprintf(LOG_ERR, "Invalid Id the id should be between 0-255\n");
+			oem_dell_sensor_usage();
+			return -1;
+		}
+		rc = oem_dell_sensor_get(intf, argc - 2, &argv[2]);
+	}
+	else
+	{
+		oem_dell_sensor_usage();
+	}
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sensor_get_sensor_reading
+*
+* Description:	This function retrieves a raw sensor reading
+* Input: 		sensorOwner	- sensor owner id
+* 	 		sensorNumber	- sensor id
+*  			x			- ipmi interface
+* Output:	sensorReadingData - ipmi response structure
+* Return:		1 on error
+*			0 if successful
+*
+******************************************************************/
+int
+oem_dell_sensor_get_sensor_reading(unsigned char sensorowner,
+	unsigned char sensorNumber,IPMISensorReadingType* sensorreadingdata,void* x)
+{
+	struct ipmi_rq req;
+	struct ipmi_rs * rsp;
+	struct ipmi_intf * intf;
+	int rc = 0;
+	uint8_t save_addr;
+
+	intf = ((struct ipmi_intf*) x);
+
+	memset(&req, 0, sizeof (req));
+	req.msg.netfn = IPMI_NETFN_SE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_SENSOR_READING;
+	req.msg.data = &sensorNumber;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+			return 1;
+		} else if (rsp->ccode > 0) {
+			return 1;
+		}
+
+	memcpy(sensorreadingdata, rsp->data, sizeof(IPMISensorReadingType));
+
+	/* if there is an error transmitting ipmi command, return error*/
+	if (rsp->ccode != 0) {
+		rc = 1;
+	}
+
+	/* if sensor messages are disabled, return error*/
+	if ((!(rsp->data[1]& 0xC0)) || ((rsp->data[1] & 0x20))) {
+		rc =1;
+	}
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sensor_print
+*
+* Description:	This function print the sensor list
+* Input: 		pSdr	- sensor id
+* 	 		pSensorIndex	- sensor index
+*  			intf			- ipmi interface
+* Output:
+* Return:		1 on error
+*			0 if successful
+*
+******************************************************************/
+static 
+int oem_dell_sensor_print(SDRType* psdr, int* psensorindex, struct ipmi_intf * intf)
+{
+    CSDDUSERAPI      pfnapilist;
+    int              count;
+    short            typesize;
+    short            namesize;
+    short            unitsize;
+    unsigned char    readingtype;
+    unsigned char    type;
+    char             szunits[16];
+    long             sensorreading;
+    unsigned short   sensorstate;
+    short            readsize;
+    short            statesize;
+    char             szstate[SENSOR_STATE_STR_SIZE];
+    short            severity;
+    char             szname[SENSOR_NAME_STR_SIZE];
+    char             sztype[SENSOR_TYPE_STR_SIZE];
+    char             szreading[SENSOR_READING_STR_SIZE];
+    CSDDSensorList   list;
+    int              status  = COMMON_STATUS_BAD_PARAMETER;
+	IPMISDR*		psdrprint;
+
+
+    /* Clear API structure */
+    memset(&pfnapilist, 0, sizeof(CSDDUSERAPI));
+
+    pfnapilist.GetFirstSDR         = (GETFIRSTSDRFN)oem_dell_sdr_get_first;
+    pfnapilist.GetNextSDR          = (GETNEXTSDRFN)oem_dell_sdr_get_next;
+    pfnapilist.GetSensorReading    = oem_dell_sensor_get_sensor_reading;
+
+    CSDDAttach(&pfnapilist);
+
+
+    if (NULL != psdr)
+    {
+        memset((void*)&list, 0, sizeof(CSDDSensorList));
+        status = CSDDGetSensorsTobeMonitored(&list, psdr, NULL, (void*)intf);
+
+
+
+        /* A failure here means no sensor present/disable for this SDR */
+        if (COMMON_STATUS_SUCCESS == status)
+        {
+            for(count = 0; count < list.sensorCount; count++)
+            {
+                typesize        = SENSOR_TYPE_STR_SIZE;
+                namesize        = SENSOR_NAME_STR_SIZE;
+                unitsize        = 16;
+                statesize       = SENSOR_STATE_STR_SIZE;
+                readsize        = SENSOR_READING_STR_SIZE;
+                /* initialize string buffers */
+                szstate[0]      = 0;
+                sztype[0]       = 0;
+                szreading[0]    = 0;
+                szunits[0]      = 0;
+
+                /* GetSensor Static Information */
+                status = CSDDGetSensorStaticInformation(psdr,0,&readingtype,&type,
+                             &namesize, szname, &typesize, sztype, &unitsize,
+                             szunits, list.sensorNumber[count], (void*)intf);
+                /* Did we encounter an error? */
+                if (COMMON_STATUS_SUCCESS != status)
+                {
+
+                    break;
+                }
+				memset(&sensorreading, 0, sizeof(sensorreading));
+                status = CSDDGetSensorDynamicInformation(psdr, &sensorreading,
+                            &sensorstate, &readsize, szreading, &statesize,
+                            szstate, &severity,  list.sensorNumber[count], (void*)intf);
+                /* Did we encounter an error? */
+                if (COMMON_STATUS_SUCCESS != status)
+                {
+					printf("Error getting dynamic information: %x\n", status);
+                    break;
+                }
+
+                /* Output common decoded data */
+
+				(*psensorindex) ++;
+				psdrprint = (IPMISDR*)psdr;
+				if (psdrprint->type.type1.entityID != 0x22) {
+
+					if (IPMI_READING_TYPE_THRESHOLD == readingtype)
+					{
+						printf("Index            : %d\n", *psensorindex);
+						printf("Sensor ID Number : %d\n", psdrprint->type.type1.sensorNum);
+						printf("Status           : %s\n", g_StatusTable[severity]);
+						printf("Probe Name       : %s\n", szname);
+						printf("Reading          : %s %s\n", szreading, szunits);
+					}
+					else
+					{
+						printf("Index            : %d\n", *psensorindex);
+						printf("Sensor ID Number : %d\n", psdrprint->type.type1.sensorNum);
+						printf("Status           : %s\n", szstate);
+						printf("Probe Name       : %s\n", szname);
+					}
+					printf("\n");
+				}
+			}
+        }
+    }
+    else
+        {
+            printf("sensor not found");
+        }
+    CSDDDetach();
+    return status;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sensor
+*
+* Description:	This function print the sensor list
+* Input: 		sensorNumIn	- sensor id
+* Output:
+* Return:		1 on error
+*			0 if successful
+*
+******************************************************************/
+static int oem_dell_sensor(struct ipmi_intf* intf, uint8_t sensornumin)
+{
+	int rc = 0;
+	int sensorindex = 0;
+	IPMISDR*        precord;
+	int i;
+
+	rc = oem_dell_sdr_build_table(intf);
+	if (rc == -1) {
+		return rc;
+	}
+	i = 0;
+	while (i < totalsdrcount) {
+		precord = (IPMISDR*)sdr[i].data;
+		if (sensornumin == 0xff && rc != -1) {
+			rc = oem_dell_sensor_print((SDRType*)sdr[i].data, &sensorindex, intf);
+		}else if (precord->type.type1.sensorNum == sensornumin){
+			rc = oem_dell_sensor_print((SDRType*)sdr[i].data, &sensorindex, intf);
+		}
+		i++;
+	}
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sensor_get
+*
+* Description:	This function print the sensor list
+* Input: 		intf			- ipmi interface
+* 	 		argc			- argument count
+* 	 		argv			- array of arguments
+* Output:
+* Return:		1 on error
+*			0 if successful
+*
+******************************************************************/
+static int oem_dell_sensor_get(struct ipmi_intf* intf, int argc, char **argv)
+{
+	int rc = 0;
+	int sensorindex = 0;
+	IPMISDR*        precord;
+	int i;
+	int current_arg;
+	int curridint;
+	uint8_t currid;
+    uint8_t currid_met=0;
+
+	rc = oem_dell_sdr_build_table(intf);
+	if (rc == -1) {
+		printf("failed in building SDR");
+
+		return rc;
+	}
+
+	current_arg = 0;
+	while (current_arg < argc) {
+		make_int(argv[current_arg],&curridint);
+
+
+		current_arg++;
+	}
+
+    if ((curridint > 255)||(curridint ==0))
+    {
+	printf("Invalid ID : ID value is out of range\n");
+        return -1;
+    }
+    currid = curridint;
+
+    i = 0;
+	while (i < totalsdrcount)
+	{
+		precord = (IPMISDR*)sdr[i].data;
+		if (precord->type.type1.sensorNum == currid)
+		{
+			rc = oem_dell_sensor_print((SDRType*)sdr[i].data, &sensorindex, intf);
+                currid_met=1;
+		}
+		i++;
+	}
+
+    if (currid_met==0)
+    {
+	printf("Invalid Id: Id not found \n");
+        currid_met=0;
+    }
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_sensor_usage
+*
+* Description: 	This function prints help message for sensor command
+* Input:
+* Output:
+*
+* Return:
+*
+******************************************************************/
+
+static void
+oem_dell_sensor_usage(void)
+{
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sensor list");
+	lprintf(LOG_NOTICE, "      Lists status, reading, and thresholds for sensors");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   sensor get <id>");
+	lprintf(LOG_NOTICE, "      Shows information for specified sensor");
+	lprintf(LOG_NOTICE, "");
+}
+
 /*
- * Function Name:       ipmi_delloem_mac_main
+ * Function Name:       oem_dell_mac_main
  *
  * Description:         This function processes the delloem mac command
  * Input:               intf    - ipmi interface
@@ -1503,82 +3633,80 @@ ipmi_lcd_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
-ipmi_delloem_mac_main(struct ipmi_intf * intf, int argc, char ** argv)
+static
+int oem_dell_mac_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	int currIdInt = -1;
 	current_arg++;
-	if (argc > 1 && strcmp(argv[current_arg], "help") == 0) {
-		ipmi_mac_usage();
+	if((argc == 1) || (argc > 1 && strcmp(argv[current_arg], "help") == 0)) {
+		oem_dell_mac_usage();
 		return 0;
 	}
-	ipmi_idracvalidator_command(intf);
-	if (argc == 1) {
-		rc = ipmi_macinfo(intf, 0xff);
-	} else if (strncmp(argv[current_arg], "list\0", 5) == 0) {
-		rc = ipmi_macinfo(intf, 0xff);
-	} else if (strncmp(argv[current_arg], "get\0", 4) == 0) {
+	if(strcmp(argv[current_arg], "list") == 0) {
+		rc = oem_dell_macinfo(intf, 0xff);
+	} else if(strcmp(argv[current_arg], "get") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_mac_usage();
+		if(NULL == argv[current_arg] ) {
+			oem_dell_mac_usage();
 			return -1;
 		}
-		if (str2int(argv[current_arg],&currIdInt) != 0) {
-			lprintf(LOG_ERR,
+		if(str2int(argv[current_arg], &currIdInt) != 0) {
+			lprintf(LOG_ERR, 
 					"Invalid NIC number. The NIC number should be between 0-8");
 			return -1;
 		}
-		if ((currIdInt > 8) || (currIdInt < 0)) {
-			lprintf(LOG_ERR,
+		if((currIdInt > 8) || (currIdInt < 0)) {
+			lprintf(LOG_ERR, 
 					"Invalid NIC number. The NIC number should be between 0-8");
 			return -1;
 		}
-		rc = ipmi_macinfo(intf, currIdInt);
-	} else {
-		ipmi_mac_usage();
+		rc = oem_dell_macinfo(intf, currIdInt);
+	} else{
+		oem_dell_mac_usage();
 	}
 	return rc;
 }
 
-EmbeddedNICMacAddressType EmbeddedNICMacAddress;
+embedded_nic_mac_address_type embedded_nic_mac_address;
 
-EmbeddedNICMacAddressType_10G EmbeddedNICMacAddress_10G;
+embedded_nic_mac_address_type_10g embedded_nic_mac_address_10g;
 
-static void
-InitEmbeddedNICMacAddressValues()
+static
+void oem_dell_init_embedded_nic_mac_address_values()
 {
 	uint8_t i;
 	uint8_t j;
-	for (i = 0; i < MAX_LOM; i++) {
-		EmbeddedNICMacAddress.LOMMacAddress[i].BladSlotNumber = 0;
-		EmbeddedNICMacAddress.LOMMacAddress[i].MacType = LOM_MACTYPE_RESERVED;
-		EmbeddedNICMacAddress.LOMMacAddress[i].EthernetStatus =
+	for(i = 0; i < MAX_LOM; i++) {
+		embedded_nic_mac_address.lom_mac_address[i].bladslotnumber = 0;
+		embedded_nic_mac_address.lom_mac_address[i].mactype = LOM_MACTYPE_RESERVED;
+		embedded_nic_mac_address.lom_mac_address[i].ethernetstatus = 
 			LOM_ETHERNET_RESERVED;
-		EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber = 0;
-		EmbeddedNICMacAddress.LOMMacAddress[i].Reserved = 0;
-		for (j = 0; j < MACADDRESSLENGH; j++) {
-			EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte[j] = 0;
-			EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte[j] = 0;
+		embedded_nic_mac_address.lom_mac_address[i].nicnumber = 0;
+		embedded_nic_mac_address.lom_mac_address[i].reserved = 0;
+		for(j = 0; j < MACADDRESSLENGH; j++) {
+			embedded_nic_mac_address.lom_mac_address[i].macaddressbyte[j] = 0;
+			embedded_nic_mac_address_10g.mac_address[i].mac_address_byte[j] = 0;
 		}
 	}
 }
 
-uint8_t UseVirtualMacAddress = 0;
-static int
-ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
+uint8_t usevirtualmacaddress = 0;
+
+static
+int oem_dell_macinfo_drac_idrac_virtual_mac(struct ipmi_intf *intf, uint8_t nicnum)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[30];
-	uint8_t VirtualMacAddress [MACADDRESSLENGH];
-	uint8_t input_length=0;
+	uint8_t virtualmacaddress[MACADDRESSLENGH];
+	uint8_t input_length = 0;
 	uint8_t j;
 	uint8_t i;
-	if (NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER) {
+	if(nicnum != 0xff && nicnum != IDRAC_NIC_NUMBER) {
 		return 0;
 	}
-	UseVirtualMacAddress = 0;
+	usevirtualmacaddress = 0;
 	input_length = 0;
 	msg_data[input_length++] = 1; /*Get*/
 
@@ -1589,84 +3717,102 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	req.msg.data_len = input_length;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
+	if(NULL == rsp) {
 		return -1;
 	}
-
-	if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)
-			|| (IMC_IDRAC_13G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
-		/* Get the Chasiss Assigned MAC Address for 12g Only */
-		memcpy(VirtualMacAddress, ((rsp->data) + 1), MACADDRESSLENGH);
-		for (i = 0; i < MACADDRESSLENGH; i++) {
-			if (VirtualMacAddress[i] != 0) {
-				UseVirtualMacAddress = 1;
+	if( rsp->ccode ) {
+		return -1;
+	}
+	if((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_12G_MONOLITHIC == IMC_Type)
+			||(IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MONOLITHIC == IMC_Type)
+			||(IMC_IDRAC_13G_DCS == IMC_Type)
+			||(IMC_IDRAC_14G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_14G_MONOLITHIC == IMC_Type)
+			||(IMC_IDRAC_14G_DCS == IMC_Type)) {
+		/* Get the Chasiss Assigned MAC Addresss for 12g and later Only */
+		memcpy(virtualmacaddress, ((rsp->data) + VIRTUAL_MAC_OFFSET_12G_AND_LATER), MACADDRESSLENGH);
+		for(i = 0; i < MACADDRESSLENGH; i++) {
+			if(virtualmacaddress[i] != 0) {
+				usevirtualmacaddress = 1;
 			}
 		}
-		/* Get the Server Assigned MAC Address for 12g Only */
-		if (!UseVirtualMacAddress) {
-			memcpy(VirtualMacAddress, ((rsp->data) + 1 + MACADDRESSLENGH),
+		/* Get the Server Assigned MAC Addresss for 12g and later Only */
+		if(!usevirtualmacaddress) {
+			memcpy(virtualmacaddress, ((rsp->data) + VIRTUAL_MAC_OFFSET_12G_AND_LATER + MACADDRESSLENGH), 
 					MACADDRESSLENGH);
-			for (i = 0; i < MACADDRESSLENGH; i++) {
-				if (VirtualMacAddress[i] != 0) {
-					UseVirtualMacAddress = 1;
+			for(i = 0; i < MACADDRESSLENGH; i++) {
+				if(virtualmacaddress[i] != 0) {
+					usevirtualmacaddress = 1;
 				}
 			}
 		}
-	} else {
-		memcpy(VirtualMacAddress, ((rsp->data) + VIRTUAL_MAC_OFFSET),
+	} else{
+		memcpy(virtualmacaddress, ((rsp->data) + VIRTUAL_MAC_OFFSET), 
 				MACADDRESSLENGH);
-		for (i = 0; i < MACADDRESSLENGH; i++) {
-			if (VirtualMacAddress[i] != 0) {
-				UseVirtualMacAddress = 1;
+		for(i = 0; i < MACADDRESSLENGH; i++) {
+			if(virtualmacaddress[i] != 0) {
+				usevirtualmacaddress = 1;
 			}
 		}
 	}
-	if (UseVirtualMacAddress == 0) {
+	if(usevirtualmacaddress == 0) {
 		return -1;
 	}
-	if (IMC_IDRAC_10G == IMC_Type) {
+	if(IMC_IDRAC_10G == IMC_Type) {
 		printf("\nDRAC MAC Address ");
-	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
+	} else if((IMC_IDRAC_11G_MODULAR == IMC_Type)
+		||(IMC_IDRAC_11G_MONOLITHIC == IMC_Type)) {
 		printf("\niDRAC6 MAC Address ");
-	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
+	} else if((IMC_IDRAC_12G_MODULAR == IMC_Type)
+		||(IMC_IDRAC_12G_MONOLITHIC == IMC_Type)) {
 		printf("\niDRAC7 MAC Address ");
-	} else if ((IMC_IDRAC_13G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC8 MAC Address ");
-	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
-			|| (IMC_MASER_LITE_NU== IMC_Type)) {
+	} else if((IMC_IDRAC_13G_MODULAR == IMC_Type)
+		||(IMC_IDRAC_13G_MONOLITHIC == IMC_Type)
+		||(IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+		printf("\niDRAC8 MAC Address ");
+	} else if((IMC_IDRAC_14G_MODULAR == IMC_Type)
+		||(IMC_IDRAC_14G_MONOLITHIC == IMC_Type)
+		||(IMC_IDRAC_14G_MODULAR == IMC_Type)) {
+		printf("\niDRAC9 MAC Address ");
+	} else if((IMC_MASER_LITE_BMC == IMC_Type)
+		||(IMC_MASER_LITE_NU == IMC_Type)) {
 		printf("\nBMC MAC Address ");
-	} else {
+	} else{
 		printf("\niDRAC6 MAC Address ");
 	}
 
-	printf("%s\n", mac2str(VirtualMacAddress));
+	for(j = 0; j < 5; j++) {
+		printf("%02x:", virtualmacaddress[j]);
+	}
+	printf("%02x", virtualmacaddress[j]);
+	printf("\n");
+
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_macinfo_drac_idrac_mac
+ * Function Name:    oem_dell_macinfo_drac_idrac_mac
  *
  * Description:      This function retrieves the mac address of DRAC or iDRAC
- * Input:            NicNum
+ * Input:            nicnum
  * Output:
  * Return:
  */
-static int
-ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
+static
+int oem_dell_macinfo_drac_idrac_mac(struct ipmi_intf *intf, uint8_t nicnum)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[30];
-	uint8_t input_length=0;
-	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
+	uint8_t input_length = 0;
+	uint8_t idrac6macaddressbyte[MACADDRESSLENGH];
 	uint8_t j;
-	ipmi_macinfo_drac_idrac_virtual_mac(intf,NicNum);
-	if ((NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER)
-			|| UseVirtualMacAddress != 0) {
+	oem_dell_macinfo_drac_idrac_virtual_mac(intf, nicnum);
+	if((nicnum != 0xff && nicnum != IDRAC_NIC_NUMBER)
+			|| usevirtualmacaddress != 0) {
 		return 0;
 	}
 	input_length = 0;
@@ -1682,59 +3828,71 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	req.msg.data_len = input_length;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting MAC Address");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
+	if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	memcpy(iDRAC6MacAddressByte, ((rsp->data) + PARAM_REV_OFFSET),
+	memcpy(idrac6macaddressbyte, ((rsp->data) + PARAM_REV_OFFSET), 
 			MACADDRESSLENGH);
 
-	if (IMC_IDRAC_10G == IMC_Type) {
+	if(IMC_IDRAC_10G == IMC_Type) {
 		printf("\nDRAC MAC Address ");
-	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_11G_MONOLITHIC== IMC_Type)) {
+	} else if((IMC_IDRAC_11G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_11G_MONOLITHIC == IMC_Type)) {
 		printf("\niDRAC6 MAC Address ");
-	} else if ((IMC_IDRAC_12G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_12G_MONOLITHIC== IMC_Type)) {
+	} else if((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_12G_MONOLITHIC == IMC_Type)) {
 		printf("\niDRAC7 MAC Address ");
-	} else if ((IMC_IDRAC_13G_MODULAR == IMC_Type)
-			|| (IMC_IDRAC_13G_MONOLITHIC== IMC_Type)) {
-			printf ("\niDRAC8 MAC Address ");
-	} else if ((IMC_MASER_LITE_BMC== IMC_Type)
-			|| (IMC_MASER_LITE_NU== IMC_Type)) {
+	} else if((IMC_IDRAC_13G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MONOLITHIC == IMC_Type) 
+			||(IMC_IDRAC_13G_DCS == IMC_Type)) { 
+		printf("\niDRAC8 MAC Address ");
+	} else if((IMC_IDRAC_14G_MODULAR == IMC_Type)
+		||(IMC_IDRAC_14G_MONOLITHIC == IMC_Type)
+		||(IMC_IDRAC_14G_MODULAR == IMC_Type)) {
+		printf("\niDRAC9 MAC Address ");
+	} else if((IMC_MASER_LITE_BMC == IMC_Type)
+			||(IMC_MASER_LITE_NU == IMC_Type)) {
 		printf("\n\rBMC MAC Address ");
-	} else {
+	} else{
 		printf("\niDRAC6 MAC Address ");
 	}
+	for(j = 0; j < 5; j++) {
+		printf("%02x:", idrac6macaddressbyte[j]);
+	}
+	printf("%02x", idrac6macaddressbyte[j]);
+	printf("\n");
 
-	printf("%s\n", mac2str(iDRAC6MacAddressByte));
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_macinfo_10g
+ * Function Name:    oem_dell_macinfo_10g
  *
  * Description:      This function retrieves the mac address of LOMs
  * Input:            intf      - ipmi interface
- *                   NicNum    - NIC number
+ *                   nicnum    - NIC number
  * Output:
  * Return:
  */
-static int
-ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
+static
+int oem_dell_macinfo_10g(struct ipmi_intf *intf, uint8_t nicnum)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[30];
-	uint8_t input_length=0;
+	uint8_t input_length = 0;
 	uint8_t j;
 	uint8_t i;
-	uint8_t Total_No_NICs = 0;
-	InitEmbeddedNICMacAddressValues();
+	uint8_t total_no_nics = 0;
+	oem_dell_init_embedded_nic_mac_address_values();
 	memset(msg_data, 0, sizeof(msg_data));
 	input_length = 0;
 	msg_data[input_length++] = 0x00; /* Get Parameter Command */
@@ -1748,49 +3906,55 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting MAC Address");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
+	if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	Total_No_NICs = (uint8_t)rsp->data[0 + PARAM_REV_OFFSET]; /* Byte 1: Total Number of Embedded NICs */
-	if (IDRAC_NIC_NUMBER != NicNum) {
-		if (0xff == NicNum) {
+	total_no_nics = (uint8_t)rsp->data[0 + PARAM_REV_OFFSET]; /* Byte 1: Total Number of Embedded NICs */
+	if(IDRAC_NIC_NUMBER != nicnum) {
+		if(0xff == nicnum) {
 			printf("\nSystem LOMs");
 		}
 		printf("\nNIC Number\tMAC Address\n");
-		memcpy(&EmbeddedNICMacAddress_10G,
-				((rsp->data) + PARAM_REV_OFFSET+TOTAL_N0_NICS_INDEX),
-				Total_No_NICs* MACADDRESSLENGH);
+		memcpy(&embedded_nic_mac_address_10g, 
+				((rsp->data) + PARAM_REV_OFFSET+TOTAL_N0_NICS_INDEX), 
+				total_no_nics * MACADDRESSLENGH);
 		/*Read the LOM type and Mac Addresses */
-		for (i = 0; i < Total_No_NICs; i++) {
-			if ((0xff == NicNum) || (i == NicNum)) {
-				printf("\n%d",i);
-				printf("\t\t%s",
-					mac2str(EmbeddedNICMacAddress_10G.MacAddress[i].MacAddressByte));
+		for(i = 0; i < total_no_nics; i++) {
+			if((0xff == nicnum) ||(i == nicnum)) {
+				printf("\n%d", i);
+				printf("\t\t");
+				for(j = 0 ; j < 5; j++) {
+					printf("%02x:", embedded_nic_mac_address_10g.mac_address[i].mac_address_byte[j]);
+				}
+				printf("%02x", embedded_nic_mac_address_10g.mac_address[i].mac_address_byte[j]);
 			}
 		}
 		printf("\n");
 	}
-	ipmi_macinfo_drac_idrac_mac(intf,NicNum);
+	oem_dell_macinfo_drac_idrac_mac(intf, nicnum);
 	return 0;
 }
+
 /*
- * Function Name:      ipmi_macinfo_11g
+ * Function Name:      oem_dell_macinfo_11g
  *
  * Description:        This function retrieves the mac address of LOMs
  * Input:              intf - ipmi interface
  * Output:
  * Return:
  */
-static int
-ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
+static
+int oem_dell_macinfo_11g(struct ipmi_intf *intf, uint8_t nicnum)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t input_length = 0;
 	uint8_t i;
@@ -1804,7 +3968,7 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 	len = 8; /*eigher 8 or 16 */
 	maxlen = 64;
 	loop_count = maxlen / len;
-	InitEmbeddedNICMacAddressValues();
+	oem_dell_init_embedded_nic_mac_address_values();
 	memset(msg_data, 0, sizeof(msg_data));
 	input_length = 0;
 	msg_data[input_length++] = 0x00; /* Get Parameter Command */
@@ -1822,26 +3986,28 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 	req.msg.data_len = input_length;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting MAC Address");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address");
 		return -1;
 	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
+	if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	len = 8; /*eigher 8 or 16 */
 	maxlen = (uint8_t)rsp->data[0 + PARAM_REV_OFFSET];
 	loop_count = maxlen / len;
-	if (IDRAC_NIC_NUMBER != NicNum) {
-		if (0xff == NicNum) {
+	if(IDRAC_NIC_NUMBER != nicnum) {
+		if(0xff == nicnum) {
 			printf("\nSystem LOMs");
 		}
 		printf("\nNIC Number\tMAC Address\t\tStatus\n");
 		/*Read the LOM type and Mac Addresses */
-		offset=0;
-		for (i = 0; i < loop_count; i++, offset = offset + len) {
+		offset = 0;
+		for(i = 0; i < loop_count; i++, offset = offset + len) {
 			input_length = 4;
 			msg_data[input_length++] = offset;
 			msg_data[input_length++] = len;
@@ -1853,27 +4019,41 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 			req.msg.data_len = input_length;
 
 			rsp = intf->sendrecv(intf, &req);
-			if (!rsp) {
-				lprintf(LOG_ERR, "Error in getting MAC Address");
+			if(NULL == rsp) {
+				lprintf(LOG_ERR, 
+						"Error in getting MAC Address");
 				return -1;
 			}
-			if (rsp->ccode) {
-				lprintf(LOG_ERR, "Error in getting MAC Address (%s)",
+			if( rsp->ccode ) {
+				lprintf(LOG_ERR, 
+						"Error in getting MAC Address(%s)", 
 						val2str(rsp->ccode, completion_code_vals));
 				return -1;
 			}
-			memcpy(&(EmbeddedNICMacAddress.LOMMacAddress[i]),
+			memcpy(&(embedded_nic_mac_address.lom_mac_address[i]), 
 					((rsp->data)+PARAM_REV_OFFSET), len);
-			if (LOM_MACTYPE_ETHERNET == EmbeddedNICMacAddress.LOMMacAddress[i].MacType) {
-				if ((0xff==NicNum)
-						|| (NicNum == EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber)) {
-					printf("\n%d",EmbeddedNICMacAddress.LOMMacAddress[i].NICNumber);
-					printf("\t\t%s", mac2str(EmbeddedNICMacAddress.LOMMacAddress[i].MacAddressByte));
 
-					if (LOM_ETHERNET_ENABLED
-							== EmbeddedNICMacAddress.LOMMacAddress[i].EthernetStatus) {
+			embedded_nic_mac_address.lom_mac_address[i].bladslotnumber = *((rsp->data)+PARAM_REV_OFFSET) & 0x0F;
+			embedded_nic_mac_address.lom_mac_address[i].mactype = *((rsp->data)+PARAM_REV_OFFSET) & 0xC0;
+			embedded_nic_mac_address.lom_mac_address[i].ethernetstatus = *((rsp->data)+PARAM_REV_OFFSET) & 0x30;
+			embedded_nic_mac_address.lom_mac_address[i].nicnumber = *((rsp->data)+PARAM_REV_OFFSET+1) & 0x1F;
+			embedded_nic_mac_address.lom_mac_address[i].reserved = *((rsp->data)+PARAM_REV_OFFSET+1) & 0x70;
+
+			memcpy(&(embedded_nic_mac_address.lom_mac_address[i].macaddressbyte), ((rsp->data)+PARAM_REV_OFFSET+2), len-2);
+			if(LOM_MACTYPE_ETHERNET == embedded_nic_mac_address.lom_mac_address[i].mactype) {
+				if((0xff == nicnum)
+						||(nicnum == embedded_nic_mac_address.lom_mac_address[i].nicnumber)) {
+					printf("\n%d", embedded_nic_mac_address.lom_mac_address[i].nicnumber);
+					printf("\t\t");
+					for(j = 0; j < 5; j++) {
+						printf("%02x:", embedded_nic_mac_address.lom_mac_address[i].macaddressbyte[j]);
+					}
+					printf("%02x", embedded_nic_mac_address.lom_mac_address[i].macaddressbyte[j]);
+
+					if(LOM_ETHERNET_ENABLED
+							 == embedded_nic_mac_address.lom_mac_address[i].ethernetstatus) {
 						printf("\tEnabled");
-					} else {
+					} else{
 						printf("\tDisabled");
 					}
 				}
@@ -1881,37 +4061,44 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 		}
 		printf("\n");
 	}
-	ipmi_macinfo_drac_idrac_mac(intf,NicNum);
+	oem_dell_macinfo_drac_idrac_mac(intf, nicnum);
 	return 0;
 }
+
 /*
- * Function Name:      ipmi_macinfo
+ * Function Name:      oem_dell_macinfo
  *
  * Description:     This function retrieves the mac address of LOMs
  * Input:           intf   - ipmi interface
  * Output:
  * Return:
  */
-static int
-ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
+static
+int oem_dell_macinfo(struct ipmi_intf *intf, uint8_t nicnum)
 {
-	if (IMC_IDRAC_10G == IMC_Type) {
-		return ipmi_macinfo_10g(intf,NicNum);
-	} else if ((IMC_IDRAC_11G_MODULAR == IMC_Type
+	if(IMC_IDRAC_10G == IMC_Type) {
+		return oem_dell_macinfo_10g(intf, nicnum);
+	} else if((IMC_IDRAC_11G_MODULAR == IMC_Type
 				|| IMC_IDRAC_11G_MONOLITHIC == IMC_Type)
-			|| (IMC_IDRAC_12G_MODULAR == IMC_Type
+			||(IMC_IDRAC_12G_MODULAR == IMC_Type
 				|| IMC_IDRAC_12G_MONOLITHIC == IMC_Type)
-			|| (IMC_IDRAC_13G_MODULAR == IMC_Type
-				|| IMC_IDRAC_13G_MONOLITHIC == IMC_Type)
-			|| (IMC_MASER_LITE_NU == IMC_Type || IMC_MASER_LITE_BMC== IMC_Type)) {
-		return ipmi_macinfo_11g(intf,NicNum);
-	} else {
-		lprintf(LOG_ERR, "Error in getting MAC Address : Not supported platform");
-		return (-1);
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type
+				|| IMC_IDRAC_13G_MONOLITHIC == IMC_Type
+				|| IMC_IDRAC_13G_DCS == IMC_Type)
+			||(IMC_IDRAC_14G_MODULAR == IMC_Type
+				|| IMC_IDRAC_14G_MONOLITHIC == IMC_Type
+				|| IMC_IDRAC_14G_DCS == IMC_Type)
+			||(IMC_MASER_LITE_NU == IMC_Type || IMC_MASER_LITE_BMC == IMC_Type)) {
+		return oem_dell_macinfo_11g(intf, nicnum);
+	} else{
+		lprintf(LOG_ERR, 
+				"Error in getting MAC Address : Not supported platform");
+		return(-1);
 	}
 }
+
 /*
- * Function Name:     ipmi_mac_usage
+ * Function Name:     oem_dell_mac_usage
  *
  * Description:   This function prints help message for mac command
  * Input:
@@ -1919,120 +4106,168 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
  *
  * Return:
  */
-static void
-ipmi_mac_usage(void)
+static
+void oem_dell_mac_usage(void)
 {
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   mac list");
-	lprintf(LOG_NOTICE,
-"      Lists the MAC address of LOMs");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   mac get <NIC number>");
-	lprintf(LOG_NOTICE,
-"      Shows the MAC address of specified LOM. 0-7 System LOM, 8- DRAC/iDRAC.");
-	lprintf(LOG_NOTICE,
-"");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   mac list");
+	lprintf(LOG_NOTICE, 
+			"      Lists the MAC address of LOMs");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   mac get <NIC number>");
+	lprintf(LOG_NOTICE, 
+			"      Shows the MAC address of specified LOM. 0-7 System LOM, 8- DRAC/iDRAC.");
+	lprintf(LOG_NOTICE, 
+			"");
 }
+
 /*
- * Function Name:       ipmi_delloem_lan_main
+ * Function Name:       oem_dell_lan_main
  *
  * Description:         This function processes the delloem lan command
  * Input:               intf    - ipmi interface
- *                      argc    - no of arguments (unused, left in for calling consistency)
+ *                      argc    - no of arguments
  *                      argv    - argument string array
  * Output:
  *
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
-ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
+static
+int oem_dell_lan_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	int nic_selection = 0;
 	char nic_set[2] = {0};
 	current_arg++;
-	if (!argv[current_arg] || strcmp(argv[current_arg], "help") == 0) {
-		ipmi_lan_usage();
+	if( NULL == argv[current_arg]  || strcmp(argv[current_arg], "help") == 0) {
+		oem_dell_lan_usage();
 		return 0;
 	}
-	ipmi_idracvalidator_command(intf);
-	if (!IsLANSupported()) {
-		lprintf(LOG_ERR, "lan is not supported on this system.");
+	oem_dell_idracvalidator_command(intf);
+	if(!oem_dell_islansupported()) {
+		lprintf(LOG_ERR, 
+				"lan is not supported on this system.");
 		return -1;
-	} else if (strncmp(argv[current_arg], "set\0", 4) == 0) {
+	} else if(strcmp(argv[current_arg], "set") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_lan_usage();
+		if( NULL == argv[current_arg] ) {
+			oem_dell_lan_usage();
 			return -1;
 		}
-		if (iDRAC_FLAG_12_13)  {
-			nic_selection = get_nic_selection_mode_12g(intf, current_arg, argv,
+		if(iDRAC_FLAG_12_13)  {
+			g_modularsupportlom = get_modular_support_lom(intf);
+			nic_selection = oem_dell_get_nic_selection_mode_12g(intf, current_arg, argv, 
 					nic_set);
-			if (INVALID == nic_selection) {
-				ipmi_lan_usage();
+			if(INVALID == nic_selection) {
+				oem_dell_lan_usage();
 				return -1;
-			} else if (INVAILD_FAILOVER_MODE == nic_selection) {
-				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_STRING);
-				return (-1);
-			} else if (INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
-				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_SET);
-				return (-1);
-			} else if (INVAILD_SHARED_MODE == nic_selection) {
-				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+			} else if(INVAILD_FAILOVER_MODE == nic_selection) {
+				lprintf(LOG_ERR, 
+						INVAILD_FAILOVER_MODE_STRING);
+				return(-1);
+			} else if(INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
+				lprintf(LOG_ERR, 
+						INVAILD_FAILOVER_MODE_SET);
+				return(-1);
+			} else if(INVAILD_SHARED_MODE == nic_selection) {
+				lprintf(LOG_ERR, 
+						INVAILD_SHARED_MODE_SET_STRING);
+				return(-1);
 			}
-			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
-		} else {
-			nic_selection = get_nic_selection_mode(current_arg, argv);
-			if (INVALID == nic_selection) {
-				ipmi_lan_usage();
+			rc = oem_dell_lan_set_nic_selection_12g(intf, nic_set);
+		} else{
+			nic_selection = oem_dell_get_nic_selection_mode(current_arg, argv);
+			if(INVALID == nic_selection) {
+				oem_dell_lan_usage();
 				return -1;
 			}
-			if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
-				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+			if(IMC_IDRAC_11G_MODULAR == IMC_Type) {
+				lprintf(LOG_ERR, 
+						INVAILD_SHARED_MODE_SET_STRING);
+				return(-1);
 			}
-			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
+			rc = oem_dell_lan_set_nic_selection(intf, nic_selection);
 		}
 		return 0;
-	} else if (strncmp(argv[current_arg], "get\0", 4) == 0) {
+	} else if(strcmp(argv[current_arg], "get") == 0) {
+		g_modularsupportlom = get_modular_support_lom(intf);
 		current_arg++;
-		if (!argv[current_arg]) {
-			rc = ipmi_lan_get_nic_selection(intf);
+		if( NULL == argv[current_arg] ) {
+			rc = oem_dell_lan_get_nic_selection(intf);
 			return rc;
-		} else if (strncmp(argv[current_arg], "active\0", 7) == 0) {
-			rc = ipmi_lan_get_active_nic(intf);
+		} else if(strcmp(argv[current_arg], "active") == 0) {
+			rc = oem_dell_lan_get_active_nic(intf);
 			return rc;
-		} else {
-			ipmi_lan_usage();
+		} else{
+			oem_dell_lan_usage();
 		}
-	} else {
-		ipmi_lan_usage();
+	} else{
+		oem_dell_lan_usage();
 		return -1;
 	}
 	return rc;
 }
 
-static int
-IsLANSupported()
+int 
+get_modular_support_lom(struct ipmi_intf* intf)
 {
-	if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	uint8_t msg_data[30];
+	uint8_t input_length = 0;
+
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_MISCELLANEOUS_CMD;
+	msg_data[input_length++] = GET_COMMAND_ID;
+	msg_data[input_length++] = GET_HWCAPABILITY_SUB_CMD;
+	msg_data[input_length++] = 8;
+	msg_data[input_length++] = 0;
+	msg_data[input_length++] = 0;
+	msg_data[input_length++] = 0;
+
+
+	req.msg.data = msg_data;
+	req.msg.data_len = input_length;
+
+	rsp = intf->sendrecv(intf, &req);
+	if(rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error in getting nic selection");
+		return 0;
+	}
+	else if(rsp->ccode > 0)
+	{
+		lprintf(LOG_ERR, " Error in getting nic selection(%s) \n", 
+				val2str(rsp->ccode, completion_code_vals) );
+		return 0;
+	}
+	//lprintf(LOG_ERR, " 9 = %x 8 = %x \n", rsp->data[9], rsp->data[8]);
+	return(rsp->data[8] & BIT(4));
+
+}
+
+static
+int oem_dell_islansupported()
+{
+	if(IMC_IDRAC_11G_MODULAR == IMC_Type) {
 		return 0;
 	}
 	return 1;
 }
 
-static int
-get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
-		char ** argv, char *nic_set)
+static
+int oem_dell_get_nic_selection_mode_12g(struct ipmi_intf *intf, int current_arg, 
+					char **argv, char *nic_set)
 {
 	/* First get the current settings. */
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	int failover = 0;
 	uint8_t input_length = 0;
@@ -2045,147 +4280,156 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting nic selection");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting nic selection");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting nic selection(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	nic_set[0] = rsp->data[0];
 	nic_set[1] = rsp->data[1];
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "dedicated\0", 10) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "dedicated") == 0) {
 		nic_set[0] = 1;
 		nic_set[1] = 0;
 		return 0;
 	}
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "shared\0", 7) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "shared") == 0) {
 		/* placeholder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "with\0", 5) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "with") == 0) {
 		/* placeholder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "failover\0", 9) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "failover") == 0) {
 		failover = 1;
 	}
-	if (failover) {
+	if(failover) {
 		current_arg++;
 	}
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom1\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "lom1") == 0) {
+		if( !g_modularsupportlom && ((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
+
 			return INVAILD_SHARED_MODE;
 		}
-		if (failover) {
-			if (nic_set[0] == 2) {
+		if(failover) {
+			if(nic_set[0] == 2) {
 				return INVAILD_FAILOVER_MODE;
-			} else if (nic_set[0] == 1) {
+			} else if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 2;
-		} else {
+		} else{
 			nic_set[0] = 2;
-			if (nic_set[1] == 2) {
+			if(nic_set[1] == 2) {
 				nic_set[1] = 0;
 			}
 		}
 		return 0;
-	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom2\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+	} else if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "lom2") == 0) {
+		if( !g_modularsupportlom && ((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
 			return INVAILD_SHARED_MODE;
 		}
-		if (failover) {
-			if (nic_set[0] == 3) {
+		if(failover) {
+			if(nic_set[0] == 3) {
 				return INVAILD_FAILOVER_MODE;
 			} else if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 3;
-		} else {
+		} else{
 			nic_set[0] = 3;
-			if (nic_set[1] == 3) {
+			if(nic_set[1] == 3) {
 				nic_set[1] = 0;
 			}
 		}
 		return 0;
-	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom3\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+	} else if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "lom3") == 0) {
+		if( !g_modularsupportlom &&((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
 			return INVAILD_SHARED_MODE;
 		}
-		if (failover) {
-			if (nic_set[0] == 4) {
+		if(failover) {
+			if(nic_set[0] == 4) {
 				return INVAILD_FAILOVER_MODE;
 			} else if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 4;
-		} else {
+		} else{
 			nic_set[0] = 4;
-			if (nic_set[1] == 4) {
+			if(nic_set[1] == 4) {
 				nic_set[1] = 0;
 			}
 		}
 		return 0;
-	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom4\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) || (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+	} else if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "lom4") == 0) {
+		if( !g_modularsupportlom &&((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
 			return INVAILD_SHARED_MODE;
 		}
-		if (failover) {
-			if (nic_set[0] == 5) {
+		if(failover) {
+			if(nic_set[0] == 5) {
 				return INVAILD_FAILOVER_MODE;
 			} else if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 5;
-		} else {
+		} else{
 			nic_set[0] = 5;
-			if (nic_set[1] == 5) {
+			if(nic_set[1] == 5) {
 				nic_set[1] = 0;
 			}
 		}
 		return 0;
-	} else if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "none\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type) ) {
+	} else if(failover && NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "none") == 0) {
+		if( !g_modularsupportlom &&((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
 			return INVAILD_SHARED_MODE;
 		}
-		if (failover) {
-			if (nic_set[0] == 1) {
+		if(failover) {
+			if(nic_set[0] == 1) {
 				return INVAILD_FAILOVER_MODE_SETTINGS;
 			}
 			nic_set[1] = 0;
 		}
 		return 0;
-	} else if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "all\0", 4) == 0) {
+	} else if(failover && NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "all") == 0) {
 		/* placeholder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (failover && argv[current_arg]
-			&& strncmp(argv[current_arg], "loms\0", 5) == 0) {
-		if ((IMC_IDRAC_12G_MODULAR == IMC_Type) ||  (IMC_IDRAC_13G_MODULAR == IMC_Type)) {
+	if(failover && NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "loms") == 0) {
+		if( !g_modularsupportlom &&((IMC_IDRAC_12G_MODULAR == IMC_Type)
+			||(IMC_IDRAC_13G_MODULAR == IMC_Type) ||(IMC_IDRAC_14G_MODULAR == IMC_Type) ) ) {
 			return INVAILD_SHARED_MODE;
 		}
-		if (nic_set[0] == 1) {
+		if(nic_set[0] == 1) {
 			return INVAILD_FAILOVER_MODE_SETTINGS;
 		}
 		nic_set[1] = 6;
@@ -2194,59 +4438,59 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	return INVALID;
 }
 
-static int
-get_nic_selection_mode(int current_arg, char ** argv)
+static
+int oem_dell_get_nic_selection_mode(int current_arg, char ** argv)
 {
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "dedicated\0", 10) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "dedicated") == 0) {
 		return DEDICATED;
 	}
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "shared\0", 7) == 0) {
-		if (!argv[current_arg+1]) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "shared") == 0) {
+		if( NULL == argv[current_arg+1] ) {
 			return SHARED;
 		}
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "with\0", 5) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "with") == 0) {
 		/* place holder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "failover\0", 9) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "failover") == 0) {
 		/* place holder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "lom2\0", 5) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "lom2") == 0) {
 		return SHARED_WITH_FAILOVER_LOM2;
-	} else if (argv[current_arg]
-			&& strncmp(argv[current_arg], "all\0", 4) == 0) {
+	} else if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "all") == 0) {
 		/* place holder */
-	} else {
+	} else{
 		return INVALID;
 	}
 
 	current_arg++;
-	if (argv[current_arg]
-			&& strncmp(argv[current_arg], "loms\0", 5) == 0) {
+	if(NULL != argv[current_arg]
+			&& strcmp(argv[current_arg], "loms") == 0) {
 		return SHARED_WITH_FAILOVER_ALL_LOMS;
 	}
 	return INVALID;
 }
 
-static int
-ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
+static
+int oem_dell_lan_set_nic_selection_12g(struct ipmi_intf *intf, uint8_t *nic_selection)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
@@ -2260,18 +4504,20 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in setting nic selection");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in setting nic selection");
 		return -1;
-	} else if( (nic_selection[0] == 1)
-			&& (( iDRAC_FLAG_12_13 )
-			&& (rsp->ccode == LICENSE_NOT_SUPPORTED))) {
+	} else if((nic_selection[0] == 1)
+			&&(( iDRAC_FLAG_12_13 )
+				&&(rsp->ccode == LICENSE_NOT_SUPPORTED))) {
 		/* Check license only for setting the dedicated nic. */
-		lprintf(LOG_ERR,
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in setting nic selection(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
@@ -2279,10 +4525,10 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 	return 0;
 }
 
-static int
-ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
+static
+int oem_dell_lan_set_nic_selection(struct ipmi_intf *intf, uint8_t nic_selection)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
@@ -2295,11 +4541,13 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in setting nic selection");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in setting nic selection");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in setting nic selection (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in setting nic selection(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
@@ -2307,71 +4555,79 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 	return 0;
 }
 
-static int
-ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
+static
+int oem_dell_lan_get_nic_selection(struct ipmi_intf *intf)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	uint8_t input_length=0;
+	uint8_t input_length = 0;
 	uint8_t msg_data[30];
-	uint8_t nic_selection=-1;
+	uint8_t nic_selection = -1;
 	uint8_t nic_selection_failover = 0;
 
 	input_length = 0;
 	req.msg.netfn = DELL_OEM_NETFN;
 	req.msg.lun = 0;
-	if( iDRAC_FLAG_12_13 ) {
+	if((iDRAC_FLAG_12_13 ) 
+		||(iDRAC_FLAG == IDRAC_13G) 
+		||(iDRAC_FLAG == IDRAC_14G) ){
 		req.msg.cmd = GET_NIC_SELECTION_12G_CMD;
-	} else {
+	} else{
 		req.msg.cmd = GET_NIC_SELECTION_CMD;
 	}
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting nic selection");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting nic selection");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting nic selection (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting nic selection(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	nic_selection = rsp->data[0];
-	if( iDRAC_FLAG_12_13 ) {
+	if((iDRAC_FLAG_12_13 ) 
+		||(iDRAC_FLAG == IDRAC_13G) 
+		||(iDRAC_FLAG == IDRAC_14G)) {
 		nic_selection_failover = rsp->data[1];
-		if ((nic_selection < 6) && (nic_selection > 0)
-				&& (nic_selection_failover < 7)) {
+		if((nic_selection < MAX_NUM_LOMS_IDX) &&(nic_selection > 0) &&
+                  (nic_selection_failover <(MAX_NUM_LOMS_IDX+1)) &&(nic_selection != RESERVED_LOM_IDX ))
+		{
 			if(nic_selection == 1) {
-				printf("%s\n",NIC_Selection_Mode_String_12g[nic_selection-1]);
+				printf("%s\n", nic_selection_mode_string_12g[nic_selection-1]);
 			} else if(nic_selection) {
-				printf("Shared LOM   :  %s\n",
-						NIC_Selection_Mode_String_12g[nic_selection-1]);
+				printf("Shared LOM   :  %s\n", 
+						nic_selection_mode_string_12g[nic_selection-1]);
 				if(nic_selection_failover  == 0) {
 					printf("Failover LOM :  None\n");
-				} else if(nic_selection_failover >= 2 && nic_selection_failover <= 6) {
-					printf("Failover LOM :  %s\n",
-							NIC_Selection_Mode_String_12g[nic_selection_failover + 3]);
+				} else if(nic_selection_failover <= FAILOVER_LOM_START_IDX && nic_selection_failover <= MAX_NUM_LOMS_IDX) {
+					printf("Failover LOM :  %s\n", 
+							nic_selection_mode_string_12g[nic_selection_failover + FAILOVER_LOM_STRING_IDX]);
 				}
 			}
-		} else {
-			lprintf(LOG_ERR, "Error Outof bond Value received (%d) (%d)",
-					nic_selection,nic_selection_failover);
+		} else{
+			lprintf(LOG_ERR, 
+					"Error Outof bond Value received(%d)(%d)", 
+					nic_selection, nic_selection_failover);
 			return -1;
 		}
-	} else {
-		printf("%s\n",NIC_Selection_Mode_String[nic_selection]);
+	} else{
+		printf("%s\n", nic_selection_mode_string[nic_selection]);
 	}
 	return 0;
 }
 
-static int
-ipmi_lan_get_active_nic(struct ipmi_intf * intf)
+static
+int oem_dell_lan_get_active_nic(struct ipmi_intf *intf)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
-	uint8_t active_nic=0;
-	uint8_t current_lom =0;
-	uint8_t input_length=0;
+	uint8_t active_nic = 0;
+	uint8_t current_lom = 0;
+	uint8_t input_length = 0;
 	uint8_t msg_data[30];
 
 	input_length = 0;
@@ -2384,11 +4640,13 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting Active LOM Status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting Active LOM Status");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting Active LOM Status (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting Active LOM Status(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
@@ -2403,85 +4661,71 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	req.msg.data = msg_data;
 	req.msg.data_len = input_length;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting Active LOM Status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting Active LOM Status");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting Active LOM Status (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting Active LOM Status(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	active_nic = rsp->data[1];
-	if (current_lom < 6 && active_nic) {
-		printf("\n%s\n", AciveLOM_String[current_lom]);
-	} else {
-		printf("\n%s\n", AciveLOM_String[0]);
+	if(current_lom < MAX_NUM_LOMS_IDX && active_nic) {
+		printf("\n%s\n", acivelom_string[current_lom]);
+	} else{
+		printf("\n%s\n", acivelom_string[0]);
 	}
 	return 0;
 }
 
-static void
-ipmi_lan_usage(void)
+static
+void oem_dell_lan_usage(void)
 {
-	/* TODO:
-	 *  - rewrite
-	 *  - review
-	 *  - make it fit into 80 chars per line
-	 *  - this ``shared with Failover None).'' seems like a typo
-	 */
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lan set <Mode>");
-	lprintf(LOG_NOTICE,
-"      sets the NIC Selection Mode :");
-	lprintf(LOG_NOTICE,
-"          on iDRAC12g OR iDRAC13g  :");
-	lprintf(LOG_NOTICE,
-"              dedicated, shared with lom1, shared with lom2,shared with lom3,shared");
-	lprintf(LOG_NOTICE,
-"              with lom4,shared with failover lom1,shared with failover lom2,shared");
-	lprintf(LOG_NOTICE,
-"              with failover lom3,shared with failover lom4,shared with Failover all");
-	lprintf(LOG_NOTICE,
-"              loms, shared with Failover None).");
-	lprintf(LOG_NOTICE,
-"          on other systems :");
-	lprintf(LOG_NOTICE,
-"              dedicated, shared, shared with failover lom2,");
-	lprintf(LOG_NOTICE,
-"              shared with Failover all loms.");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lan get ");
-	lprintf(LOG_NOTICE,
-"          on iDRAC12g or iDRAC13g  :");
-	lprintf(LOG_NOTICE,
-"              returns the current NIC Selection Mode (dedicated, shared with lom1, shared");
-	lprintf(LOG_NOTICE,
-"              with lom2, shared with lom3, shared with lom4,shared with failover lom1,");
-	lprintf(LOG_NOTICE,
-"              shared with failover lom2,shared with failover lom3,shared with failover");
-	lprintf(LOG_NOTICE,
-"              lom4,shared with Failover all loms,shared with Failover None).");
-	lprintf(LOG_NOTICE,
-"          on other systems :");
-	lprintf(LOG_NOTICE,
-"              dedicated, shared, shared with failover,");
-	lprintf(LOG_NOTICE,
-"              lom2, shared with Failover all loms.");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   lan get active");
-	lprintf(LOG_NOTICE,
-"      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).");
-	lprintf(LOG_NOTICE,
-"");
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lan set <Mode> ");
+	if((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) ||(iDRAC_FLAG == IDRAC_14G)) {
+		lprintf(LOG_NOTICE, "    sets the NIC Selection Mode :");
+		lprintf(LOG_NOTICE, "           dedicated, shared with lom1, shared with lom2, shared with lom3, shared");
+		lprintf(LOG_NOTICE, "            with lom4");
+		lprintf(LOG_NOTICE, "");
+		lprintf(LOG_NOTICE, "   lan set <Shared Failover Mode> ");
+		lprintf(LOG_NOTICE, "    sets the shared Failover Mode :");
+		lprintf(LOG_NOTICE, "           shared with failover lom1, shared with failover lom2, shared with failo");
+		lprintf(LOG_NOTICE, "           ver lom3, shared with failover lom4, shared with failover all loms, sha");
+		lprintf(LOG_NOTICE, "           red with failover none.");
+	} else{
+		lprintf(LOG_NOTICE, "    sets the NIC Selection Mode:");
+		lprintf(LOG_NOTICE, "       dedicated, shared, shared with failover lom2, shared with failover all l");
+		lprintf(LOG_NOTICE, "       oms");
+	}
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lan get ");
+	if((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) ||(iDRAC_FLAG == IDRAC_14G) ) {
+		lprintf(LOG_NOTICE, "    Get the current NIC selection:");
+		lprintf(LOG_NOTICE, "           dedicated, shared with lom1, shared with lom2, shared with lom3, shared");
+		lprintf(LOG_NOTICE, "            lom4");
+		lprintf(LOG_NOTICE, "    Get the current Shared failover modes:");
+		lprintf(LOG_NOTICE, "           shared with failover lom1, shared with failover lom2, shared with failo");
+		lprintf(LOG_NOTICE, "       ver lom3, shared with failover lom4, shared with failover all loms, sha");
+		lprintf(LOG_NOTICE, "       red with failover none.");
+	}else{
+		lprintf(LOG_NOTICE, "    Get the current NIC Selection Mode:");
+		lprintf(LOG_NOTICE, "           dedicated, shared, shared with failover lom2, shared with failover all l");
+		lprintf(LOG_NOTICE, "           oms");
+
+	}
+	lprintf(LOG_NOTICE, "");
+	lprintf(LOG_NOTICE, "   lan get active");
+	lprintf(LOG_NOTICE, "      Get the current active LOMs(LOM1, LOM2, LOM3, LOM4, NONE).");
+	lprintf(LOG_NOTICE, "");
+
+
 }
+
 /*
- * Function Name:       ipmi_delloem_powermonitor_main
+ * Function Name:       oem_dell_powermonitor_main
  *
  * Description:         This function processes the delloem powermonitor command
  * Input:               intf    - ipmi interface
@@ -2492,112 +4736,132 @@ ipmi_lan_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
-ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
+static
+int oem_dell_powermonitor_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	current_arg++;
-	if (argc > 1 && strcmp(argv[current_arg], "help") == 0) {
-		ipmi_powermonitor_usage();
+	if(argc > 1 && strcmp(argv[current_arg], "help") == 0) {
+		oem_dell_powermonitor_usage();
 		return 0;
 	}
-	ipmi_idracvalidator_command(intf);
-	if (argc == 1) {
-		rc = ipmi_powermgmt(intf);
-	} else if (strncmp(argv[current_arg], "status\0", 7) == 0) {
-		rc = ipmi_powermgmt(intf);
-	} else if (strncmp(argv[current_arg], "clear\0", 6) == 0) {
+	oem_dell_idracvalidator_command(intf);
+	if(argc == 1) {
+		rc = oem_dell_powermgmt(intf);
+	} else if(strcmp(argv[current_arg], "status") == 0) {
+		rc = oem_dell_powermgmt(intf);
+	} else if(strcmp(argv[current_arg], "clear") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			oem_dell_powermonitor_usage();
 			return -1;
-		} else if (strncmp(argv[current_arg], "peakpower\0", 10) == 0) {
-			rc = ipmi_powermgmt_clear(intf, 1);
-		} else if (strncmp(argv[current_arg], "cumulativepower\0", 16) == 0) {
-			rc = ipmi_powermgmt_clear(intf, 0);
-		} else {
-			ipmi_powermonitor_usage();
+		} else if(strcmp(argv[current_arg], "peakpower") == 0) {
+			rc = oem_dell_powermgmt_clear(intf, 1);
+		} else if(strcmp(argv[current_arg], "cumulativepower") == 0) {
+			rc = oem_dell_powermgmt_clear(intf, 0);
+		} else{
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "powerconsumption\0", 17) == 0) {
+	} else if (strncmp(argv[current_arg], "powersupplyrating\0", 18) == 0) {
+		rc = oem_dell_get_power_supply_rating(intf);
+	} else if(strcmp(argv[current_arg], "powerconsumption") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			rc = ipmi_print_get_power_consmpt_data(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-			rc = ipmi_print_get_power_consmpt_data(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
-			rc = ipmi_print_get_power_consmpt_data(intf, btuphr);
-		} else {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			rc = oem_dell_print_get_power_consmpt_data(intf, watt);
+		} else if(strcmp(argv[current_arg], "watt") == 0) {
+			rc = oem_dell_print_get_power_consmpt_data(intf, watt);
+		} else if(strcmp(argv[current_arg], "btuphr") == 0) {
+			rc = oem_dell_print_get_power_consmpt_data(intf, btuphr);
+		} else{
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "powerconsumptionhistory\0", 23) == 0) {
+	} else if(strcmp(argv[current_arg], "powerconsumptionhistory") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			rc = ipmi_print_power_consmpt_history(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-			rc = ipmi_print_power_consmpt_history(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
-			rc = ipmi_print_power_consmpt_history(intf, btuphr);
-		} else {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			rc = oem_dell_print_power_consmpt_history(intf, watt);
+		} else if(strcmp(argv[current_arg], "watt") == 0) {
+			rc = oem_dell_print_power_consmpt_history(intf, watt);
+		} else if(strcmp(argv[current_arg], "btuphr") == 0) {
+			rc = oem_dell_print_power_consmpt_history(intf, btuphr);
+		} else{
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "getpowerbudget\0", 15) == 0) {
+	} else if(strcmp(argv[current_arg], "getpowerbudget") == 0) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			rc=ipmi_print_power_cap(intf,watt);
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-			rc = ipmi_print_power_cap(intf, watt);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
-			rc = ipmi_print_power_cap(intf, btuphr);
-		} else {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			rc = oem_dell_print_power_cap(intf, watt);
+		} else if(strcmp(argv[current_arg], "watt") == 0) {
+			rc = oem_dell_print_power_cap(intf, watt);
+		} else if(strcmp(argv[current_arg], "btuphr") == 0) {
+			rc = oem_dell_print_power_cap(intf, btuphr);
+		} else{
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "setpowerbudget\0", 15) == 0) {
+	} else if(strcmp(argv[current_arg], "setpowerbudget") == 0) {
 		int val;
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-		if (strchr(argv[current_arg], '.')) {
-			lprintf(LOG_ERR,
+		if(strchr(argv[current_arg], '.')) {
+			lprintf(LOG_ERR, 
 					"Cap value in Watts, Btu/hr or percent should be whole number");
 			return -1;
 		}
-		if (str2int(argv[current_arg], &val) != 0) {
-			lprintf(LOG_ERR, "Given capacity value '%s' is invalid.",
+		if(str2int(argv[current_arg], &val) != 0) {
+			lprintf(LOG_ERR, 
+					"Given capacity value '%s' is invalid.", 
 					argv[current_arg]);
-			return (-1);
+			return(-1);
 		}
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_powermonitor_usage();
-		} else if (strncmp(argv[current_arg], "watt\0", 5) == 0) {
-			rc = ipmi_set_power_cap(intf,watt,val);
-		} else if (strncmp(argv[current_arg], "btuphr\0", 7) == 0) {
-			rc = ipmi_set_power_cap(intf, btuphr,val);
-		} else if (strncmp(argv[current_arg], "percent\0", 8) == 0) {
-			rc = ipmi_set_power_cap(intf,percent,val);
-		} else {
-			ipmi_powermonitor_usage();
+		if( NULL == argv[current_arg] ) {
+			oem_dell_powermonitor_usage();
+		} else if(strcmp(argv[current_arg], "watt") == 0) {
+			rc = oem_dell_set_power_cap(intf, watt, val);
+		} else if(strcmp(argv[current_arg], "btuphr") == 0) {
+			rc = oem_dell_set_power_cap(intf, btuphr, val);
+		} else if(strcmp(argv[current_arg], "percent") == 0) {
+			rc = oem_dell_set_power_cap(intf, percent, val);
+		} else{
+			oem_dell_powermonitor_usage();
 			return -1;
 		}
-	} else if (strncmp(argv[current_arg], "enablepowercap\0", 15) == 0) {
-		ipmi_set_power_capstatus_command(intf,1);
-	} else if (strncmp(argv[current_arg], "disablepowercap\0", 16) == 0) {
-		ipmi_set_power_capstatus_command(intf,0);
-	} else {
-		ipmi_powermonitor_usage();
+	} else if(strcmp(argv[current_arg], "enablepowercap") == 0) {
+		oem_dell_set_power_capstatus_command(intf, 1);
+	} else if(strcmp(argv[current_arg], "disablepowercap") == 0) {
+		oem_dell_set_power_capstatus_command(intf, 0);
+	} else{
+		oem_dell_powermonitor_usage();
 		return -1;
 	}
 	return rc;
 }
-
 /*
- * Function Name:      ipmi_get_sensor_reading
+ * Function Name:     oem_dell_time_to_str
+ *
+ * Description:       This function converts ipmi time format into gmtime format
+ * Input:             rawTime  - ipmi time format
+ * Output:            strTime  - gmtime format
+ *
+ * Return:
+ */
+static
+void oem_dell_time_to_str(time_t rawTime, char *strTime)
+{
+	struct tm *tm;
+	char *temp;
+	tm = gmtime(&rawTime);
+	temp = asctime(tm);
+	strcpy(strTime, temp);
+}
+/*
+ * Function Name:      oem_dell_get_sensor_reading
  *
  * Description:        This function retrieves a raw sensor reading
  * Input:              sensorOwner       - sensor owner id
@@ -2607,42 +4871,43 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:             1 on error
  *                     0 if successful
  */
-static int
-ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
-		SensorReadingType* pSensorReadingData)
+static
+int oem_dell_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensornumber,
+				sensorreadingtype *psensorreadingdata)
 {
 	struct ipmi_rq req;
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	int rc = 0;
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SE;
 	req.msg.lun = 0;
 	req.msg.cmd = GET_SENSOR_READING;
-	req.msg.data = &sensorNumber;
+	req.msg.data = &sensornumber;
 	req.msg.data_len = 1;
-	if (!pSensorReadingData) {
+	if( NULL == psensorreadingdata ) {
 		return -1;
 	}
-	memset(pSensorReadingData, 0, sizeof(SensorReadingType));
+	memset(psensorreadingdata, 0, sizeof(sensorreadingtype));
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
+	if(NULL == rsp) {
 		return 1;
-	} else if (rsp->ccode) {
+	} else if( rsp->ccode ) {
 		return 1;
 	}
-	memcpy(pSensorReadingData, rsp->data, sizeof(SensorReadingType));
+	memcpy(psensorreadingdata, rsp->data, sizeof(sensorreadingtype));
 	/* if there is an error transmitting ipmi command, return error */
-	if (rsp->ccode) {
+	if( rsp->ccode ) {
 		rc = 1;
 	}
 	/* if sensor messages are disabled, return error*/
-	if ((!(rsp->data[1]& 0xC0)) || ((rsp->data[1] & 0x20))) {
-		rc =1;
+	if((!(rsp->data[1]& 0xC0)) || ((rsp->data[1] & 0x20))) {
+		rc = 1;
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_get_power_capstatus_command
+ * Function Name:   oem_dell_get_power_capstatus_command
  *
  * Description:     This function gets the power cap status
  * Input:           intf                 - ipmi interface
@@ -2651,10 +4916,10 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
  *
  * Return:
  */
-static int
-ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
+static
+int oem_dell_get_power_capstatus_command(struct ipmi_intf *intf)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp = NULL;
 	struct ipmi_rq req = {0};
 	uint8_t data[2];
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2665,28 +4930,32 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 	data[0] = 01;
 	data[1] = 0xFF;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error getting powercap status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error getting powercap status");
 		return -1;
-	} else if (( iDRAC_FLAG_12_13 ) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	} else if(((iDRAC_FLAG == IDRAC_12G) || (iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) )
+		&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1; /* Return Error as unlicensed */
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error getting powercap statusr: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error getting powercap statusr: %s", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	if (rsp->data[0] & 0x02) {
-		PowercapSetable_flag=1;
+	if(rsp->data[0] & 0x02) {
+		powercapsetable_flag = 1;
 	}
-	if (rsp->data[0] & 0x01) {
-		PowercapstatusFlag=1;
+	if(rsp->data[0] & 0x01) {
+		powercapstatusflag = 1;
 	}
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_set_power_capstatus_command
+ * Function Name:    oem_dell_set_power_capstatus_command
  *
  * Description:      This function sets the power cap status
  * Input:            intf     - ipmi interface
@@ -2695,17 +4964,19 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
-ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
+static
+int oem_dell_set_power_capstatus_command(struct ipmi_intf *intf, uint8_t val)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp = NULL;
 	struct ipmi_rq req = {0};
 	uint8_t data[2];
-	if (ipmi_get_power_capstatus_command(intf) < 0) {
+	uint8_t input_length = 0;
+	if(oem_dell_get_power_capstatus_command(intf) < 0) {
 		return -1;
 	}
-	if (PowercapSetable_flag != 1) {
-		lprintf(LOG_ERR, "Can not set powercap on this system");
+	if(powercapsetable_flag != 1) {
+		lprintf(LOG_ERR, 
+				"Can not set powercap on this system");
 		return -1;
 	}
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2713,25 +4984,29 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 	req.msg.cmd = IPMI_DELL_POWER_CAP_STATUS;
 	req.msg.data_len = 2;
 	req.msg.data = data;
-	data[0] = 00;
-	data[1] = val;
+	data[input_length++] = 0;
+	data[input_length++] = val;
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error setting powercap status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error setting powercap status");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	} else if(((iDRAC_FLAG == IDRAC_12G) || (iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G))
+		&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {		
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1; /* return unlicensed Error code */
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error setting powercap statusr: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error setting powercap statusr: %s", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_powermgmt
+ * Function Name:    oem_dell_powermgmt
  *
  * Description:      This function print the powermonitor details
  * Input:            intf     - ipmi interface
@@ -2739,25 +5014,41 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
  *
  * Return:
  */
-static int
-ipmi_powermgmt(struct ipmi_intf * intf)
+static
+int oem_dell_powermgmt(struct ipmi_intf *intf)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+#define MAX_TIME_LEN 26
+	struct ipmi_rs *rsp = NULL;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[2];
-	uint32_t cumStartTime;
-	uint32_t cumReading;
-	uint32_t maxPeakStartTime;
-	uint32_t ampPeakTime;
-	uint32_t wattPeakTime;
-	uint32_t bmctime;
+	uint8_t input_length = 0;
+	uint32_t cumstarttimeconv = 0;
+	uint32_t cumreadingconv = 0;
+	uint32_t maxpeakstarttimeconv = 0;
+	uint32_t amppeaktimeconv = 0;
+	uint16_t ampreadingconv = 0;
+	uint32_t wattpeaktimeconv = 0;
+	uint32_t wattreadingconv = 0;
+	uint32_t bmctimeconv = 0;
+	uint32_t *bmctimeconvval = 0;
+	time_t now;
+	struct tm* tm;
 
-	IPMI_POWER_MONITOR * pwrMonitorInfo;
+	ipmi_power_monitor *pwrmonitorinfo;
 
-	int ampReading;
-	int ampReadingRemainder;
+	char cumstarttime[MAX_TIME_LEN] = {0};
+	char maxpeakstarttime[MAX_TIME_LEN] = {0};
+	char amppeaktime[MAX_TIME_LEN] = {0};
+	char wattpeaktime[MAX_TIME_LEN] = {0};
+	char bmctime[MAX_TIME_LEN] = {0};
+
+	int ampreading;
+	int ampreadingremainder;
 	int remainder;
-	int wattReading;
+	int wattreading;
+	
+	now = time(0);
+	tm = gmtime(&now);	
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_STORAGE;
@@ -2765,17 +5056,23 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	req.msg.cmd = IPMI_CMD_GET_SEL_TIME;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error getting BMC time info.");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error getting BMC time info.");
 		return -1;
 	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR,
-				"Error getting power management information, return code %x",
+	if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error getting power management information, return code %x", 
 				rsp->ccode);
 		return -1;
 	}
-	bmctime = ipmi32toh(rsp->data);
+	bmctimeconvval = (uint32_t*)rsp->data;
+# if WORDS_BIGENDIAN
+	bmctimeconv = BSWAP_32(*bmctimeconvval);
+# else
+	bmctimeconv = *bmctimeconvval;
+# endif
 
 	/* get powermanagement info*/
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2785,65 +5082,88 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 	req.msg.data_len = 2;
 
 	memset(msg_data, 0, 2);
-	msg_data[0] = 0x07;
-	msg_data[1] = 0x01;
+	msg_data[input_length++] = 0x07;
+	msg_data[input_length++] = 0x01;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error getting power management information.");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error getting power management information.");
 		return -1;
 	}
 
-	if ((iDRAC_FLAG_12_13) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	if((iDRAC_FLAG_12_13) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting power management information: "
+	} else if((rsp->ccode == IPMI_CC_INV_CMD)||(rsp->ccode == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting power management information: "
 				"Command not supported on this system.");
 		return -1;
-	}else if (rsp->ccode) {
-		lprintf(LOG_ERR,
-				"Error getting power management information, return code %x",
+	}else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error getting power management information, return code %x", 
 				rsp->ccode);
 		return -1;
 	}
 
-	pwrMonitorInfo = (IPMI_POWER_MONITOR*)rsp->data;
-	cumStartTime = ipmi32toh(&pwrMonitorInfo->cumStartTime);
-	cumReading = ipmi32toh(&pwrMonitorInfo->cumReading);
-	maxPeakStartTime = ipmi32toh(&pwrMonitorInfo->maxPeakStartTime);
-	ampPeakTime = ipmi32toh(&pwrMonitorInfo->ampPeakTime);
-	ampReading = ipmi16toh(&pwrMonitorInfo->ampReading);
-	wattPeakTime = ipmi32toh(&pwrMonitorInfo->wattPeakTime);
-	wattReading = ipmi16toh(&pwrMonitorInfo->wattReading);
+	pwrmonitorinfo = (ipmi_power_monitor*)rsp->data;
+# if WORDS_BIGENDIAN
+	cumstarttimeconv = BSWAP_32(pwrmonitorinfo->cumstarttime);
+	cumreadingconv = BSWAP_32(pwrmonitorinfo->cumreading);
+	maxpeakstarttimeconv = BSWAP_32(pwrmonitorinfo->maxpeakstarttime);
+	amppeaktimeconv = BSWAP_32(pwrmonitorinfo->amppeaktime);
+	ampreadingconv = BSWAP_16(pwrmonitorinfo->ampreading);
+	wattpeaktimeconv = BSWAP_32(pwrmonitorinfo->wattpeaktime);
+	wattreadingconv = BSWAP_16(pwrMonitorInfo->wattReading);
+# else
+	cumstarttimeconv = pwrmonitorinfo->cumstarttime;
+	cumreadingconv = pwrmonitorinfo->cumreading;
+	maxpeakstarttimeconv = pwrmonitorinfo->maxpeakstarttime;
+	amppeaktimeconv = pwrmonitorinfo->amppeaktime;
+	ampreadingconv = pwrmonitorinfo->ampreading;
+	wattpeaktimeconv = pwrmonitorinfo->wattpeaktime;
+	wattreadingconv = pwrmonitorinfo->wattreading;
+# endif
 
-	remainder = (cumReading % 1000);
-	cumReading = cumReading / 1000;
+	oem_dell_time_to_str(cumstarttimeconv, cumstarttime);
+	oem_dell_time_to_str(maxpeakstarttimeconv, maxpeakstarttime);
+	oem_dell_time_to_str(amppeaktimeconv, amppeaktime);
+	oem_dell_time_to_str(wattpeaktimeconv, wattpeaktime);
+	oem_dell_time_to_str(bmctimeconv, bmctime);
+	now = time(0);
+	
+	remainder = (cumreadingconv % 1000);
+	cumreadingconv = cumreadingconv / 1000;
 	remainder = (remainder + 50) / 100;
 
-	ampReadingRemainder = ampReading % 10;
-	ampReading = ampReading / 10;
+	ampreading = ampreadingconv;
+	ampreadingremainder = ampreading%10;
+	ampreading = ampreading/10;
+
+	wattreading = wattreadingconv;
 
 	printf("Power Tracking Statistics\n");
 	printf("Statistic      : Cumulative Energy Consumption\n");
-	printf("Start Time     : %s", ipmi_timestamp_numeric(cumStartTime));
-	printf("Finish Time    : %s", ipmi_timestamp_numeric(bmctime));
-	printf("Reading        : %d.%d kWh\n\n", cumReading, remainder);
+	printf("Start Time     : %s", cumstarttime);
+	printf("Finish Time    : %s", bmctime);
+	printf("Reading        : %d.%d kWh\n\n", cumreadingconv, remainder);
 
 	printf("Statistic      : System Peak Power\n");
-	printf("Start Time     : %s", ipmi_timestamp_numeric(maxPeakStartTime));
-	printf("Peak Time      : %s", ipmi_timestamp_numeric(wattPeakTime));
-	printf("Peak Reading   : %d W\n\n", wattReading);
+	printf("Start Time     : %s", maxpeakstarttime);
+	printf("Peak Time      : %s", wattpeaktime);
+	printf("Peak Reading   : %d W\n\n", wattreading);
 
 	printf("Statistic      : System Peak Amperage\n");
-	printf("Start Time     : %s", ipmi_timestamp_numeric(maxPeakStartTime));
-	printf("Peak Time      : %s", ipmi_timestamp_numeric(ampPeakTime));
-	printf("Peak Reading   : %d.%d A\n", ampReading, ampReadingRemainder);
+	printf("Start Time     : %s", maxpeakstarttime);
+	printf("Peak Time      : %s", amppeaktime);
+	printf("Peak Reading   : %d.%d A\n", ampreading, ampreadingremainder);
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_powermgmt_clear
+ * Function Name:    oem_dell_powermgmt_clear
  *
  * Description:     This function clears peakpower / cumulativepower value
  * Input:           intf           - ipmi interface
@@ -2852,15 +5172,16 @@ ipmi_powermgmt(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
-ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
+static
+int oem_dell_powermgmt_clear(struct ipmi_intf *intf, uint8_t clearvalue)
 {
-	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
-	uint8_t clearType = 1;
+	struct ipmi_rs *rsp = NULL;
+	struct ipmi_rq req = {0};
+	uint8_t cleartype = 1;
 	uint8_t msg_data[3];
-	if (clearValue) {
-		clearType = 2;
+	uint8_t input_length = 0;
+	if(clearvalue) {
+		cleartype = 2;
 	}
 	/* clear powermanagement info*/
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2869,32 +5190,35 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 	memset(msg_data, 0, 3);
-	msg_data[0] = 0x07;
-	msg_data[1] = 0x01;
-	msg_data[2] = clearType;
+	msg_data[input_length++] = 0x07;
+	msg_data[input_length++] = 0x01;
+	msg_data[input_length++] = cleartype;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error clearing power values.");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error clearing power values.");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13)
+	} else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) ) 
 			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rsp->ccode == 0xc1) {
-		lprintf(LOG_ERR,
+	} else if(rsp->ccode == IPMI_CC_INV_CMD) {
+		lprintf(LOG_ERR, 
 				"Error clearing power values, command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error clearing power values: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error clearing power values: %s", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 	return 0;
 }
+
 /*
- * Function Name:    watt_to_btuphr_conversion
+ * Function Name:    oem_dell_watt_to_btuphr_conversion
  *
  * Description:      This function converts the power value in watt to btuphr
  * Input:            powerinwatt     - power in watt
@@ -2903,15 +5227,16 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
  *
  * Return:
  */
-static uint64_t
-watt_to_btuphr_conversion(uint32_t powerinwatt)
+static
+uint64_t oem_dell_watt_to_btuphr_conversion(uint32_t powerinwatt)
 {
 	uint64_t powerinbtuphr;
-	powerinbtuphr=(3.413 * powerinwatt);
+	powerinbtuphr = (3.413 * powerinwatt);
 	return(powerinbtuphr);
 }
+
 /*
- * Function Name:    btuphr_to_watt_conversion
+ * Function Name:    oem_dell_btuphr_to_watt_conversion
  *
  * Description:      This function converts the power value in  btuphr to watt
  * Input:            powerinbtuphr   - power in btuphr
@@ -2920,16 +5245,17 @@ watt_to_btuphr_conversion(uint32_t powerinwatt)
  *
  * Return:
  */
-static uint32_t
-btuphr_to_watt_conversion(uint64_t powerinbtuphr)
+static
+uint32_t oem_dell_btuphr_to_watt_conversion(uint64_t powerinbtuphr)
 {
 	uint32_t powerinwatt;
 	/*returning the floor value*/
-	powerinwatt= (powerinbtuphr / 3.413);
-	return (powerinwatt);
+	powerinwatt = (powerinbtuphr / 3.413);
+	return(powerinwatt);
 }
+
 /*
- * Function Name:        ipmi_get_power_headroom_command
+ * Function Name:        oem_dell_get_power_headroom_command
  *
  * Description:          This function prints the Power consumption information
  * Input:                intf    - ipmi interface
@@ -2938,13 +5264,13 @@ btuphr_to_watt_conversion(uint64_t powerinbtuphr)
  *
  * Return:
  */
-static int
-ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
+static
+int oem_dell_get_power_headroom_command(struct ipmi_intf *intf, uint8_t unit)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp = NULL;
 	struct ipmi_rq req = {0};
-	uint64_t peakpowerheadroombtuphr;
-	uint64_t instantpowerhearoom;
+	uint64_t peakpowerheadroombtuphr = 0;
+	uint64_t instantpowerhearoom = 0;
 
 	req.msg.netfn = DELL_OEM_NETFN;
 	req.msg.lun = 0;
@@ -2952,102 +5278,647 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 	req.msg.data_len = 0;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error getting power headroom status");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error getting power headroom status");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13)
-			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	} else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) ) 
+		&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting power headroom status: "
+	} else if((rsp->ccode == IPMI_CC_INV_CMD) || (rsp->ccode == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting power headroom status: "
 				"Command not supported on this system ");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error getting power headroom status: %s",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error getting power headroom status: %s", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	if (verbose > 1) {
+	if(verbose > 1) {
 		/* need to look into */
-		printf("power headroom  Data               : %x %x %x %x ", rsp->data[0],
+		printf("power headroom  Data               : %x %x %x %x ", rsp->data[0], 
 				rsp->data[1], rsp->data[2], rsp->data[3]);
 	}
-	powerheadroom= *(( POWER_HEADROOM *)rsp->data);
+	powerheadroom = *(( power_headroom *)rsp->data);
 # if WORDS_BIGENDIAN
 	powerheadroom.instheadroom = BSWAP_16(powerheadroom.instheadroom);
 	powerheadroom.peakheadroom = BSWAP_16(powerheadroom.peakheadroom);
 # endif
 	printf("Headroom\n");
 	printf("Statistic                     Reading\n");
-	if (unit == btuphr) {
-		peakpowerheadroombtuphr = watt_to_btuphr_conversion(powerheadroom.peakheadroom);
-		instantpowerhearoom = watt_to_btuphr_conversion(powerheadroom.instheadroom);
-		printf("System Instantaneous Headroom : %" PRId64 " BTU/hr\n",
+	if(unit == btuphr) {
+		peakpowerheadroombtuphr = oem_dell_watt_to_btuphr_conversion(powerheadroom.peakheadroom);
+		instantpowerhearoom = oem_dell_watt_to_btuphr_conversion(powerheadroom.instheadroom);
+		printf("System Instantaneous Headroom : %" PRId64 " BTU/hr\n", 
 				instantpowerhearoom);
-		printf("System Peak Headroom          : %" PRId64 " BTU/hr\n",
+		printf("System Peak Headroom          : %" PRId64 " BTU/hr\n", 
 				peakpowerheadroombtuphr);
-	} else {
-		printf("System Instantaneous Headroom : %d W\n",
+	} else{
+		printf("System Instantaneous Headroom : %d W\n", 
 				powerheadroom.instheadroom);
-		printf("System Peak Headroom          : %d W\n",
+		printf("System Peak Headroom          : %d W\n", 
 				powerheadroom.peakheadroom);
 	}
 	return 0;
 }
-/*
- * Function Name:       ipmi_get_power_consumption_data
- *
- * Description:         This function updates the instant Power consumption information
- * Input:               intf - ipmi interface
- * Output:              power consumption current reading
- *                      Assumption value will be in Watt.
- *
- * Return:
- */
-static int
-ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
+
+/*****************************************************************
+* Function Name: 	oem_dell_get_power_supply_info
+*
+* Description: 	This function updates the Power supply information
+* Input: 			intf	- ipmi interface
+*				pRecord - power supply record
+* Output: 		powersupplyinfo - Power supply information
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_get_power_supply_info(struct ipmi_intf* intf,IPMISDR*  pRecord,
+					ipmi_power_supply_info* powersupplyinfo)
 {
-	SensorReadingType sensorReadingData;
+ 	struct ipmi_rs * rsp;
+ 	struct ipmi_rq req={0};
+ 	uint8_t msg_data[2];
+	/* power supply rating command*/
+	req.msg.netfn = 0x30;
+ 	req.msg.lun = 0;					
+	req.msg.cmd = 0xb0;
+ 	req.msg.data = msg_data;
+ 	req.msg.data_len = 2;
+ 	memset(msg_data, 0, 2);
+
+	msg_data[0] = pRecord->type.type2.entityID;
+	msg_data[1] = pRecord->type.type2.entityInstance;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL)
+	{
+		lprintf(LOG_ERR, " Error getting power supply info .\n");
+ 		return -1;
+	}
+	else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb))
+	{
+		lprintf(LOG_ERR, "  Error getting power supply info: Command not supported on this system");
+ 		return -1;
+	}
+	else if (rsp->ccode != 0)
+	{
+		lprintf(LOG_ERR, "  Error getting power supply info: %s",
+ 				val2str(rsp->ccode, completion_code_vals));
+ 		return -1;
+ 	}
+	if (verbose > 1)
+	{
+		printf("power supply info  data               : %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x%x%x\n",
+							rsp->data[0], rsp->data[1], rsp->data[2], rsp->data[3],
+							rsp->data[4], rsp->data[5], rsp->data[6], rsp->data[7],
+							rsp->data[8], rsp->data[9], rsp->data[10], rsp->data[11],
+							rsp->data[12], rsp->data[13], rsp->data[14], rsp->data[15],
+							rsp->data[16], rsp->data[17], rsp->data[18], rsp->data[19]);
+	}
+
+	*powersupplyinfo =*((ipmi_power_supply_info*)(rsp->data));
+
+ 	return 0;
+ }
+ 
+
+/*****************************************************************
+* Function Name: 	oem_dell_print_power_supply_info
+*
+* Description: 	This function prints the Power supply information
+* Input: 			pRecord - power supply record
+*				pSensorIndex - Power supply sensor index
+*				intf - ipmi interface
+*				powersupplyinfo - Power supply information
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_print_power_supply_info(IPMISDR*  precord,int* psensorindex,
+	struct ipmi_intf * intf,ipmi_power_supply_info* powersupplyinfo)
+{
+	CSDDUSERAPI      pfnapilist;
+	int              count;
+	short            typesize;
+	short            namesize;
+	short            unitsize;
+	unsigned char    readingtype;
+	unsigned char    type;
+	char             szunits[16];
+	long             sensorreading;
+	unsigned short   sensorstate;
+	short            readsize;
+	short            statesize;
+	char             szstate[SENSOR_STATE_STR_SIZE];
+	short            severity;
+	char             szname[SENSOR_NAME_STR_SIZE];
+	char             sztype[SENSOR_TYPE_STR_SIZE];
+	char             szreading[SENSOR_READING_STR_SIZE];
+	CSDDSensorList   list;
+	int              status  = COMMON_STATUS_BAD_PARAMETER;
+	IPMISDR*		psdrprint;
+	char sfrimwareversion[MAX_POWER_FW_VERSION+1];
+
+
+	/* Clear API structure */
+	memset((void*)&pfnapilist, 0, sizeof(CSDDUSERAPI));
+
+	pfnapilist.GetFirstSDR         = (GETFIRSTSDRFN)oem_dell_sdr_get_first;
+	pfnapilist.GetNextSDR          = (GETNEXTSDRFN)oem_dell_sdr_get_next;
+	pfnapilist.GetSensorReading    = oem_dell_sensor_get_sensor_reading;
+
+	CSDDAttach(&pfnapilist);
+
+
+	if (NULL != precord)
+	{
+		memset((void*)&list, 0, sizeof(CSDDSensorList));
+		status = CSDDGetSensorsTobeMonitored(&list, precord, NULL, (void*)intf);
+		/* A failure here means no sensor present/disable for this SDR */
+		if (COMMON_STATUS_SUCCESS == status)
+		{
+			for(count = 0; count < list.sensorCount; count++)
+			{
+				typesize        = SENSOR_TYPE_STR_SIZE;
+				namesize        = SENSOR_NAME_STR_SIZE;
+				unitsize        = 16;
+				statesize       = SENSOR_STATE_STR_SIZE;
+				readsize        = SENSOR_READING_STR_SIZE;
+				/* initialize string buffers */
+				szstate[0]      = 0;
+				sztype[0]       = 0;
+				szreading[0]    = 0;
+				szunits[0]      = 0;
+
+				/* GetSensor Static Information */
+				status = CSDDGetSensorStaticInformation(precord,0,&readingtype,&type,
+						&namesize, szname, &typesize, sztype, &unitsize,
+						szunits, list.sensorNumber[count], (void*)intf);
+
+
+				/* Did we encounter an error? */
+				if (COMMON_STATUS_SUCCESS != status)
+				{
+					printf("Error getting sensor static information: %x\n", status);
+					break;
+				}
+				memset(&sensorreading, 0, sizeof(sensorreading));
+				status = CSDDGetSensorDynamicInformation(precord, &sensorreading,
+						&sensorstate, &readsize, szreading, &statesize,
+						szstate, &severity,  list.sensorNumber[count], (void*)intf);
+
+				/* Did we encounter an error? */
+				if (COMMON_STATUS_SUCCESS != status)
+				{
+					printf("Error getting sensor dynamic information: %x\n", status);
+					break;
+				}
+
+				/* Output common decoded data */
+
+
+				psdrprint = (IPMISDR*)precord;
+
+
+				if (psdrprint->type.type2.sensorNum== 0x74)
+				{
+
+					printf("----------------------------------------------------------\n");
+					printf("Main System Chassis Power Supplies :%s\n",szstate);
+					printf("----------------------------------------------------------\n\n");
+					printf("Power Supply Redundancy : \n");
+					printf("Status    : %s\n", szstate);
+					printf("Attribute : Redundancy Status\n");
+					printf("Value 	  : %s\n",g_StatusTable[severity]);
+					printf("Attribute : Number of devices required for full redundancy \n");
+					printf("Value 	  : 2\n\n");
+					printf("Individual Power Supply Elements\n\n");
+				}
+				else if ((psdrprint->type.type1.entityID != 0x22)&&(psdrprint->type.type2.sensorNum!= 0x74))
+				{
+					(*psensorindex) ++;
+					printf("Index                   : %d\n", *psensorindex);
+					printf("Status                  : %s\n", g_StatusTable[severity]);
+					printf("location                : %s \n",szname);
+					if (powersupplyinfo->powersupplytype&0x01)
+					{
+						printf("Type                    : DC\n");
+					}
+					else
+					{
+						printf("Type                    : AC\n");
+					}
+					printf("Maximum Input Wattage   : %d W\n",powersupplyinfo->ratedWatts);
+					printf("Maximum Output Wattage  : %d W\n",powersupplyinfo->rateddcwatts);
+					printf("Online Status           : %s\n", szstate);
+					//printf("Power Monitoring capable: %s\n", g_StatusTable[severity]);
+					strncpy(sfrimwareversion,powersupplyinfo->frimwareversion,MAX_POWER_FW_VERSION);
+					sfrimwareversion[MAX_POWER_FW_VERSION] = 0;
+					printf("Firmware Version        : %s\n",sfrimwareversion);
+
+					printf("\n");
+				}
+			}
+		}
+	}
+	else
+	{
+		printf ("\nUnable to retrieve the power supply probe sensor information. The System is powered off.");
+	}
+	CSDDDetach();
+
+
+	return status;
+
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_get_power_supply_rating
+*
+* Description: 	This function prints the Power supply rating information
+* Input: 			intf - ipmi interface
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_get_power_supply_rating(struct ipmi_intf* intf)
+{
+ 	int rc = 0;
+	int sensorindex = 0;
+	IPMISDR*        precord;
+	ipmi_power_supply_info powersupplyinfo;
+	struct sdr_record_list *entry;;
+
+	int i=0;
+
+	printf("\n\rPower supply information\n");
+
+	rc = oem_dell_sdr_build_table(intf);
+	if (rc == -1)
+	{
+		return rc;
+	}
+
+	i = 0;
+
+	while (i < totalsdrcount)
+	{
+		precord = (IPMISDR*)sdr[i].data;
+		if ((IPMI_ENTITY_ID_SYS_BOARD == precord->type.type2.entityID)&&(precord->type.type2.sensorNum==0x74))
+		{
+			rc = oem_dell_print_power_supply_info(precord,&sensorindex, intf,& powersupplyinfo);
+			break;
+		}
+		i++;
+	}
+	i=0;
+
+	while (i < totalsdrcount)
+	{
+		precord = (IPMISDR*)sdr[i].data;
+
+		if  ( (IPMI_ENTITY_ID_POWER_SUPPLY == precord->type.type2.entityID)
+			&& (IPMI_SENSOR_PS == precord->type.type2.sensorType)
+			)
+		{
+
+			{
+				rc = oem_dell_get_power_supply_info(intf,  precord,& powersupplyinfo);
+				if(rc == 0)
+				{
+					rc = oem_dell_print_power_supply_info(precord,&sensorindex, intf,& powersupplyinfo);
+				}
+			}
+        }
+		i++;
+	}
+
+	if (0 == sensorindex)
+		printf("Error : Can not find Power supply sensor");
+
+	return rc;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_print_power_consumption_data_mono
+*
+* Description: 	This function prints the Power consumption information
+* Input: 			intf - ipmi interface
+*				unit - watt/btuphr
+* Output:
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_get_power_consumption_current_reading (SDRType* psdr, struct ipmi_intf * intf)
+{
+    CSDDUSERAPI      pfnapilist;
+    int              count;
+    short            typesize;
+    short            namesize;
+    short            unitsize;
+    unsigned char    readingtype;
+    unsigned char    type;
+    char             szunits[16];
+    long             sensorreading;
+    unsigned short   sensorstate;
+    short            readsize;
+    short            statesize;
+    char             szstate[SENSOR_STATE_STR_SIZE];
+    short            severity;
+    char             szname[SENSOR_NAME_STR_SIZE];
+    char             sztype[SENSOR_TYPE_STR_SIZE];
+    char             szreading[SENSOR_READING_STR_SIZE];
+    CSDDSensorList   list;
+    int              status  = COMMON_STATUS_BAD_PARAMETER;
+	IPMISDR*		psdrprint;
+	int CurrentReading=0;
+
+    /* Clear API structure */
+    memset(&pfnapilist, 0, sizeof(CSDDUSERAPI));
+
+    pfnapilist.GetFirstSDR         = (GETFIRSTSDRFN)oem_dell_sdr_get_first;
+    pfnapilist.GetNextSDR          = (GETNEXTSDRFN)oem_dell_sdr_get_next;
+    pfnapilist.GetSensorReading    = oem_dell_sensor_get_sensor_reading;
+
+    CSDDAttach(&pfnapilist);
+
+
+    if (NULL != psdr)
+    {
+        memset((void*)&list, 0, sizeof(CSDDSensorList));
+        status = CSDDGetSensorsTobeMonitored(&list, psdr, NULL, (void*)intf);
+        /* A failure here means no sensor present/disable for this SDR */
+        if (COMMON_STATUS_SUCCESS == status)
+        {
+            for(count = 0; count < list.sensorCount; count++)
+            {
+                typesize        = SENSOR_TYPE_STR_SIZE;
+                namesize        = SENSOR_NAME_STR_SIZE;
+                unitsize        = 16;
+                statesize       = SENSOR_STATE_STR_SIZE;
+                readsize        = SENSOR_READING_STR_SIZE;
+                /* initialize string buffers */
+                szstate[0]      = 0;
+                sztype[0]       = 0;
+                szreading[0]    = 0;
+                szunits[0]      = 0;
+
+                /* GetSensor Static Information */
+                status = CSDDGetSensorStaticInformation(psdr,0,&readingtype,&type,
+                             &namesize, szname, &typesize, sztype, &unitsize,
+                             szunits, list.sensorNumber[count], (void*)intf);
+
+
+                /* Did we encounter an error? */
+                if (COMMON_STATUS_SUCCESS != status)
+                {
+	                printf("Error getting sensor static information: %x\n", status);
+                    break;
+                }
+				memset(&sensorreading, 0, sizeof(sensorreading));
+                status = CSDDGetSensorDynamicInformation(psdr, &sensorreading,
+                            &sensorstate, &readsize, szreading, &statesize,
+                            szstate, &severity,  list.sensorNumber[count], (void*)intf);
+
+                /* Did we encounter an error? */
+                if (COMMON_STATUS_SUCCESS != status)
+                {
+					printf("Error getting sensor dynamic information: %x\n", status);
+                    break;
+                }
+
+                /* Output common decoded data */
+
+				psdrprint = (IPMISDR*)psdr;
+				if (psdrprint->type.type1.entityID != 0x22)
+				{
+					make_int(szreading,&CurrentReading);
+				}
+			}
+        }
+    }
+    else
+    {
+        printf("sensor not found");
+    }
+    CSDDDetach();
+
+	return CurrentReading;
+
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_print_power_consumption_data_mono
+*
+* Description: 	This function updates the instant Power consumption information
+* Input: 			intf - ipmi interface
+* Output: 		power consumption current reading - **Assumption value will be in Watt.
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_print_power_consumption_data_mono(struct ipmi_intf* intf,uint8_t unit)
+{
+	int rc = 0;
+	IPMISDR *precord;
+	int i;
+
+	struct ipmi_rs *rsp = NULL;
+	struct sdr_record_list *sdr_list;
+	int readingbtuphr=0;
+	int warning_threshbtuphr=0;
+	int failure_threshbtuphr=0;
+	int status=0;
+	int sensor_number = 0;
+
+	rc = oem_dell_sdr_build_table(intf);
+	if (rc == -1) {
+		return rc;
+	}
+	/* Read the current reading */
+
+	i = 0;
+	while (i < totalsdrcount) {
+		precord = (IPMISDR*)sdr[i].data;
+		if ( (IPMI_ENTITY_ID_SYS_BOARD == precord->type.type1.entityID) && (IPMI_SENSOR_CURRENT == precord->type.type1.sensorType)
+			&& (1 == precord->type.type1.entityInstance) ){
+			readingbtuphr = oem_dell_get_power_consumption_current_reading((SDRType*)sdr[i].data,intf);
+			break;
+		}
+		i++;
+	}
+
+	if(i >= totalsdrcount) {
+		printf ("Error : Can not access the sensor data \n\n");
+		return -1;
+	}
+	sdr_list = ipmi_sdr_find_sdr_byid(intf, "Pwr Consumption");
+	if (sdr == NULL) {
+		lprintf(LOG_ERR,
+				"Error : Can not access the System Level sensor data");
+		return -1;
+	}
+	/* Read the  Warning and Failure Threshold  value */
+	sensor_number = sdr_list->record.common->keys.sensor_num;
+	rsp = ipmi_sdr_get_sensor_thresholds(intf,
+			sdr_list->record.common->keys.sensor_num,
+			sdr_list->record.common->keys.owner_id,
+			sdr_list->record.common->keys.lun,
+			sdr_list->record.common->keys.channel);
+	printf ("Threshold gettting ..results \n");
+	if (rsp == NULL || rsp->ccode != 0) {
+		lprintf(LOG_ERR,
+				"Error : Can not access the System Level sensor data");
+		return -1;
+	}
+	warning_threshbtuphr=sdr_convert_sensor_reading
+				       ((struct sdr_record_full_sensor*)&precord->type, rsp->data[4]);
+	failure_threshbtuphr=sdr_convert_sensor_reading
+				       ((struct sdr_record_full_sensor*)&precord->type, rsp->data[5]);
+
+	printf ("System Board System Level\n\r");
+	if (unit==btuphr){
+		readingbtuphr= oem_dell_watt_to_btuphr_conversion(readingbtuphr);
+		warning_threshbtuphr= oem_dell_watt_to_btuphr_conversion(warning_threshbtuphr);
+		failure_threshbtuphr = oem_dell_watt_to_btuphr_conversion( failure_threshbtuphr);
+
+		printf ("Reading			: %d BTU/hr\n",readingbtuphr);
+		printf ("Warning threshold	: %d BTU/hr\n",warning_threshbtuphr);
+		printf ("Failure threshold	: %d BTU/hr\n",failure_threshbtuphr);
+	} else {
+		printf ("Reading			: %d W \n",readingbtuphr);
+		printf ("Warning threshold	: %d W \n",(warning_threshbtuphr));
+		printf ("Failure threshold	: %d W \n",(failure_threshbtuphr));
+	}
+    return status;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_get_power_efficiency
+*
+* Description: 	This function updates the instant Power consumption information
+* Input: 			intf - ipmi interface
+* Output: 		power consumption current reading - **Assumption value will be in Watt.
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_get_power_efficiency(struct ipmi_intf* intf)
+{
+	struct ipmi_rs * rsp=NULL;
+	struct ipmi_rq req={0};
+	uint64_t tempbtuphrconv;
+	uint8_t data[4];
+
+	/* power supply rating command*/
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = POWER_EFFICENCY_CMD;
+	req.msg.data_len = 0;
+	req.msg.data = data;
+
+
+	rsp = intf->sendrecv(intf, &req);
+
+    if (rsp == NULL) {
+		lprintf(LOG_ERR, " Error getting power efficiency  .\n");
+		return -1;
+
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
+
+		lprintf(LOG_ERR, "  Error getting power efficiency: Command not supported on this system.");
+		return -1;
+	} else if (rsp->ccode != 0){
+		lprintf(LOG_ERR, "  Error getting power efficiency: %s",
+				val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	printf ("\n ipmi_get_power_efficiency  %d %d %d %d ",rsp->data[0],rsp->data[1],rsp->data[2],rsp->data[3]);
+
+	power_efficiency = rsp->data[1] << 8 + rsp->data[0];
+
+	printf ("\n power_efficiency = %d ",power_efficiency);
+
+	return 0;
+}
+
+/*****************************************************************
+* Function Name: 	oem_dell_print_power_consumption_data_mod
+*
+* Description: 	This function updates the instant Power consumption information
+* Input: 			intf - ipmi interface
+* Output: 		power consumption current reading - **Assumption value will be in Watt.
+*
+* Return:
+*
+******************************************************************/
+static 
+int oem_dell_print_power_consumption_data_mod(struct ipmi_intf* intf,uint8_t unit)
+{
+	int readingbtuphr=0;
+	int warning_threshbtuphr=0;
+	int failure_threshbtuphr=0;
+	int status=0;
 
 	struct ipmi_rs * rsp=NULL;
-	struct sdr_record_list *sdr;
-	int readingbtuphr = 0;
-	int warning_threshbtuphr = 0;
-	int failure_threshbtuphr = 0;
-	int status = 0;
-	int sensor_number = 0;
-	sdr = ipmi_sdr_find_sdr_byid(intf, "System Level");
-	if (!sdr) {
-		lprintf(LOG_ERR,
-				"Error : Can not access the System Level sensor data");
+	struct ipmi_rq req={0};
+	uint64_t tempbtuphrconv;
+	uint8_t data[4];
+
+	printf ("\n ipmi_print_power_consumption_data_mod ");
+
+	ipmi_get_power_efficiency (intf);
+
+	/* power supply rating command*/
+	req.msg.netfn = DELL_OEM_NETFN;
+	req.msg.lun = 0;
+	req.msg.cmd = SERVER_POWER_CONSUMPTION_CMD;
+	req.msg.data_len = 0;
+	req.msg.data = data;
+
+	rsp = intf->sendrecv(intf, &req);
+
+    if (rsp == NULL) {
+		lprintf(LOG_ERR, " Error getting power consumption  .\n");
+		return -1;
+	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
+		lprintf(LOG_ERR, "  Error getting power consumption: Command not supported on this system.");
+		return -1;
+	} else if (rsp->ccode != 0){
+		lprintf(LOG_ERR, "  Error getting power consumption: %s",
+				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	sensor_number = sdr->record.common->keys.sensor_num;
-	ipmi_get_sensor_reading(intf,sensor_number,&sensorReadingData);
-	rsp = ipmi_sdr_get_sensor_thresholds(intf,
-			sdr->record.common->keys.sensor_num,
-			sdr->record.common->keys.owner_id,
-			sdr->record.common->keys.lun,
-			sdr->record.common->keys.channel);
-	if (!rsp || rsp->ccode) {
-		lprintf(LOG_ERR,
-				"Error : Can not access the System Level sensor data");
-		return -1;
-	}
-	readingbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-			sensorReadingData.sensorReading);
-	warning_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-			rsp->data[4]);
-	failure_threshbtuphr = sdr_convert_sensor_reading(sdr->record.full,
-			rsp->data[5]);
+
+	/* Read the  Warning and Failure Threshold  value */
+	readingbtuphr = (rsp->data[1] << 8) + rsp->data[0];
+	warning_threshbtuphr = (rsp->data[3] << 8) + rsp->data[2];
+
+	/* Convert as per the power efficiency */
+	readingbtuphr = readingbtuphr / power_efficiency;
+	warning_threshbtuphr = warning_threshbtuphr / power_efficiency;
+
+	failure_threshbtuphr = warning_threshbtuphr * 1.2 ;
 
 	printf("System Board System Level\n");
 	if (unit == btuphr) {
-		readingbtuphr = watt_to_btuphr_conversion(readingbtuphr);
-		warning_threshbtuphr = watt_to_btuphr_conversion(warning_threshbtuphr);
-		failure_threshbtuphr = watt_to_btuphr_conversion( failure_threshbtuphr);
+		readingbtuphr = oem_dell_watt_to_btuphr_conversion(readingbtuphr);
+		warning_threshbtuphr = oem_dell_watt_to_btuphr_conversion(warning_threshbtuphr);
+		failure_threshbtuphr = oem_dell_watt_to_btuphr_conversion( failure_threshbtuphr);
 
 		printf("Reading                        : %d BTU/hr\n", readingbtuphr);
 		printf("Warning threshold      : %d BTU/hr\n", warning_threshbtuphr);
@@ -3059,18 +5930,18 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 	}
 	return status;
 }
-/*
- * Function Name:      ipmi_get_instan_power_consmpt_data
- *
+
+/*************************************************************************************
+ * Function Name:      oem_dell_get_instan_power_consmpt_data
  * Description:        This function updates the instant Power consumption information
  * Input:              intf - ipmi interface
  * Output:             instpowerconsumptiondata - instant Power consumption information
  *
  * Return:
- */
-static int
-ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
-		IPMI_INST_POWER_CONSUMPTION_DATA * instpowerconsumptiondata)
+ **************************************************************************************/
+static 
+int oem_dell_get_instan_power_consmpt_data(struct ipmi_intf * intf,
+		ipmi_inst_power_consumption_data * instpowerconsumptiondata)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req={0};
@@ -3086,11 +5957,10 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 	msg_data[1] = 0x00;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
+	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data .");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13)
-			&& (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
+	} else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) ) && (rsp->ccode == LICENSE_NOT_SUPPORTED)) {
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
@@ -3098,30 +5968,26 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rsp->ccode) {
+	} else if (rsp->ccode != 0) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: %s",
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
-	*instpowerconsumptiondata = *((IPMI_INST_POWER_CONSUMPTION_DATA *)(rsp->data));
-#if WORDS_BIGENDIAN
-	instpowerconsumptiondata->instanpowerconsumption = BSWAP_16(instpowerconsumptiondata->instanpowerconsumption);
-	instpowerconsumptiondata->instanApms = BSWAP_16(instpowerconsumptiondata->instanApms);
-	instpowerconsumptiondata->resv1 = BSWAP_16(instpowerconsumptiondata->resv1);
-#endif
+	*instpowerconsumptiondata = *((ipmi_inst_power_consumption_data *)(rsp->data));
 	return 0;
 }
-/*
- * Function Name:      ipmi_print_get_instan_power_Amps_data
- *
- * Description:        This function prints the instant Power consumption information
- * Input:              instpowerconsumptiondata - instant Power consumption information
- * Output:
- *
- * Return:
- */
-static void
-ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata)
+
+/*******************************************************************
+* Function Name:      oem_dell_print_get_instan_power_Amps_data
+*
+* Description:        This function prints the instant Power consumption information
+* Input:              instpowerconsumptiondata - instant Power consumption information
+* Output:
+*
+* Return:
+*************************************************************************/
+static 
+void oem_dell_print_get_instan_power_Amps_data(ipmi_inst_power_consumption_data instpowerconsumptiondata)
 {
 	uint16_t intampsval=0;
 	uint16_t decimalampsval=0;
@@ -3131,39 +5997,39 @@ ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpower
 	}
 	printf("\nAmperage value: %d.%d A \n", intampsval, decimalampsval);
 }
-/*
- * Function Name:     ipmi_print_get_power_consmpt_data
- *
- * Description:       This function prints the Power consumption information
- * Input:             intf            - ipmi interface
- *                    unit            - watt / btuphr
- * Output:
- *
- * Return:
- */
-static int
-ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
+
+/**************************************************************************
+* Function Name:     oem_dell_print_get_power_consmpt_data
+* Description:       This function prints the Power consumption information
+* Input:             intf            - ipmi interface
+*                    unit            - watt / btuphr
+* Output:
+* Return:
+******************************************************************************/
+static 
+int oem_dell_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
 {
 	int rc = 0;
-	IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata = {0,0,0,0};
+	ipmi_inst_power_consumption_data instpowerconsumptiondata = {0};
 	printf("\nPower consumption information\n");
-	rc = ipmi_get_power_consumption_data(intf, unit);
+	rc = oem_dell_print_power_consumption_data_mono(intf,unit);
 	if (rc == (-1)) {
 		return rc;
 	}
-	rc = ipmi_get_instan_power_consmpt_data(intf, &instpowerconsumptiondata);
+	rc = oem_dell_get_instan_power_consmpt_data(intf, &instpowerconsumptiondata);
 	if (rc == (-1)) {
-		return rc;
-	}
-	ipmi_print_get_instan_power_Amps_data(instpowerconsumptiondata);
-	rc = ipmi_get_power_headroom_command(intf, unit);
+ 		return rc;
+ 	}
+	oem_dell_print_get_instan_power_Amps_data(instpowerconsumptiondata);
+	rc = oem_dell_get_power_headroom_command(intf, unit);
 	if (rc == (-1)) {
 		return rc;
 	}
 	return rc;
 }
+
 /*
- * Function Name:   ipmi_get_avgpower_consmpt_history
+ * Function Name:   oem_dell_get_avgpower_consmpt_history
  *
  * Description:     This function updates the average power consumption information
  * Input:           intf            - ipmi interface
@@ -3171,36 +6037,38 @@ ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
  *
  * Return:
  */
-static int
-ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
-		IPMI_AVGPOWER_CONSUMP_HISTORY * pavgpower)
+static
+int oem_dell_get_avgpower_consmpt_history(struct ipmi_intf *intf, 
+					ipmi_avgpower_consump_history *pavgpower)
 {
 	int rc;
 	uint8_t *rdata;
 	rc = ipmi_mc_getsysinfo(intf, 0xeb, 0, 0, sizeof(*pavgpower), pavgpower);
-	if (rc < 0) {
-		lprintf(LOG_ERR,
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
 				"Error getting average power consumption history data.");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) &&  (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	}else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) 
+			&&  (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting average power consumption history data: "
+	} else if((rc == IPMI_CC_INV_CMD) || (rc == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting average power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rc != 0) {
-		lprintf(LOG_ERR,
-				"Error getting average power consumption history data: %s",
+	} else if(rc != 0) {
+		lprintf(LOG_ERR, 
+				"Error getting average power consumption history data: %s", 
 				val2str(rc, completion_code_vals));
 		return -1;
 	}
-	if (verbose > 1) {
+	if(verbose > 1) {
 		rdata = (void *)pavgpower;
 		printf("Average power consumption history data"
-				"       :%x %x %x %x %x %x %x %x\n\n",
-				rdata[0], rdata[1], rdata[2], rdata[3],
+				"       :%x %x %x %x %x %x %x %x\n\n", 
+				rdata[0], rdata[1], rdata[2], rdata[3], 
 				rdata[4], rdata[5], rdata[6], rdata[7]);
 	}
 # if WORDS_BIGENDIAN
@@ -3211,8 +6079,9 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 # endif
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_get_peakpower_consmpt_history
+ * Function Name:    oem_dell_get_peakpower_consmpt_history
  *
  * Description:      This function updates the peak power consumption information
  * Input:            intf            - ipmi interface
@@ -3220,56 +6089,61 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
-ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
-		IPMI_POWER_CONSUMP_HISTORY * pstPeakpower)
+static
+int oem_dell_get_peakpower_consmpt_history(struct ipmi_intf *intf, 
+					ipmi_power_consump_history *pstpeakpower)
 {
 	uint8_t *rdata;
 	int rc;
-	rc = ipmi_mc_getsysinfo(intf, 0xec, 0, 0, sizeof(*pstPeakpower),
-			pstPeakpower);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting  peak power consumption history data.");
+	rc = ipmi_mc_getsysinfo(intf, 0xec, 0, 0, sizeof(*pstpeakpower), 
+			pstpeakpower);
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
+				"Error getting  peak power consumption history data.");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	}else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) 
+		&&  (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
+	} else if((rc == IPMI_CC_INV_CMD) || (rc == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rc != 0) {
-		lprintf(LOG_ERR, "Error getting peak power consumption history data: %s",
+	} else if( rc ) {
+		lprintf(LOG_ERR, 
+				"Error getting peak power consumption history data: %s", 
 				val2str(rc, completion_code_vals));
 		return -1;
 	}
-	if (verbose > 1) {
-		rdata = (void *)pstPeakpower;
+	if(verbose > 1) {
+		rdata = (void *)pstpeakpower;
 		printf("Peak power consmhistory  Data               : "
 				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-				rdata[0], rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10], rdata[11],
-				rdata[12], rdata[13], rdata[14], rdata[15],
-				rdata[16], rdata[17], rdata[18], rdata[19],
+				"%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n", 
+				rdata[0], rdata[1], rdata[2], rdata[3], 
+				rdata[4], rdata[5], rdata[6], rdata[7], 
+				rdata[8], rdata[9], rdata[10], rdata[11], 
+				rdata[12], rdata[13], rdata[14], rdata[15], 
+				rdata[16], rdata[17], rdata[18], rdata[19], 
 				rdata[20], rdata[21], rdata[22], rdata[23]);
 	}
 # if WORDS_BIGENDIAN
-	pstPeakpower->lastminutepower = BSWAP_16(pstPeakpower->lastminutepower);
-	pstPeakpower->lasthourpower = BSWAP_16(pstPeakpower->lasthourpower);
-	pstPeakpower->lastdaypower = BSWAP_16(pstPeakpower->lastdaypower);
-	pstPeakpower->lastweakpower = BSWAP_16(pstPeakpower->lastweakpower);
-	pstPeakpower->lastminutepowertime = BSWAP_32(pstPeakpower->lastminutepowertime);
-	pstPeakpower->lasthourpowertime = BSWAP_32(pstPeakpower->lasthourpowertime);
-	pstPeakpower->lastdaypowertime = BSWAP_32(pstPeakpower->lastdaypowertime);
-	pstPeakpower->lastweekpowertime = BSWAP_32(pstPeakpower->lastweekpowertime);
+	pstpeakpower->lastminutepower = BSWAP_16(pstpeakpower->lastminutepower);
+	pstpeakpower->lasthourpower = BSWAP_16(pstpeakpower->lasthourpower);
+	pstpeakpower->lastdaypower = BSWAP_16(pstpeakpower->lastdaypower);
+	pstpeakpower->lastweakpower = BSWAP_16(pstpeakpower->lastweakpower);
+	pstpeakpower->lastminutepowertime = BSWAP_32(pstpeakpower->lastminutepowertime);
+	pstpeakpower->lasthourpowertime = BSWAP_32(pstpeakpower->lasthourpowertime);
+	pstpeakpower->lastdaypowertime = BSWAP_32(pstpeakpower->lastdaypowertime);
+	pstpeakpower->lastweekpowertime = BSWAP_32(pstpeakpower->lastweekpowertime);
 #endif
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_get_minpower_consmpt_history
+ * Function Name:    oem_dell_get_minpower_consmpt_history
  *
  * Description:      This function updates the peak power consumption information
  * Input:            intf            - ipmi interface
@@ -3277,56 +6151,61 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
-ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
-		IPMI_POWER_CONSUMP_HISTORY * pstMinpower)
+static
+int oem_dell_get_minpower_consmpt_history(struct ipmi_intf *intf, 
+					ipmi_power_consump_history *pstminpower)
 {
 	uint8_t *rdata;
 	int rc;
-	rc = ipmi_mc_getsysinfo(intf, 0xed, 0, 0, sizeof(*pstMinpower),
-			pstMinpower);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting  peak power consumption history data .");
+	rc = ipmi_mc_getsysinfo(intf, 0xed, 0, 0, sizeof(*pstminpower), 
+			pstminpower);
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
+				"Error getting  peak power consumption history data .");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) &&  (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	}else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) 
+		&&  (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
+	} else if((rc == IPMI_CC_INV_CMD) ||(rc == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
-	} else if (rc != 0) {
-		lprintf(LOG_ERR, "Error getting peak power consumption history data: %s",
+	} else if( rc ) {
+		lprintf(LOG_ERR, 
+				"Error getting peak power consumption history data: %s", 
 				val2str(rc, completion_code_vals));
 		return -1;
 	}
-	if (verbose > 1) {
-		rdata = (void *)pstMinpower;
+	if(verbose > 1) {
+		rdata = (void *)pstminpower;
 		printf("Peak power consmhistory  Data               : "
 				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-				rdata[0], rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10], rdata[11],
-				rdata[12], rdata[13], rdata[14], rdata[15],
-				rdata[16], rdata[17], rdata[18], rdata[19],
+				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n", 
+				rdata[0], rdata[1], rdata[2], rdata[3], 
+				rdata[4], rdata[5], rdata[6], rdata[7], 
+				rdata[8], rdata[9], rdata[10], rdata[11], 
+				rdata[12], rdata[13], rdata[14], rdata[15], 
+				rdata[16], rdata[17], rdata[18], rdata[19], 
 				rdata[20], rdata[21], rdata[22], rdata[23]);
 	}
 # if WORDS_BIGENDIAN
-	pstMinpower->lastminutepower = BSWAP_16(pstMinpower->lastminutepower);
-	pstMinpower->lasthourpower = BSWAP_16(pstMinpower->lasthourpower);
-	pstMinpower->lastdaypower = BSWAP_16(pstMinpower->lastdaypower);
-	pstMinpower->lastweakpower = BSWAP_16(pstMinpower->lastweakpower);
-	pstMinpower->lastminutepowertime = BSWAP_32(pstMinpower->lastminutepowertime);
-	pstMinpower->lasthourpowertime = BSWAP_32(pstMinpower->lasthourpowertime);
-	pstMinpower->lastdaypowertime = BSWAP_32(pstMinpower->lastdaypowertime);
-	pstMinpower->lastweekpowertime = BSWAP_32(pstMinpower->lastweekpowertime);
+	pstminpower->lastminutepower = BSWAP_16(pstminpower->lastminutepower);
+	pstminpower->lasthourpower = BSWAP_16(pstminpower->lasthourpower);
+	pstminpower->lastdaypower = BSWAP_16(pstminpower->lastdaypower);
+	pstminpower->lastweakpower = BSWAP_16(pstminpower->lastweakpower);
+	pstminpower->lastminutepowertime = BSWAP_32(pstminpower->lastminutepowertime);
+	pstminpower->lasthourpowertime = BSWAP_32(pstminpower->lasthourpowertime);
+	pstminpower->lastdaypowertime = BSWAP_32(pstminpower->lastdaypowertime);
+	pstminpower->lastweekpowertime = BSWAP_32(pstminpower->lastweekpowertime);
 # endif
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_print_power_consmpt_history
+ * Function Name:    oem_dell_print_power_consmpt_history
  *
  * Description:      This function print the average and peak power consumption information
  * Input:            intf      - ipmi interface
@@ -3335,123 +6214,139 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
-ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
+static
+int oem_dell_print_power_consmpt_history(struct ipmi_intf *intf, int unit)
 {
-	uint64_t tmp;
+	char timestr[30];
+	uint32_t lastminutepeakpower;
+	uint32_t lasthourpeakpower;
+	uint32_t lastdaypeakpower;
+	uint32_t lastweekpeakpower;
+	uint64_t tempbtuphrconv;
 	int rc = 0;
 
-	IPMI_AVGPOWER_CONSUMP_HISTORY avgpower;
-	IPMI_POWER_CONSUMP_HISTORY stMinpower;
-	IPMI_POWER_CONSUMP_HISTORY stPeakpower;
+	ipmi_avgpower_consump_history avgpower;
+	ipmi_power_consump_history stminpower;
+	ipmi_power_consump_history stpeakpower;
 
-	rc = ipmi_get_avgpower_consmpt_history(intf, &avgpower);
-	if (rc == (-1)) {
+	rc = oem_dell_get_avgpower_consmpt_history(intf, &avgpower);
+	if(rc == -1) {
 		return rc;
 	}
 
-	rc = ipmi_get_peakpower_consmpt_history(intf, &stPeakpower);
-	if (rc == (-1)) {
+	rc = oem_dell_get_peakpower_consmpt_history(intf, &stpeakpower);
+	if(rc == -1) {
 		return rc;
 	}
 
-	rc = ipmi_get_minpower_consmpt_history(intf, &stMinpower);
-	if (rc == (-1)) {
+	rc = oem_dell_get_minpower_consmpt_history(intf, &stminpower);
+	if(rc == -1) {
 		return rc;
 	}
-	if (rc != 0) {
+	if(rc != 0) {
 		return rc;
 	}
 	printf("Power Consumption History\n\n");
-	/* The fields are aligned manually changing the spaces will alter
+	/* The fields are alligned manually changing the spaces will alter
 	 * the alignment*/
 	printf("Statistic                   Last Minute     Last Hour     "
 			"Last Day     Last Week\n\n");
-	if (unit == btuphr) {
+	if(unit == btuphr) {
 		printf("Average Power Consumption  ");
-		tmp = watt_to_btuphr_conversion(avgpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tmp);
-		tmp = watt_to_btuphr_conversion(avgpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tmp);
-		tmp = watt_to_btuphr_conversion(avgpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tmp);
-		tmp = watt_to_btuphr_conversion(avgpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n", tmp);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(avgpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(avgpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(avgpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(avgpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n", tempbtuphrconv);
 
 		printf("Max Power Consumption      ");
-		tmp = watt_to_btuphr_conversion(stPeakpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tmp);
-		tmp = watt_to_btuphr_conversion(stPeakpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tmp);
-		tmp = watt_to_btuphr_conversion(stPeakpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tmp);
-		tmp = watt_to_btuphr_conversion(stPeakpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n", tmp);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stpeakpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stpeakpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stpeakpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stpeakpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n", tempbtuphrconv);
 
 		printf("Min Power Consumption      ");
-		tmp = watt_to_btuphr_conversion(stMinpower.lastminutepower);
-		printf("%4" PRId64 " BTU/hr     ", tmp);
-		tmp = watt_to_btuphr_conversion(stMinpower.lasthourpower);
-		printf("%4" PRId64 " BTU/hr   ", tmp);
-		tmp = watt_to_btuphr_conversion(stMinpower.lastdaypower);
-		printf("%4" PRId64 " BTU/hr  ", tmp);
-		tmp = watt_to_btuphr_conversion(stMinpower.lastweakpower);
-		printf("%4" PRId64 " BTU/hr\n\n", tmp);
-	} else {
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stminpower.lastminutepower);
+		printf("%4" PRId64 " BTU/hr     ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stminpower.lasthourpower);
+		printf("%4" PRId64 " BTU/hr   ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stminpower.lastdaypower);
+		printf("%4" PRId64 " BTU/hr  ", tempbtuphrconv);
+		tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(stminpower.lastweakpower);
+		printf("%4" PRId64 " BTU/hr\n\n", tempbtuphrconv);
+	} else{
 		printf("Average Power Consumption  ");
-		tmp = avgpower.lastminutepower;
-		printf("%4" PRId64 " W          ", tmp);
-		tmp = avgpower.lasthourpower;
-		printf("%4" PRId64 " W        ", tmp);
-		tmp = avgpower.lastdaypower;
-		printf("%4" PRId64 " W       ", tmp);
-		tmp = avgpower.lastweakpower;
-		printf("%4" PRId64 " W   \n", tmp);
+		tempbtuphrconv = (avgpower.lastminutepower);
+		printf("%4" PRId64 " W          ", tempbtuphrconv);
+		tempbtuphrconv = (avgpower.lasthourpower);
+		printf("%4" PRId64 " W        ", tempbtuphrconv);
+		tempbtuphrconv = (avgpower.lastdaypower);
+		printf("%4" PRId64 " W       ", tempbtuphrconv);
+		tempbtuphrconv = (avgpower.lastweakpower);
+		printf("%4" PRId64 " W   \n", tempbtuphrconv);
 
 		printf("Max Power Consumption      ");
-		tmp = stPeakpower.lastminutepower;
-		printf("%4" PRId64 " W          ", tmp);
-		tmp = stPeakpower.lasthourpower;
-		printf("%4" PRId64 " W        ", tmp);
-		tmp = stPeakpower.lastdaypower;
-		printf("%4" PRId64 " W       ", tmp);
-		tmp = stPeakpower.lastweakpower;
-		printf("%4" PRId64 " W   \n", tmp);
+		tempbtuphrconv = (stpeakpower.lastminutepower);
+		printf("%4" PRId64 " W          ", tempbtuphrconv);
+		tempbtuphrconv = (stpeakpower.lasthourpower);
+		printf("%4" PRId64 " W        ", tempbtuphrconv);
+		tempbtuphrconv = (stpeakpower.lastdaypower);
+		printf("%4" PRId64 " W       ", tempbtuphrconv);
+		tempbtuphrconv = (stpeakpower.lastweakpower);
+		printf("%4" PRId64 " W   \n", tempbtuphrconv);
 
 		printf("Min Power Consumption      ");
-		tmp = stMinpower.lastminutepower;
-		printf("%4" PRId64 " W          ", tmp);
-		tmp = stMinpower.lasthourpower;
-		printf("%4" PRId64 " W        ", tmp);
-		tmp = stMinpower.lastdaypower;
-		printf("%4" PRId64 " W       ", tmp);
-		tmp = stMinpower.lastweakpower;
-		printf("%4" PRId64 " W   \n\n", tmp);
+		tempbtuphrconv = (stminpower.lastminutepower);
+		printf("%4" PRId64 " W          ", tempbtuphrconv);
+		tempbtuphrconv = (stminpower.lasthourpower);
+		printf("%4" PRId64 " W        ", tempbtuphrconv);
+		tempbtuphrconv = (stminpower.lastdaypower);
+		printf("%4" PRId64 " W       ", tempbtuphrconv);
+		tempbtuphrconv = (stminpower.lastweakpower);
+		printf("%4" PRId64 " W   \n\n", tempbtuphrconv);
 	}
 
+	lastminutepeakpower = stpeakpower.lastminutepowertime;
+	lasthourpeakpower = stpeakpower.lasthourpowertime;
+	lastdaypeakpower = stpeakpower.lastdaypowertime;
+	lastweekpeakpower = stpeakpower.lastweekpowertime;
+
 	printf("Max Power Time\n");
-	printf("Last Minute     : %s",
-	       ipmi_timestamp_numeric(stPeakpower.lastminutepowertime));
-	printf("Last Hour       : %s",
-	       ipmi_timestamp_numeric(stPeakpower.lasthourpowertime));
-	printf("Last Day        : %s",
-	       ipmi_timestamp_numeric(stPeakpower.lastdaypowertime));
-	printf("Last Week       : %s",
-	       ipmi_timestamp_numeric(stPeakpower.lastweekpowertime));
+	oem_dell_time_to_str(lastminutepeakpower, timestr);
+	printf("Last Minute     : %s", timestr);
+	oem_dell_time_to_str(lasthourpeakpower, timestr);
+	printf("Last Hour       : %s", timestr);
+	oem_dell_time_to_str(lastdaypeakpower, timestr);
+	printf("Last Day        : %s", timestr);
+	oem_dell_time_to_str(lastweekpeakpower, timestr);
+	printf("Last Week       : %s", timestr);
+
+	lastminutepeakpower = stminpower.lastminutepowertime;
+	lasthourpeakpower = stminpower.lasthourpowertime;
+	lastdaypeakpower = stminpower.lastdaypowertime;
+	lastweekpeakpower = stminpower.lastweekpowertime;
 
 	printf("Min Power Time\n");
-	printf("Last Minute     : %s",
-	       ipmi_timestamp_numeric(stMinpower.lastminutepowertime));
-	printf("Last Hour       : %s",
-	       ipmi_timestamp_numeric(stMinpower.lasthourpowertime));
-	printf("Last Day        : %s",
-	       ipmi_timestamp_numeric(stMinpower.lastdaypowertime));
-	printf("Last Week       : %s",
-	       ipmi_timestamp_numeric(stMinpower.lastweekpowertime));
+	oem_dell_time_to_str(lastminutepeakpower, timestr);
+	printf("Last Minute     : %s", timestr);
+	oem_dell_time_to_str(lasthourpeakpower, timestr);
+	printf("Last Hour       : %s", timestr);
+	oem_dell_time_to_str(lastdaypeakpower, timestr);
+	printf("Last Day        : %s", timestr);
+	oem_dell_time_to_str(lastweekpeakpower, timestr);
+	printf("Last Week       : %s", timestr);
 	return rc;
 }
+
 /*
- * Function Name:    ipmi_get_power_cap
+ * Function Name:    oem_dell_get_power_cap
  *
  * Description:      This function updates the power cap information
  * Input:            intf         - ipmi interface
@@ -3459,29 +6354,39 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
  *
  * Return:
  */
-static int
-ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
+static
+int oem_dell_get_power_cap(struct ipmi_intf *intf, ipmi_power_cap *ipmipowercap)
 {
 	uint8_t *rdata;
 	int rc;
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0,
+	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, 
 			sizeof(*ipmipowercap), ipmipowercap);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting power cap.");
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap.");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	}else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) 
+		&&  (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
-		lprintf(LOG_ERR, "Error getting power cap: "
+	} else if((rc == IPMI_CC_INV_CMD) || (rc == IPMI_CC_REQ_DATA_NOT_PRESENT)) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap: "
 				"Command not supported on this system.");
+		if (verbose > 1){
+		rdata = (void*)ipmipowercap;
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
+				rdata[1], rdata[2], rdata[3],
+				rdata[4], rdata[5], rdata[6], rdata[7],
+				rdata[8], rdata[9], rdata[10],rdata[11]);
+
+			}				
 		return -1;
-	} else if (rc != 0) {
-		lprintf(LOG_ERR, "Error getting power cap: %s",
+	} else if( rc ) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap: %s", 
 				val2str(rc, completion_code_vals));
-		return -1;
-	}
 	if (verbose > 1) {
 		rdata = (void*)ipmipowercap;
 		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
@@ -3489,19 +6394,29 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10],rdata[11]);
 	}
+		return -1;
+	}
+	if(verbose > 1) {
+		rdata = (void*)ipmipowercap;
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ", 
+				rdata[1], rdata[2], rdata[3], 
+				rdata[4], rdata[5], rdata[6], rdata[7], 
+				rdata[8], rdata[9], rdata[10], rdata[11]);
+	}
 # if WORDS_BIGENDIAN
-	ipmipowercap->PowerCap = BSWAP_16(ipmipowercap->PowerCap);
-	ipmipowercap->MaximumPowerConsmp = BSWAP_16(ipmipowercap->MaximumPowerConsmp);
-	ipmipowercap->MinimumPowerConsmp = BSWAP_16(ipmipowercap->MinimumPowerConsmp);
+	ipmipowercap->powercap = BSWAP_16(ipmipowercap->powercap);
+	ipmipowercap->maximumpowerconsmp = BSWAP_16(ipmipowercap->maximumpowerconsmp);
+	ipmipowercap->minimumpowerconsmp = BSWAP_16(ipmipowercap->minimumpowerconsmp);
 	ipmipowercap->totalnumpowersupp = BSWAP_16(ipmipowercap->totalnumpowersupp);
-	ipmipowercap->AvailablePower = BSWAP_16(ipmipowercap->AvailablePower);
-	ipmipowercap->SystemThrottling = BSWAP_16(ipmipowercap->SystemThrottling);
-	ipmipowercap->Resv = BSWAP_16(ipmipowercap->Resv);
+	ipmipowercap->availablepower = BSWAP_16(ipmipowercap->availablepower);
+	ipmipowercap->systemthrottling = BSWAP_16(ipmipowercap->systemthrottling);
+	ipmipowercap->resv = BSWAP_16(ipmipowercap->resv);
 # endif
 	return 0;
 }
+
 /*
- * Function Name:    ipmi_print_power_cap
+ * Function Name:    oem_dell_print_power_cap
  *
  * Description:      This function print the power cap information
  * Input:            intf            - ipmi interface
@@ -3509,32 +6424,33 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
  * Output:
  * Return:
  */
-static int
-ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
+static
+int oem_dell_print_power_cap(struct ipmi_intf *intf, uint8_t unit)
 {
 	uint64_t tempbtuphrconv;
 	int rc;
-	IPMI_POWER_CAP ipmipowercap;
+	ipmi_power_cap ipmipowercap;
 	memset(&ipmipowercap, 0, sizeof(ipmipowercap));
-	rc = ipmi_get_power_cap(intf, &ipmipowercap);
-	if (rc == 0) {
-		if (unit == btuphr) {
-			tempbtuphrconv = watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
+	rc = oem_dell_get_power_cap(intf, &ipmipowercap);
+	if(rc == 0) {
+		if(unit == btuphr) {
+			tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(ipmipowercap.maximumpowerconsmp);
 			printf("Maximum power: %" PRId64 "  BTU/hr\n", tempbtuphrconv);
-			tempbtuphrconv = watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
+			tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(ipmipowercap.minimumpowerconsmp);
 			printf("Minimum power: %" PRId64 "  BTU/hr\n", tempbtuphrconv);
-			tempbtuphrconv = watt_to_btuphr_conversion(ipmipowercap.PowerCap);
+			tempbtuphrconv = oem_dell_watt_to_btuphr_conversion(ipmipowercap.powercap);
 			printf("Power cap    : %" PRId64 "  BTU/hr\n", tempbtuphrconv);
-		} else {
-			printf("Maximum power: %d Watt\n", ipmipowercap.MaximumPowerConsmp);
-			printf("Minimum power: %d Watt\n", ipmipowercap.MinimumPowerConsmp);
-			printf("Power cap    : %d Watt\n", ipmipowercap.PowerCap);
+		} else{
+			printf("Maximum power: %d Watt\n", ipmipowercap.maximumpowerconsmp);
+			printf("Minimum power: %d Watt\n", ipmipowercap.minimumpowerconsmp);
+			printf("Power cap    : %d Watt\n", ipmipowercap.powercap);
 		}
 	}
 	return rc;
 }
+
 /*
- * Function Name:     ipmi_set_power_cap
+ * Function Name:     oem_dell_set_power_cap
  *
  * Description:       This function updates the power cap information
  * Input:             intf            - ipmi interface
@@ -3543,126 +6459,257 @@ ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
  * Output:
  * Return:
  */
-static int
-ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
+static
+int oem_dell_set_power_cap(struct ipmi_intf *intf, int unit, int val)
 {
 	int rc;
-	uint8_t data[13], *rdata;
-	uint16_t powercapval;
-	uint64_t maxpowerbtuphr;
-	uint64_t minpowerbtuphr;
-	IPMI_POWER_CAP ipmipowercap;
+	uint8_t data[13], *rdata = NULL;
+	uint8_t input_length = 0;
+	uint16_t powercapval = 0;
+	uint64_t maxpowerbtuphr = 0;
+	uint64_t minpowerbtuphr = 0;
+	ipmi_power_cap ipmipowercap;
 
-	if (ipmi_get_power_capstatus_command(intf) < 0) {
+	if(oem_dell_get_power_capstatus_command(intf) < 0) {
 		return -1; /* Adding the failed condition check */
 	}
-	if (PowercapSetable_flag != 1) {
-		lprintf(LOG_ERR, "Can not set powercap on this system");
+	if(powercapsetable_flag != 1) {
+		lprintf(LOG_ERR, 
+				"Can not set powercap on this system");
 		return -1;
-	} else if (PowercapstatusFlag != 1) {
-		lprintf(LOG_ERR, "Power cap set feature is not enabled");
+	} else if(powercapstatusflag != 1) {
+		lprintf(LOG_ERR, 
+				"Power cap set feature is not enabled");
 		return -1;
 	}
-	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0,
+	rc = ipmi_mc_getsysinfo(intf, IPMI_DELL_POWER_CAP, 0, 0, 
 			sizeof(ipmipowercap), &ipmipowercap);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error getting power cap.");
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap.");
+		if (verbose > 1)
+		{
+			printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
+											 data[1], data[2], data[3],
+												data[4], data[5], data[6], data[7],
+												data[8], data[9], data[10],data[11]);
+		}
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	}else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G)) 
+		&& (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rc == 0xc1) {
-		lprintf(LOG_ERR, "Error getting power cap, command not supported on "
+	} else if(rc == IPMI_CC_INV_CMD) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap, command not supported on "
 				"this system.");
-		return -1;
-	} else if (rc != 0) {
-		lprintf(LOG_ERR, "Error getting power cap: %s",
-				val2str(rc, completion_code_vals));
-		return -1;
-	}
-	if (verbose > 1) {
+		if (verbose > 1){
 		rdata = (void *)&ipmipowercap;
 		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x ",
 				rdata[1], rdata[2], rdata[3],
 				rdata[4], rdata[5], rdata[6], rdata[7],
 				rdata[8], rdata[9], rdata[10],rdata[11]);
+
+			}
+		return -1;
+	} else if( rc ) {
+		lprintf(LOG_ERR, 
+				"Error getting power cap: %s", 
+				val2str(rc, completion_code_vals));
+	if(verbose > 1) {
+		rdata = (void *)&ipmipowercap;
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x ", 
+				rdata[1], rdata[2], rdata[3], 
+				rdata[4], rdata[5], rdata[6], rdata[7], 
+				rdata[8], rdata[9], rdata[10], rdata[11]);
+	}
+		return -1;
+	}
+	if(verbose > 1) {
+		rdata = (void *)&ipmipowercap;
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x ", 
+				rdata[1], rdata[2], rdata[3], 
+				rdata[4], rdata[5], rdata[6], rdata[7], 
+				rdata[8], rdata[9], rdata[10], rdata[11]);
 	}
 # if WORDS_BIGENDIAN
-	ipmipowercap.PowerCap = BSWAP_16(ipmipowercap.PowerCap);
-	ipmipowercap.MaximumPowerConsmp = BSWAP_16(ipmipowercap.MaximumPowerConsmp);
-	ipmipowercap.MinimumPowerConsmp = BSWAP_16(ipmipowercap.MinimumPowerConsmp);
-	ipmipowercap.AvailablePower = BSWAP_16(ipmipowercap.AvailablePower);
+	ipmipowercap.powercap = BSWAP_16(ipmipowercap.powercap);
+	ipmipowercap.maximumpowerconsmp = BSWAP_16(ipmipowercap.maximumpowerconsmp);
+	ipmipowercap.minimumpowerconsmp = BSWAP_16(ipmipowercap.minimumpowerconsmp);
+	ipmipowercap.availablepower = BSWAP_16(ipmipowercap.availablepower);
 	ipmipowercap.totalnumpowersupp = BSWAP_16(ipmipowercap.totalnumpowersupp);
 # endif
 	memset(data, 0, 13);
-	data[0] = IPMI_DELL_POWER_CAP;
+	data[input_length++] = IPMI_DELL_POWER_CAP;
 	powercapval = val;
-	data[1] = (powercapval & 0XFF);
-	data[2] = ((powercapval & 0XFF00) >> 8);
-	data[3] = unit;
-	data[4] = ((ipmipowercap.MaximumPowerConsmp & 0xFF));
-	data[5] = ((ipmipowercap.MaximumPowerConsmp & 0xFF00) >> 8);
-	data[6] = ((ipmipowercap.MinimumPowerConsmp & 0xFF));
-	data[7] = ((ipmipowercap.MinimumPowerConsmp & 0xFF00) >> 8);
-	data[8] = (ipmipowercap.totalnumpowersupp);
-	data[9] = ((ipmipowercap.AvailablePower & 0xFF));
-	data[10] = ((ipmipowercap.AvailablePower & 0xFF00) >> 8);
-	data[11] = (ipmipowercap.SystemThrottling);
-	data[12] = 0x00;
+	data[input_length++] = (powercapval & 0XFF);
+	data[input_length++] = ((powercapval & 0XFF00) >> 8);
+	data[input_length++] = unit;
+	data[input_length++] = ((ipmipowercap.maximumpowerconsmp & 0xFF));
+	data[input_length++] = ((ipmipowercap.maximumpowerconsmp & 0xFF00) >> 8);
+	data[input_length++] = ((ipmipowercap.minimumpowerconsmp & 0xFF));
+	data[input_length++] = ((ipmipowercap.minimumpowerconsmp & 0xFF00) >> 8);
+	data[input_length++] = (ipmipowercap.totalnumpowersupp);
+	data[input_length++] = ((ipmipowercap.availablepower & 0xFF));
+	data[input_length++] = ((ipmipowercap.availablepower & 0xFF00) >> 8);
+	data[input_length++] = (ipmipowercap.systemthrottling);
+	data[input_length++] = 0x00;
 
-	if (unit == btuphr) {
-		val = btuphr_to_watt_conversion(val);
-	} else if (unit == percent) {
-		if ((val < 0) || (val > 100)) {
-			lprintf(LOG_ERR, "Cap value is out of boundary condition it "
+	ipmipowercap.maximumpowerconsmp = BSWAP_16(ipmipowercap.maximumpowerconsmp);
+	ipmipowercap.minimumpowerconsmp = BSWAP_16(ipmipowercap.minimumpowerconsmp);
+	ipmipowercap.powercap = BSWAP_16(ipmipowercap.powercap);
+
+	if(unit == btuphr) {
+		val = oem_dell_btuphr_to_watt_conversion(val);
+	} else if(unit == percent) {
+		if((val < 0) || (val > 100)) {
+			lprintf(LOG_ERR, 
+					"Cap value is out of boundary conditon it "
 					"should be between 0  - 100");
 			return -1;
 		}
-		val = ((val*(ipmipowercap.MaximumPowerConsmp
-						- ipmipowercap.MinimumPowerConsmp)) / 100)
-						+ ipmipowercap.MinimumPowerConsmp;
-		lprintf(LOG_ERR, "Cap value in percentage is  %d ", val);
-		data[1] = (val & 0XFF);
-		data[2] = ((val & 0XFF00) >> 8);
-		data[3] = watt;
+		val = ((val*(ipmipowercap.maximumpowerconsmp
+						- ipmipowercap.minimumpowerconsmp)) / 100)
+			+ ipmipowercap.minimumpowerconsmp;
+		lprintf(LOG_ERR, 
+				"Cap value in percentage is  %d ", val);
+		input_length = 1;
+		data[input_length++] = (val & 0XFF);
+		data[input_length++] = ((val & 0XFF00) >> 8);
+		data[input_length++] = watt;
 	}
-	if (((val < ipmipowercap.MinimumPowerConsmp)
-				|| (val > ipmipowercap.MaximumPowerConsmp)) && (unit == watt)) {
-		lprintf(LOG_ERR,
-				"Cap value is out of boundary condition it should be between %d  - %d",
-				ipmipowercap.MinimumPowerConsmp, ipmipowercap.MaximumPowerConsmp);
+	if(((val < ipmipowercap.minimumpowerconsmp)
+				|| (val > ipmipowercap.maximumpowerconsmp)) && (unit == watt)) {
+		lprintf(LOG_ERR, 
+				"Cap value is out of boundary conditon it should be between %d  - %d", 
+				ipmipowercap.minimumpowerconsmp, ipmipowercap.maximumpowerconsmp);
 		return -1;
-	} else if (((val < ipmipowercap.MinimumPowerConsmp)
-				|| (val > ipmipowercap.MaximumPowerConsmp)) && (unit == btuphr)) {
-		minpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MinimumPowerConsmp);
-		maxpowerbtuphr = watt_to_btuphr_conversion(ipmipowercap.MaximumPowerConsmp);
-		lprintf(LOG_ERR,
-				"Cap value is out of boundary condition it should be between %d",
+	} else if(((val < ipmipowercap.minimumpowerconsmp)
+				||(val > ipmipowercap.maximumpowerconsmp)) && (unit == btuphr)) {
+		minpowerbtuphr = oem_dell_watt_to_btuphr_conversion(ipmipowercap.minimumpowerconsmp);
+		maxpowerbtuphr = oem_dell_watt_to_btuphr_conversion(ipmipowercap.maximumpowerconsmp);
+		lprintf(LOG_ERR, 
+				"Cap value is out of boundary conditon it should be between %d", 
 				minpowerbtuphr);
-		lprintf(LOG_ERR, " -%d", maxpowerbtuphr);
+		lprintf(LOG_ERR, 
+				" -%d", maxpowerbtuphr);
 		return -1;
 	}
 	rc = ipmi_mc_setsysinfo(intf, 13, data);
-	if (rc < 0) {
-		lprintf(LOG_ERR, "Error setting power cap");
+	if(rc < 0) {
+		lprintf(LOG_ERR, 
+				"Error setting power cap");
 		return -1;
-	} else if ((iDRAC_FLAG_12_13) && (rc == LICENSE_NOT_SUPPORTED)) {
-		lprintf(LOG_ERR,
+	} else if(((iDRAC_FLAG == IDRAC_12G) ||(iDRAC_FLAG == IDRAC_13G) || (iDRAC_FLAG == IDRAC_14G) ) 
+		&& (rc == LICENSE_NOT_SUPPORTED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rc > 0) {
-		lprintf(LOG_ERR, "Error setting power cap: %s",
+	} else if(rc > 0) {
+		lprintf(LOG_ERR, 
+				"Error setting power cap: %s", 
 				val2str(rc, completion_code_vals));
 		return -1;
 	}
-	if (verbose > 1) {
+	if(verbose > 1) {
 		printf("CC for setpowercap :%d ", rc);
 	}
 	return 0;
 }
+
+/*****************************************************************
+* Function Name: 	getpowersupplyfruinfo
+* Description: 	This function retrieves the FRU header
+* Input: 			id	 	- ipmi interface
+*				header	- watt / btuphr
+*				fru		- FRU information
+* Output: 		header	- FRU header
+* Return:
+******************************************************************/
+static int oem_dell_getpowersupplyfruinfo(struct ipmi_intf *intf, uint8_t id,
+	struct fru_header header, struct fru_info fru)
+{
+	struct ipmi_rs * rsp;
+	struct ipmi_rq req;
+
+	uint8_t msg_data[4];
+
+	memset(&fru, 0, sizeof(struct fru_info));
+	memset(&header, 0, sizeof(struct fru_header));
+
+	/*
+	 * get info about this FRU
+	 */
+	memset(msg_data, 0, 4);
+	msg_data[0] = id;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_INFO;
+	req.msg.data = msg_data;
+	req.msg.data_len = 1;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return -1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+			val2str(rsp->ccode, completion_code_vals));
+		return -1;
+	}
+
+	fru.size = (rsp->data[1] << 8) | rsp->data[0];
+	fru.access = rsp->data[2] & 0x1;
+
+	lprintf(LOG_DEBUG, "fru.size = %d bytes (accessed by %s)",
+		fru.size, fru.access ? "words" : "bytes");
+
+	if (fru.size < 1) {
+		lprintf(LOG_ERR, " Invalid FRU size %d", fru.size);
+		return -1;
+	}
+
+	/*
+	 * retrieve the FRU header
+	 */
+	msg_data[0] = id;
+	msg_data[1] = 0;
+	msg_data[2] = 0;
+	msg_data[3] = 8;
+
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = IPMI_NETFN_STORAGE;
+	req.msg.lun = 0;
+	req.msg.cmd = GET_FRU_DATA;
+	req.msg.data = msg_data;
+	req.msg.data_len = 4;
+
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		printf(" Device not present (No Response)\n");
+		return 1;
+	}
+	if (rsp->ccode > 0) {
+		printf(" Device not present (%s)\n",
+		       val2str(rsp->ccode, completion_code_vals));
+		return 1;
+	}
+
+	if (verbose > 1)
+		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+
+	memcpy(&header, rsp->data + 1, 8);
+
+	return 0;
+
+}
+
 /*
- * Function Name:   ipmi_powermonitor_usage
+ * Function Name:   oem_dell_powermonitor_usage
  *
  * Description:     This function prints help message for powermonitor command
  * Input:
@@ -3670,127 +6717,131 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
  *
  * Return:
  */
-static void
-ipmi_powermonitor_usage(void)
+static
+void oem_dell_powermonitor_usage(void)
 {
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor");
-	lprintf(LOG_NOTICE,
-"      Shows power tracking statistics ");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor clear cumulativepower");
-	lprintf(LOG_NOTICE,
-"      Reset cumulative power reading");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor clear peakpower");
-	lprintf(LOG_NOTICE,
-"      Reset peak power reading");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor powerconsumption");
-	lprintf(LOG_NOTICE,
-"      Displays power consumption in <watt|btuphr>");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor powerconsumptionhistory <watt|btuphr>");
-	lprintf(LOG_NOTICE,
-"      Displays power consumption history ");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor getpowerbudget");
-	lprintf(LOG_NOTICE,
-"      Displays power cap in <watt|btuphr>");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor setpowerbudget <val><watt|btuphr|percent>");
-	lprintf(LOG_NOTICE,
-"      Allows user to set the  power cap in <watt|BTU/hr|percentage>");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor enablepowercap ");
-	lprintf(LOG_NOTICE,
-"      To enable set power cap");
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   powermonitor disablepowercap ");
-	lprintf(LOG_NOTICE,
-"      To disable set power cap");
-	lprintf(LOG_NOTICE,
-"");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor");
+	lprintf(LOG_NOTICE, 
+			"      Shows power tracking statistics ");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor clear cumulativepower");
+	lprintf(LOG_NOTICE, 
+			"      Reset cumulative power reading");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor clear peakpower");
+	lprintf(LOG_NOTICE, 
+			"      Reset peak power reading");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor powerconsumption");
+	lprintf(LOG_NOTICE, 
+			"      Displays power consumption in <watt|btuphr>");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor powerconsumptionhistory <watt|btuphr>");
+	lprintf(LOG_NOTICE, 
+			"      Displays power consumption history ");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor getpowerbudget");
+	lprintf(LOG_NOTICE, 
+			"      Displays power cap in <watt|btuphr>");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor setpowerbudget <val><watt|btuphr|percent>");
+	lprintf(LOG_NOTICE, 
+			"      Allows user to set the  power cap in <watt|BTU/hr|percentage>");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor enablepowercap ");
+	lprintf(LOG_NOTICE, 
+			"      To enable set power cap");
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   powermonitor disablepowercap ");
+	lprintf(LOG_NOTICE, 
+			"      To disable set power cap");
+	lprintf(LOG_NOTICE, 
+			"");
 }
+
 /*
- * Function Name:	   ipmi_delloem_vFlash_main
+ * Function Name:   oem_dell_vflash_main
  *
- * Description:		   This function processes the delloem vFlash command
- * Input:			   intf    - ipmi interface
- *					   argc    - no of arguments (unused)
- *					   argv    - argument string array
+ * Description:   This function processes the delloem vflash command
+ * Input:   intf    - ipmi interface
+ *   argc    - no of arguments
+ *   argv    - argument string array
  * Output:
  *
- * Return:			   return code	   0 - success
- *						  -1 - failure
+ * Return:   return code   0 - success
+ *  -1 - failure
  */
-static int
-ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
+static
+int oem_dell_vflash_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	current_arg++;
-	rc = ipmi_delloem_vFlash_process(intf, current_arg, argv);
+	rc = oem_dell_vflash_process(intf, current_arg, argv);
 	return rc;
 }
+
 /*
- * Function Name: 	get_vFlash_compcode_str
+ * Function Name: get_vflash_compcode_str
  *
- * Description: 	This function maps the vFlash completion code
- * 		to a string
- * Input : vFlash completion code and static array of codes vs strings
+ * Description: This function maps the vflash completion code
+ * to a string
+ * Input : vflash completion code and static array of codes vs strings
  * Output: -
  * Return: returns the mapped string
  */
-const char *
-get_vFlash_compcode_str(uint8_t vflashcompcode, const struct vFlashstr *vs)
+const char* get_vflash_compcode_str(uint8_t vflashcompcode, const struct vflashstr *vs)
 {
 	static char un_str[32];
 	int i;
-	for (i = 0; vs[i].str; i++) {
-		if (vs[i].val == vflashcompcode)
+	for(i = 0; vs[i].str != NULL; i++) {
+		if(vs[i].val == vflashcompcode)
 			return vs[i].str;
 	}
 	memset(un_str, 0, 32);
-	snprintf(un_str, 32, "Unknown (0x%02X)", vflashcompcode);
+	snprintf(un_str, 32, "Unknown(0x%02X)", vflashcompcode);
 	return un_str;
 }
+
 /*
- * Function Name: 	ipmi_get_sd_card_info
+ * Function Name: oem_dell_get_sd_card_info
  *
- * Description: This function prints the vFlash Extended SD card info
+ * Description: This function prints the vflash Extended SD card info
  * Input : ipmi interface
  * Output: prints the sd card extended info
  * Return: 0 - success -1 - failure
  */
-static int
-ipmi_get_sd_card_info(struct ipmi_intf * intf) {
-	struct ipmi_rs * rsp;
+static
+int oem_dell_get_sd_card_info(struct ipmi_intf *intf)
+{
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
-	uint8_t input_length=0;
-	uint8_t cardstatus=0x00;
-	IPMI_DELL_SDCARD_INFO * sdcardinfoblock;
+	uint8_t input_length = 0;
+	uint8_t cardstatus = 0x00;
+	ipmi_dell_sdcard_info * sdcardinfoblock;
 
-	input_length = 2;
-	msg_data[0] = msg_data[1] = 0x00;
+	input_length = 0;
+	msg_data[input_length++] = 0x00;
+	msg_data[input_length++] = 0x00;
 	req.msg.netfn = DELL_OEM_NETFN;
 	req.msg.lun = 0;
 	req.msg.cmd = IPMI_GET_EXT_SD_CARD_INFO;
@@ -3798,377 +6849,128 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 	req.msg.data_len = input_length;
 
 	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error in getting SD Card Extended Information");
+	if(NULL == rsp) {
+		lprintf(LOG_ERR, 
+				"Error in getting SD Card Extended Information");
 		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error in getting SD Card Extended Information (%s)",
+	} else if( rsp->ccode ) {
+		lprintf(LOG_ERR, 
+				"Error in getting SD Card Extended Information(%s)", 
 				val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
 
-	sdcardinfoblock = (IPMI_DELL_SDCARD_INFO *) (void *) rsp->data;
+	sdcardinfoblock = (ipmi_dell_sdcard_info *)(void *) rsp->data;
 
-	if ((iDRAC_FLAG_12_13)
-			&& (sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED)) {
-		lprintf(LOG_ERR,
+	if((iDRAC_FLAG_12_13)
+			&&(sdcardinfoblock->vflashcompcode == VFL_NOT_LICENSED)) {
+		lprintf(LOG_ERR, 
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (sdcardinfoblock->vflashcompcode != 0x00) {
-		lprintf(LOG_ERR, "Error in getting SD Card Extended Information (%s)",
-				get_vFlash_compcode_str(sdcardinfoblock->vflashcompcode,
-					vFlash_completion_code_vals));
+	} else if(sdcardinfoblock->vflashcompcode != 0x00) {
+		lprintf(LOG_ERR, 
+				"Error in getting SD Card Extended Information(%s)", 
+				get_vflash_compcode_str(sdcardinfoblock->vflashcompcode, 
+					vflash_completion_code_vals));
 		return -1;
 	}
 
-	if (!(sdcardinfoblock->sdcardstatus & 0x04)) {
-		lprintf(LOG_ERR,
-				"vFlash SD card is unavailable, please insert the card of");
-		lprintf(LOG_ERR,
+	if(!(sdcardinfoblock->sdcardstatus & 0x04)) {
+		lprintf(LOG_ERR, 
+				"vflash SD card is unavailable, please insert the card of");
+		lprintf(LOG_ERR, 
 				"size 256MB or greater");
-		return (-1);
+		return(-1);
 	}
 
-	printf("vFlash SD Card Properties\n");
+	printf("vflash SD Card Properties\n");
 	printf("SD Card size       : %8dMB\n", sdcardinfoblock->sdcardsize);
 	printf("Available size     : %8dMB\n", sdcardinfoblock->sdcardavailsize);
-	printf("Initialized        : %10s\n",
+	printf("Initialized        : %10s\n", 
 			(sdcardinfoblock->sdcardstatus & 0x80) ? "Yes" : "No");
-	printf("Licensed           : %10s\n",
+	printf("Licensed           : %10s\n", 
 			(sdcardinfoblock->sdcardstatus & 0x40) ? "Yes" : "No");
-	printf("Attached           : %10s\n",
+	printf("Attached           : %10s\n", 
 			(sdcardinfoblock->sdcardstatus & 0x20) ? "Yes" : "No");
-	printf("Enabled            : %10s\n",
+	printf("Enabled            : %10s\n", 
 			(sdcardinfoblock->sdcardstatus & 0x10) ? "Yes" : "No");
-	printf("Write Protected    : %10s\n",
+	printf("Write Protected    : %10s\n", 
 			(sdcardinfoblock->sdcardstatus & 0x08) ? "Yes" : "No");
 	cardstatus = sdcardinfoblock->sdcardstatus & 0x03;
-	printf("Health             : %10s\n",
-			((0x00 == cardstatus) ? "OK" : (
-				(cardstatus == 0x03) ? "Undefined" : (
+	printf("Health             : %10s\n", 
+			((0x00 == cardstatus) ? "OK" :(
+				(cardstatus == 0x03) ? "Undefined" :(
 					(cardstatus == 0x02) ? "Critical" : "Warning"))));
 	printf("Bootable partition : %10d\n", sdcardinfoblock->bootpartion);
 	return 0;
 }
+
 /*
- * Function Name: 	ipmi_delloem_vFlash_process
+ * Function Name: oem_dell_vflash_process
  *
- * Description: 	This function processes the args for vFlash subcmd
+ * Description: This function processes the args for vflash subcmd
  * Input : intf - ipmi interface, arg index, argv array
  * Output: prints help or error with help
  * Return: 0 - Success -1 - failure
  */
-static int
-ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** argv)
+static
+int oem_dell_vflash_process(struct ipmi_intf *intf, int current_arg, char **argv)
 {
 	int rc;
-	if (strncmp(intf->name,"wmi\0",4) && strncmp(intf->name, "open\0",5)) {
-		lprintf(LOG_ERR,
-				"vFlash support is enabled only for wmi and open interface.");
+	if(strcmp(intf->name, "wmi") && strcmp(intf->name, "open")) {
+		lprintf(LOG_ERR, 
+				"vflash support is enabled only for wmi and open interface.");
 		lprintf(LOG_ERR, "Its not enabled for lan and lanplus interface.");
 		return -1;
 	}
 
-	if (!argv[current_arg] || strcmp(argv[current_arg], "help") == 0) {
-		ipmi_vFlash_usage();
+	if( NULL == argv[current_arg] || strcmp(argv[current_arg], "help") == 0) {
+		oem_dell_vflash_usage();
 		return 0;
 	}
-	ipmi_idracvalidator_command(intf);
-	if (!strncmp(argv[current_arg], "info\0", 5)) {
+	oem_dell_idracvalidator_command(intf);
+	if(!strcmp(argv[current_arg], "info")) {
 		current_arg++;
-		if (!argv[current_arg]) {
-			ipmi_vFlash_usage();
+		if( NULL == argv[current_arg] ) {
+			oem_dell_vflash_usage();
 			return -1;
-		} else if (strncmp(argv[current_arg], "Card\0", 5) == 0) {
+		} else if(strcmp(argv[current_arg], "Card") == 0) {
 			current_arg++;
-			if (argv[current_arg]) {
-				ipmi_vFlash_usage();
+			if(NULL != argv[current_arg]) {
+				oem_dell_vflash_usage();
 				return -1;
 			}
-			rc = ipmi_get_sd_card_info(intf);
+			rc = oem_dell_get_sd_card_info(intf);
 			return rc;
-		} else {
+		} else{
 			/* TBD: many sub commands are present */
-			ipmi_vFlash_usage();
+			oem_dell_vflash_usage();
 			return -1;
 		}
-	} else {
-		/* TBD other vFlash subcommands */
-		ipmi_vFlash_usage();
+	} else{
+		/* TBD other vflash subcommands */
+		oem_dell_vflash_usage();
 		return -1;
 	}
 }
+
 /*
- * Function Name: 	ipmi_vFlash_usage
+ * Function Name: oem_dell_vflash_usage
  *
- * Description: 	This function displays the usage for using vFlash
+ * Description: This function displays the usage for using vflash
  * Input : void
  * Output: prints help
  * Return: void
  */
-static void
-ipmi_vFlash_usage(void)
+static
+void oem_dell_vflash_usage(void)
 {
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   vFlash info Card");
-	lprintf(LOG_NOTICE,
-"      Shows Extended SD Card information");
-	lprintf(LOG_NOTICE,
-"");
-}
-/*
- * Function Name: ipmi_setled_usage
- *
- * Description:  This function prints help message for setled command
- * Input:
- * Output:
- *
- * Return:
- */
-static void
-ipmi_setled_usage(void)
-{
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   setled <b:d.f> <state..>");
-	lprintf(LOG_NOTICE,
-"      Set backplane LED state");
-	lprintf(LOG_NOTICE,
-"      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
-	lprintf(LOG_NOTICE,
-"      state = present|online|hotspare|identify|rebuilding|");
-	lprintf(LOG_NOTICE,
-"              fault|predict|critical|failed");
-	lprintf(LOG_NOTICE,
-"");
-}
-
-static int
-IsSetLEDSupported(void)
-{
-	return SetLEDSupported;
-}
-
-static void
-CheckSetLEDSupport(struct ipmi_intf * intf)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[10];
-
-	SetLEDSupported = 0;
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5; /* Storage */
-	req.msg.data_len = 10;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x01; /* get */
-	data[1] = 0x00; /* subcmd:get firmware version */
-	data[2] = 0x08; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = 0x00; /* bay id */
-	data[7] = 0x00;
-	data[8] = 0x00;
-	data[9] = 0x00;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		return;
-	}
-	SetLEDSupported = 1;
-}
-/*
- * Function Name:    ipmi_getdrivemap
- *
- * Description:      This function returns mapping of BDF to Bay:Slot
- * Input:            intf         - ipmi interface
- *		    bdf	 	 - PCI Address of drive
- *		    *bay	 - Returns bay ID
- *		    *slot	 - Returns slot ID
- * Output:
- *
- * Return:
- */
-static int
-ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
-		int *slot)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[8];
-	/* Get mapping of BDF to bay:slot */
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5;
-	req.msg.data_len = 8;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x01; /* get */
-	data[1] = 0x07; /* storage map */
-	data[2] = 0x06; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = b; /* bus */
-	data[7] = (d << 3) + f; /* devfn */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error issuing getdrivemap command.");
-		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error issuing getdrivemap command: %s",
-				val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-	*bay = rsp->data[7];
-	*slot = rsp->data[8];
-	if (*bay == 0xFF || *slot == 0xFF) {
-		lprintf(LOG_ERR, "Error could not get drive bay:slot mapping");
-		return -1;
-	}
-	return 0;
-}
-/*
- * Function Name:    ipmi_setled_state
- *
- * Description:      This function updates the LED on the backplane
- * Input:            intf         - ipmi interface
- *		    bdf	 	 - PCI Address of drive
- *		    state	 - SES Flags state of drive
- * Output:
- *
- * Return:
- */
-static int
-ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[20];
-	/* Issue Drive Status Update to bay:slot */
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5;
-	req.msg.data_len = 20;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x00; /* set */
-	data[1] = 0x04; /* set drive status */
-	data[2] = 0x0e; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = 0x0e; /* length lsb */
-	data[7] = 0x00; /* length msb */
-	data[8] = bayId; /* bayid */
-	data[9] = slotId; /* slotid */
-	data[10] = state & 0xff; /* state LSB */
-	data[11] = state >> 8; /* state MSB; */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error issuing setled command.");
-		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error issuing setled command: %s",
-				val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-	return 0;
-}
-/*
- * Function Name:    ipmi_getsesmask
- *
- * Description:      This function calculates bits in SES drive update
- * Return:           Mask set with bits for SES backplane update
- */
-static int
-ipmi_getsesmask(int argc, char **argv)
-{
-	int mask = 0;
-	while (current_arg < argc) {
-		if (!strcmp(argv[current_arg], "present"))
-			mask |= (1L << 0);
-		if (!strcmp(argv[current_arg], "online"))
-			mask |= (1L << 1);
-		if (!strcmp(argv[current_arg], "hotspare"))
-			mask |= (1L << 2);
-		if (!strcmp(argv[current_arg], "identify"))
-			mask |= (1L << 3);
-		if (!strcmp(argv[current_arg], "rebuilding"))
-			mask |= (1L << 4);
-		if (!strcmp(argv[current_arg], "fault"))
-			mask |= (1L << 5);
-		if (!strcmp(argv[current_arg], "predict"))
-			mask |= (1L << 6);
-		if (!strcmp(argv[current_arg], "critical"))
-			mask |= (1L << 9);
-		if (!strcmp(argv[current_arg], "failed"))
-			mask |= (1L << 10);
-		current_arg++;
-	}
-	return mask;
-}
-/*
- * Function Name:       ipmi_delloem_setled_main
- *
- * Description:         This function processes the delloem setled command
- * Input:               intf    - ipmi interface
- *                       argc    - no of arguments
- *                       argv    - argument string array
- * Output:
- *
- * Return:              return code     0 - success
- *                         -1 - failure
- */
-static int
-ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	int b,d,f, mask;
-	int bayId, slotId;
-	bayId = 0xFF;
-	slotId = 0xFF;
-	current_arg++;
-	if (argc < current_arg) {
-		usage();
-		return -1;
-	}
-	/* ipmitool delloem setled info*/
-	if (argc == 1 || strcmp(argv[current_arg], "help") == 0) {
-		ipmi_setled_usage();
-		return 0;
-	}
-	CheckSetLEDSupport(intf);
-	if (!IsSetLEDSupported()) {
-		lprintf(LOG_ERR, "'setled' is not supported on this system.");
-		return -1;
-	} else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
-		/* We have bus/dev/function of drive */
-		current_arg++;
-		ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId);
-	} else if (sscanf(argv[current_arg], "%x:%x.%x", &b,&d,&f) == 3) {
-		/* We have bus/dev/function of drive */
-		current_arg++;
-	} else {
-		ipmi_setled_usage();
-		return -1;
-	}
-	/* Get mask of SES flags */
-	mask = ipmi_getsesmask(argc, argv);
-	/* Get drive mapping */
-	if (ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId)) {
-		return -1;
-	}
-	/* Set drive LEDs */
-	return ipmi_setled_state (intf, bayId, slotId, mask);
+	lprintf(LOG_NOTICE, 
+			"");
+	lprintf(LOG_NOTICE, 
+			"   vflash info Card");
+	lprintf(LOG_NOTICE, 
+			"      Shows Extended SD Card information");
+	lprintf(LOG_NOTICE, 
+			"");
 }
