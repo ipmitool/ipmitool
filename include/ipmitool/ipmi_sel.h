@@ -681,7 +681,7 @@ void ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_e
 void ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char ** desc);
 const char * ipmi_get_sensor_type(struct ipmi_intf *intf, uint8_t code);
 uint16_t ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id, struct sel_event_record * evt);
-char * get_newisys_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
+char * get_viking_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
 IPMI_OEM ipmi_get_oem(struct ipmi_intf * intf);
 char * ipmi_get_oem_desc(struct ipmi_intf * intf, struct sel_event_record * rec);
 int ipmi_sel_oem_init(const char * filename);

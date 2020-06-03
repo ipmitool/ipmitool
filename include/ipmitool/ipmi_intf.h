@@ -241,6 +241,9 @@ struct ipmi_intf {
 	void (*set_max_response_data_size)(struct ipmi_intf * intf, uint16_t size);
 };
 
+uint16_t ipmi_intf_get_max_request_data_size(struct ipmi_intf *intf);
+uint16_t ipmi_intf_get_max_response_data_size(struct ipmi_intf *intf);
+
 struct ipmi_intf * ipmi_intf_load(char * name);
 void ipmi_intf_print(struct ipmi_intf_support * intflist);
 

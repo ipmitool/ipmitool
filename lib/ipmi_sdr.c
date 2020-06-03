@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012 Hewlett-Packard Development Company, L.P.
+ * Copyright 2020 Joyent, Inc.
  *
  * Based on code from
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
@@ -68,8 +69,9 @@ static struct sdr_record_list *sdr_list_head = NULL;
 static struct sdr_record_list *sdr_list_tail = NULL;
 static struct ipmi_sdr_iterator *sdr_list_itr = NULL;
 
-/* unit description codes (IPMI v1.5 section 37.16) */
-#define UNIT_MAX	0x90
+/* IPMI 2.0 Table 43-15, Sensor Unit Type Codes */
+#define UNIT_TYPE_MAX 92 /* This is the ID of "grams" */
+#define UNIT_TYPE_LONGEST_NAME 19 /* This is the length of "color temp deg K" */
 static const char *unit_desc[] = {
 	"unspecified",
 	"degrees C",
@@ -161,7 +163,9 @@ static const char *unit_desc[] = {
 	"characters",
 	"error",
 	"correctable error",
-	"uncorrectable error"
+	"uncorrectable error",
+	"fatal error",
+	"grams"
 };
 
 /* sensor type codes (IPMI v1.5 table 36.3)
@@ -216,39 +220,60 @@ static const char *sensor_type_desc[] = {
 
 void printf_sdr_usage();
 
-/* From src/plugins/ipmi_intf.c: */
-uint16_t
-ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf);
-
-/* ipmi_sdr_get_unit_string  -  return units for base/modifier
+/** ipmi_sdr_get_unit_string  -  return units for base/modifier
  *
- * @pct:	units are a percentage
- * @type:	unit type
- * @base:	base
- * @modifier:	modifier
+ * @param[in] pct       Indicates that units are a percentage
+ * @param[in] relation  Modifier unit to base unit relation
+ *                      (SDR_UNIT_MOD_NONE, SDR_UNIT_MOD_MUL,
+ *                      or SDR_UNIT_MOD_DIV)
+ * @param[in] base      The base unit type id
+ * @param[in] modifier  The modifier unit type id
  *
- * returns pointer to static string
+ * @returns a pointer to static string
  */
 const char *
-ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifier)
+ipmi_sdr_get_unit_string(bool pct, uint8_t relation,
+                         uint8_t base, uint8_t modifier)
 {
-	static char unitstr[16];
+	/*
+	 * Twice as long as the longest possible unit name, plus
+	 * two characters for '%' and relation (either '*' or '/'),
+	 * plus the terminating null-byte.
+	 */
+	static char unitstr[2 * UNIT_TYPE_LONGEST_NAME + 2 + 1];
+
 	/*
 	 * By default, if units are supposed to be percent, we will pre-pend
 	 * the percent string  to the textual representation of the units.
 	 */
-	char *pctstr = pct ? "% " : "";
-	memset(unitstr, 0, sizeof (unitstr));
-	switch (type) {
-	case 2:
-		snprintf(unitstr, sizeof (unitstr), "%s%s * %s",
-			 pctstr, unit_desc[base], unit_desc[modifier]);
+	const char *pctstr = pct ? "% " : "";
+	const char *basestr;
+	const char *modstr;
+
+	if (base <= UNIT_TYPE_MAX) {
+		basestr = unit_desc[base];
+	}
+	else {
+		basestr = "invalid";
+	}
+
+	if (modifier <= UNIT_TYPE_MAX) {
+		modstr = unit_desc[base];
+	}
+	else {
+		modstr = "invalid";
+	}
+
+	switch (relation) {
+	case SDR_UNIT_MOD_MUL:
+		snprintf(unitstr, sizeof (unitstr), "%s%s*%s",
+			 pctstr, basestr, modstr);
 		break;
-	case 1:
+	case SDR_UNIT_MOD_DIV:
 		snprintf(unitstr, sizeof (unitstr), "%s%s/%s",
-			 pctstr, unit_desc[base], unit_desc[modifier]);
+			 pctstr, basestr, modstr);
 		break;
-	case 0:
+	case SDR_UNIT_MOD_NONE:
 	default:
 		/*
 		 * Display the text "percent" only when the Base unit is
@@ -257,8 +282,8 @@ ipmi_sdr_get_unit_string(uint8_t pct, uint8_t type, uint8_t base, uint8_t modifi
 		if (base == 0 && pct) {
 			snprintf(unitstr, sizeof(unitstr), "percent");
 		} else {
-			snprintf(unitstr, sizeof (unitstr), "%s%s", 
-				pctstr, unit_desc[base]);
+			snprintf(unitstr, sizeof (unitstr), "%s%s",
+			         pctstr, basestr);
 		}
 		break;
 	}
@@ -2230,7 +2255,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 		return -1;
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (sensor->id_code & 0x1f) + 1, "%s", sensor->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (sensor->id_code & 0x1f) + 1, sensor->id_string);
 
 	if (verbose) {
 		printf("Sensor ID              : %s (0x%x)\n",
@@ -2279,7 +2304,7 @@ ipmi_sdr_print_sensor_mc_locator(struct sdr_record_mc_locator *mc)
 		return -1;
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (mc->id_code & 0x1f) + 1, "%s", mc->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (mc->id_code & 0x1f) + 1, mc->id_string);
 
 	if (verbose == 0) {
 		if (csv_output)
@@ -2370,7 +2395,7 @@ ipmi_sdr_print_sensor_generic_locator(struct sdr_record_generic_locator *dev)
 	char desc[17];
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (dev->id_code & 0x1f) + 1, "%s", dev->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (dev->id_code & 0x1f) + 1, dev->id_string);
 
 	if (!verbose) {
 		if (csv_output)
@@ -2425,7 +2450,7 @@ ipmi_sdr_print_sensor_fru_locator(struct sdr_record_fru_locator *fru)
 	char desc[17];
 
 	memset(desc, 0, sizeof (desc));
-	snprintf(desc, (fru->id_code & 0x1f) + 1, "%s", fru->id_string);
+	snprintf(desc, sizeof(desc), "%.*s", (fru->id_code & 0x1f) + 1, fru->id_string);
 
 	if (!verbose) {
 		if (csv_output)
@@ -2610,35 +2635,43 @@ ipmi_sdr_print_name_from_rawentry(uint16_t id,
 
    int rc =0;
    char desc[17];
+   const char *id_string;
+   uint8_t id_code;
    memset(desc, ' ', sizeof (desc));
 
    switch ( type) {
       case SDR_RECORD_TYPE_FULL_SENSOR:
       record.full = (struct sdr_record_full_sensor *) raw;
-      snprintf(desc, (record.full->id_code & 0x1f) +1, "%s",
-               (const char *)record.full->id_string);
+      id_code = record.full->id_code;
+      id_string = record.full->id_string;
       break;
+
       case SDR_RECORD_TYPE_COMPACT_SENSOR:
       record.compact = (struct sdr_record_compact_sensor *) raw	;
-      snprintf(desc, (record.compact->id_code & 0x1f)  +1, "%s",
-               (const char *)record.compact->id_string);
+      id_code = record.compact->id_code;
+      id_string = record.compact->id_string;
       break;
+
       case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
       record.eventonly  = (struct sdr_record_eventonly_sensor *) raw ;
-      snprintf(desc, (record.eventonly->id_code & 0x1f)  +1, "%s",
-               (const char *)record.eventonly->id_string);
-      break;            
+      id_code = record.eventonly->id_code;
+      id_string = record.eventonly->id_string;
+      break;
+
       case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
       record.mcloc  = (struct sdr_record_mc_locator *) raw ;
-      snprintf(desc, (record.mcloc->id_code & 0x1f)  +1, "%s",
-               (const char *)record.mcloc->id_string);		
+      id_code = record.mcloc->id_code;
+      id_string = record.mcloc->id_string;
       break;
+
       default:
       rc = -1;
-      break;
-   }   
+   }
+   if (!rc) {
+       snprintf(desc, sizeof(desc), "%.*s", (id_code & 0x1f) + 1, id_string);
+   }
 
-      lprintf(LOG_INFO, "ID: 0x%04x , NAME: %-16s", id, desc);
+   lprintf(LOG_INFO, "ID: 0x%04x , NAME: %-16s", id, desc);
    return rc;
 }
 
@@ -3127,7 +3160,8 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			sdr_rq.length, sdr_rq.offset);
 
 		rsp = intf->sendrecv(intf, &req);
-		if (!rsp) {
+
+		if (!rsp || rsp->ccode == IPMI_CC_CANT_RET_NUM_REQ_BYTES) {
 		    sdr_max_read_len = sdr_rq.length - 1;
 		    if (sdr_max_read_len > 0) {
 			/* no response may happen if requests are bridged
@@ -3138,14 +3172,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 			data = NULL;
 			return NULL;
 		    }
-		}
-
-		switch (rsp->ccode) {
-		case 0xca:
-			/* read too many bytes at once */
-			sdr_max_read_len = sdr_rq.length - 1;
-			continue;
-		case 0xc5:
+		} else if (rsp->ccode == IPMI_CC_RES_CANCELED) {
 			/* lost reservation */
 			lprintf(LOG_DEBUG, "SDR reservation cancelled. "
 				"Sleeping a bit and retrying...");
@@ -3170,7 +3197,7 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		}
 
 		memcpy(data + i, rsp->data + 2, sdr_rq.length);
-		i += sdr_max_read_len;
+		i += sdr_rq.length;
 	}
 
 	return data;

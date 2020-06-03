@@ -450,7 +450,7 @@ const struct dcmi_cmd nm_policy_options[] = {
 	{ 0x02, "disable",   "" },
 	{ 0x03, "domain",    "" },
 	{ 0x04, "inlet",     "inlet air temp full limiting (SCRAM)" },
-	{ 0x06, "correction" "auto, soft, hard" },
+	{ 0x06, "correction","auto, soft, hard" },
 	{ 0x08, "power",     "power limit in watts" },
 	{ 0x09, "trig_lim",  "time to send alert" },
 	{ 0x0A, "stats",     "moving window averaging time" },

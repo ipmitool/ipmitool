@@ -4,6 +4,7 @@ dnl
 m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
 AC_INIT([ipmitool], [1.8.18git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
+AC_CONFIG_COMMANDS_PRE([export prefix=$prefix])
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER(config.h)
@@ -17,6 +18,8 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_CHECK_PROG([RPMBUILD], [rpmbuild], [rpmbuild], [rpm])
 AC_CHECK_PROG([SED], [sed], [sed])
+AC_CHECK_PROG([WGET], [wget], [wget])
+AC_CHECK_PROG([CURL], [curl], [curl])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h string.h sys/ioctl.h sys/stat.h unistd.h paths.h])
@@ -53,12 +56,30 @@ if test "x$exec_prefix" = "xNONE"; then
 	exec_prefix="$prefix"
 fi
 
+if test "x$WGET" = "x"; then
+	if test "x$CURL" = "x"; then
+		AC_MSG_WARN([** Neither wget nor curl could be found.])
+		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
+	else
+		DOWNLOAD="$CURL -#"
+		AM_CONDITIONAL([DOWNLOAD], [true])
+	fi
+else
+	DOWNLOAD="$WGET -c -nd -O -"
+	AM_CONDITIONAL([DOWNLOAD], [true])
+fi
+
+AC_MSG_WARN([** Download is:])
+AC_MSG_WARN($DOWNLOAD)
+AC_SUBST(DOWNLOAD, $DOWNLOAD)
+
 dnl
 dnl set default option values
 dnl
 
 xenable_all_options=yes
 xenable_intf_bmc=no
+xenable_intf_dbus=no
 xenable_intf_dummy=no
 xenable_intf_imb=yes
 xenable_intf_lipmi=yes
@@ -190,6 +211,14 @@ AC_CHECK_LIB([crypto], [MD2_Init],
 	    AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])
 	fi],
 	[], [-lcrypto])
+
+dnl check for libsystemd in case dbus-intf is requested
+AC_CHECK_LIB([systemd], [sd_bus_default],
+	[
+		LIBS="$LIBS -lsystemd"
+		have_systemd=yes
+	],
+	[ have_systemd=no],[])
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
@@ -554,6 +583,25 @@ if test "x$xenable_intf_bmc" = "xyes"; then
 	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB bmc/libintf_bmc.la"
 fi
 
+dnl enable IPMI dbus interface
+AC_ARG_ENABLE([intf-dbus],
+		[AC_HELP_STRING([--enable-intf-dbus],
+			[enable IPMI dbus interface [default=no]])],
+		[xenable_intf_dbus=$enableval],
+		[xenable_intf_dbus=no])
+if test "x$xenable_intf_dbus" != "xno"; then
+	if test "x$have_systemd" != "xyes"; then
+		AC_MSG_ERROR([** Unable to find libsystemd required by dbus-intf.])
+		xenable_intf_dbus=no
+	fi
+fi
+if test "x$xenable_intf_dbus" = "xyes"; then
+	AC_DEFINE(IPMI_INTF_DBUS, [1], [Define to 1 to enable dbus interface.])
+	AC_SUBST(INTF_DBUS, [dbus])
+	AC_SUBST(INTF_DBUS_LIB, [libintf_dbus.la])
+	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB dbus/libintf_dbus.la"
+fi
+
 dnl enable Dummy interface for testing
 AC_ARG_ENABLE([intf-dummy],
 	[AC_HELP_STRING([--enable-intf-dummy],
@@ -568,30 +616,18 @@ fi
 
 AC_SUBST(IPMITOOL_INTF_LIB)
 
-if test "x$xenable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
-	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
-	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
-	if test "x$have_curses" != "xyes" || test "x$have_readline" != "xyes"; then
-		xenable_ipmishell=no
-	fi
-fi
-
-dnl check for readline library to enable ipmi shell
 AC_ARG_ENABLE([ipmishell],
 	[AC_HELP_STRING([--enable-ipmishell],
 			[enable IPMI shell interface [default=auto]])],
 	[xenable_ipmishell=$enableval],
 	[])
+
+dnl check for readline library to enable ipmi shell
 if test "x$xenable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([tgetent], [tinfo ncurses curses readline termcap])
-	AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes])
 	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
-	if test "x$have_curses" != "xyes"; then
-		AC_MSG_ERROR([** Unable to find curses required by ipmishell.])
-	fi
 	if test "x$have_readline" != "xyes"; then
 		AC_MSG_ERROR([** Unable to find readline required by ipmishell.])
+		xenable_ipmishell=no
 	fi
 	AC_DEFINE(HAVE_READLINE, [1], [Define to 1 if readline present.])
 fi
@@ -643,6 +679,51 @@ AC_TRY_COMPILE([],[
 		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
 )
 
+dnl if no environment variable is set, set the default value for the default intf
+if test "${xenable_intf_open}" = "yes"; then
+   DEFAULT_INTF_NO_ENV=open
+else dnl macOS does not build open interface, it defaults to lan
+   DEFAULT_INTF_NO_ENV=lan
+fi
+dnl allow for a default interface to be set on configure
+AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default='open' if available, 'lan' otherwise)])
+
+dnl set the default value for the default interface environment variable
+if test "x${DEFAULT_INTF}" == "x"; then
+	echo "DEFAULT_INTF not found in environment; setting to ${DEFAULT_INTF_NO_ENV}"
+	DEFAULT_INTF=${DEFAULT_INTF_NO_ENV}
+fi
+
+xdefault_intf_is_enabled="xenable_intf_${DEFAULT_INTF}"
+if test "x${!xdefault_intf_is_enabled}" != "xyes"; then
+	AC_MSG_ERROR([** Cannot set ${DEFAULT_INTF} as default; ${DEFAULT_INTF} is not enabled. :${!xdefault_intf_is_enabled}:])
+fi
+
+AC_ARG_VAR(IANADIR, [Configure the path to IANA PEN dictionary (default=DATAROOTDIR/misc)])
+AC_ARG_VAR(IANAUSERDIR, [Configure the path to IANA PEN dictionary wihtin the user's HOME directory (default=.local/usr/share/misc)])
+
+if test "x${IANADIR}" == "x"; then
+	echo Set IANA PEN dictionary search path to ${datarootdir}/misc
+	IANADIR="${datarootdir}/misc"
+fi
+
+if test "x${IANAUSERDIR}" == "x"; then
+	IANAUSERDIR=".local/usr/share/misc"
+	echo Set user\'s IANA PEN dictionary search path to ${IANAUSERDIR}
+fi
+
+AH_TEMPLATE([IANADIR],[The path to system IANA PEN dictionary])
+AC_DEFINE_UNQUOTED(IANADIR, "`eval "echo ${IANADIR}"`", [])
+
+AH_TEMPLATE([IANAUSERDIR],[The subpath to user IANA PEN dictionary within the user's HOME])
+AC_DEFINE_UNQUOTED(IANAUSERDIR, "`eval "echo ${IANAUSERDIR}"`", [])
+
+AH_TEMPLATE([PATH_SEPARATOR], [The path separator string])
+#if defined _WIN32 || defined __CYGWIN__
+AC_DEFINE(PATH_SEPARATOR, "\\")
+#else
+AC_DEFINE(PATH_SEPARATOR, "/")
+#endif
 
 dnl Generate files for build
 AC_CONFIG_FILES([Makefile
@@ -664,23 +745,28 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/free/Makefile
 		src/plugins/imb/Makefile
 		src/plugins/bmc/Makefile
+		src/plugins/dbus/Makefile
 		src/plugins/usb/Makefile
 		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
 		src/plugins/dummy/Makefile])
+
+AC_CONFIG_FILES([doc/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmitool.1])
+AC_CONFIG_FILES([doc/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmievd.8])
 
 AC_OUTPUT
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([ipmitool $VERSION])
 AC_MSG_RESULT([])
-AC_MSG_RESULT([Interfaces])
+AC_MSG_RESULT([Interfaces (default=$DEFAULT_INTF)])
 AC_MSG_RESULT([  lan     : $xenable_intf_lan])
 AC_MSG_RESULT([  lanplus : $xenable_intf_lanplus])
 AC_MSG_RESULT([  open    : $xenable_intf_open])
 AC_MSG_RESULT([  free    : $xenable_intf_free])
 AC_MSG_RESULT([  imb     : $xenable_intf_imb])
 AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
+AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
 AC_MSG_RESULT([  usb     : $xenable_intf_usb])
 AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
 AC_MSG_RESULT([  serial  : $xenable_intf_serial])

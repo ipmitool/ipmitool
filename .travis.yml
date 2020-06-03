@@ -1,10 +1,37 @@
 language: C
 sudo: enabled
-before_install:
-  - sudo apt-get install -y libssl-dev
 before_script:
  - ./bootstrap
-script:
- - ./configure --enable-intf-dummy
- - make
- - sudo make install
+addons:
+  apt:
+    update: true
+    packages:
+      - libssl-dev
+  homebrew:
+    packages:
+      - openssl
+
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libsystemd-dev
+      script:
+        - ./configure --enable-intf-dummy --enable-intf-dbus
+        - make
+        - sudo make install
+    - os: linux
+      dist: trusty
+      script:
+        - ./configure --enable-intf-dummy
+        - make
+        - sudo make install
+    - os: osx
+      osx_image: xcode10.2
+      script:
+        - ./configure --enable-intf-dummy
+        - make
+        - sudo make install

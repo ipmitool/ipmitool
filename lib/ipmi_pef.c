@@ -1486,6 +1486,7 @@ ipmi_pef2_get_info(struct ipmi_intf *intf)
 		ipmi_pef_print_guid(guid_ptr);
 	}
 	ipmi_pef_print_flags(&pef_b2s_actions, P_SUPP, pcap.actions);
+	putchar('\n');
 	return 0;
 }
 
@@ -1537,6 +1538,7 @@ ipmi_pef2_get_status(struct ipmi_intf *intf)
 		return (-1);
 	}
 	ipmi_pef_print_flags(&pef_b2s_actions, P_ACTV, rsp->data[1]);
+	putchar('\n');
 	return 0;
 }
 

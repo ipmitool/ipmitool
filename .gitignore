@@ -1,6 +1,10 @@
 .deps
 .dirstamp
 .libs
+.*.swp
+*.log
+*.rej
+*.orig
 *.o
 *.lo
 *.la
@@ -29,6 +33,7 @@ control/prototype
 control/rpmmacros
 src/ipmievd
 src/ipmitool
-lib/ipmi_pen_list.inc.c
+doc/ipmievd.8
+doc/ipmitool.1
 cscope.out
 tags

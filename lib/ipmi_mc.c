@@ -36,7 +36,6 @@
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <endian.h>
 
 #include <arpa/inet.h>
 

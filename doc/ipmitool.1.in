@@ -259,11 +259,15 @@ system.  It is thus recommended that IPMI password management only be done
 over IPMIv2.0 \fIlanplus\fP interface or the system interface on the
 local station.
 
-For IPMI v1.5, the maximum password length is 16 characters.
-Passwords longer than 16 characters will be truncated.
+For IPMI v1.5, the maximum password length is 16 characters; longer
+passwords might be truncated or rejected by the server, or rejected
+by
+.BR ipmitool .
 
-For IPMI v2.0, the maximum password length is 20 characters;
-longer passwords are truncated.
+For IPMI v2.0, the maximum password length is 20 characters; longer
+passwords will be rejected by
+.BR ipmitool .
+
 .SH "COMMANDS"
 .TP 
 \fIhelp\fP
@@ -384,39 +388,23 @@ application (ipmi or sol) on the given channel.
 \fIstatus\fP
 
 Status information related to power, buttons, cooling, drives and faults.
-.RS
-.RE
 .TP 
 \fIpower\fP
 .RS
 .TP 
 \fIstatus\fP
-.RS
-.RE
 .TP
 \fIon\fP
-.RS
-.RE
 .TP
 \fIoff\fP
-.RS
-.RE
 .TP
 \fIcycle\fP
-.RS
-.RE
 .TP
 \fIreset\fP
-.RS
-.RE
 .TP
 \fIdiag\fP
-.RS
-.RE
 .TP
 \fIsoft\fP
-.RS
-.RE
 .RE
 .TP 
 \fIidentify\fP [<seconds>|force]
@@ -428,8 +416,6 @@ Default is 15 seconds.
 0 - Off
 .br
 force - To turn on indefinitely
-.RS
-.RE
 .TP 
 \fIpolicy\fP
 
@@ -439,34 +425,22 @@ What to do when power is restored.
 \fIlist\fP
 
 Show available options.
-.RS
-.RE
 .TP 
 \fIalways-on\fP
-.RS
-.RE
 .TP 
 \fIprevious\fP
-.RS
-.RE
 .TP 
 \fIalways-off\fP
-.RS
-.RE
 .RE
 
 .TP 
 \fIrestart_cause\fP
 
 Last restart cause.
-.RS
-.RE
 .TP 
 \fIpoh\fP
 
 Get power on hours.
-.RS
-.RE
 .TP 
 \fIbootdev\fP
 .RS
@@ -474,95 +448,123 @@ Get power on hours.
 \fInone\fP
 
 Do not change boot device order.
-.RS
-.RE
 .TP 
 \fIpxe\fP
 
 Force PXE boot.
-.RS
-.RE
 .TP 
 \fIdisk\fP
 
 Force boot from default Hard-drive.
-.RS
-.RE
 .TP 
 \fIsafe\fP
 
 Force boot from default Hard-drive, request Safe Mode.
-.RS
-.RE
 .TP 
 \fIdiag\fP
 
 Force boot from Diagnostic Partition.
-.RS
-.RE
 .TP 
 \fIcdrom\fP
 
 Force boot from CD/DVD.
-.RS
-.RE
 .TP 
 \fIbios\fP
 
 Force boot into BIOS Setup.
-.RS
-.RE
 .TP 
 \fIfloppy\fP
 
 Force boot from Floppy/primary removable media.
-.RS
 .RE
-.RE
+
+.TP
+\fIbootmbox\fP \fIget\fP [text] [block <\fBblock#\fP>]
+
+Read the Boot Initiator Mailbox in hex dump or in text mode.
+
+By default the whole mailbox is read. If block number is specified,
+that particular block is read. For block 0 or when the whole
+mailbox is read, the Boot Initiator IANA Enterprise Number and
+the corresponding enterprise name are printed.
+
+.TP
+\fIbootmbox\fP \fIset\fP text [block <\fBblock#\fP>] <\fBIANA_PEN\fP> "<\fBdata_string\fP>"
+
+Write the specified <block> or the entire Boot Initiator Mailbox in text mode.
+It is required to specify a decimal IANA Enterprise Number recognized
+by the boot initiator on the target system. Refer to your target system
+manufacturer for details. The rest of the arguments are a text string.
+
+When single block write is requested, the total length of <data> may not
+exceed 13 bytes for block 0, or 16 bytes otherwise.
+
+.TP
+\fIbootmbox\fP \fIset\fP [block <\fBblock#\fP>] <\fBIANA_PEN\fP> <\fBdata_byte\fP> [<\fBdata_byte\fP> ...]
+
+Same as above, but the arguments after IANA PEN are separate
+data byte values separated by spaces.
+
 .TP 
-\fIbootparam\fP
+\fIbootparam\fP \fIget\fP <\fBopt_id\fR> [<\fBopt_param\fR>]
+
+Get value of system boot option number <\fBopt_id\fR>. Some boot
+options (e.g. option 7) can also take an optional numeric parameter.
+
+.TP 
+\fIbootparam\fP \fIset\fP bootflag <\fBdevice\fR> [options=...]
+
+Set a boot flag. Valid devices are:
+
 .RS
-.TP 
-\fIforce_pxe\fP
+.IP \fIforce_pxe\fP
 
 Force PXE boot
-.RS
-.RE
-.TP 
-\fIforce_disk\fP
+.IP \fIforce_disk\fP
 
 Force boot from default Hard-drive
-.RS
-.RE
-.TP 
-\fIforce_safe\fP
+.IP \fIforce_safe\fP
 
 Force boot from default Hard-drive, request Safe Mode
-.RS
-.RE
-.TP 
-\fIforce_diag\fP
+.IP \fIforce_diag\fP
 
 Force boot from Diagnostic Partition
-.RS
-.RE
-.TP 
-\fIforce_cdrom\fP
+.IP \fIforce_cdrom\fP
 
 Force boot from CD/DVD
-.RS
-.RE
-.TP 
-\fIforce_bios\fP
+.IP \fIforce_bios\fP
 
 Force boot into BIOS Setup
-.RS
+
+.PP
+Valid options are:
+
+.IP \fIPEF\fP
+
+Clear valid bit on reset/power cycle cause by PEF
+
+.IP \fItimeout\fP
+
+Automatically clear boot flag valid bit on timeout
+
+.IP \fIwatchdog\fP
+
+Clear valid bit on reset/power cycle cause by watchdog
+
+.IP \fIreset\fP
+
+Clear valid bit on push button reset/soft reset
+
+.IP \fIpower\fP
+
+Clear valid bit on power up via power push button or wake event
 .RE
-.RE
+
 .TP 
 \fIselftest\fP
-.RS
-.RE
+
+Get the chassis self-test results
+
 .RE
 .TP 
 \fIdcmi\fP
@@ -957,8 +959,6 @@ Shows Extended SD Card information.
 \fIecho\fP
 
 For echoing lines to stdout in scripts.
-.RS
-.RE
 .TP
 \fIekanalyzer\fP <\fBcommand\fR> <\fBxx=filename1\fR> <\fBxx=filename2\fR> [<\fBrc=filename3\fR>] \fB...\fR
 .RS
@@ -1510,20 +1510,14 @@ Show firmware upgrade log.
 \fIlist\fP
 
 List All Generic Device Locators.
-.RS
-.RE
 .TP 
 \fIread\fP <\fBsdr name\fR> <\fBfile\fR>
 
 Read to file eeprom specify by Generic Device Locators.
-.RS
-.RE
 .TP
 \fIwrite\fP <\fBsdr name\fR> <\fBfile\fR>
 
 Write from file eeprom specify by Generic Device Locators
-.RS
-.RE
 .RE
 .TP
 \fIhpm\fP
@@ -3150,50 +3144,34 @@ or by using the keyword `all' to specify all sessions.
 \fIhostname\fP <\fBhost\fR>
 
 Session hostname.
-.RS
-.RE
 .TP
 \fIusername\fP <\fBuser\fR>
 
 Session username.
-.RS
-.RE
 .TP
 \fIpassword\fP <\fBpass\fR>
 
 Session password.
-.RS
-.RE
 .TP
 \fIprivlvl\fP <\fBlevel\fR>
 
 Session privilege level force.
-.RS
-.RE
 .TP
 \fIauthtype\fP <\fBtype\fR>
 
 Authentication type force.
-.RS
-.RE
 .TP
 \fIlocaladdr\fP <\fBaddr\fR>
 
 Local IPMB address.
-.RS
-.RE
 .TP
 \fItargetaddr\fP <\fBaddr\fR>
 
 Remote target IPMB address.
-.RS
-.RE
 .TP
 \fIport\fP <\fBport\fR>
 
 Remote RMCP port.
-.RS
-.RE
 .TP
 \fIcsv\fP [\fBlevel\fR]
 
@@ -3201,14 +3179,10 @@ Enable output in comma separated format.
 Affects following commands:
 \fIuser\fP, \fIchannel\fP, \fIisol\fP, \fIsunoem\fP,
 \fIsol\fP, \fIsensor\fP, \fIsdr\fP, \fIsel\fP, \fIsession\fP.
-.RS
-.RE
 .TP
 \fIverbose\fP [\fBverbose\fR]
 
 Verbosity level.
-.RS
-.RE
 .RE
 .TP 
 \fIshell\fP
@@ -3556,12 +3530,13 @@ Displays a list of user information for all defined userids.
 
 Sets the username associated with the given userid.
 .TP 
-\fIpassword\fP <\fBuserid\fR> [<\fBpassword\fR>]
+\fIpassword\fP <\fBuserid\fR> [<\fBpassword\fR> [<\fB16|20\fR>]]
 .br 
 
 Sets the password for the given userid.  If no password is given,
 the password is cleared (set to the NULL password).  Be careful when
-removing passwords from administrator\-level accounts.
+removing passwords from administrator\-level accounts.  If specified,
+16 or 20 determines the maximum password length.
 .RE
 .TP 
 \fIdisable\fP <\fBuserid\fR>
@@ -3847,7 +3822,16 @@ Chassis Power is on
 > ipmitool \-I lan \-H 1.2.3.4 \-f passfile chassis power on
 .br 
 Chassis Power Control: Up/On
-	
+
+.SH FILES
+.TP
+.B @IANADIR@/enterprise-numbers
+system IANA PEN registry taken from http://www.iana.org/assignments/enterprise-numbers
+.TP
+.B ~/@IANAUSERDIR@/enterprise-numbers
+user's override for the system IANA PEN registry, this file if it exists is loaded instead
+of the system registry (see above).
+
 .SH "AUTHORS"
 Originally written by Duncan Laurie <duncan@iceblink.org>.
 .br

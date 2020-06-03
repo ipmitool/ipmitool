@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> /* For free() */
+#include <stdbool.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -79,8 +80,12 @@ struct oemvalstr {
 	const char * str;
 };
 
-const char * val2str(uint16_t val, const struct valstr * vs);
-const char * oemval2str(uint32_t oem,uint16_t val, const struct oemvalstr * vs);
+const char *
+specific_val2str(uint32_t val,
+                 const struct valstr *specific,
+                 const struct valstr *generic);
+const char *val2str(uint32_t val, const struct valstr * vs);
+const char *oemval2str(uint32_t oem, uint32_t val, const struct oemvalstr * vs);
 
 int str2double(const char * str, double * double_ptr);
 int str2long(const char * str, int64_t * lng_ptr);
@@ -92,6 +97,8 @@ int str2ushort(const char * str, uint16_t * ushrt_ptr);
 int str2char(const char * str, int8_t * chr_ptr);
 int str2uchar(const char * str, uint8_t * uchr_ptr);
 
+bool args2buf(int argc, char *argv[], uint8_t *out, size_t len);
+
 int eval_ccode(const int ccode);
 
 int is_fru_id(const char *argv_ptr, uint8_t *fru_id_ptr);
@@ -99,7 +106,11 @@ int is_ipmi_channel_num(const char *argv_ptr, uint8_t *channel_ptr);
 int is_ipmi_user_id(const char *argv_ptr, uint8_t *ipmi_uid_ptr);
 int is_ipmi_user_priv_limit(const char *argv_ptr, uint8_t *ipmi_priv_limit_ptr);
 
-uint16_t str2val(const char * str, const struct valstr * vs);
+uint32_t str2val32(const char *str, const struct valstr *vs);
+static inline uint16_t str2val(const char *str, const struct valstr *vs)
+{
+	return (uint16_t)str2val32(str, vs);
+}
 void print_valstr(const struct valstr * vs, const char * title, int loglevel);
 void print_valstr_2col(const struct valstr * vs, const char * title, int loglevel);
 
@@ -164,6 +175,13 @@ static inline uint32_t ipmi24toh(void *ipmi24)
 	h |= ipmi[0]; /* LSB */
 
 	return h;
+}
+
+static inline void htoipmi24(uint32_t h, uint8_t *ipmi)
+{
+	ipmi[0] = h & 0xFF; /* LSB */
+	ipmi[1] = (h >> 8) & 0xFF;
+	ipmi[2] = (h >> 16) & 0xFF; /* MSB */
 }
 
 static inline uint32_t ipmi32toh(void *ipmi32)

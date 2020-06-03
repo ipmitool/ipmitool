@@ -319,26 +319,74 @@ mac2str(const uint8_t *buf)
 	return buf2str_extended(buf, 6, ":");
 }
 
-const char * val2str(uint16_t val, const struct valstr *vs)
+/**
+ * Find the index of value in a valstr array
+ *
+ * @param[in] val The value to search for
+ * @param[in] vs  The valstr array to search in
+ * @return >=0    The index into \p vs
+ * @return -1     Error: value \p val was not found in \p vs
+ */
+static
+inline
+off_t find_val_idx(uint32_t val, const struct valstr *vs)
 {
-	static char un_str[32];
-	int i;
-
-	for (i = 0; vs[i].str; i++) {
-		if (vs[i].val == val)
-			return vs[i].str;
+	if (vs) {
+		for (off_t i = 0; vs[i].str; ++i) {
+			if (vs[i].val == val) {
+				return i;
+			}
+		}
 	}
 
+	return -1;
+}
+
+/**
+ * Generate a statically allocated 'Unknown' string for the provided value.
+ * The function is not thread-safe (as most of ipmitool).
+ *
+ * @param[in] val The value to put into the string
+ * @returns       A pointer to a statically allocated string
+ */
+static
+inline
+const char *unknown_val_str(uint32_t val)
+{
+	static char un_str[32];
 	memset(un_str, 0, 32);
 	snprintf(un_str, 32, "Unknown (0x%02X)", val);
 
 	return un_str;
 }
 
-const char * oemval2str(uint32_t oem, uint16_t val,
-                                             const struct oemvalstr *vs)
+const char *
+specific_val2str(uint32_t val,
+                 const struct valstr *specific,
+                 const struct valstr *generic)
 {
-	static char un_str[32];
+	int i;
+
+	if (0 <= (i = find_val_idx(val, specific))) {
+		return specific[i].str;
+	}
+
+	if (0 <= (i = find_val_idx(val, generic))) {
+		return generic[i].str;
+	}
+
+	return unknown_val_str(val);
+}
+
+const char *val2str(uint32_t val, const struct valstr *vs)
+{
+	return specific_val2str(val, NULL, vs);
+}
+
+
+const char *oemval2str(uint32_t oem, uint32_t val,
+                       const struct oemvalstr *vs)
+{
 	int i;
 
 	for (i = 0; vs[i].oem != 0xffffff &&  vs[i].str; i++) {
@@ -349,10 +397,7 @@ const char * oemval2str(uint32_t oem, uint16_t val,
 		}
 	}
 
-	memset(un_str, 0, 32);
-	snprintf(un_str, 32, "Unknown (0x%X)", val);
-
-	return un_str;
+	return unknown_val_str(val);
 }
 
 /* str2double - safely convert string to double
@@ -597,7 +642,7 @@ int str2uchar(const char * str, uint8_t * uchr_ptr)
 	return 0;
 } /* str2uchar(...) */
 
-uint16_t str2val(const char *str, const struct valstr *vs)
+uint32_t str2val32(const char *str, const struct valstr *vs)
 {
 	int i;
 
@@ -1079,4 +1124,36 @@ ipmi_get_oem_id(struct ipmi_intf *intf)
 	lprintf(LOG_DEBUG,"Board ID: %x", oem_id);
 
 	return oem_id;
+}
+
+/** Parse command line arguments as numeric byte values (dec or hex)
+ *  and store them in a \p len sized buffer \p out.
+ *
+ * @param[in] argc Number of arguments
+ * @param[in] argv Array of arguments
+ * @param[out] out The output buffer
+ * @param[in] len Length of the output buffer in bytes (no null-termination
+ *                is assumed, the input data is treated as raw byte values,
+ *                not as a string.
+ *
+ * @returns A success status indicator
+ * @return false Error
+ * @return true Success
+ */
+bool
+args2buf(int argc, char *argv[], uint8_t *out, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len && i < (size_t)argc; ++i) {
+		uint8_t byte;
+
+		if (str2uchar(argv[i], &byte)) {
+			lprintf(LOG_ERR, "Bad byte value: %s", argv[i]);
+			return false;
+		}
+
+		out[i] = byte;
+	}
+	return true;
 }

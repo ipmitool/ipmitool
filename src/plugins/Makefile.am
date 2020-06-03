@@ -32,11 +32,12 @@ MAINTAINERCLEANFILES		= Makefile.in
 
 AM_CPPFLAGS			= -I$(top_srcdir)/include
 
-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@
-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb
+SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_DBUS@
+DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb dbus
 
 noinst_LTLIBRARIES		= libintf.la
 libintf_la_SOURCES		= ipmi_intf.c
+libintf_la_CFLAGS		= -DDEFAULT_INTF='"@DEFAULT_INTF@"'
 libintf_la_LDFLAGS		= -export-dynamic
 libintf_la_LIBADD		= @IPMITOOL_INTF_LIB@
 libintf_la_DEPENDENCIES		= @IPMITOOL_INTF_LIB@
