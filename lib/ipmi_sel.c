@@ -531,7 +531,6 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	int sensor_num;
 	uint8_t i = 0;
 	uint16_t oem_id = 0;
-	int dimm, cpu, channel;
 	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to
 	 * data1,data2,data3
 	 */
@@ -648,6 +647,12 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					break;
 				}
 			}
+			for (i = 0; supermicro_x12[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_x12[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
 			for (i = 0; supermicro_b11[i] != 0xFFFF; i++) {
 				if (oem_id == supermicro_b11[i]) {
 					chipset_type = 6;
@@ -661,7 +666,13 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				}
 			}
 			for (i = 0; supermicro_h11[i] != 0xFFFF; i++) {
-				if (oem_id == supermicro_b2[i]) {
+				if (oem_id == supermicro_h11[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_h12[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_h12[i]) {
 					chipset_type = 6;
 					break;
 				}
@@ -1021,6 +1032,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				}
 			}
 			if (data3 != 0xff) {
+				int dimm, cpu, channel;
 				dimm = (data3 & 0x03) + 1;
 				cpu = (((data3 & 0xff) >> 5) & 0x07) + 1;
 				if (sensor_num == 0xFF) {
@@ -1030,6 +1042,13 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				}
 				snprintf(tempDesc, SIZE_OF_DESC, " (P%d-DIMM%c%d)", cpu, channel, dimm);
 				strcat(desc, tempDesc);
+			}
+			break;
+		case 0x14:
+			if (data2 == 0) {
+				snprintf(desc, SIZE_OF_DESC, "BTN");
+			} else if (data2 == 1) {
+				snprintf(desc, SIZE_OF_DESC, "IPMI");
 			}
 			break;
 	}
