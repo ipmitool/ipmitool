@@ -1,4 +1,4 @@
-"0xC1","XX","XX","XX","XX","XX","XX","XX","0x01","0x00","Chassis Number","R","R","0x00","CPU shutdown - Potential cause "triple fault" a software address problem"
+"0xC1","XX","XX","XX","XX","XX","XX","XX","0x01","0x00","Chassis Number","R","R","0x00","CPU shutdown - Potential cause 'triple fault' a software address problem"
 "0xC1","XX","XX","XX","XX","XX","XX","XX","0x02","0x01","Chassis Number","Failed Memory Card","Spare Memory Card","0x00","Memory Mirrored Failover Occurred - System running from mirrored memory image"
 "0xC1","XX","XX","XX","XX","XX","XX","XX","0x02","0x04","Chassis Number","Memory Card","Completion Code (0x00=Success)","0x00","Memory hot replace event"
 "0xC1","XX","XX","XX","XX","XX","XX","XX","0x02","0x05","Chassis Number","Memory Card","Memory Size (in 512MB units)","0x00","Memory hot add event"
