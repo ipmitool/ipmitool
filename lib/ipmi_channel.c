@@ -803,8 +803,26 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 	int ccode = 0;
 	int i = 0;
 	uint8_t channel = 0;
-	uint8_t priv = 0;
 	uint8_t user_id = 0;
+	struct {
+		const char *option;
+		enum {
+			UA_INTEGER, /* direct integer value */
+			UA_BOOLEAN,  /* off/disable = false, on/enable = true */
+			UA_BOOLEAN_INVERSE /* off/disable = true, on/enable = false */
+		} type;
+		uint8_t *val;
+		uint8_t min; /* minimum value for UA_INTEGER options */
+		uint8_t max; /* maximum value for UA_INTEGER options */
+	} options[] = {
+		{ "callin=", UA_BOOLEAN_INVERSE, &user_access.callin_callback, 0, 0},
+		{ "link=", UA_BOOLEAN,  &user_access.link_auth, 0, 0},
+		{ "ipmi=", UA_BOOLEAN, &user_access.ipmi_messaging, 0, 0},
+		{ "privilege=", UA_INTEGER, &user_access.privilege_limit
+		              , IPMI_SESSION_PRIV_CALLBACK
+		              , IPMI_SESSION_PRIV_NOACCESS },
+	};
+
 	if (argc > 0 && strcmp(argv[0], "help") == 0) {
 		printf_channel_usage();
 		return 0;
@@ -827,33 +845,47 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 		return (-1);
 	}
 	for (i = 2; i < argc; i ++) {
-		if (strcmp(argv[i], "callin=") == 0) {
-			if (strcmp(argv[i] + strlen("callin="), "off") == 0) {
-				user_access.callin_callback = 1;
-			} else {
-				user_access.callin_callback = 0;
+		size_t j;
+		for (j = 0; j < ARRAY_SIZE(options); ++j) {
+			const char *opt = argv[i];
+			const int optlen = strlen(options[j].option);
+			if (!strncmp(opt, options[j].option, optlen)) {
+				const char *optval = opt + optlen;
+				uint16_t val;
+
+				if (UA_INTEGER != options[j].type) {
+					bool boolval = (UA_BOOLEAN_INVERSE == options[j].type)
+						? false
+						: true;
+					*options[j].val = boolval;
+					if (!strcmp(optval, "off")
+						|| !strcmp(optval, "disable")
+						|| !strcmp(optval, "no")
+					   )
+					{
+						boolval = !boolval;
+					}
+				} else if (UINT8_MAX
+				           != (val = str2val(optval, ipmi_privlvl_vals)))
+				{
+					*options[j].val = (uint8_t)val;
+				} else if (str2uchar(optval, options[j].val)) {
+						lprintf(LOG_ERR
+						        , "Numeric [%hhu-%hhu] value expected, "
+						          "but '%s' given."
+						        , options[j].min
+						        , options[j].max
+						        , optval);
+						return (-1);
+				}
+				lprintf(LOG_DEBUG
+				        , "Option %s=%hhu"
+				        , options[j].option
+				        , *options[j].val);
+				break;
 			}
-		} else if (strcmp(argv[i], "link=") == 0) {
-			if (strcmp(argv[i] + strlen("link="), "off") == 0) {
-				user_access.link_auth = 0;
-			} else {
-				user_access.link_auth = 1;
-			}
-		} else if (strcmp(argv[i], "ipmi=") == 0) {
-			if (strcmp(argv[i] + strlen("ipmi="), "off") == 0) {
-				user_access.ipmi_messaging = 0;
-			} else {
-				user_access.ipmi_messaging = 1;
-			}
-		} else if (strcmp(argv[i], "privilege=") == 0) {
-			if (str2uchar(argv[i] + 10, &priv) != 0) {
-				lprintf(LOG_ERR,
-						"Numeric value expected, but '%s' given.",
-						argv[i] + 10);
-				return (-1);
-			}
-			user_access.privilege_limit = priv;
-		} else {
+		}
+		if (ARRAY_SIZE(options) == j) {
 			lprintf(LOG_ERR, "Invalid option: %s\n", argv[i]);
 			return (-1);
 		}

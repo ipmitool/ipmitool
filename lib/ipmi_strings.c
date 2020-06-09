@@ -1031,8 +1031,8 @@ const struct valstr ipmi_privlvl_vals[] = {
 	{ IPMI_SESSION_PRIV_OPERATOR,	"OPERATOR" },
 	{ IPMI_SESSION_PRIV_ADMIN,	    "ADMINISTRATOR" },
 	{ IPMI_SESSION_PRIV_OEM,    	"OEM" },
-	{ 0xF,	        		    	"NO ACCESS" },
-	{ 0xFF,			             	NULL },
+	{ IPMI_SESSION_PRIV_NOACCESS, "NO ACCESS" },
+	{ UINT8_MAX, NULL },
 };
 
 
