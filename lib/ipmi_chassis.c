@@ -1071,23 +1071,23 @@ get_bootparam_options(char *optstring,
 	{NULL}	/* End marker */
 	}, *op;
 
-	if (strcmp(optstring, "options=") != 0) {
+	if (strcmp(optstring, "options=")) {
 		lprintf(LOG_ERR, "No options= keyword found \"%s\"", optstring);
 		return -1;
 	}
 	token = strtok_r(optstring + 8, ",", &saveptr);
 	while (token) {
 		int setbit = 0;
-		if (strcmp(token, "help") == 0) {
+		if (!strcmp(token, "help")) {
 			optionError = 1;
 			break;
 		}
-		if (strcmp(token, "no-") == 0) {
+		if (!strcmp(token, "no-")) {
 			setbit = 1;
 			token += 3;
 		}
 		for (op = options; op->name; ++op) {
-			if (strcmp(token, op->name) == 0) {
+			if (!strcmp(token, op->name)) {
 				if (setbit) {
 				    *set_flag |= op->value;
 				} else {
@@ -1897,12 +1897,12 @@ bootdev_parse_options(char *optstring, uint8_t flags[])
 	memset(&flags[0], 0, BF_BYTE_COUNT);
 	token = strtok_r(optstring, ",", &saveptr);
 	while (token) {
-		if (strcmp(token, "help") == 0) {
+		if (!strcmp(token, "help")) {
 			optionError = 1;
 			break;
 		}
 		for (op = options; op->name; ++op) {
-			if (strcmp(token, op->name) == 0) {
+			if (!strcmp(token, op->name)) {
 				flags[op->offset] &= ~(op->mask);
 				flags[op->offset] |= op->value;
 				break;
@@ -2044,9 +2044,11 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			else if (!strcmp(argv[1], "set")) {
 			    unsigned char set_flag=0;
 			    unsigned char clr_flag=0;
-				if (!strcmp(argv[2], "help")  ||
-						argc < 4 || (argc >= 4 &&
-							 strcmp(argv[2], "bootflag") != 0)) {
+				if (!strcmp(argv[2], "help")
+				    || argc < 4
+				    || (argc >= 4
+				        && strcmp(argv[2], "bootflag")))
+				{
 					ipmi_chassis_set_bootflag_help();
 				} else {
 					if (argc == 5) {

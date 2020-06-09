@@ -270,9 +270,9 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 
 	if (!evdir)
 		emsg.event_dir = EVENT_DIR_ASSERT;
-	else if (strcmp(evdir, "assert") == 0)
+	else if (!strcmp(evdir, "assert"))
 		emsg.event_dir = EVENT_DIR_ASSERT;
-	else if (strcmp(evdir, "deassert") == 0)
+	else if (!strcmp(evdir, "deassert"))
 		emsg.event_dir = EVENT_DIR_DEASSERT;
 	else {
 		lprintf(LOG_ERR, "Invalid event direction %s.  Must be 'assert' or 'deassert'", evdir);
@@ -318,7 +318,7 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		int hilo = 0;
 		off = 1;
 
-		if (!state || strcmp(state, "list") == 0) {
+		if (!state || !strcmp(state, "list")) {
 			printf("Sensor States:\n");
 			printf("  lnr : Lower Non-Recoverable \n");
 			printf("  lcr : Lower Critical\n");
@@ -596,11 +596,11 @@ ipmi_event_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 
-	if (argc == 0 || strcmp(argv[0], "help") == 0) {
+	if (argc == 0 || !strcmp(argv[0], "help")) {
 		ipmi_event_usage();
 		return 0;
 	}
-	if (strcmp(argv[0], "file") == 0) {
+	if (!strcmp(argv[0], "file")) {
 		if (argc < 2) {
 			ipmi_event_usage();
 			return 0;

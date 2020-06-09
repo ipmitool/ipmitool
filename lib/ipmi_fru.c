@@ -4424,14 +4424,15 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc < 1) {
 		rc = ipmi_fru_print_all(intf);
 	}
-	else if (strcmp(argv[0], "help") == 0) {
+	else if (!strcmp(argv[0], "help")) {
 		ipmi_fru_help();
 		return 0;
 	}
-	else if (strcmp(argv[0], "print") == 0 ||
-		strcmp(argv[0], "list") == 0) {
+	else if (!strcmp(argv[0], "print")
+	         || !strcmp(argv[0], "list"))
+	{
 		if (argc > 1) {
-			if (strcmp(argv[1], "help") == 0) {
+			if (!strcmp(argv[1], "help")) {
 				lprintf(LOG_NOTICE, "fru print [fru id] - print information about FRU(s)");
 				return 0;
 			}
@@ -4445,7 +4446,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strcmp(argv[0], "read")) {
-		if (argc > 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && !strcmp(argv[1], "help")) {
 			ipmi_fru_read_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4469,7 +4470,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_fru_read_to_bin(intf, argv[2], fru_id);
 	}
 	else if (!strcmp(argv[0], "write")) {
-		if (argc > 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && !strcmp(argv[1], "help")) {
 			ipmi_fru_write_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4493,7 +4494,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		ipmi_fru_write_from_bin(intf, argv[2], fru_id);
 	}
 	else if (!strcmp(argv[0], "upgEkey")) {
-		if (argc > 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && !strcmp(argv[1], "help")) {
 			ipmi_fru_upgekey_help();
 			return 0;
 		} else if (argc < 3) {
@@ -4512,7 +4513,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		rc = ipmi_fru_upg_ekeying(intf, argv[2], fru_id);
 	}
 	else if (!strcmp(argv[0], "internaluse")) {
-		if (argc > 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && !strcmp(argv[1], "help")) {
 			ipmi_fru_internaluse_help();
 			return 0;
 		}
@@ -4566,7 +4567,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strcmp(argv[0], "edit")) {
-		if (argc > 1 && strcmp(argv[1], "help") == 0) {
+		if (argc > 1 && !strcmp(argv[1], "help")) {
 			ipmi_fru_edit_help();
 			return 0;
 		} else if (argc < 2) {
@@ -4607,7 +4608,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	else if (!strcmp(argv[0], "get")) {
-		if (argc > 1 && (strcmp(argv[1], "help") == 0)) {
+		if (argc > 1 && (!strcmp(argv[1], "help"))) {
 			ipmi_fru_get_help();
 			return 0;
 		} else if (argc < 2) {

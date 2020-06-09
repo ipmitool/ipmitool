@@ -323,7 +323,7 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 		printf_mc_usage();
 		return (-1);
 	}
-	else if (strcmp(argv[0], "help") == 0) {
+	else if (!strcmp(argv[0], "help")) {
 		printf_mc_usage();
 		return 0;
 	}
@@ -348,13 +348,13 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	for (i = 0; i < argc; i++) {
 		for (bf = mc_enables_bf; bf->name; bf++) {
 			int nl = strlen(bf->name);
-			if (strcmp(argv[i], bf->name) != 0)
+			if (strcmp(argv[i], bf->name))
 				continue;
-			if (strcmp(argv[i]+nl+1, "off") == 0) {
+			if (!strcmp(argv[i]+nl+1, "off")) {
 					printf("Disabling %s\n", bf->desc);
 					en &= ~bf->mask;
 			}
-			else if (strcmp(argv[i]+nl+1, "on") == 0) {
+			else if (!strcmp(argv[i]+nl+1, "on")) {
 					printf("Enabling %s\n", bf->desc);
 					en |= bf->mask;
 			}
@@ -1284,24 +1284,24 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf_mc_usage();
 		rc = (-1);
 	}
-	else if (strcmp(argv[0], "help") == 0) {
+	else if (!strcmp(argv[0], "help")) {
 		printf_mc_usage();
 		rc = 0;
 	}
-	else if (strcmp(argv[0], "reset") == 0) {
+	else if (!strcmp(argv[0], "reset")) {
 		if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			printf_mc_reset_usage();
 			rc = (-1);
 		}
-		else if (strcmp(argv[1], "help") == 0) {
+		else if (!strcmp(argv[1], "help")) {
 			printf_mc_reset_usage();
 			rc = 0;
 		}
-		else if (strcmp(argv[1], "cold") == 0) {
+		else if (!strcmp(argv[1], "cold")) {
 			rc = ipmi_mc_reset(intf, BMC_COLD_RESET);
 		}
-		else if (strcmp(argv[1], "warm") == 0) {
+		else if (!strcmp(argv[1], "warm")) {
 			rc = ipmi_mc_reset(intf, BMC_WARM_RESET);
 		}
 		else {
@@ -1310,10 +1310,10 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = (-1);
 		}
 	}
-	else if (strcmp(argv[0], "info") == 0) {
+	else if (!strcmp(argv[0], "info")) {
 		rc = ipmi_mc_get_deviceid(intf);
 	}
-	else if (strcmp(argv[0], "guid") == 0) {
+	else if (!strcmp(argv[0], "guid")) {
 		ipmi_guid_mode_t guid_mode = GUID_AUTO;
 
 		/* Allow for 'rfc' and 'rfc4122' */
@@ -1336,10 +1336,10 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		rc = ipmi_mc_print_guid(intf, guid_mode);
 	}
-	else if (strcmp(argv[0], "getenables") == 0) {
+	else if (!strcmp(argv[0], "getenables")) {
 		rc = ipmi_mc_get_enables(intf);
 	}
-	else if (strcmp(argv[0], "setenables") == 0) {
+	else if (!strcmp(argv[0], "setenables")) {
 		rc = ipmi_mc_set_enables(intf, argc-1, &(argv[1]));
 	}
 	else if (!strcmp(argv[0], "selftest")) {
@@ -1351,11 +1351,11 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			print_watchdog_usage();
 			rc = (-1);
 		}
-		else if (strcmp(argv[1], "help") == 0) {
+		else if (!strcmp(argv[1], "help")) {
 			print_watchdog_usage();
 			rc = 0;
 		}
-		else if (strcmp(argv[1], "set") == 0) {
+		else if (!strcmp(argv[1], "set")) {
 			if (argc < 3) { /* Requires options */
 				lprintf(LOG_ERR, "Not enough parameters given.");
 				print_watchdog_usage();
@@ -1365,13 +1365,13 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 				rc = ipmi_mc_set_watchdog(intf, argc - 2, &(argv[2]));
 			}
 		}
-		else if (strcmp(argv[1], "get") == 0) {
+		else if (!strcmp(argv[1], "get")) {
 			rc = ipmi_mc_get_watchdog(intf);
 		}
-		else if(strcmp(argv[1], "off") == 0) {
+		else if (!strcmp(argv[1], "off")) {
 			rc = ipmi_mc_shutoff_watchdog(intf);
 		}
-		else if(strcmp(argv[1], "reset") == 0) {
+		else if (!strcmp(argv[1], "reset")) {
 			rc = ipmi_mc_rst_watchdog(intf);
 		}
 		else {
@@ -1380,10 +1380,10 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = (-1);
 		}
 	}
-	else if (strcmp(argv[0], "getsysinfo") == 0) {
+	else if (!strcmp(argv[0], "getsysinfo")) {
 		rc = ipmi_sysinfo_main(intf, argc, argv, 0);
 	}
-	else if (strcmp(argv[0], "setsysinfo") == 0) {
+	else if (!strcmp(argv[0], "setsysinfo")) {
 		rc = ipmi_sysinfo_main(intf, argc, argv, 1);
 	}
 	else {
@@ -1531,7 +1531,7 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 	char paramdata[18];
 	int len, maxset, param, pos, rc, set;
 
-	if (argc == 2 && strcmp(argv[1], "help") == 0) {
+	if (argc == 2 && !strcmp(argv[1], "help")) {
 		printf_sysinfo_usage(1);
 		return 0;
 	}

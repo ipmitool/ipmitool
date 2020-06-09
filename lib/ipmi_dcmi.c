@@ -3690,7 +3690,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	int i;
 	struct ipmi_rs *rsp;
 
-	if ((argc == 0) || (strcmp(argv[0], "help") == 0)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		print_strs(dcmi_cmd_vals,
 		           "Data Center Management Interface commands",
 		           LOG_ERR, 0);
@@ -3804,7 +3804,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	{
 		switch (argc) {
 		case 2:
-			if (strcmp(argv[1], "activate_dhcp") != 0) {
+			if (strcmp(argv[1], "activate_dhcp")) {
 				print_strs( dcmi_conf_param_vals,
 				            "DCMI Configuration Parameters",
 				            LOG_ERR, 0);
@@ -3812,14 +3812,14 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 			}
 			break;
 		default:
-			if (argc != 3 || strcmp(argv[1], "help") == 0) {
+			if (argc != 3 || !strcmp(argv[1], "help")) {
 				print_strs(dcmi_conf_param_vals,
 				           "DCMI Configuration Parameters",
 				           LOG_ERR, 0);
 				return -1;
 			}
 		}
-		if (strcmp(argv[1], "activate_dhcp") == 0) {
+		if (!strcmp(argv[1], "activate_dhcp")) {
 			rsp = ipmi_dcmi_setconfparam(intf, 1, 1);
 		} else {
 			uint16_t tmp_val = 0;
@@ -3873,7 +3873,7 @@ ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
 {
 	struct nm_discover disc;
 
-	if ((argc == 0) || (strcmp(argv[0], "help") == 0)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		print_strs(nm_cmd_vals,
 		           "Node Manager Interface commands",
 		           LOG_ERR, 0);

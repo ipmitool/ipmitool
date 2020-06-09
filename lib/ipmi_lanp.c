@@ -1384,8 +1384,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		return (-1);
 	}
 
-	if (strcmp(argv[0], "help") == 0 ||
-	    strcmp(argv[1], "help") == 0) {
+	if (!strcmp(argv[0], "help")
+	    || !strcmp(argv[1], "help"))
+	{
 		print_lan_set_usage();
 		return 0;
 	}
@@ -1405,23 +1406,23 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	memset(&data, 0, sizeof(data));
 
 	/* set user access */
-	if (strcmp(argv[1], "user") == 0) {
+	if (!strcmp(argv[1], "user")) {
 		rc = ipmi_set_user_access(intf, chan, 1);
 	}
 	/* set channel access mode */
-	else if (strcmp(argv[1], "access") == 0) {
+	else if (!strcmp(argv[1], "access")) {
 		if (argc < 3) {
 			print_lan_set_access_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_access_usage();
 			return 0;
 		}
-		else if (strcmp(argv[2], "on") == 0) {
+		else if (!strcmp(argv[2], "on")) {
 			rc = ipmi_set_channel_access(intf, chan, 1);
 		}
-		else if (strcmp(argv[2], "off") == 0) {
+		else if (!strcmp(argv[2], "off")) {
 			rc = ipmi_set_channel_access(intf, chan, 0);
 		}
 		else {
@@ -1430,15 +1431,15 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* set ARP control */
-	else if (strcmp(argv[1], "arp") == 0) {
+	else if (!strcmp(argv[1], "arp")) {
 		if (argc < 3) {
 			print_lan_set_arp_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_arp_usage();
 		}
-		else if (strcmp(argv[2], "interval") == 0) {
+		else if (!strcmp(argv[2], "interval")) {
 			uint8_t interval = 0;
 			if (str2uchar(argv[3], &interval) != 0) {
 				lprintf(LOG_ERR, "Given ARP interval '%s' is invalid.", argv[3]);
@@ -1446,28 +1447,28 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			}
 			rc = lan_set_arp_interval(intf, chan, interval);
 		}
-		else if (strcmp(argv[2], "generate") == 0) {
+		else if (!strcmp(argv[2], "generate")) {
 			if (argc < 4) {
 				print_lan_set_arp_usage();
 				return (-1);
 			}
-			else if (strcmp(argv[3], "on") == 0)
+			else if (!strcmp(argv[3], "on"))
 				rc = lan_set_arp_generate(intf, chan, 1);
-			else if (strcmp(argv[3], "off") == 0)
+			else if (!strcmp(argv[3], "off"))
 				rc = lan_set_arp_generate(intf, chan, 0);
 			else {
 				print_lan_set_arp_usage();
 				return (-1);
 			}
 		}
-		else if (strcmp(argv[2], "respond") == 0) {
+		else if (!strcmp(argv[2], "respond")) {
 			if (argc < 4) {
 				print_lan_set_arp_usage();
 				return (-1);
 			}
-			else if (strcmp(argv[3], "on") == 0)
+			else if (!strcmp(argv[3], "on"))
 				rc = lan_set_arp_respond(intf, chan, 1);
-			else if (strcmp(argv[3], "off") == 0)
+			else if (!strcmp(argv[3], "off"))
 				rc = lan_set_arp_respond(intf, chan, 0);
 			else {
 				print_lan_set_arp_usage();
@@ -1479,12 +1480,12 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* set authentication types */
-	else if (strcmp(argv[1], "auth") == 0) {
+	else if (!strcmp(argv[1], "auth")) {
 		if (argc < 3) {
 			print_lan_set_auth_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_auth_usage();
 			return 0;
 		} else {
@@ -1492,22 +1493,22 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* ip address source */
-	else if (strcmp(argv[1], "ipsrc") == 0) {
+	else if (!strcmp(argv[1], "ipsrc")) {
 		if (argc < 3) {
 			print_lan_set_ipsrc_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_ipsrc_usage();
 			return 0;
 		}
-		else if (strcmp(argv[2], "none") == 0)
+		else if (!strcmp(argv[2], "none"))
 			data[0] = 0;
-		else if (strcmp(argv[2], "static") == 0)
+		else if (!strcmp(argv[2], "static"))
 			data[0] = 1;
-		else if (strcmp(argv[2], "dhcp") == 0)
+		else if (!strcmp(argv[2], "dhcp"))
 			data[0] = 2;
-		else if (strcmp(argv[2], "bios") == 0)
+		else if (!strcmp(argv[2], "bios"))
 			data[0] = 3;
 		else {
 			print_lan_set_ipsrc_usage();
@@ -1517,16 +1518,16 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* session password
 	 * not strictly a lan setting, but its used for lan connections */
-	else if (strcmp(argv[1], "password") == 0) {
+	else if (!strcmp(argv[1], "password")) {
 		rc = ipmi_lan_set_password(intf, 1, argv[2]);
 	}
 	/* snmp community string */
-	else if (strcmp(argv[1], "snmp") == 0) {
+	else if (!strcmp(argv[1], "snmp")) {
 		if (argc < 3) {
 			print_lan_set_snmp_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_snmp_usage();
 			return 0;
 		} else {
@@ -1537,7 +1538,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* ip address */
-	else if (strcmp(argv[1], "ipaddr") == 0) {
+	else if (!strcmp(argv[1], "ipaddr")) {
 		if(argc != 3)
 		{
 			print_lan_set_usage();
@@ -1552,7 +1553,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* network mask */
-	else if (strcmp(argv[1], "netmask") == 0) {
+	else if (!strcmp(argv[1], "netmask")) {
 		if(argc != 3)
 		{
 			print_lan_set_usage();
@@ -1567,7 +1568,7 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* mac address */
-	else if (strcmp(argv[1], "macaddr") == 0) {
+	else if (!strcmp(argv[1], "macaddr")) {
 		if(argc != 3)
 		{
 			print_lan_set_usage();
@@ -1582,24 +1583,26 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* default gateway settings */
-	else if (strcmp(argv[1], "defgw") == 0) {
+	else if (!strcmp(argv[1], "defgw")) {
 		if (argc < 4) {
 			print_lan_set_defgw_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_defgw_usage();
 			return 0;
 		}
-		else if ((strcmp(argv[2], "ipaddr") == 0) &&
-			 (get_cmdline_ipaddr(argv[3], data) == 0)) {
+		else if (!strcmp(argv[2], "ipaddr")
+		         && !get_cmdline_ipaddr(argv[3], data))
+		{
 			printf("Setting LAN %s to %d.%d.%d.%d\n",
 			       ipmi_lan_params[IPMI_LANP_DEF_GATEWAY_IP].desc,
 			       data[0], data[1], data[2], data[3]);
 			rc = set_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_IP, data, 4);
 		}
-		else if ((strcmp(argv[2], "macaddr") == 0) &&
-			 (str2mac(argv[3], data) == 0)) {
+		else if (!strcmp(argv[2], "macaddr")
+		         && !str2mac(argv[3], data))
+		{
 			printf("Setting LAN %s to %s\n",
 				ipmi_lan_params[IPMI_LANP_DEF_GATEWAY_MAC].desc,
 				mac2str(data));
@@ -1611,24 +1614,25 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* backup gateway settings */
-	else if (strcmp(argv[1], "bakgw") == 0) {
+	else if (!strcmp(argv[1], "bakgw")) {
 		if (argc < 4) {
 			print_lan_set_bakgw_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_bakgw_usage();
 			return 0;
 		}
-		else if ((strcmp(argv[2], "ipaddr") == 0) &&
-			 (get_cmdline_ipaddr(argv[3], data) == 0)) {
+		else if (!strcmp(argv[2], "ipaddr")
+		         && !get_cmdline_ipaddr(argv[3], data))
+		{
 			printf("Setting LAN %s to %d.%d.%d.%d\n",
 			       ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_IP].desc,
 			       data[0], data[1], data[2], data[3]);
 			rc = set_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_IP, data, 4);
 		}
-		else if ((strcmp(argv[2], "macaddr") == 0) &&
-			 (str2mac(argv[3], data) == 0)) {
+		else if (!strcmp(argv[2], "macaddr")
+		         && !str2mac(argv[3], data)) {
 			printf("Setting LAN %s to %s\n",
 				ipmi_lan_params[IPMI_LANP_BAK_GATEWAY_MAC].desc,
 				mac2str(data));
@@ -1639,24 +1643,24 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			return -1;
 		}
 	}
-	else if (strcmp(argv[1], "vlan") == 0) {
+	else if (!strcmp(argv[1], "vlan")) {
 		if (argc < 4) {
 			print_lan_set_vlan_usage();
 			return (-1);
 		}
-		else if (strcmp(argv[2], "help") == 0) {
+		else if (!strcmp(argv[2], "help")) {
 			print_lan_set_vlan_usage();
 			return 0;
 		}
-		else if (strcmp(argv[2], "id") == 0) {
-			if (strcmp(argv[3], "off") == 0) {
+		else if (!strcmp(argv[2], "id")) {
+			if (!strcmp(argv[3], "off")) {
 				ipmi_lan_set_vlan_id(intf, chan, NULL);
 			}
 			else {
 				ipmi_lan_set_vlan_id(intf, chan, argv[3]);
 			}
 		}
-		else if (strcmp(argv[2], "priority") == 0) {
+		else if (!strcmp(argv[2], "priority")) {
 			ipmi_lan_set_vlan_priority(intf, chan, argv[3]);
 		}
 		else {
@@ -1665,18 +1669,18 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* set PEF alerting on or off */
-	else if (strcmp(argv[1], "alert") == 0) {
+	else if (!strcmp(argv[1], "alert")) {
 		if (argc < 3) {
 			lprintf(LOG_NOTICE, "LAN set alert must be 'on' or 'off'");
 			return (-1);
 		}
-		else if (strcmp(argv[2], "on") == 0 ||
-			 strcmp(argv[2], "enable") == 0) {
+		else if (!strcmp(argv[2], "on") ||
+			 !strcmp(argv[2], "enable")) {
 			printf("Enabling PEF alerts for LAN channel %d\n", chan);
 			rc = ipmi_set_alert_enable(intf, chan, 1);
 		}
-		else if (strcmp(argv[2], "off") == 0 ||
-			 strcmp(argv[2], "disable") == 0) {
+		else if (!strcmp(argv[2], "off") ||
+			 !strcmp(argv[2], "disable")) {
 			printf("Disabling PEF alerts for LAN channel %d\n", chan);
 			rc = ipmi_set_alert_enable(intf, chan, 0);
 		}
@@ -1686,14 +1690,14 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 	}
 	/* RMCP+ cipher suite privilege levels */
-	else if (strcmp(argv[1], "cipher_privs") == 0)
+	else if (!strcmp(argv[1], "cipher_privs"))
 	{
 		if (argc != 3) {
 			print_lan_set_cipher_privs_usage();
 			return (-1);
 		}
-		else if ((strcmp(argv[2], "help") == 0) ||
-		    get_cmdline_cipher_suite_priv_data(argv[2], data))
+		else if (!strcmp(argv[2], "help")
+		         || get_cmdline_cipher_suite_priv_data(argv[2], data))
 		{
 			print_lan_set_cipher_privs_usage();
 			return 0;
@@ -1703,9 +1707,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 			rc = set_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS, data, 9);
 		}
 	}
-	else if (strcmp(argv[1], "bad_pass_thresh") == 0)
+	else if (!strcmp(argv[1], "bad_pass_thresh"))
 	{
-		if (argc == 3 && strcmp(argv[2], "help") == 0) {
+		if (argc == 3 && !strcmp(argv[2], "help")) {
 			print_lan_set_bad_pass_thresh_usage();
 			return 0;
 		}
@@ -1848,8 +1852,9 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 		return (-1);
 	}
 
-	if (strcmp(argv[0], "help") == 0 ||
-	    strcmp(argv[1], "help") == 0) {
+	if (!strcmp(argv[0], "help")
+	    || !strcmp(argv[1], "help"))
+	{
 		print_lan_alert_set_usage();
 		return 0;
 	}
@@ -2476,13 +2481,13 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 	if (argc == 0) {
 		print_lan_usage();
 		return (-1);
-	} else if (strcmp(argv[0], "help") == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		print_lan_usage();
 		return 0;
 	}
 
-	if (strcmp(argv[0], "printconf") == 0 ||
-			strcmp(argv[0], "print") == 0) 
+	if (!strcmp(argv[0], "printconf")
+	    || !strcmp(argv[0], "print")) 
 	{
 		if (argc > 2) {
 			print_lan_usage();
@@ -2500,11 +2505,11 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 		}
 		rc = ipmi_lan_print(intf, chan);
-	} else if (strcmp(argv[0], "set") == 0) {
+	} else if (!strcmp(argv[0], "set")) {
 		rc = ipmi_lan_set(intf, argc-1, &(argv[1]));
-	} else if (strcmp(argv[0], "alert") == 0) {
+	} else if (!strcmp(argv[0], "alert")) {
 		rc = ipmi_lan_alert(intf, argc-1, &(argv[1]));
-	} else if (strcmp(argv[0], "stats") == 0) {
+	} else if (!strcmp(argv[0], "stats")) {
 		if (argc < 2) {
 			print_lan_usage();
 			return (-1);
@@ -2520,9 +2525,9 @@ ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_ERR, "Invalid channel: %d", chan);
 			return (-1);
 		}
-		if (strcmp(argv[1], "get") == 0) {
+		if (!strcmp(argv[1], "get")) {
 			rc = ipmi_lan_stats_get(intf, chan);
-		} else if (strcmp(argv[1], "clear") == 0) {
+		} else if (!strcmp(argv[1], "clear")) {
 			rc = ipmi_lan_stats_clear(intf, chan);
 		} else {
 			print_lan_usage();

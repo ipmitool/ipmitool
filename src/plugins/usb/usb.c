@@ -133,7 +133,7 @@ scsiProbeNew(int *num_ami_devices, int *sg_nos)
 		}
 
 		if (sscanf(linebuf, "%s", vendor) == 1) {
-			if (strcmp(vendor, "AMI") == 0) {
+			if (!strcmp(vendor, "AMI")) {
 				numdevfound++;
 				sg_nos[numdevfound - 1] = lineno;
 				if (numdevfound == inplen) {
@@ -249,7 +249,7 @@ IsG2Drive(int cd_desc)
 		return 1;
 	}
 
-	if (strcmp(szSignature, "$$$AMI$$$") != 0) {
+	if (strcmp(szSignature, "$$$AMI$$$")) {
 		lprintf(LOG_ERR,
 				"IsG2Drive:Signature mismatch when ID command sent");
 		return 1;

@@ -488,7 +488,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof(rqdata);
 
 	rqdata[0] = channel;
-	rqdata[1] = ((strcmp(payload_type, "ipmi") == 0)? 0: 1);
+	rqdata[1] = strcmp(payload_type, "ipmi") ? 1 : 0;
 
 	do {
 		/* Always ask for cipher suite format */
@@ -823,7 +823,7 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 		              , IPMI_SESSION_PRIV_NOACCESS },
 	};
 
-	if (argc > 0 && strcmp(argv[0], "help") == 0) {
+	if (argc > 0 && !strcmp(argv[0], "help")) {
 		printf_channel_usage();
 		return 0;
 	} else if (argc < 3) {
@@ -859,9 +859,8 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 						: true;
 					*options[j].val = boolval;
 					if (!strcmp(optval, "off")
-						|| !strcmp(optval, "disable")
-						|| !strcmp(optval, "no")
-					   )
+					    || !strcmp(optval, "disable")
+					    || !strcmp(optval, "no"))
 					{
 						boolval = !boolval;
 					}
@@ -912,10 +911,10 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_channel_usage();
 		return (-1);
-	} else if (strcmp(argv[0], "help") == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		printf_channel_usage();
 		return 0;
-	} else if (strcmp(argv[0], "authcap") == 0) {
+	} else if (!strcmp(argv[0], "authcap")) {
 		if (argc != 3) {
 			printf_channel_usage();
 			return (-1);
@@ -925,7 +924,7 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		retval = ipmi_get_channel_auth_cap(intf, channel, priv);
-	} else if (strcmp(argv[0], "getaccess") == 0) {
+	} else if (!strcmp(argv[0], "getaccess")) {
 		uint8_t user_id = 0;
 		if ((argc < 2) || (argc > 3)) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
@@ -941,9 +940,9 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		retval = ipmi_get_user_access(intf, channel, user_id);
-	} else if (strcmp(argv[0], "setaccess") == 0) {
+	} else if (!strcmp(argv[0], "setaccess")) {
 		return ipmi_set_user_access(intf, (argc - 1), &(argv[1]));
-	} else if (strcmp(argv[0], "info") == 0) {
+	} else if (!strcmp(argv[0], "info")) {
 		channel = 0xE;
 		if (argc > 2) {
 			printf_channel_usage();
@@ -955,7 +954,7 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		retval = ipmi_get_channel_info(intf, channel);
-	} else if (strcmp(argv[0], "getciphers") == 0) {
+	} else if (!strcmp(argv[0], "getciphers")) {
 		/* channel getciphers <ipmi|sol> [channel] */
 		channel = 0xE;
 		if ((argc < 2) || (argc > 3) ||

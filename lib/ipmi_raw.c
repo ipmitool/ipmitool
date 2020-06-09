@@ -145,7 +145,7 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	memset(spd_data, 0, RAW_SPD_SIZE);
 
-	if (argc < 2 || strcmp(argv[0], "help") == 0) {
+	if (argc < 2 || !strcmp(argv[0], "help")) {
 		lprintf(LOG_NOTICE, "usage: spd <i2cbus> <i2caddr> [channel] [maxread]");
 		return 0;
 	}
@@ -203,9 +203,9 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i = 0;
 
 	/* handle bus= argument */
-	if (argc > 2 && strcmp(argv[0], "bus=") == 0) {
+	if (argc > 2 && !strcmp(argv[0], "bus=")) {
 		i = 1;
-		if (strcmp(argv[0], "bus=public") == 0)
+		if (!strcmp(argv[0], "bus=public"))
 			bus = 0;
 		else if (sscanf(argv[0], "bus=%u", &rbus) == 1)
 			bus = ((rbus & 7) << 1) | 1;
@@ -214,14 +214,14 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* handle channel= argument
 		 * the bus= argument must be supplied first on command line */
-		if (argc > 3 && strcmp(argv[1], "chan=") == 0) {
+		if (argc > 3 && !strcmp(argv[1], "chan=")) {
 			i = 2;
 			if (sscanf(argv[1], "chan=%u", &rbus) == 1)
 				bus |= rbus << 4;
 		}
 	}
 
-	if ((argc-i) < 2 || strcmp(argv[0], "help") == 0) {
+	if ((argc - i) < 2 || !strcmp(argv[0], "help")) {
 		rawi2c_usage();
 		return 0;
 	}
@@ -322,7 +322,7 @@ ipmi_raw_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i;
 	uint8_t data[256];
 
-	if (argc == 1 && strcmp(argv[0], "help") == 0) {
+	if (argc == 1 && !strcmp(argv[0], "help")) {
 		ipmi_raw_help();
 		return 0;
 	}
