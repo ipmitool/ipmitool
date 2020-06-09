@@ -2458,10 +2458,10 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 		HpmfwupgPrintUsage();
 		return HPMFWUPG_ERROR;
 	}
-	if (strcmp(argv[0], "help") == 0) {
+	if (!strcmp(argv[0], "help")) {
 		HpmfwupgPrintUsage();
 		return HPMFWUPG_SUCCESS;
-	} else if ((strcmp(argv[0], "check") == 0)) {
+	} else if (!strcmp(argv[0], "check")) {
 		/* hpm check */
 		if (!argv[1]) {
 			rc = HpmfwupgTargetCheck(intf,VIEW_MODE);
@@ -2473,18 +2473,18 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 						0, VIEW_MODE);
 			}
 		}
-	} else if (strcmp(argv[0], "upgrade") == 0) {
+	} else if (!strcmp(argv[0], "upgrade")) {
 		int i =0;
 		for (i=1; i< argc ; i++) {
-			if (strcmp(argv[i],"activate") == 0) {
+			if (!strcmp(argv[i],"activate")) {
 				activateFlag = 1;
 			}
 			/* hpm upgrade <filename> force */
-			if (strcmp(argv[i],"force") == 0) {
+			if (!strcmp(argv[i],"force")) {
 				option |= FORCE_MODE;
 			}
 			/* hpm upgrade <filename> component <comp Id> */
-			if (strcmp(argv[i],"component") == 0) {
+			if (!strcmp(argv[i],"component")) {
 				if (i+1 < argc) {
 					/* Error Checking */
 					if (str2int(argv[i+1], &componentId) != 0
@@ -2513,7 +2513,7 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 					return  HPMFWUPG_ERROR;
 				}
 			}
-			if (strcmp(argv[i],"debug") == 0) {
+			if (!strcmp(argv[i],"debug")) {
 				option |= DEBUG_MODE;
 			}
 		}
@@ -2523,11 +2523,11 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = HpmfwupgUpgrade(intf, argv[1], activateFlag,
 					componentMask, option);
 		}
-	} else if (strcmp(argv[0], "compare") == 0) {
+	} else if (!strcmp(argv[0], "compare")) {
 		int i = 0;
 		for (i=1; i< argc; i++) {
 			/* hpm compare <file> [component x...] */
-			if (strcmp(argv[i],"component") == 0) {
+			if (!strcmp(argv[i],"component")) {
 				if (i+1 < argc) {
 					/* Error Checking */
 					if (str2int(argv[i+1], &componentId) != 0
@@ -2556,7 +2556,7 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 							"No component Id provided\n");
 					return  HPMFWUPG_ERROR;
 				}
-			} else if (strcmp(argv[i],"debug") == 0) {
+			} else if (!strcmp(argv[i],"debug")) {
 				option|= DEBUG_MODE;
 			}
 		}
@@ -2566,19 +2566,19 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 			rc = HpmfwupgUpgrade(intf, argv[1], 0,
 					componentMask, option);
 		}
-	} else if ((argc >= 1) && (strcmp(argv[0], "activate") == 0)) {
+	} else if (argc >= 1 && !strcmp(argv[0], "activate")) {
 		struct HpmfwupgActivateFirmwareCtx cmdCtx;
-		if ((argc == 2) && (strcmp(argv[1], "norollback") == 0)) {
+		if (argc == 2 && !strcmp(argv[1], "norollback")) {
 			cmdCtx.req.rollback_override = 1;
 		} else {
 			cmdCtx.req.rollback_override = 0;
 		}
 		rc = HpmfwupgActivateFirmware(intf, &cmdCtx, NULL);
-	} else if ((argc == 1) && (strcmp(argv[0], "targetcap") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "targetcap")) {
 		struct HpmfwupgGetTargetUpgCapabilitiesCtx cmdCtx;
 		verbose++;
 		rc = HpmfwupgGetTargetUpgCapabilities(intf, &cmdCtx);
-	} else if ((argc == 3) && (strcmp(argv[0], "compprop") == 0)) {
+	} else if (argc == 3 && !strcmp(argv[0], "compprop")) {
 		struct HpmfwupgGetComponentPropertiesCtx cmdCtx;
 		if (str2uchar(argv[1], &(cmdCtx.req.componentId)) != 0
 				|| cmdCtx.req.componentId > 7) {
@@ -2600,23 +2600,23 @@ ipmi_hpmfwupg_main(struct ipmi_intf *intf, int argc, char **argv)
 		}
 		verbose++;
 		rc = HpmfwupgGetComponentProperties(intf, &cmdCtx);
-	} else if ((argc == 1) && (strcmp(argv[0], "abort") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "abort")) {
 		struct HpmfwupgAbortUpgradeCtx cmdCtx;
 		verbose++;
 		rc = HpmfwupgAbortUpgrade(intf, &cmdCtx);
-	} else if ((argc == 1) && (strcmp(argv[0], "upgstatus") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "upgstatus")) {
 		struct HpmfwupgGetUpgradeStatusCtx cmdCtx;
 		verbose++;
 		rc = HpmfwupgGetUpgradeStatus(intf, &cmdCtx, NULL, 0);
-	} else if ((argc == 1) && (strcmp(argv[0], "rollback") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "rollback")) {
 		struct HpmfwupgManualFirmwareRollbackCtx cmdCtx;
 		verbose++;
 		rc = HpmfwupgManualFirmwareRollback(intf, &cmdCtx);
-	} else if ((argc == 1) && (strcmp(argv[0], "rollbackstatus") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "rollbackstatus")) {
 		struct HpmfwupgQueryRollbackStatusCtx  cmdCtx;
 		verbose++;
 		rc = HpmfwupgQueryRollbackStatus(intf, &cmdCtx, NULL);
-	} else if ((argc == 1) && (strcmp(argv[0], "selftestresult") == 0)) {
+	} else if (argc == 1 && !strcmp(argv[0], "selftestresult")) {
 		struct HpmfwupgQuerySelftestResultCtx cmdCtx;
 		verbose++;
 		rc = HpmfwupgQuerySelftestResult(intf, &cmdCtx, NULL);

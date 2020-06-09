@@ -476,11 +476,12 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 		return (-1);
 	}
 
-	if (strcmp(argv[argument_offset], "help") == 0) {
+	if (!strcmp(argv[argument_offset], "help")) {
 		ipmi_ekanalyzer_usage();
 		return 0;
-	} else if ((strcmp(argv[argument_offset], "frushow") == 0)
-			&& (argc > (MIN_ARGUMENT-1))) {
+	} else if (!strcmp(argv[argument_offset], "frushow")
+	           && (argc > (MIN_ARGUMENT-1)))
+	{
 		for (type_offset = 0; type_offset < (argc-1); type_offset++ ) {
 			argument_offset++;
 			file_type[type_offset] = ipmi_ek_get_file_type(argv[argument_offset]);
@@ -525,8 +526,9 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 			free(filename[type_offset]);
 			filename[type_offset] = NULL;
 		}
-	} else if ((strcmp(argv[argument_offset], "print") == 0)
-			|| (strcmp(argv[argument_offset], "summary") == 0)) {
+	} else if (!strcmp(argv[argument_offset], "print")
+	           || !strcmp(argv[argument_offset], "summary"))
+	{
 		/* Display help text for corresponding command
 		 * if not enough parameters were given.
 		 */
@@ -538,7 +540,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 		int filename_size=0;
 		if (argc < MIN_ARGUMENT) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
-			if (strcmp(argv[argument_offset], "print") == 0) {
+			if (!strcmp(argv[argument_offset], "print")) {
 				lprintf(LOG_ERR,
 						"   ekanalyzer print [carrier/power/all]"
 						" <xx=frufile> <xx=frufile> [xx=frufile]");
@@ -550,18 +552,20 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 			return ERROR_STATUS;
 		}
 		argument_offset++;
-		if ((strcmp(argv[argument_offset], "carrier") == 0)
-				|| (strcmp(argv[argument_offset], "power") == 0)
-				|| (strcmp(argv[argument_offset], "all") == 0)) {
+		if (!strcmp(argv[argument_offset], "carrier")
+		    || !strcmp(argv[argument_offset], "power")
+		    || !strcmp(argv[argument_offset], "all"))
+		{
 			option = argv[argument_offset];
 			index ++;
 			argc--;
-		} else if ((strcmp(argv[argument_offset], "match") == 0)
-				|| ( strcmp(argv[argument_offset], "unmatch") == 0)) {
+		} else if (!strcmp(argv[argument_offset], "match")
+		           || !strcmp(argv[argument_offset], "unmatch"))
+		{
 			option = argv[argument_offset];
 			index ++;
 			argc--;
-		} else if ( strcmp(&argv[argument_offset][2], "=") == 0) {
+		} else if ('=' == argv[argument_offset][2]) {
 			/* since the command line must receive xx=filename,
 			 * so the position of "=" sign is 2
 			 */
@@ -574,7 +578,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 			option = "invalid";
 			printf("Invalid option '%s'\n", argv[argument_offset]);
 			argument_offset--;
-			if (strcmp(argv[0], "print") == 0) {
+			if (!strcmp(argv[0], "print")) {
 				lprintf (LOG_ERR,
 						"   ekanalyzer print [carrier/power/all]"
 						" <xx=frufile> <xx=frufile> [xx=frufile]");
@@ -585,7 +589,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 			}
 			rc = ERROR_STATUS;
 		}
-		if (strcmp(option, "invalid") != 0) {
+		if (strcmp(option, "invalid")) {
 			int i=0;
 			for (i = 0; i < (argc-1); i++) {
 				file_type[i] = ipmi_ek_get_file_type (argv[index]);
@@ -624,7 +628,7 @@ ipmi_ekanalyzer_main(struct ipmi_intf *__UNUSED__(intf), int argc, char **argv)
 						printf("file name: %s\n", filename[i]);
 					}
 				}
-				if (strcmp(argv[0], "print") == 0) {
+				if (!strcmp(argv[0], "print")) {
 					rc = ipmi_ekanalyzer_print((argc-1),
 							option, filename, file_type);
 				} else {
@@ -675,7 +679,7 @@ ipmi_ekanalyzer_print(int argc, char *opt, char **filename, int *file_type)
 {
 	int return_value = OK_STATUS;
 	/* Display carrier topology */
-	if ((strcmp(opt, "carrier") == 0) || (strcmp(opt, "default") == 0)) {
+	if (!strcmp(opt, "carrier") || !strcmp(opt, "default")) {
 		tboolean found_flag = FALSE;
 		int index = 0;
 		int index_name[argc];
@@ -751,10 +755,10 @@ ipmi_ekanalyzer_print(int argc, char *opt, char **filename, int *file_type)
 				}
 			}
 		}
-	} else if (strcmp(opt, "power") == 0) {
+	} else if (!strcmp(opt, "power")) {
 		printf("Print power information\n");
 		return_value = ipmi_ek_display_power(argc, opt, filename, file_type);
-	} else if (strcmp(opt, "all") == 0) {
+	} else if (!strcmp(opt, "all")) {
 		printf("Print all information\n");
 		return_value = ipmi_ek_display_power(argc, opt, filename, file_type);
 	} else {
@@ -922,9 +926,9 @@ ipmi_ek_display_power( int argc, char * opt, char ** filename, int * file_type )
                   list_record[num_file];
                   list_record[num_file] = list_record[num_file]->next)
          {
-            if ( ( strcmp(opt, "all") == 0 )
-                  && ( file_type[num_file] == ON_CARRIER_FRU_FILE )
-               ){
+            if (!strcmp(opt, "all")
+                && file_type[num_file] == ON_CARRIER_FRU_FILE)
+            {
                   if ( list_record[num_file]->data[PICMG_ID_OFFSET]
                            ==
                         FRU_AMC_CARRIER_P2P
@@ -1083,7 +1087,7 @@ ipmi_ekanalyzer_ekeying_match( int argc, char * opt,
 {
    tboolean return_value = FALSE;
 
-   if ( (strcmp(opt, "carrier") == 0 ) || (strcmp(opt, "power") == 0) ){
+   if (!strcmp(opt, "carrier") || !strcmp(opt, "power")) {
       lprintf(LOG_ERR, "   ekanalyzer summary [match/ unmatch/ all]"\
                    " <xx=frufile> <xx=frufile> [xx=frufile]");
       return_value = ERROR_STATUS;
@@ -1450,7 +1454,7 @@ ipmi_ek_check_physical_connectivity(
                            (filetype1 ==(port_desc[j].remote_resource_id &0x0f))
                           )
                         ){
-                        if ( ! (strcmp(option, "unmatch") == 0) ){
+                        if (strcmp(option, "unmatch")){
                            printf("%s port %d ==> %s port %d\n",
                               val2str(filetype2, ipmi_ekanalyzer_module_type),
                               record1.ch_desc[index1].lane0port,
@@ -1473,7 +1477,7 @@ ipmi_ek_check_physical_connectivity(
                            &&
                          (filetype2 == (port_desc[j].remote_resource_id & 0x0f))
                         ){
-                        if ( ! (strcmp(option, "unmatch") == 0) ){
+                        if (strcmp(option, "unmatch")){
                            printf("%s port %d ==> %s port %d\n",
                               val2str(filetype2, ipmi_ekanalyzer_module_type),
                               record1.ch_desc[index1].lane0port,
@@ -1487,7 +1491,7 @@ ipmi_ek_check_physical_connectivity(
                               &&
                            (record2.rsc_id == (port_desc[j].remote_resource_id))
                         ){
-                        if ( ! (strcmp(option, "unmatch") == 0) ){
+                        if (strcmp(option, "unmatch")){
                            printf("%s port %d ==> %s %x port %d\n",
                               val2str(filetype2, ipmi_ekanalyzer_module_type),
                               record1.ch_desc[index1].lane0port,
@@ -1603,10 +1607,10 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
                            physic_record, file_type1, file_type2, opt );
                   if ( result == OK_STATUS ){
                      /*Display the result if option = match or all*/
-                     if ( (strcmp( opt, "match" ) == 0)
-                           || (strcmp( opt, "all" ) == 0)
-                           || (strcmp( opt, "default" ) == 0)
-                        ){
+                     if (!strcmp(opt, "match")
+                         || !strcmp(opt, "all")
+                         || !strcmp(opt, "default"))
+                     {
                         tboolean isOEMtype = FALSE;
                         printf(" Matching Result\n");
                         isOEMtype = ipmi_ek_display_link_descriptor( file_type1,
@@ -1663,10 +1667,10 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
                            record1, index_ch_desc1, record2, index_ch_desc2,
                            physic_record, file_type1, file_type2, opt );
                   if ( result == OK_STATUS ){
-                     if ( (strcmp( opt, "match" ) == 0)
-                           || (strcmp( opt, "all" ) == 0)
-                           || (strcmp( opt, "default" ) == 0)
-                        ){
+                     if (!strcmp( opt, "match" )
+                         || !strcmp(opt, "all")
+                         || !strcmp(opt, "default"))
+                     {
                         tboolean isOEMtype = FALSE;
                         printf("  Matching Result\n");
                         isOEMtype = ipmi_ek_display_link_descriptor( file_type1,
@@ -1694,7 +1698,7 @@ ipmi_ek_compare_link( struct ipmi_ek_multi_header * physic_record,
       }
    }
 
-   if ( (strcmp(opt, "unmatch") == 0) || (strcmp(opt, "all") == 0) ){
+   if (!strcmp(opt, "unmatch") || !strcmp(opt, "all")) {
       int isOEMtype = FALSE;
       printf("  Unmatching result\n");
       for (index1 = 0; index1 < record1.link_desc_count; index1++){
@@ -2729,7 +2733,7 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		printf("%s: None\n", board_type);
 		goto out;
 	}
-	if (strcmp(board_type, "Custom") != 0) {
+	if (strcmp(board_type, "Custom")) {
 		unsigned char *data, *str;
 		unsigned int i = 0;
 		data = malloc(size_board + 1); /* Make room for type/length field */

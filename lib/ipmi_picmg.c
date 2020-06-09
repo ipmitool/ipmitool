@@ -1883,13 +1883,13 @@ ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 	int showProperties = 0;
 
-	if (argc == 0 || (!strcmp(argv[0], "help"))) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		ipmi_picmg_help();
 		return 0;
 	}
 
 	/* Get PICMG properties is called to obtain version information */
-	if (argc !=0 && !strcmp(argv[0], "properties")) {
+	if (!strcmp(argv[0], "properties")) {
 		showProperties =1;
 	}
 	rc = ipmi_picmg_properties(intf,showProperties);

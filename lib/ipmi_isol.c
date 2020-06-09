@@ -192,12 +192,12 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 	/*
 	 * enabled
 	 */
-	if (strcmp(param, "enabled") == 0)
+	if (!strcmp(param, "enabled"))
 	{
 		data[1] = ISOL_ENABLE_PARAM;
-		if (strcmp(value, "true") == 0)
+		if (!strcmp(value, "true"))
 			data[2] = 0x01;
-		else if (strcmp(value, "false") == 0)
+		else if (!strcmp(value, "false"))
 			data[2] = 0x00;
 		else {
 			lprintf(LOG_ERR, "Invalid value %s for parameter %s",
@@ -210,7 +210,7 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 	/*
 	 * privilege-level
 	 */
-	else if (strcmp(param, "privilege-level") == 0)
+	else if (!strcmp(param, "privilege-level"))
 	{
 		data[1] = ISOL_AUTHENTICATION_PARAM;
 		if (! strcmp(value, "user"))
@@ -235,22 +235,22 @@ static int ipmi_isol_set_param(struct ipmi_intf * intf,
 	/*
 	 * bit-rate
 	 */
-	else if (strcmp(param, "bit-rate") == 0)
+	else if (!strcmp(param, "bit-rate"))
 	{
 		data[1] = ISOL_BAUD_RATE_PARAM;
-		if (strcmp(value, "9.6") == 0) {
+		if (!strcmp(value, "9.6")) {
 			data[2] = 0x06;
 		}
-		else if (strcmp(value, "19.2") == 0) {
+		else if (!strcmp(value, "19.2")) {
 			data[2] = 0x07;
 		}
-		else if (strcmp(value, "38.4") == 0) {
+		else if (!strcmp(value, "38.4")) {
 			data[2] = 0x08;
 		}
-		else if (strcmp(value, "57.6") == 0) {
+		else if (!strcmp(value, "57.6")) {
 			data[2] = 0x09;
 		}
-		else if (strcmp(value, "115.2") == 0) {
+		else if (!strcmp(value, "115.2")) {
 			data[2] = 0x0A;
 		}
 		else {

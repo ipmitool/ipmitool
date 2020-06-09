@@ -75,7 +75,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		ipmi_kontron_help();
 		return (-1);
 	}
-	if (strcmp(argv[0], "help") == 0) {
+	if (!strcmp(argv[0], "help")) {
 		ipmi_kontron_help();
 		rc = 0;
 	} else if (!strcmp(argv[0], "setsn")) {
@@ -671,7 +671,7 @@ ipmi_kontron_nextboot_set(struct ipmi_intf *intf, char **argv)
 	msg_data[5] = 0xFF;
 	msg_data[6] = 0xFF; /* any */
 	for (i = 0; bootdev[i] != 0; i++) {
-		if (strcmp(argv[0], bootdev[i]) == 0) {
+		if (!strcmp(argv[0], bootdev[i])) {
 			msg_data[5] = i;
 			break;
 		}

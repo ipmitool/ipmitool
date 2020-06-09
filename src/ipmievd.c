@@ -192,7 +192,7 @@ ipmi_event_intf_load(char * name)
 	     intf++)
 	{
 		i = *intf;
-		if (strcmp(name, i->name) == 0) {
+		if (!strcmp(name, i->name)) {
 			return i;
 		}
 	}
@@ -845,7 +845,7 @@ ipmievd_open_main(struct ipmi_intf * intf, int argc, char ** argv)
 	struct ipmi_event_intf * eintf;
 
 	/* only one interface works for this */
-	if (strcmp(intf->name, "open") != 0) {
+	if (strcmp(intf->name, "open")) {
 		lprintf(LOG_ERR, "Invalid Interface for OpenIPMI Event Handler: %s", intf->name);
 		return -1;
 	}

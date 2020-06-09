@@ -302,10 +302,12 @@ ipmi_get_session_info(struct ipmi_intf         * intf,
 
 		if (retval < 0)
 		{
-			if ((session_request_type == IPMI_SESSION_REQUEST_CURRENT) &&
-			    (strcmp(intf->name, "lan") != 0))
+			if (session_request_type == IPMI_SESSION_REQUEST_CURRENT
+			    && strcmp(intf->name, "lan"))
+			{
 				lprintf(LOG_ERR, "It is likely that the channel in use "
 					"does not support sessions");
+			}
 		}
 		else
 		{
@@ -369,14 +371,14 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
 
-	if (argc == 0 || strcmp(argv[0], "help") == 0)
+	if (!argc || !strcmp(argv[0], "help"))
 	{
 		printf_session_usage();
 	}
-	else if (strcmp(argv[0], "info") == 0)
+	else if (!strcmp(argv[0], "info"))
 	{
 
-		if ((argc < 2) || strcmp(argv[1], "help") == 0)
+		if (argc < 2 || !strcmp(argv[1], "help"))
 		{
 				printf_session_usage();
 		}
@@ -385,11 +387,11 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 			Ipmi_Session_Request_Type session_request_type = 0;
 			uint32_t                  id_or_handle = 0;
 
-			if (strcmp(argv[1], "active") == 0)
+			if (!strcmp(argv[1], "active"))
 				session_request_type = IPMI_SESSION_REQUEST_CURRENT;
-			else if (strcmp(argv[1], "all") == 0)
+			else if (!strcmp(argv[1], "all"))
 				session_request_type = IPMI_SESSION_REQUEST_ALL;
-			else if (strcmp(argv[1], "id") == 0)
+			else if (!strcmp(argv[1], "id"))
 			{
 				if (argc >= 3)
 				{
@@ -408,7 +410,7 @@ ipmi_session_main(struct ipmi_intf * intf, int argc, char ** argv)
 					retval = -1;
 				}
 			}
-			else if (strcmp(argv[1], "handle") == 0)
+			else if (!strcmp(argv[1], "handle"))
 			{
 				if (argc >= 3)
 				{

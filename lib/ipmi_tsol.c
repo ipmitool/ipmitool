@@ -381,7 +381,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	int read_only = 0, rows = 0, cols = 0;
 	int port = IPMI_TSOL_DEF_PORT;
 
-	if (strlen(intf->name) < 3 || strcmp(intf->name, "lan") != 0) {
+	if (strlen(intf->name) < 3 || strcmp(intf->name, "lan")) {
 		lprintf(LOG_ERR, "Error: Tyan SOL is only available over lan interface");
 		return (-1);
 	}
@@ -397,17 +397,13 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 			rows = ip1;
 		} else if (sscanf(argv[i], "cols=%d", &ip1) == 1) {
 			cols = ip1;
-		} else if (strlen(argv[i]) == 2
-				&& strcmp(argv[i], "ro") == 0) {
+		} else if (!strcmp(argv[i], "ro")) {
 			read_only = 1;
-		} else if (strlen(argv[i]) == 2
-				&& strcmp(argv[i], "rw") == 0) {
+		} else if (!strcmp(argv[i], "rw")) {
 			read_only = 0;
-		} else if (strlen(argv[i]) == 7
-				&& strcmp(argv[i], "altterm") == 0) {
+		} else if (!strcmp(argv[i], "altterm")) {
 			_altterm = 1;
-		} else if (strlen(argv[i]) == 4
-				&& strcmp(argv[i], "help") == 0) {
+		} else if (!strcmp(argv[i], "help")) {
 			print_tsol_usage();
 			return 0;
 		} else {
