@@ -20,18 +20,21 @@ matrix:
           packages:
             - libsystemd-dev
       script:
+        - ./bootstrap
         - ./configure --enable-intf-dummy --enable-intf-dbus
         - make
         - sudo make install
     - os: linux
       dist: trusty
       script:
+        - ./bootstrap
         - ./configure --enable-intf-dummy
         - make
         - sudo make install
     - os: osx
       osx_image: xcode10.2
       script:
+        - ./bootstrap
         - ./configure --enable-intf-dummy
         - make
         - sudo make install
