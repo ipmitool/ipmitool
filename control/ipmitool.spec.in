@@ -1,3 +1,5 @@
+%define debug_package %{nil}
+
 Name:         ipmitool
 Summary:      ipmitool - Utility for IPMI control
 Version:      @VERSION@
@@ -56,6 +58,7 @@ fi
 %attr(755,root,root) %{_bindir}/*
 %attr(755,root,root) %{_sbindir}/*
 %{_datadir}/ipmitool/*
+%{_datadir}/misc/*
 %{_mandir}/man*/*
 %doc %{_datadir}/doc/ipmitool
 
@@ -257,7 +260,7 @@ fi
  - Make ipmievd generate pidfile
  - Add initscripts for ipmievd
 
-* Mon Jan 17 2006 <duncan@iceblink.org>  1.8.6-1
+* Tue Jan 17 2006 <duncan@iceblink.org>  1.8.6-1
  - Fix memory corruption when sending encrypted SOL traffic
  - Add keepalive timer to IPMIv2 SOL sessions
 
@@ -325,7 +328,7 @@ fi
  - new "shell" and "exec" commands
  - lots of other contributed patches
 
-* Sat May 27 2004 <duncan@iceblink.org>  1.5.9-1
+* Thu May 27 2004 <duncan@iceblink.org>  1.5.9-1
  - Add ability to get a particular sensor by name
  - Add ability to set a particular sensor threshold
  - Add support for displaying V2 channel authentication levels
@@ -359,7 +362,7 @@ fi
  - Fix SEL event decoding for generic events
  - Handle empty SEL gracefully when doing "sel list"
  - Fix sdr handling of sensors that do not return a reading
- - Fix for CSV display of sensor readings/units from Fredrik Öhrn
+ - Fix for CSV display of sensor readings/units from Fredrik Ã–hrn
 
 * Tue Nov 25 2003 <duncan@iceblink.org>  1.5.5-1
  - Add -U option for setting LAN username

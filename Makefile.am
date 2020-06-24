@@ -104,8 +104,10 @@ RPMDIR   = $(BUILDDIR)/rpmbuild
 rpm: control/ipmitool.spec dist
 	mkdir -p $(RPMDIR)/{BUILD,RPMS,SRPMS,SOURCES,SPECS,tmp}
 	cp control/ipmitool.spec $(RPMDIR)/SPECS
-	BUILDDIR=$(RPMDIR) CONFIGDIR=$(BUILDDIR)/control \
-	  @RPMBUILD@ -ba --rcfile $(SRCDIR)/control/rpmrc \
+	cp $(distdir).tar.gz $(RPMDIR)/SOURCES
+	CONFIGDIR=$(BUILDDIR)/control \
+	  @RPMBUILD@ -ba --define "_topdir $(RPMDIR)" \
+	  --rcfile $(SRCDIR)/control/rpmrc \
 	  $(RPMDIR)/SPECS/ipmitool.spec
 
 .PHONY: clean-rpm

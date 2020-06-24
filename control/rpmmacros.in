@@ -1,4 +1,3 @@
-%_topdir	%(echo $BUILDDIR)
 %_sourcedir     %{_topdir}/..
 %_specdir       %{_sourcedir}
 %_tmppath	%{_topdir}/tmp
