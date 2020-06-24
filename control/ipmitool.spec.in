@@ -6,7 +6,8 @@ Version:      @VERSION@
 Release:      @RPM_RELEASE@%{?_distro:.%{_distro}}
 License:      BSD
 Group:        Utilities
-Packager:     Jim Mankovich <jmank@hp.com>
+#Packager:    PackagerName <packager@example.com>
+Distribution: GitHub Build
 Source:       %{name}-%{version}.tar.gz
 Buildroot:    /var/tmp/ipmitool-root
 

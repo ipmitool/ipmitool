@@ -101,14 +101,8 @@ SRCDIR   = ${shell cd $(top_srcdir) ; pwd | sed -e 's,^[^:\\/]:[\\/],/,'}
 RPMDIR   = $(BUILDDIR)/rpmbuild
 
 .PHONY: rpm
-rpm: control/ipmitool.spec dist
-	mkdir -p $(RPMDIR)/{BUILD,RPMS,SRPMS,SOURCES,SPECS,tmp}
-	cp control/ipmitool.spec $(RPMDIR)/SPECS
-	cp $(distdir).tar.gz $(RPMDIR)/SOURCES
-	CONFIGDIR=$(BUILDDIR)/control \
-	  @RPMBUILD@ -ba --define "_topdir $(RPMDIR)" \
-	  --rcfile $(SRCDIR)/control/rpmrc \
-	  $(RPMDIR)/SPECS/ipmitool.spec
+rpm: dist
+	@RPMBUILD@ -ta --define "_topdir $(RPMDIR)" $(distdir).tar.gz
 
 .PHONY: clean-rpm
 clean-rpm:

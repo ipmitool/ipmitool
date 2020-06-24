@@ -731,7 +731,6 @@ AC_CONFIG_FILES([Makefile
 		control/Makefile
 		control/pkginfo
 		control/prototype
-		control/rpmmacros
 		control/ipmitool.spec
 		lib/Makefile
 		include/Makefile

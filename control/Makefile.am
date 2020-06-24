@@ -31,7 +31,7 @@
 MAINTAINERCLEANFILES	= Makefile.in
 
 EXTRA_DIST		= pkginfo.in prototype.in \
-			  ipmitool.spec.in rpmmacros.in rpmrc
+			  ipmitool.spec.in
 
-dist-hook: pkginfo prototype rpmmacros
+dist-hook: pkginfo prototype
 
