@@ -52,7 +52,6 @@
 #endif
 
 #define FRU_MULTIREC_CHUNK_SIZE     (255 + sizeof(struct fru_multirec_header))
-#define FRU_FIELD_VALID(a) (a && a[0])
 
 static const char *section_id[4] = {
 	"Internal Use Section",
@@ -186,7 +185,7 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 
 	if (size < 1) {
 		*offset = off;
-		return NULL;
+		return calloc(1, 1);
 	}
 	str = malloc(size+1);
 	if (!str)
@@ -4804,10 +4803,15 @@ f_type, uint8_t f_index, char *f_string)
 		if (fru_area) {
 			free_n(&fru_area);
 		}
+		if (fru_data[fru_field_offset] == 0xc1) {
+			printf("Field not found !\n");
+			rc = -1;
+			goto ipmi_fru_set_field_string_out;
+		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data, &fru_field_offset);
 	}
 
-	if (!FRU_FIELD_VALID(fru_area)) {
+	if (!fru_area) {
 		printf("Field not found !\n");
 		rc = -1;
 		goto ipmi_fru_set_field_string_out;
@@ -4972,10 +4976,15 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	for (i = 0;i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
 		free_n(&fru_area);
+		if (fru_data_old[fru_field_offset] == 0xc1) {
+			printf("Field not found !\n");
+			rc = -1;
+			goto ipmi_fru_set_field_string_rebuild_out;
+		}
 		fru_area = (uint8_t *) get_fru_area_str(fru_data_old, &fru_field_offset);
 	}
 
-	if (!FRU_FIELD_VALID(fru_area)) {
+	if (!fru_area) {
 		printf("Field not found (1)!\n");
 		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
