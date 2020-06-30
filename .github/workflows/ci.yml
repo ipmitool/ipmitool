@@ -80,3 +80,43 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
+
+  win-srv-2019:
+
+    runs-on: windows-2019
+
+    steps:
+    - name: install dependencies
+      run: |-
+        choco install cygwin -y
+        choco install cyg-get -y
+        # Line continuation in PowerShell is backtick. Weird as Windows.
+        cyg-get gcc-g++ `
+                make `
+                automake `
+                autoconf `
+                m4 `
+                libtool `
+                libncurses-devel `
+                libreadline-devel `
+                libssl-devel `
+                unix2dos `
+                wget
+        echo "::add-path::C:/tools/cygwin/bin"
+        echo "::add-path::C:/tools/cygwin/usr/bin"
+    - uses: actions/checkout@v2
+    - name: convert line ends
+      # checkout action on Windows apparently converts line ends
+      # so we have to convert them back because cygwin bash can't
+      # can't handle Windows line ends
+      run: dos2unix bootstrap configure.ac csv-revision
+    - name: bootstrap
+      run: bash -c "./bootstrap"
+    - name: configure
+      run: bash -c "./configure"
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck
