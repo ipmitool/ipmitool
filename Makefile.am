@@ -62,7 +62,7 @@ enterprise-numbers:
 
 install-pen-database: enterprise-numbers
 	mkdir -m 755 -p $(DESTDIR)$(IANADIR)
-	$(INSTALL_DATA) $< -t $(DESTDIR)$(IANADIR)/
+	$(INSTALL_DATA) $< $(DESTDIR)$(IANADIR)/
 
 uninstall-pen-database:
 	-rm -rf $(DESTDIR)$(IANADIR)/enterprise-numbers
