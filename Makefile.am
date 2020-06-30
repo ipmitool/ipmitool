@@ -46,7 +46,8 @@ IANA_PEN = http://www.iana.org/assignments/enterprise-numbers
 dist-hook:
 	cp control/ipmitool.spec $(distdir)
 
-.PHONY: install-pen-database
+.PHONY: install-pen-database uninstall-pen-database
+.INTERMEDIATE: %.o %.la enterprise-numbers
 
 if DOWNLOAD
 
@@ -63,11 +64,18 @@ install-pen-database: enterprise-numbers
 	mkdir -m 755 -p $(DESTDIR)$(IANADIR)
 	$(INSTALL_DATA) $< -t $(DESTDIR)$(IANADIR)/
 
+uninstall-pen-database:
+	-rm -rf $(DESTDIR)$(IANADIR)/enterprise-numbers
+
 else
 
 install-pen-database:
 	@echo "*** NOT installing the IANA PEN database."
 	@echo "*** Don't know how to download it."
+
+uninstall-pen-database:
+	@echo "*** NOT uninstalling the IANA PEN database."
+	@echo "*** It was installed manually (if ever)."
 
 endif
 
@@ -75,7 +83,7 @@ install-data-local: install-pen-database
 	mkdir -p $(DESTDIR)$(DOCDIR)
 	$(INSTALL_DATA) $(DOCLIST) $(DESTDIR)$(DOCDIR)
 
-uninstall-local:
+uninstall-local: uninstall-pen-database
 	-rm -rf $(DESTDIR)$(DOCDIR)
 
 .PHONY: pkg
