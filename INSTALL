@@ -22,6 +22,7 @@ project is tested automatically to build cleanly for the following
    - Ubuntu 18.04 Bionic Beaver
    - Ubuntu 20.04 Focal Fossa
    - MacOS X 10.15 Catalina
+   - Microsoft Windows Server 2019
 
    It is also known to build successfully on Ubuntu 14.04 and Fedora 31,
 but that is not automatically verified.
@@ -47,6 +48,18 @@ recommended to do the following before building:
    $ export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
    $ export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
 
+   To prepare for buildin in Windows it is recommended to use Chocolatey
+and do the following using PowerShell:
+
+   PS C:\ipmitool> choco install cygwin -y
+   PS C:\ipmitool> choco install cyg-get -y
+   PS C:\ipmitool> cyg-get gcc-g++ make automake autoconf `
+   # m4 libtool libncurses-devel libreadline-devel libssl-devel `
+   # unix2dos wget
+   PS C:\ipmitool> $env:path="C:\tools\cygwin\usr\bin;$env:path"
+   PS C:\ipmitool> $env:path="C:\tools\cygwin\bin;$env:path"
+   PS C:\ipmitool> dos2unix bootstrap configure.ac csv-revision
+
 Basic Installation
 ==================
 
@@ -54,6 +67,9 @@ Basic Installation
 install this package:
 
    ./bootstrap && ./configure && make && sudo make install
+
+   For Windows the above command must be run inside a cygwin bash
+shell.
 
    The following more-detailed instructions are generic; see the
 `README' file for instructions specific to this package.  Some
