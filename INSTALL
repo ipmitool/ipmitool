@@ -48,7 +48,7 @@ recommended to do the following before building:
    $ export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
    $ export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
 
-   To prepare for buildin in Windows it is recommended to use Chocolatey
+   To prepare for building in Windows it is recommended to use Chocolatey
 and do the following using PowerShell:
 
    PS C:\ipmitool> choco install cygwin -y
