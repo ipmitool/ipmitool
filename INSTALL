@@ -55,7 +55,7 @@ and do the following using PowerShell:
    PS C:\ipmitool> choco install cyg-get -y
    PS C:\ipmitool> cyg-get gcc-g++ make automake autoconf `
    # m4 libtool libncurses-devel libreadline-devel libssl-devel `
-   # unix2dos wget
+   # dos2unix wget
    PS C:\ipmitool> $env:path="C:\tools\cygwin\usr\bin;$env:path"
    PS C:\ipmitool> $env:path="C:\tools\cygwin\bin;$env:path"
    PS C:\ipmitool> dos2unix bootstrap configure.ac csv-revision

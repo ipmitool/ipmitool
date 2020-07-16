@@ -100,7 +100,7 @@ jobs:
                 libncurses-devel `
                 libreadline-devel `
                 libssl-devel `
-                unix2dos `
+                dos2unix `
                 wget
         echo "::add-path::C:/tools/cygwin/bin"
         echo "::add-path::C:/tools/cygwin/usr/bin"
