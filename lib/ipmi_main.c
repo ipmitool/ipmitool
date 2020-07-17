@@ -358,11 +358,15 @@ ipmi_main(int argc, char ** argv,
 	/* Set program locale according to system settings */
 	setlocale(LC_ALL, "");
 
+
 	/* save program name */
 	progname = strrchr(argv[0], '/');
 	progname = ((!progname) ? argv[0] : progname+1);
 	signal(SIGINT, ipmi_catch_sigint);
 	memset(kgkey, 0, sizeof(kgkey));
+
+	/* setup log */
+	log_init(progname, 0, 0);
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
@@ -443,7 +447,11 @@ ipmi_main(int argc, char ** argv,
 			break;
 #endif /* IPMI_INTF_LANPLUS */
 		case 'v':
-			verbose++;
+			log_level_set(++verbose);
+			if (verbose == 2) {
+				/* add version info to debug output */
+				lprintf(LOG_DEBUG, "%s version %s\n", progname, VERSION);
+			}
 			break;
 		case 'c':
 			csv_output = 1;
@@ -843,9 +851,6 @@ ipmi_main(int argc, char ** argv,
 		lprintf(LOG_ERR, "Error loading interface %s", intfname);
 		goto out_free;
 	}
-
-	/* setup log */
-	log_init(progname, 0, verbose);
 
 	/* load the IANA PEN registry */
 	if (ipmi_oem_info_init()) {
