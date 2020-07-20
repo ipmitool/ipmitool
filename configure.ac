@@ -61,7 +61,7 @@ if test "x$WGET" = "x"; then
 		AC_MSG_WARN([** Neither wget nor curl could be found.])
 		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
 	else
-		DOWNLOAD="$CURL -#"
+		DOWNLOAD="$CURL --progress-bar"
 		AM_CONDITIONAL([DOWNLOAD], [true])
 	fi
 else
