@@ -700,6 +700,7 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 	int i, rc;
 	int daemon = 1;
 	struct sigaction act;
+	mode_t oldumask;
 
 	memset(pidfile, 0, 64);
 	sprintf(pidfile, "%s%d", DEFAULT_PIDFILE, eintf->intf->devnum);
@@ -762,8 +763,9 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 		ipmi_start_daemon(eintf->intf);
 
-		umask(022);
+		oldumask = umask(022);
 		fp = ipmi_open_file_write(pidfile);
+		umask(oldumask);
 		if (!fp) {
 			/* Failed to get fp on PID file -> exit. */
 			log_halt();

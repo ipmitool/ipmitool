@@ -949,7 +949,7 @@ ipmi_picmg_portstate_get(struct ipmi_intf * intf, int32_t interface,
 					}
 					else if (d->type >= 0x06 && d->type <= 0xef)
 					{
-						printf("Reserved\n");
+						printf("Reserved %d\n",d->type);
 					}
 					else if (d->type >= 0xf0 && d->type <= 0xfe)
 					{
@@ -1805,7 +1805,7 @@ ipmi_picmg_clk_get(struct ipmi_intf * intf, uint8_t clk_id, int8_t clk_res,
 						oemval2str( rsp->data[3], rsp->data[4],
 											picmg_clk_accuracy_vals));
 		
-		      printf("  - Freq:   %ld\n", freq);
+		      printf("  - Freq:   %lu\n", freq);
 		   }
 		}
 	}

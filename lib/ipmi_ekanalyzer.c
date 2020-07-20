@@ -4017,7 +4017,7 @@ ipmi_ek_display_clock_config_record(struct ipmi_ek_multi_header *record)
 					(feature & 1) ? "Source" : "Receiver");
 			printf("\tFamily:  0x%02x    - AccLVL: 0x%02x\n",
 					family, accuracy);
-			printf("\tFRQ: %-9ld - min: %-9ld - max: %-9ld\n",
+			printf("\tFRQ: %-9lu - min: %-9lu - max: %-9lu\n",
 					freq, min_freq, max_freq);
 		}
 		printf("\n");

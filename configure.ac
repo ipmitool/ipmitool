@@ -56,22 +56,33 @@ if test "x$exec_prefix" = "xNONE"; then
 	exec_prefix="$prefix"
 fi
 
-if test "x$WGET" = "x"; then
-	if test "x$CURL" = "x"; then
-		AC_MSG_WARN([** Neither wget nor curl could be found.])
-		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
-	else
-		DOWNLOAD="$CURL -#"
-		AM_CONDITIONAL([DOWNLOAD], [true])
-	fi
-else
-	DOWNLOAD="$WGET -c -nd -O -"
-	AM_CONDITIONAL([DOWNLOAD], [true])
-fi
+xiana_pen_url="http://www.iana.org/assignments/enterprise-numbers"
+AC_SUBST(IANA_PEN_URL, xiana_pen_url)
 
-AC_MSG_WARN([** Download is:])
-AC_MSG_WARN($DOWNLOAD)
-AC_SUBST(DOWNLOAD, $DOWNLOAD)
+AC_ARG_ENABLE([iana-download],
+	[AC_HELP_STRING([--enable-iana-download],
+			[Download IANA PEN database [default=no]])],
+	[xenable_iana_download=$enableval],
+	[xenable_iana_download=no])
+if test "x$xenable_iana_download" = "xyes"; then
+	if test "x$WGET" = "x"; then
+		if test "x$CURL" = "x"; then
+			AC_MSG_WARN([** Neither wget nor curl could be found.])
+			AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
+			xenable_iana_download="no"
+		else
+			DOWNLOAD="$CURL -#"
+		fi
+	else
+		DOWNLOAD="$WGET -c -nd -O -"
+	fi
+fi
+if test "x$xenable_iana_download" = "xyes"; then
+	AM_CONDITIONAL([DOWNLOAD], [true])
+	AC_SUBST(DOWNLOAD, $DOWNLOAD)
+else
+	AM_CONDITIONAL([DOWNLOAD], [false])
+fi
 
 dnl
 dnl set default option values
@@ -772,5 +783,8 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([Extra tools])
 AC_MSG_RESULT([  ipmievd   : yes])
 AC_MSG_RESULT([  ipmishell : $xenable_ipmishell])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([  Download IANA PEN database   : $xenable_iana_download])
+AC_MSG_RESULT([  IANA PEN database URL        : $xiana_pen_url])
 AC_MSG_RESULT([])
 

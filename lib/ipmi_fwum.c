@@ -1098,12 +1098,14 @@ ipmi_kfwum_checkfwcompat(tKFWUM_BoardInfo boardInfo,
 	int compatible = 0;
 	if (boardInfo.iana != firmInfo.iana) {
 		lprintf(LOG_ERR,
-				"Board IANA does not match firmware IANA.");
+			"Board IANA [%u] does not match firmware IANA [%u]\n",
+			boardInfo.iana, firmInfo.iana);
 		compatible = (-1);
 	}
 	if (boardInfo.boardId != firmInfo.boardId) {
 		lprintf(LOG_ERR,
-				"Board IANA does not match firmware IANA.");
+		"Board ID [%u] does not match firmware board ID [%u]\n",
+			boardInfo.boardId, firmInfo.boardId);
 		compatible = (-1);
 	}
 	if (compatible != 0) {
@@ -1120,6 +1122,10 @@ printf_kfwum_info(tKFWUM_BoardInfo boardInfo, tKFWUM_InFirmwareInfo firmInfo)
 "Target Board Id            : %u\n", boardInfo.boardId);
 	printf(
 "Target IANA number         : %u\n", boardInfo.iana);
+	printf(
+"FW File Board Id           : %u\n",firmInfo.boardId);
+	printf(
+"FW File IANA number        : %u\n",firmInfo.iana);
 	printf(
 "File Size                  : %lu bytes\n", firmInfo.fileSize);
 	printf(
