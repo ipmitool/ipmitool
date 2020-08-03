@@ -223,6 +223,7 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	struct ipmi_intf * intf = eintf->intf;
 	float trigger_reading = 0.0;
 	float threshold_reading = 0.0;
+	char id[IPMI_SDR_MAX_STR_SIZE];
 
 	if (!evt)
 		return;
@@ -279,10 +280,11 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 					sdr->record.full, evt->sel_type.standard_type.event_data[2]);
 			}
 
+			ipmi_get_sdr_string(sdr->record.full->raw_id, id);
 			lprintf(LOG_NOTICE, "%s%s sensor %s %s %s (Reading %.*f %s Threshold %.*f %s)",
 				eintf->prefix,
 				type,
-				sdr->record.full->id_string,
+				id,
 				desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"),
@@ -301,9 +303,9 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			/*
 			 * Discrete Event
 			 */
+			ipmi_get_sdr_string(sdr->record.full->raw_id, id);
 			lprintf(LOG_NOTICE, "%s%s sensor %s %s %s",
-				eintf->prefix, type,
-				sdr->record.full->id_string, desc ? desc : "",
+				eintf->prefix, type, id, desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"));
 			if (((evt->sel_type.standard_type.event_data[0] >> 6) & 3) == 1) {
@@ -314,18 +316,18 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 			/*
 			 * OEM Event
 			 */
+			ipmi_get_sdr_string(sdr->record.full->raw_id, id);
 			lprintf(LOG_NOTICE, "%s%s sensor %s %s %s",
-				eintf->prefix, type,
-				sdr->record.full->id_string, desc ? desc : "",
+				eintf->prefix, type, id, desc ? desc : "",
 				(evt->sel_type.standard_type.event_dir
 				 ? "Deasserted" : "Asserted"));
 		}
 		break;
 
 	case SDR_RECORD_TYPE_COMPACT_SENSOR:
+		ipmi_get_sdr_string(sdr->record.compact->raw_id, id);
 		lprintf(LOG_NOTICE, "%s%s sensor %s - %s %s",
-			eintf->prefix, type,
-			sdr->record.compact->id_string, desc ? desc : "",
+			eintf->prefix, type, id, desc ? desc : "",
 			(evt->sel_type.standard_type.event_dir
 			 ? "Deasserted" : "Asserted"));
 		break;
