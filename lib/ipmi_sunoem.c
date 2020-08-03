@@ -365,17 +365,18 @@ sunoem_led_get_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 
 	/* for each generic sensor get its led state */
 	for (e = elist; e; e = e->next) {
+		char desc[IPMI_SDR_MAX_STR_SIZE];
+
 		if (e->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
 			continue;
 
 		res = sunoem_led_get(intf, e->record.genloc, ledtype, &rsp);
 
+		ipmi_get_sdr_string(e->record.genloc->raw_id, desc);
 		if (res == SUNOEM_EC_SUCCESS && rsp && rsp->data_len == 1) {
-			led_print((const char *) e->record.genloc->id_string, PRINT_NORMAL,
-					rsp->data[0]);
+			led_print(desc, PRINT_NORMAL, rsp->data[0]);
 		} else {
-			led_print((const char *) e->record.genloc->id_string, PRINT_ERROR,
-					0);
+			led_print(desc, PRINT_ERROR, 0);
 			if (res != SUNOEM_EC_BMC_CCODE_NONZERO|| !rsp
 			|| rsp->ccode != CC_DEST_UNAVAILABLE) {
 				ret_get = -1;
@@ -408,14 +409,15 @@ sunoem_led_set_byentity(struct ipmi_intf * intf, uint8_t entity_id,
 
 	/* for each generic sensor set its led state */
 	for (e = elist; e; e = e->next) {
+		char desc[IPMI_SDR_MAX_STR_SIZE];
 
 		if (e->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
 			continue;
 
 		rsp = sunoem_led_set(intf, e->record.genloc, ledtype, ledmode);
+		ipmi_get_sdr_string(e->record.genloc->raw_id, desc);
 		if (rsp && rsp->data_len == 0) {
-			led_print((const char *) e->record.genloc->id_string, PRINT_NORMAL,
-					ledmode);
+			led_print(desc, PRINT_NORMAL, ledmode);
 		} else if (!rsp) {
 			ret_set = -1;
 		}
@@ -480,6 +482,8 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 
 		for (a = alist; a; a = a->next) {
+			char desc[IPMI_SDR_MAX_STR_SIZE];
+
 			if (a->type != SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR)
 				continue;
 			if (a->record.genloc->entity.logical)
@@ -487,12 +491,11 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 
 			res = sunoem_led_get(intf, a->record.genloc, ledtype, &rsp);
 
+			ipmi_get_sdr_string(a->record.genloc->raw_id, desc);
 			if (res == SUNOEM_EC_SUCCESS && rsp && rsp->data_len == 1) {
-				led_print((const char *) a->record.genloc->id_string,
-						PRINT_NORMAL, rsp->data[0]);
+				led_print(desc, PRINT_NORMAL, rsp->data[0]);
 			} else {
-				led_print((const char *) a->record.genloc->id_string,
-						PRINT_ERROR, 0);
+				led_print(desc, PRINT_ERROR, 0);
 				if (res != SUNOEM_EC_BMC_CCODE_NONZERO|| !rsp ||
 				rsp->ccode != CC_DEST_UNAVAILABLE) {
 					ret_get = -1;
@@ -521,19 +524,20 @@ ipmi_sunoem_led_get(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 
 	if (!sdr->record.genloc->entity.logical) {
+		char desc[IPMI_SDR_MAX_STR_SIZE];
+
 		/*
 		 * handle physical entity
 		 */
 
 		res = sunoem_led_get(intf, sdr->record.genloc, ledtype, &rsp);
 
+		ipmi_get_sdr_string(sdr->record.genloc->raw_id, desc);
 		if (res == SUNOEM_EC_SUCCESS && rsp && rsp->data_len == 1) {
-			led_print((const char *) sdr->record.genloc->id_string,
-					PRINT_NORMAL, rsp->data[0]);
+			led_print(desc, PRINT_NORMAL, rsp->data[0]);
 
 		} else {
-			led_print((const char *) sdr->record.genloc->id_string, PRINT_ERROR,
-					0);
+			led_print(desc, PRINT_ERROR, 0);
 			if (res != SUNOEM_EC_BMC_CCODE_NONZERO|| !rsp
 			|| rsp->ccode != CC_DEST_UNAVAILABLE) {
 				ret_get = -1;
@@ -692,10 +696,12 @@ ipmi_sunoem_led_set(struct ipmi_intf * intf, int argc, char ** argv)
 			if (a->record.genloc->entity.logical)
 				continue;
 			rsp = sunoem_led_set(intf, a->record.genloc, ledtype, ledmode);
-			if (rsp && !rsp->ccode)
-				led_print((const char *) a->record.genloc->id_string,
-						PRINT_NORMAL, ledmode);
-			else
+			if (rsp && !rsp->ccode) {
+				char desc[IPMI_SDR_MAX_STR_SIZE];
+
+				ipmi_get_sdr_string(a->record.genloc->raw_id, desc);
+				led_print(desc, PRINT_NORMAL, ledmode);
+			} else
 				ret_set = -1;
 		}
 		__sdr_list_empty(alist);
