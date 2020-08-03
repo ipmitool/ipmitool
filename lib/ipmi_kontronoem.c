@@ -54,7 +54,6 @@ extern int write_fru_area(struct ipmi_intf * intf, struct fru_info *fru,
 		uint8_t id, uint16_t soffset,
 		uint16_t doffset,  uint16_t length,
 		uint8_t *pFrubuf);
-extern char *get_fru_area_str(uint8_t *data, uint32_t *offset);
 
 static void ipmi_kontron_help(void);
 static int ipmi_kontron_set_serial_number(struct ipmi_intf *intf);
@@ -344,20 +343,23 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	}
 	/* Position at Board Manufacturer */
 	fru_data_offset = (header.offset.board * 8) + 6;
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    board_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Board Product Name */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    board_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp,
+				    board_sec_len - fru_data_offset);
 	if (!fru_area) {
 		lprintf(LOG_ERR, "Failed to read FRU Area string.");
 		free(fru_data);
@@ -418,32 +420,37 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 	}
 	/* Position at Product Manufacturer */
 	fru_data_offset = (header.offset.product * 8) + 3;
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    prod_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Name */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    prod_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Part */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    prod_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	/* Position at Product Version */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset,
+				    prod_sec_len - fru_data_offset);
 	if (fru_area) {
 		free(fru_area);
 		fru_area = NULL;
 	}
 	fru_data_offset_tmp = fru_data_offset;
 	/* Position at Serial Number */
-	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp);
+	fru_area = get_fru_area_str(fru_data, &fru_data_offset_tmp,
+				    prod_sec_len - fru_data_offset);
 	if (!fru_area) {
 		lprintf(LOG_ERR, "Failed to read FRU Area string.");
 		free(sn);
