@@ -121,7 +121,14 @@ const struct vFlashstr vFlash_completion_code_vals[] = {
 	{0x63, "UNKNOWN_ERROR"},
 	{0x00, NULL}
 };
-
+const struct valstr oem_dell_commands[] = {
+	{0x00, "lcd"},
+	{0x01, "mac"},
+	{0x02, "lan"},
+	{0x03, "powermonitor"},
+	{0x04, "vFlash"},
+	OEM_DELL_CMD_END(0xFF)
+};
 static int current_arg =0;
 uint8_t iDRAC_FLAG=0;
 
@@ -136,7 +143,6 @@ uint8_t iDRAC_FLAG_12_13=0;
 
 LCD_MODE lcd_mode;
 static uint8_t LcdSupported=0;
-static uint8_t SetLEDSupported=0;
 
 volatile uint8_t IMC_Type = IMC_IDRAC_10G;
 
@@ -147,8 +153,6 @@ uint8_t PowercapstatusFlag=0;
 
 static void usage(void);
 /* LCD Function prototypes */
-static int ipmi_delloem_lcd_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring,
 		uint8_t max_length, uint8_t field_type);
 static int ipmi_idracvalidator_command(struct ipmi_intf *intf);
@@ -177,7 +181,6 @@ static int ipmi_lcd_configure_wh(struct ipmi_intf *intf, uint32_t mode,
 static int ipmi_lcd_configure(struct ipmi_intf *intf, int command, char *text);
 static void ipmi_lcd_usage(void);
 /* MAC Function prototypes */
-static int ipmi_delloem_mac_main(struct ipmi_intf *intf, int argc, char **argv);
 static void InitEmbeddedNICMacAddressValues();
 static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf *intf,
 		uint8_t NicNum);
@@ -187,7 +190,6 @@ static int ipmi_macinfo_11g(struct ipmi_intf *intf, uint8_t NicNum);
 static int ipmi_macinfo(struct ipmi_intf *intf, uint8_t NicNum);
 static void ipmi_mac_usage(void);
 /* LAN Function prototypes */
-static int ipmi_delloem_lan_main(struct ipmi_intf *intf, int argc, char **argv);
 static int IsLANSupported();
 static int get_nic_selection_mode(int current_arg, char **argv);
 static int ipmi_lan_set_nic_selection(struct ipmi_intf *intf,
@@ -198,8 +200,6 @@ static void ipmi_lan_usage(void);
 static int ipmi_lan_set_nic_selection_12g(struct ipmi_intf *intf,
 		uint8_t *nic_selection);
 /* Power monitor Function prototypes */
-static int ipmi_delloem_powermonitor_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 static int ipmi_get_sensor_reading(struct ipmi_intf *intf,
 		unsigned char sensorNumber, SensorReadingType *pSensorReadingData);
 static int ipmi_get_power_capstatus_command(struct ipmi_intf *intf);
@@ -230,72 +230,16 @@ static int ipmi_print_power_cap(struct ipmi_intf *intf, uint8_t unit);
 static int ipmi_set_power_cap(struct ipmi_intf *intf, int unit, int val);
 static void ipmi_powermonitor_usage(void);
 /* vFlash Function prototypes */
-static int ipmi_delloem_vFlash_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 const char *get_vFlash_compcode_str(uint8_t vflashcompcode,
 		const struct vFlashstr *vs);
 static int ipmi_get_sd_card_info(struct ipmi_intf *intf);
 static int ipmi_delloem_vFlash_process(struct ipmi_intf *intf, int current_arg,
 		char **argv);
 static void ipmi_vFlash_usage(void);
-/* LED Function prototypes */
-static int ipmi_getsesmask(int, char **argv);
-static void CheckSetLEDSupport(struct ipmi_intf *intf);
-static int IsSetLEDSupported(void);
-static void ipmi_setled_usage(void);
-static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc,
-		char **argv);
-static int ipmi_setled_state(struct ipmi_intf *intf, int bayId, int slotId,
-		int state);
-static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
-		int *bayId, int *slotId);
 static int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set);
 
-/* Function Name:       ipmi_delloem_main
- *
- * Description:         This function processes the delloem command
- * Input:               intf    - ipmi interface
- *                       argc    - no of arguments
- *                       argv    - argument string array
- * Output:
- *
- * Return:              return code     0 - success
- *                                      -1 - failure
- */
-int
-ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
-{
-	int rc = 0;
-	current_arg = 0;
-	if (!argc || !strcmp(argv[0], "help")) {
-		usage();
-		return 0;
-	}
-	if (0 ==strcmp(argv[current_arg], "lcd")) {
-		rc = ipmi_delloem_lcd_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "mac")) {
-		/* mac address*/
-		rc = ipmi_delloem_mac_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "lan")) {
-		/* lan address*/
-		rc = ipmi_delloem_lan_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "setled")) {
-		/* SetLED support */
-		rc = ipmi_delloem_setled_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "powermonitor")) {
-		/*Powermanagement report processing*/
-		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "vFlash")) {
-		/* vFlash Support */
-		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
-	} else {
-		usage();
-		return -1;
-	}
-	return rc;
-}
 /*
  * Function Name:     usage
  *
@@ -323,8 +267,6 @@ usage(void)
 "    mac");
 	lprintf(LOG_NOTICE,
 "    lan");
-	lprintf(LOG_NOTICE,
-"    setled");
 	lprintf(LOG_NOTICE,
 "    powermonitor");
 	lprintf(LOG_NOTICE,
@@ -3925,256 +3867,46 @@ ipmi_vFlash_usage(void)
 "");
 }
 /*
- * Function Name: ipmi_setled_usage
+ * Function Name:       ipmi_delloem_main
  *
- * Description:  This function prints help message for setled command
- * Input:
- * Output:
- *
- * Return:
- */
-static void
-ipmi_setled_usage(void)
-{
-	lprintf(LOG_NOTICE,
-"");
-	lprintf(LOG_NOTICE,
-"   setled <b:d.f> <state..>");
-	lprintf(LOG_NOTICE,
-"      Set backplane LED state");
-	lprintf(LOG_NOTICE,
-"      b:d.f = PCI Bus:Device.Function of drive (lspci format)");
-	lprintf(LOG_NOTICE,
-"      state = present|online|hotspare|identify|rebuilding|");
-	lprintf(LOG_NOTICE,
-"              fault|predict|critical|failed");
-	lprintf(LOG_NOTICE,
-"");
-}
-
-static int
-IsSetLEDSupported(void)
-{
-	return SetLEDSupported;
-}
-
-static void
-CheckSetLEDSupport(struct ipmi_intf * intf)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[10];
-
-	SetLEDSupported = 0;
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5; /* Storage */
-	req.msg.data_len = 10;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x01; /* get */
-	data[1] = 0x00; /* subcmd:get firmware version */
-	data[2] = 0x08; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = 0x00; /* bay id */
-	data[7] = 0x00;
-	data[8] = 0x00;
-	data[9] = 0x00;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp || rsp->ccode) {
-		return;
-	}
-	SetLEDSupported = 1;
-}
-/*
- * Function Name:    ipmi_getdrivemap
- *
- * Description:      This function returns mapping of BDF to Bay:Slot
- * Input:            intf         - ipmi interface
- *		    bdf	 	 - PCI Address of drive
- *		    *bay	 - Returns bay ID
- *		    *slot	 - Returns slot ID
- * Output:
- *
- * Return:
- */
-static int
-ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
-		int *slot)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[8];
-	/* Get mapping of BDF to bay:slot */
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5;
-	req.msg.data_len = 8;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x01; /* get */
-	data[1] = 0x07; /* storage map */
-	data[2] = 0x06; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = b; /* bus */
-	data[7] = (d << 3) + f; /* devfn */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error issuing getdrivemap command.");
-		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error issuing getdrivemap command: %s",
-				val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-	*bay = rsp->data[7];
-	*slot = rsp->data[8];
-	if (*bay == 0xFF || *slot == 0xFF) {
-		lprintf(LOG_ERR, "Error could not get drive bay:slot mapping");
-		return -1;
-	}
-	return 0;
-}
-/*
- * Function Name:    ipmi_setled_state
- *
- * Description:      This function updates the LED on the backplane
- * Input:            intf         - ipmi interface
- *		    bdf	 	 - PCI Address of drive
- *		    state	 - SES Flags state of drive
- * Output:
- *
- * Return:
- */
-static int
-ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
-{
-	struct ipmi_rs * rsp = NULL;
-	struct ipmi_rq req = {0};
-	uint8_t data[20];
-	/* Issue Drive Status Update to bay:slot */
-	req.msg.netfn = DELL_OEM_NETFN;
-	req.msg.lun = 0;
-	req.msg.cmd = 0xD5;
-	req.msg.data_len = 20;
-	req.msg.data = data;
-
-	memset(data, 0, sizeof(data));
-	data[0] = 0x00; /* set */
-	data[1] = 0x04; /* set drive status */
-	data[2] = 0x0e; /* length lsb */
-	data[3] = 0x00; /* length msb */
-	data[4] = 0x00; /* offset lsb */
-	data[5] = 0x00; /* offset msb */
-	data[6] = 0x0e; /* length lsb */
-	data[7] = 0x00; /* length msb */
-	data[8] = bayId; /* bayid */
-	data[9] = slotId; /* slotid */
-	data[10] = state & 0xff; /* state LSB */
-	data[11] = state >> 8; /* state MSB; */
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Error issuing setled command.");
-		return -1;
-	} else if (rsp->ccode) {
-		lprintf(LOG_ERR, "Error issuing setled command: %s",
-				val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-	return 0;
-}
-/*
- * Function Name:    ipmi_getsesmask
- *
- * Description:      This function calculates bits in SES drive update
- * Return:           Mask set with bits for SES backplane update
- */
-static int
-ipmi_getsesmask(int argc, char **argv)
-{
-	int mask = 0;
-	while (current_arg < argc) {
-		if (!strcmp(argv[current_arg], "present"))
-			mask |= (1L << 0);
-		if (!strcmp(argv[current_arg], "online"))
-			mask |= (1L << 1);
-		if (!strcmp(argv[current_arg], "hotspare"))
-			mask |= (1L << 2);
-		if (!strcmp(argv[current_arg], "identify"))
-			mask |= (1L << 3);
-		if (!strcmp(argv[current_arg], "rebuilding"))
-			mask |= (1L << 4);
-		if (!strcmp(argv[current_arg], "fault"))
-			mask |= (1L << 5);
-		if (!strcmp(argv[current_arg], "predict"))
-			mask |= (1L << 6);
-		if (!strcmp(argv[current_arg], "critical"))
-			mask |= (1L << 9);
-		if (!strcmp(argv[current_arg], "failed"))
-			mask |= (1L << 10);
-		current_arg++;
-	}
-	return mask;
-}
-/*
- * Function Name:       ipmi_delloem_setled_main
- *
- * Description:         This function processes the delloem setled command
+ * Description:         This function processes the delloem command
  * Input:               intf    - ipmi interface
- *                       argc    - no of arguments
- *                       argv    - argument string array
+ *                      argc    - no of arguments
+ *                      argv    - argument string array
  * Output:
  *
  * Return:              return code     0 - success
- *                         -1 - failure
+ *                                      -1 - failure
  */
-static int
-ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
+int
+ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	int b,d,f, mask;
-	int bayId, slotId;
-	bayId = 0xFF;
-	slotId = 0xFF;
-	current_arg++;
-	if (argc < current_arg) {
+	int rc = 0;
+	current_arg = 0;
+	if (!argc || !strcmp(argv[0], "help")) {
 		usage();
-		return -1;
-	}
-	/* ipmitool delloem setled info*/
-	if (argc == 1 || !strcmp(argv[current_arg], "help")) {
-		ipmi_setled_usage();
 		return 0;
 	}
-	CheckSetLEDSupport(intf);
-	if (!IsSetLEDSupported()) {
-		lprintf(LOG_ERR, "'setled' is not supported on this system.");
-		return -1;
-	} else if (sscanf(argv[current_arg], "%*x:%x:%x.%x", &b,&d,&f) == 3) {
-		/* We have bus/dev/function of drive */
-		current_arg++;
-		ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId);
-	} else if (sscanf(argv[current_arg], "%x:%x.%x", &b,&d,&f) == 3) {
-		/* We have bus/dev/function of drive */
-		current_arg++;
-	} else {
-		ipmi_setled_usage();
-		return -1;
+	switch (str2val(argv[0], oem_dell_commands)) {
+	case 0x00:
+		rc = ipmi_delloem_lcd_main(intf,argc,argv);
+		break;
+	case 0x01:
+		rc = ipmi_delloem_mac_main(intf,argc,argv);
+		break;
+	case 0x02:
+		rc = ipmi_delloem_lan_main(intf,argc,argv);
+		break;
+	case 0x03:
+		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
+		break;
+	case 0x04:
+		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
+		break;
+	default:
+		usage();
+		rc = -1;
+		break;
 	}
-	/* Get mask of SES flags */
-	mask = ipmi_getsesmask(argc, argv);
-	/* Get drive mapping */
-	if (ipmi_getdrivemap (intf, b, d, f, &bayId, &slotId)) {
-		return -1;
-	}
-	/* Set drive LEDs */
-	return ipmi_setled_state (intf, bayId, slotId, mask);
+	return rc;
 }

@@ -80,6 +80,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define watt                0x00
 #define IPMI_DELL_POWER_CAP 0xEA
 #define percent             0x03 
+#define OEM_DELL_CMD_END(def) {(def), NULL}
 
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
