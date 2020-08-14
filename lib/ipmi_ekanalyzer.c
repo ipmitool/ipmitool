@@ -2752,7 +2752,8 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 		printf("%s type: 0x%02x\n", board_type, len);
 		printf("%s: ", board_type);
 		i = 0;
-		str = (unsigned char *)get_fru_area_str(data, &i);
+		str = (unsigned char *)get_fru_area_str(data, &i,
+							size_board + 1);
 		printf("%s\n", str);
 		free(str);
 		str = NULL;
@@ -2809,7 +2810,8 @@ ipmi_ek_display_board_info_area(FILE *input_file, char *board_type,
 			}
 			printf("Additional Custom Mfg. Data: ");
 			i = 0;
-			str = (unsigned char *)get_fru_area_str(additional_data, &i);
+			str = (unsigned char *)get_fru_area_str(additional_data, &i,
+								size_board + 1);
 			printf("%s\n", str);
 			free(str);
 			str = NULL;

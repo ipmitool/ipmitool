@@ -1869,26 +1869,34 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 
 	/* lookup SDR entry based on sensor number and type */
 	if (sdr) {
+		char desc[IPMI_SDR_MAX_STR_SIZE];
+
 		printf("%s ", ipmi_get_sensor_type(intf,
 			evt->sel_type.standard_type.sensor_type));
 		switch (sdr->type) {
 		case SDR_RECORD_TYPE_FULL_SENSOR:
-			printf("%s", sdr->record.full->id_string);
+			ipmi_get_sdr_string(sdr->record.full->raw_id, desc);
+			printf("%s", desc);
 			break;
 		case SDR_RECORD_TYPE_COMPACT_SENSOR:
-			printf("%s", sdr->record.compact->id_string);
+			ipmi_get_sdr_string(sdr->record.compact->raw_id, desc);
+			printf("%s", desc);
 			break;
 		case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
-			printf("%s", sdr->record.eventonly->id_string);
+			ipmi_get_sdr_string(sdr->record.eventonly->raw_id, desc);
+			printf("%s", desc);
 			break;
 		case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
-			printf("%s", sdr->record.fruloc->id_string);
+			ipmi_get_sdr_string(sdr->record.fruloc->raw_id, desc);
+			printf("%s", desc);
 			break;
 		case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
-			printf("%s", sdr->record.mcloc->id_string);
+			ipmi_get_sdr_string(sdr->record.mcloc->raw_id, desc);
+			printf("%s", desc);
 			break;
 		case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
-			printf("%s", sdr->record.genloc->id_string);
+			ipmi_get_sdr_string(sdr->record.genloc->raw_id, desc);
+			printf("%s", desc);
 			break;
 		default:
 			printf("#%02x", evt->sel_type.standard_type.sensor_num);

@@ -622,6 +622,6 @@ typedef struct ipmi_fru_bloc {
 
 int ipmi_fru_main(struct ipmi_intf *intf, int argc, char **argv);
 int ipmi_fru_print(struct ipmi_intf *intf, struct sdr_record_fru_locator *fru);
-char *get_fru_area_str(uint8_t *data, uint32_t *offset);
+char *get_fru_area_str(uint8_t *data, uint32_t *offset, uint32_t section_len);
 
 #endif /* IPMI_FRU_H */
