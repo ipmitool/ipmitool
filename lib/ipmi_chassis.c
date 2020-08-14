@@ -1070,8 +1070,9 @@ get_bootparam_options(char *optstring,
 
 	{NULL}	/* End marker */
 	}, *op;
+	const char *optkw = "options=";
 
-	if (strcmp(optstring, "options=")) {
+	if (strncmp(optstring, optkw, strlen(optkw))) {
 		lprintf(LOG_ERR, "No options= keyword found \"%s\"", optstring);
 		return -1;
 	}
@@ -2087,7 +2088,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					/* Exclusive clear-cmos, no other flags */
 					optstr = "clear-cmos";
 				}
-				else if (!strcmp(argv[2], kw)) {
+				else if (!strncmp(argv[2], kw, strlen(kw))) {
 					optstr = argv[2] + strlen(kw);
 				}
 			}
