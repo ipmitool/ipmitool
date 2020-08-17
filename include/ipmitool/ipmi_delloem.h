@@ -80,7 +80,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define watt                0x00
 #define IPMI_DELL_POWER_CAP 0xEA
 #define percent             0x03 
-#define OEM_DELL_CMD_END(def) {(def), NULL}
 
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
@@ -176,20 +175,68 @@ typedef struct _lcd_mode
 #define EMB_NIC_MAC_ADDRESS_11G     (uint8_t)(0xDA)
 #define EMB_NIC_MAC_ADDRESS_9G_10G  (uint8_t)(0xCB)
 
-#define IMC_IDRAC_10G               (uint8_t) (0x08) 
-#define IMC_CMC                     (uint8_t) (0x09)
-#define IMC_IDRAC_11G_MONOLITHIC    (uint8_t) (0x0A)
-#define IMC_IDRAC_11G_MODULAR       (uint8_t) (0x0B)
-#define IMC_UNUSED                  (uint8_t) (0x0C)
-#define IMC_MASER_LITE_BMC          (uint8_t) (0x0D)
-#define IMC_MASER_LITE_NU 			(uint8_t) (0x0E)
-#define IMC_IDRAC_12G_MONOLITHIC 	(uint8_t) (0x10)
-#define IMC_IDRAC_12G_MODULAR 		(uint8_t) (0x11)
+// iDRAC validator - related Macro's
+#define IMC_IDRAC_10G 0x08 
+#define IMC_CMC 0x09
+#define IMC_IDRAC_11G_MONOLITHIC 0x0A
+#define IMC_IDRAC_11G_MODULAR 0x0B
+#define IMC_UNUSED 0x0C
+#define IMC_MASER_LITE_BMC 0x0D
+#define IMC_MASER_LITE_NU 0x0E
+#define IMC_IDRAC_12G_MONOLITHIC 0x10
+#define IMC_IDRAC_12G_MODULAR 0x11
 
-#define IMC_IDRAC_13G_MONOLITHIC 	(uint8_t) (0x20)
-#define IMC_IDRAC_13G_MODULAR 		(uint8_t) (0x21)
-#define IMC_IDRAC_13G_DCS			(uint8_t) (0x22)
+#define IMC_IDRAC_13G_MONOLITHIC 0x20
+#define IMC_IDRAC_13G_MODULAR 0x21
+#define IMC_IDRAC_13G_DCS 0x22
 
+#define IMC_IDRAC_14G_MONOLITHIC 0x30
+#define IMC_IDRAC_14G_MODULAR 0x31
+#define IMC_IDRAC_14G_DCS 0x32
+
+#define IMC_IDRAC_15G_MONOLITHIC 0x40
+#define IMC_IDRAC_15G_MODULAR 0x41
+#define IMC_IDRAC_15G_DCS 0x42
+
+#define	IDRAC_11G 1
+#define	IDRAC_12G 2
+#define	IDRAC_13G 3
+#define	IDRAC_14G 4
+#define IDRAC_15G 5
+
+#define IDRAC_VALIDATOR_PARAM 0xDD
+#define LCD_STATUS_SELECTOR 0xE7
+
+#define OEM_DELL_CMD_END(def) {(def), NULL}
+
+//message length Macro's
+#define MSG_LEN_0 0
+#define MSG_LEN_1 1
+#define MSG_LEN_2 2
+#define MSG_LEN_3 3
+#define MSG_LEN_4 4
+#define MSG_LEN_5 5
+#define MSG_LEN_6 6
+#define MSG_LEN_11 11
+#define MSG_LEN_13 13
+#define MSG_LEN_18 18
+
+//index Macro's
+#define IDX_0 0
+#define IDX_1 1
+#define IDX_2 2
+#define IDX_3 3
+#define IDX_4 4
+#define IDX_5 5
+#define IDX_6 6
+#define IDX_7 7
+#define IDX_8 8
+#define IDX_9 9
+#define IDX_10 10
+#define IDX_11 11
+#define IDX_12 12
+#define IDX_13 13
+#define IDX_14 14
 
 typedef struct
 {
