@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * Redistribution of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * 
+ *
  * Redistribution in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind.
  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -45,11 +45,13 @@
 
 #include <sys/lipmi/lipmi_intf.h>
 
-#define IPMI_LIPMI_DEV		"/dev/lipmi"
+#define IPMI_LIPMI_DEV "/dev/lipmi"
 
 extern int verbose;
 
-static int ipmi_lipmi_open(struct ipmi_intf * intf)
+static
+int
+ipmi_lipmi_open(struct ipmi_intf *intf)
 {
 	intf->fd = open(IPMI_LIPMI_DEV, O_RDWR);
 	if (intf->fd < 0) {
@@ -61,7 +63,9 @@ static int ipmi_lipmi_open(struct ipmi_intf * intf)
 	return intf->fd;
 }
 
-static void ipmi_lipmi_close(struct ipmi_intf * intf)
+static
+void
+ipmi_lipmi_close(struct ipmi_intf *intf)
 {
 	if (intf && intf->fd >= 0)
 		close(intf->fd);
@@ -70,12 +74,13 @@ static void ipmi_lipmi_close(struct ipmi_intf * intf)
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
 }
 
-static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
+static
+struct ipmi_rs *
+ipmi_lipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 {
 	struct strioctl istr;
 	static struct lipmi_reqrsp reqrsp;
-	static struct ipmi_rs rsp;	
-	static int curr_seq = 0;
+	static struct ipmi_rs rsp;
 
 	if (!intf || !req)
 		return NULL;
@@ -119,11 +124,10 @@ static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi
 }
 
 struct ipmi_intf ipmi_lipmi_intf = {
-	name:		"lipmi",
-	desc:		"Solaris x86 LIPMI Interface",
-	open:		ipmi_lipmi_open,
-	close:		ipmi_lipmi_close,
-	sendrecv:	ipmi_lipmi_send_cmd,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	name : "lipmi",
+	desc : "Solaris x86 LIPMI Interface",
+	open : ipmi_lipmi_open,
+	close : ipmi_lipmi_close,
+	sendrecv : ipmi_lipmi_send_cmd,
+	target_addr : IPMI_BMC_SLAVE_ADDR,
 };
-
