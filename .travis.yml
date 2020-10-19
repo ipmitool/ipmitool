@@ -1,3 +1,6 @@
+arch:
+   - amd64
+   - ppc64le
 language: C
 sudo: enabled
 before_install:
