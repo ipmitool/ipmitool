@@ -89,10 +89,16 @@ struct channel_info_t {
 	uint8_t aux_info[2];
 };
 
-/* (22.23) Get Channel Access */
+
+/* (22.22 / 22.23) Set/Get Channel Access */
+typedef enum {
+    ALERTING_ENABLED = 0,
+    ALERTING_DISABLED = (1 << 5) /* See Table 22 */
+} alerting_t;
+
 struct channel_access_t {
 	uint8_t access_mode;
-	uint8_t alerting;
+	alerting_t alerting;
 	uint8_t channel;
 	uint8_t per_message_auth;
 	uint8_t privilege_limit;

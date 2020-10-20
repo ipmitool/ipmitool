@@ -1026,10 +1026,10 @@ ipmi_set_alert_enable(struct ipmi_intf *intf, uint8_t channel, uint8_t enable)
 				channel);
 		return (-1);
 	}
-	if (enable != 0) {
-		channel_access.alerting = 1;
+	if (enable) {
+		channel_access.alerting = ALERTING_ENABLED;
 	} else {
-		channel_access.alerting = 0;
+		channel_access.alerting = ALERTING_DISABLED;
 	}
 	/* non-volatile */
 	ccode = _ipmi_set_channel_access(intf, channel_access, 1, 0);
