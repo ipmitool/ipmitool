@@ -30,13 +30,17 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/uio.h>
 #include <signal.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <ipmitool/helper.h>
@@ -47,6 +51,11 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/bswap.h>
+
+#define USER_PW_IPMI15_LEN 16 /* IPMI 1.5 only allowed for 16 bytes */
+#define USER_PW_IPMI20_LEN 20 /* IPMI 2.0 allows for 20 bytes */
+#define USER_PW_MAX_LEN USER_PW_IPMI20_LEN
+#define USER_NAME_MAX_LEN 16
 
 
 extern int verbose;
@@ -123,11 +132,11 @@ _ipmi_get_user_name(struct ipmi_intf *intf, struct user_name_t *user_name_ptr)
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
-	} else if (rsp->data_len != 16) {
+	} else if (rsp->data_len != USER_NAME_MAX_LEN) {
 		return (-2);
 	}
 	memset(user_name_ptr->user_name, '\0', 17);
-	memcpy(user_name_ptr->user_name, rsp->data, 16);
+	memcpy(user_name_ptr->user_name, rsp->data, USER_NAME_MAX_LEN);
 	return rsp->ccode;
 }
 
@@ -461,15 +470,8 @@ print_user_usage(void)
 	lprintf(LOG_NOTICE, "");
 }
 
-
-const char *
-ipmi_user_build_password_prompt(uint8_t user_id)
-{
-	static char prompt[128];
-	memset(prompt, 0, 128);
-	snprintf(prompt, 128, "Password for user %d: ", user_id);
-	return prompt;
-}
+/* Aribrary value larger than USER_PW_MAX_LEN */
+#define INPUT_PASS_MAX 32
 
 /* ask_password - ask user for password
  *
@@ -477,16 +479,109 @@ ipmi_user_build_password_prompt(uint8_t user_id)
  *
  * @returns pointer to char with password
  */
-char *
-ask_password(uint8_t user_id)
+static int
+ask_password(uint8_t user_id, char *buf, size_t buflen)
 {
-	const char *password_prompt =
-		ipmi_user_build_password_prompt(user_id);
-# ifdef HAVE_GETPASSPHRASE
-	return getpassphrase(password_prompt);
-# else
-	return (char*)getpass(password_prompt);
-# endif
+	static char prompt[128];
+	char ibuf[INPUT_PASS_MAX];
+	ssize_t err;
+	size_t len;
+	int in, out, tty, save_errno;
+	struct termios cur, prev;
+	char data, *idx = NULL, *end = NULL;
+	int ret = -1;
+	int tcaction;
+
+	tcaction = TCSAFLUSH;
+#if __BSD_VISIBLE
+	tcaction |= TCSASOFT;
+//#else
+	/*
+	 * Don't see anything similar in the non FreeBSD headers.
+	 * Trying to ignore c_cflag, however since we are using the current settings
+	 * from tcgetattr, we shouldn't be changing any of those? We also saved off the
+	 * original settings in prev.
+	 */
+#endif
+
+
+	if (buf == NULL || buflen <= 0) {
+		lprintf(LOG_ERR, "ipmitool: invalid password buffer");
+		return ret;
+	}
+
+	in = out = open("/dev/tty", O_RDWR | O_CLOEXEC);
+	if (in != -1) {
+		tty = 1;
+	} else {
+		tty = 0;
+		in = STDIN_FILENO;
+		out = STDOUT_FILENO;
+	}
+
+	if (tty && tcgetattr(in, &cur) == 0) {
+		memcpy(&prev, &cur, sizeof(cur));
+		cur.c_lflag &= ~(ECHO | ISIG);
+		if (tcsetattr(in, tcaction, &cur) != 0) {
+			lprintf(LOG_ERR, "ipmitool: user password "
+				"terminal configuration failed: "
+				"%s", strerror(errno));
+			close(in);
+			return ret;
+		}
+	}
+
+	/*
+	 * Note: Not changing signal handlers and saving signals at this
+	 * point so we may be interrupted. Implementation
+	 * detail/laziness.
+	 */
+
+	memset(prompt, 0, sizeof(prompt));
+	snprintf(prompt, sizeof(prompt), "Password for user %d: ", user_id);
+	write(out, prompt, strnlen(prompt, sizeof(prompt)));
+
+	memset(ibuf, 0, sizeof(ibuf));
+	idx = ibuf;
+	end = ibuf + sizeof(ibuf) - 1;
+	while ((err = read(in, &data, sizeof(char))) == 1) {
+		if (data == '\r' || data == '\n') {
+			break;
+		}
+		if (idx == end) {
+			memset(ibuf, 0, sizeof(ibuf));
+			err = -1;
+			errno = ENOBUFS;
+			break;
+		}
+		*idx++ = data;
+	}
+
+	save_errno = errno;
+	*idx = '\0';
+	write(out, "\n", sizeof(char));
+
+	if (tty) {
+		while ((tcsetattr(in, tcaction, &prev) == -1) && errno == EINTR) {
+			continue;
+		}
+		close(in);
+	}
+
+	if (err == -1) {
+		lprintf(LOG_ERR, "ipmitool: password input error: %s", strerror(save_errno));
+	} else {
+		len = strnlen(ibuf, sizeof(ibuf));
+		if (len < buflen) {
+			memcpy(buf, ibuf, len * sizeof(char));
+			buf[len + 1] = '\0';
+			ret = 0;
+		} else {
+			lprintf(LOG_ERR, "ipmitool: password input exceeded buffer");
+		}
+	}
+	memset(ibuf, 0, sizeof(ibuf));
+	return ret;
 }
 
 int
@@ -529,9 +624,12 @@ int
 ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 {
 	/* Test */
-	char *password = NULL;
+	int ret = -1;
+	char *password;
+	char passbuf[USER_PW_MAX_LEN + 1];
 	int password_length = 0;
 	uint8_t user_id = 0;
+
 	/* a little irritating, isn't it */
 	if (argc != 3 && argc != 4) {
 		print_user_usage();
@@ -541,27 +639,32 @@ ipmi_user_test(struct ipmi_intf *intf, int argc, char **argv)
 		return (-1);
 	}
 	if (str2int(argv[2], &password_length) != 0
-			|| (password_length != 16 && password_length != 20)) {
+			|| (password_length != USER_PW_IPMI15_LEN &&
+				password_length != USER_PW_IPMI20_LEN)) {
 		lprintf(LOG_ERR,
 				"Given password length '%s' is invalid.",
 				argv[2]);
-		lprintf(LOG_ERR, "Expected value is either 16 or 20.");
+		lprintf(LOG_ERR, "Expected value is either %d or %d.",
+			USER_PW_IPMI15_LEN, USER_PW_IPMI20_LEN);
 		return (-1);
 	}
 	if (argc == 3) {
 		/* We need to prompt for a password */
-		password = ask_password(user_id);
-		if (!password) {
-			lprintf(LOG_ERR, "ipmitool: malloc failure");
+		memset(passbuf, 0, sizeof(passbuf));
+		if (ask_password(user_id, passbuf, sizeof(passbuf))) {
+			lprintf(LOG_ERR, "ipmitool: password failure");
 			return (-1);
 		}
+		password = passbuf;
 	} else {
 		password = argv[3];
 	}
-	return ipmi_user_test_password(intf,
+	ret = ipmi_user_test_password(intf,
 					 user_id,
 					 password,
-					 password_length == 20);
+					 password_length == USER_PW_IPMI20_LEN);
+	memset(passbuf, 0, sizeof(passbuf));
+	return ret;
 }
 
 int
@@ -626,42 +729,44 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	return 0;
 }
 
-#define USER_PW_IPMI15_LEN 16 /* IPMI 1.5 only allowed for 16 bytes */
-#define USER_PW_IPMI20_LEN 20 /* IPMI 2.0 allows for 20 bytes */
-#define USER_PW_MAX_LEN USER_PW_IPMI20_LEN
-
 int
 ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 {
-	char *password = NULL;
+	char *password;
+	char passbuf[USER_PW_MAX_LEN + 1];
+	char tmp[USER_PW_MAX_LEN + 1];
 	int ccode = 0;
 	uint8_t password_type = USER_PW_IPMI15_LEN;
 	size_t password_len;
 	uint8_t user_id = 0;
+	size_t tmplen;
+
 	if (is_ipmi_user_id(argv[2], &user_id)) {
 		return (-1);
 	}
 
 	if (argc == 3) {
 		/* We need to prompt for a password */
-		char *tmp;
-		size_t tmplen;
-		password = ask_password(user_id);
-		if (!password) {
-			lprintf(LOG_ERR, "ipmitool: malloc failure");
+		memset(passbuf, 0, sizeof(passbuf));
+		memset(tmp, 0, sizeof(tmp));
+
+		if (ask_password(user_id, passbuf, sizeof(passbuf))) {
 			return (-1);
 		}
-		tmp = ask_password(user_id);
+		if (ask_password(user_id, tmp, sizeof(tmp))) {
+			memset(passbuf, 0, sizeof(passbuf));
+			return (-1);
+		}
 		tmplen = strnlen(tmp, USER_PW_MAX_LEN + 1);
-		if (!tmp) {
-			lprintf(LOG_ERR, "ipmitool: malloc failure");
-			return (-1);
-		}
-		if (strncmp(password, tmp, tmplen)) {
+		if (strncmp(passbuf, tmp, tmplen)) {
 			lprintf(LOG_ERR, "Passwords do not match or are "
 			                 "longer than %d", USER_PW_MAX_LEN);
+			memset(tmp, 0, sizeof(tmp));
+			memset(passbuf, 0, sizeof(passbuf));
 			return (-1);
 		}
+		password = passbuf;
+		memset(tmp, 0, sizeof(tmp));
 	} else {
 		password = argv[3];
 	}
@@ -695,6 +800,7 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 	ccode = _ipmi_set_user_password(intf, user_id,
 	                                IPMI_PASSWORD_SET_PASSWORD, password,
 	                                password_type > USER_PW_IPMI15_LEN);
+	memset(passbuf, 0, sizeof(passbuf));
 	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
 		        user_id);
@@ -718,8 +824,9 @@ ipmi_user_name(struct ipmi_intf *intf, int argc, char **argv)
 	if (is_ipmi_user_id(argv[2], &user_id)) {
 		return (-1);
 	}
-	if (strlen(argv[3]) > 16) {
-		lprintf(LOG_ERR, "Username is too long (> 16 bytes)");
+	if (strlen(argv[3]) > USER_NAME_MAX_LEN) {
+		lprintf(LOG_ERR, "Username is too long (> %d bytes)",
+			USER_NAME_MAX_LEN);
 		return (-1);
 	}
 
