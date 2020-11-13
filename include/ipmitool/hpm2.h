@@ -30,6 +30,8 @@
  * EVEN IF PPS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#pragma once
+
 #include <stdint.h>
 #include <ipmitool/ipmi_intf.h>
 

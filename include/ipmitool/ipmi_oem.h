@@ -28,8 +28,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_OEM_H
-#define IPMI_OEM_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -43,5 +42,3 @@ struct ipmi_oem_handle {
 void ipmi_oem_print(void);
 int ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype);
 int ipmi_oem_active(struct ipmi_intf * intf, const char * oemtype);
-
-#endif /*IPMI_OEM_H*/

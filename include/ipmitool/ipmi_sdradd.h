@@ -27,9 +27,8 @@
  * LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE,
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
- 
-#ifndef IPMI_SDRADD_H
-#define IPMI_SDRADD_H
+
+#pragma once
 
 /*
  * Methods to add SDRs to repository from built-in sensors or files
@@ -42,5 +41,3 @@ ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile);
 
 int
 ipmi_sdr_add_from_list(struct ipmi_intf *intf, const char *rangeList);
-
-#endif /* IPMI_SDRADD_H */

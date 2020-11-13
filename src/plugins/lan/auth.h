@@ -30,11 +30,8 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_AUTH_H
-#define IPMI_AUTH_H
+#pragma once
 
 uint8_t * ipmi_auth_md2(struct ipmi_session * s, uint8_t * data, int data_len);
 uint8_t * ipmi_auth_md5(struct ipmi_session * s, uint8_t * data, int data_len);
 uint8_t * ipmi_auth_special(struct ipmi_session * s);
-
-#endif /*IPMI_AUTH_H*/

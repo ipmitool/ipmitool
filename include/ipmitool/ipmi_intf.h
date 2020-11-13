@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_INTF_H
-#define IPMI_INTF_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_oem.h>
@@ -268,4 +267,3 @@ void ipmi_cleanup(struct ipmi_intf * intf);
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
 int  ipmi_intf_socket_connect(struct ipmi_intf * intf);
 #endif
-#endif /* IPMI_INTF_H */
