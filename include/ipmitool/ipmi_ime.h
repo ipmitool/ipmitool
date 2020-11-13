@@ -33,13 +33,10 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_IME_H
-#define IPMI_IME_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
 
 
 int ipmi_ime_main(struct ipmi_intf *, int, char **);
-
-#endif /* IPMI_IME_H */

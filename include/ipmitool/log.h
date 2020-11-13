@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMITOOL_LOG_H
-#define IPMITOOL_LOG_H
+#pragma once
 
 #include <syslog.h>
 
@@ -57,6 +56,3 @@ void log_halt(void);
 void log_level_set(int verbose);
 void lprintf(int level, const char * format, ...);
 void lperror(int level, const char * format, ...);
-
-#endif /*IPMITOOL_LOG_H*/
-

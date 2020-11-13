@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_KFWUM_H
-# define IPMI_KFWUM_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
@@ -239,5 +238,3 @@ struct KfwumFinishFirmwareDownloadReq {
 # ifdef HAVE_PRAGMA_PACK
 #  pragma pack(0)
 # endif
-
-#endif /* IPMI_KFWUM_H */

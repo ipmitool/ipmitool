@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_RAW_H
-#define IPMI_RAW_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -40,5 +39,3 @@ struct ipmi_rs * ipmi_master_write_read(struct ipmi_intf * intf, uint8_t bus, ui
 					uint8_t * wdata, uint8_t wsize, uint8_t rsize);
 int ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv);
 int ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv);
-
-#endif /* IPMI_RAW_H */

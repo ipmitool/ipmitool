@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_BSWAP_H
-#define IPMI_BSWAP_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -49,5 +48,3 @@
 # define BSWAP_32(x) ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >> 8) |\
                      (((x) & 0x0000ff00) << 8) | (((x) & 0x000000ff) << 24))
 #endif
-
-#endif /* IPMI_BSWAP_H */

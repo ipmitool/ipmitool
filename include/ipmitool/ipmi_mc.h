@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_MC_H
-#define IPMI_MC_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -325,5 +324,3 @@ struct ipm_get_watchdog_rsp {
 int ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
 		    int len, void *buffer);
 int ipmi_mc_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
-
-#endif				/*IPMI_MC_H */

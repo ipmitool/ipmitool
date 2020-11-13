@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SOL_H
-#define IPMI_SOL_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -102,6 +101,3 @@ int ipmi_sol_main(struct ipmi_intf *, int, char **);
 int ipmi_get_sol_info(struct ipmi_intf *intf,
 		      uint8_t channel,
 		      struct sol_config_parameters *params);
-
-
-#endif /* IPMI_SOL_H */
