@@ -1908,6 +1908,12 @@ int
 ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int retval = 0;
+<<<<<<< HEAD
+=======
+	const char *instance_kw = "instance=";
+	size_t instance_len = strlen(instance_kw);
+
+>>>>>>> 050f5da63106e89ba11da3e5bac3f1e76209a3ef
 	if (!argc || !strcmp(argv[0], "help")) {
 		/* Help */
 		print_sol_usage();
@@ -1991,7 +1997,11 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 				_use_sol_for_keepalive = 1;
 			} else if (!strcmp(argv[i], "nokeepalive")) {
 				_disable_keepalive = 1;
+<<<<<<< HEAD
 			} else if (!strcmp(argv[i], "instance=")) {
+=======
+			} else if (!strncmp(argv[i], instance_kw, instance_len)) {
+>>>>>>> 050f5da63106e89ba11da3e5bac3f1e76209a3ef
 				if (str2uchar(argv[i] + 9, &instance) != 0) {
 					lprintf(LOG_ERR, "Given instance '%s' is invalid.", argv[i] + 9);
 					print_sol_usage();
@@ -2008,7 +2018,11 @@ ipmi_sol_main(struct ipmi_intf * intf, int argc, char ** argv)
 		int i;
 		uint8_t instance = 1;
 		for (i = 1; i < argc; i++) {
+<<<<<<< HEAD
 			if (!strcmp(argv[i], "instance=")) {
+=======
+			if (!strncmp(argv[i], instance_kw, instance_len)) {
+>>>>>>> 050f5da63106e89ba11da3e5bac3f1e76209a3ef
 				if (str2uchar(argv[i] + 9, &instance) != 0) {
 					lprintf(LOG_ERR,
 							"Given instance '%s' is invalid.",

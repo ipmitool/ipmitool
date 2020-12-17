@@ -14,26 +14,62 @@ Prerequisites
 
    This project requires at least gcc 4.8.1 as it uses some GNU
 extensions and some C11 features. For `lanplus` interface the OpenSSL
-library and development headers are required. As of April 2019, the
+library and development headers are required. As of July 2020, the
 project is tested automatically to build cleanly for the following
-64-bit operating systems:
+64-bit operating systems using GitHub Actions workflow:
 
-   - Ubuntu 14.04 Trusty
-   - Ubuntu 16.04 Xenial
-   - MacOS X 10.14 (Xcode 10.2)
+   - Ubuntu 16.04 Xenial Xerus
+   - Ubuntu 18.04 Bionic Beaver
+   - Ubuntu 20.04 Focal Fossa
+   - MacOS X 10.15 Catalina
+   - Microsoft Windows Server 2019
 
-   For Ubuntu 16.04 it is recommended to do the following before building:
-$ sudo apt install automake gcc git libreadline-dev libssl-dev libsystemd-dev libtool make wget
+   It is also known to build successfully on Ubuntu 14.04 and Fedora 31,
+but that is not automatically verified.
+
+   For Ubuntu 14.04+ it is recommended to do the following before building:
+
+   $ sudo apt install automake gcc git libreadline-dev libssl-dev \
+                      libtool make wget
+
+   For Ubuntu 20.04+ you will also need this:
+
+   $ sudo apt install musl-dev
 
    For Fedora 31 it is recommended to do the following before building:
-$ sudo dnf install automake gcc git libtool make openssl-devel readline-devel systemd-devel wget
+
+   $ sudo dnf install automake gcc git libtool make openssl-devel \
+                      readline-devel wget
+
+   For MacOS X 10.15 with Xcode and homebrew installed, it is
+recommended to do the following before building:
+
+   $ brew install automake openssl libtool freeipmi wget
+   $ export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
+   $ export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
+
+   To prepare for building in Windows it is recommended to use Chocolatey
+and do the following using PowerShell:
+
+   PS C:\ipmitool> choco install cygwin -y
+   PS C:\ipmitool> choco install cyg-get -y
+   PS C:\ipmitool> cyg-get gcc-g++ make automake autoconf `
+   # m4 libtool libncurses-devel libreadline-devel libssl-devel `
+   # dos2unix wget
+   PS C:\ipmitool> $env:path="C:\tools\cygwin\usr\bin;$env:path"
+   PS C:\ipmitool> $env:path="C:\tools\cygwin\bin;$env:path"
+   PS C:\ipmitool> dos2unix bootstrap configure.ac csv-revision
 
 Basic Installation
 ==================
 
    Briefly, the followong shell command should configure, build, and
 install this package:
-   `./bootstrap && ./configure && make && sudo make install`
+
+   ./bootstrap && ./configure && make && sudo make install
+
+   For Windows the above command must be run inside a cygwin bash
+shell.
 
    The following more-detailed instructions are generic; see the
 `README' file for instructions specific to this package.  Some
