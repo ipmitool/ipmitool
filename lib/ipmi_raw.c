@@ -206,15 +206,9 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i = 0;
 
 	/* handle bus= argument */
-<<<<<<< HEAD
-	if (argc > 2 && !strcmp(argv[0], "bus=")) {
-		i = 1;
-		if (!strcmp(argv[0], "bus=public"))
-=======
 	if (argc > 2 && !strncmp(argv[0], BUS_KW, strlen(BUS_KW))) {
 		i = 1;
 		if (!strcmp(argv[0], BUS_KW "public"))
->>>>>>> 050f5da63106e89ba11da3e5bac3f1e76209a3ef
 			bus = 0;
 		else if (sscanf(argv[0], BUS_KW "%u", &rbus) == 1)
 			bus = ((rbus & 7) << 1) | 1;
@@ -223,11 +217,7 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* handle channel= argument
 		 * the bus= argument must be supplied first on command line */
-<<<<<<< HEAD
-		if (argc > 3 && !strcmp(argv[1], "chan=")) {
-=======
 		if (argc > 3 && !strncmp(argv[1], CHAN_KW, strlen(CHAN_KW))) {
->>>>>>> 050f5da63106e89ba11da3e5bac3f1e76209a3ef
 			i = 2;
 			if (sscanf(argv[1], CHAN_KW "%u", &rbus) == 1)
 				bus |= rbus << 4;
