@@ -5074,7 +5074,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			header.offset.board   += change_size_by_8;
 		}
 		/* Board type field */
-		if ((f_type == 'c' ) || (f_type == 'b' ))
+		if (((f_type == 'c' ) || (f_type == 'b' )) && header.offset.product)
 		{
 			printf("Moving Section Product, from %i to %i\n",
 						((header.offset.product) * 8),
