@@ -929,6 +929,7 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    /* YADRO */
    { IPMI_OEM_YADRO, 0x0001, "VESNIN BMC" },
    { IPMI_OEM_YADRO, 0x000A, "TATLIN Storage Controller BMC" },
+   { IPMI_OEM_YADRO, 0x0014, "VEGMAN BMC" },
 
    { 0xffffff        , 0xffff , NULL },
  };
@@ -1036,8 +1037,8 @@ const struct valstr ipmi_privlvl_vals[] = {
 	{ IPMI_SESSION_PRIV_OPERATOR,	"OPERATOR" },
 	{ IPMI_SESSION_PRIV_ADMIN,	    "ADMINISTRATOR" },
 	{ IPMI_SESSION_PRIV_OEM,    	"OEM" },
-	{ 0xF,	        		    	"NO ACCESS" },
-	{ 0xFF,			             	NULL },
+	{ IPMI_SESSION_PRIV_NOACCESS, "NO ACCESS" },
+	{ UINT8_MAX, NULL },
 };
 
 
@@ -1636,6 +1637,7 @@ oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
 	size_t tail_entries = ARRAY_SIZE(ipmi_oem_info_tail) - 1;
 	static oem_valstr_list_t *item;
 	bool rc = false;
+	int oemlist_debug = LOG_DEBUG + 4; /* Require six -v options */
 
 	/* Include static entries and the terminator */
 	count += head_entries + tail_entries + 1;
@@ -1658,7 +1660,7 @@ oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
 		goto out;
 	}
 
-	lprintf(LOG_DEBUG + 3, "  Allocating %6zu entries", count);
+	lprintf(oemlist_debug, "  Allocating %6zu entries", count);
 
     /* Add a terminator at the very end */
 	--count;
@@ -1670,7 +1672,7 @@ oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
 		((struct valstr *)ipmi_oem_info)[count] = 
 			ipmi_oem_info_tail[tail_entries];
 
-		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		lprintf(oemlist_debug, "  [%6zu] %8d | %s", count,
 		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
 	}
 
@@ -1680,7 +1682,7 @@ oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
 		((struct valstr *)ipmi_oem_info)[count] =
 			item->valstr;
 
-		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		lprintf(oemlist_debug, "  [%6zu] %8d | %s", count,
 		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
 
 		item = item->next;
@@ -1691,7 +1693,7 @@ oem_info_init_from_list(oem_valstr_list_t *oemlist, size_t count)
 	while (count < SIZE_MAX && head_entries--) {
 		((struct valstr *)ipmi_oem_info)[count] =
 			ipmi_oem_info_head[head_entries];
-		lprintf(LOG_DEBUG + 3, "  [%6zu] %8d | %s", count,
+		lprintf(oemlist_debug, "  [%6zu] %8d | %s", count,
 		        ipmi_oem_info[count].val, ipmi_oem_info[count].str);
 		--count;
 	}

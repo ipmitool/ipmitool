@@ -613,7 +613,7 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	if (is_ipmi_user_id(argv[1], &user_id)) {
 		return (-1);
 	}
-	operation = (strncmp(argv[0], "disable", 7) == 0) ?
+	operation = (!strcmp(argv[0], "disable")) ?
 		IPMI_PASSWORD_DISABLE_USER : IPMI_PASSWORD_ENABLE_USER;
 
 	ccode = _ipmi_set_user_password(intf, user_id, operation,
@@ -740,32 +740,34 @@ ipmi_user_main(struct ipmi_intf *intf, int argc, char **argv)
 		print_user_usage();
 		return (-1);
 	}
-	if (strncmp(argv[0], "help", 4) == 0) {
+	if (!strcmp(argv[0], "help")) {
 		/* Help */
 		print_user_usage();
 		return 0;
-	} else if (strncmp(argv[0], "summary", 7) == 0) {
+	} else if (!strcmp(argv[0], "summary")) {
 		return ipmi_user_summary(intf, argc, argv);
-	} else if (strncmp(argv[0], "list", 4) == 0) {
+	} else if (!strcmp(argv[0], "list")) {
 		return ipmi_user_list(intf, argc, argv);
-	} else if (strncmp(argv[0], "test", 4) == 0) {
+	} else if (!strcmp(argv[0], "test")) {
 		return ipmi_user_test(intf, argc, argv);
-	} else if (strncmp(argv[0], "set", 3) == 0) {
+	} else if (!strcmp(argv[0], "set")) {
 		/* Set */
-		if ((argc >= 3)
-				&& (strncmp("password", argv[1], 8) == 0)) {
+		if (argc >= 3
+		    && !strcmp("password", argv[1]))
+		{
 			return ipmi_user_password(intf, argc, argv);
-		} else if ((argc >= 2)
-				&& (strncmp("name", argv[1], 4) == 0)) {
+		} else if (argc >= 2
+		           && !strcmp("name", argv[1]))
+		{
 			return ipmi_user_name(intf, argc, argv);
 		} else {
 			print_user_usage();
 			return (-1);
 		}
-	} else if (strncmp(argv[0], "priv", 4) == 0) {
+	} else if (!strcmp(argv[0], "priv")) {
 		return ipmi_user_priv(intf, argc, argv);
-	} else if ((strncmp(argv[0], "disable", 7) == 0)
-			|| (strncmp(argv[0], "enable",  6) == 0)) {
+	} else if (!strcmp(argv[0], "disable")
+	           || !strcmp(argv[0], "enable")) {
 		return ipmi_user_mod(intf, argc, argv);
 	} else {
 		lprintf(LOG_ERR, "Invalid user command: '%s'\n", argv[0]);

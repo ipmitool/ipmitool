@@ -1070,24 +1070,25 @@ get_bootparam_options(char *optstring,
 
 	{NULL}	/* End marker */
 	}, *op;
+	const char *optkw = "options=";
 
-	if (strncmp(optstring, "options=", 8) != 0) {
+	if (strncmp(optstring, optkw, strlen(optkw))) {
 		lprintf(LOG_ERR, "No options= keyword found \"%s\"", optstring);
 		return -1;
 	}
 	token = strtok_r(optstring + 8, ",", &saveptr);
 	while (token) {
 		int setbit = 0;
-		if (strcmp(token, "help") == 0) {
+		if (!strcmp(token, "help")) {
 			optionError = 1;
 			break;
 		}
-		if (strncmp(token, "no-", 3) == 0) {
+		if (!strcmp(token, "no-")) {
 			setbit = 1;
 			token += 3;
 		}
 		for (op = options; op->name; ++op) {
-			if (strncmp(token, op->name, strlen(op->name)) == 0) {
+			if (!strcmp(token, op->name)) {
 				if (setbit) {
 				    *set_flag |= op->value;
 				} else {
@@ -1897,12 +1898,12 @@ bootdev_parse_options(char *optstring, uint8_t flags[])
 	memset(&flags[0], 0, BF_BYTE_COUNT);
 	token = strtok_r(optstring, ",", &saveptr);
 	while (token) {
-		if (strcmp(token, "help") == 0) {
+		if (!strcmp(token, "help")) {
 			optionError = 1;
 			break;
 		}
 		for (op = options; op->name; ++op) {
-			if (strcmp(token, op->name) == 0) {
+			if (!strcmp(token, op->name)) {
 				flags[op->offset] &= ~(op->mask);
 				flags[op->offset] |= op->value;
 				break;
@@ -2044,9 +2045,11 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			else if (!strcmp(argv[1], "set")) {
 			    unsigned char set_flag=0;
 			    unsigned char clr_flag=0;
-				if (!strcmp(argv[2], "help")  ||
-						argc < 4 || (argc >= 4 &&
-							 strncmp(argv[2], "bootflag", 8) != 0)) {
+				if (!strcmp(argv[2], "help")
+				    || argc < 4
+				    || (argc >= 4
+				        && strcmp(argv[2], "bootflag")))
+				{
 					ipmi_chassis_set_bootflag_help();
 				} else {
 					if (argc == 5) {
@@ -2076,7 +2079,6 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "  floppy: Force boot from Floppy/primary removable media");
 		} else {
 			static const char *kw = "options=";
-			static const int kw_len = 8;
 			char *optstr = NULL;
 			uint8_t flags[BF_BYTE_COUNT];
 			bool use_flags = false;
@@ -2086,8 +2088,8 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					/* Exclusive clear-cmos, no other flags */
 					optstr = "clear-cmos";
 				}
-				else if (!strncmp(argv[2], kw, kw_len)) {
-					optstr = argv[2] + kw_len;
+				else if (!strncmp(argv[2], kw, strlen(kw))) {
+					optstr = argv[2] + strlen(kw);
 				}
 			}
 			if (optstr) {

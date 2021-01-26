@@ -488,7 +488,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
 	req.msg.data_len = sizeof(rqdata);
 
 	rqdata[0] = channel;
-	rqdata[1] = ((strncmp(payload_type, "ipmi", 4) == 0)? 0: 1);
+	rqdata[1] = strcmp(payload_type, "ipmi") ? 1 : 0;
 
 	do {
 		/* Always ask for cipher suite format */
@@ -803,9 +803,27 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 	int ccode = 0;
 	int i = 0;
 	uint8_t channel = 0;
-	uint8_t priv = 0;
 	uint8_t user_id = 0;
-	if (argc > 0 && strncmp(argv[0], "help", 4) == 0) {
+	struct {
+		const char *option;
+		enum {
+			UA_INTEGER, /* direct integer value */
+			UA_BOOLEAN,  /* off/disable = false, on/enable = true */
+			UA_BOOLEAN_INVERSE /* off/disable = true, on/enable = false */
+		} type;
+		uint8_t *val;
+		uint8_t min; /* minimum value for UA_INTEGER options */
+		uint8_t max; /* maximum value for UA_INTEGER options */
+	} options[] = {
+		{ "callin=", UA_BOOLEAN_INVERSE, &user_access.callin_callback, 0, 0},
+		{ "link=", UA_BOOLEAN,  &user_access.link_auth, 0, 0},
+		{ "ipmi=", UA_BOOLEAN, &user_access.ipmi_messaging, 0, 0},
+		{ "privilege=", UA_INTEGER, &user_access.privilege_limit
+		              , IPMI_SESSION_PRIV_CALLBACK
+		              , IPMI_SESSION_PRIV_NOACCESS },
+	};
+
+	if (argc > 0 && !strcmp(argv[0], "help")) {
 		printf_channel_usage();
 		return 0;
 	} else if (argc < 3) {
@@ -827,33 +845,46 @@ ipmi_set_user_access(struct ipmi_intf *intf, int argc, char **argv)
 		return (-1);
 	}
 	for (i = 2; i < argc; i ++) {
-		if (strncmp(argv[i], "callin=", 7) == 0) {
-			if (strncmp(argv[i] + 7, "off", 3) == 0) {
-				user_access.callin_callback = 1;
-			} else {
-				user_access.callin_callback = 0;
+		size_t j;
+		for (j = 0; j < ARRAY_SIZE(options); ++j) {
+			const char *opt = argv[i];
+			const int optlen = strlen(options[j].option);
+			if (!strncmp(opt, options[j].option, optlen)) {
+				const char *optval = opt + optlen;
+				uint16_t val;
+
+				if (UA_INTEGER != options[j].type) {
+					bool boolval = (UA_BOOLEAN_INVERSE == options[j].type)
+						? false
+						: true;
+					*options[j].val = boolval;
+					if (!strcmp(optval, "off")
+					    || !strcmp(optval, "disable")
+					    || !strcmp(optval, "no"))
+					{
+						boolval = !boolval;
+					}
+				} else if (UINT8_MAX
+				           != (val = str2val(optval, ipmi_privlvl_vals)))
+				{
+					*options[j].val = (uint8_t)val;
+				} else if (str2uchar(optval, options[j].val)) {
+						lprintf(LOG_ERR
+						        , "Numeric [%hhu-%hhu] value expected, "
+						          "but '%s' given."
+						        , options[j].min
+						        , options[j].max
+						        , optval);
+						return (-1);
+				}
+				lprintf(LOG_DEBUG
+				        , "Option %s=%hhu"
+				        , options[j].option
+				        , *options[j].val);
+				break;
 			}
-		} else if (strncmp(argv[i], "link=", 5) == 0) {
-			if (strncmp(argv[i] + 5, "off", 3) == 0) {
-				user_access.link_auth = 0;
-			} else {
-				user_access.link_auth = 1;
-			}
-		} else if (strncmp(argv[i], "ipmi=", 5) == 0) {
-			if (strncmp(argv[i] + 5, "off", 3) == 0) {
-				user_access.ipmi_messaging = 0;
-			} else {
-				user_access.ipmi_messaging = 1;
-			}
-		} else if (strncmp(argv[i], "privilege=", 10) == 0) {
-			if (str2uchar(argv[i] + 10, &priv) != 0) {
-				lprintf(LOG_ERR,
-						"Numeric value expected, but '%s' given.",
-						argv[i] + 10);
-				return (-1);
-			}
-			user_access.privilege_limit = priv;
-		} else {
+		}
+		if (ARRAY_SIZE(options) == j) {
 			lprintf(LOG_ERR, "Invalid option: %s\n", argv[i]);
 			return (-1);
 		}
@@ -880,10 +911,10 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_channel_usage();
 		return (-1);
-	} else if (strncmp(argv[0], "help", 4) == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		printf_channel_usage();
 		return 0;
-	} else if (strncmp(argv[0], "authcap", 7) == 0) {
+	} else if (!strcmp(argv[0], "authcap")) {
 		if (argc != 3) {
 			printf_channel_usage();
 			return (-1);
@@ -893,7 +924,7 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 		retval = ipmi_get_channel_auth_cap(intf, channel, priv);
-	} else if (strncmp(argv[0], "getaccess", 10) == 0) {
+	} else if (!strcmp(argv[0], "getaccess")) {
 		uint8_t user_id = 0;
 		if ((argc < 2) || (argc > 3)) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
@@ -909,9 +940,9 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		retval = ipmi_get_user_access(intf, channel, user_id);
-	} else if (strncmp(argv[0], "setaccess", 9) == 0) {
+	} else if (!strcmp(argv[0], "setaccess")) {
 		return ipmi_set_user_access(intf, (argc - 1), &(argv[1]));
-	} else if (strncmp(argv[0], "info", 4) == 0) {
+	} else if (!strcmp(argv[0], "info")) {
 		channel = 0xE;
 		if (argc > 2) {
 			printf_channel_usage();
@@ -923,11 +954,11 @@ ipmi_channel_main(struct ipmi_intf *intf, int argc, char **argv)
 			}
 		}
 		retval = ipmi_get_channel_info(intf, channel);
-	} else if (strncmp(argv[0], "getciphers", 10) == 0) {
+	} else if (!strcmp(argv[0], "getciphers")) {
 		/* channel getciphers <ipmi|sol> [channel] */
 		channel = 0xE;
 		if ((argc < 2) || (argc > 3) ||
-		    (strncmp(argv[1], "ipmi", 4) && strncmp(argv[1], "sol",  3))) {
+		    (strcmp(argv[1], "ipmi") && strcmp(argv[1], "sol"))) {
 			printf_channel_usage();
 			return (-1);
 		}

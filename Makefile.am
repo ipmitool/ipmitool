@@ -46,7 +46,8 @@ IANA_PEN = http://www.iana.org/assignments/enterprise-numbers
 dist-hook:
 	cp control/ipmitool.spec $(distdir)
 
-.PHONY: install-pen-database
+.PHONY: install-pen-database uninstall-pen-database
+.INTERMEDIATE: %.o %.la enterprise-numbers
 
 if DOWNLOAD
 
@@ -61,7 +62,10 @@ enterprise-numbers:
 
 install-pen-database: enterprise-numbers
 	mkdir -m 755 -p $(DESTDIR)$(IANADIR)
-	$(INSTALL_DATA) $< -t $(DESTDIR)$(IANADIR)/
+	$(INSTALL_DATA) $< $(DESTDIR)$(IANADIR)/
+
+uninstall-pen-database:
+	-rm -rf $(DESTDIR)$(IANADIR)/enterprise-numbers
 
 else
 
@@ -69,13 +73,17 @@ install-pen-database:
 	@echo "*** NOT installing the IANA PEN database."
 	@echo "*** Don't know how to download it."
 
+uninstall-pen-database:
+	@echo "*** NOT uninstalling the IANA PEN database."
+	@echo "*** It was installed manually (if ever)."
+
 endif
 
 install-data-local: install-pen-database
 	mkdir -p $(DESTDIR)$(DOCDIR)
 	$(INSTALL_DATA) $(DOCLIST) $(DESTDIR)$(DOCDIR)
 
-uninstall-local:
+uninstall-local: uninstall-pen-database
 	-rm -rf $(DESTDIR)$(DOCDIR)
 
 .PHONY: pkg
@@ -93,12 +101,8 @@ SRCDIR   = ${shell cd $(top_srcdir) ; pwd | sed -e 's,^[^:\\/]:[\\/],/,'}
 RPMDIR   = $(BUILDDIR)/rpmbuild
 
 .PHONY: rpm
-rpm: control/ipmitool.spec dist
-	mkdir -p $(RPMDIR)/{BUILD,RPMS,SRPMS,SOURCES,SPECS,tmp}
-	cp control/ipmitool.spec $(RPMDIR)/SPECS
-	BUILDDIR=$(RPMDIR) CONFIGDIR=$(BUILDDIR)/control \
-	  @RPMBUILD@ -ba --rcfile $(SRCDIR)/control/rpmrc \
-	  $(RPMDIR)/SPECS/ipmitool.spec
+rpm: dist
+	@RPMBUILD@ -ta --define "_topdir $(RPMDIR)" $(distdir).tar.gz
 
 .PHONY: clean-rpm
 clean-rpm:

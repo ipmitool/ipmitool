@@ -655,7 +655,7 @@ str2val2(const char *str, const struct dcmi_cmd *vs)
 		return 0;
 	}
 	for (i = 0; vs[i].str; i++) {
-		if (strncasecmp(vs[i].str, str, __maxlen(str, vs[i].str)) == 0)
+		if (strcasecmp(vs[i].str, str) == 0)
 			return vs[i].val;
 	}
 	return vs[i].val;
@@ -1295,7 +1295,7 @@ ipmi_dcmi_prnt_setmngctrlids(struct ipmi_intf * intf, uint8_t * data)
 		/* because after call "Set mc id string" RMCP+ will go down
 		 * we have no "rsp"
 		 */
-		if (strncmp(intf->name, "lanplus", 7)) {
+		if (strcmp(intf->name, "lanplus")) {
 			if (chk_rsp(rsp)) {
 				return -1;
 			}
@@ -3690,7 +3690,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	int i;
 	struct ipmi_rs *rsp;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		print_strs(dcmi_cmd_vals,
 		           "Data Center Management Interface commands",
 		           LOG_ERR, 0);
@@ -3804,7 +3804,7 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 	{
 		switch (argc) {
 		case 2:
-			if (strncmp(argv[1], "activate_dhcp", 13) != 0) {
+			if (strcmp(argv[1], "activate_dhcp")) {
 				print_strs( dcmi_conf_param_vals,
 				            "DCMI Configuration Parameters",
 				            LOG_ERR, 0);
@@ -3812,14 +3812,14 @@ ipmi_dcmi_main(struct ipmi_intf * intf, int argc, char **argv)
 			}
 			break;
 		default:
-			if (argc != 3 || strncmp(argv[1], "help", 4) == 0) {
+			if (argc != 3 || !strcmp(argv[1], "help")) {
 				print_strs(dcmi_conf_param_vals,
 				           "DCMI Configuration Parameters",
 				           LOG_ERR, 0);
 				return -1;
 			}
 		}
-		if (strncmp(argv[1], "activate_dhcp", 13) == 0) {
+		if (!strcmp(argv[1], "activate_dhcp")) {
 			rsp = ipmi_dcmi_setconfparam(intf, 1, 1);
 		} else {
 			uint16_t tmp_val = 0;
@@ -3873,7 +3873,7 @@ ipmi_nm_main(struct ipmi_intf * intf, int argc, char **argv)
 {
 	struct nm_discover disc;
 
-	if ((argc == 0) || (strncmp(argv[0], "help", 4) == 0)) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		print_strs(nm_cmd_vals,
 		           "Node Manager Interface commands",
 		           LOG_ERR, 0);

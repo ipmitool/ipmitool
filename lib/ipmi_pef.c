@@ -1398,13 +1398,13 @@ ipmi_pef2_filter(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		ipmi_pef2_filter_help();
 		rc = (-1);
-	} else if (!strncmp(argv[0], "help\0", 5)) {
+	} else if (!strcmp(argv[0], "help")) {
 		ipmi_pef2_filter_help();
 		rc = 0;
-	} else if (!strncmp(argv[0], "list\0", 5)) {
+	} else if (!strcmp(argv[0], "list")) {
 		rc = ipmi_pef2_list_filters(intf);
-	} else if (!strncmp(argv[0], "enable\0", 7)
-			||(!strncmp(argv[0], "disable\0", 8))) {
+	} else if (!strcmp(argv[0], "enable")
+			||(!strcmp(argv[0], "disable"))) {
 		uint8_t enable;
 		uint8_t filter_id;
 		if (argc != 2) {
@@ -1420,16 +1420,16 @@ ipmi_pef2_filter(struct ipmi_intf *intf, int argc, char **argv)
 					"Valid range is <1..255>.");
 			return (-1);
 		}
-		if (!strncmp(argv[0], "enable\0", 7)) {
+		if (!strcmp(argv[0], "enable")) {
 			enable = 1;
 		} else {
 			enable = 0;
 		}
 		rc = ipmi_pef2_filter_enable(intf, enable, filter_id);
-	} else if (!strncmp(argv[0], "create\0", 7)) {
+	} else if (!strcmp(argv[0], "create")) {
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
-	} else if (!strncmp(argv[0], "delete\0", 7)) {
+	} else if (!strcmp(argv[0], "delete")) {
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
 	} else {
@@ -1721,13 +1721,13 @@ ipmi_pef2_policy(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		ipmi_pef2_policy_help();
 		rc = (-1);
-	} else if (!strncmp(argv[0], "help\0", 5)) {
+	} else if (!strcmp(argv[0], "help")) {
 		ipmi_pef2_policy_help();
 		rc = 0;
-	} else if (!strncmp(argv[0], "list\0", 5)) {
+	} else if (!strcmp(argv[0], "list")) {
 		rc = ipmi_pef2_list_policies(intf);
-	} else if (!strncmp(argv[0], "enable\0", 7)
-			|| !strncmp(argv[0], "disable\0", 8)) {
+	} else if (!strcmp(argv[0], "enable")
+			|| !strcmp(argv[0], "disable")) {
 		uint8_t enable;
 		uint8_t policy_id;
 		if (argc != 2) {
@@ -1742,16 +1742,16 @@ ipmi_pef2_policy(struct ipmi_intf *intf, int argc, char **argv)
 			lprintf(LOG_ERR, "PEF Policy ID out of range. Valid range is <1..127>.");
 			return (-1);
 		}
-		if (!strncmp(argv[0], "enable\0", 7)) {
+		if (!strcmp(argv[0], "enable")) {
 			enable = 1;
 		} else {
 			enable = 0;
 		}
 		rc = ipmi_pef2_policy_enable(intf, enable, policy_id);
-	} else if (!strncmp(argv[0], "create\0", 7)) {
+	} else if (!strcmp(argv[0], "create")) {
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
-	} else if (!strncmp(argv[0], "delete\0", 7)) {
+	} else if (!strcmp(argv[0], "delete")) {
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
 	} else {
@@ -1812,30 +1812,30 @@ int ipmi_pef_main(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		ipmi_pef2_help();
 		rc = (-1);
-	} else if (!strncmp(argv[0], "help\0", 5)) {
+	} else if (!strcmp(argv[0], "help")) {
 		ipmi_pef2_help();
 		rc = 0;
-	} else if (!strncmp(argv[0], "capabilities\0", 13)) {
+	} else if (!strcmp(argv[0], "capabilities")) {
 		/* rc = ipmi_pef2_get_capabilities(intf); */
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
-	} else if (!strncmp(argv[0], "event\0", 6)) {
+	} else if (!strcmp(argv[0], "event")) {
 		/* rc = ipmi_pef2_event(intf, (argc - 1), ++argv); */
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
-	} else if (!strncmp(argv[0], "filter\0", 7)) {
+	} else if (!strcmp(argv[0], "filter")) {
 		rc = ipmi_pef2_filter(intf, (argc - 1), ++argv);
-	} else if (!strncmp(argv[0], "info\0", 5)) {
+	} else if (!strcmp(argv[0], "info")) {
 		rc = ipmi_pef2_get_info(intf);
-	} else if (!strncmp(argv[0], "pet\0", 4)) {
+	} else if (!strcmp(argv[0], "pet")) {
 		/* rc = ipmi_pef2_pet(intf, (argc - 1), ++argv); */
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;
-	} else if (!strncmp(argv[0], "policy\0", 7)) {
+	} else if (!strcmp(argv[0], "policy")) {
 		rc = ipmi_pef2_policy(intf, (argc - 1), ++argv);
-	} else if (!strncmp(argv[0], "status\0", 7)) {
+	} else if (!strcmp(argv[0], "status")) {
 		rc = ipmi_pef2_get_status(intf);
-	} else if (!strncmp(argv[0], "timer\0", 6)) {
+	} else if (!strcmp(argv[0], "timer")) {
 		/* rc = ipmi_pef2_timer(intf, (argc - 1), ++argv); */
 		lprintf(LOG_ERR, "Not implemented.");
 		rc = 1;

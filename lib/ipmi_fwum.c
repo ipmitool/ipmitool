@@ -151,16 +151,16 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		printf_kfwum_help();
 		return (-1);
 	}
-	if (strncmp(argv[0], "help", 4) == 0) {
+	if (!strcmp(argv[0], "help")) {
 		printf_kfwum_help();
 		rc = 0;
-	} else if (strncmp(argv[0], "info", 4) == 0) {
+	} else if (!strcmp(argv[0], "info")) {
 		rc = ipmi_fwum_info(intf);
-	} else if (strncmp(argv[0], "status", 6) == 0) {
+	} else if (!strcmp(argv[0], "status")) {
 		rc = ipmi_fwum_status(intf);
-	} else if (strncmp(argv[0], "rollback", 8) == 0) {
+	} else if (!strcmp(argv[0], "rollback")) {
 		rc = KfwumManualRollback(intf);
-	} else if (strncmp(argv[0], "download", 8) == 0) {
+	} else if (!strcmp(argv[0], "download")) {
 		if ((argc < 2) || (strlen(argv[1]) < 1)) {
 			lprintf(LOG_ERR,
 					"Path and file name must be specified.");
@@ -168,14 +168,14 @@ ipmi_fwum_main(struct ipmi_intf *intf, int argc, char **argv)
 		}
 		printf("Firmware File Name         : %s\n", argv[1]);
 		rc = ipmi_fwum_fwupgrade(intf, argv[1], 0);
-	} else if (strncmp(argv[0], "upgrade", 7) == 0) {
+	} else if (!strcmp(argv[0], "upgrade")) {
 		if ((argc >= 2) && (strlen(argv[1]) > 0)) {
 			printf("Upgrading using file name %s\n", argv[1]);
 			rc = ipmi_fwum_fwupgrade(intf, argv[1], 1);
 		} else {
 			rc = KfwumStartFirmwareUpgrade(intf);
 		}
-	} else if (strncmp(argv[0], "tracelog", 8) == 0) {
+	} else if (!strcmp(argv[0], "tracelog")) {
 		rc = KfwumGetTraceLog(intf);
 	} else {
 		lprintf(LOG_ERR, "Invalid KFWUM command: %s", argv[0]);

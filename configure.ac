@@ -61,7 +61,7 @@ if test "x$WGET" = "x"; then
 		AC_MSG_WARN([** Neither wget nor curl could be found.])
 		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
 	else
-		DOWNLOAD="$CURL -#"
+		DOWNLOAD="$CURL --location --progress-bar"
 		AM_CONDITIONAL([DOWNLOAD], [true])
 	fi
 else
@@ -689,25 +689,24 @@ dnl allow for a default interface to be set on configure
 AC_ARG_VAR(DEFAULT_INTF, [Set the default interface to use (default='open' if available, 'lan' otherwise)])
 
 dnl set the default value for the default interface environment variable
-if test "x${DEFAULT_INTF}" == "x"; then
+if test "x${DEFAULT_INTF}" = "x"; then
 	echo "DEFAULT_INTF not found in environment; setting to ${DEFAULT_INTF_NO_ENV}"
 	DEFAULT_INTF=${DEFAULT_INTF_NO_ENV}
 fi
 
-xdefault_intf_is_enabled="xenable_intf_${DEFAULT_INTF}"
-if test "x${!xdefault_intf_is_enabled}" != "xyes"; then
-	AC_MSG_ERROR([** Cannot set ${DEFAULT_INTF} as default; ${DEFAULT_INTF} is not enabled. :${!xdefault_intf_is_enabled}:])
+if test "x"`eval "echo \\\${xenable_intf_${DEFAULT_INTF}}"` != "xyes"; then
+	AC_MSG_ERROR([** Cannot set ${DEFAULT_INTF} as default; intf-${DEFAULT_INTF} is not enabled.])
 fi
 
 AC_ARG_VAR(IANADIR, [Configure the path to IANA PEN dictionary (default=DATAROOTDIR/misc)])
 AC_ARG_VAR(IANAUSERDIR, [Configure the path to IANA PEN dictionary wihtin the user's HOME directory (default=.local/usr/share/misc)])
 
-if test "x${IANADIR}" == "x"; then
-	echo Set IANA PEN dictionary search path to ${datarootdir}/misc
-	IANADIR="${datarootdir}/misc"
+if test "x${IANADIR}" = "x"; then
+	IANADIR=`eval echo "${datarootdir}/misc"`
+	echo Set IANA PEN dictionary search path to ${IANADIR}
 fi
 
-if test "x${IANAUSERDIR}" == "x"; then
+if test "x${IANAUSERDIR}" = "x"; then
 	IANAUSERDIR=".local/usr/share/misc"
 	echo Set user\'s IANA PEN dictionary search path to ${IANAUSERDIR}
 fi
@@ -732,7 +731,6 @@ AC_CONFIG_FILES([Makefile
 		control/Makefile
 		control/pkginfo
 		control/prototype
-		control/rpmmacros
 		control/ipmitool.spec
 		lib/Makefile
 		include/Makefile
@@ -749,10 +747,9 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/usb/Makefile
 		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
-		src/plugins/dummy/Makefile])
-
-AC_CONFIG_FILES([doc/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmitool.1])
-AC_CONFIG_FILES([doc/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmievd.8])
+		src/plugins/dummy/Makefile
+		doc/ipmitool.1
+		doc/ipmievd.8])
 
 AC_OUTPUT
 

@@ -2778,7 +2778,7 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 	 * the command line
 	 */
 	sel_iana = iana;
-	if (strncmp("pps", format, 3) == 0) {
+	if (!strcmp("pps", format)) {
 		/* Parser for the following format */
 		/* 0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7);
 		 * sensor:(0xc3,119); event:0x6f(asserted): 0xA3 0x00 0x88
@@ -3132,7 +3132,7 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 	req.msg.cmd      = IPMI_SET_SEL_TIME;
 
 	/* See if user requested set to current client system time */
-	if (strncasecmp(time_string, "now", 3) == 0) {
+	if (strcasecmp(time_string, "now") == 0) {
 		t = time(NULL);
 		/*
 		 * Now we have local time in t, but BMC requires UTC
@@ -3237,7 +3237,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t msg_data[4];
 	int rc = 0;
 
-	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		lprintf(LOG_ERR, "usage: delete <id>...<id>\n");
 		return -1;
 	}
@@ -3298,7 +3298,7 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 	int rc = 0;
 	uint16_t id;
 
-	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		lprintf(LOG_ERR, "usage: sel get <id>...<id>");
 		return (-1);
 	}
@@ -3387,10 +3387,10 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (argc == 0)
 		rc = ipmi_sel_get_info(intf);
-	else if (strncmp(argv[0], "help", 4) == 0)
+	else if (!strcmp(argv[0], "help"))
 		lprintf(LOG_ERR, "SEL Commands:  "
 				"info clear delete list elist get add time save readraw writeraw interpret");
-	else if (strncmp(argv[0], "interpret", 9) == 0) {
+	else if (!strcmp(argv[0], "interpret")) {
 		uint32_t iana = 0;
 		if (argc < 4) {
 			lprintf(LOG_NOTICE, "usage: sel interpret iana filename format(pps)");
@@ -3403,37 +3403,37 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		rc = ipmi_sel_interpret(intf, iana, argv[2], argv[3]);
 	}
-	else if (strncmp(argv[0], "info", 4) == 0)
+	else if (!strcmp(argv[0], "info"))
 		rc = ipmi_sel_get_info(intf);
-	else if (strncmp(argv[0], "save", 4) == 0) {
+	else if (!strcmp(argv[0], "save")) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel save <filename>");
 			return 0;
 		}
 		rc = ipmi_sel_save_entries(intf, 0, argv[1]);
 	}
-	else if (strncmp(argv[0], "add", 3) == 0) {
+	else if (!strcmp(argv[0], "add")) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel add <filename>");
 			return 0;
 		}
 		rc = ipmi_sel_add_entries_fromfile(intf, argv[1]);
 	}
-	else if (strncmp(argv[0], "writeraw", 8) == 0) {
+	else if (!strcmp(argv[0], "writeraw")) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel writeraw <filename>");
 			return 0;
 		}
 		rc = ipmi_sel_writeraw(intf, argv[1]);
 	}
-	else if (strncmp(argv[0], "readraw", 7) == 0) {
+	else if (!strcmp(argv[0], "readraw")) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel readraw <filename>");
 			return 0;
 		}
 		rc = ipmi_sel_readraw(intf, argv[1]);
 	}
-	else if (strncmp(argv[0], "ereadraw", 8) == 0) {
+	else if (!strcmp(argv[0], "ereadraw")) {
 		if (argc < 2) {
 			lprintf(LOG_NOTICE, "usage: sel ereadraw <filename>");
 			return 0;
@@ -3441,8 +3441,9 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		sel_extended = 1;
 		rc = ipmi_sel_readraw(intf, argv[1]);
 	}
-	else if (strncmp(argv[0], "list", 4) == 0 ||
-		 strncmp(argv[0], "elist", 5) == 0) {
+	else if (!strcmp(argv[0], "list")
+	         || !strcmp(argv[0], "elist"))
+	{
 		/*
 		 * Usage:
 		 *	list           - show all SEL entries
@@ -3453,7 +3454,7 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		int sign = 1;
 		char *countstr = NULL;
 
-		if (strncmp(argv[0], "elist", 5) == 0)
+		if (!strcmp(argv[0], "elist"))
 			sel_extended = 1;
 		else
 			sel_extended = 0;
@@ -3464,10 +3465,10 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		else if (argc == 3) {
 			countstr = argv[2];
 
-			if (strncmp(argv[1], "last", 4) == 0) {
+			if (!strcmp(argv[1], "last")) {
 				sign = -1;
 			}
-			else if (strncmp(argv[1], "first", 5) != 0) {
+			else if (strcmp(argv[1], "first")) {
 				lprintf(LOG_ERR, "Unknown sel list option");
 				return -1;
 			}
@@ -3484,26 +3485,26 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		rc = ipmi_sel_list_entries(intf,count);
 	}
-	else if (strncmp(argv[0], "clear", 5) == 0)
+	else if (!strcmp(argv[0], "clear"))
 		rc = ipmi_sel_clear(intf);
-	else if (strncmp(argv[0], "delete", 6) == 0) {
+	else if (!strcmp(argv[0], "delete")) {
 		if (argc < 2)
 			lprintf(LOG_ERR, "usage: sel delete <id>...<id>");
 		else
 			rc = ipmi_sel_delete(intf, argc-1, &argv[1]);
 	}
-	else if (strncmp(argv[0], "get", 3) == 0) {
+	else if (!strcmp(argv[0], "get")) {
 		if (argc < 2)
 			lprintf(LOG_ERR, "usage: sel get <entry>");
 		else
 			rc = ipmi_sel_show_entry(intf, argc-1, &argv[1]);
 	}
-	else if (strncmp(argv[0], "time", 4) == 0) {
+	else if (!strcmp(argv[0], "time")) {
 		if (argc < 2)
 			lprintf(LOG_ERR, "sel time commands: get set");
-		else if (strncmp(argv[1], "get", 3) == 0)
+		else if (!strcmp(argv[1], "get"))
 			ipmi_sel_get_time(intf);
-		else if (strncmp(argv[1], "set", 3) == 0) {
+		else if (!strcmp(argv[1], "set")) {
 			if (argc < 3)
 				lprintf(LOG_ERR, "usage: sel time set \"mm/dd/yyyy hh:mm:ss\"");
 			else

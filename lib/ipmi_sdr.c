@@ -4570,8 +4570,8 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 	uint8_t sensor_type = 0;
 
 	if (!type ||
-	    strncasecmp(type, "help", 4) == 0 ||
-	    strncasecmp(type, "list", 4) == 0) {
+	    strcasecmp(type, "help") == 0 ||
+	    strcasecmp(type, "list") == 0) {
 		printf("Sensor Types:\n");
 		for (x = 1; x < SENSOR_TYPE_MAX; x += 2) {
 			printf("\t%-25s (0x%02x)   %-25s (0x%02x)\n",
@@ -4581,7 +4581,7 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 		return 0;
 	}
 
-	if (strncmp(type, "0x", 2) == 0) {
+	if (!strcmp(type, "0x")) {
 		/* begins with 0x so let it be entered as raw hex value */
 		if (str2uchar(type, &sensor_type) != 0) {
 			lprintf(LOG_ERR,
@@ -4591,9 +4591,7 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 		}
 	} else {
 		for (x = 1; x < SENSOR_TYPE_MAX; x++) {
-			if (strncasecmp(sensor_type_desc[x], type,
-					__maxlen(type,
-						 sensor_type_desc[x])) == 0) {
+			if (strcasecmp(sensor_type_desc[x], type) == 0) {
 				sensor_type = x;
 				break;
 			}
@@ -4640,8 +4638,8 @@ ipmi_sdr_print_entity(struct ipmi_intf *intf, char *entitystr)
 	int rc = 0;
 
 	if (!entitystr ||
-	    strncasecmp(entitystr, "help", 4) == 0 ||
-	    strncasecmp(entitystr, "list", 4) == 0) {
+	    strcasecmp(entitystr, "help") == 0 ||
+	    strcasecmp(entitystr, "list") == 0) {
 		print_valstr_2col(entity_id_vals, "Entity IDs", -1);
 		return 0;
 	}
@@ -4656,8 +4654,7 @@ ipmi_sdr_print_entity(struct ipmi_intf *intf, char *entitystr)
 
 			/* now try string input */
 			for (i = 0; entity_id_vals[i].str; i++) {
-				if (strncasecmp(entitystr, entity_id_vals[i].str,
-						__maxlen(entitystr, entity_id_vals[i].str)) == 0) {
+				if (strcasecmp(entitystr, entity_id_vals[i].str) == 0) {
 					entity.id = entity_id_vals[i].val;
 					entity.instance = 0x7f;
 					j=1;
@@ -4744,41 +4741,41 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 	/* initialize random numbers used later */
 	srand(time(NULL));
 
-	if (argc == 0)
+	if (argc == 0) {
 		return ipmi_sdr_print_sdr(intf, 0xfe);
-	else if (strncmp(argv[0], "help", 4) == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		printf_sdr_usage();
-	} else if (strncmp(argv[0], "list", 4) == 0
-		   || strncmp(argv[0], "elist", 5) == 0) {
-
-		if (strncmp(argv[0], "elist", 5) == 0)
+	} else if (!strcmp(argv[0], "list")
+	           || !strcmp(argv[0], "elist"))
+	{
+		if (!strcmp(argv[0], "elist"))
 			sdr_extended = 1;
 		else
 			sdr_extended = 0;
 
 		if (argc <= 1)
 			rc = ipmi_sdr_print_sdr(intf, 0xfe);
-		else if (strncmp(argv[1], "all", 3) == 0)
+		else if (!strcmp(argv[1], "all"))
 			rc = ipmi_sdr_print_sdr(intf, 0xff);
-		else if (strncmp(argv[1], "full", 4) == 0)
+		else if (!strcmp(argv[1], "full"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_FULL_SENSOR);
-		else if (strncmp(argv[1], "compact", 7) == 0)
+		else if (!strcmp(argv[1], "compact"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_COMPACT_SENSOR);
-		else if (strncmp(argv[1], "event", 5) == 0)
+		else if (!strcmp(argv[1], "event"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_EVENTONLY_SENSOR);
-		else if (strncmp(argv[1], "mcloc", 5) == 0)
+		else if (!strcmp(argv[1], "mcloc"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_MC_DEVICE_LOCATOR);
-		else if (strncmp(argv[1], "fru", 3) == 0)
+		else if (!strcmp(argv[1], "fru"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR);
-		else if (strncmp(argv[1], "generic", 7) == 0)
+		else if (!strcmp(argv[1], "generic"))
 			rc = ipmi_sdr_print_sdr(intf,
 						SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
-		else if (strcmp(argv[1], "help") == 0) {
+		else if (!strcmp(argv[1], "help")) {
 			lprintf(LOG_NOTICE,
 				"usage: sdr %s [all|full|compact|event|mcloc|fru|generic]",
 				argv[0]);
@@ -4793,35 +4790,35 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 				argv[0]);
 			return (-1);
 		}
-	} else if (strncmp(argv[0], "type", 4) == 0) {
+	} else if (!strcmp(argv[0], "type")) {
 		sdr_extended = 1;
 		rc = ipmi_sdr_print_type(intf, argv[1]);
-	} else if (strncmp(argv[0], "entity", 6) == 0) {
+	} else if (!strcmp(argv[0], "entity")) {
 		sdr_extended = 1;
 		rc = ipmi_sdr_print_entity(intf, argv[1]);
-	} else if (strncmp(argv[0], "info", 4) == 0) {
+	} else if (!strcmp(argv[0], "info")) {
 		rc = ipmi_sdr_print_info(intf);
-	} else if (strncmp(argv[0], "get", 3) == 0) {
+	} else if (!strcmp(argv[0], "get")) {
 		rc = ipmi_sdr_print_entry_byid(intf, argc - 1, &argv[1]);
-	} else if (strncmp(argv[0], "dump", 4) == 0) {
+	} else if (!strcmp(argv[0], "dump")) {
 		if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			lprintf(LOG_NOTICE, "usage: sdr dump <file>");
 			return (-1);
 		}
 		rc = ipmi_sdr_dump_bin(intf, argv[1]);
-	} else if (strncmp(argv[0], "fill", 4) == 0) {
+	} else if (!strcmp(argv[0], "fill")) {
 		if (argc <= 1) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			lprintf(LOG_NOTICE, "usage: sdr fill sensors");
 			lprintf(LOG_NOTICE, "usage: sdr fill file <file>");
 			lprintf(LOG_NOTICE, "usage: sdr fill range <range>");
 			return (-1);
-		} else if (strncmp(argv[1], "sensors", 7) == 0) {
+		} else if (!strcmp(argv[1], "sensors")) {
 			rc = ipmi_sdr_add_from_sensors(intf, 21);
-		} else if (strncmp(argv[1], "nosat", 5) == 0) {
+		} else if (!strcmp(argv[1], "nosat")) {
 			rc = ipmi_sdr_add_from_sensors(intf, 0);
-		} else if (strncmp(argv[1], "file", 4) == 0) {
+		} else if (!strcmp(argv[1], "file")) {
 			if (argc < 3) {
 				lprintf(LOG_ERR,
 					"Not enough parameters given.");
@@ -4830,7 +4827,7 @@ ipmi_sdr_main(struct ipmi_intf *intf, int argc, char **argv)
 				return (-1);
 			}
 			rc = ipmi_sdr_add_from_file(intf, argv[2]);
-		} else if (strncmp(argv[1], "range", 4) == 0) {
+		} else if (!strcmp(argv[1], "range")) {
 			if (argc < 3) {
 				lprintf(LOG_ERR,
 					"Not enough parameters given.");

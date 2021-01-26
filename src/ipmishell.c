@@ -125,14 +125,12 @@ int ipmi_shell_main(struct ipmi_intf *intf, int argc, char **argv)
 			pbuf = NULL;
 			continue;
 		}
-		if (strncmp(pbuf, "quit", 4) == 0 ||
-		    strncmp(pbuf, "exit", 4) == 0) {
+		if (!strcmp(pbuf, "quit") || !strcmp(pbuf, "exit")) {
 			free(pbuf);
 			pbuf = NULL;
 			return 0;
 		}
-		if (strncmp(pbuf, "help", 4) == 0 ||
-		    strncmp(pbuf, "?", 1) == 0) {
+		if (!strcmp(pbuf, "help") || !strcmp(pbuf, "?")) {
 			ipmi_cmd_print(intf->cmdlist);
 			free(pbuf);
 			pbuf = NULL;
@@ -258,13 +256,13 @@ ipmi_set_usage(void)
 
 int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	if (argc == 0 || strncmp(argv[0], "help", 4) == 0) {
+	if (!argc || !strcmp(argv[0], "help")) {
 		ipmi_set_usage();
 		return -1;
 	}
 
 	/* these options can have no arguments */
-	if (strncmp(argv[0], "verbose", 7) == 0) {
+	if (!strcmp(argv[0], "verbose")) {
 		if (argc > 1) {
 			if (str2int(argv[1], &verbose) != 0) {
 				lprintf(LOG_ERR,
@@ -277,7 +275,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		return 0;
 	}
-	if (strncmp(argv[0], "csv", 3) == 0) {
+	if (!strcmp(argv[0], "csv")) {
 		if (argc > 1) {
 			if (str2int(argv[1], &csv_output) != 0) {
 				lprintf(LOG_ERR,
@@ -297,8 +295,8 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		return -1;
 	}
 
-	if (strncmp(argv[0], "host", 4) == 0 ||
-	    strncmp(argv[0], "hostname", 8) == 0) {
+	if (!strcmp(argv[0], "host") ||
+	    !strcmp(argv[0], "hostname")) {
 		ipmi_intf_session_set_hostname(intf, argv[1]);
 		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session hostname.");
@@ -307,8 +305,8 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session hostname to %s\n",
 				intf->ssn_params.hostname);
 	}
-	else if (strncmp(argv[0], "user", 4) == 0 ||
-		 strncmp(argv[0], "username", 8) == 0) {
+	else if (!strcmp(argv[0], "user") ||
+		 !strcmp(argv[0], "username")) {
 		ipmi_intf_session_set_username(intf, argv[1]);
 		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session username.");
@@ -317,8 +315,8 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session username to %s\n",
 				intf->ssn_params.username);
 	}
-	else if (strncmp(argv[0], "pass", 4) == 0 ||
-		 strncmp(argv[0], "password", 8) == 0) {
+	else if (!strcmp(argv[0], "pass") ||
+		 !strcmp(argv[0], "password")) {
 		ipmi_intf_session_set_password(intf, argv[1]);
 		if (!intf->session) {
 			lprintf(LOG_ERR, "Failed to set session password.");
@@ -326,7 +324,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		printf("Set session password\n");
 	}
-	else if (strncmp(argv[0], "authtype", 8) == 0) {
+	else if (!strcmp(argv[0], "authtype")) {
 		int authtype;
 		authtype = str2val(argv[1], ipmi_authtype_session_vals);
 		if (authtype == 0xFF) {
@@ -343,7 +341,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		       val2str(intf->ssn_params.authtype_set,
 				   ipmi_authtype_session_vals));
 	}
-	else if (strncmp(argv[0], "privlvl", 7) == 0) {
+	else if (!strcmp(argv[0], "privlvl")) {
 		int privlvl;
 		privlvl = str2val(argv[1], ipmi_privlvl_vals);
 		if (privlvl == 0xFF) {
@@ -361,7 +359,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		       val2str(intf->ssn_params.privlvl,
 				   ipmi_privlvl_vals));
 	}
-	else if (strncmp(argv[0], "port", 4) == 0) {
+	else if (!strcmp(argv[0], "port")) {
 		int port = 0;
 		if (str2int(argv[1], &port) != 0 || port > MAX_PORT) {
 			lprintf(LOG_ERR, "Given port '%s' is invalid.",
@@ -375,7 +373,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		printf("Set session port to %d\n", intf->ssn_params.port);
 	}
-	else if (strncmp(argv[0], "localaddr", 9) == 0) {
+	else if (!strcmp(argv[0], "localaddr")) {
 		uint8_t my_addr = 0;
 		if (str2uchar(argv[1], &my_addr) != 0) {
 			lprintf(LOG_ERR, "Given localaddr '%s' is invalid.",
@@ -385,7 +383,7 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		intf->my_addr = my_addr;
 		printf("Set local IPMB address to 0x%02x\n", intf->my_addr);
 	}
-	else if (strncmp(argv[0], "targetaddr", 10) == 0) {
+	else if (!strcmp(argv[0], "targetaddr")) {
 		uint8_t target_addr = 0;
 		if (str2uchar(argv[1], &target_addr) != 0) {
 			lprintf(LOG_ERR, "Given targetaddr '%s' is invalid.",

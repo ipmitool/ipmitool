@@ -75,10 +75,10 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 		ipmi_kontron_help();
 		return (-1);
 	}
-	if (strncmp(argv[0], "help", 4) == 0) {
+	if (!strcmp(argv[0], "help")) {
 		ipmi_kontron_help();
 		rc = 0;
-	} else if (!strncmp(argv[0], "setsn", 5)) {
+	} else if (!strcmp(argv[0], "setsn")) {
 		if (argc < 1) {
 			printf("fru setsn\n");
 			return (-1);
@@ -89,7 +89,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 			printf("FRU serial number set failed\n");
 			rc = (-1);
 		}
-	} else if (!strncmp(argv[0], "setmfgdate", 10)) {
+	} else if (!strcmp(argv[0], "setmfgdate")) {
 		if (argc < 1) {
 			printf("fru setmfgdate\n");
 			return (-1);
@@ -100,7 +100,7 @@ ipmi_kontronoem_main(struct ipmi_intf *intf, int argc, char **argv)
 			printf("FRU manufacturing date set failed\n");
 			rc = (-1);
 		}
-	} else if (!strncmp(argv[0], "nextboot", 8)) {
+	} else if (!strcmp(argv[0], "nextboot")) {
 		if (argc < 2) {
 			lprintf(LOG_ERR, "Not enough parameters given.");
 			ipmi_kontron_nextboot_help();
@@ -671,7 +671,7 @@ ipmi_kontron_nextboot_set(struct ipmi_intf *intf, char **argv)
 	msg_data[5] = 0xFF;
 	msg_data[6] = 0xFF; /* any */
 	for (i = 0; bootdev[i] != 0; i++) {
-		if (strcmp(argv[0], bootdev[i]) == 0) {
+		if (!strcmp(argv[0], bootdev[i])) {
 			msg_data[5] = i;
 			break;
 		}

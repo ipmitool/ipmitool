@@ -190,22 +190,22 @@ ipmi_cmd_run(struct ipmi_intf * intf, char * name, int argc, char ** argv)
 	if (!name) {
 		if (!cmd->func || !cmd->name)
 			return -1;
-		else if (strncmp(cmd->name, "default", 7) == 0)
+
+		if (!strcmp(cmd->name, "default"))
 			return cmd->func(intf, 0, NULL);
-		else {
-			lprintf(LOG_ERR, "No command provided!");
-			ipmi_cmd_print(intf->cmdlist);
-			return -1;
-		}
+
+		lprintf(LOG_ERR, "No command provided!");
+		ipmi_cmd_print(intf->cmdlist);
+		return -1;
 	}
 
 	for (cmd=intf->cmdlist; cmd->func; cmd++) {
-		if (strncmp(name, cmd->name, __maxlen(cmd->name, name)) == 0)
+		if (!strcmp(name, cmd->name))
 			break;
 	}
 	if (!cmd->func) {
 		cmd = intf->cmdlist;
-		if (strncmp(cmd->name, "default", 7) == 0)
+		if (!strcmp(cmd->name, "default"))
 			return cmd->func(intf, argc+1, argv-1);
 
 		lprintf(LOG_ERR, "Invalid command: %s", name);
@@ -358,11 +358,15 @@ ipmi_main(int argc, char ** argv,
 	/* Set program locale according to system settings */
 	setlocale(LC_ALL, "");
 
+
 	/* save program name */
 	progname = strrchr(argv[0], '/');
 	progname = ((!progname) ? argv[0] : progname+1);
 	signal(SIGINT, ipmi_catch_sigint);
 	memset(kgkey, 0, sizeof(kgkey));
+
+	/* setup log */
+	log_init(progname, 0, 0);
 
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
@@ -380,10 +384,11 @@ ipmi_main(int argc, char ** argv,
 			if (intflist) {
 				found = 0;
 				for (sup=intflist; sup->name; sup++) {
-					if (strncmp(sup->name, intfname, strlen(intfname)) == 0 &&
-							strncmp(sup->name, intfname, strlen(sup->name)) == 0 &&
-							sup->supported == 1)
+					if (!strcmp(sup->name, intfname)
+					    && sup->supported)
+					{
 						found = 1;
+					}
 				}
 				if (!found) {
 					lprintf(LOG_ERR, "Interface %s not supported", intfname);
@@ -442,7 +447,11 @@ ipmi_main(int argc, char ** argv,
 			break;
 #endif /* IPMI_INTF_LANPLUS */
 		case 'v':
-			verbose++;
+			log_level_set(++verbose);
+			if (verbose == 2) {
+				/* add version info to debug output */
+				lprintf(LOG_DEBUG, "%s version %s\n", progname, VERSION);
+			}
 			break;
 		case 'c':
 			csv_output = 1;
@@ -609,8 +618,9 @@ ipmi_main(int argc, char ** argv,
 				lprintf(LOG_ERR, "%s: malloc failure", progname);
 				goto out_free;
 			}
-			if (strncmp(oemtype, "list", 4) == 0 ||
-					strncmp(oemtype, "help", 4) == 0) {
+			if (!strcmp(oemtype, "list")
+			    || !strcmp(oemtype, "help"))
+			{
 				ipmi_oem_print();
 				rc = 0;
 				goto out_free;
@@ -777,8 +787,9 @@ ipmi_main(int argc, char ** argv,
 	}
 
 	/* check for command before doing anything */
-	if (argc-optind > 0 &&
-			strncmp(argv[optind], "help", 4) == 0) {
+	if (argc-optind > 0
+	    && !strcmp(argv[optind], "help"))
+	{
 		ipmi_cmd_print(cmdlist);
 		rc = 0;
 		goto out_free;
@@ -823,11 +834,11 @@ ipmi_main(int argc, char ** argv,
 	}
 
 	if (password && intfname) {
-		if (strcmp(intfname, "lan") == 0 && strlen(password) > 16) {
+		if (!strcmp(intfname, "lan") && strlen(password) > 16) {
 			lprintf(LOG_ERR, "%s: password is longer than 16 bytes.", intfname);
 			rc = -1;
 			goto out_free;
-		} else if (strcmp(intfname, "lanplus") == 0 && strlen(password) > 20) {
+		} else if (!strcmp(intfname, "lanplus") && strlen(password) > 20) {
 			lprintf(LOG_ERR, "%s: password is longer than 20 bytes.", intfname);
 			rc = -1;
 			goto out_free;
@@ -840,9 +851,6 @@ ipmi_main(int argc, char ** argv,
 		lprintf(LOG_ERR, "Error loading interface %s", intfname);
 		goto out_free;
 	}
-
-	/* setup log */
-	log_init(progname, 0, verbose);
 
 	/* load the IANA PEN registry */
 	if (ipmi_oem_info_init()) {

@@ -1,0 +1,122 @@
+# vi: set et ts=2 sw=2 :
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  ubuntu:
+    strategy:
+      matrix:
+        os: [ ubuntu-16.04, ubuntu-18.04 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: install dependencies
+      run: |
+        sudo apt install \
+          automake \
+          gcc \
+          git \
+          libssl-dev \
+          libtool \
+          make \
+          wget
+# TODO: Add ubuntu-20.04 to the matrix.os list and fix the build
+#    - name: install extra dependencies
+#      # In Ubuntu 20.04 some crucial development headers/libraries
+#      # have been moved from libc6-dev to musl-dev
+#      if: matrix.os == 'ubuntu-20.04'
+#      run: sudo apt install musl-dev
+    - name: install extra libraries
+      # This build job tries to verify as much of ipmitool code
+      # as possible, hence these libraries. They aren't usually
+      # needed for normal user builds:
+      run: |
+        sudo apt install \
+          libsystemd-dev \
+          libreadline-dev \
+          libfreeipmi-dev \
+          libusb-dev
+    - uses: actions/checkout@v2
+    - name: bootstrap
+      run: ./bootstrap
+    - name: configure
+      run: |
+        # For Linux, build as many extra interfaces as possible
+        # to verify the code
+        ./configure --enable-intf-dummy \
+                    --enable-intf-dbus \
+                    --enable-intf-usb \
+                    --enable-intf-bmc \
+                    --enable-intf-free
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck
+
+  macos-catalina:
+
+    runs-on: macos-10.15
+
+    steps:
+    - name: install dependencies
+      run: brew install automake openssl libtool freeipmi wget
+    - uses: actions/checkout@v2
+    - name: bootstrap
+      run: ./bootstrap
+    - name: configure
+      run: |
+        ./configure --enable-intf-dummy \
+                    LDFLAGS=-L/usr/local/opt/openssl@1.1/lib \
+                    CFLAGS=-I/usr/local/opt/openssl@1.1/include
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck
+
+  win-srv-2019:
+
+    runs-on: windows-2019
+
+    steps:
+    - name: install dependencies
+      run: |-
+        choco install cygwin -y
+        choco install cyg-get -y
+        # Line continuation in PowerShell is backtick. Weird as Windows.
+        cyg-get gcc-g++ `
+                make `
+                automake `
+                autoconf `
+                m4 `
+                libtool `
+                libncurses-devel `
+                libreadline-devel `
+                libssl-devel `
+                dos2unix `
+                wget
+        echo "::add-path::C:/tools/cygwin/bin"
+        echo "::add-path::C:/tools/cygwin/usr/bin"
+    - uses: actions/checkout@v2
+    - name: convert line ends
+      # checkout action on Windows apparently converts line ends
+      # so we have to convert them back because cygwin bash can't
+      # can't handle Windows line ends
+      run: dos2unix bootstrap configure.ac csv-revision
+    - name: bootstrap
+      run: bash -c "./bootstrap"
+    - name: configure
+      run: bash -c "./configure"
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck

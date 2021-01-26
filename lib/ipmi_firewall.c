@@ -128,7 +128,7 @@ ipmi_firewall_parse_args(int argc, char ** argv, struct ipmi_function_params * p
 		return -1;
 	}
 	for (i=0; i<argc; i++) {
-		if (strncmp(argv[i], "channel", 7) == 0 && (++i < argc)) {
+		if (!strcmp(argv[i], "channel") && (++i < argc)) {
 			uint8_t channel_tmp = 0;
 			if (is_ipmi_channel_num(argv[i], &channel_tmp) != 0) {
 				conv_err = 1;
@@ -137,31 +137,31 @@ ipmi_firewall_parse_args(int argc, char ** argv, struct ipmi_function_params * p
 				p->channel = channel_tmp;
 			}
 		}
-		else if (strncmp(argv[i], "lun", 3) == 0 && (++i < argc)) {
+		else if (!strcmp(argv[i], "lun") && (++i < argc)) {
 			if (str2int(argv[i], &(p->lun)) != 0) {
 				lprintf(LOG_ERR, "Given lun '%s' is invalid.", argv[i]);
 				conv_err = 1;
 				break;
 			}
 		}
-		else if (strncmp(argv[i], "force", 5) == 0) {
+		else if (!strcmp(argv[i], "force")) {
 			p->force = 1;
 		}
-		else if (strncmp(argv[i], "netfn", 5) == 0 && (++i < argc)) {
+		else if (!strcmp(argv[i], "netfn") && (++i < argc)) {
 			if (str2int(argv[i], &(p->netfn)) != 0) {
 				lprintf(LOG_ERR, "Given netfn '%s' is invalid.", argv[i]);
 				conv_err = 1;
 				break;
 			}
 		}
-		else if (strncmp(argv[i], "command", 7) == 0 && (++i < argc)) {
+		else if (!strcmp(argv[i], "command") && (++i < argc)) {
 			if (str2int(argv[i], &(p->command)) != 0) {
 				lprintf(LOG_ERR, "Given command '%s' is invalid.", argv[i]);
 				conv_err = 1;
 				break;
 			}
 		}
-		else if (strncmp(argv[i], "subfn", 5) == 0 && (++i < argc)) {
+		else if (!strcmp(argv[i], "subfn") && (++i < argc)) {
 			if (str2int(argv[i], &(p->subfn)) != 0) {
 				lprintf(LOG_ERR, "Given subfn '%s' is invalid.", argv[i]);
 				conv_err = 1;
@@ -903,7 +903,7 @@ ipmi_firewall_info(struct ipmi_intf * intf, int argc, char ** argv)
 	struct bmc_fn_support * bmc_fn_support;
 	unsigned int l, n, c;
 
-	if ((argc > 0 && strncmp(argv[0], "help", 4) == 0) || ipmi_firewall_parse_args(argc, argv, &p) < 0)
+	if ((argc > 0 && !strcmp(argv[0], "help")) || ipmi_firewall_parse_args(argc, argv, &p) < 0)
 	{
 		printf_firewall_info_usage();
 		return 0;
@@ -1018,7 +1018,7 @@ ipmi_firewall_enable_disable(struct ipmi_intf * intf, int enable, int argc, char
 	unsigned int l, n, c;
 	unsigned char enables[MAX_COMMAND_BYTES];
 
-	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 1 || !strcmp(argv[0], "help")) {
 		char * s1 = enable?"en":"dis";
 		char * s2 = enable?"":" [force]";
 		printf("%sable [channel H] lun L netfn N%s\n", s1, s2);
@@ -1113,7 +1113,7 @@ ipmi_firewall_reset(struct ipmi_intf * intf, int argc, char ** argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		printf_firewall_usage();
 		return (-1);
-	} else if (argc > 0 && strncmp(argv[0], "help", 4) == 0) {
+	} else if (argc > 0 && !strcmp(argv[0], "help")) {
 		printf_firewall_usage();
 		return 0;
 	}
@@ -1171,19 +1171,19 @@ ipmi_firewall_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
 
-	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 1 || !strcmp(argv[0], "help")) {
 		printf_firewall_usage();
 	}
-	else if (strncmp(argv[0], "info", 4) == 0) {
+	else if (!strcmp(argv[0], "info")) {
 		rc = ipmi_firewall_info(intf, argc-1, &(argv[1]));
 	}
-	else if (strncmp(argv[0], "enable", 6) == 0) {
+	else if (!strcmp(argv[0], "enable")) {
 		rc = ipmi_firewall_enable_disable(intf, 1, argc-1, &(argv[1]));
 	}
-	else if (strncmp(argv[0], "disable", 7) == 0) {
+	else if (!strcmp(argv[0], "disable")) {
 		rc = ipmi_firewall_enable_disable(intf, 0, argc-1, &(argv[1]));
 	}
-	else if (strncmp(argv[0], "reset", 5) == 0) {
+	else if (!strcmp(argv[0], "reset")) {
 		rc = ipmi_firewall_reset(intf, argc-1, &(argv[1]));
 	}
 	else {

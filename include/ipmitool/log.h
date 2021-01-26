@@ -54,8 +54,7 @@
 
 void log_init(const char * name, int isdaemon, int verbose);
 void log_halt(void);
-void log_level_set(int level);
-int log_level_get(void);
+void log_level_set(int verbose);
 void lprintf(int level, const char * format, ...);
 void lperror(int level, const char * format, ...);
 

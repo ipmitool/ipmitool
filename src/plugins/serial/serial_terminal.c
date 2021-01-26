@@ -394,7 +394,7 @@ recv_response(struct ipmi_intf * intf, unsigned char *data, int len)
 	*pp = 0;
 
 	/* was it an error? */
-	if (strncmp(p, "ERR ", 4) == 0) {
+	if (!strcmp(p, "ERR ")) {
 		serial_write_line(intf, "\r\r\r\r");
 		sleep(1);
 		serial_flush(intf);

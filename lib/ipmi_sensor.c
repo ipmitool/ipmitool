@@ -605,7 +605,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 
 	struct sdr_record_list *sdr;
 
-	if (argc < 3 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 3 || !strcmp(argv[0], "help")) {
 		print_sensor_thresh_usage();
 		return 0;
 	}
@@ -613,7 +613,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 	id = argv[0];
 	thresh = argv[1];
 
-	if (strncmp(thresh, "upper", 5) == 0) {
+	if (!strcmp(thresh, "upper")) {
 		if (argc < 5) {
 			lprintf(LOG_ERR,
 				"usage: sensor thresh <id> upper <unc> <ucr> <unr>");
@@ -635,7 +635,7 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 					argv[4]);
 			return (-1);
 		}
-	} else if (strncmp(thresh, "lower", 5) == 0) {
+	} else if (!strcmp(thresh, "lower")) {
 		if (argc < 5) {
 			lprintf(LOG_ERR,
 				"usage: sensor thresh <id> lower <lnr> <lcr> <lnc>");
@@ -658,17 +658,17 @@ ipmi_sensor_set_threshold(struct ipmi_intf *intf, int argc, char **argv)
 			return (-1);
 		}
 	} else {
-		if (strncmp(thresh, "unr", 3) == 0)
+		if (!strcmp(thresh, "unr"))
 			settingMask = UPPER_NON_RECOV_SPECIFIED;
-		else if (strncmp(thresh, "ucr", 3) == 0)
+		else if (!strcmp(thresh, "ucr"))
 			settingMask = UPPER_CRIT_SPECIFIED;
-		else if (strncmp(thresh, "unc", 3) == 0)
+		else if (!strcmp(thresh, "unc"))
 			settingMask = UPPER_NON_CRIT_SPECIFIED;
-		else if (strncmp(thresh, "lnc", 3) == 0)
+		else if (!strcmp(thresh, "lnc"))
 			settingMask = LOWER_NON_CRIT_SPECIFIED;
-		else if (strncmp(thresh, "lcr", 3) == 0)
+		else if (!strcmp(thresh, "lcr"))
 			settingMask = LOWER_CRIT_SPECIFIED;
-		else if (strncmp(thresh, "lnr", 3) == 0)
+		else if (!strcmp(thresh, "lnr"))
 			settingMask = LOWER_NON_RECOV_SPECIFIED;
 		else {
 			lprintf(LOG_ERR,
@@ -886,7 +886,7 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 	struct sdr_record_list *sdr;
 	int i, rc=0;
 
-	if (argc < 1 || strncmp(argv[0], "help", 4) == 0) {
+	if (argc < 1 || !strcmp(argv[0], "help")) {
 		lprintf(LOG_NOTICE, "sensor reading <id> ... [id]");
 		lprintf(LOG_NOTICE, "   id        : name of desired sensor");
 		return -1;
@@ -950,7 +950,7 @@ ipmi_sensor_get(struct ipmi_intf *intf, int argc, char **argv)
 		lprintf(LOG_ERR, "Not enough parameters given.");
 		print_sensor_get_usage();
 		return (-1);
-	} else if (strcmp(argv[0], "help") == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		print_sensor_get_usage();
 		return 0;
 	}
@@ -995,15 +995,15 @@ ipmi_sensor_main(struct ipmi_intf *intf, int argc, char **argv)
 
 	if (argc == 0) {
 		rc = ipmi_sensor_list(intf);
-	} else if (strncmp(argv[0], "help", 4) == 0) {
+	} else if (!strcmp(argv[0], "help")) {
 		lprintf(LOG_NOTICE, "Sensor Commands:  list thresh get reading");
-	} else if (strncmp(argv[0], "list", 4) == 0) {
+	} else if (!strcmp(argv[0], "list")) {
 		rc = ipmi_sensor_list(intf);
-	} else if (strncmp(argv[0], "thresh", 5) == 0) {
+	} else if (!strcmp(argv[0], "thresh")) {
 		rc = ipmi_sensor_set_threshold(intf, argc - 1, &argv[1]);
-	} else if (strncmp(argv[0], "get", 3) == 0) {
+	} else if (!strcmp(argv[0], "get")) {
 		rc = ipmi_sensor_get(intf, argc - 1, &argv[1]);
-	} else if (strncmp(argv[0], "reading", 7) == 0) {
+	} else if (!strcmp(argv[0], "reading")) {
 		rc = ipmi_sensor_get_reading(intf, argc - 1, &argv[1]);
 	} else {
 		lprintf(LOG_ERR, "Invalid sensor command: %s", argv[0]);

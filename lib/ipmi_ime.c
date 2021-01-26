@@ -988,16 +988,13 @@ int ipmi_ime_main(struct ipmi_intf * intf, int argc, char ** argv)
    lprintf(LOG_DEBUG,"ipmi_ime_main()");
    
 
-   if ( (argc == 0) || (strcmp(argv[0], "help") == 0) ) 
-   {
+   if (!argc || !strcmp(argv[0], "help")) {
       ImePrintUsage();
    }
-   else if ( (argc == 0) || (strcmp(argv[0], "info") == 0) ) 
-   {
+   else if (!strcmp(argv[0], "info")) {
       rc = ImeGetInfo(intf);
    }
-   else if ( strcmp(argv[0], "update") == 0) 
-   {
+   else if (!strcmp(argv[0], "update")) {
       if(argc == 2)
       {
          lprintf(LOG_NOTICE,"Update using file: %s", argv[1]);
@@ -1009,8 +1006,7 @@ int ipmi_ime_main(struct ipmi_intf * intf, int argc, char ** argv)
          rc = IME_ERROR;
       }
    }
-   else if ( (argc == 0) || (strcmp(argv[0], "rollback") == 0) ) 
-   {
+   else if (!strcmp(argv[0], "rollback")) {
       rc = ImeManualRollback(intf);
    }
    else

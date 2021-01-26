@@ -135,15 +135,15 @@ ipmi_oem_setup(struct ipmi_intf * intf, char * oemtype)
 	int rc = 0;
 
 	if (!oemtype
-	    || strncmp(oemtype, "help", 4) == 0
-	    || strncmp(oemtype, "list", 4) == 0)
+	    || !strcmp(oemtype, "help")
+	    || !strcmp(oemtype, "list"))
 	{
 		ipmi_oem_print();
 		return -1;
 	}
 
 	for (oem=ipmi_oem_list; oem->name; oem++) {
-		if (strncmp(oemtype, oem->name, strlen(oem->name)) == 0)
+		if (!strcmp(oemtype, oem->name))
 			break;
 	}
 
@@ -176,7 +176,7 @@ ipmi_oem_active(struct ipmi_intf * intf, const char * oemtype)
 	if (!intf->oem)
 		return 0;
 
-	if (strncmp(intf->oem->name, oemtype, strlen(oemtype)) == 0)
+	if (!strcmp(intf->oem->name, oemtype))
 		return 1;
 
 	return 0;
