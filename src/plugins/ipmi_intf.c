@@ -502,6 +502,7 @@ uint16_t
 ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 {
 	int16_t size;
+	uint8_t bridging_level = ipmi_intf_get_bridging_level(intf);
 
 	size = intf->max_request_data_size;
 
@@ -521,14 +522,14 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 		size = IPMI_DEFAULT_PAYLOAD_SIZE;
 
 		/* check if message is forwarded */
-		if (intf->target_addr && intf->target_addr != intf->my_addr) {
+		if (bridging_level) {
 			/* add Send Message request size */
 			size += 8;
 		}
 	}
 
 	/* check if message is forwarded */
-	if (intf->target_addr && intf->target_addr != intf->my_addr) {
+	if (bridging_level) {
 		/* subtract send message request size */
 		size -= 8;
 
@@ -541,8 +542,7 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 		}
 
 		/* check for double bridging */
-		if (intf->transit_addr && 
-			(intf->transit_addr != intf->target_addr || intf->transit_channel != intf->target_channel) {
+		if (bridging_level == 2) {
 			/* subtract inner send message request size */
 			size -= 8;
 		}
@@ -560,6 +560,7 @@ uint16_t
 ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 {
 	int16_t size;
+	uint8_t bridging_level = ipmi_intf_get_bridging_level(intf);
 
 	size = intf->max_response_data_size;
 
@@ -579,14 +580,14 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 		size = IPMI_DEFAULT_PAYLOAD_SIZE; /* response length with subtracted header and checksum byte */
 
 		/* check if message is forwarded */
-		if (intf->target_addr && intf->target_addr != intf->my_addr) {
+		if (bridging_level) {
 			/* add Send Message header size */
 			size += 7;
 		}
 	}
 
 	/* check if message is forwarded */
-	if (intf->target_addr && intf->target_addr != intf->my_addr) {
+	if (bridging_level) {
 		/*
 		 * Some IPMI controllers like PICMG AMC Carriers embed responses
 		 * to the forwarded messages into the Send Message response.
@@ -604,8 +605,7 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 		}
 
 		/* check for double bridging */
-		if (intf->transit_addr && 
-			(intf->transit_addr != intf->target_addr || intf->transit_channel != intf->target_channel) {
+		if (bridging_level == 2) {
 			/* subtract inner send message header size */
 			size -= 8;
 		}
@@ -617,6 +617,25 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 	}
 
 	return size;
+}
+
+uint8_t
+ipmi_intf_get_bridging_level(const struct ipmi_intf *intf)
+{
+	uint8_t bridging_level;
+
+	if (intf->target_addr && (intf->target_addr != intf->my_addr)) {
+		if (intf->transit_addr &&
+			(intf->transit_addr != intf->target_addr || intf->transit_channel != intf->target_channel)) {
+			bridging_level = 2;
+		} else {
+			bridging_level = 1;
+		}
+	} else {
+		bridging_level = 0;
+	}
+
+	return bridging_level;
 }
 
 void
