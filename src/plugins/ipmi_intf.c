@@ -508,7 +508,7 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 	/* check if request size is not specified */
 	if (!size) {
 		/*
-		 * The IPMB standard overall message length for ‘non -bridging’
+		 * The IPMB standard overall message length for non-bridging
 		 * messages is specified as 32 bytes, maximum, including slave
 		 * address. This sets the upper limit for typical IPMI messages.
 		 * With the exception of messages used for bridging messages to
@@ -541,7 +541,8 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 		}
 
 		/* check for double bridging */
-		if (intf->transit_addr && intf->transit_addr != intf->target_addr) {
+		if (intf->transit_addr && 
+			(intf->transit_addr != intf->target_addr || intf->transit_channel != intf->target_channel) {
 			/* subtract inner send message request size */
 			size -= 8;
 		}
@@ -565,7 +566,7 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 	/* check if response size is not specified */
 	if (!size) {
 		/*
-		 * The IPMB standard overall message length for ‘non -bridging’
+		 * The IPMB standard overall message length for non-bridging
 		 * messages is specified as 32 bytes, maximum, including slave
 		 * address. This sets the upper limit for typical IPMI messages.
 		 * With the exception of messages used for bridging messages to
@@ -603,7 +604,8 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 		}
 
 		/* check for double bridging */
-		if (intf->transit_addr && intf->transit_addr != intf->target_addr) {
+		if (intf->transit_addr && 
+			(intf->transit_addr != intf->target_addr || intf->transit_channel != intf->target_channel) {
 			/* subtract inner send message header size */
 			size -= 8;
 		}
