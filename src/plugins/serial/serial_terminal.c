@@ -624,7 +624,7 @@ serial_term_send_msg(struct ipmi_intf * intf, uint8_t * msg, int msg_len)
 
 	/* body */
 	for (i = 0; i < msg_len; i++) {
-		buf += sprintf( buf, "%02x", msg[i]);
+		buf += sprintf((char*) buf, "%02x", msg[i]);
 	}
 
 	/* stop character */
