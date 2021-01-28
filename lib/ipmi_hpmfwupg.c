@@ -67,6 +67,8 @@ static int errorCount;
 #endif
 
 extern int verbose;
+static unsigned char isValidSize = FALSE;
+static int invalidCount = 0;
 
 VERSIONINFO gVersionInfo[HPMFWUPG_COMPONENT_ID_MAX];
 
@@ -1111,7 +1113,7 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 	unsigned short count;
 	unsigned int totalSent = 0;
 	unsigned short bufLength = 0;
-	unsigned short bufLengthIsSet = 0;
+	unsigned short bufLengthIsSet = BUFLEN_ISSET_NONE;
 	unsigned int firmwareLength = 0;
 
 	unsigned int displayFWLength = 0;
@@ -1206,6 +1208,8 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 		lengthOfBlock = firmwareLength;
 		totalSent = 0x00;
 		displayFWLength= firmwareLength;
+		isValidSize = FALSE;
+		invalidCount = 0;
 		time(&start);
 		while ((pData < (pDataTemp+lengthOfBlock)) && (rc == HPMFWUPG_SUCCESS)) {
 			if ((pData+bufLength) <= (pDataTemp+lengthOfBlock)) {
@@ -1221,14 +1225,30 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 					pFwupgCtx, count, &imageOffset,&blockLength);
 			numRxPkts++;
 			if (rc != HPMFWUPG_SUCCESS) {
-				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH && !bufLengthIsSet) {
+				if (rc == HPMFWUPG_UPLOAD_BLOCK_LENGTH
+						&& bufLengthIsSet != BUFLEN_ISSET_FINE) {
 					rc = HPMFWUPG_SUCCESS;
 					/* Retry with a smaller buffer length */
-					if (strstr(intf->name,"lan") && bufLength > 8) {
-						bufLength-= 8;
-						lprintf(LOG_INFO,
-								"Trying reduced buffer length: %d",
-								bufLength);
+					if (strstr(intf->name,"lan")) {
+						if (bufLengthIsSet == BUFLEN_ISSET_NONE
+							&& bufLength > 2) {
+							/* Reduce buffer length to half in every retry,
+							 * to find valid buffer length fast.
+							 */
+							bufLength /= 2;
+							lprintf(LOG_INFO,
+									"Trying reduced buffer length: %d",
+									bufLength);
+						} else if (bufLengthIsSet == BUFLEN_ISSET_RETRY) {
+							/* Back to last valid buffer length, and it's the
+							 * maximum valid buffer length.
+							 */
+							bufLength -= BUFLEN_INCREASE_STEP;
+							bufLengthIsSet = BUFLEN_ISSET_FINE;
+							lprintf(LOG_INFO,
+									"Trying -%d buffer length: %d",
+									BUFLEN_INCREASE_STEP, bufLength);
+						}
 					} else if (bufLength) {
 						bufLength-= 1;
 						lprintf(LOG_INFO,
@@ -1252,7 +1272,29 @@ HpmFwupgActionUploadFirmware(struct HpmfwupgComponentBitMask components,
 				}
 			} else {
 				/* success, buf length is valid */
-				bufLengthIsSet = 1;
+				if (strstr(intf->name,"lan")
+						&& bufLengthIsSet != BUFLEN_ISSET_FINE) {
+					if (invalidCount == 0) {
+						/* The given buffer length is valid and keep it. */
+						bufLengthIsSet = BUFLEN_ISSET_FINE;
+						lprintf(LOG_INFO,
+								"Using given buffer length: %d",
+								bufLength);
+					} else {
+						/* Has found valid buffer length but not maximum.
+						 * Increase buffer length by adding a fixed length.
+						 */
+						bufLengthIsSet = BUFLEN_ISSET_RETRY;
+						bufLength += BUFLEN_INCREASE_STEP;
+						invalidCount = (HPM_LAN_PACKET_RESIZE_LIMIT - 1);
+						isValidSize = FALSE;
+						lprintf(LOG_INFO,
+								"Trying +%d buffer length: %d",
+								BUFLEN_INCREASE_STEP, bufLength);
+					}
+				} else {
+					bufLengthIsSet = BUFLEN_ISSET_FINE;
+				}
 				if (imageOffset + blockLength > firmwareLength ||
 						imageOffset + blockLength < blockLength) {
 					/*
@@ -2164,13 +2206,10 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 	}
 	timeoutSec1 = time(NULL);
 	do {
-		static unsigned char isValidSize = FALSE;
 		rsp = intf->sendrecv(intf, &req);
 		if (!rsp) {
-			#define HPM_LAN_PACKET_RESIZE_LIMIT 6
 			/* also covers lanplus */
 			if (strstr(intf->name, "lan")) {
-				static int errorCount=0;
 				static struct ipmi_rs fakeRsp;
 				lprintf(LOG_DEBUG,
 						"HPM: no response available");
@@ -2178,7 +2217,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 						"HPM: the command may be rejected for security reasons");
 				if (req.msg.netfn == IPMI_NETFN_PICMG
 						&& req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
-						&& errorCount < HPM_LAN_PACKET_RESIZE_LIMIT
+						&& invalidCount < HPM_LAN_PACKET_RESIZE_LIMIT
 						&& (!isValidSize)) {
 					lprintf(LOG_DEBUG,
 							"HPM: upload firmware block API called");
@@ -2186,7 +2225,7 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 							"HPM: returning length error to force resize");
 					fakeRsp.ccode = IPMI_CC_REQ_DATA_INV_LENGTH;
 					rsp = &fakeRsp;
-					errorCount++;
+					invalidCount++;
 				} else if (req.msg.netfn == IPMI_NETFN_PICMG
 						&& (req.msg.cmd == HPMFWUPG_ACTIVATE_FIRMWARE
 							|| req.msg.cmd == HPMFWUPG_MANUAL_FIRMWARE_ROLLBACK)) {
@@ -2268,7 +2307,8 @@ HpmfwupgSendCmd(struct ipmi_intf *intf, struct ipmi_rq req,
 			retry = 0;
 			if (req.msg.netfn == IPMI_NETFN_PICMG
 					&& req.msg.cmd == HPMFWUPG_UPLOAD_FIRMWARE_BLOCK
-					&& (!isValidSize)) {
+					&& (!isValidSize)
+					&& (rsp->ccode != IPMI_CC_REQ_DATA_INV_LENGTH)) {
 				lprintf(LOG_INFO,
 						"Buffer length is now considered valid");
 				isValidSize = TRUE;
