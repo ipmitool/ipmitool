@@ -376,7 +376,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 	char out_buff[IPMI_BUF_SIZE * 8];
 	char buff[IPMI_BUF_SIZE + 4];
 	int fd_socket, result, i;
-	int out_buff_fill, in_buff_fill;
+	size_t out_buff_fill, in_buff_fill;
 	int ip1, ip2, ip3, ip4;
 	int read_only = 0, rows = 0, cols = 0;
 	int port = IPMI_TSOL_DEF_PORT;
@@ -534,7 +534,7 @@ ipmi_tsol_main(struct ipmi_intf *intf, int argc, char **argv)
 
 		if ((fds[0].revents & POLLIN) && (sizeof(out_buff) > out_buff_fill)) {
 			socklen_t sin_len = sizeof(sin);
-			int buff_size = sizeof(buff);
+			size_t buff_size = sizeof(buff);
 			if ((sizeof(out_buff) - out_buff_fill + 4) < buff_size) {
 				buff_size = (sizeof(out_buff) - out_buff_fill) + 4;
 				if ((buff_size - 4) <= 0) {
