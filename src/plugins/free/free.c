@@ -310,11 +310,11 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
 }
 
 struct ipmi_intf ipmi_free_intf = {
-	name:		"free",
-	desc:		"FreeIPMI IPMI Interface",
-	open:		ipmi_free_open,
-	close:		ipmi_free_close,
-	sendrecv:	ipmi_free_send_cmd,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "free",
+	.desc = "FreeIPMI IPMI Interface",
+	.open = ipmi_free_open,
+	.close = ipmi_free_close,
+	.sendrecv = ipmi_free_send_cmd,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };
 
