@@ -63,8 +63,6 @@ extern int verbose;
 
 static int ipmi_free_open(struct ipmi_intf * intf)
 {
-        int kcs_ret = -1, ssif_ret = -1;
-
         if (getuid() != 0) {
                 fprintf(stderr, "Permission denied, must be root\n");
                 return -1;
