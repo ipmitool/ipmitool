@@ -2273,21 +2273,6 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		return 0;
 	}
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Reserve SEL command failed");
-		return -1;
-	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Reserve SEL command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
-	}
-
 	if (count < 0) {
 		/** Show only the most recent 'count' records. */
 		int i;
@@ -2920,11 +2905,6 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (!argc || !strcmp(argv[0], "help")) {
 		lprintf(LOG_ERR, "usage: sel get <id>...<id>");
-		return (-1);
-	}
-
-	if (ipmi_sel_reserve(intf) == 0) {
-		lprintf(LOG_ERR, "Unable to reserve SEL");
 		return (-1);
 	}
 
