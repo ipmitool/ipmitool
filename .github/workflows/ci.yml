@@ -1,5 +1,5 @@
 # vi: set et ts=2 sw=2 :
-name: C/C++ CI
+name: build
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
     branches: [ master ]
 
 jobs:
-  ubuntu:
+  linux:
     strategy:
       matrix:
-        os: [ ubuntu-16.04, ubuntu-18.04 ]
+        os: [ ubuntu-16.04, ubuntu-18.04, ubuntu-20.04 ]
     runs-on: ${{ matrix.os }}
     steps:
     - name: install dependencies
@@ -24,12 +24,6 @@ jobs:
           libtool \
           make \
           wget
-# TODO: Add ubuntu-20.04 to the matrix.os list and fix the build
-#    - name: install extra dependencies
-#      # In Ubuntu 20.04 some crucial development headers/libraries
-#      # have been moved from libc6-dev to musl-dev
-#      if: matrix.os == 'ubuntu-20.04'
-#      run: sudo apt install musl-dev
     - name: install extra libraries
       # This build job tries to verify as much of ipmitool code
       # as possible, hence these libraries. They aren't usually
@@ -51,7 +45,6 @@ jobs:
         ./configure --enable-intf-dummy \
                     --enable-intf-dbus \
                     --enable-intf-usb \
-                    --enable-intf-bmc \
                     --enable-intf-free
     - name: make
       run: make
@@ -61,7 +54,6 @@ jobs:
       run: make distcheck
 
   macos-catalina:
-
     runs-on: macos-10.15
 
     steps:
