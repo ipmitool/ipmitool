@@ -35,6 +35,7 @@ jobs:
       # as possible, hence these libraries. They aren't usually
       # needed for normal user builds:
       run: |
+        sudo apt update
         sudo apt install \
           libsystemd-dev \
           libreadline-dev \
