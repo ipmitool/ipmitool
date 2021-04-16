@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_HELPER_H
-#define IPMI_HELPER_H
+#pragma once
 
 #include <sys/types.h>
 #include <inttypes.h>
@@ -227,5 +226,3 @@ uint8_t *array_letoh(uint8_t *buffer, size_t length);
 #ifndef __maxlen
 # define __maxlen(a, b) ({ int x=strlen(a); int y=strlen(b); (x > y) ? x : y;})
 #endif
-
-#endif /* IPMI_HELPER_H */

@@ -1,5 +1,4 @@
-#ifndef IPMI_DUMMYIPMI_H
-# define IPMI_DUMMYIPMI_H
+#pragma once
 
 #define IPMI_DUMMY_DEFAULTSOCK "/tmp/.ipmi_dummy"
 
@@ -26,5 +25,3 @@ struct dummy_rs {
 	int data_len;
 	uint8_t *data;
 };
-
-#endif

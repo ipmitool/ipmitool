@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SDR_H
-#define IPMI_SDR_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -926,5 +925,3 @@ int ipmi_sdr_print_sensor_event_enable(struct ipmi_intf *intf,
 				       uint8_t sensor_num, uint8_t sensor_type,
 				       uint8_t event_type, int numeric_fmt,
 				       uint8_t target, uint8_t lun, uint8_t channel);
-
-#endif				/* IPMI_SDR_H */

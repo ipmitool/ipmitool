@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SEL_H
-#define IPMI_SEL_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
@@ -687,5 +686,3 @@ const struct ipmi_event_sensor_types *
 ipmi_get_first_event_sensor_type(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t event_type);
 const struct ipmi_event_sensor_types *
 ipmi_get_next_event_sensor_type(const struct ipmi_event_sensor_types *evt);
-
-#endif /* IPMI_SEL_H */

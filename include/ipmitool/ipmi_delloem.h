@@ -26,8 +26,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 *****************************************************************************/
-#ifndef IPMI_DELLOEM_H
-#define IPMI_DELLOEM_H
+
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -366,5 +366,3 @@ typedef struct _SensorReadingType
 }SensorReadingType;
 uint16_t compareinputwattage(IPMI_POWER_SUPPLY_INFO* powersupplyinfo, uint16_t inputwattage);
 int ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv);
-
-#endif /*IPMI_DELLOEM_H*/

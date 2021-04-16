@@ -30,12 +30,9 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LAN_H
-#define IPMI_LAN_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
 
 extern struct ipmi_intf ipmi_lan_intf;
-
-#endif /*IPMI_LAN_H*/

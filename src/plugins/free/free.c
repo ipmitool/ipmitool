@@ -42,9 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_sel.h>
 
 #include <freeipmi/freeipmi.h>
 #if IPMI_INTF_FREE_0_3_0 || IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0

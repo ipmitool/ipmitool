@@ -30,8 +30,8 @@
  * SOFTWARE, EVEN IF THE COPYRIGHT HOLDER HAS BEEN ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGES.
  */
-#ifndef IPMI_TIME_H
-#define IPMI_TIME_H
+
+#pragma once
 
 #include <time.h>
 #include <stdbool.h>
@@ -88,6 +88,3 @@ char *ipmi_timestamp_time(uint32_t stamp); /* HH:MM:SS ZZZ */
 
 /* Subtract the UTC offset from local time_t */
 time_t ipmi_localtime2utc(time_t local);
-
-#endif
-

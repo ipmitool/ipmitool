@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef _BMC_INTF_H
-#define	_BMC_INTF_H
+#pragma once
 
 #pragma ident	"@(#)bmc_intf.h	1.2	05/03/07 SMI"
 
@@ -203,5 +202,3 @@ typedef struct bmc_msg {
 #ifdef	__cplusplus
 }
 #endif
-
-#endif /* _BMC_INTF_H */

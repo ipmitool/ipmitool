@@ -29,8 +29,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef IPMI_LANP6_H
-#define IPMI_LANP6_H
+
+#pragma once
 
 #include <ipmitool/ipmi_intf.h>
 
@@ -50,5 +50,3 @@ struct ipmi_lanp_priv {
 	struct ipmi_intf *intf;
 	int channel;
 };
-
-#endif /* IPMI_LANP6_H */

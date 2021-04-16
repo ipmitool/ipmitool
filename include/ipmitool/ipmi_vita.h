@@ -2,8 +2,7 @@
  * Copyright (c) Pigeon Point Systems. All right reserved
  */
 
-#ifndef _IPMI_VITA_H_
-#define _IPMI_VITA_H_
+#pragma once
 
 /* VITA 46.11 commands */
 #define VITA_GET_VSO_CAPABILITIES_CMD		0x00
@@ -45,5 +44,3 @@ ipmi_vita_ipmb_address(struct ipmi_intf *intf);
 
 extern int
 ipmi_vita_main(struct ipmi_intf * intf, int argc, char ** argv);
-
-#endif /* _IPMI_VITA_H_ */
