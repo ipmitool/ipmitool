@@ -741,8 +741,6 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 				return (struct ipmi_rs *)1;
 			};
 
-			uint8_t target_cmd = entry->req.msg.target_cmd;
-
 			lprintf(LOG_DEBUG+2, "IPMI Request Match found");
 
 			if (entry->bridging_level) {
