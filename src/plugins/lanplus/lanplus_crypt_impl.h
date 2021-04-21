@@ -30,9 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LANPLUS_CRYPT_IMPL_H
-#define IPMI_LANPLUS_CRYPT_IMPL_H
-
+#pragma once
 
 int
 lanplus_seed_prng(uint32_t bytes);
@@ -61,6 +59,3 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 							uint32_t          input_length,
 							uint8_t       * output,
 							uint32_t        * bytes_written);
-
-
-#endif /* IPMI_LANPLUS_CRYPT_IMPL_H */

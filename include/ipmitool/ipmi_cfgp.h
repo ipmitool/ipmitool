@@ -29,8 +29,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef IPMI_CFGP_H
-#define IPMI_CFGP_H
+
+#pragma once
 
 #include <stdio.h>
 
@@ -193,5 +193,3 @@ extern int ipmi_cfgp_save(struct ipmi_cfgp_ctx *ctx,
 /* Print parameter data in user-friendly format. */
 extern int ipmi_cfgp_print(struct ipmi_cfgp_ctx *ctx,
 		const struct ipmi_cfgp_sel *sel, FILE *file);
-
-#endif /* IPMI_CFGP_H */

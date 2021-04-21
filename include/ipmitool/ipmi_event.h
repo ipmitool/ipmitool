@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_EVENT_H
-#define IPMI_EVENT_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -89,5 +88,3 @@ typedef enum {
 #define EVENT_GENERATOR(base, index) (EVENT_SWID(base,index) << 1 | 1)
 
 int  ipmi_event_main(struct ipmi_intf *, int, char **);
-
-#endif /*IPMI_EVENT_H*/

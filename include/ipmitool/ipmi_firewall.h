@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_FIREWALL_H
-#define IPMI_FIREWALL_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -102,5 +101,3 @@ static inline int bit_test(const unsigned char * bf, int n) {
 static inline void bit_set(unsigned char * bf, int n, int v) {
 	bf[n>>3] = (bf[n>>3] & ~(1<<(n%8))) | ((v?1:0)<<(n%8));
 }
-
-#endif				/*IPMI_FIREWALL_H */

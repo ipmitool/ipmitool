@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_ASF_H
-#define IPMI_ASF_H
+#pragma once
 
 #include <ipmitool/helper.h>
 #include "lanplus.h"
@@ -57,5 +56,3 @@ struct asf_hdr {
 #endif
 
 int handle_asf(struct ipmi_intf * intf, uint8_t * data, int data_len);
-
-#endif /* IPMI_ASF_H */

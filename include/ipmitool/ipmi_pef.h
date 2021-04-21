@@ -30,8 +30,7 @@
  * EVEN IF DELL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_PEF_H
-#define IPMI_PEF_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -667,5 +666,3 @@ void ipmi_pef_print_2xd(const char * text, uint8_t u1, uint8_t u2);
 void ipmi_pef_print_str(const char * text, const char * val);
 
 int ipmi_pef_main(struct ipmi_intf * intf, int argc, char ** argv);
-
-#endif /* IPMI_PEF_H */

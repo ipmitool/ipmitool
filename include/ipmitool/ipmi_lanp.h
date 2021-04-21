@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LANP_H
-#define IPMI_LANP_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -128,5 +127,3 @@ enum {
 int  ipmi_lanp_main(struct ipmi_intf *, int, char **);
 
 uint8_t find_lan_channel(struct ipmi_intf *intf, uint8_t start);
-
-#endif /*IPMI_LANP_H*/
