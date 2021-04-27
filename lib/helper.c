@@ -54,7 +54,7 @@
 #ifdef HAVE_PATHS_H
 # include <paths.h>
 #else
-# define _PATH_VARRUN "/var/run/"
+# define _PATH_RUN "/run/"
 #endif
 
 #include <ipmitool/ipmi.h>
