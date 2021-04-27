@@ -27,7 +27,7 @@ TRAPD_BMC_CONF="${SNMPD_BMC_CONF_DIR}/snmptrapd.local.conf"
 TRAPD_CONF="/etc/snmp/snmptrapd.conf"
 
 LOCKFILE="/var/lock/subsys/bmc-snmp-proxy"
-BMC_INFO="/var/run/bmc-info"
+BMC_INFO="/run/bmc-info"
 
 IPMITOOL=`which ipmitool`
 

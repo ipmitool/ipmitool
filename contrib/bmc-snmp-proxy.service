@@ -5,7 +5,7 @@ After=exchange-bmc-os-info.service
 Requires=exchange-bmc-os-info.service
 PartOf=exchange-bmc-os-info.service
 
-ConditionPathExists=/var/run/bmc-info
+ConditionPathExists=/run/bmc-info
 
 [Service]
 Type=oneshot
