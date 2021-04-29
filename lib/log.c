@@ -144,13 +144,8 @@ void log_halt(void)
 	logpriv = NULL;
 }
 
-int log_level_get(void)
+void log_level_set(int verbose)
 {
-	return logpriv->level;
-}
-
-void log_level_set(int level)
-{
-	logpriv->level = level;
+	logpriv->level = verbose + LOG_NOTICE;
 }
 

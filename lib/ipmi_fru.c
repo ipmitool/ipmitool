@@ -175,8 +175,8 @@ char * get_fru_area_str(uint8_t * data, uint32_t * offset)
 		size = (len * 2);
 		break;
 	case 2:           /* 10b: 6-bit ASCII */
-		/* 4 chars per group of 1-3 bytes */
-		size = (((len * 4 + 2) / 3) & ~3);
+		/* 4 chars per group of 1-3 bytes, round up to 4 bytes boundary */
+		size = (len / 3 + 1) * 4;
 		break;
 	case 3:           /* 11b: 8-bit ASCII */
 		/* no length adjustment */

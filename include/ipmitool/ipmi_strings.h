@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_STRINGS_H
-#define IPMI_STRINGS_H
+#pragma once
 
 #include <ipmitool/helper.h>
 
@@ -75,5 +74,3 @@ extern const struct oemvalstr picmg_busres_shmc_status_vals[];
 extern const struct oemvalstr ipmi_oem_product_info[];
 extern const char *ipmi_generic_sensor_type_vals[];
 extern const struct oemvalstr ipmi_oem_sensor_type_vals[];
-
-#endif /*IPMI_STRINGS_H*/

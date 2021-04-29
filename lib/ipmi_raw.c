@@ -190,6 +190,9 @@ static void rawi2c_usage(void)
 	lprintf(LOG_NOTICE, "            chan=0 is default, bus= must be specified to use chan=");
 }
 
+#define BUS_KW "bus="
+#define CHAN_KW "chan="
+
 int
 ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
@@ -203,20 +206,20 @@ ipmi_rawi2c_main(struct ipmi_intf * intf, int argc, char ** argv)
 	int i = 0;
 
 	/* handle bus= argument */
-	if (argc > 2 && !strcmp(argv[0], "bus=")) {
+	if (argc > 2 && !strncmp(argv[0], BUS_KW, strlen(BUS_KW))) {
 		i = 1;
-		if (!strcmp(argv[0], "bus=public"))
+		if (!strcmp(argv[0], BUS_KW "public"))
 			bus = 0;
-		else if (sscanf(argv[0], "bus=%u", &rbus) == 1)
+		else if (sscanf(argv[0], BUS_KW "%u", &rbus) == 1)
 			bus = ((rbus & 7) << 1) | 1;
 		else
 			bus = 0;
 
 		/* handle channel= argument
 		 * the bus= argument must be supplied first on command line */
-		if (argc > 3 && !strcmp(argv[1], "chan=")) {
+		if (argc > 3 && !strncmp(argv[1], CHAN_KW, strlen(CHAN_KW))) {
 			i = 2;
-			if (sscanf(argv[1], "chan=%u", &rbus) == 1)
+			if (sscanf(argv[1], CHAN_KW "%u", &rbus) == 1)
 				bus |= rbus << 4;
 		}
 	}

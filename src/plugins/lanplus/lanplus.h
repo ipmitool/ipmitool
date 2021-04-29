@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LANPLUS_H
-#define IPMI_LANPLUS_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -130,5 +129,3 @@ struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req
 int  ipmi_lanplus_open(struct ipmi_intf * intf);
 void ipmi_lanplus_close(struct ipmi_intf * intf);
 int ipmiv2_lan_ping(struct ipmi_intf * intf);
-
-#endif /*IPMI_LAN_H*/

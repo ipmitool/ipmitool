@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_CHASSIS_H
-#define IPMI_CHASSIS_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -51,5 +50,3 @@ int ipmi_chassis_power_status(struct ipmi_intf * intf);
 int ipmi_chassis_power_control(struct ipmi_intf * intf, uint8_t ctl);
 int ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv);
 int ipmi_power_main(struct ipmi_intf * intf, int argc, char ** argv);
-
-#endif /*IPMI_CHASSIS_H*/
