@@ -258,7 +258,7 @@ ipmi_sdr_get_unit_string(bool pct, uint8_t relation,
 	}
 
 	if (modifier <= UNIT_TYPE_MAX) {
-		modstr = unit_desc[base];
+		modstr = unit_desc[modifier];
 	}
 	else {
 		modstr = "invalid";
