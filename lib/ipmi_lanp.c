@@ -331,11 +331,10 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
  * @param:   lan parameter id
  * @data:    lan parameter data
  * @len:     length of lan parameter data
- * @wait:    whether to wait for write completion
  */
 static int
 __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
-		int param, uint8_t * data, int len, int wait)
+		int param, uint8_t * data, int len)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -359,7 +358,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 		lprintf(LOG_ERR, "Set LAN Parameter failed");
 		return -1;
 	}
-	if (rsp->ccode && wait) {
+	if (rsp->ccode) {
 		lprintf(LOG_DEBUG, "Warning: Set LAN Parameter failed: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		if (rsp->ccode == 0xcc) {
@@ -373,7 +372,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 				rsp = intf->sendrecv(intf, &req);
 				if (!rsp || rsp->ccode)
 					continue;
-				return set_lan_param_wait(intf, chan, param, data, len);
+				return 0;
 			}
 		}
 		else if (rsp->ccode != 0xff) {
@@ -382,9 +381,7 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 		}
 	}
 
-	if (!wait)
-		return 0;
-	return set_lan_param_wait(intf, chan, param, data, len);
+	return 0;
 }
 
 /* ipmi_lanp_lock_state - Retrieve set-in-progress status
@@ -436,7 +433,7 @@ ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
 		if (retry-- == 0)
 			break;
 		__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS,
-				&val, 1, 0);
+				&val, 1);
 	}
 }
 
@@ -457,13 +454,13 @@ ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
 	uint8_t val = IPMI_LANP_WRITE_COMMIT;
 	int rc;
 
-	rc = __set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
+	rc = __set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1);
 	if (rc < 0) {
 		lprintf(LOG_DEBUG, "LAN Parameter Commit not supported");
 	}
 
 	val = IPMI_LANP_WRITE_UNLOCK;
-	__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1, 0);
+	__set_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS, &val, 1);
 }
 
 /* set_lan_param - Wrap LAN parameter write with set-in-progress lock
@@ -482,9 +479,11 @@ set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 {
 	int rc;
 	ipmi_lanp_lock(intf, chan);
-	rc = __set_lan_param(intf, chan, param, data, len, 1);
+	rc = __set_lan_param(intf, chan, param, data, len);
 	ipmi_lanp_unlock(intf, chan);
-	return rc;
+	if (rc < 0)
+		return rc;
+	return set_lan_param_wait(intf, chan, param, data, len);
 }
 
 /* set_lan_param_nowait - Wrap LAN parameter write without set-in-progress lock
@@ -503,7 +502,7 @@ set_lan_param_nowait(struct ipmi_intf * intf, uint8_t chan,
 {
 	int rc;
 	ipmi_lanp_lock(intf, chan);
-	rc = __set_lan_param(intf, chan, param, data, len, 0);
+	rc = __set_lan_param(intf, chan, param, data, len);
 	ipmi_lanp_unlock(intf, chan);
 	return rc;
 }
