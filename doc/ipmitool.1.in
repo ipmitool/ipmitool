@@ -3742,9 +3742,9 @@ those available for the \fIlan\fP interface.
 The \fB\-C\fR option allows you specify the authentication, integrity,
 and encryption algorithms to use for for \fIlanplus\fP session based
 on the cipher suite ID found in the IPMIv2.0 specification in table
-22\-19.  The default cipher suite is \fI3\fP which specifies
-RAKP\-HMAC\-SHA1 authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128
-encryption algorightms.
+22\-19.  The default cipher suite is \fI17\fP which specifies
+RAKP\-HMAC\-SHA256 authentication, HMAC\-SHA256\-128 integrity, and 
+AES\-CBC\-128 encryption algorightms.
 
 .SH "FREE INTERFACE"
 .LP
