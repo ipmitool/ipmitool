@@ -43,6 +43,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #define NO_MORE_INFO_FIELD         0xc1
 #define TYPE_CODE 0xc0 /*Language code*/
@@ -2443,6 +2445,8 @@ ipmi_ek_display_fru_header_detail(char *filename)
 	if (header.offset.internal != 0) {
 		unsigned char format_version;
 		unsigned long len = 0;
+		uint8_t *area_offset;
+		uint8_t next_offset = UINT8_MAX;
 
 		printf("%s\n", EQUAL_LINE_LIMITER);
 		printf("FRU Internal Use Info\n");
@@ -2456,12 +2460,44 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		}
 		printf("Format Version: %d\n", (format_version & 0x0f));
 
-		if (header.offset.chassis > 0) {
-			len = (header.offset.chassis * FACTOR_OFFSET)
-				- (header.offset.internal * FACTOR_OFFSET);
-		} else {
-			len = (header.offset.board * FACTOR_OFFSET)
-				- (header.offset.internal * FACTOR_OFFSET);
+		/* Internal use area doesn't contain the size byte.
+		 * We need to calculate its size by finding the area
+		 * that is next. Areas may not follow the same order
+		 * as their offsets listed in the header, so we need
+		 * to find the area that is physically next to the
+		 * internal use area.
+		 */
+		for (area_offset = &header.offset.internal + 1;
+			 area_offset <= &header.offset.multi;
+			 ++area_offset)
+		{
+			/* If the area is closer to us than the previously
+			 * checked one, make it our best candidate
+			 */
+			if (*area_offset < next_offset
+				&& *area_offset > header.offset.internal)
+			{
+				next_offset = *area_offset;
+			}
+		}
+
+		/* If there was at least one area after internal use one,
+		 * then we must have found it and can use it to calculate
+		 * length. Otherwise, everything till the end of file is
+		 * internal use area expect for the last (checksum) byte.
+		 */
+		if (next_offset < UINT8_MAX) {
+			len = (next_offset - header.offset.internal) * FACTOR_OFFSET;
+		}
+		else {
+			struct stat fs;
+			long curpos = ftell(input_file);
+			if (curpos < 0 || 0 > fstat(fileno(input_file), &fs)) {
+				lprintf(LOG_ERR, "Failed to determine FRU file size");
+				fclose(input_file);
+				return -1;
+			}
+			len = fs.st_size - curpos - 1; /* Last byte is checksum */
 		}
 		printf("Length: %ld\n", len);
 		printf("Data dump:\n");
