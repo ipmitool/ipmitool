@@ -2488,6 +2488,8 @@ ipmi_ek_display_fru_header_detail(char *filename)
 		 */
 		if (next_offset < UINT8_MAX) {
 			len = (next_offset - header.offset.internal) * FACTOR_OFFSET;
+			--len; /* First byte of internal use area is version and we've
+					  already read it */
 		}
 		else {
 			struct stat fs;
