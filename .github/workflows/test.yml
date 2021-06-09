@@ -1,0 +1,60 @@
+# vi: set et ts=2 sw=2 :
+name: Test
+
+on:
+  push:
+    branches: [ master, regression ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: install dependencies
+      run: |
+        sudo apt install \
+          automake \
+          gcc \
+          git \
+          libssl-dev \
+          libtool \
+          make \
+          wget
+    - name: install extra libraries
+      # This build job tries to verify as much of ipmitool code
+      # as possible, hence these libraries. They aren't usually
+      # needed for normal user builds:
+      run: |
+        sudo apt update
+        sudo apt install \
+          libsystemd-dev \
+          libreadline-dev \
+          libfreeipmi-dev \
+          libusb-dev \
+          libpopt-dev \
+          python3
+        pip3 install robotframework
+    - uses: actions/checkout@v2
+    - name: bootstrap
+      run: ./bootstrap
+    - name: configure
+      run: |
+        # For Linux, build as many extra interfaces as possible
+        # to verify the code
+        ./configure --enable-intf-dummy \
+                    --enable-intf-dbus \
+                    --enable-intf-usb \
+                    --enable-intf-free
+    - name: make
+      run: make
+
+    - name: build ipmi_sim
+      run: |
+        cd test
+        ./build_sim_bmc.sh
+        ./run_sim_bmc.sh
+
