@@ -5052,30 +5052,36 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		/* Chassis type field */
 		if (f_type == 'c' )
 		{
-			printf("Moving Section Chassis, from %i to %i\n",
+		    if(header.offset.board != 0) //Consider the case where there is no board domain
+		    {
+			    printf("Moving Section Chassis, from %i to %i\n",
 						((header.offset.board) * 8),
 						((header.offset.board + change_size_by_8) * 8)
 					);
-			memcpy(
+			    memcpy(
 						(fru_data_new + ((header.offset.board + change_size_by_8) * 8)),
 						(fru_data_old + (header.offset.board) * 8),
 						board_len
 					);
-			header.offset.board   += change_size_by_8;
+			    header.offset.board   += change_size_by_8;
+		    }
 		}
 		/* Board type field */
 		if ((f_type == 'c' ) || (f_type == 'b' ))
 		{
-			printf("Moving Section Product, from %i to %i\n",
+		    if(header.offset.product != 0) //Consider the case where there is no product domain 
+		    {
+			    printf("Moving Section Product, from %i to %i\n",
 						((header.offset.product) * 8),
 						((header.offset.product + change_size_by_8) * 8)
 					);
-			memcpy(
+			    memcpy(
 						(fru_data_new + ((header.offset.product + change_size_by_8) * 8)),
 						(fru_data_old + (header.offset.product) * 8),
 						product_len
 					);
-			header.offset.product += change_size_by_8;
+			    header.offset.product += change_size_by_8;
+		    }
 		}
 
 		if ((f_type == 'c' ) || (f_type == 'b' ) || (f_type == 'p' )) {
