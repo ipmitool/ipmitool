@@ -100,6 +100,19 @@ static struct lan_param {
 	{ -1, -1, "", NULL, -1 }
 };
 
+static const struct valstr set_lan_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x81, "Attempt to set 'in progress' while not in 'complete' state" },
+	{ 0x82, "Parameter is read-only" },
+	{ 0x83, "Parameter is wrote-only" },
+	{ 0x00, NULL }
+};
+
+static const struct valstr get_lan_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x00, NULL }
+};
+
 static void print_lan_alert_print_usage(void);
 static void print_lan_alert_set_usage(void);
 static void print_lan_set_usage(void);
@@ -177,6 +190,7 @@ static struct lan_param *
 get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select)
 {
 	struct lan_param *p = NULL;
+	struct lan_param *rc = NULL;
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	int i = 0;
@@ -191,7 +205,7 @@ get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select
 
 	if (!p) {
 		lprintf(LOG_INFO, "Get LAN Parameter failed: Unknown parameter.");
-		return NULL;
+		return rc;
 	}
 
 	msg_data[0] = chan;
@@ -208,7 +222,7 @@ get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed", p->desc);
-		return NULL;
+		return rc;
 	}
 
 	switch (rsp->ccode)
@@ -219,19 +233,18 @@ get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select
 	case 0x80: /* parameter not supported */
 	case 0xc9: /* parameter out of range */
 	case 0xcc: /* invalid data field in request */
-
-		/* these completion codes usually mean parameter not supported */
-		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
-			p->desc, val2str(rsp->ccode, completion_code_vals));
+		/* We treat them as valid but empty response */
 		p->data = NULL;
 		p->data_len = 0;
-		return p;
-
+		rc = p;
+		/* fall through */
 	default:
-
 		/* other completion codes are treated as error */
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
-			p->desc, val2str(rsp->ccode, completion_code_vals));
+			p->desc,
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return NULL;
 	}
 
@@ -361,7 +374,9 @@ __set_lan_param(struct ipmi_intf *intf, uint8_t chan,
 	}
 	if (rsp->ccode && wait) {
 		lprintf(LOG_DEBUG, "Warning: Set LAN Parameter failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 set_lan_cc_vals,
+			                 completion_code_vals));
 		if (rsp->ccode == 0xcc) {
 			/* retry hack for invalid data field ccode */
 			int retry = 10;		/* 10 retries */
@@ -2137,7 +2152,9 @@ ipmi_lan_stats_get(struct ipmi_intf *intf, uint8_t chan)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return (-1);
 	}
 
@@ -2213,7 +2230,9 @@ ipmi_lan_stats_clear(struct ipmi_intf *intf, uint8_t chan)
 
 	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return (-1);
 	}
 
