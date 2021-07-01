@@ -84,12 +84,26 @@
 #define QCT_MAGIC_3 0x00
 #define QCT_MAGIC_4 0x02
 
+struct ipmi_rs* send_cmd(struct ipmi_intf *intf, uint8_t netfn, uint8_t cmd, uint8_t* msg_data, int data_len){
+
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = netfn;
+	req.msg.cmd = cmd;
+	req.msg.data = msg_data;
+	req.msg.data_len = data_len;
+
+	rsp = intf->sendrecv(intf, &req);
+	
+	return rsp;
+}
+
 qct_platform_t
 oem_qct_get_platform_id(struct ipmi_intf *intf)
 {
-	/* Execute a Get platform ID command to determine the board */
 	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
+	/* Execute a Get platform ID command to determine the board */
 	qct_platform_t platform_id;
 	uint8_t msg_data[GET_PLATFORM_ID_DATA_SIZE];
 
@@ -99,21 +113,23 @@ oem_qct_get_platform_id(struct ipmi_intf *intf)
 	msg_data[2] = QCT_MAGIC_3;
 	msg_data[3] = QCT_MAGIC_4;
 
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = OEM_QCT_NETFN;
-	req.msg.cmd = OEM_QCT_GET_INFO;
-	req.msg.data = msg_data;
-	req.msg.data_len = sizeof(msg_data);
-
-	rsp = intf->sendrecv(intf, &req);
+	rsp = send_cmd(intf, OEM_QCT_NETFN, OEM_QCT_GET_INFO, msg_data, sizeof(msg_data));
+	
 	if (!rsp) {
 		lprintf(LOG_ERR, "Get Platform ID command failed");
 		return 0;
 	}
 	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Get Platform ID command failed: %#x %s",
+		rsp = send_cmd(intf, OEM_QCT_NETFN_30, OEM_QCT_GET_PLATFORM, 0, 0);
+		if (rsp->data[0] == 'S' && rsp->data[1] == '2' && rsp->data[2] == 'B') { // S2BX_S2S
+			platform_id = OEM_QCT_PLATFORM_GRANTLEY;
+			return platform_id ;
+		} else {
+
+			lprintf(LOG_ERR, "Get Platform ID command failed: %#x %s",
 		        rsp->ccode, val2str(rsp->ccode, completion_code_vals));
-		return 0;
+			return 0;
+		}
 	}
 	platform_id = rsp->data[0];
 	lprintf(LOG_DEBUG,"Platform ID: %hhx", rsp->data[0]);
@@ -164,7 +180,7 @@ oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 		}
 		/* check the platform type */
 		platform_id = oem_qct_get_platform_id(intf);
-		if (OEM_QCT_PLATFORM_PURLEY == platform_id) {
+		if ((OEM_QCT_PLATFORM_PURLEY == platform_id) || (OEM_QCT_PLATFORM_GRANTLEY == platform_id)) {
 			snprintf(desc, SIZE_OF_DESC, "CPU%d_%c%d",
 			         CPU_NUM(data),
 			         CHANNEL_NUM(data),
