@@ -522,11 +522,13 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	char *desc = NULL;
+	char tempDesc[SIZE_OF_DESC];
 	int chipset_type = 4;
 	int data1;
 	int data2;
 	int data3;
 	int sensor_type;
+	int sensor_num;
 	uint8_t i = 0;
 	uint16_t oem_id = 0;
 	/* Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to
@@ -546,9 +548,12 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 		return NULL;
 	}
 	memset(desc, '\0', SIZE_OF_DESC);
+	memset(tempDesc, '\0', SIZE_OF_DESC);
 	sensor_type = rec->sel_type.standard_type.sensor_type;
+	sensor_num = rec->sel_type.standard_type.sensor_num;
 	switch (sensor_type) {
 		case SENSOR_TYPE_MEMORY:
+		case SENSOR_TYPE_SUPERMICRO_MEM_RAS:
 			memset(&req, 0, sizeof (req));
 			req.msg.netfn = IPMI_NETFN_APP;
 			req.msg.lun = 0;
@@ -594,6 +599,12 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					break;
 				}
 			}
+			for (i = 0; supermicro_older2[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_older2[i]) {
+					chipset_type = 0;
+					break;
+				}
+			}
 			for (i = 0; supermicro_romely[i] != 0xFFFF; i++) {
 				if (oem_id == supermicro_romely[i]) {
 					chipset_type = 1;
@@ -630,6 +641,42 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 					break;
 				}
 			}
+			for (i = 0; supermicro_x11[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_x11[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_x12[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_x12[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_b11[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_b11[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_b2[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_b2[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_h11[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_h11[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
+			for (i = 0; supermicro_h12[i] != 0xFFFF; i++) {
+				if (oem_id == supermicro_h12[i]) {
+					chipset_type = 6;
+					break;
+				}
+			}
 			if (chipset_type == 0) {
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%2X(CPU%x)",
 						data2,
@@ -644,7 +691,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
 			} else if (chipset_type == 3) {
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%d(P%dM%d)",
-						((data2 & 0xf) >> 4) > 4
+						((data2 & 0xff) >> 4) > 4
 						? '@' - 4 + ((data2 & 0xff) >> 4)
 						: '@' + ((data2 & 0xff) >> 4),
 						(data2 & 0xf) - 0x09, (data3 & 0x0f) + 1,
@@ -657,9 +704,17 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
 						(data2 >> 4) + 0x40,
 						(data2 & 0xf) + 0x27, (data3 & 0x07) + 1);
+			} else if (chipset_type == 6) {
+				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%c(CPU%x)",
+						(data2 >> 4) + 0x40,
+						(data2 & 0xf) + 0x27, (data3 & 0x07) + 1);
 			} else {
 				/* No description. */
 				desc[0] = '\0';
+			}
+			if (sensor_type == SENSOR_TYPE_SUPERMICRO_MEM_RAS) {
+				strcpy(tempDesc, desc);
+				snprintf(desc, SIZE_OF_DESC, "System Memory RAS Feature Activated %s", tempDesc);
 			}
 			break;
 		case SENSOR_TYPE_SUPERMICRO_OEM:
@@ -671,6 +726,329 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 				} else if (data2 == 0x2) {
 					snprintf(desc, SIZE_OF_DESC, "BMC warm reset");
 				}
+			}
+			break;
+		case SENSOR_TYPE_SUPERMICRO_MRC:
+			if (sensor_num == 0xFE) {
+				switch(data1) {
+					case 0xE8:
+						snprintf(desc, SIZE_OF_DESC, "No memory DIMM detected, install memory DIMMs");
+						break;
+					case 0xEB:
+						snprintf(desc, SIZE_OF_DESC, "Memory test error");
+						break;
+					case 0xEC:
+						snprintf(desc, SIZE_OF_DESC, "Memory error (Vendor:IDT)");
+						break;
+					case 0xED:
+						snprintf(desc, SIZE_OF_DESC, "Incorrect memory DIMM population, check Memory Population Rule");
+						break;
+					case 0xEF:
+						snprintf(desc, SIZE_OF_DESC, "Memory initialization panic, apply AC Reset");
+						break;
+					case 0xF0:
+						snprintf(desc, SIZE_OF_DESC, "Failed to program memory voltage regulator");
+						break;
+					case 0xF4:
+						snprintf(desc, SIZE_OF_DESC, "Memory controller error");
+						break;
+					case 0xF5:
+						snprintf(desc, SIZE_OF_DESC, "Failed to program memory voltage regulator");
+						break;
+					case 0xF6:
+						snprintf(desc, SIZE_OF_DESC, "Processor SMBUS error");
+						break;
+					case 0xF7:
+						snprintf(desc, SIZE_OF_DESC, "PCU error");
+						break;
+					case 0xF8:
+						snprintf(desc, SIZE_OF_DESC, "NVMDIMM error");
+						break;
+					case 0xF9:
+						snprintf(desc, SIZE_OF_DESC, "Memory rank interleave error");
+						break;
+					case 0xFA:
+						snprintf(desc, SIZE_OF_DESC, "DIMM capacity exceeded SKU limit");
+						break;
+					case 0x07:
+						snprintf(desc, SIZE_OF_DESC, "Memory DIMM incompatible with memory controllers");
+						break;
+					case 0x09:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Lockstep mode");
+						break;
+					case 0x0A:
+						snprintf(desc, SIZE_OF_DESC, "(runtime) Failing DIMM: DIMM location and Mapped-Out");
+						break;
+					case 0x0B:
+						snprintf(desc, SIZE_OF_DESC, "Uncorrectable error found, Memory Rank is disabled");
+						break;
+					case 0x0C:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Mirror mode");
+						break;
+					case 0x0D:
+						snprintf(desc, SIZE_OF_DESC, "Partial Mirror mode is disabled");
+						break;
+					case 0x0E:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Interleave mode");
+						break;
+					case 0x0F:
+						snprintf(desc, SIZE_OF_DESC, "DIMM communication failed");
+						break;
+					case 0x10:
+						snprintf(desc, SIZE_OF_DESC, "Sparing is disabled");
+						break;
+					case 0x14:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x15:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x17:
+						snprintf(desc, SIZE_OF_DESC, "Incorrect memory DIMM population");
+						break;
+					case 0x1F:
+						snprintf(desc, SIZE_OF_DESC, "Early Read ID training warning");
+						break;
+					case 0x24:
+						snprintf(desc, SIZE_OF_DESC, "DQ swizzling failed");
+						break;
+					case 0x26:
+						snprintf(desc, SIZE_OF_DESC, "Memory signal is too marginal");
+						break;
+					case 0x28:
+						snprintf(desc, SIZE_OF_DESC, "FNV opcode invalid");
+						break;
+					case 0x29:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x30:
+						snprintf(desc, SIZE_OF_DESC, "Failing DIMM: DIMM location (Correctable memory component found)");
+						break;
+					case 0x31:
+						snprintf(desc, SIZE_OF_DESC, "Failing DIMM: DIMM location (Uncorrectable memory component found)");
+						break;
+					case 0x34:
+						snprintf(desc, SIZE_OF_DESC, "Difference Completion Delay is exceeded");
+						break;
+					case 0x35:
+						snprintf(desc, SIZE_OF_DESC, "Post Package Repair warning");
+						break;
+					case 0x36:
+						snprintf(desc, SIZE_OF_DESC, "Check Bounds error");
+						break;
+					case 0x39:
+						snprintf(desc, SIZE_OF_DESC, "NVMDIMM boot related warning");
+						break;
+					case 0x3A:
+						snprintf(desc, SIZE_OF_DESC, "ADDDC(Adaptive Dual Device Data Correction) is disabled");
+						break;
+					case 0x3B:
+						snprintf(desc, SIZE_OF_DESC, "SDDC(Single Device Data Correction) is disabled");
+						break;
+					case 0x3C:
+						snprintf(desc, SIZE_OF_DESC, "NVMDIMM controller FW is out of date");
+						break;
+					case 0x84:
+						snprintf(desc, SIZE_OF_DESC, "NVMDIMM controller Media status warning");
+						break;
+				}
+			} else if (sensor_num == 0x00) {
+				switch(data1) {
+					case 0x01:
+						snprintf(desc, SIZE_OF_DESC, "MRC Fail");
+						break;
+					case 0x02:
+						snprintf(desc, SIZE_OF_DESC, "MRC Wrong Input Parameter");
+						break;
+					case 0x03:
+						snprintf(desc, SIZE_OF_DESC, "MRC CAS Error");
+						break;
+					case 0x04:
+						snprintf(desc, SIZE_OF_DESC, "MRC Timing Error");
+						break;
+					case 0x05:
+						snprintf(desc, SIZE_OF_DESC, "MRC Sense AMP Err");
+						break;
+					case 0x06:
+						snprintf(desc, SIZE_OF_DESC, "MRC Read MPR Err");
+						break;
+					case 0x07:
+						snprintf(desc, SIZE_OF_DESC, "MRC Read Leveling Error");
+						break;
+					case 0x08:
+						snprintf(desc, SIZE_OF_DESC, "MRC Write Leveling Error");
+						break;
+					case 0x09:
+						snprintf(desc, SIZE_OF_DESC, "MRC Data Time Centering 1D Err");
+						break;
+					case 0x0A:
+						snprintf(desc, SIZE_OF_DESC, "MRC Write Voltage 2D Error");
+						break;
+					case 0x0B:
+						snprintf(desc, SIZE_OF_DESC, "MRC Read Voltage 2D Error");
+						break;
+					case 0x0C:
+						snprintf(desc, SIZE_OF_DESC, "MRC Misc Training Error");
+						break;
+					case 0x0D:
+						snprintf(desc, SIZE_OF_DESC, "MRC Wr Error");
+						break;
+					case 0x0E:
+						snprintf(desc, SIZE_OF_DESC, "MRC Dimm Not Support");
+						break;
+					case 0x0F:
+						snprintf(desc, SIZE_OF_DESC, "MRC Channel Not Support");
+						break;
+					case 0x10:
+						snprintf(desc, SIZE_OF_DESC, "MRC Pi Setting Error");
+						break;
+					case 0x11:
+						snprintf(desc, SIZE_OF_DESC, "MRC DqsPi Setting Error");
+						break;
+					case 0x12:
+						snprintf(desc, SIZE_OF_DESC, "MRC Device Busy");
+						break;
+					case 0x13:
+						snprintf(desc, SIZE_OF_DESC, "MRC Frequency Change");
+						break;
+					case 0x14:
+						snprintf(desc, SIZE_OF_DESC, "MRC Reut Sequence Error");
+						break;
+					case 0x15:
+						snprintf(desc, SIZE_OF_DESC, "MRC CRC Error");
+						break;
+					case 0x16:
+						snprintf(desc, SIZE_OF_DESC, "MRC Frequency Error");
+						break;
+					case 0x17:
+						snprintf(desc, SIZE_OF_DESC, "MRC Dimm Not Exist");
+						break;
+					case 0x18:
+						snprintf(desc, SIZE_OF_DESC, "MRC Cold Boot Required");
+						break;
+					case 0x19:
+						snprintf(desc, SIZE_OF_DESC, "MRC Round Trip Latency Error");
+						break;
+					case 0x1A:
+						snprintf(desc, SIZE_OF_DESC, "MRC Mixed Dimm System");
+						break;
+					case 0x1B:
+						snprintf(desc, SIZE_OF_DESC, "MRC Alias Detected");
+						break;
+					case 0x1C:
+						snprintf(desc, SIZE_OF_DESC, "MRC Retrain");
+						break;
+					case 0x1D:
+						snprintf(desc, SIZE_OF_DESC, "MRC Rtp Error");
+						break;
+					case 0x1E:
+						snprintf(desc, SIZE_OF_DESC, "MRC Unsupported Technology");
+						break;
+					case 0x1F:
+						snprintf(desc, SIZE_OF_DESC, "MRC Mapping Error");
+						break;
+					case 0x20:
+						snprintf(desc, SIZE_OF_DESC, "MRC Socket Not Supported");
+						break;
+					case 0x21:
+						snprintf(desc, SIZE_OF_DESC, "MRC Controller Not Supported");
+						break;
+					case 0x22:
+						snprintf(desc, SIZE_OF_DESC, "MRC Rank Not Supported");
+						break;
+				}
+			} else if (sensor_num == 0xFF) {
+				switch(data1) {
+					case 0xE8:
+						snprintf(desc, SIZE_OF_DESC, "No memory DIMM detected, install memory DIMMs");
+						break;
+					case 0xEB:
+						snprintf(desc, SIZE_OF_DESC, "Hardware memtest failed");
+						break;
+					case 0xED:
+						snprintf(desc, SIZE_OF_DESC, "Incorrect memory DIMM population, check Memory Population Rule");
+						break;
+					case 0xEF:
+						snprintf(desc, SIZE_OF_DESC, "Memory initialization panic, apply AC Reset");
+						break;
+					case 0xF0:
+						snprintf(desc, SIZE_OF_DESC, "Failed to program memory voltage regulator");
+						break;
+					case 0x07:
+						switch(data2) {
+							case 0x02:
+								snprintf(desc, SIZE_OF_DESC, "Max number of ranks exceeded on the channel");
+								break;
+							case 0x05:
+								snprintf(desc, SIZE_OF_DESC, "The number of ranks on this device is not supported");
+								break;
+							case 0x06:
+								snprintf(desc, SIZE_OF_DESC, "This DIMM does not support DDR4-1333 or higher");
+								break;
+							case 0x08:
+								snprintf(desc, SIZE_OF_DESC, "Channel configuration is not supported");
+								break;
+							case 0x0A:
+								snprintf(desc, SIZE_OF_DESC, "DDR4 voltage is not supported");
+								break;
+						}
+						break;
+					case 0x09:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Lockstep mode");
+						break;
+					case 0x0A:
+						snprintf(desc, SIZE_OF_DESC, "(runtime) Failing DIMM: DIMM location and Mapped-Out");
+						break;
+					case 0x0B:
+						snprintf(desc, SIZE_OF_DESC, "Uncorrectable error found, Memory Rank is disabled");
+						break;
+					case 0x0C:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Mirror mode");
+						break;
+					case 0x0E:
+						snprintf(desc, SIZE_OF_DESC, "Failed to honor Interleave mode");
+						break;
+					case 0x14:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x15:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x16:
+						snprintf(desc, SIZE_OF_DESC, "Memory training failure");
+						break;
+					case 0x17:
+						snprintf(desc, SIZE_OF_DESC, "Incorrect memory DIMM population");
+						break;
+					case 0x26:
+						snprintf(desc, SIZE_OF_DESC, "Memory signal is too marginal");
+						break;
+					case 0x30:
+						snprintf(desc, SIZE_OF_DESC, "Failing DIMM: DIMM location (Correctable memory component found)");
+						break;
+					case 0x31:
+						snprintf(desc, SIZE_OF_DESC, "Failing DIMM: DIMM location (Uncorrectable memory component found)");
+						break;
+				}
+			}
+			if (data3 != 0xff) {
+				int dimm, cpu, channel;
+				dimm = (data3 & 0x03) + 1;
+				cpu = (((data3 & 0xff) >> 5) & 0x07) + 1;
+				if (sensor_num == 0xFF) {
+					channel = (((data3 & 0xff) >> 2) & 0x07) + (cpu - 1) * 4 + 65;
+				} else {
+					channel = (((data3 & 0xff) >> 2) & 0x07) + 65;
+				}
+				snprintf(tempDesc, SIZE_OF_DESC, " (P%d-DIMM%c%d)", cpu, channel, dimm);
+				strcat(desc, tempDesc);
+			}
+			break;
+		case 0x14:
+			if (data2 == 0) {
+				snprintf(desc, SIZE_OF_DESC, "BTN");
+			} else if (data2 == 1) {
+				snprintf(desc, SIZE_OF_DESC, "IPMI");
 			}
 			break;
 	}
@@ -1424,6 +1802,8 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
                      flag = 0x01;			
                  break;
             case SENSOR_TYPE_SUPERMICRO_OEM:
+            case SENSOR_TYPE_SUPERMICRO_MRC:
+            case SENSOR_TYPE_SUPERMICRO_MEM_RAS:
                  flag = 0x02;
                  break;
             default:
