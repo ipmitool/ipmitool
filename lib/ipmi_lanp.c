@@ -736,8 +736,11 @@ ipmi_lan_print(struct ipmi_intf *intf, uint8_t chan)
 		case 3:
 			printf("BIOS Assigned Address\n");
 			break;
+		case 4:
+			printf("Other Address Assignment Protocol\n");
+			break;
 		default:
-			printf("Other\n");
+			printf("Unknown Source %d\n", p->data[0]);
 			break;
 		}
 	}
@@ -1525,6 +1528,8 @@ ipmi_lan_set(struct ipmi_intf *intf, int argc, char **argv)
 			data[0] = 2;
 		else if (!strcmp(argv[2], "bios"))
 			data[0] = 3;
+		else if (!strcmp(argv[2], "other"))
+			data[0] = 4;
 		else {
 			print_lan_set_ipsrc_usage();
 			return -1;
@@ -2345,6 +2350,8 @@ print_lan_set_usage(void)
 	lprintf(LOG_NOTICE,
 "    bios   = address loaded by BIOS or system software");
 	lprintf(LOG_NOTICE,
+"    other  = address obtained via other protocol, such as HPM.3");
+	lprintf(LOG_NOTICE,
 "  cipher_privs XXXXXXXXXXXXXXX   Set RMCP+ cipher suite privilege levels");
 	lprintf(LOG_NOTICE,
 "    X = Cipher Suite Unused");
@@ -2448,6 +2455,8 @@ print_lan_set_ipsrc_usage(void)
 "  dhcp   = address obtained by BMC running DHCP");
 	lprintf(LOG_NOTICE,
 "  bios   = address loaded by BIOS or system software");
+	lprintf(LOG_NOTICE,
+"  other  = address obtained via other protocol, such as HPM.3");
 }
 
 static void
