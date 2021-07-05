@@ -238,6 +238,8 @@ struct ipmi_intf {
 	int (*set_my_addr)(struct ipmi_intf * intf, uint8_t addr);
 	void (*set_max_request_data_size)(struct ipmi_intf * intf, uint16_t size);
 	void (*set_max_response_data_size)(struct ipmi_intf * intf, uint16_t size);
+	// Context struct ptr, available for each interface to use as they need
+	void* context;
 };
 
 uint16_t ipmi_intf_get_max_request_data_size(struct ipmi_intf *intf);
@@ -263,6 +265,8 @@ void ipmi_intf_session_set_timeout(struct ipmi_intf * intf, uint32_t timeout);
 void ipmi_intf_session_set_retry(struct ipmi_intf * intf, int retry);
 void ipmi_intf_session_cleanup(struct ipmi_intf *intf);
 void ipmi_cleanup(struct ipmi_intf * intf);
+int ipmi_open(struct ipmi_intf *intf);
+void ipmi_close(struct ipmi_intf *intf);
 
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
 int  ipmi_intf_socket_connect(struct ipmi_intf * intf);
