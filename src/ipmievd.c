@@ -39,8 +39,10 @@
 #include <inttypes.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <sys/un.h>
 
 #if defined(HAVE_CONFIG_H)
 # include <config.h>
@@ -93,6 +95,8 @@ uint16_t selwatch_lastid = 0;	/* current last entry in the SEL */
 int selwatch_pctused = 0;	/* current percent usage in the SEL */
 int selwatch_overflow = 0;	/* SEL overflow */
 int selwatch_timeout = 10;	/* default to 10 seconds */
+int log_raw = 0;
+int no_syslog = 0;
 
 /* event interface definition */
 struct ipmi_event_intf {
@@ -105,6 +109,7 @@ struct ipmi_event_intf {
 	int (*check)(struct ipmi_event_intf * eintf);
 	void (*log)(struct ipmi_event_intf * eintf, struct sel_event_record * evt);
 	struct ipmi_intf * intf;
+	int rawfd;
 };
 
 /* Data from SEL we are interested in */
@@ -129,6 +134,7 @@ static struct ipmi_event_intf openipmi_event_intf = {
 	.wait = openipmi_wait,
 	.read = openipmi_read,
 	.log = log_event,
+	.rawfd = -1,
 };
 #endif
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -146,6 +152,7 @@ static struct ipmi_event_intf selwatch_event_intf = {
 	.read = selwatch_read,
 	.check = selwatch_check,
 	.log = log_event,
+	.rawfd = -1,
 };
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
@@ -166,6 +173,8 @@ ipmievd_usage(void)
 	lprintf(LOG_NOTICE, "\ttimeout=#     Time between checks for SEL polling method [default=10]");
 	lprintf(LOG_NOTICE, "\tdaemon        Become a daemon [default]");
 	lprintf(LOG_NOTICE, "\tnodaemon      Do NOT become a daemon");
+	lprintf(LOG_NOTICE, "\traw           Log raw hex format to socket /var/run/ipmievd.socket");
+	lprintf(LOG_NOTICE, "\tnosyslog      Do NOT log to the syslog");
 }
 
 /* ipmi_intf_load  -  Load an event interface from the table above
@@ -213,6 +222,107 @@ compute_pctfull(uint16_t entries, uint16_t freespace)
 	return pctfull;
 }
 
+#define MAX_CLIENTS 4
+static int client_socket[MAX_CLIENTS];
+static int max_fd;
+int fd_socket = -1;
+#define IPMIEVD_SOCKET "/var/run/ipmievd.socket"
+
+static int setup_raw_log_socket(char * socket_path)
+{
+	struct sockaddr_un addr;
+	int fd;
+
+	umask(0);
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+		perror("socket error");
+		exit(-1);
+	}
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	if (*socket_path == '\0') {
+		*addr.sun_path = '\0';
+		strncpy(addr.sun_path+1, socket_path+1, sizeof(addr.sun_path)-2);
+	} else {
+		strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path)-1);
+		unlink(socket_path);
+	}
+
+	if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+		perror("bind error");
+		exit(-1);
+	}
+
+	if (listen(fd, 5) == -1) {
+		perror("listen error");
+		exit(-1);
+	}
+
+	/* catch SIGPIPE and ignore to allow closing of the reading end of socket */
+	signal(SIGPIPE, SIG_IGN);
+
+	return fd;
+}
+
+static void write_raw_log_socket(int fd_socket, const char * msg_str, int msg_len)
+{
+	int i;
+	int sd;
+	int activity;
+	fd_set readfds;
+	struct timeval timeout = {0};
+
+	FD_ZERO(&readfds);
+	FD_SET(fd_socket, &readfds);
+	max_fd = fd_socket;
+
+	/* add child sockets to set */
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		sd = client_socket[i];
+		if (sd > 0)
+			FD_SET(sd, &readfds);
+
+		if (sd > max_fd)
+			max_fd = sd;
+	}
+
+
+	activity = select(max_fd + 1 , &readfds , NULL , NULL , &timeout);
+	if ((activity < 0) && (errno != EINTR)) {
+		perror("select error");
+	}
+
+	/* check for new incoming connection */
+	if (FD_ISSET(fd_socket, &readfds)) {
+		int new_socket;
+
+		if ((new_socket = accept(fd_socket, NULL, NULL)) < 0)
+			return;
+
+		/* todo check for max reached ... */
+		for (i = 0; i < MAX_CLIENTS; i++) {
+			if (client_socket[i] == 0) {
+				client_socket[i] = new_socket;
+				break;
+			}
+		}
+	}
+
+	/* handle all active connecitons */
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		sd = client_socket[i];
+		if (sd == 0)
+			continue;
+
+		if (write(sd ,msg_str, msg_len) <= 0) {
+			close(sd);
+			client_socket[i] = 0;
+		}
+	}
+	return;
+}
 
 static void
 log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
@@ -225,6 +335,27 @@ log_event(struct ipmi_event_intf * eintf, struct sel_event_record * evt)
 	float threshold_reading = 0.0;
 
 	if (!evt)
+		return;
+
+	if (log_raw) {
+		unsigned char *raw;
+		char msg_str[256] = {0};
+
+		raw = (unsigned char*)evt;
+		snprintf(msg_str, sizeof(msg_str),
+				 "0x%02x, 0x%02x, 0x%02x, 0x%02x, "
+				 "0x%02x, 0x%02x, 0x%02x, 0x%02x, "
+				 "0x%02x, 0x%02x, 0x%02x, 0x%02x, "
+				 "0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+				*(raw+0), *(raw+1), *(raw+2), *(raw+3),
+				*(raw+4), *(raw+5), *(raw+6), *(raw+7),
+				*(raw+8), *(raw+9), *(raw+10), *(raw+11),
+				*(raw+12), *(raw+13), *(raw+14), *(raw+15)
+				);
+		write_raw_log_socket(eintf->rawfd, msg_str, strlen(msg_str));
+	}
+
+	if (no_syslog)
 		return;
 
 	if (evt->record_type == 0xf0) {
@@ -735,6 +866,12 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 			strncpy(pidfile, argv[i]+8,
 				__min(strlen((const char *)(argv[i]+8)), 63));
 		}
+		else if (strncasecmp(argv[i], "raw", 3) == 0) {
+			log_raw = 1;
+		}
+		else if (strncasecmp(argv[i], "nosyslog", 8) == 0) {
+			no_syslog = 1;
+		}
 	}
 
 	lprintf(LOG_DEBUG, "ipmievd: using pidfile %s", pidfile);
@@ -787,6 +924,8 @@ ipmievd_main(struct ipmi_event_intf * eintf, int argc, char ** argv)
 
 	log_halt();
 	log_init("ipmievd", daemon, verbose);
+
+	eintf->rawfd = setup_raw_log_socket(IPMIEVD_SOCKET);
 
 	/* generate SDR cache for fast lookups */
 	lprintf(LOG_NOTICE, "Reading sensors...");
