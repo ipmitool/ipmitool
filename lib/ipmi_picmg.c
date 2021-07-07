@@ -2428,10 +2428,11 @@ ipmi_picmg_ipmb_address(struct ipmi_intf *intf) {
 uint8_t
 picmg_discover(struct ipmi_intf *intf) {
 	/* Check if PICMG extension is available to use the function 
-	 * GetDeviceLocator to retrieve i2c address PICMG hack to set
+	 * GetAddressInfo to retrieve i2c address PICMG hack to set
 	 * right IPMB address, If extension is not supported, should 
 	 * not give any problems
-	 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA) to
+	 *  PICMG Extension Version 1.0 (PICMG 2.9 Revision 1.0 CPCI)
+	 *  PICMG Extension Version 2.0 (PICMG 3.0 Revision 1.0 ATCA)
 	 *  PICMG Extension Version 2.3 (PICMG 3.0 Revision 3.0 ATCA)
 	 *  PICMG Extension Version 4.1 (PICMG 3.0 Revision 3.0 AMC)
 	 *  PICMG Extension Version 5.0 (MTCA.0 R1.0)
@@ -2465,7 +2466,8 @@ picmg_discover(struct ipmi_intf *intf) {
 	} else if (rsp->data[0] != 0) {
 	    lprintf(LOG_INFO,"Invalid Get PICMG Properties group extension %#x",
 		    rsp->data[0]);
-	} else if ((rsp->data[1] & 0x0F) != PICMG_ATCA_MAJOR_VERSION
+	} else if ((rsp->data[1] & 0x0F) != PICMG_CPCI_MAJOR_VERSION
+		&& (rsp->data[1] & 0x0F) != PICMG_ATCA_MAJOR_VERSION
 		&& (rsp->data[1] & 0x0F) != PICMG_AMC_MAJOR_VERSION
 		&& (rsp->data[1] & 0x0F) != PICMG_UTCA_MAJOR_VERSION) {
 	    lprintf(LOG_INFO,"Unknown PICMG Extension Version %d.%d",
