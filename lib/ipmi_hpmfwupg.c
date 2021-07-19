@@ -1572,9 +1572,11 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 				val2str(rsp->ccode, completion_code_vals));
 		return HPMFWUPG_ERROR;
 	}
+
+	memcpy(&pCtx->resp, rsp->data, rsp->data_len);
+	((uint8_t*)&pCtx->resp)[rsp->data_len] = '\0';
 	switch (pCtx->req.selector) {
 	case HPMFWUPG_COMP_GEN_PROPERTIES:
-		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetGeneralPropResp));
 		if (verbose) {
 			lprintf(LOG_NOTICE, "GENERAL PROPERTIES");
 			lprintf(LOG_NOTICE, "-------------------------------");
@@ -1591,8 +1593,6 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 		}
 		break;
 	case HPMFWUPG_COMP_CURRENT_VERSION:
-		memcpy(&pCtx->resp, rsp->data,
-				sizeof(struct HpmfwupgGetCurrentVersionResp));
 		if (verbose) {
 			lprintf(LOG_NOTICE, "Current Version: ");
 			lprintf(LOG_NOTICE, " Major: %d",
@@ -1607,21 +1607,17 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 		}
 		break;
 	case HPMFWUPG_COMP_DESCRIPTION_STRING:
-		memcpy(&pCtx->resp, rsp->data,
-				sizeof(struct HpmfwupgGetDescStringResp));
 		if (verbose) {
 			char descString[HPMFWUPG_DESC_STRING_LENGTH + 1];
 			memcpy(descString,
 					pCtx->resp.Response.descStringResp.descString,
 					HPMFWUPG_DESC_STRING_LENGTH);
-			descString[HPMFWUPG_DESC_STRING_LENGTH] = '\0';
 			lprintf(LOG_NOTICE,
 					"Description string: %s\n",
 					descString);
 		}
 		break;
 	case HPMFWUPG_COMP_ROLLBACK_FIRMWARE_VERSION:
-		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetRollbackFwVersionResp));
 		if (verbose) {
 			lprintf(LOG_NOTICE, "Rollback FW Version: ");
 			lprintf(LOG_NOTICE, " Major: %d",
@@ -1636,7 +1632,6 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 		}
 		break;
 	case HPMFWUPG_COMP_DEFERRED_FIRMWARE_VERSION:
-		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetDeferredFwVersionResp));
 		if (verbose) {
 			lprintf(LOG_NOTICE, "Deferred FW Version: ");
 			lprintf(LOG_NOTICE, " Major: %d",
@@ -1652,7 +1647,6 @@ HpmfwupgGetComponentProperties(struct ipmi_intf *intf,
 		break;
 	case HPMFWUPG_COMP_OEM_PROPERTIES:
 		/* OEM Properties command */
-		memcpy(&pCtx->resp, rsp->data, sizeof(struct HpmfwupgGetOemProperties));
 		if (verbose) {
 			unsigned char i = 0;
 			lprintf(LOG_NOTICE,"OEM Properties: ");

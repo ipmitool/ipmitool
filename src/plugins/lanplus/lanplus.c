@@ -785,9 +785,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 			if (extra_data_length > 0) {
 				rsp->data_len = extra_data_length;
 				memmove(rsp->data, rsp->data + offset, extra_data_length);
-				offset = 0;
-				payload_start = 0;
-				payload_size = extra_data_length;
+				memset(rsp->data + rsp->data_len, 0, IPMI_BUF_SIZE - rsp->data_len);
 			} else {
 				rsp->data_len = 0;
 			}
