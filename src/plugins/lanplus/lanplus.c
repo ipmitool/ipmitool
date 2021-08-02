@@ -82,9 +82,17 @@ extern const struct valstr ipmi_auth_algorithms[];
 extern const struct valstr ipmi_integrity_algorithms[];
 extern const struct valstr ipmi_encryption_algorithms[];
 
-static struct ipmi_rq_entry * ipmi_req_entries;
-static struct ipmi_rq_entry * ipmi_req_entries_tail;
-
+// Contains per-lanplus state, stored in the `ipmi_intf` for a given lanplus
+// interface within the context pointer.
+struct lanplus_context {
+  uint8_t last_received_sequence_number;
+  uint8_t last_received_byte_count;
+  struct ipmi_rs rsp;
+  struct ipmi_rq_entry *ipmi_req_entries;
+  struct ipmi_rq_entry *ipmi_req_entries_tail;
+  uint8_t bridgePossible;
+  uint8_t curr_seq;
+};
 
 static int ipmi_lanplus_setup(struct ipmi_intf * intf);
 static int ipmi_lanplus_keepalive(struct ipmi_intf * intf);
@@ -116,15 +124,13 @@ static struct ipmi_rs * ipmi_lanplus_recv_sol(struct ipmi_intf * intf);
 static struct ipmi_rs * ipmi_lanplus_send_sol(
 											  struct ipmi_intf * intf,
 											  struct ipmi_v2_payload * payload);
-static int check_sol_packet_for_new_data(
-									 struct ipmi_rs *rsp);
+static int check_sol_packet_for_new_data(struct ipmi_intf *intf,
+                                         struct ipmi_rs *rsp);
 static void ack_sol_packet(
 							struct ipmi_intf * intf,
 							struct ipmi_rs * rsp);
 static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size);
 static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size);
-
-static uint8_t bridgePossible = 0;
 
 struct ipmi_intf ipmi_lanplus_intf = {
 	.name = "lanplus",
@@ -288,36 +294,39 @@ static const struct valstr plus_payload_types_vals[] = {
 static struct ipmi_rq_entry *
 ipmi_req_add_entry(struct ipmi_intf * intf, struct ipmi_rq * req, uint8_t req_seq)
 {
-	struct ipmi_rq_entry * e;
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
+  struct ipmi_rq_entry * e;
 
-	e = malloc(sizeof(struct ipmi_rq_entry));
-	if (!e) {
-		lprintf(LOG_ERR, "ipmitool: malloc failure");
-		return NULL;
-	}
+  e = malloc(sizeof(struct ipmi_rq_entry));
 
-	memset(e, 0, sizeof(struct ipmi_rq_entry));
-	memcpy(&e->req, req, sizeof(struct ipmi_rq));
+  if (e == NULL) {
+    lprintf(LOG_ERR, "ipmitool: malloc failure");
+    return NULL;
+  }
 
-	e->intf = intf;
-	e->rq_seq = req_seq;
+  memset(e, 0, sizeof(struct ipmi_rq_entry));
+  memcpy(&e->req, req, sizeof(struct ipmi_rq));
 
-	if (!ipmi_req_entries)
-		ipmi_req_entries = e;
-	else
-		ipmi_req_entries_tail->next = e;
+  e->intf = intf;
+  e->rq_seq = req_seq;
 
-	ipmi_req_entries_tail = e;
+  if (context->ipmi_req_entries == NULL)
+    context->ipmi_req_entries = e;
+  else
+    context->ipmi_req_entries_tail->next = e;
+
+	context->ipmi_req_entries_tail = e;
 	lprintf(LOG_DEBUG+3, "added list entry seq=0x%02x cmd=0x%02x",
-		e->rq_seq, e->req.msg.cmd);     
+		e->rq_seq, e->req.msg.cmd);
 	return e;
 }
 
 
 static struct ipmi_rq_entry *
-ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
+ipmi_req_lookup_entry(const struct ipmi_intf *intf, uint8_t seq, uint8_t cmd)
 {
-	struct ipmi_rq_entry * e = ipmi_req_entries;
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
+  struct ipmi_rq_entry *e = context->ipmi_req_entries;
 
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
 		if (e == e->next)
@@ -328,11 +337,12 @@ ipmi_req_lookup_entry(uint8_t seq, uint8_t cmd)
 }
 
 static void
-ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
+ipmi_req_remove_entry(struct ipmi_intf *intf, uint8_t seq, uint8_t cmd)
 {
-	struct ipmi_rq_entry * p, * e, * saved_next_entry;
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
+  struct ipmi_rq_entry *p, *e, *saved_next_entry;
 
-	e = p = ipmi_req_entries;
+  e = p = context->ipmi_req_entries;
 
 	while (e && (e->rq_seq != seq || e->req.msg.cmd != cmd)) {
 		p = e;
@@ -344,19 +354,19 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 		saved_next_entry = e->next;
 		p->next = (p->next == e->next) ? NULL : e->next;
 		/* If entry being removed is first in list, fix up list head */
-		if (ipmi_req_entries == e) {
-			if (ipmi_req_entries != p)
-				ipmi_req_entries = p;
-			else
-				ipmi_req_entries = saved_next_entry;
-		}
-		/* If entry being removed is last in list, fix up list tail */
-		if (ipmi_req_entries_tail == e) {
-			if (ipmi_req_entries_tail != p)
-				ipmi_req_entries_tail = p;
-			else
-				ipmi_req_entries_tail = NULL;
-		}
+    if (context->ipmi_req_entries == e) {
+      if (context->ipmi_req_entries != p)
+        context->ipmi_req_entries = p;
+      else
+        context->ipmi_req_entries = saved_next_entry;
+    }
+    /* If entry being removed is last in list, fix up list tail */
+    if (context->ipmi_req_entries_tail == e) {
+      if (context->ipmi_req_entries_tail != p)
+        context->ipmi_req_entries_tail = p;
+      else
+        context->ipmi_req_entries_tail = NULL;
+    }
 
 		if (e->msg_data) {
 			free(e->msg_data);
@@ -368,23 +378,23 @@ ipmi_req_remove_entry(uint8_t seq, uint8_t cmd)
 }
 
 static void
-ipmi_req_clear_entries(void)
+ipmi_req_clear_entries(struct ipmi_intf *intf)
 {
-	struct ipmi_rq_entry * p, * e;
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
+  struct ipmi_rq_entry *p, *e;
 
-	e = ipmi_req_entries;
-	while (e) {
-		lprintf(LOG_DEBUG+3, "cleared list entry seq=0x%02x cmd=0x%02x",
-			e->rq_seq, e->req.msg.cmd);
-		p = e->next;
-		free(e);
-		e = p;
-	}
+  e = context->ipmi_req_entries;
+  while (e) {
+    lprintf(LOG_DEBUG + 3, "cleared list entry seq=0x%02x cmd=0x%02x",
+            e->rq_seq, e->req.msg.cmd);
+    p = e->next;
+    free(e);
+    e = p;
+  }
 
-	ipmi_req_entries = NULL;
-	ipmi_req_entries_tail = NULL;
+  context->ipmi_req_entries = NULL;
+  context->ipmi_req_entries_tail = NULL;
 }
-
 
 int
 ipmi_lan_send_packet(
@@ -401,9 +411,11 @@ ipmi_lan_send_packet(
 
 
 struct ipmi_rs *
-ipmi_lan_recv_packet(struct ipmi_intf * intf)
+ipmi_lan_recv_packet(struct ipmi_intf *intf)
 {
-	static struct ipmi_rs rsp;
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
+  struct ipmi_rs *rsp_ptr = &context->rsp;
+
 	fd_set read_set, err_set;
 	struct timeval tmout;
 	int ret;
@@ -431,7 +443,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	 * regardless of the order they were sent out.  (unless the
 	 * response is read before the connection refused is returned)
 	 */
-	ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+  ret = recv(intf->fd, &rsp_ptr->data, IPMI_BUF_SIZE, 0);
 
 	if (ret < 0) {
 		FD_ZERO(&read_set);
@@ -447,7 +459,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 		if (ret < 0 || FD_ISSET(intf->fd, &err_set) || !FD_ISSET(intf->fd, &read_set))
 			return NULL;
 
-		ret = recv(intf->fd, &rsp.data, IPMI_BUF_SIZE, 0);
+    	ret = recv(intf->fd, &rsp_ptr->data, IPMI_BUF_SIZE, 0);
 		if (ret < 0)
 			return NULL;
 	}
@@ -455,13 +467,13 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	if (ret == 0)
 		return NULL;
 
-	rsp.data[ret] = '\0';
-	rsp.data_len = ret;
+  rsp_ptr->data[ret] = '\0';
+  rsp_ptr->data_len = ret;
 
 	if (verbose >= 5)
-		printbuf(rsp.data, rsp.data_len, "<< received packet");
+    	printbuf(rsp_ptr->data, rsp_ptr->data_len, "<< received packet");
 
-	return &rsp;
+  return rsp_ptr;
 }
 
 
@@ -605,6 +617,7 @@ ipmiv2_lan_ping(struct ipmi_intf * intf)
 static struct ipmi_rs *
 ipmi_lan_poll_single(struct ipmi_intf * intf)
 {
+  struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	struct rmcp_hdr * rmcp_rsp;
 	struct ipmi_rs * rsp;
 	struct ipmi_session * session = intf->session;
@@ -732,8 +745,8 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 				rsp->ccode);
 
 			/* Are we expecting this packet? */
-			entry = ipmi_req_lookup_entry(rsp->payload.ipmi_response.rq_seq,
-								rsp->payload.ipmi_response.cmd);
+      		entry = ipmi_req_lookup_entry(intf, rsp->payload.ipmi_response.rq_seq,
+                                    rsp->payload.ipmi_response.cmd);
 
 			if (!entry) {
 				lprintf(LOG_INFO, "IPMI Request Match NOT FOUND");
@@ -773,8 +786,8 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 			}
 
 			/* Remove request entry */
-			ipmi_req_remove_entry(rsp->payload.ipmi_response.rq_seq,
-					rsp->payload.ipmi_response.cmd);
+      		ipmi_req_remove_entry(intf, rsp->payload.ipmi_response.rq_seq,
+                            rsp->payload.ipmi_response.cmd);
 
 			/*
 			 * Good packet.  Shift response data to start of array.
@@ -1342,6 +1355,7 @@ void getIpmiPayloadWireRep(
 							uint8_t    rq_seq,
 							uint8_t curr_seq)
 {
+	struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	int cs, tmp, len;
 	int cs2 = 0;
 	int cs3 = 0;
@@ -1354,7 +1368,7 @@ void getIpmiPayloadWireRep(
 	len = 0;
 
 	/* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec */
-	if ((intf->target_addr == ourAddress) || (!bridgePossible)) {
+	if ((intf->target_addr == ourAddress) || (!context->bridgePossible)) {
 		cs = len;
 	} else {
 		bridgedRequest = 1;
@@ -1408,7 +1422,7 @@ void getIpmiPayloadWireRep(
 		bridgedRequest ? "Bridging" : "Local",
 		intf->my_addr, intf->transit_addr, intf->transit_channel,
 		intf->target_addr, intf->target_channel,
-		bridgePossible);
+		context->bridgePossible);
 
 	/* rsAddr */
 	if (bridgedRequest)
@@ -1880,6 +1894,7 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 								struct ipmi_rq * req,
 								int isRetry)
 {
+	struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	struct ipmi_v2_payload v2_payload;
 	struct ipmi_rq_entry * entry;
 
@@ -1892,19 +1907,19 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	static uint8_t curr_seq = 0;
 
 	if( isRetry == 0 )
-		curr_seq += 1;
+		context->curr_seq += 1;
 
 	if (curr_seq >= 64)
-		curr_seq = 0;
+		context->curr_seq = 0;
 
 
 	/* IPMI Message Header -- Figure 13-4 of the IPMI v2.0 spec */
-	if ((intf->target_addr == intf->my_addr) || (!bridgePossible)) {
-		entry = ipmi_req_add_entry(intf, req, curr_seq);
+	if ((intf->target_addr == intf->my_addr) || (!context->bridgePossible)) {
+		entry = ipmi_req_add_entry(intf, req, context->curr_seq);
 	/* it's a bridge command */
 	} else {
 		/* Add entry for cmd */
-		entry = ipmi_req_add_entry(intf, req, curr_seq);
+		entry = ipmi_req_add_entry(intf, req, context->curr_seq);
 
 		if (entry) {
 			entry->req.msg.target_cmd = entry->req.msg.cmd;
@@ -1925,13 +1940,13 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 	v2_payload.payload_type                 = IPMI_PAYLOAD_TYPE_IPMI;
 	v2_payload.payload_length               = req->msg.data_len + 7;
 	v2_payload.payload.ipmi_request.request = req;
-	v2_payload.payload.ipmi_request.rq_seq  = curr_seq;
+	v2_payload.payload.ipmi_request.rq_seq  = context->curr_seq;
 
 	ipmi_lanplus_build_v2x_msg(intf,                // in
 					&v2_payload,         // in
 					&(entry->msg_len),   // out
 					&(entry->msg_data),  // out
-					curr_seq); 		// in
+					context->curr_seq);  // in
 
 	return entry;
 }
@@ -2114,10 +2129,11 @@ ipmi_lanplus_send_payload(
 						  struct ipmi_intf * intf,
 						  struct ipmi_v2_payload * payload)
 {
+  	struct lanplus_context *context;
 	struct ipmi_rs      * rsp = NULL;
 	uint8_t             * msg_data = NULL;
 	int                   msg_length;
-	struct ipmi_session * session = intf->session;
+	struct ipmi_session * session;
 	struct ipmi_rq_entry * entry = NULL;
 	int                   try = 0;
 	int                   xmit = 1;
@@ -2126,11 +2142,13 @@ ipmi_lanplus_send_payload(
 
 	if (!intf->opened && intf->open && intf->open(intf) < 0)
 		return NULL;
+  	context = (struct lanplus_context *) intf->context;
 
 	/*
 	 * The session timeout is initialized in the above interface open,
 	 * so it will only be valid after the open completes.
 	 */
+  	session = intf->session;
 	saved_timeout = session->timeout;
 	while (try < intf->ssn_params.retry) {
 		//ltime = time(NULL);
@@ -2337,7 +2355,7 @@ ipmi_lanplus_send_payload(
 				break;
 			/* This payload type is retryable for timeouts. */
 			if ((payload->payload_type == IPMI_PAYLOAD_TYPE_IPMI) && entry) {
-				ipmi_req_remove_entry( entry->rq_seq, entry->req.msg.cmd);
+				ipmi_req_remove_entry(intf, entry->rq_seq, entry->req.msg.cmd);
 			}
 		}
 
@@ -2514,12 +2532,10 @@ ipmi_lanplus_send_sol(
  */
 static int
 check_sol_packet_for_new_data(
-							  struct ipmi_rs *rsp)
+    struct ipmi_intf *intf, struct ipmi_rs *rsp)
 {
-	static uint8_t last_received_sequence_number = 0;
-	static uint8_t last_received_byte_count      = 0;
-	int new_data_size                                  = 0;
-
+  	struct lanplus_context *context = (struct lanplus_context *)intf->context;
+	int new_data_size = 0;
 
 	if (rsp &&
 		(rsp->session.authtype    == IPMI_SESSION_AUTHTYPE_RMCP_PLUS) &&
@@ -2529,14 +2545,14 @@ check_sol_packet_for_new_data(
 		uint8_t unaltered_data_len = rsp->data_len;
 
 		if (rsp->payload.sol_packet.packet_sequence_number ==
-			last_received_sequence_number)
+        	context->last_received_sequence_number)
 		{
 
 			/*
 			 * This is the same as the last packet, but may include
 			 * extra data
 			 */
-			new_data_size = rsp->data_len - last_received_byte_count;
+      		new_data_size = rsp->data_len - context->last_received_byte_count;
 
 			if (new_data_size > 0)
 			{
@@ -2556,13 +2572,12 @@ check_sol_packet_for_new_data(
 		 */
 		if (rsp->payload.sol_packet.packet_sequence_number)
 		{
-			last_received_sequence_number =
-				rsp->payload.sol_packet.packet_sequence_number;
+      		context->last_received_sequence_number =
+          		rsp->payload.sol_packet.packet_sequence_number;
 
-			last_received_byte_count = unaltered_data_len;
+     		context->last_received_byte_count = unaltered_data_len;
 		}
 	}
-
 
 	return new_data_size;
 }
@@ -2629,7 +2644,7 @@ ipmi_lanplus_recv_sol(struct ipmi_intf * intf)
 		 * Remembers the data sent, and alters the data to just
 		 * include the new stuff.
 		 */
-		check_sol_packet_for_new_data(rsp);
+		check_sol_packet_for_new_data(intf, rsp);
 	}
 	return rsp;
 }
@@ -2679,14 +2694,15 @@ ipmi_get_auth_capabilities_cmd(
 								struct ipmi_intf * intf,
 								struct get_channel_auth_cap_rsp * auth_cap)
 {
+	struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
 	uint8_t backupBridgePossible;
 
-	backupBridgePossible = bridgePossible;
+	backupBridgePossible = context->bridgePossible;
 
-	bridgePossible = 0;
+	context->bridgePossible = 0;
 
 	msg_data[0] = IPMI_LAN_CHANNEL_E | 0x80; // Ask for IPMI v2 data as well
 	msg_data[1] = intf->ssn_params.privlvl;
@@ -2724,7 +2740,7 @@ ipmi_get_auth_capabilities_cmd(
 			rsp->data,
 			sizeof(struct get_channel_auth_cap_rsp));
 
-	bridgePossible = backupBridgePossible;
+	context->bridgePossible = backupBridgePossible;
 
 	return 0;
 }
@@ -2734,6 +2750,7 @@ ipmi_get_auth_capabilities_cmd(
 static int
 ipmi_close_session_cmd(struct ipmi_intf * intf)
 {
+	struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[4];
@@ -2743,10 +2760,10 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 			|| intf->session->v2_data.session_state != LANPLUS_STATE_ACTIVE)
 		return -1;
 
-	backupBridgePossible = bridgePossible;
+	backupBridgePossible = context->bridgePossible;
 
 	intf->target_addr = IPMI_BMC_SLAVE_ADDR;
-	bridgePossible = 0;
+	context->bridgePossible = 0;
 
 	htoipmi32(intf->session->v2_data.bmc_id, msg_data);
 
@@ -2780,7 +2797,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 	lprintf(LOG_DEBUG, "Closed Session %08lx\n",
 		(long)intf->session->v2_data.bmc_id);
 
-	bridgePossible = backupBridgePossible;
+	context->bridgePossible = backupBridgePossible;
 
 	return 0;
 }
@@ -3306,7 +3323,11 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 		intf->fd = -1;
 	}
 
-	ipmi_req_clear_entries();
+	if (intf->context != NULL) {
+		ipmi_req_clear_entries(intf);
+		free(intf->context);
+		intf->context = NULL;
+	}
 	ipmi_intf_session_cleanup(intf);
 	intf->opened = 0;
 	intf->manufacturer_id = IPMI_OEM_UNKNOWN;
@@ -3318,6 +3339,7 @@ ipmi_lanplus_close(struct ipmi_intf * intf)
 static int
 ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 {
+	struct lanplus_context *context = (struct lanplus_context *)intf->context;
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t backupBridgePossible;
@@ -3326,9 +3348,9 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (privlvl <= IPMI_SESSION_PRIV_USER)
 		return 0;	/* no need to set higher */
 
-	backupBridgePossible = bridgePossible;
+	backupBridgePossible = context->bridgePossible;
 
-	bridgePossible = 0;
+	context->bridgePossible = 0;
 
 	memset(&req, 0, sizeof(req));
 	req.msg.netfn		= IPMI_NETFN_APP;
@@ -3340,7 +3362,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 	if (!rsp) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed",
 			val2str(privlvl, ipmi_privlvl_vals));
-		bridgePossible = backupBridgePossible;
+		context->bridgePossible = backupBridgePossible;
 		return -1;
 	}
 	if (verbose > 2)
@@ -3350,14 +3372,14 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
 			val2str(privlvl, ipmi_privlvl_vals),
 			val2str(rsp->ccode, completion_code_vals));
-		bridgePossible = backupBridgePossible;
+		context->bridgePossible = backupBridgePossible;
 		return -1;
 	}
 
 	lprintf(LOG_DEBUG, "Set Session Privilege Level to %s\n",
 		val2str(rsp->data[0], ipmi_privlvl_vals));
 
-	bridgePossible = backupBridgePossible;
+	context->bridgePossible = backupBridgePossible;
 
 	return 0;
 }
@@ -3424,6 +3446,7 @@ ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
 int
 ipmi_lanplus_open(struct ipmi_intf * intf)
 {
+	struct lanplus_context *context;
 	int rc;
 	int retry;
 	struct get_channel_auth_cap_rsp auth_cap;
@@ -3436,8 +3459,11 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 	if (intf->opened)
 		return intf->fd;
 
-	params = &intf->ssn_params;
+	intf->context = malloc(sizeof(struct lanplus_context));
+	memset(intf->context, 0, sizeof(struct lanplus_context));
+	context = (struct lanplus_context *)intf->context;
 
+	params = &intf->ssn_params;
 	if (!params->port)
 		params->port = IPMI_LANPLUS_PORT;
 	if (!params->privlvl)
@@ -3560,8 +3586,9 @@ ipmi_lanplus_open(struct ipmi_intf * intf)
 		hpm2_detect_max_payload_size(intf);
 	}
 
-	bridgePossible = 1;
-
+	context = (struct lanplus_context *)intf->context;
+	context->bridgePossible = 1;
+	
 	if (!ipmi_oem_active(intf, "i82571spt")) {
 		intf->manufacturer_id = ipmi_get_oem(intf);
 	}
@@ -3685,7 +3712,7 @@ ipmi_lanplus_keepalive(struct ipmi_intf * intf)
 					 /* rsp was SOL data instead of our answer */
 					 /* since it didn't go through the sol recv, do sol recv stuff here */
 					 ack_sol_packet(intf, rsp);
-					 check_sol_packet_for_new_data(rsp);
+					 check_sol_packet_for_new_data(intf, rsp);
 					 if (rsp->data_len)
 								intf->session->sol_data.sol_input_handler(rsp);
 		rsp = ipmi_lan_poll_recv(intf);
@@ -3718,7 +3745,8 @@ static int ipmi_lanplus_setup(struct ipmi_intf * intf)
 	return 0;
 }
 
-static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
+static void
+ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t size)
 {
 	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*
@@ -3736,7 +3764,8 @@ static void ipmi_lanp_set_max_rq_data_size(struct ipmi_intf * intf, uint16_t siz
 	intf->max_request_data_size = size;
 }
 
-static void ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
+static void
+ipmi_lanp_set_max_rp_data_size(struct ipmi_intf * intf, uint16_t size)
 {
 	if (intf->ssn_params.cipher_suite_id == IPMI_LANPLUS_CIPHER_SUITE_3) {
 		/*

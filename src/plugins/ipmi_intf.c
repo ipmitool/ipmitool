@@ -343,6 +343,20 @@ ipmi_cleanup(struct ipmi_intf * intf)
 	ipmi_intf_session_set_hostname(intf, NULL);
 }
 
+int ipmi_open(struct ipmi_intf *intf) {
+  if (intf == NULL) {
+    return -1;
+  }
+  return intf->open(intf);
+}
+
+void ipmi_close(struct ipmi_intf *intf) {
+  if (intf == NULL) {
+    return;
+  }
+  intf->close(intf);
+}
+
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
 int
 ipmi_intf_socket_connect(struct ipmi_intf * intf)
@@ -508,7 +522,7 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
 	/* check if request size is not specified */
 	if (!size) {
 		/*
-		 * The IPMB standard overall message length for ‘non -bridging’
+		 * The IPMB standard overall message length for ï¿½non -bridgingï¿½
 		 * messages is specified as 32 bytes, maximum, including slave
 		 * address. This sets the upper limit for typical IPMI messages.
 		 * With the exception of messages used for bridging messages to
@@ -565,7 +579,7 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
 	/* check if response size is not specified */
 	if (!size) {
 		/*
-		 * The IPMB standard overall message length for ‘non -bridging’
+		 * The IPMB standard overall message length for ï¿½non -bridgingï¿½
 		 * messages is specified as 32 bytes, maximum, including slave
 		 * address. This sets the upper limit for typical IPMI messages.
 		 * With the exception of messages used for bridging messages to
