@@ -84,12 +84,16 @@ lanplus_rakp2_hmac_matches(const struct ipmi_session * session,
 		return 1;
 	
 	/* We don't yet support other algorithms */
+#ifdef HAVE_CRYPTO_SHA256 // assert() is a macro, must not put #ifdef inside it
 	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
-#ifdef HAVE_CRYPTO_SHA256
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA256)
-#endif /* HAVE_CRYPTO_SHA256 */
 	);
+#else
+	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
+		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
+	);
+#endif /* HAVE_CRYPTO_SHA256 */
 	
 
 	bufferLength =
@@ -251,12 +255,16 @@ lanplus_rakp4_hmac_matches(const struct ipmi_session * session,
 			return 1;
 
 		/* We don't yet support other algorithms */
+#ifdef HAVE_CRYPTO_SHA256 // assert() is a macro, must not put #ifdef inside it
 		assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
 			|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
-#ifdef HAVE_CRYPTO_SHA256
 			|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA256)
-#endif /* HAVE_CRYPTO_SHA256 */
 		);
+#else
+		assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
+			|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
+		);
+#endif /* HAVE_CRYPTO_SHA256 */
 	}
 
 	bufferLength =
@@ -417,12 +425,16 @@ lanplus_generate_rakp3_authcode(uint8_t * output_buffer,
 	}
 
 	/* We don't yet support other algorithms */
+#ifdef HAVE_CRYPTO_SHA256 // assert() is a macro, must not put #ifdef inside it
 	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
-#ifdef HAVE_CRYPTO_SHA256
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA256)
-#endif /* HAVE_CRYPTO_SHA256 */
 	);
+#else
+	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
+		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
+	);
+#endif /* HAVE_CRYPTO_SHA256 */
 
 	input_buffer_length =
 		16 + /* Rc       */
@@ -539,12 +551,16 @@ lanplus_generate_sik(struct ipmi_session * session, struct ipmi_intf * intf)
 		return 0;
 
 	/* We don't yet support other algorithms */
+#ifdef HAVE_CRYPTO_SHA256 // assert() is a macro, must not put #ifdef inside it
 	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
-#ifdef HAVE_CRYPTO_SHA256
 		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA256)
-#endif /* HAVE_CRYPTO_SHA256 */
 	);
+#else
+	assert((session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1)
+		|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)
+	);
+#endif /* HAVE_CRYPTO_SHA256 */
 
 	input_buffer_length =
 		16 +  /* Rm       */

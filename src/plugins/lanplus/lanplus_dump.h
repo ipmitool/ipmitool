@@ -30,9 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-
-#ifndef IPMI_LANPLUS_DUMP_H
-#define IPMI_LANPLUS_DUMP_H
+#pragma once
 
 #include <ipmitool/ipmi_intf.h>
 
@@ -40,6 +38,3 @@
 void lanplus_dump_open_session_response(const struct ipmi_rs * rsp);
 void lanplus_dump_rakp2_message(const struct ipmi_rs * rsp, uint8_t auth_alg);
 void lanplus_dump_rakp4_message(const struct ipmi_rs * rsp, uint8_t auth_alg);
-
-
-#endif /* IPMI_LANPLUS_DUMP_H  */

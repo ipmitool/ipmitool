@@ -27,9 +27,9 @@ TRAPD_BMC_CONF="${SNMPD_BMC_CONF_DIR}/snmptrapd.local.conf"
 TRAPD_CONF="/etc/snmp/snmptrapd.conf"
 
 LOCKFILE="/var/lock/subsys/bmc-snmp-proxy"
-BMC_INFO="/var/run/bmc-info"
+BMC_INFO="/run/bmc-info"
 
-IPMITOOL=`which ipmitool`
+IPMITOOL=$(which ipmitool)
 
 #Default config
 BMC_COMMUNITY="public"
@@ -158,7 +158,7 @@ pick_alert_dest()
 {
 	test_ip="$1"
 	# We have 4 IPv4 and 4 IPv6 alert dest. We will set IPv4 for now.
-	for ALERT_DEST in `seq 1 4`
+	for ALERT_DEST in $(seq 1 4)
 	do
 		temp_ip=$(${IPMITOOL} lan alert print ${CHANNEL} ${ALERT_DEST}\
 			2>/dev/null| sed -n "s#^Alert IP Address.*: ##p")
@@ -178,7 +178,7 @@ config_bmc_alert_dest()
 {
 	# call with enable|disable
 	# Pick the first active LAN channel
-        for CHANNEL in `seq 1 14`
+        for CHANNEL in $(seq 1 14)
         do
                 [ $(${IPMITOOL} -I open channel info ${CHANNEL} 2>/dev/null \
                         | grep -q "802\.3") ] || break

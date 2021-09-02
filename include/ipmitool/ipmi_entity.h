@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_ENTITY_H
-#define IPMI_ENTITY_H
+#pragma once
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
@@ -49,5 +48,3 @@ struct entity_id {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
 #endif
-
-#endif /* IPMI_ENTITY_H */

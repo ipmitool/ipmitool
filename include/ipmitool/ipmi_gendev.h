@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_GENDEV_H
-#define IPMI_GENDEV_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -44,5 +43,3 @@
 #include <ipmitool/ipmi_entity.h>
 
 int ipmi_gendev_main(struct ipmi_intf *, int, char **);
-
-#endif				/* IPMI_GENDEV_H */

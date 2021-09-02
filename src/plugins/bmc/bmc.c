@@ -68,11 +68,12 @@ static struct ipmi_rs *ipmi_bmc_send_cmd_putmsg(struct ipmi_intf *intf,
 #define	MESSAGE_BUFSIZE 1024
 
 struct ipmi_intf ipmi_bmc_intf = {
-	name:		"bmc",
-	desc:		"IPMI v2.0 BMC interface",
-	open:		ipmi_bmc_open,
-	close:		ipmi_bmc_close,
-	sendrecv:	ipmi_bmc_send_cmd};
+	.name = "bmc",
+	.desc = "IPMI v2.0 BMC interface",
+	.open = ipmi_bmc_open,
+	.close = ipmi_bmc_close,
+	.sendrecv = ipmi_bmc_send_cmd
+};
 
 void
 ipmi_bmc_close(struct ipmi_intf *intf)

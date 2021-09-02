@@ -119,11 +119,11 @@ static struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi
 }
 
 struct ipmi_intf ipmi_lipmi_intf = {
-	name:		"lipmi",
-	desc:		"Solaris x86 LIPMI Interface",
-	open:		ipmi_lipmi_open,
-	close:		ipmi_lipmi_close,
-	sendrecv:	ipmi_lipmi_send_cmd,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "lipmi",
+	.desc = "Solaris x86 LIPMI Interface",
+	.open = ipmi_lipmi_open,
+	.close = ipmi_lipmi_close,
+	.sendrecv = ipmi_lipmi_send_cmd,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };
 

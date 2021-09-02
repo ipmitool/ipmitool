@@ -928,8 +928,9 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_SUPERMICRO, 0xF580, "X8ST3" },
    /* YADRO */
    { IPMI_OEM_YADRO, 0x0001, "VESNIN BMC" },
-   { IPMI_OEM_YADRO, 0x000A, "TATLIN Storage Controller BMC" },
-   { IPMI_OEM_YADRO, 0x0014, "VEGMAN BMC" },
+   { IPMI_OEM_YADRO, 0x000A, "TATLIN.UNIFIED Storage Controller BMC" },
+   { IPMI_OEM_YADRO, 0x0014, "VEGMAN Series BMC" },
+   { IPMI_OEM_YADRO, 0x0015, "TATLIN.ARCHIVE/xS BMC" },
 
    { 0xffffff        , 0xffff , NULL },
  };

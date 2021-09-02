@@ -30,9 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_CONSTANTS_H
-#define IPMI_CONSTANTS_H
-
+#pragma once
 
 /*
  * COMMANDS
@@ -133,5 +131,3 @@
 #define IPMI_CRYPT_AES_CBC_128      0x01
 #define IPMI_CRYPT_XRC4_128         0x02
 #define IPMI_CRYPT_XRC4_40          0x03
-
-#endif /*IPMI_CONSTANTS_H*/
