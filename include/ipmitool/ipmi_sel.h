@@ -527,6 +527,7 @@ static const struct ipmi_event_sensor_types sensor_specific_event_types[] = {
     { 0x2b, 0x01, 0x15, "Firmware or software change detected, board/FRU replace new ver" },
     { 0x2b, 0x01, 0x16, "Firmware or software change detected, board/FRU replace old ver" },
     { 0x2b, 0x01, 0x17, "Firmware or software change detected, board/FRU HW conf change" },
+    { 0x2b, 0x01, 0xff, "Firmware or software change detected" },
     { 0x2b, 0x02, 0xff, "Hardware incompatibility detected" },
     { 0x2b, 0x03, 0xff, "Firmware or software incompatibility detected" },
     { 0x2b, 0x04, 0xff, "Invalid or unsupported hardware version" },
@@ -556,6 +557,7 @@ static const struct ipmi_event_sensor_types sensor_specific_event_types[] = {
     { 0x2b, 0x07, 0x15, "Firmware or software change success, board/FRU replace new ver" },
     { 0x2b, 0x07, 0x16, "Firmware or software change success, board/FRU replace old ver" },
     { 0x2b, 0x07, 0x17, "Firmware or software change success, board/FRU HW conf change" },
+    { 0x2b, 0x07, 0xff, "Firmware or software change success" },
     /* FRU State */
     { 0x2c, 0x00, 0xff, "Not Installed" },
     { 0x2c, 0x01, 0xff, "Inactive" },
