@@ -174,7 +174,7 @@ Do NOT become a daemon, instead log all messages to stderr.
 .TP
 \fIpidfile\fP=<\fBfilename\fR>
 Save process ID to this file when in daemon mode.  Defaults to
-/var/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
+/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
 number -- defaults to 0).
 .RE
 
@@ -197,7 +197,7 @@ Do NOT become a daemon, instead log all messages to stderr.
 .TP
 \fIpidfile\fP=<\fBfilename\fR>
 Save process ID to this file when in daemon mode.  Defaults to
-/var/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
+/run/ipmievd.pid\fIN\fP (where \fIN\fP is the ipmi device
 number -- defaults to 0).
 .TP 
 \fItimeout\fP=<\fBseconds\fR>

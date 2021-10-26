@@ -42,9 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_sel.h>
 
 #include <freeipmi/freeipmi.h>
 #if IPMI_INTF_FREE_0_3_0 || IPMI_INTF_FREE_0_4_0 || IPMI_INTF_FREE_0_5_0
@@ -61,8 +63,6 @@ extern int verbose;
 
 static int ipmi_free_open(struct ipmi_intf * intf)
 {
-        int kcs_ret = -1, ssif_ret = -1;
-
         if (getuid() != 0) {
                 fprintf(stderr, "Permission denied, must be root\n");
                 return -1;
@@ -308,11 +308,11 @@ static struct ipmi_rs * ipmi_free_send_cmd(struct ipmi_intf * intf, struct ipmi_
 }
 
 struct ipmi_intf ipmi_free_intf = {
-	name:		"free",
-	desc:		"FreeIPMI IPMI Interface",
-	open:		ipmi_free_open,
-	close:		ipmi_free_close,
-	sendrecv:	ipmi_free_send_cmd,
-	target_addr:	IPMI_BMC_SLAVE_ADDR,
+	.name = "free",
+	.desc = "FreeIPMI IPMI Interface",
+	.open = ipmi_free_open,
+	.close = ipmi_free_close,
+	.sendrecv = ipmi_free_send_cmd,
+	.target_addr = IPMI_BMC_SLAVE_ADDR,
 };
 

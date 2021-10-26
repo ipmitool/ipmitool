@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_OPENIPMI_H
-#define IPMI_OPENIPMI_H
+#pragma once
 
 #define IPMI_MAX_ADDR_SIZE		0x20
 #define IPMI_BMC_CHANNEL		0xf
@@ -102,5 +101,3 @@ struct ipmi_ipmb_addr {
 #define IPMICTL_GET_MY_ADDRESS_CMD	_IOR(IPMI_IOC_MAGIC, 18, unsigned int)
 #define IPMICTL_SET_MY_LUN_CMD		_IOR(IPMI_IOC_MAGIC, 19, unsigned int)
 #define IPMICTL_GET_MY_LUN_CMD		_IOR(IPMI_IOC_MAGIC, 20, unsigned int)
-
-#endif /*IPMI_OPENIPMI_H*/

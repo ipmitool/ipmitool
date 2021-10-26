@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_TSOL_H
-#define IPMI_TSOL_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -42,5 +41,3 @@
 #define IPMI_TSOL_DEF_PORT	6230
 
 int ipmi_tsol_main(struct ipmi_intf *, int, char **);
-
-#endif /* IPMI_TSOL_H */

@@ -473,18 +473,7 @@ serial_term_build_msg(const struct ipmi_intf * intf,
 	struct serial_term_hdr * term_hdr = (struct serial_term_hdr *) msg;
 	struct ipmi_send_message_rq * outer_rq = NULL;
 	struct ipmi_send_message_rq * inner_rq = NULL;
-	int bridging_level;
-
-	/* acquire bridging level */
-	if (intf->target_addr && intf->target_addr != intf->my_addr) {
-		if (intf->transit_addr != 0) {
-			bridging_level = 2;
-		} else {
-			bridging_level = 1;
-		}
-	} else {
-		bridging_level = 0;
-	}
+	int bridging_level = ipmi_intf_get_bridging_level(intf);
 
 	/* check overall packet length */
 	if(req->msg.data_len + 3 + bridging_level * 8 > max_len) {
@@ -635,7 +624,7 @@ serial_term_send_msg(struct ipmi_intf * intf, uint8_t * msg, int msg_len)
 
 	/* body */
 	for (i = 0; i < msg_len; i++) {
-		buf += sprintf( buf, "%02x", msg[i]);
+		buf += sprintf((char*) buf, "%02x", msg[i]);
 	}
 
 	/* stop character */
