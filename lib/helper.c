@@ -54,7 +54,7 @@
 #ifdef HAVE_PATHS_H
 # include <paths.h>
 #else
-# define _PATH_VARRUN "/var/run/"
+# define _PATH_RUN "/run/"
 #endif
 
 #include <ipmitool/ipmi.h>
@@ -935,7 +935,7 @@ ipmi_start_daemon(struct ipmi_intf *intf)
 		exit(1);
 	}
 	ret = dup(fd);
-	if (ret != STDOUT_FILENO) {
+	if (ret != STDERR_FILENO) {
 		lprintf(LOG_ERR, "failed to reset stderr: %s (%d)", strerror(errno), errno);
 		exit(1);
 	}
