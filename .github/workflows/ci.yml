@@ -11,7 +11,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        os: [ ubuntu-16.04, ubuntu-18.04, ubuntu-20.04 ]
+        os: [ ubuntu-18.04, ubuntu-20.04 ]
     runs-on: ${{ matrix.os }}
     steps:
     - name: install dependencies
