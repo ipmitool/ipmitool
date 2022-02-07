@@ -845,7 +845,7 @@ ipmi_main(int argc, char ** argv,
 	log_init(progname, 0, verbose);
 
 	/* load the IANA PEN registry */
-	if (ipmi_oem_info_init()) {
+	if (0 && ipmi_oem_info_init()) {  // not do init by slash
 		lprintf(LOG_ERR, "Failed to initialize the OEM info dictionary");
 		goto out_free;
 	}
