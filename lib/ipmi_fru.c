@@ -4564,7 +4564,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 					ipmi_fru_edit_help();
 					return -1;
 				}
-				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], *argv[4],
+				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], atoi(argv[4]),  // the 4th param was changed to convert w/ atoi() by slash
 						(char *) argv[5]);
 			} else if (!strncmp(argv[2], "oem", 3)) {
 				rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
@@ -4766,7 +4766,7 @@ f_type, uint8_t f_index, char *f_string)
 		goto ipmi_fru_set_field_string_out;
 	}
 	/* Convert index from character to decimal */
-	f_index= f_index - 0x30;
+	//f_index= f_index - 0x30;  // comment out since the caller changed to atoi(), by slash
 	
 	if (f_type == 'b' && f_index == 9)		// use index '9' for editing 'board mfg date', by slash.wu@ztsystems.com
 	{
