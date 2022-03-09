@@ -1265,6 +1265,25 @@ const struct valstr ipmi_chassis_power_control_vals[] = {
 	{ 0x00, NULL },
 };
 
+/*
+ * See Table 28-11, Get System Restart Cause Command
+ */
+const struct valstr ipmi_chassis_restart_cause_vals[] = {
+	{ 0x0, "unknown" },
+	{ 0x1, "chassis power control command" },
+	{ 0x2, "reset via pushbutton" },
+	{ 0x3, "power-up via pushbutton" },
+	{ 0x4, "watchdog expired" },
+	{ 0x5, "OEM" },
+	{ 0x6, "power-up due to always-restore power policy" },
+	{ 0x7, "power-up due to restore-previous power policy" },
+	{ 0x8, "reset via PEF" },
+	{ 0x9, "power-cycle via PEF" },
+	{ 0xa, "soft reset" },
+	{ 0xb, "power-up via RTC wakeup" },
+	{ 0xFF, NULL },
+};
+
 const struct valstr ipmi_auth_algorithms[] = {
 	{ IPMI_AUTH_RAKP_NONE,      "none"      },
 	{ IPMI_AUTH_RAKP_HMAC_SHA1, "hmac_sha1" },
