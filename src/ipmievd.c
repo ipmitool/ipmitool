@@ -422,7 +422,7 @@ static int
 openipmi_read(struct ipmi_event_intf * eintf)
 {
 	struct ipmi_addr addr;
-	struct ipmi_recv recv;
+	struct ipmi_recv recv = {};
 	uint8_t data[80];
 	int rv;
 
