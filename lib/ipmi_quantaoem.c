@@ -120,57 +120,194 @@ oem_qct_get_platform_id(struct ipmi_intf *intf)
 	return platform_id;
 }
 
+/**
+ * return the device ID.
+ */
+int get_device_id(struct ipmi_intf *intf) {
+	struct ipmi_rs *rsp;
+	struct ipmi_rq req;
+	struct ipm_devid_rsp *devid;
+
+
+	memset(&req, 0, sizeof (req));
+	req.msg.netfn = IPMI_NETFN_APP;
+	req.msg.cmd = BMC_GET_DEVICE_ID;
+	req.msg.data_len = 0;
+
+	rsp = intf->sendrecv(intf, &req);
+
+	if (!rsp) {
+		lprintf(LOG_ERR, "Get Device ID command failed");
+	}
+	if (rsp->ccode) {
+		lprintf(LOG_ERR, "Get Device ID command failed: %#x %s",
+			rsp->ccode, val2str(rsp->ccode, completion_code_vals));
+	}
+	devid = (struct ipm_devid_rsp *) rsp->data;
+	return devid->device_id;
+}
+
+static char * get_pcie_data1_desc(unsigned char d) {
+    typedef enum {
+        PCIE_PERR = 4,
+        PCIE_SERR,
+        PCIE_BUS_CORRECTABLE = 7,
+        PCIE_BUS_UNCORRECTABLE,
+        PCIE_BUS_FATAL = 0x0a
+    } qct_pcie_error_t;
+
+    switch (d) {
+        case PCIE_PERR:
+            return "PCI PERR";
+        case PCIE_SERR:
+            return "PCI SERR";
+        case PCIE_BUS_CORRECTABLE:
+            return "Bus Correctable";
+        case PCIE_BUS_UNCORRECTABLE:
+            return "Bus Uncorrectable";
+        case PCIE_BUS_FATAL:
+            return "Bus fatal";
+    }
+	return NULL;
+}
+
+/**
+ * @brief get the PCIe error logging description
+ */
+static void qct_get_pcie_desc(struct ipmi_intf *intf, struct sel_event_record *rec, char * desc) {
+	int gen_id = rec->sel_type.standard_type.gen_id;
+	int sensor_num = rec->sel_type.standard_type.sensor_num;
+
+	// gen id = 0x01 BIOS and sensor number 0xa1
+	if (gen_id == 0x01 &&  sensor_num == 0xa1) {
+		unsigned char data1, data2, bus, dev, fun;
+		data1= rec->sel_type.standard_type.event_data[0];
+		data2= rec->sel_type.standard_type.event_data[1];
+		bus = rec->sel_type.standard_type.event_data[2];
+
+		data1 &= 0x0f; 				// take the bit [3:0]
+		fun = data2 & 0x7;			// take bit [2:0]
+		dev = (data2 & 0xf8) >> 3;	// take bit [7:3]
+		snprintf(desc, SIZE_OF_DESC, "%s:B%dD%dF%d", get_pcie_data1_desc(data1), bus, dev, fun);
+	}
+}
+
+/**
+ * @brief According te the error ID, return the description.
+ * 
+ */
+static char * qct_get_pcie_extened_err_desc(int e) {
+
+	struct message {
+		uint8_t err;
+		const char * msg;
+	};
+
+	struct message messages[] = {
+		{0, "Received Error"},
+		{1, "Bad TLP"},
+		{2, "Bad DLLP"},
+		{3, "Replay Number Rollover"},
+		{4, "Replay Timer Timeout Status"},
+		{5, "Advistory Non-Fatal Error Status"},
+		{6, "Corrected Internal Error Status"},
+		{7, "Header Log Overflow Status"},
+		{0x20, "Data Link Protocol Error Status"},
+		{0x21, "Surprise Down Error Status"},
+		{0x22, "Poisoned TLP Status" },
+		{0x23, "Flow Control Protocol Error Status"},
+		{0x24, "Completion Timeout Status" },
+		{0x25, "Completer Abort Status"},
+		{0x26, "Unexpected Completion Status"},
+		{0x27, "Receiver Overflow Status"},
+		{0x28, "Malformed TLP Status"},
+		{0x29, "ECRC Error Status"},
+		{0x3a, "Unsupported Request Error Status"},
+		{0x3b, "ACS Violation Status"},
+		{0x3c, "Uncorrectable Internal Error Status"},
+		{0x3d, "MC Blocked TLP Status"},
+		{0x3e, "AtomicOp Egress Blocked Status"},
+		{0x3f, "TLP Prefix Blocked Error Status"},
+		{0x50, "Received ERR_NONFATAL Message from downstream device"},
+		{0x51, "Received ERR_FATAL message from downstream device"},
+		{0x52, "Received ERR_FATAL message from downstream device"},
+		{0x60, "pci_link_bandwidth _changed_status"},
+		{0x80, "outbound_switch_fifo_data_parity_error_detected"},
+		{0x81, "sent_completion_with_completer_abort"},
+		{0x82, "sent_completion_with_unsupported_request"},
+		{0x83, "received_pcie_completion_with_ca_status" },
+		{0x84, "received_pcie_completion_with_ur_status" },
+		{0x85, "received_msi_writes _greater _than _a _dword_data"},
+		{0x86, "outbound _poisoned _data"}
+	};
+
+	const size_t nmessages = sizeof(messages) /sizeof(struct message);
+	for (int i=0; i< nmessages; i++) {
+		if (e == messages[i].err)
+			return messages[i].msg;
+	}
+	return NULL;
+}
+
+
 char *
 oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 {
-	struct ipmi_rs *rsp;
-	struct ipmi_rq req;
 	char *desc = NULL;
-	int data;
 	int sensor_type;
 	qct_platform_t platform_id;
 
-	/* Get the OEM event Bytes of the SEL Records byte 15 to data */
-	data = rec->sel_type.standard_type.event_data[2];
 	/* Check for the Standard Event type == 0x6F */
 	if (rec->sel_type.standard_type.event_type != 0x6F) {
 		goto out;
 	}
 	/* Allocate mem for the Description string */
 	desc = malloc(SIZE_OF_DESC);
-	if (!desc) {
+		if (!desc) {
 		lprintf(LOG_ERR, "ipmitool: malloc failure");
 		goto out;
 	}
 	memset(desc, 0, SIZE_OF_DESC);
+
+	int rec_type = rec->record_type;
+	if ((rec_type >= IPMI_EVT_TYPE_OEM_TS_START) && (rec_type < IPMI_EVT_TYPE_OEM_NONTS_START)) {
+		// Extended PCI Express errror events log format
+		// write the desc in extended format.
+		uint16_t vid, did;
+		uint8_t slot;
+		uint8_t error_id;
+		vid = ipmi16toh(&rec->sel_type.oem_ts_type.oem_defined[0]);
+		did = ipmi16toh(&rec->sel_type.oem_ts_type.oem_defined[2]);
+		slot = rec->sel_type.oem_ts_type.oem_defined[4];
+		error_id = rec->sel_type.oem_ts_type.oem_defined[5];
+		snprintf(desc, SIZE_OF_DESC, "VID%04x,DID%04x,slot%d:%s", vid, did, slot, qct_get_pcie_extened_err_desc(error_id));
+		return desc;
+	}
+
+	// Other standard record type
 	sensor_type = rec->sel_type.standard_type.sensor_type;
 	switch (sensor_type) {
 	case SENSOR_TYPE_MEMORY:
-		memset(&req, 0, sizeof (req));
-		req.msg.netfn = IPMI_NETFN_APP;
-		req.msg.lun = 0;
-		req.msg.cmd = BMC_GET_DEVICE_ID;
-		req.msg.data = NULL;
-		req.msg.data_len = 0;
-
-		rsp = intf->sendrecv(intf, &req);
-		if (!rsp) {
-			lprintf(LOG_ERR, " Error getting system info");
-			goto out;
-		} else if (rsp->ccode) {
-			lprintf(LOG_ERR, " Error getting system info: %s",
-			        val2str(rsp->ccode, completion_code_vals));
-			goto out;
-		}
 		/* check the platform type */
 		platform_id = oem_qct_get_platform_id(intf);
 		if (OEM_QCT_PLATFORM_PURLEY == platform_id) {
+			/* Get the OEM event Bytes of the SEL Records byte 15 to data */
+			int data;
+			data = rec->sel_type.standard_type.event_data[2];
 			snprintf(desc, SIZE_OF_DESC, "CPU%d_%c%d",
 			         CPU_NUM(data),
 			         CHANNEL_NUM(data),
 			         DIMM_NUM(data));
 		}
 		break;
+	case SENSOR_TYPE_CRIT_INTR:
+		/* check the platform type */
+		platform_id = oem_qct_get_platform_id(intf);
+		if (OEM_QCT_PLATFORM_PURLEY == platform_id) {
+			qct_get_pcie_desc(intf, rec, desc);
+		}
+		break;
+
 	default:
 		goto out;
 	}

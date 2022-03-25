@@ -78,7 +78,7 @@ struct ipmi_sel_oem_msg_rec {
  */
 static int ipmi_sel_oem_readval(char *str)
 {
-	int ret;
+	unsigned int ret;
 	if (!strcmp(str, "XX")) {
 		return -1;
 	}
@@ -437,7 +437,7 @@ get_kontron_evt_desc(struct ipmi_intf *__UNUSED__(intf), struct sel_event_record
 	 */
 
 	/* Only standard records are defined so far */
-	if( rec->record_type < 0xC0 ){
+	if( rec->record_type < IPMI_EVT_TYPE_OEM_TS_START ){
 		const struct ipmi_event_sensor_types *st=NULL;
 		for (st = oem_kontron_event_types; st->desc; st++){
 			if (st->code == rec->sel_type.standard_type.event_type ){
@@ -1667,7 +1667,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 	/*Clear SEL Structure*/
 	evt->record_id = 0;
 	evt->record_type = 0;
-	if (evt->record_type < 0xc0)
+	if (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START )
 	{
 		evt->sel_type.standard_type.timestamp = 0;
 		evt->sel_type.standard_type.gen_id = 0;
@@ -1680,7 +1680,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 		evt->sel_type.standard_type.event_data[1] = 0;
 		evt->sel_type.standard_type.event_data[2] = 0;
 	}
-	else if (evt->record_type < 0xe0)
+	else if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 	{
 		evt->sel_type.oem_ts_type.timestamp = 0;
 		evt->sel_type.oem_ts_type.manf_id[0] = 0;
@@ -1698,7 +1698,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 	/* save response into SEL event structure */
 	evt->record_id = (rsp->data[3] << 8) | rsp->data[2];
 	evt->record_type = rsp->data[4];
-	if (evt->record_type < 0xc0)
+	if (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START)
 	{
     		evt->sel_type.standard_type.timestamp = (rsp->data[8] << 24) |	(rsp->data[7] << 16) |
     			(rsp->data[6] << 8) | rsp->data[5];
@@ -1712,7 +1712,7 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
     		evt->sel_type.standard_type.event_data[1] = rsp->data[16];
     		evt->sel_type.standard_type.event_data[2] = rsp->data[17];
   	}
-  	else if (evt->record_type < 0xe0)
+  	else if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
   	{
     		evt->sel_type.oem_ts_type.timestamp= (rsp->data[8] << 24) |	(rsp->data[7] << 16) |
     			(rsp->data[6] << 8) | rsp->data[5];
@@ -1773,7 +1773,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	struct sdr_record_list * sdr = NULL;
 	int data_count;
 
-	if (sel_extended && (evt->record_type < 0xc0))
+	if (sel_extended && (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START))
 		sdr = ipmi_sdr_find_sdr_bynumtype(intf, evt->sel_type.standard_type.gen_id, evt->sel_type.standard_type.sensor_num, evt->sel_type.standard_type.sensor_type);
 
 
@@ -1794,7 +1794,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		return;
 	}
 
-	if (evt->record_type < 0xe0)
+	if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 	{
 		if ((evt->sel_type.standard_type.timestamp < 0x20000000)||(evt->sel_type.oem_ts_type.timestamp <  0x20000000)){
 			printf(" Pre-Init "); 
@@ -1811,7 +1811,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 				printf("| ");
 		}
 		else {
-			if (evt->record_type < 0xc0)
+			if (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START)
 				printf("%s", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp));
 			else
 				printf("%s", ipmi_timestamp_date(evt->sel_type.oem_ts_type.timestamp));
@@ -1821,7 +1821,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			else
 				printf(" | ");
 
-			if (evt->record_type < 0xc0)
+			if (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START)
 				printf("%s", ipmi_timestamp_time(evt->sel_type.standard_type.timestamp));
 			else
 				printf("%s", ipmi_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
@@ -1839,7 +1839,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			printf(",,");
 	}
 
-	if (evt->record_type >= 0xc0)
+	if (evt->record_type >= IPMI_EVT_TYPE_OEM_TS_START)
 	{
 		printf ("OEM record %02x", evt->record_type);
 		if (csv_output)
@@ -1847,7 +1847,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		else
 			printf(" | ");
 
-		if(evt->record_type <= 0xdf)
+		if(evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 		{
 			printf ("%02x%02x%02x", evt->sel_type.oem_ts_type.manf_id[0], evt->sel_type.oem_ts_type.manf_id[1], evt->sel_type.oem_ts_type.manf_id[2]);
 			if (csv_output)
@@ -2018,19 +2018,19 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 	}
 
 	printf(" Record Type           : %02x", evt->record_type);
-	if (evt->record_type >= 0xc0)
+	if (evt->record_type >= IPMI_EVT_TYPE_OEM_TS_START)
 	{
-		if (evt->record_type < 0xe0)
+		if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 			printf("  (OEM timestamped)");
 		else
 			printf("  (OEM non-timestamped)");
 	}
 	printf("\n");
   
-	if (evt->record_type < 0xe0)
+	if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 	{
 		printf(" Timestamp             : ");
-		if (evt->record_type < 0xc0)
+		if (evt->record_type < IPMI_EVT_TYPE_OEM_TS_START)
 			printf("%s %s", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp),
 				ipmi_timestamp_time(evt->sel_type.standard_type.timestamp));
 		else
@@ -2039,9 +2039,9 @@ ipmi_sel_print_std_entry_verbose(struct ipmi_intf * intf, struct sel_event_recor
 		printf("\n");
 	}
 
-	if (evt->record_type >= 0xc0)
+	if (evt->record_type >= IPMI_EVT_TYPE_OEM_TS_START)
 	{
-		if(evt->record_type <= 0xdf)
+		if(evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 		{
 			printf (" Manufactacturer ID    : %02x%02x%02x\n", evt->sel_type.oem_ts_type.manf_id[0],
 			evt->sel_type.oem_ts_type.manf_id[1], evt->sel_type.oem_ts_type.manf_id[2]);
@@ -2118,7 +2118,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 	}
 
 	printf(" Record Type           : %02x\n", evt->record_type);
-	if (evt->record_type < 0xe0)
+	if (evt->record_type < IPMI_EVT_TYPE_OEM_NONTS_START)
 	{
 		printf(" Timestamp             : ");
 		printf("%s %s\n", ipmi_timestamp_date(evt->sel_type.standard_type.timestamp),
