@@ -50,3 +50,4 @@ typedef enum
 
 qct_platform_t oem_qct_get_platform_id(struct ipmi_intf *intf);
 char *oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
+void oem_qct_std_entry_verbose(struct sel_event_record * rec);

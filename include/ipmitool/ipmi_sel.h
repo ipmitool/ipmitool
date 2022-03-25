@@ -49,6 +49,10 @@
 #define IPMI_CMD_GET_AUX_LOG_STATUS	0x5A
 #define IPMI_CMD_SET_AUX_LOG_STATUS	0x5B
 
+#define IPMI_EVT_TYPE_SYSTEM 0x2
+#define IPMI_EVT_TYPE_OEM_TS_START 0xc0               // c0h-dfh OEM timestamped
+#define IPMI_EVT_TYPE_OEM_NONTS_START 0xe0            // e0h-ffh OEM non-timestamped.
+
 enum {
 	IPMI_EVENT_CLASS_DISCRETE,
 	IPMI_EVENT_CLASS_DIGITAL,
