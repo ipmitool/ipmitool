@@ -97,9 +97,14 @@ This is not available with all commands.
 .TP 
 \fB\-C\fR <\fIciphersuite\fP>
 The remote server authentication, integrity, and encryption algorithms
-to use for IPMIv2.0 \fIlanplus\fP connections.  See table 22\-19 in the
-IPMIv2.0 specification.  The default is 3 which specifies RAKP\-HMAC\-SHA1 
-authentication, HMAC\-SHA1\-96 integrity, and AES\-CBC\-128 encryption algorithms.
+to use for IPMIv2.0 \fIlanplus\fP connections.  See table 22\-20 in the
+IPMI v2.0 specification. The default is 17 which specifies RAKP\-HMAC\-SHA256
+authentication, HMAC\-SHA256\-128 integrity, and AES\-CBC\-128 encryption algorithms.
+
+NOTE: In
+.BR ipmitool
+1.8.18 and earlier the default was 3, which was insecure and was not supported
+by some more recent BMC implementations.
 .TP 
 \fB\-d \fIN\fP\fR
 Use device number N to specify the /dev/ipmiN (or 
@@ -3742,7 +3747,7 @@ those available for the \fIlan\fP interface.
 The \fB\-C\fR option allows you specify the authentication, integrity,
 and encryption algorithms to use for for \fIlanplus\fP session based
 on the cipher suite ID found in the IPMIv2.0 specification in table
-22\-19.  The default cipher suite is \fI17\fP which specifies
+22\-20.  The default cipher suite is \fI17\fP which specifies
 RAKP\-HMAC\-SHA256 authentication, HMAC\-SHA256\-128 integrity, and 
 AES\-CBC\-128 encryption algorightms.
 
