@@ -4805,16 +4805,10 @@ f_type, uint8_t f_index, char *f_string)
 		total_secs = ipmi_strptime("%Y-%m-%d %H:%M:%S", f_string);
 		ipmi_time2fru(total_secs, board_mfg_date);
 
-		checksum = 0;
-	/* Calculate Header Checksum */
-		for (i = 0; i < fru_section_len - 1; i++)
-		{
-			checksum += fru_data[i];
-		}
-		checksum = (~checksum) + 1;
+		checksum = ipmi_csum(fru_data, fru_section_len -1);
 		fru_data[fru_section_len - 1] = checksum;
 
-	/* Write the updated section to the FRU data; source offset => 0 */
+		/* Write the updated section to the FRU data; source offset => 0 */
 		if (write_fru_area(intf, &fru, fruId, 0, header_offset, fru_section_len, fru_data) < 0)
 		{
 			printf("Write to FRU data failed.\n");
@@ -4844,13 +4838,8 @@ f_type, uint8_t f_index, char *f_string)
 		memcpy(fru_data + fru_field_offset_tmp + 1,
 								f_string, strlen(f_string));
 
-		checksum = 0;
-		/* Calculate Header Checksum */
-		for (i = 0; i < fru_section_len - 1; i++)
-		{
-			checksum += fru_data[i];
-		}
-		checksum = (~checksum) + 1;
+
+		checksum = ipmi_csum(fru_data, fru_section_len -1);
 		fru_data[fru_section_len - 1] = checksum;
 
 		/* Write the updated section to the FRU data; source offset => 0 */

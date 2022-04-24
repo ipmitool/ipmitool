@@ -599,7 +599,7 @@ struct fru_picmgext_amc_link_desc_record {
 #define FRU_BOARD_DATE_UNSPEC 0 /* IPMI FRU Information Storage Definition
                                    v1.0 rev 1.3, Table 11-1 */
 
-static inline uint32_t SECS_FROM_1970_1996=820454400;
+const static time_t SECS_FROM_1970_1996=820454400;
 
 static inline time_t ipmi_fru2time_t(void *mfg_date) {
 	uint32_t fru_ts = ipmi24toh(mfg_date);
