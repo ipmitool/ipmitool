@@ -2242,7 +2242,7 @@ ipmi_sel_print_extended_entry_verbose(struct ipmi_intf * intf, struct sel_event_
 
 static int
 __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * savefile,
-							int binary)
+							int binary, int start_id)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -2271,6 +2271,24 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
 		lprintf(LOG_ERR, "SEL has no entries");
 		return 0;
+	}
+
+	/*
+	 * try with start id, if no specific the start id, start id should be 0
+	 * if start id is 0, we should get the first entry
+	 * if start id is 0xffff, we should get the last entry
+	 * if the sel entry of start id is not exist, the next id will be 0
+	 */
+	if (next_id != start_id) {
+		next_id = ipmi_sel_get_std_entry(intf, start_id, &evt) == 0 ? 0 : start_id;
+		if (next_id != start_id) {
+			/*
+			* usually next_id of zero means end but
+			* retry because some hardware has quirks
+			* and will return 0 randomly.
+			*/
+			next_id = ipmi_sel_get_std_entry(intf, start_id, &evt) == 0 ? 0 : start_id;
+		}
 	}
 
 	if (count < 0) {
@@ -2313,7 +2331,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		fp = ipmi_open_file_write(savefile);
 	}
 
-	while (next_id != 0xffff) {
+	do {
 		curr_id = next_id;
 		lprintf(LOG_DEBUG, "SEL Next ID: %04x", curr_id);
 
@@ -2344,7 +2362,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		if (++n == count) {
 			break;
 		}
-	}
+	} while (next_id != 0xffff);
 
 	if (fp)
 		fclose(fp);
@@ -2353,15 +2371,15 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 }
 
 static int
-ipmi_sel_list_entries(struct ipmi_intf * intf, int count)
+ipmi_sel_list_entries(struct ipmi_intf * intf, int count, int start)
 {
-	return __ipmi_sel_savelist_entries(intf, count, NULL, 0);
+	return __ipmi_sel_savelist_entries(intf, count, NULL, 0, start);
 }
 
 static int
 ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
 {
-	return __ipmi_sel_savelist_entries(intf, count, savefile, 0);
+	return __ipmi_sel_savelist_entries(intf, count, savefile, 0, 0);
 }
 
 /*
@@ -2601,7 +2619,7 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 static int
 ipmi_sel_writeraw(struct ipmi_intf * intf, const char * savefile)
 {
-    return __ipmi_sel_savelist_entries(intf, 0, savefile, 1);
+    return __ipmi_sel_savelist_entries(intf, 0, savefile, 1, 0);
 }
 
 
@@ -3049,9 +3067,12 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		 *	list           - show all SEL entries
 		 *  list first <n> - show the first (oldest) <n> SEL entries
 		 *  list last <n>  - show the last (newsest) <n> SEL entries
+		 *  list start <n> - show the SEL entries start with <n>,
+		 *                   if the sel entry <n> does not exist, start from the first entry
 		 */
 		int count = 0;
 		int sign = 1;
+		int start = 0;
 		char *countstr = NULL;
 
 		if (!strcmp(argv[0], "elist"))
@@ -3064,8 +3085,10 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		else if (argc == 3) {
 			countstr = argv[2];
-
-			if (!strcmp(argv[1], "last")) {
+			if (!strcmp(argv[1], "start")) {
+				start = 1;
+			}
+			else if (!strcmp(argv[1], "last")) {
 				sign = -1;
 			}
 			else if (strcmp(argv[1], "first")) {
@@ -3083,7 +3106,12 @@ int ipmi_sel_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		count *= sign;
 
-		rc = ipmi_sel_list_entries(intf,count);
+		if(start == 1) {
+			// count is the starting SEL entry number, not the number of entries to show
+			rc = ipmi_sel_list_entries(intf, 0, count);
+		} else {
+			rc = ipmi_sel_list_entries(intf, count, 0);
+		}
 	}
 	else if (!strcmp(argv[0], "clear"))
 		rc = ipmi_sel_clear(intf);
