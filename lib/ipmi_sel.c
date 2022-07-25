@@ -1955,8 +1955,20 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 				(trigger_reading==(int)trigger_reading) ? 0 : 2,
 				trigger_reading);
 		if (threshold_reading_provided) {
+			/* According to Table 29-6, Event Data byte 1 contains,
+			 * among other info, the offset from the Threshold type
+			 * code. According to Table 42-2, all even offsets
+			 * are 'going low', and all odd offsets are 'going high'
+			 */
+			bool going_high =
+			        (evt->sel_type.standard_type.event_data[0]
+			         & EVENT_OFFSET_MASK) % 2;
+			if (evt->sel_type.standard_type.event_dir) {
+				/* Event is de-asserted so the inequality is reversed */
+				going_high = !going_high;
+			}
 			printf(" %s Threshold %.*f %s",
-					((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
+					going_high ? ">" : "<",
 					(threshold_reading==(int)threshold_reading) ? 0 : 2,
 					threshold_reading,
 					ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
