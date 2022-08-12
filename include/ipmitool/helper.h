@@ -152,7 +152,7 @@ static inline uint16_t ipmi16toh(void *ipmi16)
 	uint8_t *ipmi = (uint8_t *)ipmi16;
 	uint16_t h;
 
-	h = ipmi[1] << 8; /* MSB */
+	h = (uint16_t)ipmi[1] << 8; /* MSB */
 	h |= ipmi[0]; /* LSB */
 
 	return h;
@@ -169,7 +169,7 @@ static inline uint32_t ipmi24toh(void *ipmi24)
 	uint8_t *ipmi = (uint8_t *)ipmi24;
 	uint32_t h = 0;
 
-	h = ipmi[2] << 16; /* MSB */
+	h = (uint32_t)ipmi[2] << 16; /* MSB */
 	h |= ipmi[1] << 8;
 	h |= ipmi[0]; /* LSB */
 
@@ -188,7 +188,7 @@ static inline uint32_t ipmi32toh(void *ipmi32)
 	uint8_t *ipmi = ipmi32;
 	uint32_t h;
 
-	h = ipmi[3] << 24; /* MSB */
+	h = (uint32_t)ipmi[3] << 24; /* MSB */
 	h |= ipmi[2] << 16;
 	h |= ipmi[1] << 8;
 	h |= ipmi[0]; /* LSB */
