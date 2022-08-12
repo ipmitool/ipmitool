@@ -1727,6 +1727,7 @@ ipmi_lanplus_build_v2x_msg(
 	 */
 	if (session->v2_data.session_state == LANPLUS_STATE_ACTIVE)
 	{
+		uint16_t old_payload_length = payload->payload_length;
 		/* Payload len is adjusted as necessary by lanplus_encrypt_payload */
 		lanplus_encrypt_payload(session->v2_data.crypt_alg,        /* input  */
 								session->v2_data.k2,               /* input  */
@@ -1735,6 +1736,24 @@ ipmi_lanplus_build_v2x_msg(
 								msg + IPMI_LANPLUS_OFFSET_PAYLOAD, /* output */
 								&(payload->payload_length));       /* output */
 
+		if (old_payload_length != payload->payload_length)
+		{
+			len =
+				IPMI_LANPLUS_OFFSET_PAYLOAD   +
+				payload->payload_length       +
+				IPMI_MAX_INTEGRITY_PAD_SIZE   +
+				IPMI_LANPLUS_PAD_LENGTH_SIZE  +
+				IPMI_LANPLUS_NEXT_HEADER_SIZE +
+				IPMI_MAX_AUTH_CODE_SIZE;
+
+			uint8_t * new_msg = realloc(msg, len);
+			if (!new_msg) {
+				free(msg);
+				lprintf(LOG_ERR, "ipmitool: realloc failure");
+				return;
+			}
+			msg = new_msg;
+		}
 	}
 
 	/* Now we know the payload length */
