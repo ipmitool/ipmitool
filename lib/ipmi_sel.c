@@ -1955,8 +1955,20 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 				(trigger_reading==(int)trigger_reading) ? 0 : 2,
 				trigger_reading);
 		if (threshold_reading_provided) {
+			/* According to Table 29-6, Event Data byte 1 contains,
+			 * among other info, the offset from the Threshold type
+			 * code. According to Table 42-2, all even offsets
+			 * are 'going low', and all odd offsets are 'going high'
+			 */
+			bool going_high =
+			        (evt->sel_type.standard_type.event_data[0]
+			         & EVENT_OFFSET_MASK) % 2;
+			if (evt->sel_type.standard_type.event_dir) {
+				/* Event is de-asserted so the inequality is reversed */
+				going_high = !going_high;
+			}
 			printf(" %s Threshold %.*f %s",
-					((evt->sel_type.standard_type.event_data[0] & 0xf) % 2) ? ">" : "<",
+					going_high ? ">" : "<",
 					(threshold_reading==(int)threshold_reading) ? 0 : 2,
 					threshold_reading,
 					ipmi_sdr_get_unit_string(sdr->record.common->unit.pct,
@@ -2271,21 +2283,6 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
 		lprintf(LOG_ERR, "SEL has no entries");
 		return 0;
-	}
-
-	memset(&req, 0, sizeof(req));
-	req.msg.netfn = IPMI_NETFN_STORAGE;
-	req.msg.cmd = IPMI_CMD_RESERVE_SEL;
-
-	rsp = intf->sendrecv(intf, &req);
-	if (!rsp) {
-		lprintf(LOG_ERR, "Reserve SEL command failed");
-		return -1;
-	}
-	if (rsp->ccode) {
-		lprintf(LOG_ERR, "Reserve SEL command failed: %s",
-		       val2str(rsp->ccode, completion_code_vals));
-		return -1;
 	}
 
 	if (count < 0) {
@@ -2920,11 +2917,6 @@ ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 
 	if (!argc || !strcmp(argv[0], "help")) {
 		lprintf(LOG_ERR, "usage: sel get <id>...<id>");
-		return (-1);
-	}
-
-	if (ipmi_sel_reserve(intf) == 0) {
-		lprintf(LOG_ERR, "Unable to reserve SEL");
 		return (-1);
 	}
 

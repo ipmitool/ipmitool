@@ -170,7 +170,7 @@ static
 struct ipmi_rs *
 ipmi_openipmi_send_cmd(struct ipmi_intf *intf, struct ipmi_rq *req)
 {
-	struct ipmi_recv recv;
+	struct ipmi_recv recv = {};
 	struct ipmi_addr addr;
 	struct ipmi_system_interface_addr bmc_addr = {
 		.addr_type = IPMI_SYSTEM_INTERFACE_ADDR_TYPE,

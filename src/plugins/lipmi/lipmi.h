@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LIPMI_H
-#define IPMI_LIPMI_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_intf.h>
@@ -42,5 +41,3 @@ struct ipmi_rs * ipmi_lipmi_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * r
 int ipmi_lipmi_open(struct ipmi_intf * intf);
 void ipmi_lipmi_close(struct ipmi_intf * intf);
 int lipmi_intf_setup(struct ipmi_intf ** intf);
-
-#endif

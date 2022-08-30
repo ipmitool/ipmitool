@@ -378,42 +378,8 @@ ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	printf("System restart cause: ");
-
-	switch (rsp->data[0] & 0xf) {
-	case 0:
-		printf("unknown\n");
-		break;
-	case 1:
-		printf("chassis power control command\n");
-		break;
-	case 2:
-		printf("reset via pushbutton\n");
-		break;
-	case 3:
-		printf("power-up via pushbutton\n");
-		break;
-	case 4:
-		printf("watchdog expired\n");
-		break;
-	case 5:
-		printf("OEM\n");
-		break;
-	case 6:
-		printf("power-up due to always-restore power policy\n");
-		break;
-	case 7:
-		printf("power-up due to restore-previous power policy\n");
-		break;
-	case 8:
-		printf("reset via PEF\n");
-		break;
-	case 9:
-		printf("power-cycle via PEF\n");
-		break;
-	default:
-		printf("invalid\n");
-	}
+	printf("System restart cause: %s\n",
+	       val2str(rsp->data[0] & 0xf, ipmi_chassis_restart_cause_vals));
 
 	return 0;
 }

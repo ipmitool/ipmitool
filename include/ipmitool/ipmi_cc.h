@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_CC_H
-#define IPMI_CC_H
+#pragma once
 
 /*
    Thu Jan 11 09:32:41 2007
@@ -71,6 +70,3 @@
 #define IPMI_CC_NOT_SUPPORTED_PRESENT_STATE        0xd5 
 #define IPMI_CC_ILLEGAL_COMMAND_DISABLED           0xd6 
 #define IPMI_CC_UNSPECIFIED_ERROR                  0xff 
-
-
-#endif /*IPMI_CC_H*/

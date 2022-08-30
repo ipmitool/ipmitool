@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LANPLUS_CRYPT_H
-#define IPMI_LANPLUS_CRYPT_H
+#pragma once
 
 #include <ipmitool/ipmi_intf.h>
 
@@ -68,8 +67,3 @@ int lanplus_decrypt_payload(uint8_t         crypt_alg,
 							uint16_t      * payload_size);
 int lanplus_has_valid_auth_code(struct ipmi_rs * rs,
 								struct ipmi_session * session);
-
-
-
-
-#endif /* IPMI_LANPLUS_CRYPT_H  */

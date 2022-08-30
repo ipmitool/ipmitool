@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_RMCP_H
-#define IPMI_RMCP_H
+#pragma once
 
 #include <ipmitool/helper.h>
 #include "lanplus.h"
@@ -65,5 +64,3 @@ struct rmcp_hdr {
 #endif
 
 int handle_rmcp(struct ipmi_intf * intf, uint8_t * data, int data_len);
-
-#endif /* IPMI_RMCP_H */

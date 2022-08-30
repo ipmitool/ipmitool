@@ -928,8 +928,9 @@ const struct oemvalstr ipmi_oem_product_info[] = {
    { IPMI_OEM_SUPERMICRO, 0xF580, "X8ST3" },
    /* YADRO */
    { IPMI_OEM_YADRO, 0x0001, "VESNIN BMC" },
-   { IPMI_OEM_YADRO, 0x000A, "TATLIN Storage Controller BMC" },
-   { IPMI_OEM_YADRO, 0x0014, "VEGMAN BMC" },
+   { IPMI_OEM_YADRO, 0x000A, "TATLIN.UNIFIED Storage Controller BMC" },
+   { IPMI_OEM_YADRO, 0x0014, "VEGMAN Series BMC" },
+   { IPMI_OEM_YADRO, 0x0015, "TATLIN.ARCHIVE/xS BMC" },
 
    { 0xffffff        , 0xffff , NULL },
  };
@@ -1262,6 +1263,25 @@ const struct valstr ipmi_chassis_power_control_vals[] = {
 	{ IPMI_CHASSIS_CTL_PULSE_DIAG,   "Diag" },
 	{ IPMI_CHASSIS_CTL_ACPI_SOFT,    "Soft" },
 	{ 0x00, NULL },
+};
+
+/*
+ * See Table 28-11, Get System Restart Cause Command
+ */
+const struct valstr ipmi_chassis_restart_cause_vals[] = {
+	{ 0x0, "unknown" },
+	{ 0x1, "chassis power control command" },
+	{ 0x2, "reset via pushbutton" },
+	{ 0x3, "power-up via pushbutton" },
+	{ 0x4, "watchdog expired" },
+	{ 0x5, "OEM" },
+	{ 0x6, "power-up due to always-restore power policy" },
+	{ 0x7, "power-up due to restore-previous power policy" },
+	{ 0x8, "reset via PEF" },
+	{ 0x9, "power-cycle via PEF" },
+	{ 0xa, "soft reset" },
+	{ 0xb, "power-up via RTC wakeup" },
+	{ 0xFF, NULL },
 };
 
 const struct valstr ipmi_auth_algorithms[] = {

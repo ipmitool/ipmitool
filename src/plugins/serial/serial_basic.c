@@ -612,18 +612,7 @@ serial_bm_build_msg(const struct ipmi_intf * intf,
 	uint8_t * data = msg, seq;
 	struct ipmb_msg_hdr * hdr = (struct ipmb_msg_hdr *) msg;
 	struct ipmi_send_message_rq * inner_rq = NULL, * outer_rq = NULL;
-	int bridging_level;
-
-	/* acquire bridging level */
-	if (intf->target_addr && intf->target_addr != intf->my_addr) {
-		if (intf->transit_addr != 0) {
-			bridging_level = 2;
-		} else {
-			bridging_level = 1;
-		}
-	} else {
-		bridging_level = 0;
-	}
+	int bridging_level = ipmi_intf_get_bridging_level(intf);
 
 	/* check overall packet length */
 	if(req->msg.data_len + 7 + bridging_level * 8 > max_len) {

@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_H
-#define IPMI_H
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -307,5 +306,3 @@ typedef enum IPMI_OEM {
 } IPMI_OEM;
 
 extern const struct valstr completion_code_vals[];
-
-#endif				/* IPMI_H */

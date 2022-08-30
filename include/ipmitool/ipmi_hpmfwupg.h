@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_HPMFWUPG_H
-#define IPMI_HPMFWUPG_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
@@ -786,5 +785,3 @@ typedef struct _VERSIONINFO {
 #define TARGET_VER (0x01)
 #define ROLLBACK_VER (0x02)
 #define IMAGE_VER (0x04)
-
-#endif /* IPMI_KFWUM_H */
