@@ -4581,7 +4581,7 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 		return 0;
 	}
 
-	if (!strcmp(type, "0x")) {
+	if (strncmp(type, "0x", 2)) {
 		/* begins with 0x so let it be entered as raw hex value */
 		if (str2uchar(type, &sensor_type) != 0) {
 			lprintf(LOG_ERR,
