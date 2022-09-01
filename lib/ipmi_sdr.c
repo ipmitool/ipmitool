@@ -4590,7 +4590,7 @@ ipmi_sdr_print_type(struct ipmi_intf *intf, char *type)
 			return (-1);
 		}
 	} else {
-		for (x = 1; x < SENSOR_TYPE_MAX; x++) {
+		for (x = 1; x <= SENSOR_TYPE_MAX; x++) {
 			if (strcasecmp(sensor_type_desc[x], type) == 0) {
 				sensor_type = x;
 				break;
