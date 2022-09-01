@@ -2,7 +2,7 @@ dnl
 dnl autoconf for ipmitool
 dnl
 m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
-AC_INIT([ipmitool], [1.8.18git_suffix])
+AC_INIT([ipmitool], [1.8.19git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_CONFIG_COMMANDS_PRE([export prefix=$prefix])
 AC_CANONICAL_SYSTEM
