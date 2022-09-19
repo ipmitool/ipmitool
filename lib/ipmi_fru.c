@@ -4594,7 +4594,7 @@ ipmi_fru_main(struct ipmi_intf * intf, int argc, char ** argv)
 					ipmi_fru_edit_help();
 					return -1;
 				}
-				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], *argv[4],
+				rc = ipmi_fru_set_field_string(intf, fru_id, *argv[3], atoi(argv[4]),  // the 4th param was changed to convert w/ atoi() by slash
 						(char *) argv[5]);
 			} else if (!strcmp(argv[2], "oem")) {
 				rc = ipmi_fru_edit_multirec(intf, fru_id, argc, argv);
@@ -4796,7 +4796,47 @@ f_type, uint8_t f_index, char *f_string)
 		goto ipmi_fru_set_field_string_out;
 	}
 	/* Convert index from character to decimal */
-	f_index= f_index - 0x30;
+	//f_index= f_index - 0x30;  // comment out since the caller changed to atoi(), by slash
+	
+	if (f_type == 'b' && f_index == 9)		// use index '9' for editing 'board mfg date', by slash.wu@ztsystems.com
+	{
+		const uint64_t secs_from_1970_1996 = 820454400;
+		int y, m, d, h, min;
+		struct tm board_mfg_date;
+		time_t total_secs;
+	
+		sscanf(f_string, "%4d%2d%2d%2d%2d", &y, &m, &d, &h, &min);
+		board_mfg_date.tm_year = y - 1900;
+		board_mfg_date.tm_mon = m - 1;
+		board_mfg_date.tm_mday = d;
+		board_mfg_date.tm_hour = h;
+		board_mfg_date.tm_min = min;
+		board_mfg_date.tm_sec = 0;
+		total_secs = mktime(&board_mfg_date);
+		total_secs -= secs_from_1970_1996;
+		total_secs /= 60;			// mins
+	
+		memcpy(&fru_data[3], &total_secs, 3);
+	
+		checksum = 0;
+	/* Calculate Header Checksum */
+		for (i = 0; i < fru_section_len - 1; i++)
+		{
+			checksum += fru_data[i];
+		}
+		checksum = (~checksum) + 1;
+		fru_data[fru_section_len - 1] = checksum;
+	
+	/* Write the updated section to the FRU data; source offset => 0 */
+		if (write_fru_area(intf, &fru, fruId, 0, header_offset, fru_section_len, fru_data) < 0)
+		{
+			printf("Write to FRU data failed.\n");
+			rc = (-1);
+			goto ipmi_fru_set_field_string_out;
+		}
+		else
+			goto ipmi_fru_set_field_string_out;
+	}
 
 	/*Seek to field index */
 	for (i=0; i <= f_index; i++) {
@@ -5064,7 +5104,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			header.offset.board   += change_size_by_8;
 		}
 		/* Board type field */
-		if ((f_type == 'c' ) || (f_type == 'b' ))
+		if (((f_type == 'c' ) || (f_type == 'b' )) && header.offset.product)
 		{
 			printf("Moving Section Product, from %i to %i\n",
 						((header.offset.product) * 8),
