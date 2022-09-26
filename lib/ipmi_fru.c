@@ -4889,7 +4889,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 											struct fru_info fru, struct fru_header header,
 											uint8_t f_type, uint8_t f_index, char *f_string)
 {
-	int i = 0;
+	int i = 0, j;
 	uint8_t *fru_data_old = NULL;
 	uint8_t *fru_data_new = NULL;
 	uint8_t *fru_area = NULL;
@@ -4901,6 +4901,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint32_t counter;
 	unsigned char cksum;
 	int rc = 1;
+	char section_list[] = {'i', 'c', 'b', 'p', 'm'};
 
 	fru_data_old = calloc( fru.size, sizeof(uint8_t) );
 
@@ -5018,8 +5019,10 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	5) Check if section must be resize.  This occur when padding length is not between 0 and 7 */
 	if( (padding_len < 0) || (padding_len >= 8))
 	{
-		uint32_t remaining_offset = ((header.offset.product * 8) + product_len);
-		int change_size_by_8;
+		int change_size_by_8, section_len;
+		char *name;
+		uint8_t *section_offset_by_8;
+		uint8_t last_offset_by_8 = 0;
 
 		if(padding_len >= 8)
 		{
@@ -5044,48 +5047,85 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		#endif
 
 		/* Must move sections */
-		/* Section that can be modified are as follow
-			Chassis
-			Board
-			product */
+		/* The IPMI FRU SPEC doesn't define the sequence of each FRU area.
+		 * Therefore we need to find out the affected section in this change based on
+		 * their current offset and adjust each of them.
+		 */
 
-		/* Chassis type field */
-		if (f_type == 'c' )
-		{
-			if (header.offset.board != 0) {
-				printf("Moving Section Chassis, from %i to %i\n",
-							((header.offset.board) * 8),
-							((header.offset.board + change_size_by_8) * 8)
+		/* Find out the section behind the edited section and adjust them */
+		for (j = 0; j < sizeof(section_list); j++) {
+			section_offset_by_8 = NULL;
+			name = NULL;
+
+			switch (section_list[j]) {
+			case 'i':
+				section_offset_by_8 = &header.offset.internal;
+				name = "Internal";
+				break;
+			case 'c':
+				section_offset_by_8 = &header.offset.chassis;
+				name = "Chassis";
+				break;
+			case 'b':
+				section_offset_by_8 = &header.offset.board;
+				name = "Board";
+				break;
+			case 'p':
+				section_offset_by_8 = &header.offset.product;
+				name = "Product";
+				break;
+			case 'm':
+				section_offset_by_8 = &header.offset.multi;
+				name = "MitiRecord";
+				break;
+			default:
+				/* Should not go into here */
+				break;
+			}
+
+			/* Should never happened */
+			if (section_offset_by_8 == NULL || name == NULL) {
+				continue;
+			}
+
+			/* Ignore the section that doesn't exist */
+			if (*section_offset_by_8 == 0) {
+				continue;
+			}
+
+			/* Store the last offset in case we need to reset the last part */
+			if (last_offset_by_8 < *section_offset_by_8) {
+				last_offset_by_8 = *section_offset_by_8;
+			}
+
+			/* Adjust the section offset that locates behind the current edit section */
+			if (*section_offset_by_8 > (header_offset / 8)) {
+
+				/* Make sure the adjusted offset range is still inside the FRU field */
+				section_len = *(fru_data_old + (*section_offset_by_8 * 8) + 1) * 8;
+				if (((*section_offset_by_8 * 8) + section_len + (change_size_by_8 * 8)) > fru.size)
+				{
+					/* Return error if oversize */
+					printf("Internal error, section %s out of FRU field. %i > %i\n",
+						name, 
+						((*section_offset_by_8 * 8) + section_len + (change_size_by_8 * 8)), 
+						fru.size);
+					rc = -1;
+					goto ipmi_fru_set_field_string_rebuild_out;
+				}
+
+				/* Copy the section to adjusted offset */
+				printf("Moving Section %s, from %i to %i\n",
+							name,
+							((*section_offset_by_8) * 8),
+							((*section_offset_by_8 + change_size_by_8) * 8)
 						);
 				memcpy(
-							(fru_data_new + ((header.offset.board + change_size_by_8) * 8)),
-							(fru_data_old + (header.offset.board) * 8),
-							board_len
+							(fru_data_new + ((*section_offset_by_8 + change_size_by_8) * 8)),
+							(fru_data_old + (*section_offset_by_8) * 8),
+							section_len
 						);
-				header.offset.board   += change_size_by_8;
-			}
-		}
-		/* Board type field */
-		if ((f_type == 'c' ) || (f_type == 'b' ))
-		{
-			if (header.offset.product != 0) {
-				printf("Moving Section Product, from %i to %i\n",
-							((header.offset.product) * 8),
-							((header.offset.product + change_size_by_8) * 8)
-						);
-				memcpy(
-							(fru_data_new + ((header.offset.product + change_size_by_8) * 8)),
-							(fru_data_old + (header.offset.product) * 8),
-							product_len
-						);
-				header.offset.product += change_size_by_8;
-			}
-		}
-
-		if (header.offset.multi != 0) {
-			if ((f_type == 'c' ) || (f_type == 'b' ) || (f_type == 'p' )) {
-				printf("Change multi offset from %d to %d\n", header.offset.multi, header.offset.multi + change_size_by_8);
-				header.offset.multi += change_size_by_8;
+				*section_offset_by_8 += change_size_by_8;
 			}
 		}
 
@@ -5101,7 +5141,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		else if( f_type == 'p')
 		{
 			*(fru_data_new + product_offset + 1) += change_size_by_8;
-			product_len_new = *(fru_data_new + product_offset + 1) * 8;
 		}
 
 		/* Rebuild Header checksum */
@@ -5116,26 +5155,16 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			memcpy(fru_data_new, pfru_header, sizeof(struct fru_header));
 		}
 
-		/* Move remaining sections in 1 copy */
-		printf("Moving Remaining Bytes (Multi-Rec , etc..), from %i to %i\n",
-					remaining_offset,
-					((header.offset.product) * 8) + product_len_new
-				);
-		if(((header.offset.product * 8) + product_len_new - remaining_offset) < 0)
-		{
-			memcpy(
-						fru_data_new + (header.offset.product * 8) + product_len_new,
-						fru_data_old + remaining_offset,
-						fru.size - remaining_offset
-					);
-		}
-		else
-		{
-			memcpy(
-						fru_data_new + (header.offset.product * 8) + product_len_new,
-						fru_data_old + remaining_offset,
-						fru.size - ((header.offset.product * 8) + product_len_new)
-					);
+		/* Reset the last part to 0 if the new FRU is smaller them old one */
+		if (change_size_by_8 < 0) {
+			section_len = *(fru_data_old + (last_offset_by_8 * 8) + 1) * 8;
+
+			/* Get the reset start offset and reset size */
+			int reset_start = ((last_offset_by_8 * 8) + section_len + (change_size_by_8 * 8));
+			int reset_size = (change_size_by_8 * (-1)) * 8;
+
+			printf("Reset to 0 from %i to %i\n", reset_start, reset_start + reset_size);
+			memset(fru_data_new + reset_start, 0, reset_size);
 		}
 	}
 
