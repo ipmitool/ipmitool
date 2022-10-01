@@ -220,7 +220,7 @@ led_print(const char * name, print_status_t stat, uint8_t state)
 		theValue = "na";
 	}
 
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%s,%s\n", name, theValue);
 	} else {
 		printf("%-16s | %s\n", name, theValue);

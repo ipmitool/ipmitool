@@ -79,9 +79,9 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
+# define OPTION_STRING	"I:46hVvc:gsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
 #else
-# define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
+# define OPTION_STRING	"I:46hVvc:H:f:U:p:d:S:D:"
 #endif
 
 /* From src/plugins/ipmi_intf.c: */
@@ -454,7 +454,7 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'c':
-			csv_output = 1;
+				output_format = 1;
 			break;
 		case 'H':
 			if (hostname) {

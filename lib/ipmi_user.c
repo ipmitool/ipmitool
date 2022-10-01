@@ -50,7 +50,6 @@
 
 
 extern int verbose;
-extern int csv_output;
 
 
 /* _ipmi_get_user_access - Get User Access for given channel. Results are stored
@@ -293,7 +292,7 @@ ipmi_print_user_list(struct ipmi_intf *intf, uint8_t channel_number)
 		} else if (eval_ccode(ccode) != 0) {
 			return (-1);
 		}
-		if (csv_output) {
+		if (output_format == 1) {
 			dump_user_access_csv((char *)user_name.user_name,
 					&user_access);
 		} else {
@@ -324,7 +323,7 @@ ipmi_print_user_summary(struct ipmi_intf *intf, uint8_t channel_number)
 	if (eval_ccode(ccode) != 0) {
 		return (-1);
 	}
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%" PRIu8 ",%" PRIu8 ",%" PRIu8 "\n",
 				user_access.max_user_ids,
 				user_access.enabled_user_ids,

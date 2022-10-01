@@ -275,16 +275,16 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		}
 		return 0;
 	}
-	if (!strcmp(argv[0], "csv")) {
+	if (!strcmp(argv[0], "format")) {
 		if (argc > 1) {
-			if (str2int(argv[1], &csv_output) != 0) {
+			if (str2int(argv[1], &output_format) != 0) {
 				lprintf(LOG_ERR,
 						"Given csv '%s' argument is invalid.",
 						argv[1]);
 				return (-1);
 			}
 		} else {
-			csv_output = 1;
+			output_format = 1;
 		}
 		return 0;
 	}

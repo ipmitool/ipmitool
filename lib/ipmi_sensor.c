@@ -168,7 +168,7 @@ ipmi_sensor_print_fc_discrete(struct ipmi_intf *intf,
 		return -1;
 	}
 
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%s", sr->s_id);
 		if (sr->s_reading_valid) {
 			if (sr->s_has_analog_value) {
@@ -465,7 +465,7 @@ ipmi_sensor_print_fc_threshold(struct ipmi_intf *intf,
 	if (!rsp || rsp->ccode || !rsp->data_len)
 		thresh_available = 0;
 
-	if (csv_output) {
+	if (output_format == 1) {
 		dump_sensor_fc_thredshold_csv(thresh_available, thresh_status, rsp, sr);
 	} else {
 		if (verbose == 0) {
@@ -924,7 +924,7 @@ ipmi_sensor_get_reading(struct ipmi_intf *intf, int argc, char **argv)
 				lprintf(LOG_ERR, "Sensor \"%s\" is a discrete sensor!", argv[i]);
 				continue;
 			}
-			if (csv_output)
+			if (output_format == 1)
 				printf("%s,%s\n", argv[i], sr->s_a_str);
 			else
 				printf("%-16s | %s\n", argv[i], sr->s_a_str);
