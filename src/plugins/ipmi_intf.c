@@ -238,8 +238,7 @@ ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 
 void ipmi_intf_session_set_bind_intf(struct ipmi_intf *intf, char *bind_intf) {
 	if (intf->ssn_params.bind_intf) {
-		free(intf->ssn_params.bind_intf);
-		intf->ssn_params.bind_intf = NULL;
+		free_n(&intf->ssn_params.bind_intf);
 	}
 	if (!bind_intf) {
 		return;
@@ -411,13 +410,18 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 		}
 
 		if (params->bind_intf != NULL) {
+			#ifdef SO_BINDTODEVICE
 			int err = setsockopt(intf->fd, SOL_SOCKET, SO_BINDTODEVICE,
 					params->bind_intf, strlen(params->bind_intf) + 1);
 			if (err) {
 				lprintf(LOG_ERR, "Binding to network interface %s failed: %d",
 						params->bind_intf, err);
-				break;
+				continue;
 			}
+			#else
+			lprintf(LOG_ERR, "Binding network interface is not supported on this platform.");
+			break;
+			#endif /* SO_BINDTODEVICE */
 		}
 
 		if (rp->ai_family == AF_INET) {

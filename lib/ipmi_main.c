@@ -375,8 +375,7 @@ ipmi_main(int argc, char ** argv,
 		switch (argflag) {
 		case 'i':
 			if (bind_intf) {
-				free(bind_intf);
-				bind_intf = NULL;
+				free_n(&bind_intf);
 			}
 			bind_intf = strdup(optarg);
 			if (!bind_intf) {
