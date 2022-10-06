@@ -251,6 +251,7 @@ usage: ipmitool [options...] <command>
    -c            Display output in comma separated format
    -I intf       Interface to use
    -H hostname   Remote host name for LAN interface
+   -i bind_intf  Network interface name bound for lan/lanplus interface
    -p port       Remote RMCP port [default=623]
    -L level      Remote session privilege level [default=USER]
    -A authtype   Force use of authtype NONE, PASSWORD, MD2 or MD5
@@ -332,6 +333,7 @@ Setting Lan Default Gateway IP to 10.1.1.254
   various session parameters:
 
   hostname <host>        Session hostname
+  bind_intf <intf>       Session network interface
   username <user>        Session username
   password <pass>        Session password
   privlvl <level>        Session privilege level force

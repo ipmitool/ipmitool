@@ -12,10 +12,10 @@ Any recognized option is accepted. Conditional options may be ignored or it's
 usage postponed until shell or exec processes relevant command.
 
 <general\-options>   := [ \-h | \-V | \-v | \-I <interface> | \-H <address> |
-                         \-d <N> | \-p <port> | \-c | \-U <username> |
-                         \-L <privlvl> | \-l <lun> | \-m <local_address> |
-                         \-N <sec> | \-R <count> | <password\-option> |
-                         <oem-option> | <bridge-options> ]
+                         \-i <bind_intf> | \-d <N> | \-p <port> | \-c |
+                         \-U <username> | \-L <privlvl> | \-l <lun> |
+                         \-m <local_address> | \-N <sec> | \-R <count> |
+                         <password\-option> | <oem-option> | <bridge-options> ]
 
 <conditional\-opts>  := [ <lan\-options> | <lanplus\-options> |
                          <command\-options> ]
@@ -131,6 +131,9 @@ Deprecated. Use: \-o intelplus
 .TP 
 \fB\-h\fR
 Get basic usage help from the command line.
+.TP 
+\fB\-i\fR <\fIbind_intf\fP>
+Selects network interface to bind to for lan/lanplus interfaces.
 .TP 
 \fB\-H\fR <\fIaddress\fP>
 Remote server address, can be IP address or hostname.  This 
@@ -3149,6 +3152,11 @@ or by using the keyword `all' to specify all sessions.
 \fIhostname\fP <\fBhost\fR>
 
 Session hostname.
+.TP
+\fIbind_intf\fP <\fBintf\fR>
+
+Session bind_intf.
+
 .TP
 \fIusername\fP <\fBuser\fR>
 
