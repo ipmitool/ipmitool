@@ -624,7 +624,11 @@ AC_ARG_ENABLE([ipmishell],
 
 dnl check for readline library to enable ipmi shell
 if test "x$xenable_ipmishell" = "xyes"; then
-	AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])
+	PKG_PROG_PKG_CONFIG
+	PKG_CHECK_MODULES([READLINE], [readline],
+		[LIBS="$LIBS $READLINE_LIBS" have_readline=yes],
+		[AC_SEARCH_LIBS([readline], [readline edit], [have_readline=yes])]
+	)
 	if test "x$have_readline" != "xyes"; then
 		AC_MSG_ERROR([** Unable to find readline required by ipmishell.])
 		xenable_ipmishell=no
