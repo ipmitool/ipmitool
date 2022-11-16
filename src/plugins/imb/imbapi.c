@@ -65,7 +65,7 @@
 
 #ifdef SCO_UW
 # define NO_MACRO_ARGS  1
-# define __FUNCTION__ "func"
+# define __func__ "func"
 # define IMB_DEVICE "/dev/instru/mismic"
 #else
 # define IMB_DEVICE "/dev/imb"
@@ -171,7 +171,7 @@ open_imb(void)
 	if (hDevice1 != 0) {
 		return 1;
 	}
-	lprintf(LOG_DEBUG, "%s: opening the driver", __FUNCTION__);
+	lprintf(LOG_DEBUG, "%s: opening the driver", __func__);
 	/*  printf("open_imb: "
 	"IOCTL_IMB_SEND_MESSAGE =%x \n" "IOCTL_IMB_GET_ASYNC_MSG=%x \n"
 	"IOCTL_IMB_MAP_MEMORY  = %x \n" "IOCTL_IMB_UNMAP_MEMORY= %x \n"
@@ -193,7 +193,7 @@ open_imb(void)
 		if (fDriverTyp != 0) {
 			/* not 1st time */
 			sprintf(buf,"%s %s: open(%s) failed",
-					__FILE__, __FUNCTION__, IMB_DEVICE);
+					__FILE__, __func__, IMB_DEVICE);
 			perror(buf);
 		}
 		return 0;
@@ -213,14 +213,14 @@ open_imb(void)
 	requestData.data = NULL;
 	requestData.dataLength = 0;
 	respLength = 16;
-	lprintf(LOG_DEBUG, "%s: opened driver, getting IPMI version", __FUNCTION__);
+	lprintf(LOG_DEBUG, "%s: opened driver, getting IPMI version", __func__);
 	if (((my_ret_code = SendTimedImbpRequest(&requestData, (DWORD)400,
 						respBuffer,
 						(int *)&respLength,
 						&completionCode)) != ACCESN_OK)
 			|| (completionCode != 0)) {
 		printf("%s: SendTimedImbpRequest error. Ret = %d CC = 0x%X\n",
-				__FUNCTION__, my_ret_code, completionCode);
+				__func__, my_ret_code, completionCode);
 				close(hDevice1);
 				hDevice1 = 0;
 				return 0;
@@ -234,7 +234,7 @@ open_imb(void)
 			IpmiVersion = IPMI_10_VERSION;
 		}
 	}
-	lprintf(LOG_DEBUG, "%s: IPMI version 0x%x", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: IPMI version 0x%x", __func__,
 			IpmiVersion);
 	return 1;
 } /* end open_imb() */
@@ -299,7 +299,7 @@ DeviceIoControl(HANDLE __UNUSED__(dummey_hDevice), DWORD dwIoControlCode, LPVOID
 	if (rc == 0) {
 		return FALSE;
 	}
-	lprintf(LOG_DEBUG, "%s: ioctl cmd = 0x%lx", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: ioctl cmd = 0x%lx", __func__,
 			dwIoControlCode);
 	lprintf(LOG_DEBUG, "cbInBuffer %d cbOutBuffer %d", cbInBuffer,
 			cbOutBuffer);
@@ -320,16 +320,16 @@ DeviceIoControl(HANDLE __UNUSED__(dummey_hDevice), DWORD dwIoControlCode, LPVOID
 
 	if ((ioctl_status = ioctl(hDevice1, dwIoControlCode,&s)) < 0) {
 		lprintf(LOG_DEBUG, "%s %s: ioctl cmd = 0x%x failed",
-				__FILE__, __FUNCTION__, dwIoControlCode);
+				__FILE__, __func__, dwIoControlCode);
 		return FALSE;
 	}
 	lprintf(LOG_DEBUG, "%s: ioctl_status %d bytes returned = %d",
-			__FUNCTION__, ioctl_status, *lpcbBytesReturned);
+			__func__, ioctl_status, *lpcbBytesReturned);
 	if (ioctl_status == STATUS_SUCCESS) {
-		lprintf(LOG_DEBUG, "%s returning true", __FUNCTION__);
+		lprintf(LOG_DEBUG, "%s returning true", __func__);
 		return (TRUE);
 	} else {
-		lprintf(LOG_DEBUG, "%s returning false", __FUNCTION__);
+		lprintf(LOG_DEBUG, "%s returning false", __func__);
 		return (FALSE);
 	}
 }
@@ -342,12 +342,12 @@ StartAsyncMesgPoll()
 	DWORD retLength;
 	BOOL status;
 	lprintf(LOG_DEBUG, "%s: DeviceIoControl cmd = %x",
-			__FUNCTION__, IOCTL_IMB_POLL_ASYNC);
+			__func__, IOCTL_IMB_POLL_ASYNC);
 
 	status = DeviceIoControl(hDevice, IOCTL_IMB_POLL_ASYNC, NULL, 0, NULL,
 			0, &retLength, 0);
 
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status == TRUE) {
 		return ACCESN_OK;
@@ -408,7 +408,7 @@ SendTimedI2cRequest(I2CREQUESTDATA *reqPtr, int timeOut, BYTE *respDataPtr,
 	status = DeviceIoControl(hDevice, IOCTL_IMB_SEND_MESSAGE, requestData,
 			sizeof(requestData), &responseData,
 			sizeof(responseData), &respLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status != TRUE) {
 		DWORD error;
@@ -499,7 +499,7 @@ SendTimedEmpMessageResponse (ImbPacket *ptr, char *responseDataBuf,
 	status = DeviceIoControl(hDevice, IOCTL_IMB_SEND_MESSAGE, requestData,
 			sizeof(requestData), responseData, sizeof(responseData),
 			&respLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if ((status != TRUE) || (respLength != 1) || (responseData[0] != 0)) {
 		return ACCESN_ERROR;
@@ -627,7 +627,7 @@ SendTimedEmpMessageResponse_Ex (ImbPacket *ptr, char *responseDataBuf, int
 			sizeof(requestData), responseData, sizeof(responseData),
 			&respLength, NULL);
 
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if ((status != TRUE) || (respLength != 1) || (responseData[0] != 0)) {
 		return ACCESN_ERROR;
@@ -712,7 +712,7 @@ SendTimedLanMessageResponse(ImbPacket *ptr, char *responseDataBuf,
 			sizeof(requestData), responseData, sizeof(responseData),
 			&respLength, NULL);
 
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if ((status != TRUE) || (respLength != 1) || (responseData[0] != 0)) {
 		return ACCESN_ERROR;
@@ -840,7 +840,7 @@ SendTimedLanMessageResponse_Ex(ImbPacket *ptr, char *responseDataBuf, int
 	status = DeviceIoControl(hDevice, IOCTL_IMB_SEND_MESSAGE, requestData,
 			sizeof(requestData), responseData, sizeof(responseData),
 			&respLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if ((status != TRUE) || (respLength != 1) || (responseData[0] != 0)) {
 		return ACCESN_ERROR;
@@ -883,7 +883,7 @@ SendTimedImbpRequest(IMBPREQUESTDATA *reqPtr, int timeOut, BYTE *respDataPtr,
 	/* convert to uSec units */
 	req->timeOut = timeOut * 1000;
 	lprintf(LOG_DEBUG, "%s: rsSa 0x%x cmd 0x%x netFn 0x%x rsLun 0x%x",
-			__FUNCTION__, req->req.rsSa, req->req.cmd,
+			__func__, req->req.rsSa, req->req.cmd,
 			req->req.netFn, req->req.rsLun);
 
 	status = DeviceIoControl(hDevice, IOCTL_IMB_SEND_MESSAGE, requestData,
@@ -891,11 +891,11 @@ SendTimedImbpRequest(IMBPREQUESTDATA *reqPtr, int timeOut, BYTE *respDataPtr,
 			sizeof(responseData), &respLength, NULL);
 
 	lprintf(LOG_DEBUG, "%s: DeviceIoControl returned status = %d",
-			__FUNCTION__, status);
+			__func__, status);
 #ifdef DBG_IPMI
 	/* TODO */
 	printf("%s: rsSa %x cmd %x netFn %x lun %x, status=%d, cc=%x, rlen=%d\n",
-			__FUNCTION__, req->req.rsSa, req->req.cmd,
+			__func__, req->req.rsSa, req->req.cmd,
 			req->req.netFn, req->req.rsLun, status, resp->cCode,
 			respLength);
 #endif
@@ -950,7 +950,7 @@ SendAsyncImbpRequest(IMBPREQUESTDATA *reqPtr, BYTE *seqNo)
 			sizeof(requestData), &responseData,
 			sizeof(responseData), &respLength, NULL);
 
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status != TRUE) {
 		DWORD error;
@@ -1027,7 +1027,7 @@ GetAsyncImbpMessage_Ex(ImbPacket *msgPtr, DWORD *msgLen, DWORD timeOut,
 				sizeof(responseData), &respLength, NULL);
 
 		lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d",
-				__FUNCTION__, status);
+				__func__, status);
 		if (status != TRUE) {
 			DWORD error = GetLastError();
 			/* handle "msg not available" specially. it is
@@ -1125,7 +1125,7 @@ IsAsyncMessageAvailable(unsigned int eventId)
 	status = DeviceIoControl(hDevice, IOCTL_IMB_CHECK_EVENT,
 			&AsyncEventHandle, sizeof(HANDLE), &dummy, sizeof(int),
 			(LPDWORD)&respLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status != TRUE) {
 		return ACCESN_ERROR;
@@ -1157,7 +1157,7 @@ RegisterForImbAsyncMessageNotification(unsigned int *handleId)
 	status = DeviceIoControl(hDevice, IOCTL_IMB_REGISTER_ASYNC_OBJ, &dummy,
 			sizeof(int), &AsyncEventHandle, (DWORD)sizeof(HANDLE),
 			(LPDWORD)&respLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if ((respLength != sizeof(int)) || (status != TRUE)) {
 		return ACCESN_ERROR;
@@ -1196,7 +1196,7 @@ UnRegisterForImbAsyncMessageNotification(unsigned int handleId, int iFlag)
 	status = DeviceIoControl(hDevice, IOCTL_IMB_DEREGISTER_ASYNC_OBJ,
 			&AsyncEventHandle, (DWORD)sizeof(HANDLE ), &dummy,
 			(DWORD)sizeof(int), (LPDWORD)&respLength, NULL );
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status != TRUE) {
 		return ACCESN_ERROR;
@@ -1226,7 +1226,7 @@ SetShutDownCode(int delayTime, int code)
 	cmd.delayTime = delayTime;
 	status = DeviceIoControl(hDevice, IOCTL_IMB_SHUTDOWN_CODE, &cmd,
 			sizeof(cmd), NULL, 0, &retLength, NULL);
-	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: DeviceIoControl status = %d", __func__,
 			status);
 	if (status == TRUE) {
 		return ACCESN_OK;
@@ -1333,7 +1333,7 @@ MapPhysicalMemory(int startAddress, int addressLength, int *virtualAddress)
 	if ((fd = open("/dev/mem", O_RDONLY)) < 0) {
 		char buf[128];
 		sprintf(buf,"%s %s: open(%s) failed",
-				__FILE__, __FUNCTION__, IMB_DEVICE);
+				__FILE__, __func__, IMB_DEVICE);
 		perror(buf);
 		return ACCESN_ERROR;
 	}
@@ -1344,12 +1344,12 @@ MapPhysicalMemory(int startAddress, int addressLength, int *virtualAddress)
 	if ((startvAddress = mmap(0, length, PROT_READ, MAP_SHARED, fd,
 					startpAddress)) == MAP_FAILED) {
 		char buf[128];
-		sprintf(buf, "%s %s: mmap failed", __FILE__, __FUNCTION__);
+		sprintf(buf, "%s %s: mmap failed", __FILE__, __func__);
 		perror(buf);
 		close(fd);
 		return ACCESN_ERROR;
 	}
-	lprintf(LOG_DEBUG, "%s: mmap of 0x%x success", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: mmap of 0x%x success", __func__,
 			startpAddress);
 #ifdef LINUX_DEBUG_MAX
 	for (int i = 0; i < length; i++) {
@@ -1382,15 +1382,15 @@ UnmapPhysicalMemory(int virtualAddress, int Length)
 	diff = ((unsigned int)virtualAddress) % pagesize;
 	virtualAddress -= diff;
 	Length += diff;
-	lprintf(LOG_DEBUG, "%s: calling munmap(0x%x,%d)", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: calling munmap(0x%x,%d)", __func__,
 			virtualAddress,Length);
 	if (munmap(&virtualAddress, Length) != 0) {
 		char buf[128];
-		sprintf(buf, "%s %s: munmap failed", __FILE__, __FUNCTION__);
+		sprintf(buf, "%s %s: munmap failed", __FILE__, __func__);
 		perror(buf);
 		return ACCESN_ERROR;
 	}
-	lprintf(LOG_DEBUG, "%s: munmap(0x%x,%d) success", __FUNCTION__,
+	lprintf(LOG_DEBUG, "%s: munmap(0x%x,%d) success", __func__,
 			virtualAddress, Length);
 	return ACCESN_OK;
 }

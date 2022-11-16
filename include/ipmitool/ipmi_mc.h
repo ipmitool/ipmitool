@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_MC_H
-#define IPMI_MC_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -84,7 +83,7 @@ struct ipm_devid_rsp {
 #define IPM_DEV_DEVICE_ID_REV_MASK     (0x0F)	/* BCD-enoded             */
 
 #define IPM_DEV_FWREV1_AVAIL_MASK      (0x80)	/* 0 = normal operation   */
-#define IPM_DEV_FWREV1_MAJOR_MASK      (0x3f)	/* Major rev, BCD-encoded */
+#define IPM_DEV_FWREV1_MAJOR_MASK      (0x7f)	/* Major rev, BCD-encoded */
 
 #define IPM_DEV_IPMI_VER_MAJOR_MASK    (0x0F)	/* Major rev, BCD-encoded */
 #define IPM_DEV_IPMI_VER_MINOR_MASK    (0xF0)	/* Minor rev, BCD-encoded */
@@ -325,5 +324,3 @@ struct ipm_get_watchdog_rsp {
 int ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
 		    int len, void *buffer);
 int ipmi_mc_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
-
-#endif				/*IPMI_MC_H */

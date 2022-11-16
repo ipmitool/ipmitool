@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_INTF_H
-#define IPMI_INTF_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_oem.h>
@@ -243,6 +242,7 @@ struct ipmi_intf {
 
 uint16_t ipmi_intf_get_max_request_data_size(struct ipmi_intf *intf);
 uint16_t ipmi_intf_get_max_response_data_size(struct ipmi_intf *intf);
+uint8_t ipmi_intf_get_bridging_level(const struct ipmi_intf *intf);
 
 struct ipmi_intf * ipmi_intf_load(char * name);
 void ipmi_intf_print(struct ipmi_intf_support * intflist);
@@ -268,4 +268,3 @@ void ipmi_cleanup(struct ipmi_intf * intf);
 #if defined(IPMI_INTF_LAN) || defined (IPMI_INTF_LANPLUS)
 int  ipmi_intf_socket_connect(struct ipmi_intf * intf);
 #endif
-#endif /* IPMI_INTF_H */

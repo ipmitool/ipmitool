@@ -3,8 +3,7 @@
 	(C) Kontron
  */
 
-#ifndef _IPMI_PICMG_H_
-#define _IPMI_PICMG_H_
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -120,5 +119,3 @@ struct sAmcPortState {
 int ipmi_picmg_main (struct ipmi_intf * intf, int argc, char ** argv);
 uint8_t picmg_discover(struct ipmi_intf *intf);
 uint8_t ipmi_picmg_ipmb_address(struct ipmi_intf *intf);
-
-#endif

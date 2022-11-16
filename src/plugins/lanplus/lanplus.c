@@ -741,8 +741,6 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 				return (struct ipmi_rs *)1;
 			};
 
-			uint8_t target_cmd = entry->req.msg.target_cmd;
-
 			lprintf(LOG_DEBUG+2, "IPMI Request Match found");
 
 			if (entry->bridging_level) {
@@ -1905,8 +1903,6 @@ ipmi_lanplus_build_v2x_ipmi_cmd(
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
 	/* it's a bridge command */
 	} else {
-		unsigned char backup_cmd;
-
 		/* Add entry for cmd */
 		entry = ipmi_req_add_entry(intf, req, curr_seq);
 

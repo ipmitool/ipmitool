@@ -2,7 +2,7 @@ dnl
 dnl autoconf for ipmitool
 dnl
 m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
-AC_INIT([ipmitool], [1.8.18git_suffix])
+AC_INIT([ipmitool], [1.8.19git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_CONFIG_COMMANDS_PRE([export prefix=$prefix])
 AC_CANONICAL_SYSTEM
@@ -61,7 +61,7 @@ if test "x$WGET" = "x"; then
 		AC_MSG_WARN([** Neither wget nor curl could be found.])
 		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
 	else
-		DOWNLOAD="$CURL -#"
+		DOWNLOAD="$CURL --location --progress-bar"
 		AM_CONDITIONAL([DOWNLOAD], [true])
 	fi
 else
@@ -702,8 +702,8 @@ AC_ARG_VAR(IANADIR, [Configure the path to IANA PEN dictionary (default=DATAROOT
 AC_ARG_VAR(IANAUSERDIR, [Configure the path to IANA PEN dictionary wihtin the user's HOME directory (default=.local/usr/share/misc)])
 
 if test "x${IANADIR}" = "x"; then
-	echo Set IANA PEN dictionary search path to ${datarootdir}/misc
-	IANADIR="${datarootdir}/misc"
+	IANADIR=`eval echo "${datarootdir}/misc"`
+	echo Set IANA PEN dictionary search path to ${IANADIR}
 fi
 
 if test "x${IANAUSERDIR}" = "x"; then
@@ -731,7 +731,6 @@ AC_CONFIG_FILES([Makefile
 		control/Makefile
 		control/pkginfo
 		control/prototype
-		control/rpmmacros
 		control/ipmitool.spec
 		lib/Makefile
 		include/Makefile
@@ -748,10 +747,9 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/usb/Makefile
 		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
-		src/plugins/dummy/Makefile])
-
-AC_CONFIG_FILES([doc/ipmitool.1], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmitool.1])
-AC_CONFIG_FILES([doc/ipmievd.8], [${SED} -i -e "s%\${prefix}%$prefix%" doc/ipmievd.8])
+		src/plugins/dummy/Makefile
+		doc/ipmitool.1
+		doc/ipmievd.8])
 
 AC_OUTPUT
 

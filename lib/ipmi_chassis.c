@@ -378,42 +378,8 @@ ipmi_chassis_restart_cause(struct ipmi_intf * intf)
 		return -1;
 	}
 
-	printf("System restart cause: ");
-
-	switch (rsp->data[0] & 0xf) {
-	case 0:
-		printf("unknown\n");
-		break;
-	case 1:
-		printf("chassis power control command\n");
-		break;
-	case 2:
-		printf("reset via pushbutton\n");
-		break;
-	case 3:
-		printf("power-up via pushbutton\n");
-		break;
-	case 4:
-		printf("watchdog expired\n");
-		break;
-	case 5:
-		printf("OEM\n");
-		break;
-	case 6:
-		printf("power-up due to always-restore power policy\n");
-		break;
-	case 7:
-		printf("power-up due to restore-previous power policy\n");
-		break;
-	case 8:
-		printf("reset via PEF\n");
-		break;
-	case 9:
-		printf("power-cycle via PEF\n");
-		break;
-	default:
-		printf("invalid\n");
-	}
+	printf("System restart cause: %s\n",
+	       val2str(rsp->data[0] & 0xf, ipmi_chassis_restart_cause_vals));
 
 	return 0;
 }
@@ -1070,8 +1036,9 @@ get_bootparam_options(char *optstring,
 
 	{NULL}	/* End marker */
 	}, *op;
+	const char *optkw = "options=";
 
-	if (strcmp(optstring, "options=")) {
+	if (strncmp(optstring, optkw, strlen(optkw))) {
 		lprintf(LOG_ERR, "No options= keyword found \"%s\"", optstring);
 		return -1;
 	}
@@ -2087,7 +2054,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 					/* Exclusive clear-cmos, no other flags */
 					optstr = "clear-cmos";
 				}
-				else if (!strcmp(argv[2], kw)) {
+				else if (!strncmp(argv[2], kw, strlen(kw))) {
 					optstr = argv[2] + strlen(kw);
 				}
 			}

@@ -1,3 +1,238 @@
+version 1.8.19 2022-08-31
+	* Cast type before the left shift
+	* sel: Fix the deasserted thresholds inequality
+	* man: Update the text for -C option
+	* chassis restart_cause: Add new causes
+	* sel: Remove redundant "Reserve SEL"
+	* zero initialize the recv structure on the stack
+	* zero initialize the recv structure on the stack
+	* ci: Add support for MacOS-11
+	* ci: Remove ubuntu-16.04 support
+	* sdr: Fix modifier unit
+	* Fix compile error
+	* Refactor bridging level detection to dedicated function
+	* Fix double bridge detection in get_max_(req|rsp)_data_size()
+	* ipmi_mc: Fix the IPM_DEV_FWREV1_MAJOR_MASK
+	* helper: Fix stderr file descriptor
+	* Fix codefactor-io / CodeFactor warnings
+	* Use /run instead of /var/run
+	* oem: Update product IDs for YADRO
+	* lan: Add processing of get/set specific CCs
+	* lan: Refactor pointer style
+	* doc: update lanplus doc to reflect default cipher suite change
+	* ekanalyzer: Fix internal use area off-by-one bug
+	* ekanalyzer frushow: Fix internal area size calc
+	* sel: Fix "power supply inactive" flag offset
+	* ci: Add support for Ubuntu 20.04
+	* ci: Fix Ubuntu builds
+	* Fix compiler warning
+	* Fix compiler warning
+	* Fix compiler warning
+	* ci: Update for GitHub Actions v2.274.2
+	* free: Fix implicit function declarations
+	* Use "#pragma once" for headers
+	* Remove unneeded execution bits from C source files and a header file
+	* Convert line endings to LF
+	* Fixed compiler warning.
+	* RPM support: fixed broken build due to use of headers from kernel
+	* imbapi: replace __FUNCTION__ to eleminate compiler warnings
+	* lanplus: remove unused variable
+	* hpmfwupg: Clean up / refactor
+	* fru: Fix crashes on 6-bit ASCII strings
+	* oem: Add product ID for YADRO VEGMAN
+	* configure.ac: add '--location' for curl to follow location
+	* configure.ac: replace '-#' by '--progress-bar' with curl
+	* Add version info to debug output
+	* doc, ci: Fix an error in package name for Windows
+	* doc: Fix a small typo in INSTALL
+	* RPM support: updated spec file changelog
+	* RPM support: simplified build process
+	* RPM support: fixed broken RPM build
+	* doc: Update INSTALL with Windows info
+	* ci: Add Windows/cygwin config
+	* doc: Update INSTALL for new CI
+	* ci: Add github workflow, drop travis
+	* Fix compatibility with OpenBSD and macOS
+	* dist: Fix dependencies and cleanup
+	* dist: Add missing ipmi_time.h header to packaging
+	* configure: Fix compatibility with non-bash systems
+	* Finalize refactoring of string comparisons
+	* channel: Refactor set_user_access option processing
+	* Refactor string comparisons
+	* sel: Fix OEM record definition example
+	* sdr: harden against bad records
+	* fru: fix memory leak in ipmi_spd_print_fru
+	* ipmi_sel_set_time: fix strptime() return check
+	* hpm: use portable __max() in hpmfwupg
+	* hpmfwupg: move variable definition to .c file
+	* sel: time: fix null pointer dereference in set
+	* fru, sdr: Fix id_string buffer overflows
+	* lanp: Fix buffer overflows in get_lan_param_select
+	* channel: Fix buffer overflow
+	* session: Fix buffer overflow in ipmi_get_session_info
+	* fru: Fix buffer overflow in ipmi_spd_print_fru
+	* fru: Fix buffer overflow vulnerabilities
+	* configure: Drop requirement for curses et. al libs
+	* configure: remove some duplicate code
+	* doc: Update INSTALL to fix installation errors
+	* ipmi_dcmi: fix typo in nm_policy_options initialization.
+	* Docs: Add info on packages to install on Ubuntu 16.04
+	* chassis: Refactor to get rid of strncmp()
+	* chassis: Refactor main for centralized exiting
+	* chassis: bootdev: Refactor more
+	* chassis: bootdev: Refactor to reduce nesting
+	* chassis: bootdev: Fix help message and its formatting
+	* chassis: bootparam/bootdev: Refactor for less magic
+	* oem: supermicro: Add product codes from IPMICFG
+	* doc: Update man page regarding `user set password`
+	* user: Cleanup/refactor ipmi_user_password()
+	* user: Improve password length handling
+	* user: Alter "set password" usage information
+	* intf: Add missing function declarations
+	* doc: fix URL in README
+	* event: Clean up event sending from a file
+	* event: Clean up the event sending code
+	* event: Fix event submission via SSIF
+	* make: Use DESTDIR to install IANA PEN database
+	* lanplus: Fix embedded bridged responses handling
+	* Update .gitignore
+	* mc: Fix reporting of manufacturers > 64K
+	* Add installation of enterprise-numbers database
+	* Update documentation in regard to IANA PEN registry
+	* Use configurable path to IANA PEN registry
+	* Load IANA PEN registry from a file
+	* dbus: Replace obsolete INCLUDES with AM_CPPFLAGS
+	* oem: name change from Newisys to Viking Enterprise Solutions
+	* Fix default interface to behave as it did before
+	* man: Add documentation for chassis bootmbox
+	* man: Update the chassis bootparam section
+	* chassis: Add boot initiator mailbox support
+	* chassis: Use command-specific completion code parser
+	* Add support for command-specific completion codes
+	* Add a helper htoipmi24() function
+	* Add a helper args2buf() function
+	* man: Cleanup the manpage formatting tags
+	* create_pen_list: only print if values are set
+	* chassis: Refactor to reduce code duplication
+	* chassis: Refactor to reduce code duplication
+	* sdr: Fix segfault on invalid unit types
+	* vendor: Add YADRO TATLIN Storage Controller ID
+	* exchange-bmc-os-info: Remove dependency on ipmi.service
+	* Add mechanism to configure to set the default interface
+	* ci: Update INSTALL to reflect recent changes
+	* ci: Set up matrix builds with Travis CI
+	* Enable Travis build of D-Bus interface
+	* add OpenBMC D-Bus interface
+	* Fix "ipmitool pef {status,info}" not printing final newline
+	* Remove unused include
+	* Fix IPMI DCMI message typo
+	* open: swap free() calls for free_n()
+	* open: checking received msg id against expectation
+	* open: fix whitespace
+	* Refactor free_n() function
+	* fru: swap free() calls for free_n()
+	* fru: Fix write chunk reduction code
+	* fru: add macro FRU_AREA macros
+	* fru: replace magic return codes with macros
+	* fru header: add return error codes specific to fru
+	* fru: fix ipmi_fru_picmg_ext_edit as bool
+	* fru: use bool with ipmi_fru_oemkontron_edit
+	* fru: change ipmi_fru_query_new_value to return bool
+	* fru: mark ipmi_fru_query_new_value as static
+	* fru: add fru_cc_rq2big helper method for code checks
+	* fru: cleanup ipmi_fru_upg_ekeying
+	* fru: use ipmi_cc defined maros for return codes
+	* fru: drop extraneous parentheses on negative returns
+	* fru: delete unused variable matchInstance
+	* fru: cleanup ipmi_fru_oemkontron_get
+	* fru: fixup array bounds checking
+	* hpm: Adhere to centralized exiting
+	* hpm: Minor refactoring
+	* hpm: Fix resource leak
+	* sol: Make interface timeout obey the -N option
+	* helper: add free_n method to handle clearing pointers
+	* cygwin: imb: Fix build error (wchar_t)
+	* lanplus: Fix segfault for truncated dcmi response
+	* Move led color static array to source file
+	* drop unused static arrays
+	* move static objects to source file
+	* cleanup all unused-parameter warnings
+	* use __UNUSED__ macro instead of gcc specific attribute
+	* implement __UNUSED__ macro for marking unused
+	* Add .dirstamp to .gitignore
+	* fru: Fix processing of unspecified board mfg. date
+	* [compiler-warnings-fixes] use correct fall through comment
+	* [compiler-warnings-fixes] ipmi_start_daemon: check return values
+	* [compiler-warnings-fixes] ipmi_sdr.c: remove unused function parameters
+	* lan: Fix processing disabled VLAN
+	* Make ipmitool respect system locale settings
+	* Fix strftime() non-literal argument warning
+	* Refactor timestamp handling
+	* doc: Update manpage with new contact info
+	* lanplus: Refactoring
+	* lanplus: Fix -C option processing
+	* lanplus: Auto-select 'best' cipher suite available
+	* lanplus: Fix compile with deprecated APIs disabled.
+	* doc: Update home page links
+	* doc: Update formatting of ipmitool man page
+	* sensor: Refactor ipmi_sensor_print_fc_threshold()
+	* sensor: Add support for csv output
+	* plugins: open: Properly enable event receiver (#35)
+	* lan: Refactoring: Remove unused function
+	* general: Get rid of some unused parameter warnings
+	* mc: guid: Implement encoding autodetection
+	* mc: guid: Fix timestamp decoding
+	* mc: guid: Add support for non-standard encodings
+	* mc: guid: Fix byte ordering to follow IPMI spec
+	* Refactoring: optimize pointer checks
+	* imb: Refactoring: remove duplicate code
+	* Refactoring: get rid of superfluous comparisons
+	* Refactoring. Improve code reuse ratio.
+	* general: Fix several misspellings
+	* mc: Fix compiler warnings
+	* general: Add array_byteswap() to helper
+	* lanplus: Make byteswapping generic
+	* framework: Update .gitignore
+	* framework: Switch to C11 standard with GNU extensions
+	* framework: ci: Add support for Travis CI
+	* oem: Add basic support for Quanta
+	* intf: Refactoring. Remove unused sendrsp()
+	* dummy: Add default dummy socket
+	* mc: Fix manufacturer ID masking
+	* Refactoring. Remove useless feature test macros.
+	* general: Make byteswapping arch-independent
+	* sel: Minor refactoring
+	* sdr: Refactor/optimize code. No functional changes.
+	* Add an option to display all dates in UTC
+	* mc: Code refactor to reduce copy-paste ratio
+	* mc: watchdog set: Refactor to reduce complexity
+	* mc: watchdog set: Fix intr setting
+	* mc: watchdog get: Update to match IPMI 2.0 spec
+	* mc: watchdog: Add `set` command
+	* framework: Make git ignore cscope.out
+	* plugins/open: Fix for interrupted select
+	* nm: Fix policy range (#12)
+	* Replace user_id masks with a macro (#8)
+	* fru: internaluse: Fix segmentation fault (#9)
+	* dcmi: Refactor
+	* ID:508 - Fix segfaults in dcmi command handlers
+	* vendor: Add YADRO VESNIN identification
+	* ID:491 - Fetch vendor IDs from IANA
+	* ID:472 - Fix The Most recent Addition/Erase date
+	* ID:480 - Call EVP_CIPHER_CTX_free() instead of EVP_CIPHER_CTX_cleanup()
+	* ID:480 - ipmitool coredumps in EVP_CIPHER_CTX_init
+	* Make git revision more descriptive
+	* ID:477 - fru: Fix decoding of non-text data in get_fru_area_str()
+	* ID:479 - ekanalyzer: fix processing of custom mfg. fields
+	* ID:478 - ekanalyzer: Fixed decoding of FRU fields
+	* Add some more configure/build/editor byproducts to .gitignore
+	* Add git hash and dirty mark to ipmitool version
+	* Prevent autoreconf from complaining about missing NEWS
+	* Add bootstrap support for Mac
+	* ID:474 - Compile fix on nonlinux systems
+	* ID:461 - Make compiler happier about changes related to OpenSSL 1.1
+	* ID:461 - OpenSSL 1.1 compatibility - "error: storage size of 'ctx' isn't known"
+
 version 1.8.18 2016-10-08
 	* Add mac2str() and str2mac() to print/parse MAC address
 	* Change formatting, remove commented-out code in
@@ -647,7 +882,7 @@ version 1.8.11 released 2009-02-25
 	* Patch ID 1990560 to get readings from non-linear analog sensors
 	* Add support for SOL payload status command
 	* SOL set parameter range checking added
-	* Fixed SOL activate options usage 
+	* Fixed SOL activate options usage
 	* Fixed crashes when parsing 'sol payload' and 'tsol' cmds (#216967)
 	* Added retries to SOL keepalive
 	* Fixed wrong mask values for Front Panel disable/enable status
@@ -663,14 +898,14 @@ version 1.8.11 released 2009-02-25
 	* Fix occasional SDR dump segfault; #1793076
 	* Allow ipmitool sel delete to accept hex list entry numbers
 	* Fix SEL total space reporting.
-	* Fix for garbage sensor threshold values reported when none 
+	* Fix for garbage sensor threshold values reported when none
 		returned.  Tracker Bug #863748
 	* ipmievd change to Monitor %used in SEL buffer and log warnings when
 		the buffer is 80% and 100% full
 
 version 1.8.10 released 2008-08-08
 	* Added support for BULL IANA number.
-	* Fixed contrib build so the oem_ibm_sel_map file gets included in 
+	* Fixed contrib build so the oem_ibm_sel_map file gets included in
 		rpm builds again.
 	* Added support for Debian packages to be built from CVS
 	* Fix for sdr and sel timestamp reporting issues
@@ -679,11 +914,11 @@ version 1.8.10 released 2008-08-08
 	* Change ipmi_chassis_status() to non-static so it can be used
 		externally
 	* Added retries to SOL keepalive
-	* Fix to stop sensor list command from reporting a failure due 
+	* Fix to stop sensor list command from reporting a failure due
 		to missing sensor
 	* Fix bug in sdr free space reporting
 	* Add support for IANA number to vendor name conversion for many
-		vendors 
+		vendors
 	* Fix segfault bug in lan set command
 	* Fix bug in population of raw i2c wdata buffer
 	* Fix bug in ipmb sensor reading
@@ -697,7 +932,7 @@ version 1.8.10 released 2008-08-08
 	* Add more JEDEC support info for DIMMs; decrease request size
 		for DIMM FRU info to 16 bytes at a time to allow more
 		DIMM FRUs to respond.
-	* Fix to change hpmfwupg to version 1.02; fix to reduce hpmfwupg 
+	* Fix to change hpmfwupg to version 1.02; fix to reduce hpmfwupg
 		buffer length more aggressively when no response from iol
 	* Fix HPM firmware activation via IOL; fake a timeout after IOL
 		session re-open to force get upgrade status retry;
@@ -706,11 +941,11 @@ version 1.8.10 released 2008-08-08
 	* Fix for oemval2str size
 	* Add support for product name resolution in mc info
 	* Fix FRU display format
-	* Added PICMG ekeying analyzer module support (ekanalyzer); 
-		display point to point physical connectivity and power 
-		supply information between carriers and AMC modules; 
-		display matched results of ekeying match between an 
-		on-carrier device and AMC module or between 2 AMC modules 
+	* Added PICMG ekeying analyzer module support (ekanalyzer);
+		display point to point physical connectivity and power
+		supply information between carriers and AMC modules;
+		display matched results of ekeying match between an
+		on-carrier device and AMC module or between 2 AMC modules
 	* Fix AMC GUID display support
 	* Improved amcportstate operations
 	* Added resolution for new sensor types
@@ -723,8 +958,8 @@ version 1.8.10 released 2008-08-08
 	* Added SPD support for parms: channel number, max read size
 	* Add SDR support for adding SDR records from a dumped file,
 		clearing SDR, adding partial SDR records
-	* Add updates and fixes to hpmfwupg: upload block size to 32 bytes 
-		for KCS, handle long response option, implement rollback 
+	* Add updates and fixes to hpmfwupg: upload block size to 32 bytes
+		for KCS, handle long response option, implement rollback
 		override, garbage output fix
 	* Add double bridge lan support , fix bridging issue
 	* Add HPM support to pre-check which components need to be skipped
@@ -758,7 +993,7 @@ version 1.8.9 released 2007-03-06
 	* Added edit support for AMC activation "Maximum Internal Current"
 	* Fix bug generating garbage on the screen when handling GetDeviceId
 		and sol traffic occurs
-	* Added ability to map OEM sensor types to OEM description string using 
+	* Added ability to map OEM sensor types to OEM description string using
 		IANA number; moved IANA number table
 	* Fix lan set access command to use value already saved within
 		parameters for PEF and authentication
@@ -776,13 +1011,13 @@ version 1.8.9 released 2007-03-06
 	* Fix SOL set errors when commit-write not supported
 	* Fix reset of session timeout for lanplus interface
 	* Fixed lan interface accessibility timeout handling
-	* Fix bug with Function Get Channel Cipher Suites command when 
+	* Fix bug with Function Get Channel Cipher Suites command when
 		more than 1 page used.
 	* Fix missing firmware firewall top-level command
 	* Fix bug in SOL keepalive functionality
 	* Fix SOLv2 NACK and retry handling for Intel ESB2 BMC
 	* Added ipmi_sel_get_oem_sensor* APIs
-	* Added HPM.1 support 
+	* Added HPM.1 support
 	* Fix segfault when incorrect oem option supplied
 	* Fix bus problem with spd command
 	* Fix segfault in SOL when remote BMC does not return packet
@@ -796,7 +1031,7 @@ version 1.8.9 released 2007-03-06
 	* Add freeipmi interface support
 	* Add remote spd printing
 	* Add better detection of linux/compiler.h to config
-	* Makefile changes to fix makedistcheck, etc. 
+	* Makefile changes to fix makedistcheck, etc.
 
 version 1.8.8
 	* Fix segfaults in sensor data repository list

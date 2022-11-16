@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SESSION_H
-#define IPMI_SESSION_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -127,5 +126,3 @@ struct get_session_info_rsp
 
 
 int ipmi_session_main(struct ipmi_intf *, int, char **);
-
-#endif /*IPMI_CHANNEL_H*/

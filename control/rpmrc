@@ -1,8 +1,0 @@
-macrofiles: /usr/lib/rpm/macros:/usr/lib/rpm/%{_target}/macros:/etc/rpm/macros.specspo:/etc/rpm/macros:/etc/rpm/%{_target}/macros:%(echo $CONFIGDIR)/rpmmacros
-
-buildarchtranslate: athlon: i386
-buildarchtranslate: i686: i386
-buildarchtranslate: i586: i386
-buildarchtranslate: i486: i386
-buildarchtranslate: i386: i386
-

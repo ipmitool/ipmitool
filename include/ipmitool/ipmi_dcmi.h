@@ -16,9 +16,7 @@
  *
  */
 
-
-#ifndef IPMI_DCMI_H
-#define IPMI_DCMI_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -267,4 +265,3 @@ struct nm_suspend {
 } __attribute__ ((packed));
 
 int ipmi_nm_main(struct ipmi_intf * intf, int argc, char ** argv);
-#endif /*IPMI_DCMI_H*/

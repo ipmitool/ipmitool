@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_ISOL_H
-#define IPMI_ISOL_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -53,5 +52,3 @@ struct isol_config_parameters {
 };
 
 int ipmi_isol_main(struct ipmi_intf *, int, char **);
-
-#endif /* IPMI_SOL_H */
