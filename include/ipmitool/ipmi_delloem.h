@@ -343,10 +343,6 @@ typedef struct _power_headroom
     uint16_t peakheadroom;
 } __attribute__ ((packed)) POWER_HEADROOM;
 
-struct vFlashstr {
-	uint8_t val;
-	const char * str;
-};
 typedef struct ipmi_vFlash_extended_info
 {
 	uint8_t  vflashcompcode;
