@@ -81,6 +81,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define IPMI_DELL_POWER_CAP 0xEA
 #define percent             0x03 
 
+#define RC_ERROR -1
+#define RC_SUCCESS 0
+
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
 {
@@ -198,45 +201,29 @@ typedef struct _lcd_mode
 #define IMC_IDRAC_15G_MODULAR 0x41
 #define IMC_IDRAC_15G_DCS 0x42
 
+#define IMC_IDRAC_16G_MONOLITHIC 0x50
+#define IMC_IDRAC_16G_MODULAR 0x51
+#define IMC_IDRAC_16G_DCS 0x52
+
+#define IDRAC_DEFAULT 0
 #define	IDRAC_11G 1
 #define	IDRAC_12G 2
 #define	IDRAC_13G 3
 #define	IDRAC_14G 4
 #define IDRAC_15G 5
+#define IDRAC_16G 6
 
-#define IDRAC_VALIDATOR_PARAM 0xDD
+#define GENERIC_SUBCMD_GET 0
+
+#define IDRACVALIDATOR_PARAM 0xDD
+#define IDRACVALIDATOR_MSGLEN_4 4
+#define IDRACVALIDATOR_DEVICETYPE_OFFSET 10
+#define IDRACVALIDATOR_SETSELECTOR_ID 0x0
+#define IDRACVALIDATOR_BLKSELECTOR_ID 0x2
+
 #define LCD_STATUS_SELECTOR 0xE7
 
 #define OEM_DELL_CMD_END(def) {(def), NULL}
-
-//message length Macro's
-#define MSG_LEN_0 0
-#define MSG_LEN_1 1
-#define MSG_LEN_2 2
-#define MSG_LEN_3 3
-#define MSG_LEN_4 4
-#define MSG_LEN_5 5
-#define MSG_LEN_6 6
-#define MSG_LEN_11 11
-#define MSG_LEN_13 13
-#define MSG_LEN_18 18
-
-//index Macro's
-#define IDX_0 0
-#define IDX_1 1
-#define IDX_2 2
-#define IDX_3 3
-#define IDX_4 4
-#define IDX_5 5
-#define IDX_6 6
-#define IDX_7 7
-#define IDX_8 8
-#define IDX_9 9
-#define IDX_10 10
-#define IDX_11 11
-#define IDX_12 12
-#define IDX_13 13
-#define IDX_14 14
 
 typedef struct
 {

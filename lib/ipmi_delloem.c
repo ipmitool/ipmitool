@@ -273,10 +273,9 @@ oem_dell_frame_send_request(struct ipmi_intf *intf, uint8_t netfun,
 	struct ipmi_rq req;
 	struct ipmi_rs *rsp = NULL;
 
-	if((msg_len > 0 && msg_data == NULL) || cmd_rsp == NULL 
-		|| netfun == 0 || cmd == 0 ) {
+	if ((0 < msg_len && !msg_data) || !cmd_rsp || !netfun || !cmd) {
 		lprintf(LOG_ERR,"Error in the command framing\n");
-		return -1;
+		return RC_ERROR;
 	}
 	
 	memset(&req, 0, sizeof(req));
@@ -288,29 +287,30 @@ oem_dell_frame_send_request(struct ipmi_intf *intf, uint8_t netfun,
 	rsp = intf->sendrecv(intf, &req);
 	if (rsp == NULL) {
 		lprintf(LOG_ERR, "Error getting in response ");
-		return -1;
+		return RC_ERROR;
 	} else if ((iDRAC_FLAG > IDRAC_11G) 
-		&& (rsp->ccode == LICENSE_NOT_SUPPORTED))
+		&& (LICENSE_NOT_SUPPORTED == rsp->ccode))
 	{
 		lprintf(LOG_ERR, "FM001 : A required license is missing or expired");
-		return -1;
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
-		if(cmd == 0x2d)
-			return -1;
+		return RC_ERROR;
+	} else if ((IPMI_CC_INV_CMD == rsp->ccode)||(IPMI_CC_REQ_DATA_NOT_PRESENT == rsp->ccode)) {
+		/*For Cmd: 2Dh, return here, to avoid unnecessary prints*/
+		if(GET_SENSOR_READING == cmd)
+			return RC_ERROR;
 		/* For cmd: 59h, param: LCD_STATUS_SELECTOR, Just return.
 		do not print error message because, unnecessary prints 
 		are seen on the systems which doesnt support LCD. */
-		if (cmd == 0x59 && msg_data[IDX_1] == LCD_STATUS_SELECTOR)
-			return -1;
+		if (IPMI_GET_SYS_INFO == cmd && LCD_STATUS_SELECTOR == msg_data[1])
+			return RC_ERROR;
 		lprintf(LOG_ERR, "0x%02x - Command not supported on this system", cmd);
-		return -1;
-	} else if (rsp->ccode > 0) {
+		return RC_ERROR;
+	} else if (IPMI_CC_OK != rsp->ccode) {
 		lprintf(LOG_ERR, "[0x%02x] Command error : %s", rsp->ccode,
 			val2str(rsp->ccode, completion_code_vals));
-		return -1;
+		return RC_ERROR;
 	}
 	*cmd_rsp = rsp;
-	return 0;
+	return RC_SUCCESS;
 }
 /*
  * Function Name:     usage
@@ -4209,19 +4209,19 @@ static
 int
 oem_dell_idracvalidator_command(struct ipmi_intf *intf)
 {
-	uint8_t msg_data[MSG_LEN_4] = {0};
+	uint8_t msg_data[IDRACVALIDATOR_MSGLEN_4] = { 0 };
 	struct ipmi_rs *rsp = NULL;
 
-	msg_data[IDX_0] = 0; // get cmd
-	msg_data[IDX_1] = IDRAC_VALIDATOR_PARAM; // parameter
-	msg_data[IDX_2] = 2; // block selector
-	msg_data[IDX_3] = 0; // set selector
+	msg_data[0] = GENERIC_SUBCMD_GET; // get cmd
+	msg_data[1] = IDRACVALIDATOR_PARAM; // parameter
+	msg_data[2] = IDRACVALIDATOR_BLKSELECTOR_ID; // block selector
+	msg_data[3] = IDRACVALIDATOR_SETSELECTOR_ID; // set selector
 
-	if (oem_dell_frame_send_request(intf, IPMI_NETFN_APP, 
-		IPMI_GET_SYS_INFO, msg_data, MSG_LEN_4, &rsp) != 0) {
-		return -1;
+	if (0 != oem_dell_frame_send_request(intf, IPMI_NETFN_APP, 
+		IPMI_GET_SYS_INFO, msg_data, IDRACVALIDATOR_MSGLEN_4, &rsp)) {
+		return RC_ERROR;
 	}
-	switch (rsp->data[IDX_10]) {
+	switch (rsp->data[IDRACVALIDATOR_DEVICETYPE_OFFSET]) {
 	case IMC_IDRAC_11G_MONOLITHIC:
 	case IMC_IDRAC_11G_MODULAR:
 	case IMC_MASER_LITE_BMC:
@@ -4247,12 +4247,17 @@ oem_dell_idracvalidator_command(struct ipmi_intf *intf)
 	case IMC_IDRAC_15G_DCS:
 		iDRAC_FLAG = IDRAC_15G;
 		break;		
+	case IMC_IDRAC_16G_MONOLITHIC:
+	case IMC_IDRAC_16G_MODULAR:
+	case IMC_IDRAC_16G_DCS:
+		iDRAC_FLAG = IDRAC_16G;
+		break;		
 	default:
-		iDRAC_FLAG = 0;
+		iDRAC_FLAG = IDRAC_DEFAULT;
 		break;
 	}
-	IMC_Type = rsp->data[IDX_10];
-	return 0;
+	IMC_Type = rsp->data[IDRACVALIDATOR_DEVICETYPE_OFFSET];
+	return RC_SUCCESS;
 }
 /*
  * Function Name:       ipmi_delloem_main
