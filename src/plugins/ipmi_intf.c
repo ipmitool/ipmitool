@@ -236,6 +236,7 @@ ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname)
 	intf->ssn_params.hostname = strdup(hostname);
 }
 
+#ifdef HAVE_BINDTODEVICE
 void ipmi_intf_session_set_bind_intf(struct ipmi_intf *intf, char *bind_intf) {
 	if (intf->ssn_params.bind_intf) {
 		free_n(&intf->ssn_params.bind_intf);
@@ -245,6 +246,7 @@ void ipmi_intf_session_set_bind_intf(struct ipmi_intf *intf, char *bind_intf) {
 	}
 	intf->ssn_params.bind_intf = strdup(bind_intf);
 }
+#endif /* HAVE_BINDTODEVICE */
 
 void
 ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username)
@@ -409,8 +411,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 			continue;
 		}
 
+#ifdef HAVE_BINDTODEVICE
 		if (params->bind_intf != NULL) {
-			#ifdef SO_BINDTODEVICE
 			int err = setsockopt(intf->fd, SOL_SOCKET, SO_BINDTODEVICE,
 					params->bind_intf, strlen(params->bind_intf) + 1);
 			if (err) {
@@ -418,11 +420,8 @@ ipmi_intf_socket_connect(struct ipmi_intf * intf)
 						params->bind_intf, err);
 				continue;
 			}
-			#else
-			lprintf(LOG_ERR, "Binding network interface is not supported on this platform.");
-			break;
-			#endif /* SO_BINDTODEVICE */
 		}
+#endif /* HAVE_BINDTODEVICE */
 
 		if (rp->ai_family == AF_INET) {
 			if (connect(intf->fd, rp->ai_addr, rp->ai_addrlen) != -1) {

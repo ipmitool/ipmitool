@@ -249,7 +249,9 @@ struct ipmi_intf * ipmi_intf_load(char * name);
 void ipmi_intf_print(struct ipmi_intf_support * intflist);
 
 void ipmi_intf_session_set_hostname(struct ipmi_intf * intf, char * hostname);
+#ifdef HAVE_BINDTODEVICE
 void ipmi_intf_session_set_bind_intf(struct ipmi_intf * intf, char * bind_intf);
+#endif /* HAVE_BINDTODEVICE */
 void ipmi_intf_session_set_username(struct ipmi_intf * intf, char * username);
 void ipmi_intf_session_set_password(struct ipmi_intf * intf, char * password);
 void ipmi_intf_session_set_privlvl(struct ipmi_intf * intf, uint8_t privlvl);
