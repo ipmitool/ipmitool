@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_time.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -1283,6 +1284,26 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	free_n(&fru_data);
 }
 
+/**
+ * Take n bytes from src and convert them into hex doublets in dst
+ *
+ * The function is invoked from a place where the dst is known to
+ * have enough space to accomodate the hex string representation
+ * of a UUID.
+ *
+ * @param[out] dst The destination buffer (at least 33 bytes long)
+ * @param[in]  src The source binary data
+ * @param[in]  n   The length of the source data, for compatibility
+ *                 with strncpy() on calls from fru_area_print_multirec()
+ */
+static
+char *
+uuidstrncpy(char *dst, const char *src, size_t n)
+{
+	(void)ipmi_guid2str(dst, src, GUID_AUTO);
+	return dst;
+}
+
 /* fru_area_print_multirec  -  Print FRU Multi Record Area
 *
 * @intf:   ipmi interface
@@ -1467,8 +1488,86 @@ fru_area_print_multirec(struct ipmi_intf * intf, struct fru_info * fru,
 				}
 			}
 			break;
+		case FRU_RECORD_TYPE_MANAGEMENT_ACCESS:
+			{
+				struct fru_multirec_mgmt *mmh =
+					(struct fru_multirect_mgmt *)
+					&fru_data[sizeof(struct fru_multirec_header)];
+				size_t datalen = h->len - sizeof(*mmh);
+				struct {
+					unsigned char *name;
+					size_t minlen;
+					size_t maxlen;
+					char * (*convert)(char *, const char *, size_t);
+				} subtypes[FRU_MULTIREC_MGMT_SUBTYPE_MAX + 1] = {
+					[FRU_MULTIREC_MGMT_SYSURL] = {
+						"System Management URL",
+						FRU_MULTIREC_MGMT_URL_MINLEN,
+						FRU_MULTIREC_MGMT_URL_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_SYSNAME] = {
+						"System Name",
+						FRU_MULTIREC_MGMT_NAME_MINLEN,
+						FRU_MULTIREC_MGMT_NAME_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_SYSPINGADDR] = {
+						"System Ping Address",
+						FRU_MULTIREC_MGMT_PINGADDR_MINLEN,
+						FRU_MULTIREC_MGMT_PINGADDR_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_CMPURL] = {
+						"Component Management URL",
+						FRU_MULTIREC_MGMT_URL_MINLEN,
+						FRU_MULTIREC_MGMT_URL_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_CMPNAME] = {
+						"Component Name",
+						FRU_MULTIREC_MGMT_NAME_MINLEN,
+						FRU_MULTIREC_MGMT_NAME_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_CMPPINGADDR] = {
+						"Component Ping Address",
+						FRU_MULTIREC_MGMT_PINGADDR_MINLEN,
+						FRU_MULTIREC_MGMT_PINGADDR_MAXLEN,
+						strncpy
+					},
+					[FRU_MULTIREC_MGMT_UUID] = {
+						"System Unique ID",
+						FRU_MULTIREC_MGMT_UUID_LEN,
+						FRU_MULTIREC_MGMT_UUID_LEN,
+						uuidstrncpy
+					}
+				};
+				unsigned char string[FRU_MULTIREC_MGMT_DATA_MAXLEN + 1] = { 0 };
+
+				if (mmh->subtype < FRU_MULTIREC_MGMT_SUBTYPE_MIN ||
+					mmh->subtype > FRU_MULTIREC_MGMT_SUBTYPE_MAX)
+				{
+					lprintf(LOG_WARN, "Unsupported subtype 0x%02x found for "
+					                  "multi-record area management record\n",
+					                  mmh->subtype);
+					break;
+				}
+
+				if (datalen < subtypes[mmh->subtype].minlen ||
+					datalen > subtypes[mmh->subtype].maxlen)
+				{
+					lprintf(LOG_WARN,
+							"Wrong data length %zu, must be %zu < X < %zu\n",
+							datalen,
+							subtypes[mmh->subtype].minlen,
+							subtypes[mmh->subtype].maxlen);
+				}
+				subtypes[mmh->subtype].convert(string, mmh->data, datalen);
+				printf(" %-22s: %s\n", subtypes[mmh->subtype].name, string);
+			}
 		}
-	} while (!(h->format & 0x80));
+	} while (!(h->format & FRU_RECORD_FORMAT_EOL_MASK));
 
 	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)", last_off, last_off);
 
