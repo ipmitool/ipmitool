@@ -141,6 +141,50 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			uint32_t offset, uint32_t length, uint8_t *frubuf);
 void free_fru_bloc(t_ipmi_fru_bloc *bloc);
 
+/**
+ * Caclculate the simple FRU checksum as per IPMI FRU specification.
+ * Works both for the whole FRU image and for separate areas.
+ *
+ * @param[in] area Pointer to the start of checksummed area,
+ *                 the area must end with the checksum byte
+ * @param[in[ len  Length of the checksummed area, including
+ *                 the trailing checksum byte
+ * @returns The calculated checksum byte
+ */
+static
+uint8_t fru_calc_checksum(void *area, size_t len)
+{
+	uint8_t checksum = 0;
+	uint8_t * data = area;
+	size_t i;
+
+	for (i = 0; i < len - 1; i++)
+		checksum += data[i];
+
+	return -checksum;
+}
+
+/**
+ * Check if FRU checksum is valid. Works both on the
+ * whole FRU image and on separate areas.
+ *
+ * @param[in] area Pointer to the start of checksummed area,
+ *                 the area must end with the checksum byte
+ * @param[in[ len  Length of the checksummed area, including
+ *                 the trailing checksum byte
+ * @returns The boolean state of checksum validity
+ * @retval true  Checksum is valid
+ * @retval false Checsum in invalid
+ */
+static
+bool fru_checksum_is_valid(void *area, size_t len)
+{
+	uint8_t * data = area;
+
+	/* Checksum is valid when the stored checksum equals calculated */
+	return data[len - 1] == fru_calc_checksum(area, len);
+}
+
 /* get_fru_area_str  -  Parse FRU area string from raw data
 *
 * @data:   raw FRU data
@@ -1048,6 +1092,12 @@ fru_area_print_chassis(struct ipmi_intf * intf, struct fru_info * fru,
 		}
 	}
 
+	/* Check area checksum */
+	printf(" Chassis Area Checksum : %s\n",
+	       fru_checksum_is_valid(fru_data, fru_len)
+	       ? "OK"
+	       : "INVALID");
+
 	free_n(&fru_data);
 }
 
@@ -1158,6 +1208,12 @@ fru_area_print_board(struct ipmi_intf * intf, struct fru_info * fru,
 		if (i == j)
 			break;
 	}
+
+	/* Check area checksum */
+	printf(" Board Area Checksum   : %s\n",
+	       fru_checksum_is_valid(fru_data, fru_len)
+	       ? "OK"
+	       : "INVALID");
 
 	free_n(&fru_data);
 }
@@ -1280,6 +1336,12 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 		if (i == j)
 			break;
 	}
+
+	/* Check area checksum */
+	printf(" Product Area Checksum : %s\n",
+	       fru_checksum_is_valid(fru_data, fru_len)
+	       ? "OK"
+	       : "INVALID");
 
 	free_n(&fru_data);
 }
