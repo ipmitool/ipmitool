@@ -236,8 +236,12 @@ get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select
 		/* We treat them as valid but empty response */
 		p->data = NULL;
 		p->data_len = 0;
-		rc = p;
-		/* fall through */
+		lprintf(LOG_INFO, "Get LAN Parameter '%s' command unsupported: %s",
+			p->desc,
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
+		return p;
 	default:
 		/* other completion codes are treated as error */
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
