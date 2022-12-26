@@ -121,7 +121,15 @@ const struct vFlashstr vFlash_completion_code_vals[] = {
 	{0x63, "UNKNOWN_ERROR"},
 	{0x00, NULL}
 };
-
+const struct valstr oem_dell_commands[] = {
+	{0x00, "lcd"},
+	{0x01, "mac"},
+	{0x02, "lan"},
+	{0x03, "powermonitor"},
+	{0x04, "vFlash"},
+	{0x05, "setled"},
+	OEM_DELL_CMD_END(0xFF)
+};
 static int current_arg =0;
 uint8_t iDRAC_FLAG=0;
 
@@ -147,8 +155,6 @@ uint8_t PowercapstatusFlag=0;
 
 static void usage(void);
 /* LCD Function prototypes */
-static int ipmi_delloem_lcd_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring,
 		uint8_t max_length, uint8_t field_type);
 static int ipmi_idracvalidator_command(struct ipmi_intf *intf);
@@ -177,7 +183,6 @@ static int ipmi_lcd_configure_wh(struct ipmi_intf *intf, uint32_t mode,
 static int ipmi_lcd_configure(struct ipmi_intf *intf, int command, char *text);
 static void ipmi_lcd_usage(void);
 /* MAC Function prototypes */
-static int ipmi_delloem_mac_main(struct ipmi_intf *intf, int argc, char **argv);
 static void InitEmbeddedNICMacAddressValues();
 static int ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf *intf,
 		uint8_t NicNum);
@@ -187,7 +192,6 @@ static int ipmi_macinfo_11g(struct ipmi_intf *intf, uint8_t NicNum);
 static int ipmi_macinfo(struct ipmi_intf *intf, uint8_t NicNum);
 static void ipmi_mac_usage(void);
 /* LAN Function prototypes */
-static int ipmi_delloem_lan_main(struct ipmi_intf *intf, int argc, char **argv);
 static int IsLANSupported();
 static int get_nic_selection_mode(int current_arg, char **argv);
 static int ipmi_lan_set_nic_selection(struct ipmi_intf *intf,
@@ -198,8 +202,6 @@ static void ipmi_lan_usage(void);
 static int ipmi_lan_set_nic_selection_12g(struct ipmi_intf *intf,
 		uint8_t *nic_selection);
 /* Power monitor Function prototypes */
-static int ipmi_delloem_powermonitor_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 static int ipmi_get_sensor_reading(struct ipmi_intf *intf,
 		unsigned char sensorNumber, SensorReadingType *pSensorReadingData);
 static int ipmi_get_power_capstatus_command(struct ipmi_intf *intf);
@@ -230,8 +232,6 @@ static int ipmi_print_power_cap(struct ipmi_intf *intf, uint8_t unit);
 static int ipmi_set_power_cap(struct ipmi_intf *intf, int unit, int val);
 static void ipmi_powermonitor_usage(void);
 /* vFlash Function prototypes */
-static int ipmi_delloem_vFlash_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 const char *get_vFlash_compcode_str(uint8_t vflashcompcode,
 		const struct vFlashstr *vs);
 static int ipmi_get_sd_card_info(struct ipmi_intf *intf);
@@ -243,8 +243,6 @@ static int ipmi_getsesmask(int, char **argv);
 static void CheckSetLEDSupport(struct ipmi_intf *intf);
 static int IsSetLEDSupported(void);
 static void ipmi_setled_usage(void);
-static int ipmi_delloem_setled_main(struct ipmi_intf *intf, int argc,
-		char **argv);
 static int ipmi_setled_state(struct ipmi_intf *intf, int bayId, int slotId,
 		int state);
 static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
@@ -252,49 +250,67 @@ static int ipmi_getdrivemap(struct ipmi_intf *intf, int b, int d, int f,
 static int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set);
-
-/* Function Name:       ipmi_delloem_main
- *
- * Description:         This function processes the delloem command
- * Input:               intf    - ipmi interface
- *                       argc    - no of arguments
- *                       argv    - argument string array
- * Output:
- *
- * Return:              return code     0 - success
- *                                      -1 - failure
+/*
+ * Function Name: oem_dell_frame_send_request
+ * 
+ * Description:	This function frames the command per arguments recevied,
+ * 				sends and recieves the response.
+ * 
+ * Input:		intf - pointer to interface
+ * 				netfun - command net function
+ * 				cmd -  command number
+ * 				msg_data - pointer to messge data needs to be passed
+ * 
+ * Output:		cmd_rsp - holds the repsonse of the command sent
+ * 
+ * Return:		 0: Success
+ *				-1: Failure/Error
  */
 int
-ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
+oem_dell_frame_send_request(struct ipmi_intf *intf, uint8_t netfun,
+	uint8_t cmd, uint8_t *msg_data, uint8_t msg_len, struct ipmi_rs **cmd_rsp)
 {
-	int rc = 0;
-	current_arg = 0;
-	if (!argc || !strcmp(argv[0], "help")) {
-		usage();
-		return 0;
+	struct ipmi_rq req;
+	struct ipmi_rs *rsp = NULL;
+
+	if ((0 < msg_len && !msg_data) || !cmd_rsp || !netfun || !cmd) {
+		lprintf(LOG_ERR,"Error in the command framing\n");
+		return RC_ERROR;
 	}
-	if (0 ==strcmp(argv[current_arg], "lcd")) {
-		rc = ipmi_delloem_lcd_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "mac")) {
-		/* mac address*/
-		rc = ipmi_delloem_mac_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "lan")) {
-		/* lan address*/
-		rc = ipmi_delloem_lan_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "setled")) {
-		/* SetLED support */
-		rc = ipmi_delloem_setled_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "powermonitor")) {
-		/*Powermanagement report processing*/
-		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
-	} else if (!strcmp(argv[current_arg], "vFlash")) {
-		/* vFlash Support */
-		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
-	} else {
-		usage();
-		return -1;
+	
+	memset(&req, 0, sizeof(req));
+	req.msg.netfn = netfun;
+	req.msg.lun = 0;
+	req.msg.cmd = cmd;
+	req.msg.data_len = msg_len;
+	req.msg.data = msg_data;
+	rsp = intf->sendrecv(intf, &req);
+	if (rsp == NULL) {
+		lprintf(LOG_ERR, "Error getting in response ");
+		return RC_ERROR;
+	} else if ((iDRAC_FLAG > IDRAC_11G) 
+		&& (LICENSE_NOT_SUPPORTED == rsp->ccode))
+	{
+		lprintf(LOG_ERR, "FM001 : A required license is missing or expired");
+		return RC_ERROR;
+	} else if ((IPMI_CC_INV_CMD == rsp->ccode)||(IPMI_CC_REQ_DATA_NOT_PRESENT == rsp->ccode)) {
+		/*For Cmd: 2Dh, return here, to avoid unnecessary prints*/
+		if(GET_SENSOR_READING == cmd)
+			return RC_ERROR;
+		/* For cmd: 59h, param: LCD_STATUS_SELECTOR, Just return.
+		do not print error message because, unnecessary prints 
+		are seen on the systems which doesnt support LCD. */
+		if (IPMI_GET_SYS_INFO == cmd && LCD_STATUS_SELECTOR == msg_data[1])
+			return RC_ERROR;
+		lprintf(LOG_ERR, "0x%02x - Command not supported on this system", cmd);
+		return RC_ERROR;
+	} else if (IPMI_CC_OK != rsp->ccode) {
+		lprintf(LOG_ERR, "[0x%02x] Command error : %s", rsp->ccode,
+			val2str(rsp->ccode, completion_code_vals));
+		return RC_ERROR;
 	}
-	return rc;
+	*cmd_rsp = rsp;
+	return RC_SUCCESS;
 }
 /*
  * Function Name:     usage
@@ -4126,7 +4142,7 @@ ipmi_getsesmask(int argc, char **argv)
 	return mask;
 }
 /*
- * Function Name:       ipmi_delloem_setled_main
+ * Function Name:       oem_dell_setled_main
  *
  * Description:         This function processes the delloem setled command
  * Input:               intf    - ipmi interface
@@ -4138,7 +4154,7 @@ ipmi_getsesmask(int argc, char **argv)
  *                         -1 - failure
  */
 static int
-ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
+oem_dell_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int b,d,f, mask;
 	int bayId, slotId;
@@ -4177,4 +4193,117 @@ ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 	}
 	/* Set drive LEDs */
 	return ipmi_setled_state (intf, bayId, slotId, mask);
+}
+/*
+ * Function Name: oem_dell_idracvalidator_command
+ * 
+ * Description:	This function returns the iDRAC6 type
+ * Input:			intf - ipmi interface
+ *
+ * Output:
+ * 
+ * Return:		0 -Success
+ *             -1 - Failure/Error
+*/
+static
+int
+oem_dell_idracvalidator_command(struct ipmi_intf *intf)
+{
+	uint8_t msg_data[IDRACVALIDATOR_MSGLEN_4] = { 0 };
+	struct ipmi_rs *rsp = NULL;
+
+	msg_data[0] = GENERIC_SUBCMD_GET; // get cmd
+	msg_data[1] = IDRACVALIDATOR_PARAM; // parameter
+	msg_data[2] = IDRACVALIDATOR_BLKSELECTOR_ID; // block selector
+	msg_data[3] = IDRACVALIDATOR_SETSELECTOR_ID; // set selector
+
+	if (0 != oem_dell_frame_send_request(intf, IPMI_NETFN_APP, 
+		IPMI_GET_SYS_INFO, msg_data, IDRACVALIDATOR_MSGLEN_4, &rsp)) {
+		return RC_ERROR;
+	}
+	switch (rsp->data[IDRACVALIDATOR_DEVICETYPE_OFFSET]) {
+	case IMC_IDRAC_11G_MONOLITHIC:
+	case IMC_IDRAC_11G_MODULAR:
+	case IMC_MASER_LITE_BMC:
+	case IMC_MASER_LITE_NU:
+		iDRAC_FLAG = IDRAC_11G;
+		break;
+	case IMC_IDRAC_12G_MONOLITHIC:
+	case IMC_IDRAC_12G_MODULAR:
+		iDRAC_FLAG = IDRAC_12G;
+		break;
+	case IMC_IDRAC_13G_MONOLITHIC:
+	case IMC_IDRAC_13G_MODULAR:
+	case IMC_IDRAC_13G_DCS:
+		iDRAC_FLAG = IDRAC_13G;
+		break;
+	case IMC_IDRAC_14G_MONOLITHIC:
+	case IMC_IDRAC_14G_MODULAR:
+	case IMC_IDRAC_14G_DCS:
+		iDRAC_FLAG = IDRAC_14G;
+		break;
+	case IMC_IDRAC_15G_MONOLITHIC:
+	case IMC_IDRAC_15G_MODULAR:
+	case IMC_IDRAC_15G_DCS:
+		iDRAC_FLAG = IDRAC_15G;
+		break;		
+	case IMC_IDRAC_16G_MONOLITHIC:
+	case IMC_IDRAC_16G_MODULAR:
+	case IMC_IDRAC_16G_DCS:
+		iDRAC_FLAG = IDRAC_16G;
+		break;		
+	default:
+		iDRAC_FLAG = IDRAC_DEFAULT;
+		break;
+	}
+	IMC_Type = rsp->data[IDRACVALIDATOR_DEVICETYPE_OFFSET];
+	return RC_SUCCESS;
+}
+/*
+ * Function Name:       ipmi_delloem_main
+ *
+ * Description:         This function processes the delloem command
+ * Input:               intf    - ipmi interface
+ *                      argc    - no of arguments
+ *                      argv    - argument string array
+ * Output:
+ *
+ * Return:              return code     0 - success
+ *                                      -1 - failure
+ */
+int
+ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
+{
+	int rc = 0;
+	current_arg = 0;
+	if (!argc || !strcmp(argv[0], "help")) {
+		usage();
+		return 0;
+	}
+	oem_dell_idracvalidator_command(intf);
+	switch (str2val(argv[0], oem_dell_commands)) {
+	case 0x00:
+		rc = ipmi_delloem_lcd_main(intf,argc,argv);
+		break;
+	case 0x01:
+		rc = ipmi_delloem_mac_main(intf,argc,argv);
+		break;
+	case 0x02:
+		rc = ipmi_delloem_lan_main(intf,argc,argv);
+		break;
+	case 0x03:
+		rc = ipmi_delloem_powermonitor_main(intf,argc,argv);
+		break;
+	case 0x04:
+		rc = ipmi_delloem_vFlash_main(intf,argc,argv);
+		break;
+	case 0x05:
+		rc = oem_dell_setled_main(intf,argc,argv);
+		break;
+	default:
+		usage();
+		rc = -1;
+		break;
+	}
+	return rc;
 }

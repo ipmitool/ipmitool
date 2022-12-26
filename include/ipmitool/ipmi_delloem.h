@@ -81,6 +81,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define IPMI_DELL_POWER_CAP 0xEA
 #define percent             0x03 
 
+#define RC_ERROR -1
+#define RC_SUCCESS 0
+
 /* Not on all Dell servers. If there, use it.*/
 typedef struct _tag_ipmi_dell_lcd_caps
 {
@@ -175,20 +178,52 @@ typedef struct _lcd_mode
 #define EMB_NIC_MAC_ADDRESS_11G     (uint8_t)(0xDA)
 #define EMB_NIC_MAC_ADDRESS_9G_10G  (uint8_t)(0xCB)
 
-#define IMC_IDRAC_10G               (uint8_t) (0x08) 
-#define IMC_CMC                     (uint8_t) (0x09)
-#define IMC_IDRAC_11G_MONOLITHIC    (uint8_t) (0x0A)
-#define IMC_IDRAC_11G_MODULAR       (uint8_t) (0x0B)
-#define IMC_UNUSED                  (uint8_t) (0x0C)
-#define IMC_MASER_LITE_BMC          (uint8_t) (0x0D)
-#define IMC_MASER_LITE_NU 			(uint8_t) (0x0E)
-#define IMC_IDRAC_12G_MONOLITHIC 	(uint8_t) (0x10)
-#define IMC_IDRAC_12G_MODULAR 		(uint8_t) (0x11)
+// iDRAC validator - related Macro's
+#define IMC_IDRAC_10G 0x08 
+#define IMC_CMC 0x09
+#define IMC_IDRAC_11G_MONOLITHIC 0x0A
+#define IMC_IDRAC_11G_MODULAR 0x0B
+#define IMC_UNUSED 0x0C
+#define IMC_MASER_LITE_BMC 0x0D
+#define IMC_MASER_LITE_NU 0x0E
+#define IMC_IDRAC_12G_MONOLITHIC 0x10
+#define IMC_IDRAC_12G_MODULAR 0x11
 
-#define IMC_IDRAC_13G_MONOLITHIC 	(uint8_t) (0x20)
-#define IMC_IDRAC_13G_MODULAR 		(uint8_t) (0x21)
-#define IMC_IDRAC_13G_DCS			(uint8_t) (0x22)
+#define IMC_IDRAC_13G_MONOLITHIC 0x20
+#define IMC_IDRAC_13G_MODULAR 0x21
+#define IMC_IDRAC_13G_DCS 0x22
 
+#define IMC_IDRAC_14G_MONOLITHIC 0x30
+#define IMC_IDRAC_14G_MODULAR 0x31
+#define IMC_IDRAC_14G_DCS 0x32
+
+#define IMC_IDRAC_15G_MONOLITHIC 0x40
+#define IMC_IDRAC_15G_MODULAR 0x41
+#define IMC_IDRAC_15G_DCS 0x42
+
+#define IMC_IDRAC_16G_MONOLITHIC 0x50
+#define IMC_IDRAC_16G_MODULAR 0x51
+#define IMC_IDRAC_16G_DCS 0x52
+
+#define IDRAC_DEFAULT 0
+#define	IDRAC_11G 1
+#define	IDRAC_12G 2
+#define	IDRAC_13G 3
+#define	IDRAC_14G 4
+#define IDRAC_15G 5
+#define IDRAC_16G 6
+
+#define GENERIC_SUBCMD_GET 0
+
+#define IDRACVALIDATOR_PARAM 0xDD
+#define IDRACVALIDATOR_MSGLEN_4 4
+#define IDRACVALIDATOR_DEVICETYPE_OFFSET 10
+#define IDRACVALIDATOR_SETSELECTOR_ID 0x0
+#define IDRACVALIDATOR_BLKSELECTOR_ID 0x2
+
+#define LCD_STATUS_SELECTOR 0xE7
+
+#define OEM_DELL_CMD_END(def) {(def), NULL}
 
 typedef struct
 {
