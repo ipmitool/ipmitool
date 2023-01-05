@@ -211,6 +211,21 @@ typedef struct {
 
 parsed_guid_t ipmi_parse_guid(void *guid, ipmi_guid_mode_t guid_mode);
 
+/**
+ * Convert a binary GUID/UUID to a canonical hex string form.
+ * If the version/encoding of the source data is unknown,
+ * dump the source data as a simple hex string.
+ *
+ * @param[out] str  The string representation of GUID
+ * @param[in]  data The source binary GUID data
+ * @param[in]  mode The conversion mode, use GUID_AUTO for automatic detection
+ *
+ * @returns The parsed GUID structure
+ */
+parsed_guid_t
+ipmi_guid2str(char *str, const void *data, ipmi_guid_mode_t mode);
+#define GUID_STR_MAXLEN 36 /* 8+4+4+4+12 bytes plus the dashes */
+
 int _ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid);
 
 #ifdef HAVE_PRAGMA_PACK

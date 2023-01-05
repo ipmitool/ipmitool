@@ -127,6 +127,7 @@ struct fru_area_product {
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
+/* See Table 16-1 of "IPMI FRU Information Storage Specification" */
 struct fru_multirec_header {
 #define FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION 0x00
 #define FRU_RECORD_TYPE_DC_OUTPUT 0x01
@@ -136,6 +137,8 @@ struct fru_multirec_header {
 #define FRU_RECORD_TYPE_EXTENDED_COMPATIBILITY 0x05
 #define FRU_RECORD_TYPE_OEM_EXTENSION	0xc0
 	uint8_t type;
+#define FRU_RECORD_FORMAT_EOL_MASK 0x80
+#define FRU_RECORD_FORMAT_VER_MASK 0x0F
 	uint8_t format;
 	uint8_t len;
 	uint8_t record_checksum;
@@ -239,6 +242,43 @@ struct fru_multirec_dcload {
 }ATTRIBUTE_PACKING;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(0)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(push, 1)
+#endif
+/*
+ * In accordance with Table 18-7 of "IPMI Platform Management FRU Information
+ * Storage Definition v1.0"
+ */
+struct fru_multirec_mgmt {
+#define FRU_MULTIREC_MGMT_SUBTYPE_MIN 0x01
+#define FRU_MULTIREC_MGMT_SUBTYPE_MAX 0x07
+	uint8_t subtype;
+#define FRU_MULTIREC_MGMT_SYSURL 0x01
+#define FRU_MULTIREC_MGMT_CMPURL 0x04
+#define FRU_MULTIREC_MGMT_URL_MINLEN 16
+#define FRU_MULTIREC_MGMT_URL_MAXLEN 256
+
+#define FRU_MULTIREC_MGMT_SYSNAME 0x02
+#define FRU_MULTIREC_MGMT_CMPNAME 0x05
+#define FRU_MULTIREC_MGMT_NAME_MINLEN 8
+#define FRU_MULTIREC_MGMT_NAME_MAXLEN 64
+
+#define FRU_MULTIREC_MGMT_SYSPINGADDR 0x03
+#define FRU_MULTIREC_MGMT_CMPPINGADDR 0x06
+#define FRU_MULTIREC_MGMT_PINGADDR_MINLEN 8
+#define FRU_MULTIREC_MGMT_PINGADDR_MAXLEN 64
+
+#define FRU_MULTIREC_MGMT_UUID 0x07
+#define FRU_MULTIREC_MGMT_UUID_LEN 16
+
+#define FRU_MULTIREC_MGMT_DATA_MAXLEN FRU_MULTIREC_MGMT_URL_MAXLEN
+	uint8_t data[];
+} ATTRIBUTE_PACKING;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(pop)
 #endif
 
 #ifdef HAVE_PRAGMA_PACK
