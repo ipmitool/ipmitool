@@ -1719,39 +1719,30 @@ out:
 	return rc;
 }
 
-int ipmi_oem_info_init()
+void ipmi_oem_info_init()
 {
 	oem_valstr_list_t terminator = { { -1, NULL}, NULL }; /* Terminator */
 	oem_valstr_list_t *oemlist = &terminator;
 	bool free_strings = true;
-	size_t count;
-	int rc = -4;
+	int count;
 
 	lprintf(LOG_INFO, "Loading IANA PEN Registry...");
 
 	if (ipmi_oem_info) {
 		lprintf(LOG_INFO, "IANA PEN Registry is already loaded");
-		rc = 0;
 		goto out;
 	}
 
-	if (!(count = oem_info_list_load(&oemlist))) {
-		/*
-		 * We can't identify OEMs without a loaded registry.
-		 * Set the pointer to dummy and return.
-		 */
-		ipmi_oem_info = ipmi_oem_info_dummy;
-		goto out;
+	if ((count = oem_info_list_load(&oemlist)) < 1) {
+		lprintf(LOG_WARN, "Failed to load entries from IANA PEN Registry");
+		count = 0;
 	}
 
 	/* In the array was allocated, don't free the strings at cleanup */
 	free_strings = !oem_info_init_from_list(oemlist, count);
 
-	rc = IPMI_CC_OK;
-
 out:
 	oem_info_list_free(&oemlist, free_strings);
-	return rc;
 }
 
 void ipmi_oem_info_free()
