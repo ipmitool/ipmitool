@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_MC_H
-#define IPMI_MC_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -84,7 +83,7 @@ struct ipm_devid_rsp {
 #define IPM_DEV_DEVICE_ID_REV_MASK     (0x0F)	/* BCD-enoded             */
 
 #define IPM_DEV_FWREV1_AVAIL_MASK      (0x80)	/* 0 = normal operation   */
-#define IPM_DEV_FWREV1_MAJOR_MASK      (0x3f)	/* Major rev, BCD-encoded */
+#define IPM_DEV_FWREV1_MAJOR_MASK      (0x7f)	/* Major rev, BCD-encoded */
 
 #define IPM_DEV_IPMI_VER_MAJOR_MASK    (0x0F)	/* Major rev, BCD-encoded */
 #define IPM_DEV_IPMI_VER_MINOR_MASK    (0xF0)	/* Minor rev, BCD-encoded */
@@ -212,6 +211,21 @@ typedef struct {
 
 parsed_guid_t ipmi_parse_guid(void *guid, ipmi_guid_mode_t guid_mode);
 
+/**
+ * Convert a binary GUID/UUID to a canonical hex string form.
+ * If the version/encoding of the source data is unknown,
+ * dump the source data as a simple hex string.
+ *
+ * @param[out] str  The string representation of GUID
+ * @param[in]  data The source binary GUID data
+ * @param[in]  mode The conversion mode, use GUID_AUTO for automatic detection
+ *
+ * @returns The parsed GUID structure
+ */
+parsed_guid_t
+ipmi_guid2str(char *str, const void *data, ipmi_guid_mode_t mode);
+#define GUID_STR_MAXLEN 36 /* 8+4+4+4+12 bytes plus the dashes */
+
 int _ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid);
 
 #ifdef HAVE_PRAGMA_PACK
@@ -325,5 +339,3 @@ struct ipm_get_watchdog_rsp {
 int ipmi_mc_getsysinfo(struct ipmi_intf * intf, int param, int block, int set, 
 		    int len, void *buffer);
 int ipmi_mc_setsysinfo(struct ipmi_intf * intf, int len, void *buffer);
-
-#endif				/*IPMI_MC_H */

@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_QUANTAOEM_H
-#define IPMI_QUANTAOEM_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -51,5 +50,3 @@ typedef enum
 
 qct_platform_t oem_qct_get_platform_id(struct ipmi_intf *intf);
 char *oem_qct_get_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
-
-#endif /*IPMI_QUANTAOEM_H*/

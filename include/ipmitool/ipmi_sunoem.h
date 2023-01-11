@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SUNOEM_H
-#define IPMI_SUNOEM_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -68,6 +67,3 @@ typedef enum {
 } sunoem_ec_t;
 
 int ipmi_sunoem_main(struct ipmi_intf *, int, char **);
-
-#endif /*IPMI_SUNOEM_H*/
-

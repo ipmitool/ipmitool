@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_LANPLUS_H
-#define IPMI_LANPLUS_H
+#pragma once
 
 #include <ipmitool/ipmi.h>
 
@@ -87,6 +86,8 @@
 #define IPMI_LANPLUS_OFFSET_PAYLOAD_SIZE 0x0E
 #define IPMI_LANPLUS_OFFSET_PAYLOAD      0x10
 
+#define IPMI_LANPLUS_PAD_LENGTH_SIZE  1
+#define IPMI_LANPLUS_NEXT_HEADER_SIZE 1
 
 #define IPMI_GET_CHANNEL_AUTH_CAP 0x38
 
@@ -130,5 +131,3 @@ struct ipmi_rs * ipmi_lan_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req
 int  ipmi_lanplus_open(struct ipmi_intf * intf);
 void ipmi_lanplus_close(struct ipmi_intf * intf);
 int ipmiv2_lan_ping(struct ipmi_intf * intf);
-
-#endif /*IPMI_LAN_H*/

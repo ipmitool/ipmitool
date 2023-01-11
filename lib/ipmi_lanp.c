@@ -61,7 +61,7 @@ static struct lan_param {
 	int cmd;
 	int size;
 	char desc[24];
-	uint8_t * data;
+	uint8_t *data;
 	int data_len;
 } ipmi_lan_params[] = {
 	{ IPMI_LANP_SET_IN_PROGRESS,	1,	"Set in Progress", NULL, 0 },
@@ -100,6 +100,19 @@ static struct lan_param {
 	{ -1, -1, "", NULL, -1 }
 };
 
+static const struct valstr set_lan_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x81, "Attempt to set 'in progress' while not in 'complete' state" },
+	{ 0x82, "Parameter is read-only" },
+	{ 0x83, "Parameter is wrote-only" },
+	{ 0x00, NULL }
+};
+
+static const struct valstr get_lan_cc_vals[] = {
+	{ 0x80, "Unsupported parameter" },
+	{ 0x00, NULL }
+};
+
 static void print_lan_alert_print_usage(void);
 static void print_lan_alert_set_usage(void);
 static void print_lan_set_usage(void);
@@ -123,7 +136,7 @@ static void print_lan_usage(void);
  * @chan:    channel number to check
  */
 static int
-is_lan_channel(struct ipmi_intf * intf, uint8_t chan)
+is_lan_channel(struct ipmi_intf *intf, uint8_t chan)
 {
 	uint8_t medium;
 
@@ -148,7 +161,7 @@ is_lan_channel(struct ipmi_intf * intf, uint8_t chan)
  * @start:   channel number to start searching from
  */
 uint8_t
-find_lan_channel(struct ipmi_intf * intf, uint8_t start)
+find_lan_channel(struct ipmi_intf *intf, uint8_t start)
 {
 	uint8_t chan = 0;
 
@@ -174,10 +187,11 @@ find_lan_channel(struct ipmi_intf * intf, uint8_t start)
  * @select:  lan parameter set selector
  */
 static struct lan_param *
-get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int select)
+get_lan_param_select(struct ipmi_intf *intf, uint8_t chan, int param, int select)
 {
-	struct lan_param * p = NULL;
-	struct ipmi_rs * rsp;
+	struct lan_param *p = NULL;
+	struct lan_param *rc = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	int i = 0;
 	uint8_t msg_data[4];
@@ -191,7 +205,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 
 	if (!p) {
 		lprintf(LOG_INFO, "Get LAN Parameter failed: Unknown parameter.");
-		return NULL;
+		return rc;
 	}
 
 	msg_data[0] = chan;
@@ -208,7 +222,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 	rsp = intf->sendrecv(intf, &req);
 	if (!rsp) {
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed", p->desc);
-		return NULL;
+		return rc;
 	}
 
 	switch (rsp->ccode)
@@ -219,19 +233,18 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
 	case 0x80: /* parameter not supported */
 	case 0xc9: /* parameter out of range */
 	case 0xcc: /* invalid data field in request */
-
-		/* these completion codes usually mean parameter not supported */
-		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
-			p->desc, val2str(rsp->ccode, completion_code_vals));
+		/* We treat them as valid but empty response */
 		p->data = NULL;
 		p->data_len = 0;
-		return p;
-
+		rc = p;
+		/* fall through */
 	default:
-
 		/* other completion codes are treated as error */
 		lprintf(LOG_INFO, "Get LAN Parameter '%s' command failed: %s",
-			p->desc, val2str(rsp->ccode, completion_code_vals));
+			p->desc,
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return NULL;
 	}
 
@@ -254,7 +267,7 @@ get_lan_param_select(struct ipmi_intf * intf, uint8_t chan, int param, int selec
  * @param:   lan parameter id
  */
 static struct lan_param *
-get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
+get_lan_param(struct ipmi_intf *intf, uint8_t chan, int param)
 {
 	return get_lan_param_select(intf, chan, param, 0);
 }
@@ -275,10 +288,10 @@ get_lan_param(struct ipmi_intf * intf, uint8_t chan, int param)
  * @len:     length of lan parameter data
  */
 static int
-set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
-		   int param, uint8_t * data, int len)
+set_lan_param_wait(struct ipmi_intf *intf, uint8_t chan,
+		   int param, uint8_t *data, int len)
 {
-	struct lan_param * p;
+	struct lan_param *p;
 	int retry = 10;		/* 10 retries */
 
 	lprintf(LOG_DEBUG, "Waiting for Set LAN Parameter to complete...");
@@ -334,10 +347,10 @@ set_lan_param_wait(struct ipmi_intf * intf, uint8_t chan,
  * @wait:    whether to wait for write completion
  */
 static int
-__set_lan_param(struct ipmi_intf * intf, uint8_t chan,
-		int param, uint8_t * data, int len, int wait)
+__set_lan_param(struct ipmi_intf *intf, uint8_t chan,
+		int param, uint8_t *data, int len, int wait)
 {
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[32];
 
@@ -361,7 +374,9 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
 	}
 	if (rsp->ccode && wait) {
 		lprintf(LOG_DEBUG, "Warning: Set LAN Parameter failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 set_lan_cc_vals,
+			                 completion_code_vals));
 		if (rsp->ccode == 0xcc) {
 			/* retry hack for invalid data field ccode */
 			int retry = 10;		/* 10 retries */
@@ -399,9 +414,9 @@ __set_lan_param(struct ipmi_intf * intf, uint8_t chan,
  * @chan:    ipmi channel
  */
 static int
-ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lanp_lock_state(struct ipmi_intf *intf, uint8_t chan)
 {
-	struct lan_param * p;
+	struct lan_param *p;
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
 	if (!p)
 		return -1;
@@ -422,7 +437,7 @@ ipmi_lanp_lock_state(struct ipmi_intf * intf, uint8_t chan)
  * @chan:    ipmi channel
  */
 static void
-ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lanp_lock(struct ipmi_intf *intf, uint8_t chan)
 {
 	uint8_t val = IPMI_LANP_WRITE_LOCK;
 	int retry = 3;
@@ -452,7 +467,7 @@ ipmi_lanp_lock(struct ipmi_intf * intf, uint8_t chan)
  * @chan:    ipmi channel
  */
 static void
-ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lanp_unlock(struct ipmi_intf *intf, uint8_t chan)
 {
 	uint8_t val = IPMI_LANP_WRITE_COMMIT;
 	int rc;
@@ -477,8 +492,8 @@ ipmi_lanp_unlock(struct ipmi_intf * intf, uint8_t chan)
  * @len:     length of lan parameter data
  */
 static int
-set_lan_param(struct ipmi_intf * intf, uint8_t chan,
-	      int param, uint8_t * data, int len)
+set_lan_param(struct ipmi_intf *intf, uint8_t chan,
+	      int param, uint8_t *data, int len)
 {
 	int rc;
 	ipmi_lanp_lock(intf, chan);
@@ -498,8 +513,8 @@ set_lan_param(struct ipmi_intf * intf, uint8_t chan,
  * @len:     length of lan parameter data
  */
 static int
-set_lan_param_nowait(struct ipmi_intf * intf, uint8_t chan,
-		     int param, uint8_t * data, int len)
+set_lan_param_nowait(struct ipmi_intf *intf, uint8_t chan,
+		     int param, uint8_t *data, int len)
 {
 	int rc;
 	ipmi_lanp_lock(intf, chan);
@@ -509,7 +524,7 @@ set_lan_param_nowait(struct ipmi_intf * intf, uint8_t chan,
 }
 
 static int
-lan_set_arp_interval(struct ipmi_intf * intf, uint8_t chan, uint8_t ival)
+lan_set_arp_interval(struct ipmi_intf *intf, uint8_t chan, uint8_t ival)
 {
 	struct lan_param *lp;
 	uint8_t interval = 0;
@@ -539,7 +554,7 @@ lan_set_arp_interval(struct ipmi_intf * intf, uint8_t chan, uint8_t ival)
 }
 
 static int
-lan_set_arp_generate(struct ipmi_intf * intf,
+lan_set_arp_generate(struct ipmi_intf *intf,
 		     uint8_t chan, uint8_t ctl)
 {
 	struct lan_param *lp;
@@ -563,7 +578,7 @@ lan_set_arp_generate(struct ipmi_intf * intf,
 }
 
 static int
-lan_set_arp_respond(struct ipmi_intf * intf,
+lan_set_arp_respond(struct ipmi_intf *intf,
 		    uint8_t chan, uint8_t ctl)
 {
 	struct lan_param *lp;
@@ -615,9 +630,9 @@ static char priv_level_to_char(unsigned char priv_level)
 
 
 static int
-ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lan_print(struct ipmi_intf *intf, uint8_t chan)
 {
-	struct lan_param * p;
+	struct lan_param *p;
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
 		lprintf(LOG_ERR, "Invalid Channel %d", chan);
@@ -903,12 +918,12 @@ ipmi_lan_print(struct ipmi_intf * intf, uint8_t chan)
 /* Configure Authentication Types */
 /* TODO - probably some code duplication going on ??? */
 static int
-ipmi_lan_set_auth(struct ipmi_intf * intf, uint8_t chan, char * level, char * types)
+ipmi_lan_set_auth(struct ipmi_intf *intf, uint8_t chan, char *level, char *types)
 {
 	uint8_t data[5];
 	uint8_t authtype = 0;
-	char * p;
-	struct lan_param * lp;
+	char *p;
+	struct lan_param *lp;
 
 	if (!level || !types)
 		return -1;
@@ -1144,7 +1159,7 @@ ipmi_set_user_access(struct ipmi_intf *intf, uint8_t channel, uint8_t user_id)
 
 
 static int
-get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
+get_cmdline_cipher_suite_priv_data(char *arg, uint8_t *buf)
 {
 	int i, ret = 0;
 
@@ -1221,7 +1236,7 @@ get_cmdline_cipher_suite_priv_data(char * arg, uint8_t * buf)
 
 
 static int
-get_cmdline_ipaddr(char * arg, uint8_t * buf)
+get_cmdline_ipaddr(char *arg, uint8_t *buf)
 {
 	uint32_t ip1, ip2, ip3, ip4;
 	if (sscanf(arg,
@@ -1373,7 +1388,7 @@ get_cmdline_bad_pass_thresh(char *argv[], uint8_t *buf)
 }
 
 static int
-ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_lan_set(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t data[32];
 	uint8_t chan;
@@ -1729,9 +1744,9 @@ ipmi_lan_set(struct ipmi_intf * intf, int argc, char ** argv)
 
 
 static int
-is_alert_destination(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
+is_alert_destination(struct ipmi_intf *intf, uint8_t channel, uint8_t alert)
 {
-	struct lan_param * p;
+	struct lan_param *p;
 
 	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
 	if (!p)
@@ -1746,7 +1761,7 @@ is_alert_destination(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 }
 
 static int
-ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
+ipmi_lan_alert_print(struct ipmi_intf *intf, uint8_t channel, uint8_t alert)
 {
 # define PTYPE_LEN	4
 # define PADDR_LEN	13
@@ -1820,10 +1835,10 @@ ipmi_lan_alert_print(struct ipmi_intf * intf, uint8_t channel, uint8_t alert)
 }
 
 static int
-ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
+ipmi_lan_alert_print_all(struct ipmi_intf *intf, uint8_t channel)
 {
 	int j, ndest;
-	struct lan_param * p;
+	struct lan_param *p;
 
 	p = get_lan_param(intf, channel, IPMI_LANP_NUM_DEST);
 	if (!p)
@@ -1840,10 +1855,10 @@ ipmi_lan_alert_print_all(struct ipmi_intf * intf, uint8_t channel)
 }
 
 static int
-ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
-		   int argc, char ** argv)
+ipmi_lan_alert_set(struct ipmi_intf *intf, uint8_t chan, uint8_t alert,
+		   int argc, char **argv)
 {
-	struct lan_param * p;
+	struct lan_param *p;
 	uint8_t data[32], temp[32];
 	int rc = 0;
 
@@ -2013,7 +2028,7 @@ ipmi_lan_alert_set(struct ipmi_intf * intf, uint8_t chan, uint8_t alert,
 }
 
 static int
-ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_lan_alert(struct ipmi_intf *intf, int argc, char **argv)
 {
 	uint8_t alert;
 	uint8_t channel = 1;
@@ -2105,10 +2120,10 @@ ipmi_lan_alert(struct ipmi_intf * intf, int argc, char ** argv)
 
 
 static int
-ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lan_stats_get(struct ipmi_intf *intf, uint8_t chan)
 {
 	int rc = 0;
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
 	uint16_t statsTemp;
@@ -2137,7 +2152,9 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Get LAN Stats command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return (-1);
 	}
 
@@ -2183,10 +2200,10 @@ ipmi_lan_stats_get(struct ipmi_intf * intf, uint8_t chan)
 
 
 static int
-ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
+ipmi_lan_stats_clear(struct ipmi_intf *intf, uint8_t chan)
 {
 	int rc = 0;
-	struct ipmi_rs * rsp;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[2];
 
@@ -2213,7 +2230,9 @@ ipmi_lan_stats_clear(struct ipmi_intf * intf, uint8_t chan)
 
 	if (rsp->ccode) {
 		lprintf(LOG_INFO, "Get LAN Stats command failed: %s",
-			val2str(rsp->ccode, completion_code_vals));
+			specific_val2str(rsp->ccode,
+			                 get_lan_cc_vals,
+			                 completion_code_vals));
 		return (-1);
 	}
 
@@ -2473,7 +2492,7 @@ print_lan_usage(void)
 
 
 int
-ipmi_lanp_main(struct ipmi_intf * intf, int argc, char ** argv)
+ipmi_lanp_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = 0;
 	uint8_t chan = 0;

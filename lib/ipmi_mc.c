@@ -696,6 +696,27 @@ out:
 	return parsed_guid;
 }
 
+parsed_guid_t
+ipmi_guid2str(char *str, const void *data, ipmi_guid_mode_t mode)
+{
+	parsed_guid_t guid;
+	guid = ipmi_parse_guid(data, mode);
+
+	if (GUID_DUMP == guid.mode) {
+		sprintf(str, "%s", buf2str(data, sizeof(ipmi_guid_t)));
+		return guid;
+	}
+
+	sprintf(str, "%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
+	       (int)guid.time_low,
+	       (int)guid.time_mid,
+	       (int)guid.time_hi_and_version,
+	       (int)guid.clock_seq_and_rsvd,
+	       (int)guid.node[0], (int)guid.node[1], (int)guid.node[2],
+	       (int)guid.node[3], (int)guid.node[4], (int)guid.node[5]);
+	return guid;
+}
+
 /* ipmi_mc_print_guid - print-out given BMC GUID
  *
  * @param[in] intf - The IPMI interface to request GUID from
@@ -740,24 +761,11 @@ ipmi_mc_print_guid(struct ipmi_intf *intf, ipmi_guid_mode_t guid_mode)
 
 	printf("System GUID   : ");
 
-	guid = ipmi_parse_guid(guid_data, guid_mode);
-	if (GUID_DUMP == guid.mode) {
-		size_t i;
-		for (i = 0; i < sizeof(guid_data); ++i) {
-			printf("%02X", guid_data[i]);
-		}
-		printf("\n");
-		return 0;
-	}
+	char buf[GUID_STR_MAXLEN + 1];
+	guid = ipmi_guid2str(buf, guid_data, guid_mode);
+	printf("%s\n", buf);
 
-	printf("%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x\n",
-	       (int)guid.time_low,
-	       (int)guid.time_mid,
-	       (int)guid.time_hi_and_version,
-	       guid.clock_seq_and_rsvd,
-	       guid.node[0], guid.node[1], guid.node[2],
-	       guid.node[3], guid.node[4], guid.node[5]);
-
+	/* Print the GUID properties */
 	if (GUID_AUTO == guid_mode) {
 		/* ipmi_parse_guid() returns only valid modes in guid.ver */
 		printf("GUID Encoding : %s", guid_mode_str[guid.mode]);

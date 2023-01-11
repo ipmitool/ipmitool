@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_SEL_H
-#define IPMI_SEL_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
@@ -257,7 +256,7 @@ static const struct ipmi_event_sensor_types sensor_specific_event_types[] = {
     { 0x08, 0x06, 0x03, "Config Error: Power Supply Rating Mismatch" },
     { 0x08, 0x06, 0x04, "Config Error: Voltage Rating Mismatch" },
     { 0x08, 0x06, 0xff, "Config Error" },
-    { 0x08, 0x06, 0xff, "Power Supply Inactive" },
+    { 0x08, 0x07, 0xff, "Power Supply Inactive" },
     /* Power Unit */
     { 0x09, 0x00, 0xff, "Power off/down" },
     { 0x09, 0x01, 0xff, "Power cycle" },
@@ -687,5 +686,3 @@ const struct ipmi_event_sensor_types *
 ipmi_get_first_event_sensor_type(struct ipmi_intf *intf, uint8_t sensor_type, uint8_t event_type);
 const struct ipmi_event_sensor_types *
 ipmi_get_next_event_sensor_type(const struct ipmi_event_sensor_types *evt);
-
-#endif /* IPMI_SEL_H */

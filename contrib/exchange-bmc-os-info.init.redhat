@@ -12,10 +12,10 @@
 # Description:  Script to set OS information in the BMC; fetch BMC IP/URL
 #		and set in the OS for use by other scripts/user.
 #
-#		BMC IP and URL are made available in /var/run/bmc-info
+#		BMC IP and URL are made available in /run/bmc-info
 #
 #		Example to launch BMC web-interface:
-#		# . /var/run/bmc-info
+#		# . /run/bmc-info
 #		# xdg-open $BMC_URL
 #
 #		See here for details:
@@ -42,7 +42,7 @@
 #############################################################################
 CONFIGFILE=/etc/sysconfig/exchange-bmc-os-info
 IPMI_TOOL=/usr/bin/ipmitool
-BMC_INFO=/var/run/bmc-info
+BMC_INFO=/run/bmc-info
 
 # BMC Manufacturer ID used in 'oem_set_os_version' and 'oem_get_bmc_url'
 DELL="674"

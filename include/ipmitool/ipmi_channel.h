@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_CHANNEL_H
-#define IPMI_CHANNEL_H
+#pragma once
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -223,5 +222,3 @@ int ipmi_channel_main(struct ipmi_intf * intf, int argc, char ** argv);
 int ipmi_get_channel_auth_cap(struct ipmi_intf * intf,
                               uint8_t channel, uint8_t priv);
 int ipmi_get_channel_info(struct ipmi_intf * intf, uint8_t channel);
-
-#endif /*IPMI_CHANNEL_H*/

@@ -30,8 +30,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef _IPMI_BMC_H_
-#define	_IPMI_BMC_H_
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,5 +47,3 @@ void ipmi_bmc_close(struct ipmi_intf *intf);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _IPMI_BMC_H_ */

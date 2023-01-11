@@ -33,8 +33,7 @@
  * EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#ifndef IPMI_EKANALYZER_H
-#define IPMI_EKANALYZER_H
+#pragma once
 
 #include <inttypes.h>
 #include <ipmitool/ipmi.h>
@@ -64,5 +63,3 @@
 #define FRU_RADIAL_IPMB0_LINK_MAPPING 0x15
 
 int ipmi_ekanalyzer_main(struct ipmi_intf *, int, char **);
-
-#endif /* IPMI_EKANALYZER_H */
