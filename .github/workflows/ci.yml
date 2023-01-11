@@ -11,7 +11,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04 ]
+        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
     runs-on: ${{ matrix.os }}
     steps:
     - name: install dependencies
@@ -53,10 +53,10 @@ jobs:
     - name: make distcheck
       run: make distcheck
 
-  macos-catalina:
+  macos:
     strategy:
       matrix:
-        os: [ macos-10.15, macos-11 ]
+        os: [ macos-10.15, macos-11, macos-12 ]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -77,9 +77,11 @@ jobs:
     - name: make distcheck
       run: make distcheck
 
-  win-srv-2019:
-
-    runs-on: windows-2019
+  windows:
+    strategy:
+      matrix:
+        os: [ windows-2019, windows-2022 ]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: install dependencies
