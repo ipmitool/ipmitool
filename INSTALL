@@ -18,11 +18,14 @@ library and development headers are required. As of July 2020, the
 project is tested automatically to build cleanly for the following
 64-bit operating systems using GitHub Actions workflow:
 
-   - Ubuntu 16.04 Xenial Xerus
    - Ubuntu 18.04 Bionic Beaver
    - Ubuntu 20.04 Focal Fossa
+   - Ubuntu 22.04 Jammy Jellyfish
    - MacOS X 10.15 Catalina
+   - MacOS 11 Big Sur
+   - MacOS 12 Monterey
    - Microsoft Windows Server 2019
+   - Microsoft Windows Server 2022
 
    It is also known to build successfully on Ubuntu 14.04 and Fedora 31,
 but that is not automatically verified.
@@ -41,8 +44,8 @@ but that is not automatically verified.
    $ sudo dnf install automake gcc git libtool make openssl-devel \
                       readline-devel wget
 
-   For MacOS X 10.15 with Xcode and homebrew installed, it is
-recommended to do the following before building:
+   For MacOS with Xcode and homebrew installed, it is recommended to do the
+following before building:
 
    $ brew install automake openssl libtool freeipmi wget
    $ export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
@@ -182,7 +185,7 @@ architecture at a time in the source code directory.  After you have
 installed the package for one architecture, use `make distclean' before
 reconfiguring for another architecture.
 
-   On MacOS X 10.5 and later systems, you can create libraries and
+   On MacOS and later systems, you can create libraries and
 executables that work on multiple system types--known as "fat" or
 "universal" binaries--by specifying multiple `-arch' options to the
 compiler but only a single `-arch' option to the preprocessor.  Like
