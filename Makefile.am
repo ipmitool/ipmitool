@@ -41,7 +41,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure configure-stamp \
 	$(distdir).tar.gz $(distdir).tar.bz2
 
 SUBDIRS = lib src include doc contrib control
-IANA_PEN = http://www.iana.org/assignments/enterprise-numbers
+IANA_PEN = http://www.iana.org/assignments/enterprise-numbers.txt
 
 dist-hook:
 	cp control/ipmitool.spec $(distdir)
