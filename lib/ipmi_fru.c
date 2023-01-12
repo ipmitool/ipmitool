@@ -61,6 +61,13 @@ static const char *section_id[4] = {
 	"Board Section",
 	"Product Section"
 };
+/* From lib/ipmi_hpmfwupg.c: */
+uint16_t
+ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf);
+
+/* From src/plugins/ipmi_intf.c: */
+uint16_t
+ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf);
 
 static const char * combined_voltage_desc[] = {
 	"12 V",
