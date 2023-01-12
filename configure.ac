@@ -18,8 +18,6 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_CHECK_PROG([RPMBUILD], [rpmbuild], [rpmbuild], [rpm])
 AC_CHECK_PROG([SED], [sed], [sed])
-AC_CHECK_PROG([WGET], [wget], [wget])
-AC_CHECK_PROG([CURL], [curl], [curl])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h string.h sys/ioctl.h sys/stat.h unistd.h paths.h])
@@ -56,21 +54,33 @@ if test "x$exec_prefix" = "xNONE"; then
 	exec_prefix="$prefix"
 fi
 
-if test "x$WGET" = "x"; then
-	if test "x$CURL" = "x"; then
+dnl allow enabling/disabling the fetching of the IANA PEN registry
+AC_ARG_ENABLE([registry-download],
+	[AC_HELP_STRING([--enable-registry-download],
+			[download/install the IANA PEN registry [default=yes]])],
+	[xenable_registry_download=$enableval],
+	[xenable_registry_download=yes])
+
+AM_CONDITIONAL([DOWNLOAD], [false])
+
+if test "x$xenable_registry_download" = "xyes"; then
+	AC_CHECK_PROG([WGET], [wget], [wget])
+	AC_CHECK_PROG([CURL], [curl], [curl])
+
+	if test "x$WGET" = "x" && test "x$CURL" = "x"; then
 		AC_MSG_WARN([** Neither wget nor curl could be found.])
 		AC_MSG_WARN([** IANA PEN database will not be installed by `make install` !])
 	else
-		DOWNLOAD="$CURL --location --progress-bar"
 		AM_CONDITIONAL([DOWNLOAD], [true])
+		if test "x$WGET" != "x"; then
+			DOWNLOAD="$WGET -c -nd -O -"
+		else
+			DOWNLOAD="$CURL --location --progress-bar"
+		fi
 	fi
-else
-	DOWNLOAD="$WGET -c -nd -O -"
-	AM_CONDITIONAL([DOWNLOAD], [true])
 fi
 
-AC_MSG_WARN([** Download is:])
-AC_MSG_WARN($DOWNLOAD)
+AC_MSG_WARN([** Download is: $DOWNLOAD])
 AC_SUBST(DOWNLOAD, $DOWNLOAD)
 
 dnl
