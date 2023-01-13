@@ -393,7 +393,7 @@ ipmi_lan_send_packet(
 					 data_len)
 {
 	if (verbose >= 5)
-		printbuf(data, data_len, ">> sending packet");
+		print_buf(data, data_len, ">> sending packet");
 
 	return send(intf->fd, data, data_len, 0);
 }
@@ -459,7 +459,7 @@ ipmi_lan_recv_packet(struct ipmi_intf * intf)
 	rsp.data_len = ret;
 
 	if (verbose >= 5)
-		printbuf(rsp.data, rsp.data_len, "<< received packet");
+		print_buf(rsp.data, rsp.data_len, "<< received packet");
 
 	return &rsp;
 }
@@ -757,7 +757,7 @@ ipmi_lan_poll_single(struct ipmi_intf * intf)
 
 					/* check if bridged response is embedded */
 					if (payload_size > 8) {
-						printbuf(&rsp->data[offset], (rsp->data_len-offset-1),
+						print_buf(&rsp->data[offset], (rsp->data_len-offset-1),
 								"bridge command response");
 						/*
 						 * need to make a loop for embedded bridged response
@@ -1321,7 +1321,7 @@ void read_sol_packet(struct ipmi_rs * rsp, int * offset)
 	lprintf(LOG_DEBUG, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
 	if (verbose >= 5)
-		printbuf(rsp->data + *offset - 4, 4, "SOL MSG FROM BMC");
+		print_buf(rsp->data + *offset - 4, 4, "SOL MSG FROM BMC");
 }
 
 
@@ -1519,7 +1519,7 @@ void getSolPayloadWireRep(
 	lprintf(LOG_DEBUG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
 	if (verbose >= 5 && payload->payload.sol_packet.character_count)
-		printbuf(payload->payload.sol_packet.data, payload->payload.sol_packet.character_count, "SOL SEND DATA");
+		print_buf(payload->payload.sol_packet.data, payload->payload.sol_packet.character_count, "SOL SEND DATA");
 
 	/*
 	 * At this point, the payload length becomes the whole payload
@@ -1680,7 +1680,7 @@ ipmi_lanplus_build_v2x_msg(
 							 payload);
 
 		if (verbose >= 5)
-			printbuf(msg + IPMI_LANPLUS_OFFSET_PAYLOAD, 4, "SOL MSG TO BMC");
+			print_buf(msg + IPMI_LANPLUS_OFFSET_PAYLOAD, 4, "SOL MSG TO BMC");
 
 		len += payload->payload_length;
 
@@ -1827,7 +1827,7 @@ ipmi_lanplus_build_v2x_msg(
 			2;
 
 		if (verbose > 2)
-			printbuf(msg + IPMI_LANPLUS_OFFSET_AUTHTYPE, hmac_input_size, "authcode input");
+			print_buf(msg + IPMI_LANPLUS_OFFSET_AUTHTYPE, hmac_input_size, "authcode input");
 
 
 		/* Auth Code */
@@ -1860,7 +1860,7 @@ ipmi_lanplus_build_v2x_msg(
 		}
 
 		if (verbose > 2)
-			printbuf(hmac_output, auth_length, "authcode output");
+			print_buf(hmac_output, auth_length, "authcode output");
 
 		/* Set session_trailer_length appropriately */
 		session_trailer_length =
@@ -2782,7 +2782,7 @@ ipmi_close_session_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "close_session");
+		print_buf(rsp->data, rsp->data_len, "close_session");
 
 	if (rsp->ccode == 0x87) {
 		lprintf(LOG_ERR, "Failed to Close Session: invalid "
@@ -3047,7 +3047,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 	array_letoh(msg + 8, 16);
 
 	if (verbose > 1)
-		printbuf(session->v2_data.console_rand, 16,
+		print_buf(session->v2_data.console_rand, 16,
 				 ">> Console generated random number");
 
 
@@ -3119,7 +3119,7 @@ ipmi_lanplus_rakp1(struct ipmi_intf * intf)
 		memcpy(session->v2_data.bmc_guid, rsp->payload.rakp2_message.bmc_guid, 16);
 
 		if (verbose > 2)
-			printbuf(session->v2_data.bmc_rand, 16, "bmc_rand");
+			print_buf(session->v2_data.bmc_rand, 16, "bmc_rand");
 
 		/*
 		 * It is at this point that we have to decode the random number and determine
@@ -3363,7 +3363,7 @@ ipmi_set_session_privlvl_cmd(struct ipmi_intf * intf)
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "set_session_privlvl");
+		print_buf(rsp->data, rsp->data_len, "set_session_privlvl");
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Set Session Privilege Level to %s failed: %s",
@@ -3611,7 +3611,7 @@ void test_crypt1(void)
 		 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
 		 0x11, 0x12};
 
-	printbuf(data, sizeof(data), "original data");
+	print_buf(data, sizeof(data), "original data");
 
 	if (lanplus_encrypt_payload(IPMI_CRYPT_AES_CBC_128,
 								key,
@@ -3623,7 +3623,7 @@ void test_crypt1(void)
 		lprintf(LOG_ERR, "Encrypt test failed");
 		assert(0);
 	}
-	printbuf(encrypt_buffer, bytes_encrypted, "encrypted payload");
+	print_buf(encrypt_buffer, bytes_encrypted, "encrypted payload");
 	
 
 	if (lanplus_decrypt_payload(IPMI_CRYPT_AES_CBC_128,
@@ -3636,7 +3636,7 @@ void test_crypt1(void)
 		lprintf(LOG_ERR, "Decrypt test failed\n");
 		assert(0);
 	}	
-	printbuf(decrypt_buffer, bytes_decrypted, "decrypted payload");
+	print_buf(decrypt_buffer, bytes_decrypted, "decrypted payload");
 	
 	lprintf(LOG_DEBUG, "\nDone testing the encrypt/decyrpt methods!\n");
 	exit(0);
@@ -3659,7 +3659,7 @@ void test_crypt2(void)
 	uint32_t bytes_encrypted;
 	uint32_t bytes_decrypted;
 
-	printbuf((const uint8_t *)data, strlen((const char *)data), "input data");
+	print_buf((const uint8_t *)data, strlen((const char *)data), "input data");
 
 	lanplus_encrypt_aes_cbc_128(iv,
 								key,
@@ -3667,7 +3667,7 @@ void test_crypt2(void)
 								strlen((const char *)data),
 								encrypt_buffer,
 								&bytes_encrypted);
-	printbuf((const uint8_t *)encrypt_buffer, bytes_encrypted, "encrypt_buffer");
+	print_buf((const uint8_t *)encrypt_buffer, bytes_encrypted, "encrypt_buffer");
 
 	lanplus_decrypt_aes_cbc_128(iv,
 								key,
@@ -3675,7 +3675,7 @@ void test_crypt2(void)
 								bytes_encrypted,
 								decrypt_buffer,
 								&bytes_decrypted);
-	printbuf((const uint8_t *)decrypt_buffer, bytes_decrypted, "decrypt_buffer");
+	print_buf((const uint8_t *)decrypt_buffer, bytes_decrypted, "decrypt_buffer");
 
 	lprintf(LOG_INFO, "\nDone testing the encrypt/decyrpt methods!\n");
 	exit(0);

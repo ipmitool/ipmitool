@@ -204,10 +204,10 @@ static void ipmi_sel_oem_message(struct sel_event_record * evt)
 
 	for (i=0; i < sel_oem_nrecs; i++) {
 		if (ipmi_sel_oem_match((uint8_t *)evt, &sel_oem_msg[i])) {
-			printf (csv_output ? ",\"%s\"" : " | %s", sel_oem_msg[i].text);
+			printf (output_format == 1 ? ",\"%s\"" : " | %s", sel_oem_msg[i].text);
 			for (j=4; j<17; j++) {
 				if (sel_oem_msg[i].value[SEL_BYTE(j)] == -3) {
-					printf (csv_output ? ",%s=0x%x" : " %s = 0x%x",
+					printf (output_format == 1 ? ",%s=0x%x" : " %s = 0x%x",
 						sel_oem_msg[i].string[SEL_BYTE(j)],
 						((uint8_t *)evt)[SEL_BYTE(j)]);
 				}
@@ -1534,7 +1534,7 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 		return (-1);
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "sel_info");
+		print_buf(rsp->data, rsp->data_len, "sel_info");
 
 	printf("SEL Information\n");
         version = rsp->data[0];
@@ -1780,14 +1780,14 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	if (!evt)
 		return;
 
-	if (csv_output)
+	if (output_format == 1)
 		printf("%x,", evt->record_id);
 	else
 		printf("%4x | ", evt->record_id);
 
 	if (evt->record_type == 0xf0)
 	{
-		if (csv_output)
+		if (output_format == 1)
 			printf(",,");
 
 		printf ("Linux kernel panic: %.11s\n", (char *) evt + 5);
@@ -1799,13 +1799,13 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		if ((evt->sel_type.standard_type.timestamp < 0x20000000)||(evt->sel_type.oem_ts_type.timestamp <  0x20000000)){
 			printf(" Pre-Init "); 
 
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf(" |");
 
 			printf("%010d", evt->sel_type.standard_type.timestamp );
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf("| ");
@@ -1816,7 +1816,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			else
 				printf("%s", ipmi_timestamp_date(evt->sel_type.oem_ts_type.timestamp));
 
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf(" | ");
@@ -1826,7 +1826,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			else
 				printf("%s", ipmi_timestamp_time(evt->sel_type.oem_ts_type.timestamp));
 
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf(" | ");
@@ -1835,14 +1835,14 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 	}
 	else
 	{
-		if (csv_output)
+		if (output_format == 1)
 			printf(",,");
 	}
 
 	if (evt->record_type >= 0xc0)
 	{
 		printf ("OEM record %02x", evt->record_type);
-		if (csv_output)
+		if (output_format == 1)
 			printf(",");
 		else
 			printf(" | ");
@@ -1850,7 +1850,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		if(evt->record_type <= 0xdf)
 		{
 			printf ("%02x%02x%02x", evt->sel_type.oem_ts_type.manf_id[0], evt->sel_type.oem_ts_type.manf_id[1], evt->sel_type.oem_ts_type.manf_id[2]);
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf(" | ");
@@ -1901,7 +1901,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			printf(" #0x%02x", evt->sel_type.standard_type.sensor_num);
 	}
 
-	if (csv_output)
+	if (output_format == 1)
 		printf(",");
 	else
 		printf(" | ");
@@ -1913,7 +1913,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		description = NULL;
 	}
 
-	if (csv_output) {
+	if (output_format == 1) {
 		printf(",");
 	} else {
 		printf(" | ");
@@ -1946,7 +1946,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 			threshold_reading_provided = 1;
 		}
 
-		if (csv_output)
+		if (output_format == 1)
 			printf(",");
 		else
 			printf(" | ");
@@ -1997,7 +1997,7 @@ ipmi_sel_print_std_entry(struct ipmi_intf * intf, struct sel_event_record * evt)
 		    evt->sel_type.standard_type.sensor_num == 0 &&
 		    (evt->sel_type.standard_type.event_data[0] & 0x30) == 0x20) {
 			/* break down memory ECC reporting if we can */
-			if (csv_output)
+			if (output_format == 1)
 				printf(",");
 			else
 				printf(" | ");
@@ -2278,7 +2278,7 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		return -1;
 	}
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "sel_info");
+		print_buf(rsp->data, rsp->data_len, "sel_info");
 
 	if (rsp->data[1] == 0 && rsp->data[2] == 0) {
 		lprintf(LOG_ERR, "SEL has no entries");

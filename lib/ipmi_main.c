@@ -79,9 +79,9 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
+# define OPTION_STRING	"I:46hVvc:gsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
 #else
-# define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
+# define OPTION_STRING	"I:46hVvc:H:f:U:p:d:S:D:"
 #endif
 
 /* From src/plugins/ipmi_intf.c: */
@@ -223,7 +223,7 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -h             This help");
 	lprintf(LOG_NOTICE, "       -V             Show version information");
 	lprintf(LOG_NOTICE, "       -v             Verbose (can use multiple times)");
-	lprintf(LOG_NOTICE, "       -c             Display output in comma separated format");
+	lprintf(LOG_NOTICE, "       -c type        Display output format (csv, json)");
 	lprintf(LOG_NOTICE, "       -d N           Specify a /dev/ipmiN device to use (default=0)");
 	lprintf(LOG_NOTICE, "       -I intf        Interface to use");
 	lprintf(LOG_NOTICE, "       -H hostname    Remote host name for LAN interface");
@@ -454,7 +454,19 @@ ipmi_main(int argc, char ** argv,
 			}
 			break;
 		case 'c':
-			csv_output = 1;
+			if (strcmp(optarg, "csv") == 0) {
+				output_format = 1;
+			} else if(strcmp(optarg, "json") == 0) {
+#ifndef HAVE_JSON_C
+				lprintf(LOG_WARN, "WARNING: this copy of ipmitool has been compiled without JSON-C: json export disabled\n");
+#else
+				output_format = 2;
+#endif
+			} else {
+				lprintf(LOG_ERR, "Invalid parameter given for '-c'.");
+				rc = -1;
+				goto out_free;
+			}
 			break;
 		case 'H':
 			if (hostname) {

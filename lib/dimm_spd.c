@@ -1608,7 +1608,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 
 	if (verbose) {
 		printf("\n");
-		printbuf(spd_data, len, "SPD DATA");
+		print_buf(spd_data, len, "SPD DATA");
 	}
 
 	return 0;

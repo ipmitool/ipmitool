@@ -63,7 +63,6 @@
 #define IPMI_LAN_PORT       0x26f
 
 extern int verbose;
-extern int csv_output;
 static int ipmi_print_sensor_info(struct ipmi_intf *intf, uint16_t rec_id);
 
 /*******************************************************************************
@@ -2541,7 +2540,7 @@ ipmi_nm_getcapabilities(struct ipmi_intf * intf, int argc, char **argv)
 	memset(&caps, 0, sizeof(caps));
 	if (_ipmi_nm_getcapabilities(intf, domain, trigger, &caps))
 		return -1;
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%d,%u,%u,%u,%u,%u,%u,%s\n",
 		       caps.max_settings, caps.max_value,caps.min_value,
 		       caps.min_corr/1000, caps.max_corr/1000,
@@ -2622,7 +2621,7 @@ ipmi_nm_get_policy(struct ipmi_intf * intf, int argc, char **argv)
 	}
 	if (_ipmi_nm_get_policy(intf, policy.domain, policy_id, &policy))
 		return -1;
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%s,0x%x,%s,%s,%s,%u,%u,%u,%u,%s\n",
 		       val2str2(policy.domain&0xF, nm_domain_vals),
 		       policy.domain,
@@ -2934,7 +2933,7 @@ ipmi_nm_get_statistics(struct ipmi_intf * intf, int argc, char **argv)
 	}
 	if (_ipmi_nm_statistics(intf, mode, domain, policy_id, &stats))
 		return -1;
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%d\n",
 		       val2str2(stats.id_state & 0xF, nm_domain_vals),
 		       ((stats.id_state >> 4) & 1) ? (policy_mode ? "Policy Enabled"
@@ -3095,7 +3094,7 @@ ipmi_nm_get_alert(struct ipmi_intf * intf)
 	memset(&alert, 0, sizeof(alert));
 	if (_ipmi_nm_get_alert(intf, &alert))
 		return -1;
-	if (csv_output) {
+	if (output_format == 1) {
 		printf("%d,%s,0x%x,%s,0x%x\n",
 		       alert.chan & 0xF,
 		       (alert.chan >> 7) ? "not registered"

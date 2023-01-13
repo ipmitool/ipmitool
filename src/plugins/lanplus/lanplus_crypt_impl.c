@@ -173,9 +173,9 @@ lanplus_encrypt_aes_cbc_128(const uint8_t * iv,
 
 	if (verbose >= 5)
 	{
-		printbuf(iv,  16, "encrypting with this IV");
-		printbuf(key, 16, "encrypting with this key");
-		printbuf(input, input_length, "encrypting this data");
+		print_buf(iv,  16, "encrypting with this IV");
+		print_buf(key, 16, "encrypting with this key");
+		print_buf(input, input_length, "encrypting this data");
 	}
 
 	ctx = EVP_CIPHER_CTX_new();
@@ -251,9 +251,9 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 
 	if (verbose >= 5)
 	{
-		printbuf(iv,  16, "decrypting with this IV");
-		printbuf(key, 16, "decrypting with this key");
-		printbuf(input, input_length, "decrypting this data");
+		print_buf(iv,  16, "decrypting with this IV");
+		print_buf(key, 16, "decrypting with this key");
+		print_buf(input, input_length, "decrypting this data");
 	}
 
 	*bytes_written = 0;
@@ -313,6 +313,6 @@ lanplus_decrypt_aes_cbc_128(const uint8_t * iv,
 	if (verbose >= 5)
 	{
 		lprintf(LOG_DEBUG, "Decrypted %d encrypted bytes", input_length);
-		printbuf(output, *bytes_written, "Decrypted this data");
+		print_buf(output, *bytes_written, "Decrypted this data");
 	}
 }

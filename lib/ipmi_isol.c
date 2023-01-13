@@ -147,7 +147,7 @@ static int ipmi_print_isol_info(struct ipmi_intf * intf)
 	if (ipmi_get_isol_info(intf, &params))
 		return -1;
 
-	if (csv_output)
+	if (output_format == 1)
 	{
 		printf("%s,", (params.enabled & 0x1)?"true": "false");
 		printf("%s,",

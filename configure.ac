@@ -668,6 +668,17 @@ if test "x$xenable_file_security" != "xno"; then
 fi
 
 
+dnl Enable json output
+AC_ARG_ENABLE([json-output],
+	[AC_HELP_STRING([--enable-json-output],
+			[enable json output [default=no]])],
+	[xenable_json_output=$enableval],
+	[xenable_json_output=no])
+if test "x$xenable_json_output" != "xno"; then
+	AC_SEARCH_LIBS([json_object_new_object], [json-c], AC_DEFINE_UNQUOTED(HAVE_JSON_C, 1, [The JSON-C library is present]))
+fi
+
+
 AC_TRY_COMPILE([],[
 	#include <stdio.h>
 	

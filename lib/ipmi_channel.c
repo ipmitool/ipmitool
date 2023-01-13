@@ -52,7 +52,6 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_user.h>
 
-extern int csv_output;
 extern int verbose;
 
 void printf_channel_usage(void);
@@ -509,7 +508,7 @@ ipmi_get_channel_cipher_suites(struct ipmi_intf *intf,
 		/*
 		 * We got back cipher suite data -- store it.
 		 * printf("copying data to offset %d\n", offset);
-		 * printbuf(rsp->data + 1, rsp->data_len - 1, "this is the data");
+		 * print_buf(rsp->data + 1, rsp->data_len - 1, "this is the data");
 		 */
 		memcpy(cipher_suite_data + offset, rsp->data + 1, rsp->data_len - 1);
 		offset += rsp->data_len - 1;
@@ -544,12 +543,12 @@ ipmi_print_channel_cipher_suites(struct ipmi_intf *intf,
 	if (rc < 0)
 		return rc;
 
-	if (!csv_output) {
+	if (output_format == 0) {
 		printf("%s\n", header_str);
 	}
 	for (i = 0; i < nr_suites; i++) {
 		/* We have everything we need to spit out a cipher suite record */
-		printf(csv_output ? "%d,%s,%s,%s,%s\n"
+		printf(output_format == 1 ? "%d,%s,%s,%s,%s\n"
 		                  : "%-4d %-7s %-15s %-15s %-15s\n",
 		       suites[i].cipher_suite_id,
 		       iana_string(suites[i].iana),

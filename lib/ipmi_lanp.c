@@ -55,6 +55,10 @@
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_user.h>
 
+#ifdef HAVE_JSON_C
+#include <json-c/json.h>
+#endif
+
 extern int verbose;
 
 static struct lan_param {
@@ -296,7 +300,7 @@ set_lan_param_wait(struct ipmi_intf *intf, uint8_t chan,
 
 	lprintf(LOG_DEBUG, "Waiting for Set LAN Parameter to complete...");
 	if (verbose > 1)
-		printbuf(data, len, "SET DATA");
+		print_buf(data, len, "SET DATA");
 
 	for (;;) {
 		p = get_lan_param(intf, chan, param);
@@ -307,7 +311,7 @@ set_lan_param_wait(struct ipmi_intf *intf, uint8_t chan,
 			continue;
 		}
 		if (verbose > 1)
-			printbuf(p->data, p->data_len, "READ DATA");
+			print_buf(p->data, p->data_len, "READ DATA");
 		if (p->data_len != len) {
 			sleep(IPMI_LANP_TIMEOUT);
 			if (retry-- == 0) {
@@ -628,11 +632,22 @@ static char priv_level_to_char(unsigned char priv_level)
  	return ret;
 }
 
+#ifdef HAVE_JSON_C
+#define JSON_IF if (output_format == 2) {
+#else
+#define JSON_IF if (0) {
+#endif
+#define JSON_ELSE } else {
+#define JSON_END }
 
 static int
 ipmi_lan_print(struct ipmi_intf *intf, uint8_t chan)
 {
 	struct lan_param *p;
+#ifdef HAVE_JSON_C
+	char tmp[255];
+	json_object *jObj_main, *jObj_tmp, *jArray_tmp;
+#endif
 
 	if (chan < 1 || chan > IPMI_CHANNEL_NUMBER_MAX) {
 		lprintf(LOG_ERR, "Invalid Channel %d", chan);
@@ -645,217 +660,428 @@ ipmi_lan_print(struct ipmi_intf *intf, uint8_t chan)
 		return -1;
 	}
 
+#ifdef HAVE_JSON_C
+	jObj_main = json_object_new_object();
+#endif
 	p = get_lan_param(intf, chan, IPMI_LANP_SET_IN_PROGRESS);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data) {
 		printf("%-24s: ", p->desc);
 		p->data[0] &= 3;
-		switch (p->data[0]) {
-		case 0:
-			printf("Set Complete\n");
-			break;
-		case 1:
-			printf("Set In Progress\n");
-			break;
-		case 2:
-			printf("Commit Write\n");
-			break;
-		case 3:
-			printf("Reserved\n");
-			break;
-		default:
-			printf("Unknown\n");
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			switch (p->data[0]) {
+			case 0:
+				json_object_object_add(jObj_main, "set_in_progress", json_object_new_string("complete"));
+				break;
+			case 1:
+				json_object_object_add(jObj_main, "set_in_progress", json_object_new_string("in_progress"));
+				break;
+			case 2:
+				json_object_object_add(jObj_main, "set_in_progress", json_object_new_string("commit"));
+				break;
+			case 3:
+				json_object_object_add(jObj_main, "set_in_progress", json_object_new_string("reserved"));
+				break;
+			default:
+				json_object_object_add(jObj_main, "set_in_progress", json_object_new_string("unknown"));
+			}
+		} else
+#endif
+		{
+			printf("%-24s: ", p->desc);
+			switch (p->data[0]) {
+			case 0:
+				printf("Set Complete\n");
+				break;
+			case 1:
+				printf("Set In Progress\n");
+				break;
+			case 2:
+				printf("Commit Write\n");
+				break;
+			case 3:
+				printf("Reserved\n");
+				break;
+			default:
+				printf("Unknown\n");
+			}
 		}
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data) {
-		printf("%-24s: %s%s%s%s%s\n", p->desc,
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jArray_tmp = json_object_new_array();
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_main, "auth_type", jArray_tmp);
+		} else
+#endif
+			printf("%-24s: %s%s%s%s%s\n", p->desc,
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data) {
-		printf("%-24s: Callback : %s%s%s%s%s\n", p->desc,
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
-		printf("%-24s: User     : %s%s%s%s%s\n", "",
-		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
-		printf("%-24s: Operator : %s%s%s%s%s\n", "",
-		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
-		printf("%-24s: Admin    : %s%s%s%s%s\n", "",
-		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
-		printf("%-24s: OEM      : %s%s%s%s%s\n", "",
-		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
-		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
-		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
-		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
-		       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jObj_tmp = json_object_new_object();
+			jArray_tmp = json_object_new_array();
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_tmp, "callback", jArray_tmp);
+
+			jArray_tmp = json_object_new_array();
+			if (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_tmp, "user", jArray_tmp);
+
+			jArray_tmp = json_object_new_array();
+			if (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_tmp, "operator", jArray_tmp);
+
+			jArray_tmp = json_object_new_array();
+			if (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_tmp, "admin", jArray_tmp);
+
+			jArray_tmp = json_object_new_array();
+			if (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_NONE) json_object_array_add(jArray_tmp, json_object_new_string("NONE"));
+			if (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD2) json_object_array_add(jArray_tmp, json_object_new_string("MD2"));
+			if (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD5) json_object_array_add(jArray_tmp, json_object_new_string("MD5"));
+			if (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) json_object_array_add(jArray_tmp, json_object_new_string("PASSWORD"));
+			if (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_OEM) json_object_array_add(jArray_tmp, json_object_new_string("OEM"));
+			json_object_object_add(jObj_tmp, "oem", jArray_tmp);
+
+			json_object_object_add(jObj_main, "auth_type_enable", jObj_tmp);
+		} else
+#endif
+		{
+			printf("%-24s: Callback : %s%s%s%s%s\n", p->desc,
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[0] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+			printf("%-24s: User     : %s%s%s%s%s\n", "",
+			       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[1] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+			printf("%-24s: Operator : %s%s%s%s%s\n", "",
+			       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[2] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+			printf("%-24s: Admin    : %s%s%s%s%s\n", "",
+			       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[3] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+			printf("%-24s: OEM      : %s%s%s%s%s\n", "",
+			       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_NONE) ? "NONE " : "",
+			       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD2) ? "MD2 " : "",
+			       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_MD5) ? "MD5 " : "",
+			       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_PASSWORD) ? "PASSWORD " : "",
+			       (p->data[4] & 1<<IPMI_SESSION_AUTHTYPE_OEM) ? "OEM " : "");
+		}
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_ADDR_SRC);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data) {
-		printf("%-24s: ", p->desc);
 		p->data[0] &= 0xf;
-		switch (p->data[0]) {
-		case 0:
-			printf("Unspecified\n");
-			break;
-		case 1:
-			printf("Static Address\n");
-			break;
-		case 2:
-			printf("DHCP Address\n");
-			break;
-		case 3:
-			printf("BIOS Assigned Address\n");
-			break;
-		default:
-			printf("Other\n");
-			break;
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			switch (p->data[0]) {
+			case 0:
+				json_object_object_add(jObj_main, "ip_addr_src", json_object_new_string("unspecified"));
+				break;
+			case 1:
+				json_object_object_add(jObj_main, "ip_addr_src", json_object_new_string("static"));
+				break;
+			case 2:
+				json_object_object_add(jObj_main, "ip_addr_src", json_object_new_string("dhcp"));
+				break;
+			case 3:
+				json_object_object_add(jObj_main, "ip_addr_src", json_object_new_string("bios"));
+				break;
+			default:
+				json_object_object_add(jObj_main, "ip_addr_src", json_object_new_string("other"));
+				break;
+			}
+		} else
+#endif
+		{
+			printf("%-24s: ", p->desc);
+			switch (p->data[0]) {
+			case 0:
+				printf("Unspecified\n");
+				break;
+			case 1:
+				printf("Static Address\n");
+				break;
+			case 2:
+				printf("DHCP Address\n");
+				break;
+			case 3:
+				printf("BIOS Assigned Address\n");
+				break;
+			default:
+				printf("Other\n");
+				break;
+			}
 		}
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_ADDR);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %d.%d.%d.%d\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3]);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			sprintf(tmp, "%d.%d.%d.%d", p->data[0], p->data[1], p->data[2], p->data[3]);
+			json_object_object_add(jObj_main, "ip_addr", json_object_new_string(tmp));
+		} else
+#endif
+			printf("%-24s: %d.%d.%d.%d\n", p->desc,
+			       p->data[0], p->data[1], p->data[2], p->data[3]);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SUBNET_MASK);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %d.%d.%d.%d\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3]);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			sprintf(tmp, "%d.%d.%d.%d", p->data[0], p->data[1], p->data[2], p->data[3]);
+			json_object_object_add(jObj_main, "subnet_mask", json_object_new_string(tmp));
+		} else
+#endif
+			printf("%-24s: %d.%d.%d.%d\n", p->desc,
+			       p->data[0], p->data[1], p->data[2], p->data[3]);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_MAC_ADDR);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %s\n", p->desc, mac2str(p->data));
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "mac_addr", json_object_new_string(mac2str(p->data)));
+		else
+#endif
+			printf("%-24s: %s\n", p->desc, mac2str(p->data));
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_SNMP_STRING);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %s\n", p->desc, p->data);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "snmp", json_object_new_string((const char *)p->data));
+		else
+#endif
+			printf("%-24s: %s\n", p->desc, p->data);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_IP_HEADER);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: TTL=0x%02x Flags=0x%02x Precedence=0x%02x TOS=0x%02x\n",
-		       p->desc, p->data[0], p->data[1] & 0xe0, p->data[2] & 0xe0, p->data[2] & 0x1e);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jObj_tmp = json_object_new_object();
+			json_object_object_add(jObj_tmp, "ttl", json_object_new_int(p->data[0]));
+			json_object_object_add(jObj_tmp, "flags", json_object_new_int(p->data[1] & 0xe0));
+			json_object_object_add(jObj_tmp, "precedence", json_object_new_int(p->data[2] & 0xe0));
+			json_object_object_add(jObj_tmp, "tos", json_object_new_int(p->data[2] & 0x1e));
+			json_object_object_add(jObj_main, "ip_header", jObj_tmp);
+		} else
+#endif
+			printf("%-24s: TTL=0x%02x Flags=0x%02x Precedence=0x%02x TOS=0x%02x\n",
+			       p->desc, p->data[0], p->data[1] & 0xe0, p->data[2] & 0xe0, p->data[2] & 0x1e);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BMC_ARP);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: ARP Responses %sabled, Gratuitous ARP %sabled\n", p->desc,
-		       (p->data[0] & 2) ? "En" : "Dis", (p->data[0] & 1) ? "En" : "Dis");
+		goto error;
+	if (p->data){
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jObj_tmp = json_object_new_object();
+			json_object_object_add(jObj_tmp, "arp_responses", json_object_new_boolean(p->data[0] & 2));
+			json_object_object_add(jObj_tmp, "gratuitous_arp", json_object_new_boolean(p->data[0] & 1));
+			json_object_object_add(jObj_main, "bmc_arp", jObj_tmp);
+		} else
+#endif
+			printf("%-24s: ARP Responses %sabled, Gratuitous ARP %sabled\n", p->desc,
+			       (p->data[0] & 2) ? "En" : "Dis", (p->data[0] & 1) ? "En" : "Dis");
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_GRAT_ARP);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data)
 		printf("%-24s: %.1f seconds\n", p->desc, (float)((p->data[0] + 1) / 2));
 
 	p = get_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_IP);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %d.%d.%d.%d\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3]);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			sprintf(tmp, "%d.%d.%d.%d", p->data[0], p->data[1], p->data[2], p->data[3]);
+			json_object_object_add(jObj_main, "def_gw", json_object_new_string(tmp));
+		} else
+#endif
+			printf("%-24s: %d.%d.%d.%d\n", p->desc,
+			       p->data[0], p->data[1], p->data[2], p->data[3]);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_DEF_GATEWAY_MAC);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %s\n", p->desc, mac2str(p->data));
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "def_gw_addr", json_object_new_string(mac2str(p->data)));
+		else
+#endif
+			printf("%-24s: %s\n", p->desc, mac2str(p->data));
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_IP);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %d.%d.%d.%d\n", p->desc,
-		       p->data[0], p->data[1], p->data[2], p->data[3]);
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			sprintf(tmp, "%d.%d.%d.%d", p->data[0], p->data[1], p->data[2], p->data[3]);
+			json_object_object_add(jObj_main, "backup_gw", json_object_new_string(tmp));
+		} else
+#endif
+			printf("%-24s: %d.%d.%d.%d\n", p->desc,
+			       p->data[0], p->data[1], p->data[2], p->data[3]);
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_BAK_GATEWAY_MAC);
 	if (!p)
-		return -1;
-	if (p->data)
-		printf("%-24s: %s\n", p->desc, mac2str(p->data));
+		goto error;
+	if (p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "backup_gw_mac", json_object_new_string(mac2str(p->data)));
+		else
+#endif
+			printf("%-24s: %s\n", p->desc, mac2str(p->data));
+	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_ID);
 	if (p && p->data) {
 		int id = ((p->data[1] & 0x0f) << 8) + p->data[0];
-		if (p->data[1] & 0x80)
-			printf("%-24s: %d\n", p->desc, id);
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			if (p->data[1] & 0x80)
+				json_object_object_add(jObj_main, "vlan_id", json_object_new_int(id));
+			else
+				json_object_object_add(jObj_main, "vlan_id", json_object_new_int(0));
 		else
-			printf("%-24s: Disabled\n", p->desc);
+#endif
+			if (p->data[1] & 0x80)
+				printf("%-24s: %d\n", p->desc, id);
+			else
+				printf("%-24s: Disabled\n", p->desc);
 	}
 
 	p = get_lan_param(intf, chan, IPMI_LANP_VLAN_PRIORITY);
-	if (p && p->data)
-		printf("%-24s: %d\n", p->desc, p->data[0] & 0x07);
+	if (p && p->data) {
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "vlan_priority", json_object_new_int(p->data[0] & 0x07));
+		else
+#endif
+			printf("%-24s: %d\n", p->desc, p->data[0] & 0x07);
+	}
 
 	/* Determine supported Cipher Suites -- Requires two calls */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHER_SUPPORT);
 	if (!p)
-		return -1;
+		goto error;
 	else if (p->data)
 	{
 		unsigned char cipher_suite_count = p->data[0];
 		p = get_lan_param(intf, chan, IPMI_LANP_RMCP_CIPHERS);
 		if (!p)
-			return -1;
-
-		printf("%-24s: ", p->desc);
-
-		/* Now we're dangerous.  There are only 15 fixed cipher
-		   suite IDs, but the spec allows for 16 in the return data.*/
-		if (p->data && p->data_len <= 17)
-		{
-			unsigned int i;
-			for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
+			goto error;
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jArray_tmp = json_object_new_array();
+			/* Now we're dangerous.  There are only 15 fixed cipher
+			   suite IDs, but the spec allows for 16 in the return data.*/
+			if ((p->data != NULL) && (p->data_len <= 17))
 			{
-				printf("%s%d",
-				       (i > 0? ",": ""),
-				       p->data[i + 1]);
+				unsigned int i;
+				for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
+				{
+					json_object_array_add(jArray_tmp, json_object_new_int(p->data[i + 1]));
+				}
 			}
-			printf("\n");
-		}
-		else
+			json_object_object_add(jObj_main, "rmcp_ciphers", jArray_tmp);
+		} else
+#endif
 		{
-			printf("None\n");
+			printf("%-24s: ", p->desc);
+
+			/* Now we're dangerous.  There are only 15 fixed cipher
+			   suite IDs, but the spec allows for 16 in the return data.*/
+			if (p->data && p->data_len <= 17)
+			{
+				unsigned int i;
+				for (i = 0; (i < 16) && (i < cipher_suite_count); ++i)
+				{
+					printf("%s%d",
+					       (i > 0? ",": ""),
+					       p->data[i + 1]);
+				}
+				printf("\n");
+			}
+			else
+			{
+				printf("None\n");
+			}
 		}
 	}
 
@@ -863,56 +1089,97 @@ ipmi_lan_print(struct ipmi_intf *intf, uint8_t chan)
 	/* These are the privilege levels for the 15 fixed cipher suites */
 	p = get_lan_param(intf, chan, IPMI_LANP_RMCP_PRIV_LEVELS);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data && 9 == p->data_len)
 	{
-		printf("%-24s: %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", p->desc,
-		       priv_level_to_char(p->data[1] & 0x0F),
-		       priv_level_to_char(p->data[1] >> 4),
-		       priv_level_to_char(p->data[2] & 0x0F),
-		       priv_level_to_char(p->data[2] >> 4),
-		       priv_level_to_char(p->data[3] & 0x0F),
-		       priv_level_to_char(p->data[3] >> 4),
-		       priv_level_to_char(p->data[4] & 0x0F),
-		       priv_level_to_char(p->data[4] >> 4),
-		       priv_level_to_char(p->data[5] & 0x0F),
-		       priv_level_to_char(p->data[5] >> 4),
-		       priv_level_to_char(p->data[6] & 0x0F),
-		       priv_level_to_char(p->data[6] >> 4),
-		       priv_level_to_char(p->data[7] & 0x0F),
-		       priv_level_to_char(p->data[7] >> 4),
-		       priv_level_to_char(p->data[8] & 0x0F));
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			/* Not implemented */
+		} else
+#endif
+		{
+			printf("%-24s: %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", p->desc,
+			       priv_level_to_char(p->data[1] & 0x0F),
+			       priv_level_to_char(p->data[1] >> 4),
+			       priv_level_to_char(p->data[2] & 0x0F),
+			       priv_level_to_char(p->data[2] >> 4),
+			       priv_level_to_char(p->data[3] & 0x0F),
+			       priv_level_to_char(p->data[3] >> 4),
+			       priv_level_to_char(p->data[4] & 0x0F),
+			       priv_level_to_char(p->data[4] >> 4),
+			       priv_level_to_char(p->data[5] & 0x0F),
+			       priv_level_to_char(p->data[5] >> 4),
+			       priv_level_to_char(p->data[6] & 0x0F),
+			       priv_level_to_char(p->data[6] >> 4),
+			       priv_level_to_char(p->data[7] & 0x0F),
+			       priv_level_to_char(p->data[7] >> 4),
+			       priv_level_to_char(p->data[8] & 0x0F));
 
-		/* Now print a legend */
-		printf("%-24s: %s\n", "", "    X=Cipher Suite Unused");
-		printf("%-24s: %s\n", "", "    c=CALLBACK");
-		printf("%-24s: %s\n", "", "    u=USER");
-		printf("%-24s: %s\n", "", "    o=OPERATOR");
-		printf("%-24s: %s\n", "", "    a=ADMIN");
-		printf("%-24s: %s\n", "", "    O=OEM");
+			/* Now print a legend */
+			printf("%-24s: %s\n", "", "    X=Cipher Suite Unused");
+			printf("%-24s: %s\n", "", "    c=CALLBACK");
+			printf("%-24s: %s\n", "", "    u=USER");
+			printf("%-24s: %s\n", "", "    o=OPERATOR");
+			printf("%-24s: %s\n", "", "    a=ADMIN");
+			printf("%-24s: %s\n", "", "    O=OEM");
+		}
 	}
 	else
-		printf("%-24s: Not Available\n", p->desc);
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			/* Not implemented */
+		} else
+#endif
+			printf("%-24s: Not Available\n", p->desc);
 
 	/* Bad Password Threshold */
 	p = get_lan_param(intf, chan, IPMI_LANP_BAD_PASS_THRESH);
 	if (!p)
-		return -1;
+		goto error;
 	if (p->data && 6 == p->data_len) {
 		int tmp;
 
-		printf("%-24s: %d\n", p->desc, p->data[1]);
-		printf("%-24s: %s\n", "Invalid password disable",
-				p->data[0] & 1 ? "yes" : "no" );
-		tmp = p->data[2] + (p->data[3] << 8);
-		printf("%-24s: %d\n", "Attempt Count Reset Int.", tmp * 10);
-		tmp = p->data[4] + (p->data[5] << 8);
-		printf("%-24s: %d\n", "User Lockout Interval", tmp * 10);
+#ifdef HAVE_JSON_C
+		if (output_format == 2) {
+			jObj_tmp = json_object_new_object();
+			json_object_object_add(jObj_tmp, "threshold", json_object_new_int(p->data[1]));
+			json_object_object_add(jObj_tmp, "invalid_password", json_object_new_boolean(p->data[0] & 1));
+			tmp = p->data[2] + (p->data[3] << 8);
+			json_object_object_add(jObj_tmp, "count_reset", json_object_new_int(tmp * 10));
+			tmp = p->data[4] + (p->data[5] << 8);
+			json_object_object_add(jObj_tmp, "lockout", json_object_new_int(tmp * 10));
+			json_object_object_add(jObj_main, "bad_password", jObj_tmp);
+		} else
+#endif
+		{
+			printf("%-24s: %d\n", p->desc, p->data[1]);
+			printf("%-24s: %s\n", "Invalid password disable",
+					p->data[0] & 1 ? "yes" : "no" );
+			tmp = p->data[2] + (p->data[3] << 8);
+			printf("%-24s: %d\n", "Attempt Count Reset Int.", tmp * 10);
+			tmp = p->data[4] + (p->data[5] << 8);
+			printf("%-24s: %d\n", "User Lockout Interval", tmp * 10);
+		}
 	} else {
-		printf("%-24s: Not Available\n", p->desc);
+#ifdef HAVE_JSON_C
+		if (output_format == 2)
+			json_object_object_add(jObj_main, "bad_password", json_object_new_object());
+		else
+#endif
+			printf("%-24s: Not Available\n", p->desc);
 	}
 
+#ifdef HAVE_JSON_C
+	if (output_format == 2) printf("%s\n", json_object_to_json_string(jObj_main));
+	json_object_put(jObj_main);
+#endif
+
 	return 0;
+error:
+#ifdef HAVE_JSON_C
+	json_object_put(jObj_main);
+#endif
+	return -1;
 }
 
 /* Configure Authentication Types */
@@ -978,7 +1245,7 @@ ipmi_lan_set_auth(struct ipmi_intf *intf, uint8_t chan, char *level, char *types
 	}
 
 	if (verbose > 1)
-		printbuf(data, 5, "authtype data");
+		print_buf(data, 5, "authtype data");
 
 	return set_lan_param(intf, chan, IPMI_LANP_AUTH_TYPE_ENABLE, data, 5);
 }

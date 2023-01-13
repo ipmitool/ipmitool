@@ -1707,7 +1707,7 @@ ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
 	 * CSV OUTPUT
 	 */
 
-	if (csv_output) {
+	if (output_format == 1) {
 		/*
 		 * print sensor name, reading, unit, state
 		 */
@@ -2270,7 +2270,7 @@ ipmi_sdr_print_sensor_eventonly(struct ipmi_intf *intf,
 			sensor->event_type);
 		printf("\n");
 	} else {
-		if (csv_output)
+		if (output_format == 1)
 			printf("%s,%02Xh,ns,%d.%d,Event-Only\n",
 			       sensor->id_code ? desc : "",
 			       sensor->keys.sensor_num,
@@ -2307,7 +2307,7 @@ ipmi_sdr_print_sensor_mc_locator(struct sdr_record_mc_locator *mc)
 	snprintf(desc, sizeof(desc), "%.*s", (mc->id_code & 0x1f) + 1, mc->id_string);
 
 	if (verbose == 0) {
-		if (csv_output)
+		if (output_format == 1)
 			printf("%s,00h,ok,%d.%d\n",
 			       mc->id_code ? desc : "",
 			       mc->entity.id, mc->entity.instance);
@@ -2398,7 +2398,7 @@ ipmi_sdr_print_sensor_generic_locator(struct sdr_record_generic_locator *dev)
 	snprintf(desc, sizeof(desc), "%.*s", (dev->id_code & 0x1f) + 1, dev->id_string);
 
 	if (!verbose) {
-		if (csv_output)
+		if (output_format == 1)
 			printf("%s,00h,ns,%d.%d\n",
 			       dev->id_code ? desc : "",
 			       dev->entity.id, dev->entity.instance);
@@ -2453,7 +2453,7 @@ ipmi_sdr_print_sensor_fru_locator(struct sdr_record_fru_locator *fru)
 	snprintf(desc, sizeof(desc), "%.*s", (fru->id_code & 0x1f) + 1, fru->id_string);
 
 	if (!verbose) {
-		if (csv_output)
+		if (output_format == 1)
 			printf("%s,00h,ns,%d.%d\n",
 			       fru->id_code ? desc : "",
 			       fru->entity.id, fru->entity.instance);
@@ -2522,7 +2522,7 @@ ipmi_sdr_print_sensor_oem_intel(struct sdr_record_oem *oem)
 		case 7:	/* SR1300, non-redundant */
 			if (verbose)
 				printf("Power Redundancy       : No\n");
-			else if (csv_output)
+			else if (output_format == 1)
 				printf("Power Redundancy,Not Available,nr\n");
 			else
 				printf
@@ -2533,7 +2533,7 @@ ipmi_sdr_print_sensor_oem_intel(struct sdr_record_oem *oem)
 				printf("Power Redundancy       : No\n");
 				printf("Power Supply 2 Sensor  : %x\n",
 				       oem->data[8]);
-			} else if (csv_output) {
+			} else if (output_format == 1) {
 				printf("Power Redundancy,PS@%02xh,nr\n",
 				       oem->data[8]);
 			} else {
@@ -2549,7 +2549,7 @@ ipmi_sdr_print_sensor_oem_intel(struct sdr_record_oem *oem)
 				       oem->data[7]);
 				printf("Power Supply Sensor    : %x\n",
 				       oem->data[8]);
-			} else if (csv_output) {
+			} else if (output_format == 1) {
 				printf
 				    ("Power Redundancy,PS@%02xh + PS@%02xh,ok\n",
 				     oem->data[7], oem->data[8]);
@@ -2599,7 +2599,7 @@ ipmi_sdr_print_sensor_oem(struct sdr_record_oem *oem)
 		return -1;
 
 	if (verbose > 2)
-		printbuf(oem->data, oem->data_len, "OEM Record");
+		print_buf(oem->data, oem->data_len, "OEM Record");
 
 	/* intel manufacturer id */
 	if (oem->data[0] == 0x57 &&

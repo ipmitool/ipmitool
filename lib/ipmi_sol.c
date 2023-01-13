@@ -575,7 +575,7 @@ ipmi_print_sol_info(struct ipmi_intf * intf, uint8_t channel)
 	if (ipmi_get_sol_info(intf, channel, &params))
 		return -1;
 
-	if (csv_output)
+	if (output_format == 1)
 	{
 		printf("%s,",
 			   val2str(params.set_in_progress & 0x03,

@@ -80,7 +80,7 @@ extern int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_exec_main(struct ipmi_intf * intf, int argc, char ** argv);
 extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
-int csv_output = 0;
+int output_format = 0;
 int verbose = 0;
 
 struct ipmi_cmd ipmitool_cmd_list[] = {

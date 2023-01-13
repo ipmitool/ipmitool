@@ -314,7 +314,7 @@ ipmi_kontron_set_serial_number(struct ipmi_intf *intf)
 		return (-1);
 	}
 	if (verbose > 1) {
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 	}
 	memcpy(&header, rsp->data + 1, 8);
 	if (header.version != 1) {
@@ -590,7 +590,7 @@ ipmi_kontron_set_mfg_date (struct ipmi_intf *intf)
 		return (-1);
 	}
 	if (verbose > 1) {
-		printbuf(rsp->data, rsp->data_len, "FRU DATA");
+		print_buf(rsp->data, rsp->data_len, "FRU DATA");
 	}
 	memcpy(&header, rsp->data + 1, 8);
 	if (header.version != 1) {

@@ -227,7 +227,7 @@ print_session_info_verbose(const struct  get_session_info_rsp * session_info,
 static void print_session_info(const struct  get_session_info_rsp * session_info,
 							   int data_len)
 {
-	if (csv_output)
+	if (output_format == 1)
 		print_session_info_csv(session_info, data_len);
 	else
 		print_session_info_verbose(session_info, data_len);

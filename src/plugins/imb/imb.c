@@ -103,12 +103,12 @@ static struct ipmi_rs * ipmi_imb_send_cmd(struct ipmi_intf *__UNUSED__(intf), st
 
 	for (i=0; i<IPMI_IMB_MAX_RETRY; i++) {
 		if (verbose > 2)
-			printbuf(imbreq.data, imbreq.dataLength, "ipmi_imb request");
+			print_buf(imbreq.data, imbreq.dataLength, "ipmi_imb request");
 		status = SendTimedImbpRequest(&imbreq, IPMI_IMB_TIMEOUT,
 					      rsp.data, &rsp.data_len, &ccode);
 		if (status == 0) {
 			if (verbose > 2)
-				printbuf(rsp.data, rsp.data_len, "ipmi_imb response");
+				print_buf(rsp.data, rsp.data_len, "ipmi_imb response");
 			break;
 		}
 		/* error */

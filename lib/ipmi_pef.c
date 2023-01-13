@@ -531,7 +531,7 @@ ipmi_pef_msg_exchange(struct ipmi_intf * intf, struct ipmi_rq * req, char * txt)
 		return(NULL);
 	}
 	if (verbose > 2) {
-		printbuf(rsp->data, rsp->data_len, txt);
+		print_buf(rsp->data, rsp->data_len, txt);
 	}
 	return(rsp);
 }

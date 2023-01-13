@@ -724,7 +724,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf,
 	}
 
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "Boot Option");
+		print_buf(rsp->data, rsp->data_len, "Boot Option");
 
 	param_id = 0;
 	param_id = (rsp->data[1] & 0x7f);
@@ -1121,7 +1121,7 @@ ipmi_chassis_get_bootvalid(struct ipmi_intf * intf)
 	}
 
 	if (verbose > 2)
-		printbuf(rsp->data, rsp->data_len, "Boot Option");
+		print_buf(rsp->data, rsp->data_len, "Boot Option");
 
 	return(rsp->data[2]);
 }
