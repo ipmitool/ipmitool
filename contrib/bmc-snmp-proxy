@@ -44,7 +44,14 @@ RELOAD_SERVICES="yes"
 # source config
 [ -r ${CONFIG} ] && . ${CONFIG}
 
-. gettext.sh
+if [ -f /usr/bin/gettext.sh ]; then
+	GETTEXT=1
+	. /usr/bin/gettext.sh
+	OUTPUT="eval_gettext"
+else
+	GETTEXT=0
+	OUTPUT="echo"
+fi
 
 SCRIPT_NAME=$(basename $0)
 RETVAL=0
@@ -347,23 +354,24 @@ stop()
 #############################################################################
 status()
 {
-	eval_gettext "${SCRIPT_NAME}: snmp proxy to BMC is "
+	${OUTPUT} "${SCRIPT_NAME}: snmp proxy to BMC is "
 	# Checking for lockfile is better.
 	#if grep -q "^proxy" "${SNMPD_BMC_CONF}" > /dev/null 2>&1 ; then
 	if [ -f ${LOCKFILE} ]; then
-		eval_gettext "set"
+		${OUTPUT} "set"
 	else
-		eval_gettext "not set"
+		${OUTPUT} "not set"
 	fi
 
-	echo
+	[ ${GETTEXT} -eq 1 ] && echo
 	RETVAL=0
 }
 
 #############################################################################
 usage()
 {
-	eval_gettext "Usage: $0 {start|stop|status}"; echo 1>&2
+	${OUTPUT} "Usage: $0 {start|stop|status}"; echo 1>&2
+	[ ${GETTEXT} -eq 1 ] && echo
 	RETVAL=1
 }
 
@@ -379,22 +387,23 @@ esac
 
 case "$RETVAL" in
 	0|1) ;;
-	2) eval_gettext "${SCRIPT_NAME}: failed to read ${BMC_INFO} " 1>&2 ;;
-	3) eval_gettext "${SCRIPT_NAME}: failed to get proxy config." 1>&2 ;;
-	4) eval_gettext "${SCRIPT_NAME}: failed to set ${SNMPD_BMC_CONF}." 1>&2 ;;
-	5) eval_gettext "${SCRIPT_NAME}: failed to disable snmp proxy." 1>&2 ;;
-	6) eval_gettext "${SCRIPT_NAME}: failed to reload snmpd." 1>&2 ;;
-	7) eval_gettext "${SCRIPT_NAME}: failed to set snmpd config." 1>&2 ;;
-	8) eval_gettext "${SCRIPT_NAME}: failed to set IPMI alert dest." 1>&2 ;;
-	9) eval_gettext "${SCRIPT_NAME}: no free IPMI alert dest." 1>&2 ;;
-	10) eval_gettext "${SCRIPT_NAME}: failed to set IPMI PEF." 1>&2 ;;
-	11) eval_gettext "${SCRIPT_NAME}: failed to write snmptrapd.conf." 1>&2 ;;
-	12) eval_gettext "${SCRIPT_NAME}: snmpd not found." 1>&2 ;;
-	*) eval_gettext "${SCRIPT_NAME}: unknown error." 1>&2 ;;
+	2) ${OUTPUT} "${SCRIPT_NAME}: failed to read ${BMC_INFO} " 1>&2 ;;
+	3) ${OUTPUT} "${SCRIPT_NAME}: failed to get proxy config." 1>&2 ;;
+	4) ${OUTPUT} "${SCRIPT_NAME}: failed to set ${SNMPD_LOCAL_CONF}." 1>&2 ;;
+	5) ${OUTPUT} "${SCRIPT_NAME}: failed to disable snmp proxy." 1>&2 ;;
+	6) ${OUTPUT} "${SCRIPT_NAME}: failed to reload snmpd." 1>&2 ;;
+	7) ${OUTPUT} "${SCRIPT_NAME}: failed to update ${SYSCONF}." 1>&2 ;;
+	8) ${OUTPUT} "${SCRIPT_NAME}: failed to set IPMI alert dest." 1>&2 ;;
+	9) ${OUTPUT} "${SCRIPT_NAME}: no free IPMI alert dest." 1>&2 ;;
+	10) ${OUTPUT} "${SCRIPT_NAME}: failed to set IPMI PEF." 1>&2 ;;
+	11) ${OUTPUT} "${SCRIPT_NAME}: failed to write snmptrapd.conf." 1>&2 ;;
+	12) ${OUTPUT} "${SCRIPT_NAME}: snmpd not found." 1>&2 ;;
+	*) ${OUTPUT} "${SCRIPT_NAME}: unknown error." 1>&2 ;;
 esac
 
 if [ ${RETVAL} -gt 1 ]; then
-        eval_gettext " Return code: ${RETVAL}"; echo
+	${OUTPUT} " Return code: ${RETVAL}" 1>&2
+	[ ${GETTEXT} -eq 1 ] && echo
 fi
 
 exit ${RETVAL}

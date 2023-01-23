@@ -64,9 +64,9 @@ SCRIPT_NAME=$(basename $0)
 
 RETVAL=0
 
-if [ -f /bin/gettext.sh ]; then
+if [ -f /usr/bin/gettext.sh ]; then
 	GETTEXT=1
-	. /bin/gettext.sh
+	. /usr/bin/gettext.sh
 	OUTPUT="eval_gettext"
 else
 	GETTEXT=0
