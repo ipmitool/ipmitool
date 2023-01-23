@@ -748,6 +748,15 @@ ipmi_sdr_get_sensor_reading_ipmb(struct ipmi_intf *intf, uint8_t sensor,
 	uint32_t save_addr;
 	uint32_t save_channel;
 
+	/* Adding a check to verfiy sensor owner id bit
+	 * If the least significant bit of target address is set to 1
+	 * Then no need for bridging the command since it is not an ipmb
+	 * address 
+	 */
+	if(target & SENSOR_OWNER_ID_BIT == 0x01){
+		return NULL;
+	}
+
 	if ( BRIDGE_TO_SENSOR(intf, target, channel) ) {
 		lprintf(LOG_DEBUG,
 			"Bridge to Sensor "
