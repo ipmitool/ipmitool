@@ -41,7 +41,8 @@ libipmitool_la_SOURCES	= helper.c ipmi_sdr.c ipmi_sel.c ipmi_sol.c ipmi_pef.c \
 				  ipmi_main.c ipmi_tsol.c ipmi_firewall.c ipmi_kontronoem.c        \
 				  ipmi_hpmfwupg.c ipmi_sdradd.c ipmi_ekanalyzer.c ipmi_gendev.c    \
 				  ipmi_ime.c ipmi_delloem.c ipmi_dcmi.c hpm2.c ipmi_vita.c \
-				  ipmi_lanp6.c ipmi_cfgp.c ipmi_quantaoem.c ipmi_time.c
+				  ipmi_lanp6.c ipmi_cfgp.c ipmi_quantaoem.c ipmi_time.c \
+				  ipmi_hpeoem.c
 
 libipmitool_la_LDFLAGS		= -export-dynamic
 libipmitool_la_LIBADD		= -lm
