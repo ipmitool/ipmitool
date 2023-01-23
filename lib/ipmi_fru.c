@@ -3290,7 +3290,8 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	struct ipmi_sdr_iterator * itr;
 	struct sdr_get_rs * header;
 	struct sdr_record_fru_locator * fru;
-	int rc;
+	int rc = -1;
+	/* Assing rc = 0, if even single FRU print succeeds. */
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	struct ipm_devid_rsp *devid;
@@ -3323,7 +3324,8 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 	/* FRU commands can be issued to FRU device #0 LUN 0		*/
 
 	if (devid->adtl_device_support & 0x08) {	/* FRU Inventory Device bit? */
-		rc = ipmi_fru_print(intf, NULL);
+		if(ipmi_fru_print(intf, NULL) == 0)
+			rc = 0;
 		printf("\n");
 	}
 
@@ -3357,7 +3359,8 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 
 				/* print the FRU by issuing FRU commands to the satellite     */
 				/* controller.						      */
-				rc = __ipmi_fru_print(intf, 0);
+				if(__ipmi_fru_print(intf, 0) == 0)
+					rc = 0;
 
 				printf("\n");
 
@@ -3379,7 +3382,8 @@ ipmi_fru_print_all(struct ipmi_intf * intf)
 			free_n(&fru);
 			continue;
 		}
-		rc = ipmi_fru_print(intf, fru);
+		if(ipmi_fru_print(intf, fru) == 0)
+			rc = 0;
 		free_n(&fru);
 	}
 
