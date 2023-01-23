@@ -77,6 +77,8 @@ typedef char ipmi_datebuf_t[IPMI_ASCTIME_SZ];
 char *ipmi_asctime_r(time_t stamp, ipmi_datebuf_t outbuf);
 size_t ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
        __attribute__((format(strftime, 3, 0)));
+time_t
+ipmi_strptime(const char *format, const char *s);
 
 /* These return pointers to static arrays and aren't thread safe */
 char *ipmi_timestamp_fmt(uint32_t stamp, const char *fmt)

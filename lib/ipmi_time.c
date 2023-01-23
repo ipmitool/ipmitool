@@ -116,6 +116,19 @@ ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
 }
 
 /**
+ * @brief Convert a formatted string to time_t 
+ * @returns the number of minutes from 1/1/1996 00:00
+ */
+time_t
+ipmi_strptime(const char *format, const char *s)
+{
+	struct tm mfg_date;
+	strptime(s, format, &mfg_date);
+	return mktime(&mfg_date);
+}
+
+
+/**
  * @brief Convert a timestamp to string, considering the '-Z' option.
  *        Similar to asctime_r(), but takes time_t instead of struct tm,
  *        and the string is in form "Wed Jun 30 21:49:08 1993 TZD" without

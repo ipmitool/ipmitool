@@ -637,8 +637,10 @@ struct fru_picmgext_amc_link_desc_record {
 /* FRU Board manufacturing date */
 #define FRU_BOARD_DATE_UNSPEC 0 /* IPMI FRU Information Storage Definition
                                    v1.0 rev 1.3, Table 11-1 */
+
+const static time_t SECS_FROM_1970_1996=820454400;
+
 static inline time_t ipmi_fru2time_t(void *mfg_date) {
-	const uint64_t secs_from_1970_1996 = 820454400;
 	uint32_t fru_ts = ipmi24toh(mfg_date);
 	time_t ts;
 
@@ -646,10 +648,21 @@ static inline time_t ipmi_fru2time_t(void *mfg_date) {
 		ts = IPMI_TIME_UNSPECIFIED;
 	}
 	else {
-		ts = fru_ts * 60 + secs_from_1970_1996;
+		ts = fru_ts * 60 + SECS_FROM_1970_1996;
 	}
 
 	return ts;
+}
+
+/**
+ * @brief Convert a host time_t from 1/1/1970 to IPMI mfg date
+ * @param[out]	mfg_date	at least 3 bytes buffer
+ * @returns the number of minutes from 1/1/1996 00:00
+ */
+static inline ipmi_time2fru(time_t sec, void *mfg_date) {
+	sec -= SECS_FROM_1970_1996;
+	sec/=60;
+	htoipmi24(sec, mfg_date);
 }
 
 typedef struct ipmi_fru_bloc {

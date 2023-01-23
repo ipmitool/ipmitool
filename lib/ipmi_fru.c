@@ -188,7 +188,7 @@ bool fru_checksum_is_valid(void *area, size_t len)
 /* get_fru_area_str  -  Parse FRU area string from raw data
 *
 * @data:   raw FRU data
-* @offset: offset into data for area
+* @offset: offset into data for area, the offset will be modified to next
 *
 * returns pointer to FRU area string
 */
@@ -4959,6 +4959,26 @@ f_type, uint8_t f_index, char *f_string)
 	/* Convert index from character to decimal */
 	f_index= f_index - 0x30;
 
+	if (f_type == 'b' && f_index == 9)		// use index '9' for editing 'board mfg date'
+	{
+		time_t total_secs;
+		uint32_t *board_mfg_date=&fru_data[3];
+
+		total_secs = ipmi_strptime("%Y-%m-%d %H:%M:%S", f_string);
+		ipmi_time2fru(total_secs, board_mfg_date);
+
+		checksum = ipmi_csum(fru_data, fru_section_len -1);
+		fru_data[fru_section_len - 1] = checksum;
+
+		/* Write the updated section to the FRU data; source offset => 0 */
+		if (write_fru_area(intf, &fru, fruId, 0, header_offset, fru_section_len, fru_data) < 0)
+		{
+			printf("Write to FRU data failed.\n");
+			rc = (-1);
+		}
+		goto ipmi_fru_set_field_string_out;
+	}
+
 	/*Seek to field index */
 	for (i=0; i <= f_index; i++) {
 		fru_field_offset_tmp = fru_field_offset;
@@ -4980,13 +5000,8 @@ f_type, uint8_t f_index, char *f_string)
 		memcpy(fru_data + fru_field_offset_tmp + 1,
 								f_string, strlen(f_string));
 
-		checksum = 0;
-		/* Calculate Header Checksum */
-		for (i = 0; i < fru_section_len - 1; i++)
-		{
-			checksum += fru_data[i];
-		}
-		checksum = (~checksum) + 1;
+
+		checksum = ipmi_csum(fru_data, fru_section_len -1);
 		fru_data[fru_section_len - 1] = checksum;
 
 		/* Write the updated section to the FRU data; source offset => 0 */
