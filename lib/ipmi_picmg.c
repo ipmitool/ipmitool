@@ -1345,6 +1345,8 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, char ** argv)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
+	int has_local = 0, override = 0, lamp_test = 0;
+	int local_blink = 0, override_blink = 0;
 
 	unsigned char msg_data[6];
 
@@ -1373,59 +1375,97 @@ ipmi_picmg_get_led_state(struct ipmi_intf * intf, char ** argv)
 		return -1;
 	}
 
-	printf("LED states:						  %x	", rsp->data[1] );
-
-	if (!(rsp->data[1] & 0x1)) {
-		printf("[NO LOCAL CONTROL]\n");
-		return 0;
+	if (rsp->data_len != 5 && rsp->data_len != 8 && rsp->data_len != 9) {
+		lprintf(LOG_ERR, "LED get state failed with invalid response data length");
+		return -1;
 	}
 
-	printf("[LOCAL CONTROL");
+	printf("LED states:			  %x	[", rsp->data[1] );
 
-	if (rsp->data[1] & 0x2) {
-		printf("|OVERRIDE");
+	if (rsp->data[1] & 0x8) {
+		printf("RESTRICTED | ");
 	}
 
 	if (rsp->data[1] & 0x4) {
-		printf("|LAMPTEST");
+		lamp_test = 1;
+		printf("LAMPTEST | ");
 	}
 
+	if (rsp->data[1] & 0x1) {
+		has_local = 1;
+	}
+	if (rsp->data[1] & 0x2) {
+		override = 1;
+		printf("OVERRIDE");
+	} else if (has_local) {
+		printf("LOCAL CONTROL");
+	} else {
+		printf("UNKNOWN");
+	}
+
+	if (!has_local) {
+		printf(" | NO LOCAL CONTROL");
+	} else if (override) {
+		printf(" | HAS LOCAL CONTROL");
+	}
 	printf("]\n");
 
-	printf("  Local Control function:     %x  ", rsp->data[2] );
+	printf("%c Local Control function:	  %x	", override ? ' ' :
+		(has_local ? '>' : '#'), rsp->data[2] );
 	if (rsp->data[2] == 0x0) {
 		printf("[OFF]\n");
 	} else if (rsp->data[2] == 0xff) {
 		printf("[ON]\n");
-	} else {
+	} else if (rsp->data[2] <= 0xfa) {
+		local_blink = 1;
 		printf("[BLINKING]\n");
+	} else {
+		printf("[RESERVED]\n");
 	}
 
-	printf("  Local Control On-Duration:  %x\n", rsp->data[3] );
-	printf("  Local Control Color:        %x  [%s]\n",
-	       rsp->data[4],
-	       picmg_led_color_str(rsp->data[4]));
+	if (local_blink) {
+		printf("%c Blink On:Off Duration:	  %s%d:%d ms\n",
+			has_local ? ' ' : '#',
+			(rsp->data[3] &&  rsp->data[3] <= 0xfa) ? "" :
+				"[RESERVED]",
+			(rsp->data[3] * 10), (rsp->data[2] * 10));
+	}
+	printf("%c Local Control Color:		  %x	[%s]\n",
+		has_local ? ' ' : '#', rsp->data[4],
+		picmg_led_color_str(rsp->data[4]));
 
-	/* override state or lamp test */
-	if (rsp->data[1] & 0x02) {
-		printf("  Override function:     %x  ", rsp->data[5] );
-		if (rsp->data[2] == 0x0) {
-			printf("[OFF]\n");
-		} else if (rsp->data[2] == 0xff) {
-			printf("[ON]\n");
-		} else {
-			printf("[BLINKING]\n");
-		}
-
-		printf("  Override On-Duration:  %x\n", rsp->data[6] );
-		printf("  Override Color:        %x  [%s]\n",
-		       rsp->data[7],
-		       picmg_led_color_str(rsp->data[7]));
-
+	/* override state */
+	if (rsp->data_len < 8) {
+		return 0;
 	}
 
-	if (rsp->data[1] & 0x04) {
-		printf("  Lamp test duration:    %x\n", rsp->data[8] );
+	printf("%c Override Control function:	  %x	", override ? '>' : ' ',
+		rsp->data[5] );
+	if (rsp->data[5] == 0x0) {
+		printf("[OFF]\n");
+	} else if (rsp->data[5] == 0xff) {
+		printf("[ON]\n");
+	} else if (rsp->data[5] <= 0xfa) {
+		override_blink = 1;
+		printf("[BLINKING]\n");
+	} else {
+		printf("[RESERVED]\n");
+	}
+
+	if (override_blink) {
+		printf("  Blink On:Off Duration:	  %s%d:%d ms\n",
+			(rsp->data[6] &&  rsp->data[6] <= 0xfa) ? "" :
+				"[RESERVED]",
+			(rsp->data[6] * 10), (rsp->data[5] * 10));
+	}
+	printf("  Override Control Color:	  %x	[%s]\n",
+	       rsp->data[7],
+	       picmg_led_color_str(rsp->data[7]));
+
+	/* lamp test */
+	if (rsp->data_len == 9) {
+		printf("%c Lamp Test Duration:		  %d ms\n",
+			lamp_test ? '>' : ' ', rsp->data[8] * 100);
 	}
 
 	return 0;
