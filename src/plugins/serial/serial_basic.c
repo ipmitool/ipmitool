@@ -58,12 +58,10 @@
 # include <config.h>
 #endif
 
-#define SERIAL_BM_MAX_MSG_SIZE	47
 #define SERIAL_BM_MAX_RQ_SIZE	33	/* 40 - 7 */
 #define SERIAL_BM_MAX_RS_SIZE	32	/* 40 - 8 */
 #define	SERIAL_BM_TIMEOUT	5
 #define SERIAL_BM_RETRY_COUNT	5
-#define SERIAL_BM_MAX_BUFFER_SIZE 250
 
 #define BM_START		0xA0
 #define BM_STOP			0xA5
@@ -129,7 +127,7 @@ struct  serial_bm_parse_ctx{
  *	Receiving context
  */
 struct serial_bm_recv_ctx {
-	uint8_t buffer[SERIAL_BM_MAX_BUFFER_SIZE];
+	uint8_t *buffer;
 	size_t buffer_size;
 	size_t max_buffer_size;
 };
@@ -814,12 +812,22 @@ serial_bm_get_message(struct ipmi_intf * intf,
 		struct serial_bm_recv_ctx * read_ctx,
 		uint8_t * msg, size_t __UNUSED__(max_len))
 {
-	uint8_t data[SERIAL_BM_MAX_MSG_SIZE];
+	uint8_t *data;
 	struct serial_bm_request_ctx tmp_ctx;
-	struct ipmi_get_message_rp * rp = (struct ipmi_get_message_rp *) data;
-	struct ipmb_msg_hdr * hdr = (struct ipmb_msg_hdr *) data;
+	struct ipmi_get_message_rp * rp;
+	struct ipmb_msg_hdr * hdr;
 	clock_t start, tm;
 	int rv, netFn, rqSeq;
+	int size;
+
+	size = intf->max_response_data_size * 2 + 8;
+	data = (uint8_t *) alloca(size);
+	if (!data) {
+		lperror(LOG_ERR, "ipmitool: alloca error");
+		return -1;
+	}
+	rp = (struct ipmi_get_message_rp *) data;
+	hdr = (struct ipmb_msg_hdr *) data;
 
 	start = clock();
 
@@ -846,7 +854,7 @@ serial_bm_get_message(struct ipmi_intf * intf,
 
 		/* wait for response */
 		rv = serial_bm_wait_response(intf, &tmp_ctx, read_ctx,
-				data, sizeof (data));
+				data, size);
 
 		/* check for IO error or timeout */
 		if (rv <= 0) {
@@ -884,24 +892,33 @@ static struct ipmi_rs *
 serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 {
 	static struct ipmi_rs rsp;
-	uint8_t msg[SERIAL_BM_MAX_MSG_SIZE], * resp = msg;
+	uint8_t *msg, *resp;
 	struct serial_bm_request_ctx req_ctx[3];
 	struct serial_bm_recv_ctx read_ctx;
 	int retry, rv, msg_len, bridging_level;
+	int size;
 
 	if (!intf->opened && intf->open && intf->open(intf) < 0) {
 		return NULL;
 	}
 
+	size = intf->max_request_data_size + 7;
+	msg = resp = (uint8_t *) alloca(size);
+	if (!msg) {
+		lperror(LOG_ERR, "ipmitool: alloca error");
+		return NULL;
+	}
+
 	/* reset receive context */
 	read_ctx.buffer_size = 0;
-	read_ctx.max_buffer_size = SERIAL_BM_MAX_BUFFER_SIZE;
+	read_ctx.buffer = (uint8_t *)alloca(size * 2);
+	read_ctx.max_buffer_size = size * 2;
 
 	/* Send the message and receive the answer */
 	for (retry = 0; retry < intf->ssn_params.retry; retry++) {
 		/* build output message */
 		bridging_level = serial_bm_build_msg(intf, req, msg,
-				sizeof (msg), req_ctx, &msg_len);
+				size, req_ctx, &msg_len);
 		if (msg_len < 0) {
 			return NULL;
 		}
@@ -912,7 +929,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 
 		/* wait for response */
 		rv = serial_bm_wait_response(intf, &req_ctx[0],
-				&read_ctx, msg, sizeof (msg));
+				&read_ctx, msg, size);
 
 		/* check for IO error */
 		if (rv < 0) {
@@ -930,7 +947,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 			if (is_system) {
 				/* check message flags */
 				rv = serial_bm_get_message(intf, &req_ctx[1],
-						&read_ctx, msg, sizeof (msg));
+						&read_ctx, msg, size);
 
 				/* check for IO error */
 				if (rv < 0) {
@@ -945,7 +962,7 @@ serial_bm_send_request(struct ipmi_intf * intf, struct ipmi_rq * req)
 			} else if (rv == 1) {
 				/* wait for response for inner request */
 				rv = serial_bm_wait_response(intf, &req_ctx[1],
-						&read_ctx, msg, sizeof (msg));
+						&read_ctx, msg, size);
 
 				/* check for IO error */
 				if (rv < 0) {
