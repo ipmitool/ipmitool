@@ -3405,9 +3405,13 @@ ipmi_find_best_cipher_suite(struct ipmi_intf *intf)
 	};
 	const size_t nr_preferred = ARRAY_SIZE(cipher_order_preferred);
 	size_t ipref, i;
+	int rc;
+	int retry_old = intf->ssn_params.retry;
 
-	if (ipmi_get_channel_cipher_suites(intf, "ipmi", IPMI_LAN_CHANNEL_E,
-	                                   suites, &nr_suites) < 0)
+	ipmi_intf_session_set_retry(intf, 1);
+	rc = ipmi_get_channel_cipher_suites(intf, "ipmi", IPMI_LAN_CHANNEL_E, suites, &nr_suites);
+	ipmi_intf_session_set_retry(intf, retry_old);
+	if (rc < 0)
 	{
 		/* default legacy behavior - fall back to cipher suite 3 */
 		return IPMI_LANPLUS_CIPHER_SUITE_3;
