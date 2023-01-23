@@ -34,6 +34,7 @@
 
 #include <sys/types.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> /* For free() */
@@ -128,7 +129,7 @@ FILE * ipmi_open_file(const char * file, int rw);
 void ipmi_start_daemon(struct ipmi_intf *intf);
 uint16_t ipmi_get_oem_id(struct ipmi_intf *intf);
 
-#define IS_SET(v, b) ((v) & (1 << (b)))
+#define IS_SET(v, b) ((bool)((v) & (1 << (b))))
 
 /**
  * Free the memory and clear the pointer.

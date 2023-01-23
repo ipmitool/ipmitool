@@ -31,6 +31,7 @@
  */
 
 
+#include <ipmitool/helper.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_vita.h>
@@ -38,40 +39,46 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/log.h>
 
+enum vita_fru_policy_bits {
+	activation_locked = (1 << 0),
+	deactivation_locked = (1 << 1),
+	commanded_deactivation_ignored = (1 << 2),
+	default_activation_locked = (1 << 3),
+};
+
 /* Handled VITA 46.11 commands */
-#define VITA_CMD_HELP		0
-#define VITA_CMD_PROPERTIES	1
-#define VITA_CMD_FRUCONTROL	2
-#define VITA_CMD_ADDRINFO	3
-#define VITA_CMD_ACTIVATE	4
-#define VITA_CMD_DEACTIVATE	5
-#define VITA_CMD_POLICY_GET	6
-#define VITA_CMD_POLICY_SET	7
-#define VITA_CMD_LED_PROP	8
-#define VITA_CMD_LED_CAP	9
-#define VITA_CMD_LED_GET	10
-#define VITA_CMD_LED_SET	11
-#define VITA_CMD_UNKNOWN	255
+#define VITA_CMD_HELP 0
+#define VITA_CMD_PROPERTIES 1
+#define VITA_CMD_FRUCONTROL 2
+#define VITA_CMD_ADDRINFO 3
+#define VITA_CMD_ACTIVATE 4
+#define VITA_CMD_DEACTIVATE 5
+#define VITA_CMD_POLICY_GET 6
+#define VITA_CMD_POLICY_SET 7
+#define VITA_CMD_LED_PROP 8
+#define VITA_CMD_LED_CAP 9
+#define VITA_CMD_LED_GET 10
+#define VITA_CMD_LED_SET 11
+#define VITA_CMD_UNKNOWN 255
 
 /* VITA 46.11 Site Type strings */
 static struct valstr vita_site_types[] = {
-	{ VITA_FRONT_VPX_MODULE, "Front Loading VPX Plug-In Module" },
-	{ VITA_POWER_ENTRY, "Power Entry Module" },
-	{ VITA_CHASSIS_FRU, "Chassic FRU Information Module" },
-	{ VITA_DEDICATED_CHMC, "Dedicated Chassis Manager" },
-	{ VITA_FAN_TRAY, "Fan Tray" },
-	{ VITA_FAN_TRAY_FILTER, "Fan Tray Filter" },
-	{ VITA_ALARM_PANEL, "Alarm Panel" },
-	{ VITA_XMC, "XMC" },
-	{ VITA_VPX_RTM, "VPX Rear Transition Module" },
-	{ VITA_FRONT_VME_MODULE, "Front Loading VME Plug-In Module" },
-	{ VITA_FRONT_VXS_MODULE, "Front Loading VXS Plug-In Module" },
-	{ VITA_POWER_SUPPLY, "Power Supply" },
-	{ VITA_FRONT_VITA62_MODULE, "Front Loading VITA 62 Module\n" },
-	{ VITA_71_MODULE, "VITA 71 Module\n" },
-	{ VITA_FMC, "FMC\n" },
-	{ 0, NULL }
-};
+	{VITA_FRONT_VPX_MODULE, "Front Loading VPX Plug-In Module"},
+	{VITA_POWER_ENTRY, "Power Entry Module"},
+	{VITA_CHASSIS_FRU, "Chassic FRU Information Module"},
+	{VITA_DEDICATED_CHMC, "Dedicated Chassis Manager"},
+	{VITA_FAN_TRAY, "Fan Tray"},
+	{VITA_FAN_TRAY_FILTER, "Fan Tray Filter"},
+	{VITA_ALARM_PANEL, "Alarm Panel"},
+	{VITA_XMC, "XMC"},
+	{VITA_VPX_RTM, "VPX Rear Transition Module"},
+	{VITA_FRONT_VME_MODULE, "Front Loading VME Plug-In Module"},
+	{VITA_FRONT_VXS_MODULE, "Front Loading VXS Plug-In Module"},
+	{VITA_POWER_SUPPLY, "Power Supply"},
+	{VITA_FRONT_VITA62_MODULE, "Front Loading VITA 62 Module\n"},
+	{VITA_71_MODULE, "VITA 71 Module\n"},
+	{VITA_FMC, "FMC\n"},
+	{0, NULL}};
 
 /* VITA 46.11 command help strings */
 static struct valstr vita_help_strings[] = {
@@ -202,14 +209,11 @@ vita_discover(struct ipmi_intf *intf)
 		lprintf(LOG_INFO, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->data_len < 5) {
-		lprintf(LOG_INFO, "Invalid response length %d",
-			rsp->data_len);
+		lprintf(LOG_INFO, "Invalid response length %d", rsp->data_len);
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
-		lprintf(LOG_INFO, "Invalid group extension %#x",
-			rsp->data[0]);
+		lprintf(LOG_INFO, "Invalid group extension %#x", rsp->data[0]);
 	} else if ((rsp->data[3] & 0x03) != 0) {
-		lprintf(LOG_INFO, "Unknown VSO Standard %d",
-			(rsp->data[3] & 0x03));
+		lprintf(LOG_INFO, "Unknown VSO Standard %d", rsp->data[3] & 0x03);
 	} else if ((rsp->data[4] & 0x0F) != 1) {
 		lprintf(LOG_INFO, "Unknown VSO Specification Revision %d.%d",
 			(rsp->data[4] & 0x0F), (rsp->data[4] >> 4));
@@ -246,11 +250,9 @@ ipmi_vita_ipmb_address(struct ipmi_intf *intf)
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 	} else if (rsp->data_len < 7) {
-		lprintf(LOG_ERR, "Invalid response length %d",
-			rsp->data_len);
+		lprintf(LOG_ERR, "Invalid response length %d", rsp->data_len);
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
-		lprintf(LOG_ERR, "Invalid group extension %#x",
-			rsp->data[0]);
+		lprintf(LOG_ERR, "Invalid group extension %#x", rsp->data[0]);
 	} else {
 		return rsp->data[2];
 	}
@@ -258,7 +260,8 @@ ipmi_vita_ipmb_address(struct ipmi_intf *intf)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -272,8 +275,8 @@ ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 2;
 
-	msg_data[0] = GROUP_EXT_VITA;		/* VITA identifier */
-	msg_data[1] = 0;			/* default FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	msg_data[1] = 0; /* default FRU ID */
 
 	if (argc > 0) {
 		/* validate and get FRU Device ID */
@@ -292,12 +295,10 @@ ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	} else if (rsp->data_len < 7) {
-		lprintf(LOG_ERR, "Invalid response length %d",
-			rsp->data_len);
+		lprintf(LOG_ERR, "Invalid response length %d", rsp->data_len);
 		return -1;
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
-		lprintf(LOG_ERR, "Invalid group extension %#x",
-			rsp->data[0]);
+		lprintf(LOG_ERR, "Invalid group extension %#x", rsp->data[0]);
 		return -1;
 	}
 
@@ -305,8 +306,8 @@ ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 	printf("IPMB-0 Address   : 0x%02x\n", rsp->data[2]);
 	printf("FRU ID           : 0x%02x\n", rsp->data[4]);
 	printf("Site ID          : 0x%02x\n", rsp->data[5]);
-	printf("Site Type        : %s\n", val2str(rsp->data[6],
-		vita_site_types));
+	printf("Site Type        : %s\n",
+	       val2str(rsp->data[6], vita_site_types));
 	if (rsp->data_len > 8) {
 		printf("Channel 7 Address: 0x%02x\n", rsp->data[8]);
 	}
@@ -314,7 +315,8 @@ ipmi_vita_getaddr(struct ipmi_intf *intf, int argc, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 {
 	struct ipmi_rs *rsp;
@@ -328,7 +330,7 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 	req.msg.data = &msg_data;
 	req.msg.data_len = 1;
 
-	msg_data = GROUP_EXT_VITA;		/* VITA identifier */
+	msg_data = GROUP_EXT_VITA; /* VITA identifier */
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -356,8 +358,18 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 
 	tmp = (rsp->data[2] & 0x30) >> 4;
 
-	printf("    Frequency  %skHz\n",
-		tmp == 0 ? "100" : tmp == 1 ? "400" : "RESERVED");
+	static const char const *rsvd = "RESERVED";
+	const char *freq = rsvd;
+	switch (tmp) {
+	case 0:
+		freq = "100";
+		break;
+	case 1:
+		freq = "400";
+		break;
+	}
+
+	printf("    Frequency  %skHz\n", freq);
 
 	tmp = rsp->data[2] & 3;
 
@@ -368,10 +380,10 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 	}
 
 	printf("VSO Standard      : %s\n",
-		(rsp->data[3] & 0x3) == 0 ? "VITA 46.11" : "RESERVED");
+	       (rsp->data[3] & 0x3) == 0 ? "VITA 46.11" : "RESERVED");
 
 	printf("VSO Spec Revision : %d.%d\n", rsp->data[4] & 0xf,
-		rsp->data[4] >> 4);
+	       rsp->data[4] >> 4);
 
 	printf("Max FRU Device ID : 0x%02x\n", rsp->data[5]);
 	printf("FRU Device ID     : 0x%02x\n", rsp->data[6]);
@@ -379,9 +391,10 @@ ipmi_vita_get_vso_capabilities(struct ipmi_intf *intf)
 	return 0;
 }
 
-static int
-ipmi_vita_set_fru_activation(struct ipmi_intf *intf,
-	char **argv, unsigned char command)
+static
+int
+ipmi_vita_set_fru_activation(struct ipmi_intf *intf, char **argv,
+			     unsigned char command)
 {
 	struct ipmi_rs *rsp;
 	struct ipmi_rq req;
@@ -394,11 +407,12 @@ ipmi_vita_set_fru_activation(struct ipmi_intf *intf,
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 
-	msg_data[0]	= GROUP_EXT_VITA;		/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	msg_data[2]	= command;			/* command */
+	msg_data[2] = command; /* command */
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -418,12 +432,13 @@ ipmi_vita_set_fru_activation(struct ipmi_intf *intf,
 	}
 
 	printf("FRU has been successfully %s\n",
-		command ? "activated" : "deactivated");
+	       command ? "activated" : "deactivated");
 
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -437,8 +452,9 @@ ipmi_vita_get_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 2;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
 
@@ -461,18 +477,19 @@ ipmi_vita_get_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 
 	printf("FRU State Policy Bits:	%xh\n", rsp->data[1]);
 	printf("    Default-Activation-Locked Policy Bit is %d\n",
-		rsp->data[1] & 0x08 ? 1 : 0);
+	       IS_SET(rsp->data[1], default_activation_locked));
 	printf("    Commanded-Deactivation-Ignored Policy Bit is %d\n",
-		rsp->data[1] & 0x04 ? 1 : 0);
+	       IS_SET(rsp->data[1], commanded_deactivation_ignored));
 	printf("    Deactivation-Locked Policy Bit is %d\n",
-		rsp->data[1] & 0x02 ? 1 : 0);
+	       IS_SET(rsp->data[1], deactivation_locked));
 	printf("    Activation-Locked Policy Bit is %d\n",
-		rsp->data[1] & 0x01);
+	       IS_SET(rsp->data[1], activation_locked));
 
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_set_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -486,14 +503,17 @@ ipmi_vita_set_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 4;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0) {	/* bits mask */
+	if (str2uchar(argv[1], &msg_data[2]) != 0) {
+		/* bits mask */
 		return -1;
 	}
-	if (str2uchar(argv[2], &msg_data[3]) != 0) {	/* bits */
+	if (str2uchar(argv[2], &msg_data[3]) != 0) {
+		/* bits */
 		return -1;
 	}
 
@@ -519,7 +539,8 @@ ipmi_vita_set_fru_state_policy_bits(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_led_properties(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -533,8 +554,9 @@ ipmi_vita_get_led_properties(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 2;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
 
@@ -560,7 +582,8 @@ ipmi_vita_get_led_properties(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -575,11 +598,13 @@ ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0) {	/* LED-ID */
+	if (str2uchar(argv[1], &msg_data[2]) != 0) {
+		/* LED-ID */
 		return -1;
 	}
 
@@ -625,7 +650,8 @@ ipmi_vita_get_led_color_capabilities(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -639,11 +665,13 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0) {	/* LED-ID */
+	if (str2uchar(argv[1], &msg_data[2]) != 0) {
+		/* LED-ID */
 		return -1;
 	}
 
@@ -656,9 +684,9 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 		lprintf(LOG_ERR, "Invalid completion code received: %s",
 			val2str(rsp->ccode, completion_code_vals));
 		return -1;
-	} else if (rsp->data_len < 5
-		|| ((rsp->data[1] & 0x2) && rsp->data_len < 8)
-		|| ((rsp->data[1] & 0x4) && rsp->data_len < 9)) {
+	} else if ((rsp->data_len < 5)
+		   || ((rsp->data[1] & 0x2) && rsp->data_len < 8)
+		   || ((rsp->data[1] & 0x4) && rsp->data_len < 9)) {
 		lprintf(LOG_ERR, "Invalid response length %d", rsp->data_len);
 		return -1;
 	} else if (rsp->data[0] != GROUP_EXT_VITA) {
@@ -691,8 +719,8 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 			printf("[BLINKING]\n");
 		}
 		printf("  Local Control On-Duration:  %x\n", rsp->data[3]);
-		printf("  Local Control Color:        %x\t[%s]\n",
-			rsp->data[4], picmg_led_color_str(rsp->data[4] & 7));
+		printf("  Local Control Color:        %x\t[%s]\n", rsp->data[4],
+		       picmg_led_color_str(rsp->data[4] & 7));
 	}
 
 	/* override state or lamp test */
@@ -706,8 +734,8 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 			printf("[BLINKING]\n");
 		}
 		printf("  Override On-Duration:  %x\n", rsp->data[6]);
-		printf("  Override Color:        %x\t[%s]\n",
-			rsp->data[7], picmg_led_color_str(rsp->data[7] & 7));
+		printf("  Override Color:        %x\t[%s]\n", rsp->data[7],
+		       picmg_led_color_str(rsp->data[7] & 7));
 		if (rsp->data[1] == 0x04) {
 			printf("  Lamp test duration:    %x\n", rsp->data[8]);
 		}
@@ -716,7 +744,8 @@ ipmi_vita_get_led_state(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_set_led_state(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -730,20 +759,25 @@ ipmi_vita_set_led_state(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 6;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0) {	/* LED-ID */
+	if (str2uchar(argv[1], &msg_data[2]) != 0) {
+		/* LED-ID */
 		return -1;
 	}
-	if (str2uchar(argv[2], &msg_data[3]) != 0) {	/* LED function */
+	if (str2uchar(argv[2], &msg_data[3]) != 0) {
+		/* LED function */
 		return -1;
 	}
-	if (str2uchar(argv[3], &msg_data[4]) != 0) {	/* LED on duration */
+	if (str2uchar(argv[3], &msg_data[4]) != 0) {
+		/* LED on duration */
 		return -1;
 	}
-	if (str2uchar(argv[4], &msg_data[5]) != 0) {	/* LED color */
+	if (str2uchar(argv[4], &msg_data[5]) != 0) {
+		/* LED color */
 		return -1;
 	}
 
@@ -769,7 +803,8 @@ ipmi_vita_set_led_state(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 {
 	struct ipmi_rs *rsp;
@@ -783,16 +818,18 @@ ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 	req.msg.data = msg_data;
 	req.msg.data_len = 3;
 
-	msg_data[0] = GROUP_EXT_VITA;			/* VITA identifier */
-	if (is_fru_id(argv[0], &msg_data[1]) != 0) {	/* FRU ID */
+	msg_data[0] = GROUP_EXT_VITA; /* VITA identifier */
+	if (is_fru_id(argv[0], &msg_data[1]) != 0) {
+		/* FRU ID */
 		return -1;
 	}
-	if (str2uchar(argv[1], &msg_data[2]) != 0) {	/* control option */
+	if (str2uchar(argv[1], &msg_data[2]) != 0) {
+		/* control option */
 		return -1;
 	}
 
 	printf("FRU Device Id: %d FRU Control Option: %s\n", msg_data[1],
-		val2str(msg_data[2], picmg_frucontrol_vals));
+	       val2str(msg_data[2], picmg_frucontrol_vals));
 
 	rsp = intf->sendrecv(intf, &req);
 
@@ -816,7 +853,8 @@ ipmi_vita_fru_control(struct ipmi_intf *intf, char **argv)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_vita_get_cmd(int argc, char **argv)
 {
 	if (argc < 1 || !strcmp(argv[0], "help")) {
@@ -903,7 +941,7 @@ ipmi_vita_get_cmd(int argc, char **argv)
 }
 
 int
-ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
+ipmi_vita_main(struct ipmi_intf *intf, int argc, char **argv)
 {
 	int rc = -1, show_help = 0;
 	int cmd = ipmi_vita_get_cmd(argc, argv);
@@ -949,8 +987,7 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 
 	case VITA_CMD_POLICY_GET:
 		if (argc > 2) {
-			rc = ipmi_vita_get_fru_state_policy_bits(intf,
-				&argv[2]);
+			rc = ipmi_vita_get_fru_state_policy_bits(intf, &argv[2]);
 		} else {
 			show_help = 1;
 		}
@@ -958,8 +995,7 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 
 	case VITA_CMD_POLICY_SET:
 		if (argc > 4) {
-			rc = ipmi_vita_set_fru_state_policy_bits(intf,
-				&argv[2]);
+			rc = ipmi_vita_set_fru_state_policy_bits(intf, &argv[2]);
 		} else {
 			show_help = 1;
 		}
@@ -975,8 +1011,7 @@ ipmi_vita_main (struct ipmi_intf *intf, int argc, char **argv)
 
 	case VITA_CMD_LED_CAP:
 		if (argc > 3) {
-			rc = ipmi_vita_get_led_color_capabilities(intf,
-				&argv[2]);
+			rc = ipmi_vita_get_led_color_capabilities(intf, &argv[2]);
 		} else {
 			show_help = 1;
 		}
