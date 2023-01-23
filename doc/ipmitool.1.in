@@ -2194,6 +2194,8 @@ Stores system info string to bmc for given argument
 Possible arguments are:
 .RS
 .TP
+\fIsystem_fw_version\fP   System firmware (e.g. BIOS) version
+.TP
 \fIprimary_os_name\fP     Primary Operating System Name
 .TP
 \fIos_name\fP             Operating System Name
