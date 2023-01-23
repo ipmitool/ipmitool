@@ -93,7 +93,7 @@ pkg: control/pkginfo
 	$(STRIP) src/ipmitool
 	(cd control ; pkgmk -o -d /tmp)
 	pkgtrans -s /tmp $(PKG) ipmitool
-	gzip -c /tmp/$(PKG) > $(PKG).gz
+	gzip -nc /tmp/$(PKG) > $(PKG).gz
 	-rm -rf /tmp/ipmitool /tmp/$(PKG)
 
 BUILDDIR = ${shell cd $(top_builddir) ; pwd | sed -e 's,^[^:\\/]:[\\/],/,'}
