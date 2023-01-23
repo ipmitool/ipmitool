@@ -724,11 +724,11 @@ read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	finish = offset + length;
 	if (finish > fru->size) {
-		memset(frubuf + fru->size, 0, length - fru->size);
-		finish = fru->size;
+		memset(frubuf + fru->size - offset, 0, finish - fru->size);
 		lprintf(LOG_NOTICE, "Read FRU Area length %d too large, "
 			"Adjusting to %d",
-			offset + length, finish - offset);
+			finish - offset, fru->size - offset);
+		finish = fru->size;
 		length = finish - offset;
 	}
 
@@ -1239,6 +1239,8 @@ fru_area_print_product(struct ipmi_intf * intf, struct fru_info * fru,
 	/* read enough to check length field */
 	if (read_fru_area(intf, fru, id, offset, 2, tmp) == 0) {
 		fru_len = 8 * tmp[1];
+	} else {
+		lprintf(LOG_ERR, "Can not get Product Area Length");
 	}
 
 	if (fru_len == 0) {
