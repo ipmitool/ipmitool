@@ -990,6 +990,11 @@ const struct oemvalstr ipmi_oem_sensor_type_vals[] = {
    { IPMI_OEM_VITA, 0xF3, "FRU Temperature" },
    { IPMI_OEM_VITA, 0xF4, "Payload Test Results" },
    { IPMI_OEM_VITA, 0xF5, "Payload Test Status" },
+   /* Supermicro Sensor Types */
+   { IPMI_OEM_SUPERMICRO, 0xCC, "BIOS OEM" },
+   { IPMI_OEM_SUPERMICRO_47488, 0xCC, "BIOS OEM" },
+   { IPMI_OEM_SUPERMICRO, 0xD3, "Memory RAS" },
+   { IPMI_OEM_SUPERMICRO_47488, 0xD3, "Memory RAS" },
 
    { 0xffffff,      0x00,  NULL }
 };
