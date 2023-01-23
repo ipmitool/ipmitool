@@ -79,7 +79,7 @@
 #endif
 
 #ifdef ENABLE_ALL_OPTIONS
-# define OPTION_STRING	"I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
+# define OPTION_STRING	"i:I:46hVvcgsEKYao:H:d:P:f:U:p:C:L:A:t:T:m:z:S:l:b:B:e:k:y:O:R:N:D:Z"
 #else
 # define OPTION_STRING	"I:46hVvcH:f:U:p:d:S:D:"
 #endif
@@ -227,6 +227,9 @@ ipmi_option_usage(const char * progname, struct ipmi_cmd * cmdlist, struct ipmi_
 	lprintf(LOG_NOTICE, "       -d N           Specify a /dev/ipmiN device to use (default=0)");
 	lprintf(LOG_NOTICE, "       -I intf        Interface to use");
 	lprintf(LOG_NOTICE, "       -H hostname    Remote host name for LAN interface");
+#ifdef HAVE_BINDTODEVICE
+	lprintf(LOG_NOTICE, "       -i bind_intf   Network interface name bound for lan/lanplus interface");
+#endif
 	lprintf(LOG_NOTICE, "       -p port        Remote RMCP port [default=623]");
 	lprintf(LOG_NOTICE, "       -U username    Remote session username");
 	lprintf(LOG_NOTICE, "       -f file        Read remote session password from file");
@@ -335,6 +338,9 @@ ipmi_main(int argc, char ** argv,
 	char * tmp_pass = NULL;
 	char * tmp_env = NULL;
 	char * hostname = NULL;
+#ifdef HAVE_BINDTODEVICE
+	char * bind_intf = NULL;
+#endif /* HAVE_BINDTODEVICE */
 	char * username = NULL;
 	char * password = NULL;
 	char * intfname = NULL;
@@ -371,6 +377,18 @@ ipmi_main(int argc, char ** argv,
 	while ((argflag = getopt(argc, (char **)argv, OPTION_STRING)) != -1)
 	{
 		switch (argflag) {
+#ifdef HAVE_BINDTODEVICE
+		case 'i':
+			if (bind_intf) {
+				free_n(&bind_intf);
+			}
+			bind_intf = strdup(optarg);
+			if (!bind_intf) {
+				lprintf(LOG_ERR, "%s: malloc failure", progname);
+				goto out_free;
+			}
+			break;
+#endif /* HAVE_BINDTODEVICE */
 		case 'I':
 			if (intfname) {
 				free(intfname);
@@ -865,6 +883,10 @@ ipmi_main(int argc, char ** argv,
 	/* set session variables */
 	if (hostname)
 		ipmi_intf_session_set_hostname(ipmi_main_intf, hostname);
+#ifdef HAVE_BINDTODEVICE
+	if (bind_intf)
+		ipmi_intf_session_set_bind_intf(ipmi_main_intf, bind_intf);
+#endif /* HAVE_BINDTODEVICE */
 	if (username)
 		ipmi_intf_session_set_username(ipmi_main_intf, username);
 	if (password)
@@ -1049,6 +1071,12 @@ ipmi_main(int argc, char ** argv,
 		free(hostname);
 		hostname = NULL;
 	}
+#ifdef HAVE_BINDTODEVICE
+	if (bind_intf) {
+		free(bind_intf);
+		bind_intf = NULL;
+	}
+#endif /* HAVE_BINDTODEVICE */
 	if (username) {
 		free(username);
 		username = NULL;

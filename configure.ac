@@ -246,6 +246,22 @@ if test "x$xenable_intf_lan" = "xyes"; then
 	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lan/libintf_lan.la"
 fi
 
+dnl Check for socket option SO_BINDTODEVICE support
+AC_MSG_CHECKING([for socket option SO_BINDTODEVICE support])
+have_bindtodevice=no
+AC_TRY_COMPILE([
+		#ifdef HAVE_SYS_SOCKET_H
+		# include <sys/socket.h>
+		#endif
+	], [
+		int i = SO_BINDTODEVICE;
+	], [have_bindtodevice=yes])
+if test x"$have_bindtodevice" = x"yes"; then
+	AC_DEFINE(HAVE_BINDTODEVICE, [1],
+		[Define to 1 to enable socket option SO_BINDTODEVICE support])
+fi
+AC_MSG_RESULT([$have_bindtodevice])
+
 dnl enable IPMI USB interface
 AC_ARG_ENABLE([intf-usb],
 	[AC_HELP_STRING([--enable-intf-usb],

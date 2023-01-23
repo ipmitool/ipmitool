@@ -242,6 +242,9 @@ ipmi_set_usage(void)
 	lprintf(LOG_NOTICE, "Usage: set <option> <value>\n");
 	lprintf(LOG_NOTICE, "Options are:");
 	lprintf(LOG_NOTICE, "    hostname <host>        Session hostname");
+#ifdef HAVE_BINDTODEVICE
+	lprintf(LOG_NOTICE, "    bind_intf <intf>       Session network interface");
+#endif /* HAVE_BINDTODEVICE */
 	lprintf(LOG_NOTICE, "    username <user>        Session username");
 	lprintf(LOG_NOTICE, "    password <pass>        Session password");
 	lprintf(LOG_NOTICE, "    privlvl <level>        Session privilege level force");
@@ -305,6 +308,17 @@ int ipmi_set_main(struct ipmi_intf * intf, int argc, char ** argv)
 		printf("Set session hostname to %s\n",
 				intf->ssn_params.hostname);
 	}
+#ifdef HAVE_BINDTODEVICE
+	else if (!strcmp(argv[0], "bind_intf")) {
+		ipmi_intf_session_set_bind_intf(intf, argv[1]);
+		if (!intf->session) {
+			lprintf(LOG_ERR, "Failed to set session bind interface.");
+			return (-1);
+		}
+		printf("Set session bind interface to %s\n",
+				intf->ssn_params.bind_intf);
+	}
+#endif /* HAVE_BINDTODEVICE */
 	else if (!strcmp(argv[0], "user") ||
 		 !strcmp(argv[0], "username")) {
 		ipmi_intf_session_set_username(intf, argv[1]);
