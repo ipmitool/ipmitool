@@ -593,7 +593,11 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
 				double val)
 {
 	int m, b, k1, k2;
+	int iret;
 	double result;
+	double min, max;
+	uint8_t ubyte;
+	int8_t sbyte;
 
 	/* only works for analog sensors */
 	if (UNITS_ARE_DISCRETE((&sensor->cmn)))
@@ -608,12 +612,60 @@ sdr_convert_sensor_value_to_raw(struct sdr_record_full_sensor * sensor,
 	if (m == 0)
 		return 0;
 
-	result = (((val / pow(10, k2)) - (b * pow(10, k1))) / m);
+	result = (((val / pow(10.0, k2)) - (b * pow(10.0, k1))) / m);
 
-	if ((result - (int) result) >= .5)
-		return (uint8_t) ceil(result);
-	else
-		return (uint8_t) result;
+	/* Set appropriate bounds, based on type of analog byte */
+	switch (sensor->cmn.unit.analog) {
+		case 0:
+			min = 0.0;
+			max = 255.0;
+			break;
+		case 1:
+			min = -127.0;
+			max = 127.0;
+			break;
+		case 2:
+			min = -128.0;
+			max = 127.0;
+			break;
+		default:
+			/* Oops! This isn't an analog sensor. */
+			return 0;
+	}
+
+	/* Clamp to bounds, avoiding rollover */
+	if (result < min) {
+		result = min;
+	}
+	if (result > max) {
+		result = max;
+	}
+
+	/* Round to integer */
+	if ((result - (int)result) >= .5) {
+		iret = ceil(result);
+	}
+	else {
+		iret = result;
+	}
+
+	/* Return signed or unsigned, based on type of analog byte */
+	switch (sensor->cmn.unit.analog) {
+		case 0:
+			ubyte = iret;
+			return ubyte;
+		case 1:
+			if (iret < 0) {
+				--iret;
+			}
+			/* fall through */
+		case 2:
+			sbyte = iret;
+			return sbyte;
+		default:
+			/* Oops! This isn't an analog sensor. */
+			return 0;
+	}
 }
 
 /* ipmi_sdr_get_sensor_thresholds  -  return thresholds for sensor
