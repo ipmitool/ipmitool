@@ -32,6 +32,7 @@
  * This Code is edited and Implemented the License feature for Delloem
  * Author Harsha S <Harsha_S1@dell.com>
  */
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -50,6 +51,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
+#include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_delloem.h>
 #include <ipmitool/ipmi_fru.h>
@@ -251,6 +253,14 @@ static int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set);
 
+static
+inline
+bool
+cc_invalid_or_not_present(int rc)
+{
+	return (rc == IPMI_CC_INV_CMD || rc == IPMI_CC_REQ_DATA_NOT_PRESENT);
+}
+
 /* Function Name:       ipmi_delloem_main
  *
  * Description:         This function processes the delloem command
@@ -304,7 +314,8 @@ ipmi_delloem_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:
  *
  */
-static void
+static
+void
 usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -347,7 +358,8 @@ usage(void)
  *                         -1 - failure
  *
  */
-static int
+static
+int
 ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -392,7 +404,7 @@ ipmi_delloem_lcd_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR,
 						"Argument '%s' is either not a number or out of range.",
 						argv[current_arg]);
-				return (-1);
+				return -1;
 			}
 			current_arg++;
 			if (argc <= current_arg) {
@@ -648,7 +660,8 @@ ipmi_lcd_get_platform_model_name(struct ipmi_intf * intf, char* lcdstring,
  * Return:           iDRAC6 type     1 - whoville
  *                                   0 - others
  */
-static int
+static
+int
 ipmi_idracvalidator_command(struct ipmi_intf * intf)
 {
 	int rc;
@@ -707,7 +720,8 @@ ipmi_idracvalidator_command(struct ipmi_intf * intf)
  *                   1 = Default
  *                   2 = None
  */
-static int
+static
+int
 ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
 {
 	int rc;
@@ -716,7 +730,7 @@ ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)){
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -737,7 +751,8 @@ ipmi_lcd_get_configure_command_wh(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
 {
 	uint8_t data[4];
@@ -747,7 +762,7 @@ ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1)||(rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD configuration: "
 				"Command not supported on this system.");
 		return -1;
@@ -770,7 +785,8 @@ ipmi_lcd_get_configure_command(struct ipmi_intf * intf, uint8_t *command)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
 {
 	#define LSCC_DATA_LEN 2
@@ -782,7 +798,7 @@ ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error setting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error setting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -803,7 +819,8 @@ ipmi_lcd_set_configure_command(struct ipmi_intf * intf, int command)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp)
 {
@@ -845,7 +862,7 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error setting LCD configuration");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error setting LCD configuration: "
 				"Command not supported on this system.");
 	} else if (rc > 0) {
@@ -865,7 +882,8 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
 		uint8_t max_length)
 {
@@ -921,22 +939,23 @@ ipmi_lcd_get_single_line_text(struct ipmi_intf * intf, char* lcdstring,
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 {
 	IPMI_DELL_LCD_CAPS lcd_caps;
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-	int rc;
+	int rc = -1;
 	printf("LCD info\n");
 	if (ipmi_lcd_get_configure_command_wh(intf) != 0) {
-		return -1;
+		goto out;
 	}
 	if (lcd_mode.lcdmode== IPMI_DELL_LCD_CONFIG_DEFAULT) {
 		char text[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
 		if (ipmi_lcd_get_platform_model_name(intf, text,
 					IPMI_DELL_LCD_STRING_LENGTH_MAX,
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			goto out;
 		}
 		printf("    Setting:Model name\n");
 		printf("    Line 1:  %s\n", text);
@@ -948,19 +967,23 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 				sizeof(lcd_caps), &lcd_caps);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
-			return -1;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
+			ERR_OUT;
+		} else if (cc_invalid_or_not_present(rc)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
 					val2str(rc, completion_code_vals));
-			return -1;
+			ERR_OUT;
 		}
 		if (lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
 			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
 					lcd_caps.max_chars[0]);
+			if (rc < 0) {
+				lprintf(LOG_ERR, "Error getting LCD single line.");
+				goto out;
+			}
 			printf("    Text:    %s\n", lcdstring);
 		} else {
 			printf("    No lines to show\n");
@@ -997,7 +1020,9 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
 	} else if (lcd_mode.error_display == IPMI_DELL_LCD_ERROR_DISP_VERBOSE) {
 		printf("    Error Display:  Simple\n");
 	}
-	return 0;
+	rc = 0;
+out:
+	return rc;
 }
 /*
  * Function Name:    ipmi_lcd_get_info
@@ -1007,25 +1032,26 @@ ipmi_lcd_get_info_wh(struct ipmi_intf * intf)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_info(struct ipmi_intf * intf)
 {
 	IPMI_DELL_LCD_CAPS lcd_caps;
 	uint8_t command = 0;
 	char lcdstring[IPMI_DELL_LCD_STRING_LENGTH_MAX+1] = {0};
-	int rc;
+	int rc = -1;
 
 	printf("LCD info\n");
 
 	if (ipmi_lcd_get_configure_command(intf, &command) != 0) {
-		return -1;
+		goto out;
 	}
 	if (command == IPMI_DELL_LCD_CONFIG_DEFAULT) {
 		memset(lcdstring,0,IPMI_DELL_LCD_STRING_LENGTH_MAX+1);
 		if (ipmi_lcd_get_platform_model_name(intf, lcdstring,
 					IPMI_DELL_LCD_STRING_LENGTH_MAX,
 					IPMI_DELL_PLATFORM_MODEL_NAME_SELECTOR) != 0) {
-			return (-1);
+			goto out;
 		}
 		printf("    Setting: default\n");
 		printf("    Line 1:  %s\n", lcdstring);
@@ -1037,25 +1063,32 @@ ipmi_lcd_get_info(struct ipmi_intf * intf)
 				sizeof(lcd_caps), &lcd_caps);
 		if (rc < 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities.");
-			return -1;
-		} else if ((rc == 0xc1) || (rc == 0xcb)) {
+			ERR_OUT;
+		} else if (cc_invalid_or_not_present(rc)) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: "
 					"Command not supported on this system.");
 		} else if (rc > 0) {
 			lprintf(LOG_ERR, "Error getting LCD capabilities: %s",
 					val2str(rc, completion_code_vals));
-			return -1;
+			ERR_OUT;
 		}
 		if (lcd_caps.number_lines > 0) {
 			memset(lcdstring, 0, IPMI_DELL_LCD_STRING_LENGTH_MAX + 1);
 			rc = ipmi_lcd_get_single_line_text(intf, lcdstring,
 					lcd_caps.max_chars[0]);
+			if (rc < 0) {
+				lprintf(LOG_ERR, "Error getting LCD single line.");
+				goto out;
+			}
 			printf("    Text:    %s\n", lcdstring);
 		} else {
 			printf("    No lines to show\n");
 		}
 	}
-	return 0;
+
+	rc = 0;
+out:
+	return rc;
 }
 /*
  * Function Name:    ipmi_lcd_get_status_val
@@ -1065,7 +1098,8 @@ ipmi_lcd_get_info(struct ipmi_intf * intf)
  * Output:           lcdstatus       - KVM Status & Lock Status
  * Return:
  */
-static int
+static
+int
 ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 {
 	int rc;
@@ -1074,7 +1108,7 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
 	if (rc < 0) {
 		lprintf(LOG_ERR, "Error getting LCD Status");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
@@ -1093,7 +1127,8 @@ ipmi_lcd_get_status_val(struct ipmi_intf * intf, LCD_STATUS* lcdstatus)
  * Output:
  * Return:
  */
-static int
+static
+int
 IsLCDSupported()
 {
 	return LcdSupported;
@@ -1106,7 +1141,8 @@ IsLCDSupported()
  * Output:
  * Return:
  */
-static void
+static
+void
 CheckLCDSupport(struct ipmi_intf * intf)
 {
 	int rc;
@@ -1124,7 +1160,8 @@ CheckLCDSupport(struct ipmi_intf * intf)
  * Output:
  * Return:
  */
-static void
+static
+void
 ipmi_lcd_status_print(LCD_STATUS lcdstatus)
 {
 	switch (lcdstatus.vKVM_status) {
@@ -1162,7 +1199,8 @@ ipmi_lcd_status_print(LCD_STATUS lcdstatus)
  * Return:           -1 on error
  *                   0 if successful
  */
-static int
+static
+int
 ipmi_lcd_get_status(struct ipmi_intf * intf)
 {
 	int rc=0;
@@ -1184,7 +1222,8 @@ ipmi_lcd_get_status(struct ipmi_intf * intf)
  * Return:            -1 on error
  *                    0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 {
 	#define LSCC_DATA_LEN 2
@@ -1209,7 +1248,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting LCD status");
 		rc= -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		return -1;
@@ -1230,7 +1269,8 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 {
 	#define LSCC_DATA_LEN 2
@@ -1255,7 +1295,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 	if (!rsp) {
 		lprintf(LOG_ERR, "Error setting LCD status");
 		rc = -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting LCD status: "
 				"Command not supported on this system.");
 		rc = -1;
@@ -1276,7 +1316,8 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
  * Return:         -1 on error
  *                 0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 {
 	uint8_t data[18];
@@ -1286,7 +1327,7 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 	int rc = 0;
 	if (bytes_to_store > IPMI_DELL_LCD_STRING_LENGTH_MAX) {
 		lprintf(LOG_ERR, "Out of range Max limit is 62 characters");
-		return (-1);
+		return -1;
 	} else {
 		bytes_to_store = MIN(bytes_to_store, IPMI_DELL_LCD_STRING_LENGTH_MAX);
 		for (ii = 0; ii < 4; ii++) {
@@ -1338,7 +1379,8 @@ ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
 {
 	int rc = 0;
@@ -1373,7 +1415,8 @@ ipmi_lcd_set_text(struct ipmi_intf * intf, char * text)
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp, char * text)
 {
@@ -1398,7 +1441,8 @@ ipmi_lcd_configure_wh(struct ipmi_intf * intf, uint32_t  mode,
  * Return:          -1 on error
  *                  0 if successful
  */
-static int
+static
+int
 ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
 {
 	int rc = 0;
@@ -1419,7 +1463,8 @@ ipmi_lcd_configure(struct ipmi_intf * intf, int command, char * text)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_lcd_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -1507,7 +1552,8 @@ ipmi_lcd_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_mac_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -1549,7 +1595,8 @@ EmbeddedNICMacAddressType EmbeddedNICMacAddress;
 
 EmbeddedNICMacAddressType_10G EmbeddedNICMacAddress_10G;
 
-static void
+static
+void
 InitEmbeddedNICMacAddressValues()
 {
 	uint8_t i;
@@ -1569,7 +1616,8 @@ InitEmbeddedNICMacAddressValues()
 }
 
 uint8_t UseVirtualMacAddress = 0;
-static int
+static
+int
 ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1577,7 +1625,6 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t msg_data[30];
 	uint8_t VirtualMacAddress [MACADDRESSLENGH];
 	uint8_t input_length=0;
-	uint8_t j;
 	uint8_t i;
 	if (NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER) {
 		return 0;
@@ -1659,7 +1706,8 @@ ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
@@ -1667,7 +1715,6 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
 	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
-	uint8_t j;
 	ipmi_macinfo_drac_idrac_virtual_mac(intf,NicNum);
 	if ((NicNum != 0xff && NicNum != IDRAC_NIC_NUMBER)
 			|| UseVirtualMacAddress != 0) {
@@ -1728,14 +1775,14 @@ ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
-	uint8_t j;
 	uint8_t i;
 	uint8_t Total_No_NICs = 0;
 	InitEmbeddedNICMacAddressValues();
@@ -1791,14 +1838,14 @@ ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
 	uint8_t input_length = 0;
 	uint8_t i;
-	uint8_t j;
 	uint8_t len;
 	uint8_t loop_count;
 	uint8_t maxlen;
@@ -1896,7 +1943,8 @@ ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	if (IMC_IDRAC_10G == IMC_Type) {
@@ -1911,7 +1959,7 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
 		return ipmi_macinfo_11g(intf,NicNum);
 	} else {
 		lprintf(LOG_ERR, "Error in getting MAC Address : Not supported platform");
-		return (-1);
+		return -1;
 	}
 }
 /*
@@ -1923,7 +1971,8 @@ ipmi_macinfo(struct ipmi_intf* intf, uint8_t NicNum)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_mac_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -1953,7 +2002,8 @@ ipmi_mac_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
@@ -1982,13 +2032,13 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 				return -1;
 			} else if (INVAILD_FAILOVER_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_STRING);
-				return (-1);
+				return -1;
 			} else if (INVAILD_FAILOVER_MODE_SETTINGS == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_FAILOVER_MODE_SET);
-				return (-1);
+				return -1;
 			} else if (INVAILD_SHARED_MODE == nic_selection) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_lan_set_nic_selection_12g(intf,nic_set);
 		} else {
@@ -1999,7 +2049,7 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 			}
 			if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
 				lprintf(LOG_ERR, INVAILD_SHARED_MODE_SET_STRING);
-				return (-1);
+				return -1;
 			}
 			rc = ipmi_lan_set_nic_selection(intf,nic_selection);
 		}
@@ -2022,7 +2072,8 @@ ipmi_delloem_lan_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** arg
 	return rc;
 }
 
-static int
+static
+int
 IsLANSupported()
 {
 	if (IMC_IDRAC_11G_MODULAR == IMC_Type) {
@@ -2031,7 +2082,8 @@ IsLANSupported()
 	return 1;
 }
 
-static int
+static
+int
 get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 		char ** argv, char *nic_set)
 {
@@ -2198,7 +2250,8 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 	return INVALID;
 }
 
-static int
+static
+int
 get_nic_selection_mode(int current_arg, char ** argv)
 {
 	if (argv[current_arg]
@@ -2247,7 +2300,8 @@ get_nic_selection_mode(int current_arg, char ** argv)
 	return INVALID;
 }
 
-static int
+static
+int
 ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 {
 	struct ipmi_rs * rsp;
@@ -2283,7 +2337,8 @@ ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 {
 	struct ipmi_rs * rsp;
@@ -2311,7 +2366,8 @@ ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2368,7 +2424,8 @@ ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 	return 0;
 }
 
-static int
+static
+int
 ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2424,7 +2481,8 @@ ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 	return 0;
 }
 
-static void
+static
+void
 ipmi_lan_usage(void)
 {
 	/* TODO:
@@ -2496,7 +2554,8 @@ ipmi_lan_usage(void)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int rc = 0;
@@ -2574,7 +2633,7 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
 		if (str2int(argv[current_arg], &val) != 0) {
 			lprintf(LOG_ERR, "Given capacity value '%s' is invalid.",
 					argv[current_arg]);
-			return (-1);
+			return -1;
 		}
 		current_arg++;
 		if (!argv[current_arg]) {
@@ -2611,7 +2670,8 @@ ipmi_delloem_powermonitor_main(struct ipmi_intf * intf, int argc, char ** argv)
  * Return:             1 on error
  *                     0 if successful
  */
-static int
+static
+int
 ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 		SensorReadingType* pSensorReadingData)
 {
@@ -2655,10 +2715,11 @@ ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[2];
 	req.msg.netfn = DELL_OEM_NETFN;
@@ -2699,7 +2760,8 @@ ipmi_get_power_capstatus_command(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
 {
 	struct ipmi_rs * rsp = NULL;
@@ -2743,7 +2805,8 @@ ipmi_set_power_capstatus_command(struct ipmi_intf * intf, uint8_t val)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_powermgmt(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
@@ -2802,7 +2865,7 @@ ipmi_powermgmt(struct ipmi_intf * intf)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1)||(rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting power management information: "
 				"Command not supported on this system.");
 		return -1;
@@ -2856,7 +2919,8 @@ ipmi_powermgmt(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 {
 	struct ipmi_rs * rsp;
@@ -2886,7 +2950,7 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rsp->ccode == 0xc1) {
+	} else if (rsp->ccode == IPMI_CC_INV_CMD) {
 		lprintf(LOG_ERR,
 				"Error clearing power values, command not supported on this system.");
 		return -1;
@@ -2907,7 +2971,8 @@ ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
  *
  * Return:
  */
-static uint64_t
+static
+uint64_t
 watt_to_btuphr_conversion(uint32_t powerinwatt)
 {
 	uint64_t powerinbtuphr;
@@ -2924,7 +2989,8 @@ watt_to_btuphr_conversion(uint32_t powerinwatt)
  *
  * Return:
  */
-static uint32_t
+static
+uint32_t
 btuphr_to_watt_conversion(uint64_t powerinbtuphr)
 {
 	uint32_t powerinwatt;
@@ -2942,10 +3008,11 @@ btuphr_to_watt_conversion(uint64_t powerinbtuphr)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint64_t peakpowerheadroombtuphr;
 	uint64_t instantpowerhearoom;
@@ -2964,7 +3031,7 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting power headroom status: "
 				"Command not supported on this system ");
 		return -1;
@@ -3010,7 +3077,8 @@ ipmi_get_power_headroom_command(struct ipmi_intf * intf,uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
 {
 	SensorReadingType sensorReadingData;
@@ -3072,7 +3140,8 @@ ipmi_get_power_consumption_data(struct ipmi_intf * intf,uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		IPMI_INST_POWER_CONSUMPTION_DATA * instpowerconsumptiondata)
 {
@@ -3098,7 +3167,7 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rsp->ccode == 0xc1) || (rsp->ccode == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rsp->ccode)) {
 		lprintf(LOG_ERR, "Error getting instantaneous power consumption data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3124,7 +3193,8 @@ ipmi_get_instan_power_consmpt_data(struct ipmi_intf * intf,
  *
  * Return:
  */
-static void
+static
+void
 ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata)
 {
 	uint16_t intampsval=0;
@@ -3145,23 +3215,24 @@ ipmi_print_get_instan_power_Amps_data(IPMI_INST_POWER_CONSUMPTION_DATA instpower
  *
  * Return:
  */
-static int
+static
+int
 ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
 {
 	int rc = 0;
 	IPMI_INST_POWER_CONSUMPTION_DATA instpowerconsumptiondata = {0,0,0,0};
 	printf("\nPower consumption information\n");
 	rc = ipmi_get_power_consumption_data(intf, unit);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	rc = ipmi_get_instan_power_consmpt_data(intf, &instpowerconsumptiondata);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	ipmi_print_get_instan_power_Amps_data(instpowerconsumptiondata);
 	rc = ipmi_get_power_headroom_command(intf, unit);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	return rc;
@@ -3175,7 +3246,8 @@ ipmi_print_get_power_consmpt_data(struct ipmi_intf * intf, uint8_t unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_AVGPOWER_CONSUMP_HISTORY * pavgpower)
 {
@@ -3190,7 +3262,7 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting average power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3224,7 +3296,8 @@ ipmi_get_avgpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_POWER_CONSUMP_HISTORY * pstPeakpower)
 {
@@ -3239,7 +3312,7 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3281,7 +3354,8 @@ ipmi_get_peakpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		IPMI_POWER_CONSUMP_HISTORY * pstMinpower)
 {
@@ -3296,7 +3370,7 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting peak power consumption history data: "
 				"Command not supported on this system.");
 		return -1;
@@ -3308,14 +3382,14 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
 	if (verbose > 1) {
 		rdata = (void *)pstMinpower;
 		printf("Peak power consmhistory  Data               : "
-				"%x %x %x %x %x %x %x %x %x %x\n   "
-				"%x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
-				rdata[0], rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10], rdata[11],
-				rdata[12], rdata[13], rdata[14], rdata[15],
-				rdata[16], rdata[17], rdata[18], rdata[19],
-				rdata[20], rdata[21], rdata[22], rdata[23]);
+		       "%x %x %x %x %x %x %x %x %x %x\n   "
+		       "%x %x %x %x %x %x %x %x %x %x %x %x %x %x\n\n",
+		       rdata[0], rdata[1], rdata[2], rdata[3],
+		       rdata[4], rdata[5], rdata[6], rdata[7],
+		       rdata[8], rdata[9], rdata[10], rdata[11],
+		       rdata[12], rdata[13], rdata[14], rdata[15],
+		       rdata[16], rdata[17], rdata[18], rdata[19],
+		       rdata[20], rdata[21], rdata[22], rdata[23]);
 	}
 # if WORDS_BIGENDIAN
 	pstMinpower->lastminutepower = BSWAP_16(pstMinpower->lastminutepower);
@@ -3339,7 +3413,8 @@ ipmi_get_minpower_consmpt_history(struct ipmi_intf * intf,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 {
 	uint64_t tmp;
@@ -3350,17 +3425,17 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
 	IPMI_POWER_CONSUMP_HISTORY stPeakpower;
 
 	rc = ipmi_get_avgpower_consmpt_history(intf, &avgpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 
 	rc = ipmi_get_peakpower_consmpt_history(intf, &stPeakpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 
 	rc = ipmi_get_minpower_consmpt_history(intf, &stMinpower);
-	if (rc == (-1)) {
+	if (rc == -1) {
 		return rc;
 	}
 	if (rc != 0) {
@@ -3463,7 +3538,8 @@ ipmi_print_power_consmpt_history(struct ipmi_intf * intf, int unit)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 {
 	uint8_t *rdata;
@@ -3477,7 +3553,7 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if ((rc == 0xc1) || (rc == 0xcb)) {
+	} else if (cc_invalid_or_not_present(rc)) {
 		lprintf(LOG_ERR, "Error getting power cap: "
 				"Command not supported on this system.");
 		return -1;
@@ -3488,10 +3564,10 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
 	}
 	if (verbose > 1) {
 		rdata = (void*)ipmipowercap;
-		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x ",
-				rdata[1], rdata[2], rdata[3],
-				rdata[4], rdata[5], rdata[6], rdata[7],
-				rdata[8], rdata[9], rdata[10],rdata[11]);
+		printf("power cap  Data               :%x %x %x %x %x %x %x %x %x %x %x",
+		       rdata[1], rdata[2], rdata[3],
+		       rdata[4], rdata[5], rdata[6], rdata[7],
+		       rdata[8], rdata[9], rdata[10],rdata[11]);
 	}
 # if WORDS_BIGENDIAN
 	ipmipowercap->PowerCap = BSWAP_16(ipmipowercap->PowerCap);
@@ -3513,7 +3589,8 @@ ipmi_get_power_cap(struct ipmi_intf * intf, IPMI_POWER_CAP * ipmipowercap)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
 {
 	uint64_t tempbtuphrconv;
@@ -3547,7 +3624,8 @@ ipmi_print_power_cap(struct ipmi_intf * intf,uint8_t unit)
  * Output:
  * Return:
  */
-static int
+static
+int
 ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 {
 	int rc;
@@ -3576,7 +3654,7 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
 		lprintf(LOG_ERR,
 				"FM001 : A required license is missing or expired");
 		return -1;
-	} else if (rc == 0xc1) {
+	} else if (rc == IPMI_CC_INV_CMD) {
 		lprintf(LOG_ERR, "Error getting power cap, command not supported on "
 				"this system.");
 		return -1;
@@ -3674,7 +3752,8 @@ ipmi_set_power_cap(struct ipmi_intf * intf, int unit, int val)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_powermonitor_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3746,7 +3825,8 @@ ipmi_powermonitor_usage(void)
  * Return:			   return code	   0 - success
  *						  -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** argv)
 {
 	int rc = 0;
@@ -3762,7 +3842,8 @@ ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** 
  * Output: prints the sd card extended info
  * Return: 0 - success -1 - failure
  */
-static int
+static
+int
 ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
@@ -3808,7 +3889,7 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 				"vFlash SD card is unavailable, please insert the card of");
 		lprintf(LOG_ERR,
 				"size 256MB or greater");
-		return (-1);
+		return -1;
 	}
 
 	printf("vFlash SD Card Properties\n");
@@ -3840,7 +3921,8 @@ ipmi_get_sd_card_info(struct ipmi_intf * intf) {
  * Output: prints help or error with help
  * Return: 0 - Success -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** argv)
 {
 	int rc;
@@ -3888,7 +3970,8 @@ ipmi_delloem_vFlash_process(struct ipmi_intf * intf, int current_arg, char ** ar
  * Output: prints help
  * Return: void
  */
-static void
+static
+void
 ipmi_vFlash_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3909,7 +3992,8 @@ ipmi_vFlash_usage(void)
  *
  * Return:
  */
-static void
+static
+void
 ipmi_setled_usage(void)
 {
 	lprintf(LOG_NOTICE,
@@ -3928,16 +4012,18 @@ ipmi_setled_usage(void)
 "");
 }
 
-static int
+static
+int
 IsSetLEDSupported(void)
 {
 	return SetLEDSupported;
 }
 
-static void
+static
+void
 CheckSetLEDSupport(struct ipmi_intf * intf)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[10];
 
@@ -3978,11 +4064,12 @@ CheckSetLEDSupport(struct ipmi_intf * intf)
  *
  * Return:
  */
-static int
+static
+int
 ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
 		int *slot)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[8];
 	/* Get mapping of BDF to bay:slot */
@@ -4030,10 +4117,11 @@ ipmi_getdrivemap(struct ipmi_intf * intf, int b, int d, int f, int *bay,
  *
  * Return:
  */
-static int
+static
+int
 ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
 {
-	struct ipmi_rs * rsp = NULL;
+	struct ipmi_rs *rsp;
 	struct ipmi_rq req = {0};
 	uint8_t data[20];
 	/* Issue Drive Status Update to bay:slot */
@@ -4074,7 +4162,8 @@ ipmi_setled_state(struct ipmi_intf * intf, int bayId, int slotId, int state)
  * Description:      This function calculates bits in SES drive update
  * Return:           Mask set with bits for SES backplane update
  */
-static int
+static
+int
 ipmi_getsesmask(int argc, char **argv)
 {
 	int mask = 0;
@@ -4113,7 +4202,8 @@ ipmi_getsesmask(int argc, char **argv)
  * Return:              return code     0 - success
  *                         -1 - failure
  */
-static int
+static
+int
 ipmi_delloem_setled_main(struct ipmi_intf * intf, int argc, char ** argv)
 {
 	int b,d,f, mask;
