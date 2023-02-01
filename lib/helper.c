@@ -66,7 +66,7 @@ extern int verbose;
 
 uint32_t buf2long(uint8_t * buf)
 {
-	return (uint32_t)(buf[3] << 24 | buf[2] << 16 | buf[1] << 8 | buf[0]);
+	return (uint32_t)(buf[3]) << 24 | buf[2] << 16 | buf[1] << 8 | buf[0];
 }
 
 uint16_t buf2short(uint8_t * buf)
